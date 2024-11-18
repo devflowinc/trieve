@@ -12,30 +12,54 @@
     Do not edit the class manually.
 """  # noqa: E501
 
+import json
 import warnings
 from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
+import requests
 from typing_extensions import Annotated
 
 from pydantic import Field, StrictBool, StrictInt, StrictStr
 from typing import Any, Optional
 from typing_extensions import Annotated
-from trieve_py_client.models.add_chunk_to_group_req_payload import AddChunkToGroupReqPayload
+from trieve_py_client.models.add_chunk_to_group_req_payload import (
+    AddChunkToGroupReqPayload,
+)
 from trieve_py_client.models.chunk_group_and_file_id import ChunkGroupAndFileId
-from trieve_py_client.models.create_chunk_group_req_payload_enum import CreateChunkGroupReqPayloadEnum
-from trieve_py_client.models.create_chunk_group_response_enum import CreateChunkGroupResponseEnum
-from trieve_py_client.models.get_chunks_in_group_response import GetChunksInGroupResponse
-from trieve_py_client.models.get_groups_for_chunks_req_payload import GetGroupsForChunksReqPayload
+from trieve_py_client.models.create_chunk_group_req_payload_enum import (
+    CreateChunkGroupReqPayloadEnum,
+)
+from trieve_py_client.models.create_chunk_group_response_enum import (
+    CreateChunkGroupResponseEnum,
+)
+from trieve_py_client.models.get_chunks_in_group_response import (
+    GetChunksInGroupResponse,
+)
+from trieve_py_client.models.get_groups_for_chunks_req_payload import (
+    GetGroupsForChunksReqPayload,
+)
 from trieve_py_client.models.group_data import GroupData
 from trieve_py_client.models.groups_for_chunk import GroupsForChunk
-from trieve_py_client.models.recommend_groups_req_payload import RecommendGroupsReqPayload
+from trieve_py_client.models.recommend_groups_req_payload import (
+    RecommendGroupsReqPayload,
+)
 from trieve_py_client.models.recommend_groups_response import RecommendGroupsResponse
-from trieve_py_client.models.remove_chunk_from_group_req_payload import RemoveChunkFromGroupReqPayload
+from trieve_py_client.models.remove_chunk_from_group_req_payload import (
+    RemoveChunkFromGroupReqPayload,
+)
 from trieve_py_client.models.search_group_response_types import SearchGroupResponseTypes
-from trieve_py_client.models.search_over_groups_req_payload import SearchOverGroupsReqPayload
-from trieve_py_client.models.search_over_groups_response_types import SearchOverGroupsResponseTypes
-from trieve_py_client.models.search_within_group_req_payload import SearchWithinGroupReqPayload
-from trieve_py_client.models.update_chunk_group_req_payload import UpdateChunkGroupReqPayload
+from trieve_py_client.models.search_over_groups_req_payload import (
+    SearchOverGroupsReqPayload,
+)
+from trieve_py_client.models.search_over_groups_response_types import (
+    SearchOverGroupsResponseTypes,
+)
+from trieve_py_client.models.search_within_group_req_payload import (
+    SearchWithinGroupReqPayload,
+)
+from trieve_py_client.models.update_chunk_group_req_payload import (
+    UpdateChunkGroupReqPayload,
+)
 
 from trieve_py_client.api_client import ApiClient, RequestSerialized
 from trieve_py_client.api_response import ApiResponse
@@ -54,20 +78,31 @@ class ChunkGroupApi:
             api_client = ApiClient.get_default()
         self.api_client = api_client
 
-
     @validate_call
     def add_chunk_to_group(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group to add the chunk to as a bookmark")],
-        add_chunk_to_group_req_payload: Annotated[AddChunkToGroupReqPayload, Field(description="JSON request payload to add a chunk to a group (bookmark it)")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr,
+            Field(description="Id of the group to add the chunk to as a bookmark"),
+        ],
+        add_chunk_to_group_req_payload: Annotated[
+            AddChunkToGroupReqPayload,
+            Field(
+                description="JSON request payload to add a chunk to a group (bookmark it)"
+            ),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -104,7 +139,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._add_chunk_to_group_serialize(
             tr_dataset=tr_dataset,
@@ -113,16 +148,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -130,20 +164,31 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def add_chunk_to_group_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group to add the chunk to as a bookmark")],
-        add_chunk_to_group_req_payload: Annotated[AddChunkToGroupReqPayload, Field(description="JSON request payload to add a chunk to a group (bookmark it)")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr,
+            Field(description="Id of the group to add the chunk to as a bookmark"),
+        ],
+        add_chunk_to_group_req_payload: Annotated[
+            AddChunkToGroupReqPayload,
+            Field(
+                description="JSON request payload to add a chunk to a group (bookmark it)"
+            ),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -180,7 +225,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._add_chunk_to_group_serialize(
             tr_dataset=tr_dataset,
@@ -189,16 +234,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -206,20 +250,31 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def add_chunk_to_group_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group to add the chunk to as a bookmark")],
-        add_chunk_to_group_req_payload: Annotated[AddChunkToGroupReqPayload, Field(description="JSON request payload to add a chunk to a group (bookmark it)")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr,
+            Field(description="Id of the group to add the chunk to as a bookmark"),
+        ],
+        add_chunk_to_group_req_payload: Annotated[
+            AddChunkToGroupReqPayload,
+            Field(
+                description="JSON request payload to add a chunk to a group (bookmark it)"
+            ),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -256,7 +311,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._add_chunk_to_group_serialize(
             tr_dataset=tr_dataset,
@@ -265,19 +320,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _add_chunk_to_group_serialize(
         self,
@@ -292,8 +345,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -304,46 +356,37 @@ class ChunkGroupApi:
 
         # process the path parameters
         if group_id is not None:
-            _path_params['group_id'] = group_id
+            _path_params["group_id"] = group_id
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
         if add_chunk_to_group_req_payload is not None:
             _body_params = add_chunk_to_group_req_payload
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
         # set the HTTP header `Content-Type`
         if _content_type:
-            _header_params['Content-Type'] = _content_type
+            _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = (
-                self.api_client.select_header_content_type(
-                    [
-                        'application/json'
-                    ]
-                )
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
             )
             if _default_content_type is not None:
-                _header_params['Content-Type'] = _default_content_type
+                _header_params["Content-Type"] = _default_content_type
 
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='POST',
-            resource_path='/api/chunk_group/chunk/{group_id}',
+            method="POST",
+            resource_path="/api/chunk_group/chunk/{group_id}",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -353,25 +396,36 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def add_chunk_to_group_by_tracking_id(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        tracking_id: Annotated[StrictStr, Field(description="Tracking id of the group to add the chunk to as a bookmark")],
-        add_chunk_to_group_req_payload: Annotated[AddChunkToGroupReqPayload, Field(description="JSON request payload to add a chunk to a group via tracking_id")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        tracking_id: Annotated[
+            StrictStr,
+            Field(
+                description="Tracking id of the group to add the chunk to as a bookmark"
+            ),
+        ],
+        add_chunk_to_group_req_payload: Annotated[
+            AddChunkToGroupReqPayload,
+            Field(
+                description="JSON request payload to add a chunk to a group via tracking_id"
+            ),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -408,7 +462,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._add_chunk_to_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -417,16 +471,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -434,20 +487,33 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def add_chunk_to_group_by_tracking_id_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        tracking_id: Annotated[StrictStr, Field(description="Tracking id of the group to add the chunk to as a bookmark")],
-        add_chunk_to_group_req_payload: Annotated[AddChunkToGroupReqPayload, Field(description="JSON request payload to add a chunk to a group via tracking_id")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        tracking_id: Annotated[
+            StrictStr,
+            Field(
+                description="Tracking id of the group to add the chunk to as a bookmark"
+            ),
+        ],
+        add_chunk_to_group_req_payload: Annotated[
+            AddChunkToGroupReqPayload,
+            Field(
+                description="JSON request payload to add a chunk to a group via tracking_id"
+            ),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -484,7 +550,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._add_chunk_to_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -493,16 +559,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -510,20 +575,33 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def add_chunk_to_group_by_tracking_id_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        tracking_id: Annotated[StrictStr, Field(description="Tracking id of the group to add the chunk to as a bookmark")],
-        add_chunk_to_group_req_payload: Annotated[AddChunkToGroupReqPayload, Field(description="JSON request payload to add a chunk to a group via tracking_id")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        tracking_id: Annotated[
+            StrictStr,
+            Field(
+                description="Tracking id of the group to add the chunk to as a bookmark"
+            ),
+        ],
+        add_chunk_to_group_req_payload: Annotated[
+            AddChunkToGroupReqPayload,
+            Field(
+                description="JSON request payload to add a chunk to a group via tracking_id"
+            ),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -560,7 +638,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._add_chunk_to_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -569,19 +647,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _add_chunk_to_group_by_tracking_id_serialize(
         self,
@@ -596,8 +672,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -608,46 +683,37 @@ class ChunkGroupApi:
 
         # process the path parameters
         if tracking_id is not None:
-            _path_params['tracking_id'] = tracking_id
+            _path_params["tracking_id"] = tracking_id
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
         if add_chunk_to_group_req_payload is not None:
             _body_params = add_chunk_to_group_req_payload
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
         # set the HTTP header `Content-Type`
         if _content_type:
-            _header_params['Content-Type'] = _content_type
+            _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = (
-                self.api_client.select_header_content_type(
-                    [
-                        'application/json'
-                    ]
-                )
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
             )
             if _default_content_type is not None:
-                _header_params['Content-Type'] = _default_content_type
+                _header_params["Content-Type"] = _default_content_type
 
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='POST',
-            resource_path='/api/chunk_group/tracking_id/{tracking_id}',
+            method="POST",
+            resource_path="/api/chunk_group/tracking_id/{tracking_id}",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -657,24 +723,28 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def create_chunk_group(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        create_chunk_group_req_payload_enum: Annotated[CreateChunkGroupReqPayloadEnum, Field(description="JSON request payload to cretea a chunk_group(s)")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        create_chunk_group_req_payload_enum: Annotated[
+            CreateChunkGroupReqPayloadEnum,
+            Field(description="JSON request payload to cretea a chunk_group(s)"),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -709,7 +779,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._create_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -717,17 +787,16 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "CreateChunkGroupResponseEnum",
-            '400': "ErrorResponseBody",
-            '413': "ErrorResponseBody",
+            "200": "CreateChunkGroupResponseEnum",
+            "400": "ErrorResponseBody",
+            "413": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -735,19 +804,25 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def create_chunk_group_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        create_chunk_group_req_payload_enum: Annotated[CreateChunkGroupReqPayloadEnum, Field(description="JSON request payload to cretea a chunk_group(s)")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        create_chunk_group_req_payload_enum: Annotated[
+            CreateChunkGroupReqPayloadEnum,
+            Field(description="JSON request payload to cretea a chunk_group(s)"),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -782,7 +857,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._create_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -790,17 +865,16 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "CreateChunkGroupResponseEnum",
-            '400': "ErrorResponseBody",
-            '413': "ErrorResponseBody",
+            "200": "CreateChunkGroupResponseEnum",
+            "400": "ErrorResponseBody",
+            "413": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -808,19 +882,25 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def create_chunk_group_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        create_chunk_group_req_payload_enum: Annotated[CreateChunkGroupReqPayloadEnum, Field(description="JSON request payload to cretea a chunk_group(s)")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        create_chunk_group_req_payload_enum: Annotated[
+            CreateChunkGroupReqPayloadEnum,
+            Field(description="JSON request payload to cretea a chunk_group(s)"),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -855,7 +935,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._create_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -863,20 +943,18 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "CreateChunkGroupResponseEnum",
-            '400': "ErrorResponseBody",
-            '413': "ErrorResponseBody",
+            "200": "CreateChunkGroupResponseEnum",
+            "400": "ErrorResponseBody",
+            "413": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _create_chunk_group_serialize(
         self,
@@ -890,8 +968,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -904,42 +981,33 @@ class ChunkGroupApi:
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
         if create_chunk_group_req_payload_enum is not None:
             _body_params = create_chunk_group_req_payload_enum
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
         # set the HTTP header `Content-Type`
         if _content_type:
-            _header_params['Content-Type'] = _content_type
+            _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = (
-                self.api_client.select_header_content_type(
-                    [
-                        'application/json'
-                    ]
-                )
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
             )
             if _default_content_type is not None:
-                _header_params['Content-Type'] = _default_content_type
+                _header_params["Content-Type"] = _default_content_type
 
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='POST',
-            resource_path='/api/chunk_group',
+            method="POST",
+            resource_path="/api/chunk_group",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -949,25 +1017,30 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def delete_chunk_group(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to fetch.")],
-        delete_chunks: Annotated[StrictBool, Field(description="Delete the chunks within the group")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr, Field(description="Id of the group you want to fetch.")
+        ],
+        delete_chunks: Annotated[
+            StrictBool, Field(description="Delete the chunks within the group")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1004,7 +1077,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._delete_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -1013,16 +1086,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -1030,20 +1102,27 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def delete_chunk_group_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to fetch.")],
-        delete_chunks: Annotated[StrictBool, Field(description="Delete the chunks within the group")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr, Field(description="Id of the group you want to fetch.")
+        ],
+        delete_chunks: Annotated[
+            StrictBool, Field(description="Delete the chunks within the group")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1080,7 +1159,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._delete_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -1089,16 +1168,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -1106,20 +1184,27 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def delete_chunk_group_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to fetch.")],
-        delete_chunks: Annotated[StrictBool, Field(description="Delete the chunks within the group")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr, Field(description="Id of the group you want to fetch.")
+        ],
+        delete_chunks: Annotated[
+            StrictBool, Field(description="Delete the chunks within the group")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1156,7 +1241,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._delete_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -1165,19 +1250,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _delete_chunk_group_serialize(
         self,
@@ -1192,8 +1275,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -1204,35 +1286,29 @@ class ChunkGroupApi:
 
         # process the path parameters
         if group_id is not None:
-            _path_params['group_id'] = group_id
+            _path_params["group_id"] = group_id
         # process the query parameters
         if delete_chunks is not None:
-            
-            _query_params.append(('delete_chunks', delete_chunks))
-            
+
+            _query_params.append(("delete_chunks", delete_chunks))
+
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
-
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='DELETE',
-            resource_path='/api/chunk_group/{group_id}',
+            method="DELETE",
+            resource_path="/api/chunk_group/{group_id}",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -1242,25 +1318,30 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def delete_group_by_tracking_id(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        tracking_id: Annotated[StrictStr, Field(description="Tracking id of the chunk_group to delete")],
-        delete_chunks: Annotated[StrictBool, Field(description="Delete the chunks within the group")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        tracking_id: Annotated[
+            StrictStr, Field(description="Tracking id of the chunk_group to delete")
+        ],
+        delete_chunks: Annotated[
+            StrictBool, Field(description="Delete the chunks within the group")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1297,7 +1378,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._delete_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -1306,16 +1387,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -1323,20 +1403,27 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def delete_group_by_tracking_id_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        tracking_id: Annotated[StrictStr, Field(description="Tracking id of the chunk_group to delete")],
-        delete_chunks: Annotated[StrictBool, Field(description="Delete the chunks within the group")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        tracking_id: Annotated[
+            StrictStr, Field(description="Tracking id of the chunk_group to delete")
+        ],
+        delete_chunks: Annotated[
+            StrictBool, Field(description="Delete the chunks within the group")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1373,7 +1460,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._delete_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -1382,16 +1469,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -1399,20 +1485,27 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def delete_group_by_tracking_id_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        tracking_id: Annotated[StrictStr, Field(description="Tracking id of the chunk_group to delete")],
-        delete_chunks: Annotated[StrictBool, Field(description="Delete the chunks within the group")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        tracking_id: Annotated[
+            StrictStr, Field(description="Tracking id of the chunk_group to delete")
+        ],
+        delete_chunks: Annotated[
+            StrictBool, Field(description="Delete the chunks within the group")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1449,7 +1542,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._delete_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -1458,19 +1551,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _delete_group_by_tracking_id_serialize(
         self,
@@ -1485,8 +1576,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -1497,35 +1587,29 @@ class ChunkGroupApi:
 
         # process the path parameters
         if tracking_id is not None:
-            _path_params['tracking_id'] = tracking_id
+            _path_params["tracking_id"] = tracking_id
         # process the query parameters
         if delete_chunks is not None:
-            
-            _query_params.append(('delete_chunks', delete_chunks))
-            
+
+            _query_params.append(("delete_chunks", delete_chunks))
+
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
-
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='DELETE',
-            resource_path='/api/chunk_group/tracking_id/{tracking_id}',
+            method="DELETE",
+            resource_path="/api/chunk_group/tracking_id/{tracking_id}",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -1535,24 +1619,27 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def get_chunk_group(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to fetch.")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr, Field(description="Id of the group you want to fetch.")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1587,7 +1674,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -1595,17 +1682,16 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ChunkGroupAndFileId",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "ChunkGroupAndFileId",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -1613,19 +1699,24 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def get_chunk_group_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to fetch.")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr, Field(description="Id of the group you want to fetch.")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1660,7 +1751,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -1668,17 +1759,16 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ChunkGroupAndFileId",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "ChunkGroupAndFileId",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -1686,19 +1776,24 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def get_chunk_group_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to fetch.")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr, Field(description="Id of the group you want to fetch.")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1733,7 +1828,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -1741,20 +1836,18 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ChunkGroupAndFileId",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "ChunkGroupAndFileId",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _get_chunk_group_serialize(
         self,
@@ -1768,8 +1861,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -1780,31 +1872,25 @@ class ChunkGroupApi:
 
         # process the path parameters
         if group_id is not None:
-            _path_params['group_id'] = group_id
+            _path_params["group_id"] = group_id
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
-
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='GET',
-            resource_path='/api/chunk_group/{group_id}',
+            method="GET",
+            resource_path="/api/chunk_group/{group_id}",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -1814,26 +1900,35 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def get_chunks_in_group(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to fetch.")],
-        page: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="The page of chunks to get from the group")],
-        x_api_version: Annotated[Optional[Any], Field(description="The version of the API to use for the request")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr, Field(description="Id of the group you want to fetch.")
+        ],
+        page: Annotated[
+            Optional[Annotated[int, Field(strict=True, ge=0)]],
+            Field(description="The page of chunks to get from the group"),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(description="The version of the API to use for the request"),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1872,7 +1967,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_chunks_in_group_serialize(
             tr_dataset=tr_dataset,
@@ -1882,17 +1977,16 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GetChunksInGroupResponse",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "GetChunksInGroupResponse",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -1900,21 +1994,32 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def get_chunks_in_group_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to fetch.")],
-        page: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="The page of chunks to get from the group")],
-        x_api_version: Annotated[Optional[Any], Field(description="The version of the API to use for the request")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr, Field(description="Id of the group you want to fetch.")
+        ],
+        page: Annotated[
+            Optional[Annotated[int, Field(strict=True, ge=0)]],
+            Field(description="The page of chunks to get from the group"),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(description="The version of the API to use for the request"),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -1953,7 +2058,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_chunks_in_group_serialize(
             tr_dataset=tr_dataset,
@@ -1963,17 +2068,16 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GetChunksInGroupResponse",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "GetChunksInGroupResponse",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -1981,21 +2085,32 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def get_chunks_in_group_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to fetch.")],
-        page: Annotated[Optional[Annotated[int, Field(strict=True, ge=0)]], Field(description="The page of chunks to get from the group")],
-        x_api_version: Annotated[Optional[Any], Field(description="The version of the API to use for the request")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr, Field(description="Id of the group you want to fetch.")
+        ],
+        page: Annotated[
+            Optional[Annotated[int, Field(strict=True, ge=0)]],
+            Field(description="The page of chunks to get from the group"),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(description="The version of the API to use for the request"),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -2034,7 +2149,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_chunks_in_group_serialize(
             tr_dataset=tr_dataset,
@@ -2044,20 +2159,18 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GetChunksInGroupResponse",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "GetChunksInGroupResponse",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _get_chunks_in_group_serialize(
         self,
@@ -2073,8 +2186,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -2085,35 +2197,29 @@ class ChunkGroupApi:
 
         # process the path parameters
         if group_id is not None:
-            _path_params['group_id'] = group_id
+            _path_params["group_id"] = group_id
         if page is not None:
-            _path_params['page'] = page
+            _path_params["page"] = page
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         if x_api_version is not None:
-            _header_params['X-API-Version'] = x_api_version
+            _header_params["X-API-Version"] = x_api_version
         # process the form parameters
         # process the body parameter
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
-
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='GET',
-            resource_path='/api/chunk_group/{group_id}/{page}',
+            method="GET",
+            resource_path="/api/chunk_group/{group_id}/{page}",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -2123,26 +2229,39 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def get_chunks_in_group_by_tracking_id(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_tracking_id: Annotated[StrictStr, Field(description="The id of the group to get the chunks from")],
-        page: Annotated[int, Field(strict=True, ge=0, description="The page of chunks to get from the group")],
-        x_api_version: Annotated[Optional[Any], Field(description="The version of the API to use for the request")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_tracking_id: Annotated[
+            StrictStr, Field(description="The id of the group to get the chunks from")
+        ],
+        page: Annotated[
+            int,
+            Field(
+                strict=True,
+                ge=0,
+                description="The page of chunks to get from the group",
+            ),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(description="The version of the API to use for the request"),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -2181,7 +2300,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_chunks_in_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -2191,17 +2310,16 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GetChunksInGroupResponse",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "GetChunksInGroupResponse",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -2209,21 +2327,36 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def get_chunks_in_group_by_tracking_id_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_tracking_id: Annotated[StrictStr, Field(description="The id of the group to get the chunks from")],
-        page: Annotated[int, Field(strict=True, ge=0, description="The page of chunks to get from the group")],
-        x_api_version: Annotated[Optional[Any], Field(description="The version of the API to use for the request")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_tracking_id: Annotated[
+            StrictStr, Field(description="The id of the group to get the chunks from")
+        ],
+        page: Annotated[
+            int,
+            Field(
+                strict=True,
+                ge=0,
+                description="The page of chunks to get from the group",
+            ),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(description="The version of the API to use for the request"),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -2262,7 +2395,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_chunks_in_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -2272,17 +2405,16 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GetChunksInGroupResponse",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "GetChunksInGroupResponse",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -2290,21 +2422,36 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def get_chunks_in_group_by_tracking_id_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_tracking_id: Annotated[StrictStr, Field(description="The id of the group to get the chunks from")],
-        page: Annotated[int, Field(strict=True, ge=0, description="The page of chunks to get from the group")],
-        x_api_version: Annotated[Optional[Any], Field(description="The version of the API to use for the request")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_tracking_id: Annotated[
+            StrictStr, Field(description="The id of the group to get the chunks from")
+        ],
+        page: Annotated[
+            int,
+            Field(
+                strict=True,
+                ge=0,
+                description="The page of chunks to get from the group",
+            ),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(description="The version of the API to use for the request"),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -2343,7 +2490,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_chunks_in_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -2353,20 +2500,18 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GetChunksInGroupResponse",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "GetChunksInGroupResponse",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _get_chunks_in_group_by_tracking_id_serialize(
         self,
@@ -2382,8 +2527,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -2394,35 +2538,29 @@ class ChunkGroupApi:
 
         # process the path parameters
         if group_tracking_id is not None:
-            _path_params['group_tracking_id'] = group_tracking_id
+            _path_params["group_tracking_id"] = group_tracking_id
         if page is not None:
-            _path_params['page'] = page
+            _path_params["page"] = page
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         if x_api_version is not None:
-            _header_params['X-API-Version'] = x_api_version
+            _header_params["X-API-Version"] = x_api_version
         # process the form parameters
         # process the body parameter
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
-
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='GET',
-            resource_path='/api/chunk_group/tracking_id/{group_tracking_id}/{page}',
+            method="GET",
+            resource_path="/api/chunk_group/tracking_id/{group_tracking_id}/{page}",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -2432,24 +2570,27 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def get_group_by_tracking_id(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        tracking_id: Annotated[StrictStr, Field(description="The tracking id of the group to fetch.")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        tracking_id: Annotated[
+            StrictStr, Field(description="The tracking id of the group to fetch.")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -2484,7 +2625,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -2492,17 +2633,16 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ChunkGroupAndFileId",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "ChunkGroupAndFileId",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -2510,19 +2650,24 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def get_group_by_tracking_id_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        tracking_id: Annotated[StrictStr, Field(description="The tracking id of the group to fetch.")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        tracking_id: Annotated[
+            StrictStr, Field(description="The tracking id of the group to fetch.")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -2557,7 +2702,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -2565,17 +2710,16 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ChunkGroupAndFileId",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "ChunkGroupAndFileId",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -2583,19 +2727,24 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def get_group_by_tracking_id_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        tracking_id: Annotated[StrictStr, Field(description="The tracking id of the group to fetch.")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        tracking_id: Annotated[
+            StrictStr, Field(description="The tracking id of the group to fetch.")
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -2630,7 +2779,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_group_by_tracking_id_serialize(
             tr_dataset=tr_dataset,
@@ -2638,20 +2787,18 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ChunkGroupAndFileId",
-            '400': "ErrorResponseBody",
-            '404': "ErrorResponseBody",
+            "200": "ChunkGroupAndFileId",
+            "400": "ErrorResponseBody",
+            "404": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _get_group_by_tracking_id_serialize(
         self,
@@ -2665,8 +2812,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -2677,31 +2823,25 @@ class ChunkGroupApi:
 
         # process the path parameters
         if tracking_id is not None:
-            _path_params['tracking_id'] = tracking_id
+            _path_params["tracking_id"] = tracking_id
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
-
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='GET',
-            resource_path='/api/chunk_group/tracking_id/{tracking_id}',
+            method="GET",
+            resource_path="/api/chunk_group/tracking_id/{tracking_id}",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -2711,24 +2851,30 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def get_groups_for_chunks(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        get_groups_for_chunks_req_payload: Annotated[GetGroupsForChunksReqPayload, Field(description="JSON request payload to get the groups that a chunk is in")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        get_groups_for_chunks_req_payload: Annotated[
+            GetGroupsForChunksReqPayload,
+            Field(
+                description="JSON request payload to get the groups that a chunk is in"
+            ),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -2763,7 +2909,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_groups_for_chunks_serialize(
             tr_dataset=tr_dataset,
@@ -2771,16 +2917,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "List[GroupsForChunk]",
-            '400': "ErrorResponseBody",
+            "200": "List[GroupsForChunk]",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -2788,19 +2933,27 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def get_groups_for_chunks_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        get_groups_for_chunks_req_payload: Annotated[GetGroupsForChunksReqPayload, Field(description="JSON request payload to get the groups that a chunk is in")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        get_groups_for_chunks_req_payload: Annotated[
+            GetGroupsForChunksReqPayload,
+            Field(
+                description="JSON request payload to get the groups that a chunk is in"
+            ),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -2835,7 +2988,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_groups_for_chunks_serialize(
             tr_dataset=tr_dataset,
@@ -2843,16 +2996,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "List[GroupsForChunk]",
-            '400': "ErrorResponseBody",
+            "200": "List[GroupsForChunk]",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -2860,19 +3012,27 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def get_groups_for_chunks_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        get_groups_for_chunks_req_payload: Annotated[GetGroupsForChunksReqPayload, Field(description="JSON request payload to get the groups that a chunk is in")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        get_groups_for_chunks_req_payload: Annotated[
+            GetGroupsForChunksReqPayload,
+            Field(
+                description="JSON request payload to get the groups that a chunk is in"
+            ),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -2907,7 +3067,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_groups_for_chunks_serialize(
             tr_dataset=tr_dataset,
@@ -2915,19 +3075,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "List[GroupsForChunk]",
-            '400': "ErrorResponseBody",
+            "200": "List[GroupsForChunk]",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _get_groups_for_chunks_serialize(
         self,
@@ -2941,8 +3099,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -2955,42 +3112,33 @@ class ChunkGroupApi:
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
         if get_groups_for_chunks_req_payload is not None:
             _body_params = get_groups_for_chunks_req_payload
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
         # set the HTTP header `Content-Type`
         if _content_type:
-            _header_params['Content-Type'] = _content_type
+            _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = (
-                self.api_client.select_header_content_type(
-                    [
-                        'application/json'
-                    ]
-                )
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
             )
             if _default_content_type is not None:
-                _header_params['Content-Type'] = _default_content_type
+                _header_params["Content-Type"] = _default_content_type
 
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='POST',
-            resource_path='/api/chunk_group/chunks',
+            method="POST",
+            resource_path="/api/chunk_group/chunks",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -3000,25 +3148,31 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def get_groups_for_dataset(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        dataset_id: Annotated[StrictStr, Field(description="The id of the dataset to fetch groups for.")],
-        page: Annotated[StrictInt, Field(description="The page of groups to fetch. Page is 1-indexed.")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        dataset_id: Annotated[
+            StrictStr, Field(description="The id of the dataset to fetch groups for.")
+        ],
+        page: Annotated[
+            StrictInt,
+            Field(description="The page of groups to fetch. Page is 1-indexed."),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -3055,7 +3209,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_groups_for_dataset_serialize(
             tr_dataset=tr_dataset,
@@ -3064,16 +3218,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GroupData",
-            '400': "ErrorResponseBody",
+            "200": "GroupData",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -3081,20 +3234,28 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def get_groups_for_dataset_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        dataset_id: Annotated[StrictStr, Field(description="The id of the dataset to fetch groups for.")],
-        page: Annotated[StrictInt, Field(description="The page of groups to fetch. Page is 1-indexed.")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        dataset_id: Annotated[
+            StrictStr, Field(description="The id of the dataset to fetch groups for.")
+        ],
+        page: Annotated[
+            StrictInt,
+            Field(description="The page of groups to fetch. Page is 1-indexed."),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -3131,7 +3292,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_groups_for_dataset_serialize(
             tr_dataset=tr_dataset,
@@ -3140,16 +3301,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GroupData",
-            '400': "ErrorResponseBody",
+            "200": "GroupData",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -3157,20 +3317,28 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def get_groups_for_dataset_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        dataset_id: Annotated[StrictStr, Field(description="The id of the dataset to fetch groups for.")],
-        page: Annotated[StrictInt, Field(description="The page of groups to fetch. Page is 1-indexed.")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        dataset_id: Annotated[
+            StrictStr, Field(description="The id of the dataset to fetch groups for.")
+        ],
+        page: Annotated[
+            StrictInt,
+            Field(description="The page of groups to fetch. Page is 1-indexed."),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -3207,7 +3375,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_groups_for_dataset_serialize(
             tr_dataset=tr_dataset,
@@ -3216,19 +3384,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GroupData",
-            '400': "ErrorResponseBody",
+            "200": "GroupData",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _get_groups_for_dataset_serialize(
         self,
@@ -3243,8 +3409,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -3255,33 +3420,27 @@ class ChunkGroupApi:
 
         # process the path parameters
         if dataset_id is not None:
-            _path_params['dataset_id'] = dataset_id
+            _path_params["dataset_id"] = dataset_id
         if page is not None:
-            _path_params['page'] = page
+            _path_params["page"] = page
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
-
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='GET',
-            resource_path='/api/dataset/groups/{dataset_id}/{page}',
+            method="GET",
+            resource_path="/api/dataset/groups/{dataset_id}/{page}",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -3291,25 +3450,36 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def get_recommended_groups(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        recommend_groups_req_payload: Annotated[RecommendGroupsReqPayload, Field(description="JSON request payload to get recommendations of chunks similar to the chunks in the request")],
-        x_api_version: Annotated[Optional[Any], Field(description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        recommend_groups_req_payload: Annotated[
+            RecommendGroupsReqPayload,
+            Field(
+                description="JSON request payload to get recommendations of chunks similar to the chunks in the request"
+            ),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(
+                description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."
+            ),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -3346,7 +3516,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_recommended_groups_serialize(
             tr_dataset=tr_dataset,
@@ -3355,16 +3525,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "RecommendGroupsResponse",
-            '400': "ErrorResponseBody",
+            "200": "RecommendGroupsResponse",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -3372,20 +3541,33 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def get_recommended_groups_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        recommend_groups_req_payload: Annotated[RecommendGroupsReqPayload, Field(description="JSON request payload to get recommendations of chunks similar to the chunks in the request")],
-        x_api_version: Annotated[Optional[Any], Field(description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        recommend_groups_req_payload: Annotated[
+            RecommendGroupsReqPayload,
+            Field(
+                description="JSON request payload to get recommendations of chunks similar to the chunks in the request"
+            ),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(
+                description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."
+            ),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -3422,7 +3604,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_recommended_groups_serialize(
             tr_dataset=tr_dataset,
@@ -3431,16 +3613,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "RecommendGroupsResponse",
-            '400': "ErrorResponseBody",
+            "200": "RecommendGroupsResponse",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -3448,20 +3629,33 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def get_recommended_groups_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        recommend_groups_req_payload: Annotated[RecommendGroupsReqPayload, Field(description="JSON request payload to get recommendations of chunks similar to the chunks in the request")],
-        x_api_version: Annotated[Optional[Any], Field(description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        recommend_groups_req_payload: Annotated[
+            RecommendGroupsReqPayload,
+            Field(
+                description="JSON request payload to get recommendations of chunks similar to the chunks in the request"
+            ),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(
+                description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."
+            ),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -3498,7 +3692,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._get_recommended_groups_serialize(
             tr_dataset=tr_dataset,
@@ -3507,19 +3701,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "RecommendGroupsResponse",
-            '400': "ErrorResponseBody",
+            "200": "RecommendGroupsResponse",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _get_recommended_groups_serialize(
         self,
@@ -3534,8 +3726,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -3548,44 +3739,35 @@ class ChunkGroupApi:
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         if x_api_version is not None:
-            _header_params['X-API-Version'] = x_api_version
+            _header_params["X-API-Version"] = x_api_version
         # process the form parameters
         # process the body parameter
         if recommend_groups_req_payload is not None:
             _body_params = recommend_groups_req_payload
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
         # set the HTTP header `Content-Type`
         if _content_type:
-            _header_params['Content-Type'] = _content_type
+            _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = (
-                self.api_client.select_header_content_type(
-                    [
-                        'application/json'
-                    ]
-                )
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
             )
             if _default_content_type is not None:
-                _header_params['Content-Type'] = _default_content_type
+                _header_params["Content-Type"] = _default_content_type
 
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='POST',
-            resource_path='/api/chunk_group/recommend',
+            method="POST",
+            resource_path="/api/chunk_group/recommend",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -3595,26 +3777,36 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def remove_chunk_from_group(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to remove the chunk from.")],
-        chunk_id: Annotated[Optional[StrictStr], Field(description="Id of the chunk you want to remove from the group")] = None,
-        remove_chunk_from_group_req_payload: Annotated[Optional[RemoveChunkFromGroupReqPayload], Field(description="JSON request payload to remove a chunk from a group")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr,
+            Field(description="Id of the group you want to remove the chunk from."),
+        ],
+        chunk_id: Annotated[
+            Optional[StrictStr],
+            Field(description="Id of the chunk you want to remove from the group"),
+        ] = None,
+        remove_chunk_from_group_req_payload: Annotated[
+            Optional[RemoveChunkFromGroupReqPayload],
+            Field(description="JSON request payload to remove a chunk from a group"),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -3653,7 +3845,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._remove_chunk_from_group_serialize(
             tr_dataset=tr_dataset,
@@ -3663,16 +3855,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -3680,21 +3871,33 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def remove_chunk_from_group_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to remove the chunk from.")],
-        chunk_id: Annotated[Optional[StrictStr], Field(description="Id of the chunk you want to remove from the group")] = None,
-        remove_chunk_from_group_req_payload: Annotated[Optional[RemoveChunkFromGroupReqPayload], Field(description="JSON request payload to remove a chunk from a group")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr,
+            Field(description="Id of the group you want to remove the chunk from."),
+        ],
+        chunk_id: Annotated[
+            Optional[StrictStr],
+            Field(description="Id of the chunk you want to remove from the group"),
+        ] = None,
+        remove_chunk_from_group_req_payload: Annotated[
+            Optional[RemoveChunkFromGroupReqPayload],
+            Field(description="JSON request payload to remove a chunk from a group"),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -3733,7 +3936,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._remove_chunk_from_group_serialize(
             tr_dataset=tr_dataset,
@@ -3743,16 +3946,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -3760,21 +3962,33 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def remove_chunk_from_group_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        group_id: Annotated[StrictStr, Field(description="Id of the group you want to remove the chunk from.")],
-        chunk_id: Annotated[Optional[StrictStr], Field(description="Id of the chunk you want to remove from the group")] = None,
-        remove_chunk_from_group_req_payload: Annotated[Optional[RemoveChunkFromGroupReqPayload], Field(description="JSON request payload to remove a chunk from a group")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        group_id: Annotated[
+            StrictStr,
+            Field(description="Id of the group you want to remove the chunk from."),
+        ],
+        chunk_id: Annotated[
+            Optional[StrictStr],
+            Field(description="Id of the chunk you want to remove from the group"),
+        ] = None,
+        remove_chunk_from_group_req_payload: Annotated[
+            Optional[RemoveChunkFromGroupReqPayload],
+            Field(description="JSON request payload to remove a chunk from a group"),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -3813,7 +4027,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._remove_chunk_from_group_serialize(
             tr_dataset=tr_dataset,
@@ -3823,19 +4037,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _remove_chunk_from_group_serialize(
         self,
@@ -3851,8 +4063,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -3863,50 +4074,41 @@ class ChunkGroupApi:
 
         # process the path parameters
         if group_id is not None:
-            _path_params['group_id'] = group_id
+            _path_params["group_id"] = group_id
         # process the query parameters
         if chunk_id is not None:
-            
-            _query_params.append(('chunk_id', chunk_id))
-            
+
+            _query_params.append(("chunk_id", chunk_id))
+
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
         if remove_chunk_from_group_req_payload is not None:
             _body_params = remove_chunk_from_group_req_payload
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
         # set the HTTP header `Content-Type`
         if _content_type:
-            _header_params['Content-Type'] = _content_type
+            _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = (
-                self.api_client.select_header_content_type(
-                    [
-                        'application/json'
-                    ]
-                )
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
             )
             if _default_content_type is not None:
-                _header_params['Content-Type'] = _default_content_type
+                _header_params["Content-Type"] = _default_content_type
 
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='DELETE',
-            resource_path='/api/chunk_group/chunk/{group_id}',
+            method="DELETE",
+            resource_path="/api/chunk_group/chunk/{group_id}",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -3916,25 +4118,36 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def search_over_groups(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        search_over_groups_req_payload: Annotated[SearchOverGroupsReqPayload, Field(description="JSON request payload to semantically search over groups")],
-        x_api_version: Annotated[Optional[Any], Field(description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        search_over_groups_req_payload: Annotated[
+            SearchOverGroupsReqPayload,
+            Field(
+                description="JSON request payload to semantically search over groups"
+            ),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(
+                description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."
+            ),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -3971,7 +4184,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._search_over_groups_serialize(
             tr_dataset=tr_dataset,
@@ -3980,16 +4193,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "SearchOverGroupsResponseTypes",
-            '400': "ErrorResponseBody",
+            "200": "SearchOverGroupsResponseTypes",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -3997,20 +4209,33 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def search_over_groups_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        search_over_groups_req_payload: Annotated[SearchOverGroupsReqPayload, Field(description="JSON request payload to semantically search over groups")],
-        x_api_version: Annotated[Optional[Any], Field(description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        search_over_groups_req_payload: Annotated[
+            SearchOverGroupsReqPayload,
+            Field(
+                description="JSON request payload to semantically search over groups"
+            ),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(
+                description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."
+            ),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -4047,7 +4272,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._search_over_groups_serialize(
             tr_dataset=tr_dataset,
@@ -4056,16 +4281,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "SearchOverGroupsResponseTypes",
-            '400': "ErrorResponseBody",
+            "200": "SearchOverGroupsResponseTypes",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -4073,20 +4297,33 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def search_over_groups_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        search_over_groups_req_payload: Annotated[SearchOverGroupsReqPayload, Field(description="JSON request payload to semantically search over groups")],
-        x_api_version: Annotated[Optional[Any], Field(description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        search_over_groups_req_payload: Annotated[
+            SearchOverGroupsReqPayload,
+            Field(
+                description="JSON request payload to semantically search over groups"
+            ),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(
+                description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."
+            ),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -4123,7 +4360,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._search_over_groups_serialize(
             tr_dataset=tr_dataset,
@@ -4132,19 +4369,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "SearchOverGroupsResponseTypes",
-            '400': "ErrorResponseBody",
+            "200": "SearchOverGroupsResponseTypes",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _search_over_groups_serialize(
         self,
@@ -4159,8 +4394,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -4173,44 +4407,35 @@ class ChunkGroupApi:
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         if x_api_version is not None:
-            _header_params['X-API-Version'] = x_api_version
+            _header_params["X-API-Version"] = x_api_version
         # process the form parameters
         # process the body parameter
         if search_over_groups_req_payload is not None:
             _body_params = search_over_groups_req_payload
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
         # set the HTTP header `Content-Type`
         if _content_type:
-            _header_params['Content-Type'] = _content_type
+            _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = (
-                self.api_client.select_header_content_type(
-                    [
-                        'application/json'
-                    ]
-                )
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
             )
             if _default_content_type is not None:
-                _header_params['Content-Type'] = _default_content_type
+                _header_params["Content-Type"] = _default_content_type
 
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='POST',
-            resource_path='/api/chunk_group/group_oriented_search',
+            method="POST",
+            resource_path="/api/chunk_group/group_oriented_search",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -4220,25 +4445,33 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
 
-
-
-
-    @validate_call
     def search_within_group(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        search_within_group_req_payload: Annotated[SearchWithinGroupReqPayload, Field(description="JSON request payload to semantically search a group")],
-        x_api_version: Annotated[Optional[Any], Field(description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        search_within_group_req_payload: Annotated[
+            SearchWithinGroupReqPayload,
+            Field(description="JSON request payload to semantically search a group"),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(
+                description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."
+            ),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -4275,7 +4508,9 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
+
+        print("serializing search_within_group")
 
         _param = self._search_within_group_serialize(
             tr_dataset=tr_dataset,
@@ -4284,37 +4519,49 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
-        _response_types_map: Dict[str, Optional[str]] = {
-            '200': "SearchGroupResponseTypes",
-            '400': "ErrorResponseBody",
+        payload = self.api_client.sanitize_for_serialization(search_within_group_req_payload)
+
+        url = "https://api.trieve.ai/api/chunk_group/search"
+        headers = {
+            "TR-Dataset": tr_dataset,
+            "Authorization": self.api_client.configuration.api_key["ApiKey"],
+            "Content-Type": "application/json",
         }
-        response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
-        )
-        response_data.read()
-        return self.api_client.response_deserialize(
-            response_data=response_data,
-            response_types_map=_response_types_map,
-        ).data
 
+        response = requests.request(
+            "POST", url, json=payload, headers=headers
+        )
+
+        return response.json()
 
     @validate_call
     def search_within_group_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        search_within_group_req_payload: Annotated[SearchWithinGroupReqPayload, Field(description="JSON request payload to semantically search a group")],
-        x_api_version: Annotated[Optional[Any], Field(description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        search_within_group_req_payload: Annotated[
+            SearchWithinGroupReqPayload,
+            Field(description="JSON request payload to semantically search a group"),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(
+                description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."
+            ),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -4351,7 +4598,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._search_within_group_serialize(
             tr_dataset=tr_dataset,
@@ -4360,16 +4607,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "SearchGroupResponseTypes",
-            '400': "ErrorResponseBody",
+            "200": "SearchGroupResponseTypes",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -4377,20 +4623,31 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def search_within_group_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        search_within_group_req_payload: Annotated[SearchWithinGroupReqPayload, Field(description="JSON request payload to semantically search a group")],
-        x_api_version: Annotated[Optional[Any], Field(description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")] = None,
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        search_within_group_req_payload: Annotated[
+            SearchWithinGroupReqPayload,
+            Field(description="JSON request payload to semantically search a group"),
+        ],
+        x_api_version: Annotated[
+            Optional[Any],
+            Field(
+                description="The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise."
+            ),
+        ] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -4427,7 +4684,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._search_within_group_serialize(
             tr_dataset=tr_dataset,
@@ -4436,19 +4693,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "SearchGroupResponseTypes",
-            '400': "ErrorResponseBody",
+            "200": "SearchGroupResponseTypes",
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _search_within_group_serialize(
         self,
@@ -4463,8 +4718,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -4477,44 +4731,35 @@ class ChunkGroupApi:
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         if x_api_version is not None:
-            _header_params['X-API-Version'] = x_api_version
+            _header_params["X-API-Version"] = x_api_version
         # process the form parameters
         # process the body parameter
         if search_within_group_req_payload is not None:
             _body_params = search_within_group_req_payload
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
         # set the HTTP header `Content-Type`
         if _content_type:
-            _header_params['Content-Type'] = _content_type
+            _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = (
-                self.api_client.select_header_content_type(
-                    [
-                        'application/json'
-                    ]
-                )
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
             )
             if _default_content_type is not None:
-                _header_params['Content-Type'] = _default_content_type
+                _header_params["Content-Type"] = _default_content_type
 
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='POST',
-            resource_path='/api/chunk_group/search',
+            method="POST",
+            resource_path="/api/chunk_group/search",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -4524,24 +4769,28 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
-
 
     @validate_call
     def update_chunk_group(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        update_chunk_group_req_payload: Annotated[UpdateChunkGroupReqPayload, Field(description="JSON request payload to update a chunkGroup")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        update_chunk_group_req_payload: Annotated[
+            UpdateChunkGroupReqPayload,
+            Field(description="JSON request payload to update a chunkGroup"),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -4576,7 +4825,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._update_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -4584,16 +4833,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -4601,19 +4849,25 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         ).data
 
-
     @validate_call
     def update_chunk_group_with_http_info(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        update_chunk_group_req_payload: Annotated[UpdateChunkGroupReqPayload, Field(description="JSON request payload to update a chunkGroup")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        update_chunk_group_req_payload: Annotated[
+            UpdateChunkGroupReqPayload,
+            Field(description="JSON request payload to update a chunkGroup"),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -4648,7 +4902,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._update_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -4656,16 +4910,15 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         response_data.read()
         return self.api_client.response_deserialize(
@@ -4673,19 +4926,25 @@ class ChunkGroupApi:
             response_types_map=_response_types_map,
         )
 
-
     @validate_call
     def update_chunk_group_without_preload_content(
         self,
-        tr_dataset: Annotated[StrictStr, Field(description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.")],
-        update_chunk_group_req_payload: Annotated[UpdateChunkGroupReqPayload, Field(description="JSON request payload to update a chunkGroup")],
+        tr_dataset: Annotated[
+            StrictStr,
+            Field(
+                description="The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."
+            ),
+        ],
+        update_chunk_group_req_payload: Annotated[
+            UpdateChunkGroupReqPayload,
+            Field(description="JSON request payload to update a chunkGroup"),
+        ],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
             Tuple[
-                Annotated[StrictFloat, Field(gt=0)],
-                Annotated[StrictFloat, Field(gt=0)]
-            ]
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -4720,7 +4979,7 @@ class ChunkGroupApi:
                             in the spec for a single request.
         :type _host_index: int, optional
         :return: Returns the result object.
-        """ # noqa: E501
+        """  # noqa: E501
 
         _param = self._update_chunk_group_serialize(
             tr_dataset=tr_dataset,
@@ -4728,19 +4987,17 @@ class ChunkGroupApi:
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
-            _host_index=_host_index
+            _host_index=_host_index,
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '204': None,
-            '400': "ErrorResponseBody",
+            "204": None,
+            "400": "ErrorResponseBody",
         }
         response_data = self.api_client.call_api(
-            *_param,
-            _request_timeout=_request_timeout
+            *_param, _request_timeout=_request_timeout
         )
         return response_data.response
-
 
     def _update_chunk_group_serialize(
         self,
@@ -4754,8 +5011,7 @@ class ChunkGroupApi:
 
         _host = None
 
-        _collection_formats: Dict[str, str] = {
-        }
+        _collection_formats: Dict[str, str] = {}
 
         _path_params: Dict[str, str] = {}
         _query_params: List[Tuple[str, str]] = []
@@ -4768,42 +5024,33 @@ class ChunkGroupApi:
         # process the query parameters
         # process the header parameters
         if tr_dataset is not None:
-            _header_params['TR-Dataset'] = tr_dataset
+            _header_params["TR-Dataset"] = tr_dataset
         # process the form parameters
         # process the body parameter
         if update_chunk_group_req_payload is not None:
             _body_params = update_chunk_group_req_payload
 
-
         # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            [
-                'application/json'
-            ]
+        _header_params["Accept"] = self.api_client.select_header_accept(
+            ["application/json"]
         )
 
         # set the HTTP header `Content-Type`
         if _content_type:
-            _header_params['Content-Type'] = _content_type
+            _header_params["Content-Type"] = _content_type
         else:
-            _default_content_type = (
-                self.api_client.select_header_content_type(
-                    [
-                        'application/json'
-                    ]
-                )
+            _default_content_type = self.api_client.select_header_content_type(
+                ["application/json"]
             )
             if _default_content_type is not None:
-                _header_params['Content-Type'] = _default_content_type
+                _header_params["Content-Type"] = _default_content_type
 
         # authentication setting
-        _auth_settings: List[str] = [
-            'ApiKey'
-        ]
+        _auth_settings: List[str] = ["ApiKey"]
 
         return self.api_client.param_serialize(
-            method='PUT',
-            resource_path='/api/chunk_group',
+            method="PUT",
+            resource_path="/api/chunk_group",
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -4813,7 +5060,5 @@ class ChunkGroupApi:
             auth_settings=_auth_settings,
             collection_formats=_collection_formats,
             _host=_host,
-            _request_auth=_request_auth
+            _request_auth=_request_auth,
         )
-
-
