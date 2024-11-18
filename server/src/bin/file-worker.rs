@@ -1,3 +1,4 @@
+use base64::Engine;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use redis::aio::MultiplexedConnection;
 use sentry::{Hub, SentryFutureExt};
@@ -8,13 +9,17 @@ use std::sync::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
-    data::models::{self, FileWorkerMessage},
+    data::models::{self, ChunkGroup, FileWorkerMessage},
     errors::ServiceError,
     establish_connection, get_env,
+    handlers::chunk_handler::ChunkReqPayload,
     operators::{
         clickhouse_operator::{ClickHouseEvent, EventQueue},
         dataset_operator::get_dataset_and_organization_from_dataset_id_query,
-        file_operator::{create_file_chunks, create_file_query, get_aws_bucket},
+        file_operator::{
+            create_file_chunks, create_file_query, get_aws_bucket, preprocess_file_to_chunks,
+        },
+        group_operator::{create_group_from_file_query, create_groups_query},
     },
 };
 
@@ -275,6 +280,42 @@ async fn file_worker(
     }
 }
 
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+pub struct CreateFileTaskResponse {
+    pub task_id: uuid::Uuid,
+    pub status: FileTaskStatus,
+    pub pos_in_queue: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq, Eq)]
+pub enum FileTaskStatus {
+    Created,
+    ProcessingFile(u32),
+    ChunkingFile(u32),
+    Completed,
+    Failed,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub struct PollTaskResponse {
+    pub id: String,
+    pub total_document_pages: u32,
+    pub pages_processed: u32,
+    pub status: String,
+    pub created_at: String,
+    pub pages: Option<Vec<PdfToMdChunk>>,
+    pub pagination_token: Option<String>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub struct PdfToMdChunk {
+    pub id: String,
+    pub task_id: String,
+    pub content: String,
+    pub metadata: serde_json::Value,
+    pub created_at: String,
+}
+
 async fn upload_file(
     file_worker_message: FileWorkerMessage,
     web_pool: actix_web::web::Data<models::Pool>,
@@ -302,6 +343,126 @@ async fn upload_file(
         .to_vec();
 
     get_file_span.finish();
+
+    let file_name = file_worker_message.upload_file_data.file_name.clone();
+
+    let dataset_org_plan_sub = get_dataset_and_organization_from_dataset_id_query(
+        models::UnifiedId::TrieveUuid(file_worker_message.dataset_id),
+        None,
+        web_pool.clone(),
+    )
+    .await?;
+
+    if file_name.ends_with(".pdf") {
+        // Send file to router PDF2MD
+        let pdf2md_url = std::env::var("PDF2MD_URL")
+            .expect("PDF2MD_URL must be set")
+            .to_string();
+
+        let pdf2md_auth = std::env::var("PDF2MD_AUTH").unwrap_or("".to_string());
+
+        let pdf2md_client = reqwest::Client::new();
+        let encoded_file = base64::prelude::BASE64_STANDARD.encode(file_data.clone());
+
+        let json_value = serde_json::json!({
+            "base64_file": encoded_file.clone()
+        });
+
+        let pdf2md_response = pdf2md_client
+            .post(format!("{}/api/task/create", pdf2md_url))
+            .header("Content-Type", "application/json")
+            .header("Authorization", &pdf2md_auth)
+            .json(&json_value)
+            .send()
+            .await
+            .map_err(|err| {
+                log::error!("Could not send file to pdf2md {:?}", err);
+                ServiceError::BadRequest("Could not send file to pdf2md".to_string())
+            })?;
+
+        let response = pdf2md_response.json::<CreateFileTaskResponse>().await;
+
+        let task_id = match response {
+            Ok(response) => response.task_id,
+            Err(err) => {
+                log::error!("Could not parse task_id from pdf2md {:?}", err);
+                return Err(ServiceError::BadRequest(format!(
+                    "Could not parse task_id from pdf2md {:?}",
+                    err
+                )));
+            }
+        };
+
+        log::info!("Waiting on Task {}", task_id);
+        let mut completed_task: Option<PollTaskResponse> = None;
+
+        loop {
+            let request = pdf2md_client
+                .get(format!("{}/api/task/{}", pdf2md_url, task_id).as_str())
+                .header("Content-Type", "application/json")
+                .header("Authorization", &pdf2md_auth)
+                .send()
+                .await
+                .map_err(|err| {
+                    log::error!("Could not send poll request to pdf2md {:?}", err);
+                    ServiceError::BadRequest(format!("Could not send request to pdf2md {:?}", err))
+                })?;
+
+            let response = request.json::<PollTaskResponse>().await.map_err(|err| {
+                log::error!("Could not parse response from pdf2md {:?}", err);
+                ServiceError::BadRequest(format!("Could not parse response from pdf2md {:?}", err))
+            })?;
+
+            if (response.status == "Completed" && response.total_document_pages != 0)
+                && response.pages.is_some()
+            {
+                log::info!("Got job back from task {}", task_id);
+                completed_task = Some(response);
+                break;
+            } else {
+                log::info!("Polling on task {}... {:?}", task_id, response);
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                continue;
+            }
+        }
+
+        if let Some(task) = completed_task {
+            // Poll Chunks from pdf chunks from service
+            let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
+            let created_file = create_file_query(
+                file_id,
+                file_size_mb,
+                file_worker_message.upload_file_data.clone(),
+                file_worker_message.dataset_id,
+                web_pool.clone(),
+            )
+            .await?;
+
+            let mut chunk_htmls: Vec<String> = vec![];
+
+            log::info!("Chunks got {:?}", task);
+            if let Some(pages) = task.pages {
+                for page in pages {
+                    chunk_htmls.push(page.content.clone());
+                }
+            }
+
+            log::info!("Chunks got {}", chunk_htmls.len());
+
+            create_file_chunks(
+                created_file.id,
+                file_worker_message.upload_file_data,
+                chunk_htmls,
+                dataset_org_plan_sub,
+                web_pool.clone(),
+                event_queue.clone(),
+                redis_conn,
+            )
+            .await?;
+
+            return Ok(Some(file_id));
+        }
+    }
 
     let tika_url = std::env::var("TIKA_URL")
         .expect("TIKA_URL must be set")
@@ -369,10 +530,16 @@ async fn upload_file(
     )
     .await?;
 
+    let Ok(chunk_htmls) =
+        preprocess_file_to_chunks(html_content, file_worker_message.upload_file_data.clone())
+    else {
+        return Err(ServiceError::BadRequest("Could not parse file".to_string()));
+    };
+
     create_file_chunks(
         created_file.id,
         file_worker_message.upload_file_data,
-        html_content,
+        chunk_htmls,
         dataset_org_plan_sub,
         web_pool.clone(),
         event_queue.clone(),

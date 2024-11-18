@@ -101,21 +101,14 @@ pub async fn create_file_query(
     Ok(created_file)
 }
 
-#[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool, redis_conn, event_queue))]
-pub async fn create_file_chunks(
-    created_file_id: uuid::Uuid,
-    upload_file_data: UploadFileReqPayload,
+#[tracing::instrument]
+pub fn preprocess_file_to_chunks(
     html_content: String,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    pool: web::Data<Pool>,
-    event_queue: web::Data<EventQueue>,
-    mut redis_conn: MultiplexedConnection,
-) -> Result<(), ServiceError> {
+    upload_file_data: UploadFileReqPayload,
+) -> Result<Vec<String>, ServiceError> {
     let file_text = convert_html_to_text(&html_content);
 
-    let split_regex: Option<Regex> = upload_file_data
-        .split_delimiters
+    let split_regex: Option<Regex> = upload_file_data.split_delimiters
         .map(|delimiters| {
             build_chunking_regex(delimiters).map_err(|e| {
                 log::error!("Could not parse chunking delimiters {:?}", e);
@@ -134,9 +127,24 @@ pub async fn create_file_chunks(
         target_splits_per_chunk,
     );
 
+    return Ok(chunk_htmls);
+}
+
+#[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip(pool, redis_conn, event_queue))]
+pub async fn create_file_chunks(
+    created_file_id: uuid::Uuid,
+    upload_file_data: UploadFileReqPayload,
+    chunk_htmls: Vec<String>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    pool: web::Data<Pool>,
+    event_queue: web::Data<EventQueue>,
+    mut redis_conn: MultiplexedConnection,
+) -> Result<(), ServiceError> {
+
     let mut chunks: Vec<ChunkReqPayload> = [].to_vec();
 
-    let name = format!("Group for file {}", upload_file_data.file_name);
+    let name = format!("{}", upload_file_data.file_name);
 
     let chunk_group = ChunkGroup::from_details(
         Some(name.clone()),
