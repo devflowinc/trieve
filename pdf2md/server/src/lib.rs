@@ -1,8 +1,8 @@
 use actix_web::{
-    middleware::Logger, web::{self, PayloadConfig}, App, HttpServer
+    get, middleware::Logger, web::{self, PayloadConfig}, App, HttpResponse, HttpServer
 };
 use chm::tools::migrations::{run_pending_migrations, SetupArgs};
-use errors::custom_json_error_handler;
+use errors::{custom_json_error_handler, ErrorResponseBody};
 use routes::{create_task::create_task, get_task::get_task, jinja_templates};
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -16,6 +16,24 @@ pub mod middleware;
 pub mod models;
 pub mod operators;
 pub mod routes;
+
+/// Health Check
+///
+/// Confirmation that the service is healthy and can make embedding vectors
+#[utoipa::path(
+    get,
+    path = "/health",
+    context_path = "/api",
+    tag = "Health",
+    responses(
+        (status = 200, description = "Confirmation that the service is healthy and can make embedding vectors"),
+        (status = 400, description = "Service error relating to making an embedding or overall service health", body = ErrorResponseBody),
+    ),
+)]
+#[get("")]
+pub async fn health_check() -> Result<HttpResponse, actix_web::Error> {
+    Ok(HttpResponse::Ok().finish())
+}
 
 #[macro_export]
 #[cfg(not(feature = "runtime-env"))]
@@ -159,11 +177,16 @@ pub async fn main() -> std::io::Result<()> {
                 }),
             )
             .service(
+                utoipa_actix_web::scope("/health").configure(|config| {
+                    config.service(health_check);
+                }),
+            )
+            .openapi_service(|api| Redoc::with_url("/redoc", api))
+            .service(
                 utoipa_actix_web::scope("").configure(|config| {
                     config.service(jinja_templates::public_page);
                 }),
             )
-            .openapi_service(|api| Redoc::with_url("/redoc", api))
             .into_app()
     })
     .bind(("127.0.0.1", 8081))?
