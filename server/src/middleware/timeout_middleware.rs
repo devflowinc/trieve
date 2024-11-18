@@ -36,14 +36,17 @@ pub async fn timeout_15secs(
                 path, method, queries, headers
             );
             log::info!("Request timeout: {}", path);
-            let _ = send_email(
-                email_body,
-                "webmaster@trieve.ai".to_string(),
-                Some(format!(
-                    "🤖🤖 {} Request timeout {} 🤖🤖",
-                    base_server_url, path
-                )),
-            );
+            let emails_enabled = std::env::var("ENABLE_408_EMIALS").unwrap_or("false".to_string());
+            if emails_enabled == "true" {
+                let _ = send_email(
+                    email_body,
+                    "webmaster@trieve.ai".to_string(),
+                    Some(format!(
+                        "🤖🤖 {} Request timeout {} 🤖🤖",
+                        base_server_url, path
+                    )),
+                );
+            }
 
             Err(ServiceError::RequestTimeout.into())
         }
