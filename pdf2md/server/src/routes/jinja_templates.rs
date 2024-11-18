@@ -42,12 +42,15 @@ pub async fn public_page(templates: Templates<'_>) -> Result<HttpResponse, Servi
 pub async fn view_pdf_page(templates: Templates<'_>) -> Result<HttpResponse, ServiceError> {
     let templ = templates.get_template("view-pdf.html").unwrap();
     let trieve_api_key = get_env!("API_KEY", "API_KEY should be set");
+
+    let pdf_url = "/static/testpdf.pdf";
+
     let response_body = templ
         .render(context! {
-            trieve_api_key
+            trieve_api_key,
+            pdf_url => pdf_url
         })
         .unwrap();
 
     Ok(HttpResponse::Ok().body(response_body))
 }
-
