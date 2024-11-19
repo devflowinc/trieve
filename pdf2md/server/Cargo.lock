@@ -2010,26 +2010,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lopdf"
-version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5c8ecfc6c72051981c0459f75ccc585e7ff67c70829560cda8e647882a9abff"
-dependencies = [
- "chrono",
- "encoding_rs",
- "flate2",
- "indexmap",
- "itoa",
- "log",
- "md-5",
- "nom",
- "rangemap",
- "rayon",
- "time",
- "weezl",
-]
-
-[[package]]
 name = "lz4"
 version = "1.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2073,16 +2053,6 @@ checksum = "8ea1f30cedd69f0a2954655f7188c6a834246d2bcf1e315e2ac40c4b24dc9519"
 dependencies = [
  "cfg-if",
  "rayon",
-]
-
-[[package]]
-name = "md-5"
-version = "0.10.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d89e7ee0cfbedfc4da3340218492196241d89eefb6dab27de5df917a6d2e78cf"
-dependencies = [
- "cfg-if",
- "digest",
 ]
 
 [[package]]
@@ -2413,7 +2383,6 @@ dependencies = [
  "image",
  "lazy_static",
  "log",
- "lopdf",
  "minijinja",
  "minijinja-embed",
  "openai_dive",
@@ -2575,12 +2544,6 @@ checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
 ]
-
-[[package]]
-name = "rangemap"
-version = "1.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f60fcc7d6849342eff22c4350c8b9a989ee8ceabc4b481253e8946b9fe83d684"
 
 [[package]]
 name = "rav1e"

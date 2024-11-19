@@ -1,4 +1,5 @@
 use crate::models::RedisPool;
+use crate::operators::clickhouse::get_last_page;
 use crate::{
     errors::ServiceError,
     get_env,
@@ -14,7 +15,7 @@ use openai_dive::v1::{
         ChatMessageImageContentPart, ImageUrlType,
     },
 };
-use pdf2image::{image::DynamicImage, PDF};
+use pdf2image::image::DynamicImage;
 use regex::Regex;
 use s3::creds::time::OffsetDateTime;
 
@@ -69,7 +70,7 @@ fn get_llm_client(params: ChunkingParams) -> Client {
     }
 }
 
-async fn get_pages_from_image(
+async fn get_markdown_from_image(
     img: DynamicImage,
     prev_md_doc: Option<String>,
     page: u32,
@@ -150,18 +151,17 @@ async fn get_pages_from_image(
         }
     };
 
-    let mut metadata = serde_json::json!({
-        "page": page,
-    });
+    let mut metadata = serde_json::json!({});
     if let Some(usage) = response.usage {
-        metadata["usage"] = serde_json::json!(usage);
+        metadata = serde_json::json!(usage);
     }
 
     Ok(ChunkClickhouse {
         id: uuid::Uuid::new_v4().to_string(),
         task_id: task.id.to_string().clone(),
         content: format_markdown(&content),
-        metadata: metadata.to_string(),
+        page,
+        usage: metadata.to_string(),
         created_at: OffsetDateTime::now_utc(),
     })
 }
@@ -181,43 +181,41 @@ pub async fn chunk_sub_pages(
     task: ChunkingTask,
     clickhouse_client: &clickhouse::Client,
     redis_pool: &RedisPool,
-) -> Result<Vec<ChunkClickhouse>, ServiceError> {
-    log::info!("Chunking pages for {:?} size {}", task.id, data.len());
-    let pdf = PDF::from_bytes(data)
-        .map_err(|err| ServiceError::BadRequest(format!("Failed to open PDF file {:?}", err)))?;
+) -> Result<(), ServiceError> {
+    log::info!("Chunking page {} for {:?}", task.page_num, task.id);
 
-    let pages = pdf
-        .render(pdf2image::Pages::All, None)
+    let page = image::load_from_memory_with_format(&data, image::ImageFormat::Jpeg)
         .map_err(|err| ServiceError::BadRequest(format!("Failed to render PDF file {:?}", err)))?;
 
-    let mut result_pages = vec![];
-
     let client = get_llm_client(task.params.clone());
-    let mut prev_md_doc = None;
 
-    for (page_image, page_num) in pages.into_iter().zip(task.page_range.0..task.page_range.1) {
-        let page = get_pages_from_image(
-            page_image,
-            prev_md_doc,
-            page_num,
-            task.clone(),
-            client.clone(),
-        )
-        .await?;
-        prev_md_doc = Some(page.content.clone());
+    let prev_md_doc = if task.page_num > 1 {
+        let prev_page = get_last_page(task.id, clickhouse_client).await?;
 
-        let data = insert_page(task.clone(), page.clone(), clickhouse_client, redis_pool).await?;
+        prev_page.map(|p| p.content)
+    } else {
+        None
+    };
 
-        send_webhook(
-            task.params.webhook_url.clone(),
-            task.params.webhook_payload_template.clone(),
-            data,
-        )
-        .await?;
-        log::info!("Page {} processed", page_num);
+    let page = get_markdown_from_image(
+        page,
+        prev_md_doc,
+        task.page_num,
+        task.clone(),
+        client.clone(),
+    )
+    .await?;
 
-        result_pages.push(page);
-    }
+    let data = insert_page(task.clone(), page.clone(), clickhouse_client, redis_pool).await?;
 
-    Ok(result_pages)
+    send_webhook(
+        task.params.webhook_url.clone(),
+        task.params.webhook_payload_template.clone(),
+        data,
+    )
+    .await?;
+
+    log::info!("Page {} processed", task.page_num);
+
+    Ok(())
 }
