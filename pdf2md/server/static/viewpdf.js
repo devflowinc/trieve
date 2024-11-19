@@ -78,6 +78,7 @@ if (taskId) {
     .then((response) => response.json())
     .then((data) => {
       upsertTaskToStorage(data);
+      loadPDF(data.file_url);
     })
     .catch((error) => {
       console.error("Error:", error);
