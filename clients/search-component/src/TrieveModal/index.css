@@ -172,8 +172,9 @@ body {
         }
       }
     }
+
     .chat-footer-wrapper {
-      @apply sticky bottom-0 flex flex-col;
+      @apply sticky bottom-0 flex flex-col p-3 pb-1;
       background-color: var(--tv-zinc-50);
     }
 
@@ -187,7 +188,25 @@ body {
       }
 
       &.chat {
-        @apply pb-2;
+        @apply pb-2 flex justify-between pr-0.5 gap-y-3;
+
+        .tags-row {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          width: 100%;
+        }
+
+        .chat-controls-row {
+          display: flex;
+          flex-direction: row;
+          width: 100%;
+          justify-content: flex-start;
+
+          .clear-button {
+            @apply px-4 py-1.5 rounded-md text-white bg-magenta-500 hover:bg-magenta-400 text-xs;
+          }
+        }
       }
 
       .bottom-row {
@@ -197,10 +216,6 @@ body {
           @apply px-2 text-sm py-1 rounded-md;
           color: var(--tv-zinc-700);
           border-color: var(--tv-zinc-300);
-
-          &.clear-button {
-            @apply border ml-2;
-          }
 
           &:hover {
             color: var(--tv-zinc-950);

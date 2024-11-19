@@ -4,6 +4,7 @@ import { useModalState } from "../../utils/hooks/modal-context";
 import { AIInitialMessage } from "./AIInitalMessage";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
+import { Tags } from "../Tags";
 
 export const ChatMode = () => {
   const { props, setMode, modalRef, open, setOpen, mode } = useModalState();
@@ -88,29 +89,34 @@ export const ChatMode = () => {
             />
           </form>
         </div>
-        <div className={`trieve-footer chat ${props.type}`}>
-          <div className="bottom-row">
+        <div className={`trieve-footer chat ${props.type} flex flex-col`}>
+          <div className="tags-row">
+            <Tags />
+            <a
+              className="trieve-powered text-right"
+              href="https://trieve.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src="https://cdn.trieve.ai/trieve-logo.png"
+                alt="logo"
+                className="inline-block mr-2"
+              />
+              Powered by Trieve
+            </a>
+          </div>
+          <div className="chat-controls-row">
             {messages.length ? (
               <button
                 onClick={() =>
-                  isDoneReading?.current
-                    ? clearConversation()
-                    : stopGeneratingMessage()
+                  isDoneReading ? clearConversation() : stopGeneratingMessage()
                 }
                 className="clear-button"
               >
-                {isDoneReading?.current ? "Clear messages" : "Stop Generating"}
+                {isDoneReading ? "Clear messages" : "Stop Generating"}
               </button>
             ) : null}
-            <span className="spacer" />
-            <a
-              className="trieve-powered"
-              href="https://trieve.ai"
-              target="_blank"
-            >
-              <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
-              Powered by Trieve
-            </a>
           </div>
         </div>
       </div>

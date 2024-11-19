@@ -2,6 +2,7 @@ import React, { createContext, useContext, useRef, useState } from "react";
 import { useModalState } from "./modal-context";
 import { Chunk } from "../types";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
+import { useEffect } from "react";
 
 type Messages = {
   queryId: string | null;
@@ -41,7 +42,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController()
+    new AbortController(),
   );
   const isDoneReading = useRef<boolean>(true);
   const createTopic = async ({ question }: { question: string }) => {
@@ -64,9 +65,17 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([]);
   };
 
+  const { currentTag } = useModalState();
+
+  useEffect(() => {
+    if (currentTag) {
+      clearConversation();
+    }
+  }, [currentTag]);
+
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     setIsLoading(true);
     isDoneReading.current = false;
@@ -127,8 +136,14 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           completion_first: false,
         },
         page_size: 5,
+        filters:
+          currentTag !== "all"
+            ? {
+                must: [{ field: "tag_set", match_any: [currentTag] }], // Apply tag filter
+              }
+            : null,
       },
-      chatMessageAbortController.current.signal
+      chatMessageAbortController.current.signal,
     );
     handleReader(reader, queryId);
   };
@@ -144,7 +159,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         [
           ...messages.slice(0, -1),
           messages[messages.length - 1]?.slice(0, -1),
-        ].filter((a) => a.length)
+        ].filter((a) => a.length),
       );
     }
   };
@@ -187,7 +202,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
