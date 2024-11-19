@@ -56,6 +56,7 @@ pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
     "create_chunks": true,
     "split_delimiters": [",",".","\n"],
     "target_splits_per_chunk": 20,
+    "use_pdf2md_ocr": false
 }))]
 pub struct UploadFileReqPayload {
     /// Base64 encoded file. This is the standard base64url encoding.

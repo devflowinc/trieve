@@ -353,7 +353,7 @@ async fn upload_file(
 
     if file_name.ends_with(".pdf") {
         if let Some(true) = file_worker_message.upload_file_data.use_pdf2md_ocr {
-            // Send file to router PDF2MD
+            log::info!("Using pdf2md for OCR for file");
             let pdf2md_url = std::env::var("PDF2MD_URL")
                 .expect("PDF2MD_URL must be set")
                 .to_string();
