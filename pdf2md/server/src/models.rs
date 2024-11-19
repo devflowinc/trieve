@@ -16,6 +16,7 @@ pub trait TaskMessage {
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct FileTask {
     pub task_id: uuid::Uuid,
+    pub file_name: String,
     pub upload_file_data: UploadFileReqPayload,
     pub attempt_number: u8,
 }
@@ -55,12 +56,15 @@ impl TaskMessage for ChunkingTask {
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug, ToSchema)]
 pub struct CreateFileTaskResponse {
     pub task_id: uuid::Uuid,
+    pub file_name: String,
     pub status: FileTaskStatus,
     pub pos_in_queue: String,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug, ToSchema)]
 pub struct UploadFileReqPayload {
+    /// Name of the file
+    pub file_name: String,
     /// Base64 encoded file. This is the standard base64 encoding.
     pub base64_file: String,
 }
@@ -68,6 +72,7 @@ pub struct UploadFileReqPayload {
 #[derive(Debug, serde::Serialize, serde::Deserialize, clickhouse::Row, Clone)]
 pub struct FileTaskClickhouse {
     pub id: String,
+    pub file_name: String,
     pub pages: u32,
     pub pages_processed: u32,
     pub status: String,
@@ -115,6 +120,7 @@ pub struct GetTaskRequest {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, ToSchema)]
 pub struct GetTaskResponse {
     pub id: String,
+    pub file_name: String,
     pub total_document_pages: u32,
     pub pages_processed: u32,
     pub status: String,
@@ -127,6 +133,7 @@ impl GetTaskResponse {
     pub fn new(task: FileTaskClickhouse) -> Self {
         Self {
             id: task.id.clone(),
+            file_name: task.file_name.clone(),
             total_document_pages: task.pages,
             pages_processed: task.pages_processed,
             status: task.status,
@@ -138,6 +145,7 @@ impl GetTaskResponse {
     pub fn new_with_pages(task: FileTaskClickhouse, pages: Vec<ChunkClickhouse>) -> Self {
         Self {
             id: task.id.clone(),
+            file_name: task.file_name.clone(),
             total_document_pages: task.pages,
             pages_processed: task.pages_processed,
             status: task.status,
