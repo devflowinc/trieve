@@ -17,6 +17,7 @@ interface RequestBody {
   group_tracking_id?: string;
   metadata: any;
   time_stamp?: string;
+  use_pdf2md_ocr?: boolean;
 }
 
 export const UploadFile = () => {
@@ -38,6 +39,7 @@ export const UploadFile = () => {
   const [splitDelimiters, setSplitDelimiters] = createSignal([".", "?", "\\n"]);
   const [targetSplitsPerChunk, setTargetSplitsPerChunk] = createSignal(20);
   const [rebalanceChunks, setRebalanceChunks] = createSignal(false);
+  const [useGptChunking, setUseGptChunking] = createSignal(false);
   const [groupTrackingId, setGroupTrackingId] = createSignal("");
 
   const [showFileInput, setShowFileInput] = createSignal(true);
@@ -136,19 +138,20 @@ export const UploadFile = () => {
       });
 
     const requestBodyTemplate: Omit<RequestBody, "base64_file" | "file_name"> =
-      {
-        link: link() === "" ? undefined : link(),
-        tag_set:
-          tagSet().split(",").length > 0 ? undefined : tagSet().split(","),
-        split_delimiters: splitDelimiters(),
-        target_splits_per_chunk: targetSplitsPerChunk(),
-        rebalance_chunks: rebalanceChunks(),
-        group_tracking_id:
-          groupTrackingId() === "" ? undefined : groupTrackingId(),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        metadata: metadata(),
-        time_stamp: timestamp() ? timestamp() + " 00:00:00" : undefined,
-      };
+    {
+      link: link() === "" ? undefined : link(),
+      tag_set:
+        tagSet().split(",").length > 0 ? undefined : tagSet().split(","),
+      split_delimiters: splitDelimiters(),
+      target_splits_per_chunk: targetSplitsPerChunk(),
+      rebalance_chunks: rebalanceChunks(),
+      use_pdf2md_ocr: useGptChunking(),
+      group_tracking_id:
+        groupTrackingId() === "" ? undefined : groupTrackingId(),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      metadata: metadata(),
+      time_stamp: timestamp() ? timestamp() + " 00:00:00" : undefined,
+    };
 
     const uploadFilePromises = files().map(async (file) => {
       let base64File = await toBase64(file);
@@ -323,15 +326,27 @@ export const UploadFile = () => {
               onInput={(e) => setRebalanceChunks(e.currentTarget.checked)}
               class="h-4 w-4 rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
+            <div class="flex flex-row items-center space-x-2">
+              <div>Use gpt4o chunking</div>
+              <Tooltip
+                body={<BsInfoCircle />}
+                tooltipText="Use gpt4o chunking. If set to true, Trieve will use the gpt4o model to chunk the document if it is a pdf file. This is an experimental feature and may not work as expected."
+              />
+            </div>
+            <input
+              type="checkbox"
+              checked={useGptChunking()}
+              onInput={(e) => setUseGptChunking(e.currentTarget.checked)}
+              class="h-4 w-4 rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            />
           </div>
         </Show>
         <div class="m-1 mb-1 flex flex-row gap-2">
           <button
-            class={`rounded border-2 border-magenta p-2 px-4 font-semibold ${
-              showFileInput()
+            class={`rounded border-2 border-magenta p-2 px-4 font-semibold ${showFileInput()
                 ? "bg-magenta-600 text-white"
                 : "text-magenta hover:bg-magenta-500 hover:text-white"
-            }`}
+              }`}
             onClick={() => {
               setFiles([]);
               setShowFileInput(true);
@@ -341,11 +356,10 @@ export const UploadFile = () => {
             Select Files
           </button>
           <button
-            class={`rounded border-2 border-magenta p-2 px-4 font-semibold ${
-              showFolderInput()
+            class={`rounded border-2 border-magenta p-2 px-4 font-semibold ${showFolderInput()
                 ? "bg-magenta-600 text-white"
                 : "text-magenta hover:bg-magenta-500 hover:text-white"
-            }`}
+              }`}
             onClick={() => {
               setFiles([]);
               setShowFolderInput(true);
