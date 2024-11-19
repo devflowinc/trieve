@@ -280,7 +280,7 @@ async fn file_worker(
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct CreateFileTaskResponse {
-    pub task_id: uuid::Uuid,
+    pub id: uuid::Uuid,
     pub status: FileTaskStatus,
     pub pos_in_queue: String,
 }
@@ -364,6 +364,7 @@ async fn upload_file(
             let encoded_file = base64::prelude::BASE64_STANDARD.encode(file_data.clone());
 
             let json_value = serde_json::json!({
+                "file_name": file_name,
                 "base64_file": encoded_file.clone()
             });
 
@@ -383,11 +384,11 @@ async fn upload_file(
             let response = pdf2md_response.json::<CreateFileTaskResponse>().await;
 
             let task_id = match response {
-                Ok(response) => response.task_id,
+                Ok(response) => response.id,
                 Err(err) => {
-                    log::error!("Could not parse task_id from pdf2md {:?}", err);
+                    log::error!("Could not parse id from pdf2md {:?}", err);
                     return Err(ServiceError::BadRequest(format!(
-                        "Could not parse task_id from pdf2md {:?}",
+                        "Could not parse id from pdf2md {:?}",
                         err
                     )));
                 }
@@ -395,24 +396,58 @@ async fn upload_file(
 
             log::info!("Waiting on Task {}", task_id);
             #[allow(unused_assignments)]
-            let mut completed_task: Option<PollTaskResponse> = None;
+            let mut chunk_htmls: Vec<String> = vec![];
+            let mut pagination_token: Option<String> = None;
+            let mut completed = false;
 
             loop {
-                let request = pdf2md_client
-                    .get(format!("{}/api/task/{}", pdf2md_url, task_id).as_str())
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", &pdf2md_auth)
-                    .send()
-                    .await
-                    .map_err(|err| {
-                        log::error!("Could not send poll request to pdf2md {:?}", err);
-                        ServiceError::BadRequest(format!(
-                            "Could not send request to pdf2md {:?}",
-                            err
-                        ))
-                    })?;
+                if completed && pagination_token.is_none() {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                let request = if let Some(pagination_token) = &pagination_token {
+                    log::info!(
+                        "Polling on task {} with pagination token {}",
+                        task_id,
+                        pagination_token
+                    );
+                    pdf2md_client
+                        .get(
+                            format!(
+                                "{}/api/task/{}?pagination_token={}",
+                                pdf2md_url, task_id, pagination_token
+                            )
+                            .as_str(),
+                        )
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", &pdf2md_auth)
+                        .send()
+                        .await
+                        .map_err(|err| {
+                            log::error!("Could not send poll request to pdf2md {:?}", err);
+                            ServiceError::BadRequest(format!(
+                                "Could not send request to pdf2md {:?}",
+                                err
+                            ))
+                        })?
+                } else {
+                    log::info!("Waiting on task {}", task_id);
+                    pdf2md_client
+                        .get(format!("{}/api/task/{}", pdf2md_url, task_id).as_str())
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", &pdf2md_auth)
+                        .send()
+                        .await
+                        .map_err(|err| {
+                            log::error!("Could not send poll request to pdf2md {:?}", err);
+                            ServiceError::BadRequest(format!(
+                                "Could not send request to pdf2md {:?}",
+                                err
+                            ))
+                        })?
+                };
 
-                let response = request.json::<PollTaskResponse>().await.map_err(|err| {
+                let task_response = request.json::<PollTaskResponse>().await.map_err(|err| {
                     log::error!("Could not parse response from pdf2md {:?}", err);
                     ServiceError::BadRequest(format!(
                         "Could not parse response from pdf2md {:?}",
@@ -420,54 +455,48 @@ async fn upload_file(
                     ))
                 })?;
 
-                if (response.status == "Completed" && response.total_document_pages != 0)
-                    && response.pages.is_some()
-                {
-                    log::info!("Got job back from task {}", task_id);
-                    completed_task = Some(response);
-                    break;
+                if task_response.status == "Completed" && task_response.pages.is_some() {
+                    completed = true;
+                    pagination_token = task_response.pagination_token.clone();
+                    if let Some(pages) = task_response.pages {
+                        log::info!("Got {} pages from task {}", pages.len(), task_id);
+                        for page in pages {
+                            log::info!(".");
+                            chunk_htmls.push(page.content.clone());
+                        }
+                    }
+
+                    continue;
                 } else {
-                    log::info!("Polling on task {}... {:?}", task_id, response);
+                    log::info!("Task {} not ready", task_id);
                     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                     continue;
                 }
             }
 
-            if let Some(task) = completed_task {
-                // Poll Chunks from pdf chunks from service
-                let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
-                let created_file = create_file_query(
-                    file_id,
-                    file_size_mb,
-                    file_worker_message.upload_file_data.clone(),
-                    file_worker_message.dataset_id,
-                    web_pool.clone(),
-                )
-                .await?;
+            // Poll Chunks from pdf chunks from service
+            let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
+            let created_file = create_file_query(
+                file_id,
+                file_size_mb,
+                file_worker_message.upload_file_data.clone(),
+                file_worker_message.dataset_id,
+                web_pool.clone(),
+            )
+            .await?;
 
-                let mut chunk_htmls: Vec<String> = vec![];
+            create_file_chunks(
+                created_file.id,
+                file_worker_message.upload_file_data,
+                chunk_htmls,
+                dataset_org_plan_sub,
+                web_pool.clone(),
+                event_queue.clone(),
+                redis_conn,
+            )
+            .await?;
 
-                log::info!("Got {} pages from pdf2ocr", chunk_htmls.len());
-
-                if let Some(pages) = task.pages {
-                    for page in pages {
-                        chunk_htmls.push(page.content.clone());
-                    }
-                }
-
-                create_file_chunks(
-                    created_file.id,
-                    file_worker_message.upload_file_data,
-                    chunk_htmls,
-                    dataset_org_plan_sub,
-                    web_pool.clone(),
-                    event_queue.clone(),
-                    redis_conn,
-                )
-                .await?;
-
-                return Ok(Some(file_id));
-            }
+            return Ok(Some(file_id));
         }
     }
 
