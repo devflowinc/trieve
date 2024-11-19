@@ -142,7 +142,7 @@ pub async fn create_file_chunks(
 ) -> Result<(), ServiceError> {
     let mut chunks: Vec<ChunkReqPayload> = [].to_vec();
 
-    let name = format!("{}", upload_file_data.file_name);
+    let name = upload_file_data.file_name.clone();
 
     let chunk_group = ChunkGroup::from_details(
         Some(name.clone()),
