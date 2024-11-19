@@ -179,7 +179,6 @@ pub async fn main() -> std::io::Result<()> {
             .openapi_service(|api| Redoc::with_url("/redoc", api))
             .service(utoipa_actix_web::scope("").configure(|config| {
                 config.service(jinja_templates::public_page);
-                config.service(jinja_templates::view_pdf_page);
             }))
             .into_app()
     })

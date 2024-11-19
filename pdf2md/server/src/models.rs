@@ -15,7 +15,7 @@ pub trait TaskMessage {
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct FileTask {
-    pub task_id: uuid::Uuid,
+    pub id: uuid::Uuid,
     pub file_name: String,
     pub upload_file_data: UploadFileReqPayload,
     pub attempt_number: u8,
@@ -29,13 +29,13 @@ impl TaskMessage for FileTask {
         self.attempt_number
     }
     fn get_task_id(&self) -> uuid::Uuid {
-        self.task_id
+        self.id
     }
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct ChunkingTask {
-    pub task_id: uuid::Uuid,
+    pub id: uuid::Uuid,
     pub file_name: String,
     pub page_range: (u32, u32),
     pub model_params: ModelParams,
@@ -50,13 +50,13 @@ impl TaskMessage for ChunkingTask {
         self.attempt_number
     }
     fn get_task_id(&self) -> uuid::Uuid {
-        self.task_id
+        self.id
     }
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug, ToSchema)]
 pub struct CreateFileTaskResponse {
-    pub task_id: uuid::Uuid,
+    pub id: uuid::Uuid,
     pub file_name: String,
     pub status: FileTaskStatus,
     pub pos_in_queue: String,

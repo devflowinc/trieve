@@ -52,7 +52,7 @@ pub async fn insert_page(
     })?;
 
     let total_pages_processed = redis::cmd("incr")
-        .arg(format!("{}:count", task.task_id))
+        .arg(format!("{}:count", task.id))
         .query_async::<u32>(&mut *redis_conn)
         .await
         .map_err(|e| {
@@ -62,7 +62,7 @@ pub async fn insert_page(
             )
         })?;
 
-    let prev_task = get_task(task.task_id, clickhouse_client).await?;
+    let prev_task = get_task(task.id, clickhouse_client).await?;
 
     log::info!(
         "total_pages: {} pages processed: {}",
@@ -71,10 +71,10 @@ pub async fn insert_page(
     );
 
     if total_pages_processed >= prev_task.pages {
-        update_task_status(task.task_id, FileTaskStatus::Completed, clickhouse_client).await?;
+        update_task_status(task.id, FileTaskStatus::Completed, clickhouse_client).await?;
     } else {
         update_task_status(
-            task.task_id,
+            task.id,
             FileTaskStatus::ProcessingFile(total_pages_processed),
             clickhouse_client,
         )

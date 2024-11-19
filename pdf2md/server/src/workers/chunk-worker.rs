@@ -111,7 +111,7 @@ pub async fn chunk_sub_pdf(
 
     let result = chunk_sub_pages(file_data, task.clone(), &clickhouse_client, &redis_pool).await?;
 
-    log::info!("Got {} pages for {:?}", result.len(), task.task_id);
+    log::info!("Got {} pages for {:?}", result.len(), task.id);
 
     Ok(())
 }

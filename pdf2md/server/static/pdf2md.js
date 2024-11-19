@@ -1,6 +1,6 @@
 const upsertTaskToStorage = (task) => {
   const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-  const filteredTasks = tasks.filter((t) => t.task_id !== task.task_id);
+  const filteredTasks = tasks.filter((t) => t.id !== task.id);
   filteredTasks.unshift(task);
   localStorage.setItem("tasks", JSON.stringify(filteredTasks));
 
@@ -54,7 +54,7 @@ const updateTaskStatusTable = () => {
   tbody.innerHTML = "";
   const htmlRows = tasks.map((task) => {
     const row = firstRow.cloneNode(true);
-    row.querySelector(".task-id").innerText = task.task_id;
+    row.querySelector(".task-id").innerText = task.id;
     row.querySelector(".task-file-name").innerText = task.file_name;
     row.querySelector(".task-status").innerText = task.status;
     row.querySelector(".task-status").classList.add(`status-${task.status}`);
@@ -72,3 +72,23 @@ const updateTaskStatusTable = () => {
 };
 
 updateTaskStatusTable();
+
+const refreshTasks = () => {
+  const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+  tasks.forEach((task) => {
+    fetch(`/api/task/${task.id}`, {
+      headers: {
+        Authorization: window.TRIEVE_API_KEY,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        upsertTaskToStorage(data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  });
+};
+
+setInterval(refreshTasks, 5000);
