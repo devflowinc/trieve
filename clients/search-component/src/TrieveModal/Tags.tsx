@@ -1,11 +1,12 @@
 import React from "react";
-import { ALL_TAG, useModalState } from "../../utils/hooks/modal-context";
-import { ArrowDownKey, ArrowUpIcon, EnterKeyIcon, EscKeyIcon } from "../icons";
+import { ALL_TAG, useModalState } from "../utils/hooks/modal-context";
+import { ArrowDownKey, ArrowUpIcon, EnterKeyIcon, EscKeyIcon } from "./icons";
 
 export const Tags = () => {
   const { props, mode, currentTag, setCurrentTag, tagCounts } = useModalState();
+
   return (
-    mode === "search" &&
+    (mode === "search" || mode === "chat") &&
     (props.tags?.length ? (
       <ul className="tags">
         {[ALL_TAG, ...props.tags].map((tag, idx) => (

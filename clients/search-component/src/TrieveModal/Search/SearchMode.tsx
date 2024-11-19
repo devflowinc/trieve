@@ -3,7 +3,7 @@ import { DocsItem } from "./DocsItem";
 import { AIIcon, ArrowIcon, ReloadIcon } from "../icons";
 import { useSuggestedQueries } from "../../utils/hooks/useSuggestedQueries";
 import { useModalState } from "../../utils/hooks/modal-context";
-import { Tags } from "./Tags";
+import { Tags } from "../Tags";
 import { useChatState } from "../../utils/hooks/chat-context";
 import {
   ChunkWithHighlights,
@@ -37,7 +37,7 @@ export const SearchMode = () => {
 
   const getItemComponent = (
     result: ChunkWithHighlights | GroupChunk[],
-    index: number
+    index: number,
   ) => {
     const chunkOrGroup = isChunksWithHighlights(result);
     const ecommerce = props.type == "ecommerce";
@@ -52,11 +52,7 @@ export const SearchMode = () => {
       );
     } else if (!chunkOrGroup && ecommerce) {
       return (
-        <ProductGroupItem
-          group={result}
-          index={index}
-          requestID={requestID}
-        />
+        <ProductGroupItem group={result} index={index} requestID={requestID} />
       );
     } else if (chunkOrGroup) {
       return (
