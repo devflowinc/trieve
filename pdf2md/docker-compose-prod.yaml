@@ -1,0 +1,26 @@
+services:
+  pdf2md-server:
+    image: trieve/pdf2md-server:latest
+    network_mode: "host"
+    build:
+      context: ./server/
+      dockerfile: Dockerfile.pdf2md-server
+    env_file: .env
+
+  supervisor-worker:
+    image: trieve/supervisor-worker:latest
+    network_mode: "host"
+    build:
+      context: ./server/
+      dockerfile: Dockerfile.supervisor-worker
+    env_file: .env
+
+  chunk-worker:
+    image: trieve/chunk-worker:latest
+    network_mode: "host"
+    build:
+      context: ./server/
+      dockerfile: Dockerfile.chunk-worker
+    env_file: .env
+    deploy:
+      replicas: 5
