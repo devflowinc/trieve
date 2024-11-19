@@ -1,3 +1,6 @@
+include:
+  - docker-compose.yml  # This includes all services from base file
+
 services:
   pdf2md-server:
     image: trieve/pdf2md-server:latest

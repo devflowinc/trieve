@@ -124,8 +124,6 @@ pub async fn update_task_status(
         }
     };
 
-    log::info!("Update Task Sttaus Query: {}", query);
-
     clickhouse_client
         .query(&query)
         .execute()
