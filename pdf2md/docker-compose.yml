@@ -1,7 +1,6 @@
 services:
   redis:
     image: redis:7.2.2
-    profiles: ["dev", "prod-deps"]
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
@@ -18,7 +17,6 @@ services:
 
   s3:
     image: minio/minio:RELEASE.2023-09-27T15-22-50Z
-    profiles: ["dev", "prod-deps"]
     ports:
       - 9000:9000
       - 42625:42625
@@ -38,7 +36,6 @@ services:
 
   s3-client:
     image: minio/mc
-    profiles: ["dev", "prod-deps"]
     depends_on:
       s3:
         condition: service_healthy
@@ -59,7 +56,6 @@ services:
 
   clickhouse-db:
     image: trieve/clickhouse:latest
-    profiles: ["dev", "prod-deps"]
     restart: always
     environment:
       - CLICKHOUSE_USER=clickhouse
@@ -73,35 +69,6 @@ services:
       - "9009:9009"
     networks:
       - app-network
-
-  pdf2md-server:
-    image: trieve/pdf2md-server:latest
-    profiles: ["prod"]
-    network_mode: "host"
-    build:
-      context: ./server/
-      dockerfile: Dockerfile.pdf2md-server
-    env_file: .env
-
-  supervisor-worker:
-    image: trieve/supervisor-worker:latest
-    profiles: ["prod"]
-    network_mode: "host"
-    build:
-      context: ./server/
-      dockerfile: Dockerfile.supervisor-worker
-    env_file: .env
-
-  chunk-worker:
-    image: trieve/chunk-worker:latest
-    profiles: ["prod"]
-    network_mode: "host"
-    build:
-      context: ./server/
-      dockerfile: Dockerfile.chunk-worker
-    env_file: .env
-    deploy:
-      replicas: 5
 
 networks:
   app-network:
