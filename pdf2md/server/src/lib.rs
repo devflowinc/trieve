@@ -184,7 +184,7 @@ pub async fn main() -> std::io::Result<()> {
             }))
             .into_app()
     })
-    .bind(("127.0.0.1", 8081))?
+    .bind(("0.0.0.0", 8081))?
     .run()
     .await
 }
