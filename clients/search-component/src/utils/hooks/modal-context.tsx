@@ -5,7 +5,12 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Chunk, ChunkWithHighlights, GroupChunk } from "../types";
+import {
+  Chunk,
+  ChunkWithHighlights,
+  flattenResults,
+  GroupChunk,
+} from "../types";
 import {
   CountChunkQueryResponseBody,
   SearchChunksReqPayload,
@@ -157,6 +162,14 @@ const ModalProvider = ({
   const [results, setResults] = useState<
     ChunkWithHighlights[] | GroupChunk[][]
   >([]);
+
+  const [tagFrequencies, setTagFrequencies] = useState<
+    {
+      tagName: string;
+      frequency: number;
+    }[]
+  >([]);
+
   const [requestID, setRequestID] = useState("");
   const [loadingResults, setLoadingResults] = useState(false);
   const [open, setOpen] = useState(props.open ?? false);
@@ -184,6 +197,15 @@ const ModalProvider = ({
   useEffect(() => {
     props.onOpenChange?.(open);
   }, [open]);
+
+  // Update the most popular tags to filter chat to tags
+  useEffect(() => {
+    if (!results) {
+      setTagFrequencies([]);
+      return;
+    }
+    const flatResults = flattenResults(results);
+  });
 
   // Use TAB to alternate modes
   useEffect(() => {

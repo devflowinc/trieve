@@ -31,16 +31,41 @@ export type GroupSearchResults = {
 };
 
 export function isChunksWithHighlights(
-  result: ChunkWithHighlights | GroupChunk[]
+  result: ChunkWithHighlights | GroupChunk[],
 ): result is ChunkWithHighlights {
   return (result as ChunkWithHighlights).highlights !== undefined;
 }
 
 export function isGroupChunk(
-  result: ChunkWithHighlights | GroupChunk
+  result: ChunkWithHighlights | GroupChunk,
 ): result is GroupChunk {
   return (result as GroupChunk).group !== undefined;
 }
+
+type ComponentSearchResults = ChunkWithHighlights[] | GroupChunk[][];
+
+export const flattenResults = (results: ComponentSearchResults) => {
+  const finalResults: ChunkWithHighlights[] = [];
+
+  if (Array.isArray(results)) {
+    for (const result of results) {
+      if (isChunksWithHighlights(result)) {
+        finalResults.push(result);
+      } else {
+        finalResults.push(...flattenGroupResults(result));
+      }
+    }
+  }
+  return finalResults;
+};
+
+export const flattenGroupResults = (result: GroupChunk[]) => {
+  const chunks: ChunkWithHighlights[] = [];
+  for (const group of result) {
+    chunks.push(...group.chunks);
+  }
+  return chunks;
+};
 
 export type Props = {
   datasetId: string;
