@@ -32,6 +32,7 @@ async fn create_task(
 ) -> Result<HttpResponse, actix_web::Error> {
     let clickhouse_task = models::FileTaskClickhouse {
         id: uuid::Uuid::new_v4().to_string(),
+        file_name: req.file_name.clone(),
         pages: 0,
         pages_processed: 0,
         status: "CREATED".to_string(),
@@ -44,6 +45,7 @@ async fn create_task(
 
     let task = FileTask {
         task_id: clickhouse_task.id.parse().unwrap(),
+        file_name: clickhouse_task.file_name,
         upload_file_data: req.into_inner(),
         attempt_number: 0,
     };
@@ -65,6 +67,7 @@ async fn create_task(
 
     Ok(HttpResponse::Ok().json(CreateFileTaskResponse {
         task_id: task.task_id,
+        file_name: task.file_name,
         status: FileTaskStatus::Created,
         pos_in_queue,
     }))
