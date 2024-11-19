@@ -35,3 +35,12 @@ pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
 
     Ok(*aws_bucket)
 }
+
+pub async fn get_signed_url(bucket: &Bucket, key: &str) -> Result<String, ServiceError> {
+    let url = bucket.presign_get(key, 3600, None).await.map_err(|e| {
+        log::error!("Could not get signed url {:?}", e);
+        ServiceError::BadRequest("Could not get signed url".to_string())
+    })?;
+
+    Ok(url)
+}
