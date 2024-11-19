@@ -46,6 +46,9 @@ async fn get_task(
     let bucket = get_aws_bucket()?;
     let file_url = get_signed_url(&bucket, format!("{}.pdf", &task.id).as_str()).await?;
 
-    let result = models::GetTaskResponse::new_with_pages(task, pages, file_url);
+    let mut result = models::GetTaskResponse::new_with_pages(task, pages, file_url);
+    if result.clone().pages.unwrap_or_default().len() < data.limit.unwrap_or(20) as usize {
+        result.pagination_token = None;
+    }
     Ok(HttpResponse::Ok().json(result))
 }

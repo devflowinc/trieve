@@ -126,7 +126,8 @@ pub async fn chunk_pdf(
         .map_err(|e| ServiceError::BadRequest(format!("Could not load pdf: {}", e)))?;
 
     let all_pages = doc.get_pages();
-    let max_page_num = *all_pages.keys().last().unwrap();
+    let offset = *all_pages.keys().next().unwrap_or(&0);
+    let max_page_num = *all_pages.keys().last().unwrap_or(&0);
     let pages_per_doc = 10;
     let num_docs = (max_page_num as f64 / pages_per_doc as f64).ceil() as u32;
 
@@ -134,8 +135,8 @@ pub async fn chunk_pdf(
 
     // Process each chunk
     for i in 0..num_docs {
-        let start_page = i * pages_per_doc + 1;
-        let end_page = std::cmp::min((i + 1) * pages_per_doc, max_page_num);
+        let start_page = i * pages_per_doc + offset;
+        let end_page = std::cmp::min((i + 1) * pages_per_doc, max_page_num) + offset;
 
         // Split the documentid
         let mut split_doc = split_pdf(doc.clone(), start_page, end_page)
@@ -179,7 +180,7 @@ pub async fn chunk_pdf(
 
     update_task_status(
         task.id,
-        FileTaskStatus::ProcessingFile(num_docs * pages_per_doc),
+        FileTaskStatus::ProcessingFile(max_page_num),
         &clickhouse_client,
     )
     .await?;
@@ -189,7 +190,7 @@ pub async fn chunk_pdf(
 
 pub fn split_pdf(doc: Document, start_page: u32, end_page: u32) -> Result<Document, String> {
     let mut new_document = Document::with_version(doc.version.clone());
-    let page_numbers_to_keep: Vec<u32> = (start_page..=end_page).collect();
+    let page_numbers_to_keep: Vec<u32> = (start_page..end_page).collect();
 
     // Get mapping of page numbers to object IDs
     let page_map = doc.get_pages();
@@ -200,6 +201,7 @@ pub fn split_pdf(doc: Document, start_page: u32, end_page: u32) -> Result<Docume
 
     // Filter and collect pages we want to keep
     for page_num in page_numbers_to_keep {
+        log::info!("Processing page {}", page_num);
         if let Some(&object_id) = page_map.get(&page_num) {
             if let Ok(page_object) = doc.get_object(object_id) {
                 documents_pages.insert(object_id, page_object.clone());
