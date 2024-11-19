@@ -1,6 +1,9 @@
 use crate::{
     errors::ServiceError,
-    models::{ChunkClickhouse, ChunkingTask, FileTaskClickhouse, FileTaskStatus, GetTaskResponse},
+    models::{
+        ChunkClickhouse, ChunkingTask, FileTaskClickhouse, FileTaskStatus, GetTaskResponse,
+        RedisPool,
+    },
 };
 
 pub async fn insert_task(
@@ -29,33 +32,53 @@ pub async fn insert_page(
     task: ChunkingTask,
     page: ChunkClickhouse,
     clickhouse_client: &clickhouse::Client,
+    redis_pool: &RedisPool,
 ) -> Result<(), ServiceError> {
     let mut page_inserter = clickhouse_client.insert("file_chunks").map_err(|e| {
-        log::error!("Error inserting recommendations: {:?}", e);
-        ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
+        log::error!("Error getting page_inserter: {:?}", e);
+        ServiceError::InternalServerError(format!("Error getting page_inserter: {:?}", e))
     })?;
 
     page_inserter.write(&page).await.map_err(|e| {
-        log::error!("Error inserting recommendations: {:?}", e);
-        ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
+        log::error!("Error inserting page: {:?}", e);
+        ServiceError::InternalServerError(format!("Error inserting page: {:?}", e))
     })?;
 
     page_inserter.end().await.map_err(|e| {
-        log::error!("Error inserting recommendations: {:?}", e);
+        log::error!("Error terminating connection: {:?}", e);
         ServiceError::InternalServerError(format!("Error inserting task: {:?}", e))
     })?;
 
+    let mut redis_conn = redis_pool.get().await.map_err(|e| {
+        log::error!("Failed to get redis connection: {:?}", e);
+        ServiceError::InternalServerError("Failed to get redis connection".to_string())
+    })?;
+
+    let total_pages_processed = redis::cmd("incr")
+        .arg(format!("{}:count", task.task_id))
+        .query_async::<u32>(&mut *redis_conn)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to push task to chunks_to_process: {:?}", e);
+            ServiceError::InternalServerError(
+                "Failed to push task to chunks_to_process".to_string(),
+            )
+        })?;
+
     let prev_task = get_task(task.task_id, clickhouse_client).await?;
 
-    let pages_processed = prev_task.pages_processed + 1;
+    log::info!(
+        "total_pages: {} pages processed: {}",
+        total_pages_processed,
+        prev_task.pages
+    );
 
-    // Doing this update is ok because it only performs it on one row, so it's not a big deal
-    if pages_processed == prev_task.pages {
+    if total_pages_processed >= prev_task.pages {
         update_task_status(task.task_id, FileTaskStatus::Completed, clickhouse_client).await?;
     } else {
         update_task_status(
             task.task_id,
-            FileTaskStatus::ChunkingFile(pages_processed),
+            FileTaskStatus::ProcessingFile(total_pages_processed),
             clickhouse_client,
         )
         .await?;
@@ -100,6 +123,8 @@ pub async fn update_task_status(
             )
         }
     };
+
+    log::info!("Update Task Sttaus Query: {}", query);
 
     clickhouse_client
         .query(&query)
