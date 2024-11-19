@@ -2,8 +2,8 @@ use crate::models::RedisPool;
 use crate::{
     errors::ServiceError,
     get_env,
-    models::{ChunkClickhouse, ChunkingTask, ModelParams},
-    operators::clickhouse::insert_page,
+    models::{ChunkClickhouse, ChunkingParams, ChunkingTask},
+    operators::{clickhouse::insert_page, webhook_template::send_webhook},
 };
 use base64::Engine;
 use image::{codecs::png::PngEncoder, ImageEncoder};
@@ -48,7 +48,7 @@ fn get_data_url_from_image(img: DynamicImage) -> Result<String, ServiceError> {
     Ok(final_encoded)
 }
 
-fn get_llm_client(params: ModelParams) -> Client {
+fn get_llm_client(params: ChunkingParams) -> Client {
     let base_url = get_env!("LLM_BASE_URL", "LLM_BASE_URL should be set").into();
 
     let llm_api_key: String = params.llm_api_key.unwrap_or(
@@ -77,7 +77,7 @@ async fn get_pages_from_image(
     client: Client,
 ) -> Result<ChunkClickhouse, ServiceError> {
     let llm_model: String = task
-        .model_params
+        .params
         .llm_model
         .unwrap_or(get_env!("LLM_MODEL", "LLM_MODEL should be set").into());
 
@@ -86,7 +86,7 @@ async fn get_pages_from_image(
     let mut messages = vec![
         ChatMessage::System {
             content: (ChatMessageContent::Text(
-                task.model_params
+                task.params
                     .system_prompt
                     .unwrap_or(CHUNK_SYSTEM_PROMPT.to_string()),
             )),
@@ -192,7 +192,7 @@ pub async fn chunk_sub_pages(
 
     let mut result_pages = vec![];
 
-    let client = get_llm_client(task.model_params.clone());
+    let client = get_llm_client(task.params.clone());
     let mut prev_md_doc = None;
 
     for (page_image, page_num) in pages.into_iter().zip(task.page_range.0..task.page_range.1) {
@@ -205,7 +205,15 @@ pub async fn chunk_sub_pages(
         )
         .await?;
         prev_md_doc = Some(page.content.clone());
-        insert_page(task.clone(), page.clone(), clickhouse_client, redis_pool).await?;
+
+        let data = insert_page(task.clone(), page.clone(), clickhouse_client, redis_pool).await?;
+
+        send_webhook(
+            task.params.webhook_url.clone(),
+            task.params.webhook_payload_template.clone(),
+            data,
+        )
+        .await?;
         log::info!("Page {} processed", page_num);
 
         result_pages.push(page);
