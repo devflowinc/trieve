@@ -2,6 +2,7 @@ use crate::{
     errors::{ErrorResponseBody, ServiceError},
     middleware::api_key_middleware::ApiKey,
     models::{self, GetTaskRequest},
+    operators::s3::{get_aws_bucket, get_signed_url},
 };
 use actix_web::{get, web, HttpResponse};
 
@@ -35,13 +36,16 @@ async fn get_task(
 ) -> Result<HttpResponse, ServiceError> {
     let task_id = task_id.into_inner();
     let task = crate::operators::clickhouse::get_task(task_id, &clickhouse_client).await?;
-    let result = crate::operators::clickhouse::get_task_pages(
-        task,
+    let pages = crate::operators::clickhouse::get_task_pages(
+        task.clone(),
         data.limit,
         data.pagination_token,
         &clickhouse_client,
     )
     .await?;
+    let bucket = get_aws_bucket()?;
+    let file_url = get_signed_url(&bucket, format!("{}.pdf", &task.id).as_str()).await?;
 
+    let result = models::GetTaskResponse::new_with_pages(task, pages, file_url);
     Ok(HttpResponse::Ok().json(result))
 }

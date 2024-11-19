@@ -160,7 +160,7 @@ pub async fn get_task_pages(
     limit: Option<u32>,
     offset_id: Option<uuid::Uuid>,
     clickhouse_client: &clickhouse::Client,
-) -> Result<GetTaskResponse, ServiceError> {
+) -> Result<Vec<ChunkClickhouse>, ServiceError> {
     if FileTaskStatus::from(task.status.clone()) == FileTaskStatus::Completed || task.pages > 0 {
         let limit = limit.unwrap_or(20);
 
@@ -180,8 +180,8 @@ pub async fn get_task_pages(
                 ServiceError::BadRequest("Failed to get pages".to_string())
             })?;
 
-        return Ok(GetTaskResponse::new_with_pages(task, pages));
+        return Ok(pages);
     }
 
-    Ok(GetTaskResponse::new(task))
+    Ok(vec![])
 }

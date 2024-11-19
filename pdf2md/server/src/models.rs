@@ -145,6 +145,7 @@ pub struct GetTaskRequest {
 pub struct GetTaskResponse {
     pub id: String,
     pub file_name: String,
+    pub file_url: Option<String>,
     pub total_document_pages: u32,
     pub pages_processed: u32,
     pub status: String,
@@ -158,6 +159,7 @@ impl GetTaskResponse {
         Self {
             id: task.id.clone(),
             file_name: task.file_name.clone(),
+            file_url: None,
             total_document_pages: task.pages,
             pages_processed: task.pages_processed,
             status: task.status,
@@ -166,10 +168,15 @@ impl GetTaskResponse {
             pages: None,
         }
     }
-    pub fn new_with_pages(task: FileTaskClickhouse, pages: Vec<ChunkClickhouse>) -> Self {
+    pub fn new_with_pages(
+        task: FileTaskClickhouse,
+        pages: Vec<ChunkClickhouse>,
+        file_url: String,
+    ) -> Self {
         Self {
             id: task.id.clone(),
             file_name: task.file_name.clone(),
+            file_url: Some(file_url),
             total_document_pages: task.pages,
             pages_processed: task.pages_processed,
             status: task.status,

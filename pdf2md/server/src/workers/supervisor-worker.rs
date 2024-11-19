@@ -107,6 +107,8 @@ pub async fn chunk_pdf(
     mut redis_connection: redis::aio::MultiplexedConnection,
     clickhouse_client: clickhouse::Client,
 ) -> Result<(), ServiceError> {
+    let bucket = get_aws_bucket()?;
+
     let estimated_size = (task.upload_file_data.base64_file.len() * 3) / 4;
     let mut decoded_file_data = Vec::with_capacity(estimated_size);
     base64::prelude::BASE64_STANDARD
@@ -116,6 +118,17 @@ pub async fn chunk_pdf(
         )
         .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
 
+    bucket
+        .put_object(
+            format!("{}.pdf", task.task_id),
+            decoded_file_data.as_slice(),
+        )
+        .await
+        .map_err(|e| {
+            log::error!("Could not upload file to S3 {:?}", e);
+            ServiceError::BadRequest("Could not upload file to S3".to_string())
+        })?;
+
     let doc = lopdf::Document::load_mem(&decoded_file_data)
         .map_err(|e| ServiceError::BadRequest(format!("Could not load pdf: {}", e)))?;
 
@@ -124,7 +137,6 @@ pub async fn chunk_pdf(
     let pages_per_doc = 10;
     let num_docs = (max_page_num as f64 / pages_per_doc as f64).ceil() as u32;
 
-    let bucket = get_aws_bucket()?;
     let mut buffer = Vec::new();
 
     // Process each chunk
