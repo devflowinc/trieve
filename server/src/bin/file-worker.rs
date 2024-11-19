@@ -369,7 +369,7 @@ async fn upload_file(
         });
 
         let pdf2md_response = pdf2md_client
-            .post(format!("{}/api/task/create", pdf2md_url))
+            .post(format!("{}/api/task", pdf2md_url))
             .header("Content-Type", "application/json")
             .header("Authorization", &pdf2md_auth)
             .json(&json_value)

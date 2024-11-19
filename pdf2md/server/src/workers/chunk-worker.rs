@@ -116,7 +116,6 @@ pub async fn chunk_sub_pdf(
     let result = chunk_sub_pages(
         file_data,
         task.clone(),
-        task.page_range,
         &clickhouse_client,
         &redis_pool,
     )
