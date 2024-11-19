@@ -94,9 +94,7 @@ pub async fn create_file_query(
         .values(&new_file)
         .get_result(&mut conn)
         .await
-        .map_err(|err| {
-            ServiceError::BadRequest(format!("Could not create file {:?}", err))
-        })?;
+        .map_err(|err| ServiceError::BadRequest(format!("Could not create file {:?}", err)))?;
 
     Ok(created_file)
 }
@@ -108,7 +106,8 @@ pub fn preprocess_file_to_chunks(
 ) -> Result<Vec<String>, ServiceError> {
     let file_text = convert_html_to_text(&html_content);
 
-    let split_regex: Option<Regex> = upload_file_data.split_delimiters
+    let split_regex: Option<Regex> = upload_file_data
+        .split_delimiters
         .map(|delimiters| {
             build_chunking_regex(delimiters).map_err(|e| {
                 log::error!("Could not parse chunking delimiters {:?}", e);
@@ -141,7 +140,6 @@ pub async fn create_file_chunks(
     event_queue: web::Data<EventQueue>,
     mut redis_conn: MultiplexedConnection,
 ) -> Result<(), ServiceError> {
-
     let mut chunks: Vec<ChunkReqPayload> = [].to_vec();
 
     let name = format!("{}", upload_file_data.file_name);
