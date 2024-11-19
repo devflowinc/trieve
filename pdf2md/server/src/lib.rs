@@ -1,5 +1,8 @@
 use actix_web::{
-    get, middleware::Logger, web::{self, PayloadConfig}, App, HttpResponse, HttpServer
+    get,
+    middleware::Logger,
+    web::{self, PayloadConfig},
+    App, HttpResponse, HttpServer,
 };
 use chm::tools::migrations::{run_pending_migrations, SetupArgs};
 use errors::{custom_json_error_handler, ErrorResponseBody};
@@ -47,6 +50,7 @@ macro_rules! get_env {
         ENV_VAR.as_str()
     }};
 }
+
 #[macro_export]
 #[cfg(feature = "runtime-env")]
 macro_rules! get_env {
@@ -79,8 +83,7 @@ pub async fn main() -> std::io::Result<()> {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.0.0",
-    ), 
+        version = "0.0.0"), 
     modifiers(&SecurityAddon),
     tags(
         (name = "Task", description = "Task operations. Allow you to interact with tasks."),
@@ -166,27 +169,19 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(jinja_env))
             .app_data(web::Data::new(redis_pool.clone()))
             .app_data(web::Data::new(clickhouse_client.clone()))
-            .service(
-                utoipa_actix_web::scope("/api/task").configure(|config| {
-                    config.service(create_task).service(get_task);
-                }),
-            )
-            .service(
-                utoipa_actix_web::scope("/static").configure(|config| {
-                    config.service(jinja_templates::static_files);
-                }),
-            )
-            .service(
-                utoipa_actix_web::scope("/health").configure(|config| {
-                    config.service(health_check);
-                }),
-            )
+            .service(utoipa_actix_web::scope("/api/task").configure(|config| {
+                config.service(create_task).service(get_task);
+            }))
+            .service(utoipa_actix_web::scope("/static").configure(|config| {
+                config.service(jinja_templates::static_files);
+            }))
+            .service(utoipa_actix_web::scope("/health").configure(|config| {
+                config.service(health_check);
+            }))
             .openapi_service(|api| Redoc::with_url("/redoc", api))
-            .service(
-                utoipa_actix_web::scope("").configure(|config| {
-                    config.service(jinja_templates::public_page);
-                }),
-            )
+            .service(utoipa_actix_web::scope("").configure(|config| {
+                config.service(jinja_templates::public_page);
+            }))
             .into_app()
     })
     .bind(("127.0.0.1", 8081))?

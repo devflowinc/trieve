@@ -1,3 +1,4 @@
+use crate::models::RedisPool;
 use crate::{
     errors::ServiceError,
     get_env,
@@ -175,10 +176,11 @@ fn format_markdown(text: &str) -> String {
     formatted_markdown.into_owned()
 }
 
-pub async fn chunk_pdf(
+pub async fn chunk_sub_pages(
     data: Vec<u8>,
     task: ChunkingTask,
     clickhouse_client: &clickhouse::Client,
+    redis_pool: &RedisPool,
 ) -> Result<Vec<ChunkClickhouse>, ServiceError> {
     let pdf = PDF::from_bytes(data)
         .map_err(|_| ServiceError::BadRequest("Failed to open PDF file".to_string()))?;
@@ -202,7 +204,7 @@ pub async fn chunk_pdf(
         )
         .await?;
         prev_md_doc = Some(page.content.clone());
-        insert_page(task.clone(), page.clone(), clickhouse_client).await?;
+        insert_page(task.clone(), page.clone(), clickhouse_client, redis_pool).await?;
         log::info!("Page {} processed", page_num);
 
         result_pages.push(page);
