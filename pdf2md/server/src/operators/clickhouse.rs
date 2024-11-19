@@ -65,20 +65,19 @@ pub async fn insert_page(
     let prev_task = get_task(task.id, clickhouse_client).await?;
 
     log::info!(
-        "total_pages: {} pages processed: {}",
+        "processed {} of {} pages",
         total_pages_processed,
         prev_task.pages
     );
 
+    update_task_status(
+        task.id,
+        FileTaskStatus::ChunkingFile(total_pages_processed),
+        clickhouse_client,
+    )
+    .await?;
     if total_pages_processed >= prev_task.pages {
         update_task_status(task.id, FileTaskStatus::Completed, clickhouse_client).await?;
-    } else {
-        update_task_status(
-            task.id,
-            FileTaskStatus::ProcessingFile(total_pages_processed),
-            clickhouse_client,
-        )
-        .await?;
     }
 
     Ok(())

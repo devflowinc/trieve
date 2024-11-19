@@ -46,23 +46,31 @@ const displayTask = (task) => {
   const markdownContainer = document.getElementById("markdown-container");
   const taskId = markdownContainer.getAttribute("data-task-id");
   const taskStatus = markdownContainer.getAttribute("data-task-status");
-  const taskNumPages = markdownContainer.getAttribute("data-task-num-pages");
+  const taskNumPagesProcessed = markdownContainer.getAttribute(
+    "data-task-pages-processed"
+  );
   if (
     taskId === task.id &&
     taskStatus === task.status &&
-    taskNumPages === task.num_pages.toString()
+    taskNumPagesProcessed === task.pages_processed.toString()
   ) {
     console.log("Task already displayed", task.id);
     return;
   }
+
+  const pages = task.pages;
+  if (!pages) {
+    return;
+  }
+  const sortedPages = pages.sort((a, b) => a.metadata.page - b.metadata.page);
 
   PDFObject.embed(task.file_url, "#my-pdf", {
     pdfOpenParams: {
       view: "FitH",
     },
   });
-  const pages = task.pages;
-  const sortedPages = pages.sort((a, b) => a.metadata.page - b.metadata.page);
+  const resultContainer = document.getElementById("result-container");
+  resultContainer.classList.add(...["border", "border-gray-900"]);
 
   while (markdownContainer.firstChild) {
     markdownContainer.removeChild(markdownContainer.firstChild);
@@ -70,7 +78,10 @@ const displayTask = (task) => {
 
   markdownContainer.setAttribute("data-task-id", task.id);
   markdownContainer.setAttribute("data-task-status", task.status);
-  markdownContainer.setAttribute("data-task-num-pages", task.num_pages);
+  markdownContainer.setAttribute(
+    "data-task-pages-processed",
+    task.pages_processed
+  );
 
   sortedPages.forEach((page) => {
     const pageContainer = document.createElement("div");
@@ -87,6 +98,49 @@ const displayTask = (task) => {
     pageContainer.innerText =
       "Your file is being converted. We are pinging the server every 5 seconds to check for status updates. Please be patient!";
     markdownContainer.appendChild(pageContainer);
+  }
+};
+
+const getTaskPages = async (taskId, taskIdToDisplay) => {
+  try {
+    let paginationToken = "";
+    let task = null;
+    let pages = [];
+    while (true) {
+      const resp = await fetch(
+        `/api/task/${taskId}${
+          paginationToken ? `?pagination_token=${paginationToken}` : ""
+        }`,
+        {
+          headers: {
+            Authorization: window.TRIEVE_API_KEY,
+          },
+        }
+      );
+      const taskWithPages = await resp.json();
+      task = taskWithPages;
+      pages.push(...taskWithPages.pages);
+      paginationToken = taskWithPages.pagination_token;
+      if (!paginationToken) {
+        break;
+      }
+    }
+
+    pages = pages.sort((a, b) => a.metadata.page - b.metadata.page);
+    console.log("final pages", taskId, pages);
+    task.pages = pages;
+    upsertTaskToStorage(task);
+    if (taskIdToDisplay === taskId) {
+      displayTask(task);
+    }
+  } catch (e) {
+    console.error(e);
+    Notyf.error({
+      message: `Error fetching task pages. Please try again later. ${e}`,
+      dismissable: true,
+      type: "error",
+      position: { x: "center", y: "top" },
+    });
   }
 };
 
@@ -188,6 +242,8 @@ updateTaskStatusTable();
 
 const refreshTasks = () => {
   const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+  const url = new URL(window.location);
+  const taskIdToDisplay = url.searchParams.get("taskId");
   tasks.forEach((task) => {
     if (
       task.status.toLowerCase() === "completed" &&
@@ -197,26 +253,7 @@ const refreshTasks = () => {
       return;
     }
 
-    fetch(`/api/task/${task.id}`, {
-      headers: {
-        Authorization: window.TRIEVE_API_KEY,
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        upsertTaskToStorage(data);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  });
-
-  const url = new URL(window.location);
-  const taskId = url.searchParams.get("taskId");
-  tasks.forEach((task) => {
-    if (task.id === taskId) {
-      displayTask(task);
-    }
+    getTaskPages(task.id, taskIdToDisplay);
   });
 };
 
@@ -226,19 +263,7 @@ const setActiveTaskFromUrl = () => {
   const url = new URL(window.location);
   const taskId = url.searchParams.get("taskId");
   if (taskId) {
-    fetch(`/api/task/${taskId}`, {
-      headers: {
-        Authorization: window.TRIEVE_API_KEY,
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        upsertTaskToStorage(data);
-        displayTask(data);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+    getTaskPages(taskId, taskId);
   }
 };
 
