@@ -1,3 +1,33 @@
+const defaultTableRowStr = `
+    <td
+      class="task-id whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0"
+    >
+      Lindsay Walton
+    </td>
+    <td
+      class="task-file-name whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+    >
+      Front-end Developer
+    </td>
+    <td
+      class="task-status whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+    >
+      lindsay.walton@example.com
+    </td>
+    <td
+      class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0"
+    >
+      <button
+        href="#"
+        class="task-view-button text-magenta-600 hover:text-magenta-900"
+      >
+        View
+      </button>
+    </td>
+`;
+const defaultTableRow = document.createElement("tr");
+defaultTableRow.innerHTML = defaultTableRowStr;
+
 const upsertTaskToStorage = (task) => {
   const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
   const filteredTasks = tasks.filter((t) => t.id !== task.id);
@@ -53,11 +83,24 @@ const updateTaskStatusTable = () => {
   const firstRow = tbody.querySelector("tr");
   tbody.innerHTML = "";
   const htmlRows = tasks.map((task) => {
-    const row = firstRow.cloneNode(true);
+    const row = firstRow
+      ? firstRow.cloneNode(true)
+      : defaultTableRow.cloneNode(true);
     row.querySelector(".task-id").innerText = task.id;
     row.querySelector(".task-file-name").innerText = task.file_name;
     row.querySelector(".task-status").innerText = task.status;
     row.querySelector(".task-status").classList.add(`status-${task.status}`);
+    row.querySelector("button").addEventListener("click", () => {
+      const url = new URL(window.location);
+      url.searchParams.set("taskId", task.id);
+      window.history.pushState({}, "", url);
+
+      document.dispatchEvent(
+        new CustomEvent("open-pdf", {
+          detail: { pdfUrl: task.file_url },
+        })
+      );
+    });
     return row;
   });
   htmlRows.forEach((row) => tbody.appendChild(row));
