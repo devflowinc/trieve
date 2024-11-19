@@ -2,8 +2,8 @@ use chm::tools::migrations::{run_pending_migrations, SetupArgs};
 use pdf2md_server::{
     errors::ServiceError,
     get_env,
-    models::ChunkingTask,
-    operators::{pdf_chunk::chunk_pdf, redis::listen_to_redis, s3::get_aws_bucket},
+    models::{ChunkingTask, RedisPool},
+    operators::{pdf_chunk::chunk_sub_pages, redis::listen_to_redis, s3::get_aws_bucket},
     process_task_with_retry,
 };
 use signal_hook::consts::SIGTERM;
@@ -92,7 +92,7 @@ async fn main() {
         redis_connection,
         &clickhouse_client.clone(),
         "files_to_chunk",
-        |task| chunk_sub_pdf(task, clickhouse_client.clone()),
+        |task| chunk_sub_pdf(task, clickhouse_client.clone(), redis_pool.clone()),
         ChunkingTask
     );
 }
@@ -100,6 +100,7 @@ async fn main() {
 pub async fn chunk_sub_pdf(
     task: ChunkingTask,
     clickhouse_client: clickhouse::Client,
+    redis_pool: RedisPool,
 ) -> Result<(), pdf2md_server::errors::ServiceError> {
     let bucket = get_aws_bucket()?;
     let file_data = bucket
@@ -112,7 +113,15 @@ pub async fn chunk_sub_pdf(
         .as_slice()
         .to_vec();
 
-    let result = chunk_pdf(file_data, task.clone(), &clickhouse_client).await?;
+    let result = chunk_sub_pages(
+        file_data,
+        task.clone(),
+        task.page_range,
+        &clickhouse_client,
+        &redis_pool,
+    )
+    .await?;
+
     log::info!("Got {} pages for {:?}", result.len(), task.task_id);
 
     Ok(())
