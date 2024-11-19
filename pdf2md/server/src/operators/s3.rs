@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use s3::{creds::Credentials, Bucket, Region};
 
 use crate::{errors::ServiceError, get_env};
@@ -37,10 +39,18 @@ pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
 }
 
 pub async fn get_signed_url(bucket: &Bucket, key: &str) -> Result<String, ServiceError> {
-    let url = bucket.presign_get(key, 3600, None).await.map_err(|e| {
-        log::error!("Could not get signed url {:?}", e);
-        ServiceError::BadRequest("Could not get signed url".to_string())
-    })?;
+    let mut custom_queries: HashMap<String, String> = HashMap::new();
+    custom_queries.insert("response-content-disposition".into(), "inline".into());
+    custom_queries.insert("response-content-type".into(), "application/pdf".into());
+    custom_queries.insert("response-content-encoding".into(), "utf-8".into());
+
+    let url = bucket
+        .presign_get(key, 3600, Some(custom_queries))
+        .await
+        .map_err(|e| {
+            log::error!("Could not get signed url {:?}", e);
+            ServiceError::BadRequest("Could not get signed url".to_string())
+        })?;
 
     Ok(url)
 }

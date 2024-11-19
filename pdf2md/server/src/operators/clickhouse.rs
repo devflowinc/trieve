@@ -159,8 +159,6 @@ pub async fn get_task_pages(
     if FileTaskStatus::from(task.status.clone()) == FileTaskStatus::Completed || task.pages > 0 {
         let limit = limit.unwrap_or(20);
 
-        log::info!("offset id {:?}", offset_id);
-
         let pages: Vec<ChunkClickhouse> = clickhouse_client
             .query(
                 "SELECT ?fields FROM file_chunks WHERE task_id = ? AND id > ? ORDER BY id LIMIT ?",
