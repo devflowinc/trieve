@@ -143,7 +143,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.12.0",
+        version = "0.12.1",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -167,6 +167,7 @@ impl Modify for SecurityAddon {
         handlers::topic_handler::clone_topic,
         handlers::topic_handler::get_all_topics_for_owner_id,
         handlers::message_handler::create_message,
+        handlers::message_handler::get_message_by_id,
         handlers::message_handler::get_all_topic_messages,
         handlers::message_handler::edit_message,
         handlers::message_handler::regenerate_message,
@@ -920,6 +921,10 @@ pub fn main() -> std::io::Result<()> {
                                     web::delete()
                                         .to(handlers::message_handler::regenerate_message),
                                 ),
+                        )
+                        .service(
+                            web::resource("/message/{message_id}")
+                                .route(web::get().to(handlers::message_handler::get_message_by_id))
                         )
                         .service(
                             web::resource("/messages/{messages_topic_id}").route(

@@ -44,7 +44,7 @@ pub struct ChatCompletionDTO {
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn get_topic_messages(
+pub async fn get_topic_messages_query(
     messages_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
@@ -67,6 +67,32 @@ pub async fn get_topic_messages(
         })?;
 
     Ok(topic_messages)
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn get_message_by_id_query(
+    message_id: uuid::Uuid,
+    given_dataset_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<Message, ServiceError> {
+    use crate::data::schema::messages::dsl as messages_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    let message = messages_columns::messages
+        .filter(messages_columns::id.eq(message_id))
+        .filter(messages_columns::dataset_id.eq(given_dataset_id))
+        .filter(messages_columns::deleted.eq(false))
+        .first::<Message>(&mut conn)
+        .await
+        .map_err(|db_error| {
+            log::error!("Error getting message by id {:?}", db_error);
+            ServiceError::BadRequest("Error getting message by id".to_string())
+        })?;
+
+    Ok(message)
 }
 
 #[tracing::instrument(skip(pool))]

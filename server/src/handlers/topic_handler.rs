@@ -3,7 +3,7 @@ use crate::{
     errors::ServiceError,
     handlers::auth_handler::AdminOnly,
     operators::{
-        message_operator::{create_messages_query, get_topic_messages, get_topic_string},
+        message_operator::{create_messages_query, get_topic_messages_query, get_topic_string},
         topic_operator::{
             create_topic_query, delete_topic_query, get_all_topics_for_owner_id_query,
             get_topic_query, update_topic_query,
@@ -139,7 +139,7 @@ pub async fn clone_topic(
     create_topic_query(new_topic.clone(), &pool).await?;
 
     let mut old_messages =
-        get_topic_messages(original_topic.id, dataset_org_plan_sub.dataset.id, &pool).await?;
+        get_topic_messages_query(original_topic.id, dataset_org_plan_sub.dataset.id, &pool).await?;
 
     old_messages.iter_mut().for_each(|message| {
         message.topic_id = new_topic.id;

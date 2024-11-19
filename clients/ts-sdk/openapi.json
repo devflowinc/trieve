@@ -12,7 +12,7 @@
       "name": "BSL",
       "url": "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt"
     },
-    "version": "0.12.0"
+    "version": "0.12.1"
   },
   "servers": [
     {
@@ -1426,7 +1426,7 @@
           "Chunk"
         ],
         "summary": "Split HTML Content into Chunks",
-        "description": "This endpoint receives a single html string and splits it into chunks based on the headings and\nbody content. The headings are split based on headding html tags. chunk_html has a maximum size\nof 256Kb.",
+        "description": "This endpoint receives a single html string and splits it into chunks based on the headings and\nbody content. The headings are split based on heading html tags. chunk_html has a maximum size\nof 256Kb.",
         "operationId": "split_html_content",
         "requestBody": {
           "description": "JSON request payload to perform RAG on some chunks (chunks)",
@@ -4648,7 +4648,7 @@
         "security": [
           {
             "ApiKey": [
-              "readonly"
+              "admin"
             ]
           }
         ]
@@ -4710,7 +4710,7 @@
         "security": [
           {
             "ApiKey": [
-              "readonly"
+              "admin"
             ]
           }
         ]
@@ -4780,7 +4780,7 @@
         "security": [
           {
             "ApiKey": [
-              "readonly"
+              "admin"
             ]
           }
         ]
@@ -4849,7 +4849,68 @@
         "security": [
           {
             "ApiKey": [
-              "readonly"
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/message/{message_id}": {
+      "get": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Get a message by its ID",
+        "description": "Quickly get the full object for a given message. From the message, you can get the topic and all messages which exist on that topic.",
+        "operationId": "get_message_by_id",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "path",
+            "description": "The ID of the message to get.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message with the given ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting the message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
             ]
           }
         ]
@@ -4861,7 +4922,7 @@
           "Message"
         ],
         "summary": "Get all messages for a given topic",
-        "description": "Get all messages for a given topic. If the topic is a RAG topic then the response will include Chunks first on each message. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.",
+        "description": "If the topic is a RAG topic then the response will include Chunks first on each message. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.",
         "operationId": "get_all_topic_messages",
         "parameters": [
           {
@@ -13599,7 +13660,7 @@
           },
           "group_size": {
             "type": "integer",
-            "format": "int32",
+            "format": "int64",
             "description": "Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.",
             "nullable": true,
             "minimum": 0
@@ -13646,6 +13707,14 @@
           "slim_chunks": {
             "type": "boolean",
             "description": "Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.",
+            "nullable": true
+          },
+          "sort_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SortOptions"
+              }
+            ],
             "nullable": true
           },
           "typo_options": {
@@ -15489,6 +15558,11 @@
             "type": "string",
             "description": "Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.",
             "nullable": true
+          },
+          "use_pdf2md_ocr": {
+            "type": "boolean",
+            "description": "Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o.\nDefault is false.",
+            "nullable": true
           }
         },
         "example": {
@@ -15512,7 +15586,8 @@
             "tag2"
           ],
           "target_splits_per_chunk": 20,
-          "time_stamp": "2021-01-01 00:00:00.000Z"
+          "time_stamp": "2021-01-01 00:00:00.000Z",
+          "use_pdf2md_ocr": false
         }
       },
       "UploadFileResult": {
