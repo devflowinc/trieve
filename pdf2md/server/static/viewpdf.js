@@ -5,8 +5,8 @@ let currentPage = 1;
 let totalPages;
 let pdf;
 
-async function loadPDF() {
-  const loadingTask = pdfjsLib.getDocument(window.pdf_url);
+async function loadPDF(pdfUrl) {
+  const loadingTask = pdfjsLib.getDocument(pdfUrl);
   pdf = await loadingTask.promise;
   totalPages = pdf.numPages;
   renderPage(currentPage);
@@ -63,5 +63,6 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// Initial load
-loadPDF();
+document.addEventListener("open-pdf", (e) => {
+  loadPDF(e.detail.pdfUrl);
+});

@@ -44,7 +44,7 @@ async fn create_task(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     let task = FileTask {
-        task_id: clickhouse_task.id.parse().unwrap(),
+        id: clickhouse_task.id.parse().unwrap(),
         file_name: clickhouse_task.file_name,
         upload_file_data: req.into_inner(),
         attempt_number: 0,
@@ -66,7 +66,7 @@ async fn create_task(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::Ok().json(CreateFileTaskResponse {
-        task_id: task.task_id,
+        id: task.id,
         file_name: task.file_name,
         status: FileTaskStatus::Created,
         pos_in_queue,

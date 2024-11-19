@@ -115,10 +115,7 @@ pub async fn chunk_pdf(
         .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
 
     bucket
-        .put_object(
-            format!("{}.pdf", task.task_id),
-            decoded_file_data.as_slice(),
-        )
+        .put_object(format!("{}.pdf", task.id), decoded_file_data.as_slice())
         .await
         .map_err(|e| {
             log::error!("Could not upload file to S3 {:?}", e);
@@ -140,7 +137,7 @@ pub async fn chunk_pdf(
         let start_page = i * pages_per_doc + 1;
         let end_page = std::cmp::min((i + 1) * pages_per_doc, max_page_num);
 
-        // Split the document
+        // Split the documentid
         let mut split_doc = split_pdf(doc.clone(), start_page, end_page)
             .map_err(|e| ServiceError::BadRequest(format!("Failed to split PDF: {}", e)))?;
 
@@ -152,7 +149,7 @@ pub async fn chunk_pdf(
             .save_to(&mut buffer)
             .map_err(|_e| ServiceError::BadRequest("Could not save pdf to buffer".to_string()))?;
 
-        let file_name = format!("{}part{}.pdf", task.task_id, i + 1);
+        let file_name = format!("{}part{}.pdf", task.id, i + 1);
         bucket
             .put_object(file_name.clone(), buffer.as_slice())
             .await
@@ -162,7 +159,7 @@ pub async fn chunk_pdf(
             })?;
 
         let chunking_task = serde_json::to_string(&models::ChunkingTask {
-            task_id: task.task_id,
+            id: task.id,
             file_name,
             page_range: (start_page, end_page),
             model_params: task.upload_file_data.clone().into(),
@@ -181,7 +178,7 @@ pub async fn chunk_pdf(
     }
 
     update_task_status(
-        task.task_id,
+        task.id,
         FileTaskStatus::ProcessingFile(num_docs * pages_per_doc),
         &clickhouse_client,
     )

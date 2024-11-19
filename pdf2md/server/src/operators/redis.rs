@@ -21,7 +21,7 @@ macro_rules! process_task_with_retry {
 
             match task {
                 Some(task) => {
-                    log::info!("Processing task: {:?}", task.task_id);
+                    log::info!("Processing task: {:?}", task.id);
                     let result = $process_fn(task.clone()).await;
 
                     if let Err(err) = result {

@@ -159,7 +159,7 @@ async fn get_pages_from_image(
 
     Ok(ChunkClickhouse {
         id: uuid::Uuid::new_v4().to_string(),
-        task_id: task.task_id.to_string().clone(),
+        task_id: task.id.to_string().clone(),
         content: format_markdown(&content),
         metadata: metadata.to_string(),
         created_at: OffsetDateTime::now_utc(),
