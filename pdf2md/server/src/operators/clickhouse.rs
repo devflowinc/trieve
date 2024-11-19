@@ -1,6 +1,9 @@
 use crate::{
     errors::ServiceError,
-    models::{ChunkClickhouse, ChunkingTask, FileTaskClickhouse, FileTaskStatus, RedisPool},
+    models::{
+        ChunkClickhouse, ChunkingTask, FileTaskClickhouse, FileTaskStatus, RedisPool,
+        WebhookPayloadData,
+    },
 };
 
 pub async fn insert_task(
@@ -30,7 +33,7 @@ pub async fn insert_page(
     page: ChunkClickhouse,
     clickhouse_client: &clickhouse::Client,
     redis_pool: &RedisPool,
-) -> Result<(), ServiceError> {
+) -> Result<WebhookPayloadData, ServiceError> {
     let mut page_inserter = clickhouse_client.insert("file_chunks").map_err(|e| {
         log::error!("Error getting page_inserter: {:?}", e);
         ServiceError::InternalServerError(format!("Error getting page_inserter: {:?}", e))
@@ -70,24 +73,25 @@ pub async fn insert_page(
         prev_task.pages
     );
 
-    update_task_status(
-        task.id,
-        FileTaskStatus::ChunkingFile(total_pages_processed),
-        clickhouse_client,
-    )
-    .await?;
-    if total_pages_processed >= prev_task.pages {
-        update_task_status(task.id, FileTaskStatus::Completed, clickhouse_client).await?;
-    }
+    let task = if total_pages_processed >= prev_task.pages {
+        update_task_status(task.id, FileTaskStatus::Completed, clickhouse_client).await?
+    } else {
+        update_task_status(
+            task.id,
+            FileTaskStatus::ChunkingFile(total_pages_processed),
+            clickhouse_client,
+        )
+        .await?
+    };
 
-    Ok(())
+    Ok(WebhookPayloadData::from_tasks(task, page))
 }
 
 pub async fn update_task_status(
     task_id: uuid::Uuid,
     status: FileTaskStatus,
     clickhouse_client: &clickhouse::Client,
-) -> Result<(), ServiceError> {
+) -> Result<FileTaskClickhouse, ServiceError> {
     let query = match status {
         FileTaskStatus::ProcessingFile(pages) => {
             format!(
@@ -129,7 +133,15 @@ pub async fn update_task_status(
             ServiceError::BadRequest("Failed to update task status".to_string())
         })?;
 
-    Ok(())
+    clickhouse_client
+        .query("SELECT ?fields FROM file_tasks WHERE id = ?")
+        .bind(task_id)
+        .fetch_one()
+        .await
+        .map_err(|err| {
+            log::error!("Failed to get task {:?}", err);
+            ServiceError::BadRequest("Failed to get task".to_string())
+        })
 }
 
 pub async fn get_task(

@@ -38,7 +38,7 @@ pub struct ChunkingTask {
     pub id: uuid::Uuid,
     pub file_name: String,
     pub page_range: (u32, u32),
-    pub model_params: ModelParams,
+    pub params: ChunkingParams,
     pub attempt_number: u8,
 }
 
@@ -74,21 +74,63 @@ pub struct UploadFileReqPayload {
     pub llm_api_key: Option<String>,
     /// The System prompt that will be used for the conversion of the file.
     pub system_prompt: Option<String>,
+    /// Optional webhook URL to receive notifications for each page processed.
+    pub webhook_url: Option<String>,
+    /// Optional webhook payload template with placeholder values.
+    /// Supports the following template variables:
+    /// - {{status}} : Current status of the processing
+    /// - {{file_name}} : Original file name
+    /// - {{result}} : Processing result/output
+    /// - {{error}} : Error message if any
+    ///   Example: {"status": "{{status}}", "data": {"output": "{{result}}"}}
+    ///   If not provided, the default template will be used.
+    pub webhook_payload_template: Option<String>,
+}
+
+#[derive(Debug)]
+pub struct WebhookPayloadData {
+    pub task_id: String,
+    pub file_name: String,
+    pub pages: u32,
+    pub pages_processed: u32,
+    pub content: String,
+    pub metadata: String,
+    pub status: String,
+    pub timestamp: String,
+}
+
+impl WebhookPayloadData {
+    pub fn from_tasks(task: FileTaskClickhouse, page: ChunkClickhouse) -> Self {
+        Self {
+            task_id: task.id.clone(),
+            file_name: task.id.clone(),
+            pages: task.pages,
+            pages_processed: task.pages_processed,
+            content: page.content.clone(),
+            metadata: page.metadata.clone(),
+            status: task.status,
+            timestamp: task.created_at.to_string(),
+        }
+    }
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
-pub struct ModelParams {
+pub struct ChunkingParams {
     pub llm_model: Option<String>,
     pub llm_api_key: Option<String>,
     pub system_prompt: Option<String>,
+    pub webhook_url: Option<String>,
+    pub webhook_payload_template: Option<String>,
 }
 
-impl From<UploadFileReqPayload> for ModelParams {
+impl From<UploadFileReqPayload> for ChunkingParams {
     fn from(payload: UploadFileReqPayload) -> Self {
         Self {
             llm_model: payload.llm_model,
             llm_api_key: payload.llm_api_key,
             system_prompt: payload.system_prompt,
+            webhook_url: payload.webhook_url,
+            webhook_payload_template: payload.webhook_payload_template,
         }
     }
 }
