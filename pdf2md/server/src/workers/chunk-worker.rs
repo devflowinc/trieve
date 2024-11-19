@@ -112,7 +112,7 @@ pub async fn chunk_sub_pdf(
         .as_slice()
         .to_vec();
 
-    let result = chunk_pdf(file_data, task.clone(), task.page_range, &clickhouse_client).await?;
+    let result = chunk_pdf(file_data, task.clone(), &clickhouse_client).await?;
     log::info!("Got {} pages for {:?}", result.len(), task.task_id);
 
     Ok(())

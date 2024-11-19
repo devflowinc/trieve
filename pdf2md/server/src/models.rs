@@ -37,6 +37,7 @@ pub struct ChunkingTask {
     pub task_id: uuid::Uuid,
     pub file_name: String,
     pub page_range: (u32, u32),
+    pub model_params: ModelParams,
     pub attempt_number: u8,
 }
 
@@ -63,6 +64,29 @@ pub struct CreateFileTaskResponse {
 pub struct UploadFileReqPayload {
     /// Base64 encoded file. This is the standard base64 encoding.
     pub base64_file: String,
+    /// The name of the llm model to use for the task. If not provided, the default model will be used. We support all models from (OpenRouter)[https://openrouter.ai/models]
+    pub llm_model: Option<String>,
+    /// The API key to use for the llm being used.
+    pub llm_api_key: Option<String>,
+    /// The System prompt that will be used for the conversion of the file.
+    pub system_prompt: Option<String>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+pub struct ModelParams {
+    pub llm_model: Option<String>,
+    pub llm_api_key: Option<String>,
+    pub system_prompt: Option<String>,
+}
+
+impl From<UploadFileReqPayload> for ModelParams {
+    fn from(payload: UploadFileReqPayload) -> Self {
+        Self {
+            llm_model: payload.llm_model,
+            llm_api_key: payload.llm_api_key,
+            system_prompt: payload.system_prompt,
+        }
+    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, clickhouse::Row, Clone)]
