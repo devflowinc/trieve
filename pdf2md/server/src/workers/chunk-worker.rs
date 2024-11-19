@@ -1,4 +1,4 @@
-use chm::tools::migrations::{run_pending_migrations, SetupArgs};
+use chm::tools::migrations::SetupArgs;
 use pdf2md_server::{
     errors::ServiceError,
     get_env,
@@ -51,10 +51,6 @@ async fn main() {
         .with_database(args.database.as_ref().unwrap())
         .with_option("async_insert", "1")
         .with_option("wait_for_async_insert", "0");
-
-    let _ = run_pending_migrations(args.clone()).await.map_err(|err| {
-        log::error!("Failed to run clickhouse migrations: {:?}", err);
-    });
 
     let should_terminate = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
