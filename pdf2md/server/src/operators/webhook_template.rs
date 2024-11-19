@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
-use crate::{
-    errors::ServiceError,
-    models::WebhookPayloadData,
-};
+use crate::{errors::ServiceError, models::WebhookPayloadData};
 
 pub async fn send_webhook(
     webhook_url: Option<String>,
@@ -52,23 +49,24 @@ pub fn render_webhook_payload(
     replacements.insert("task_id", data.task_id.to_string());
     replacements.insert("file_name", data.file_name.to_string());
     replacements.insert("pages", data.pages.to_string());
+    replacements.insert("page_num", data.page_num.to_string());
     replacements.insert("pages_processed", data.pages_processed.to_string());
     replacements.insert("content", data.content.to_string());
     replacements.insert("status", data.status.to_string());
     replacements.insert("timestamp", data.timestamp.to_string());
 
-    let metadata_value = if let Ok(parsed) = serde_json::from_str::<Value>(&data.metadata) {
+    let metadata_value = if let Ok(parsed) = serde_json::from_str::<Value>(&data.usage) {
         serde_json::to_string(&parsed)
             .map_err(|e| ServiceError::BadRequest(format!("Invalid JSON in metadata: {}", e)))?
     } else {
-        serde_json::to_string(&data.metadata)
+        serde_json::to_string(&data.usage)
             .map_err(|e| ServiceError::BadRequest(format!("Invalid JSON in metadata: {}", e)))?
     };
     replacements.insert("metadata", metadata_value);
 
     let mut processed = template.clone();
     for (key, value) in &replacements {
-        if ["pages", "pages_processed"].contains(key) {
+        if ["pages", "pages_processed", "page_num"].contains(key) {
             processed = processed.replace(&format!("\"{{{{{}}}}}\"", key), value);
             processed = processed.replace(&format!("{{{{{}}}}}", key), value);
         } else {
@@ -107,6 +105,7 @@ mod tests {
                 "metadata": {{metadata}},
                 "content": "{{content}}",
                 "status": "{{status}}",
+                "page_num": "{{page_num}}",
                 "timestamp": "{{timestamp}}"
             }"#
                 .to_string(),
@@ -122,7 +121,8 @@ mod tests {
             pages: 10,
             pages_processed: 7,
             content: "Sample content".to_string(),
-            metadata: r#"{"author": "John Doe", "created": "2024-01-01"}"#.to_string(),
+            page_num: 3,
+            usage: r#"{"author": "John Doe", "created": "2024-01-01"}"#.to_string(),
             status: "processing".to_string(),
             timestamp: OffsetDateTime::now_utc().to_string(),
         };
@@ -163,7 +163,8 @@ mod tests {
             pages: 10,
             pages_processed: 7,
             content: "Sample content".to_string(),
-            metadata: "Invalid JSON".to_string(), // Not valid JSON
+            page_num: 3,
+            usage: "Invalid JSON".to_string(), // Not valid JSON
             status: "processing".to_string(),
             timestamp: OffsetDateTime::now_utc().to_string(),
         };

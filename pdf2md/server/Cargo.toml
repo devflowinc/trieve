@@ -36,7 +36,6 @@ actix-cors = "0.7.0"
 reqwest = "0.12.9"
 clickhouse = { version = "0.13.1", features = ["time"] }
 chm = "0.1.17"
-lopdf = "0.34.0"
 base64 = "0.22.1"
 pdf2image = "0.1.2"
 image = "0.25.5"

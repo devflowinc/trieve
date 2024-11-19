@@ -1,6 +1,6 @@
 use base64::Engine;
 use chm::tools::migrations::SetupArgs;
-use lopdf::{Document, Object, ObjectId};
+use pdf2image::PDF;
 use pdf2md_server::{
     errors::ServiceError,
     get_env,
@@ -10,7 +10,7 @@ use pdf2md_server::{
 };
 use signal_hook::consts::SIGTERM;
 use std::{
-    collections::BTreeMap,
+    io::Cursor,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -122,37 +122,24 @@ pub async fn chunk_pdf(
             ServiceError::BadRequest("Could not upload file to S3".to_string())
         })?;
 
-    let doc = lopdf::Document::load_mem(&decoded_file_data)
-        .map_err(|e| ServiceError::BadRequest(format!("Could not load pdf: {}", e)))?;
+    let pdf = PDF::from_bytes(decoded_file_data)
+        .map_err(|err| ServiceError::BadRequest(format!("Failed to open PDF file {:?}", err)))?;
 
-    let all_pages = doc.get_pages();
-    let offset = *all_pages.keys().next().unwrap_or(&0);
-    let max_page_num = *all_pages.keys().last().unwrap_or(&0);
-    let pages_per_doc = 10;
-    let num_docs = (max_page_num as f64 / pages_per_doc as f64).ceil() as u32;
-
-    let mut buffer = Vec::new();
+    let pages = pdf
+        .render(pdf2image::Pages::All, None)
+        .map_err(|err| ServiceError::BadRequest(format!("Failed to render PDF file {:?}", err)))?;
+    let num_pages = pages.len();
 
     // Process each chunk
-    for i in 0..num_docs {
-        let start_page = i * pages_per_doc + offset;
-        let end_page = std::cmp::min((i + 1) * pages_per_doc, max_page_num) + offset;
-
-        // Split the documentid
-        let mut split_doc = split_pdf(doc.clone(), start_page, end_page)
-            .map_err(|e| ServiceError::BadRequest(format!("Failed to split PDF: {}", e)))?;
-
-        // Clear and reuse buffer
-        buffer.clear();
-
-        // Save to reused buffer
-        split_doc
-            .save_to(&mut buffer)
-            .map_err(|_e| ServiceError::BadRequest("Could not save pdf to buffer".to_string()))?;
-
-        let file_name = format!("{}part{}.pdf", task.id, i + 1);
+    for (i, page) in pages.into_iter().enumerate() {
+        let file_name = format!("{}page{}.jpeg", task.id, i + 1);
+        let mut buffer = Vec::new();
+        page.write_to(&mut Cursor::new(&mut buffer), image::ImageFormat::Jpeg)
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Failed to render PDF file {:?}", err))
+            })?;
         bucket
-            .put_object(file_name.clone(), buffer.as_slice())
+            .put_object(file_name.clone(), &buffer)
             .await
             .map_err(|e| {
                 log::error!("Could not upload file to S3 {:?}", e);
@@ -162,7 +149,7 @@ pub async fn chunk_pdf(
         let chunking_task = serde_json::to_string(&models::ChunkingTask {
             id: task.id,
             file_name,
-            page_range: (start_page, end_page),
+            page_num: (i + 1) as u32,
             params: task.upload_file_data.clone().into(),
             attempt_number: 0,
         })
@@ -175,126 +162,15 @@ pub async fn chunk_pdf(
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-        log::info!("Uploaded part {} of {} to S3", i + 1, num_docs);
+        log::info!("Uploaded page {} of {} to S3", i + 1, num_pages);
     }
 
     update_task_status(
         task.id,
-        FileTaskStatus::ProcessingFile(max_page_num),
+        FileTaskStatus::ProcessingFile(num_pages as u32),
         &clickhouse_client,
     )
     .await?;
 
     Ok(())
-}
-
-pub fn split_pdf(doc: Document, start_page: u32, end_page: u32) -> Result<Document, String> {
-    let mut new_document = Document::with_version(doc.version.clone());
-    let page_numbers_to_keep: Vec<u32> = (start_page..end_page).collect();
-
-    // Get mapping of page numbers to object IDs
-    let page_map = doc.get_pages();
-
-    // Collect only the pages we want to keep
-    let mut documents_pages = BTreeMap::new();
-    let mut documents_objects = BTreeMap::new();
-
-    // Filter and collect pages we want to keep
-    for page_num in page_numbers_to_keep {
-        log::info!("Processing page {}", page_num);
-        if let Some(&object_id) = page_map.get(&page_num) {
-            if let Ok(page_object) = doc.get_object(object_id) {
-                documents_pages.insert(object_id, page_object.clone());
-            }
-        }
-    }
-
-    // Collect all objects from original document
-    documents_objects.extend(doc.objects.clone());
-
-    // "Catalog" and "Pages" are mandatory
-    let mut catalog_object: Option<(ObjectId, Object)> = None;
-    let mut pages_object: Option<(ObjectId, Object)> = None;
-
-    // Process all objects except "Page" type
-    for (object_id, object) in documents_objects.iter() {
-        match object.type_name().unwrap_or("") {
-            "Catalog" => {
-                catalog_object = Some((
-                    if let Some((id, _)) = catalog_object {
-                        id
-                    } else {
-                        *object_id
-                    },
-                    object.clone(),
-                ));
-            }
-            "Pages" => {
-                if let Ok(dictionary) = object.as_dict() {
-                    pages_object = Some((
-                        if let Some((id, _)) = pages_object {
-                            id
-                        } else {
-                            *object_id
-                        },
-                        Object::Dictionary(dictionary.clone()),
-                    ));
-                }
-            }
-            "Page" => {} // Handled separately
-            _ => {
-                // Copy other necessary objects (resources, fonts, etc.)
-                new_document.objects.insert(*object_id, object.clone());
-            }
-        }
-    }
-
-    // If no "Pages" object found, abort
-    let pages_object = pages_object.ok_or_else(|| "Pages root not found".to_string())?;
-    let catalog_object = catalog_object.ok_or_else(|| "Catalog root not found".to_string())?;
-
-    // Add pages to new document
-    for (object_id, object) in documents_pages.iter() {
-        if let Ok(dictionary) = object.as_dict() {
-            let mut dictionary = dictionary.clone();
-            dictionary.set("Parent", pages_object.0);
-            new_document
-                .objects
-                .insert(*object_id, Object::Dictionary(dictionary));
-        }
-    }
-
-    // Build new "Pages" object
-    if let Ok(dictionary) = pages_object.1.as_dict() {
-        let mut dictionary = dictionary.clone();
-        dictionary.set("Count", documents_pages.len() as u32);
-        dictionary.set(
-            "Kids",
-            documents_pages
-                .into_keys()
-                .map(Object::Reference)
-                .collect::<Vec<_>>(),
-        );
-        new_document
-            .objects
-            .insert(pages_object.0, Object::Dictionary(dictionary));
-    }
-
-    // Build new "Catalog" object
-    if let Ok(dictionary) = catalog_object.1.as_dict() {
-        let mut dictionary = dictionary.clone();
-        dictionary.set("Pages", pages_object.0);
-        dictionary.remove(b"Outlines"); // Remove outlines as we're splitting
-        new_document
-            .objects
-            .insert(catalog_object.0, Object::Dictionary(dictionary));
-    }
-
-    // Set up trailer and document structure
-    new_document.trailer.set("Root", catalog_object.0);
-    new_document.max_id = new_document.objects.len() as u32;
-    new_document.renumber_objects();
-    new_document.compress();
-
-    Ok(new_document)
 }

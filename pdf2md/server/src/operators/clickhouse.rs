@@ -74,6 +74,12 @@ pub async fn insert_page(
     );
 
     let task = if total_pages_processed >= prev_task.pages {
+        update_task_status(
+            task.id,
+            FileTaskStatus::ChunkingFile(total_pages_processed),
+            clickhouse_client,
+        )
+        .await?;
         update_task_status(task.id, FileTaskStatus::Completed, clickhouse_client).await?
     } else {
         update_task_status(
@@ -172,7 +178,7 @@ pub async fn get_task_pages(
 
         let pages: Vec<ChunkClickhouse> = clickhouse_client
             .query(
-                "SELECT ?fields FROM file_chunks WHERE task_id = ? AND id > ? ORDER BY id LIMIT ?",
+                "SELECT ?fields FROM file_chunks WHERE task_id = ? AND id > ? ORDER BY page LIMIT ?",
             )
             .bind(task.id.clone())
             .bind(offset_id.unwrap_or(uuid::Uuid::nil()))
@@ -188,4 +194,21 @@ pub async fn get_task_pages(
     }
 
     Ok(vec![])
+}
+
+pub async fn get_last_page(
+    task_id: uuid::Uuid,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<Option<ChunkClickhouse>, ServiceError> {
+    let page = clickhouse_client
+        .query("SELECT ?fields FROM file_chunks WHERE task_id = ? ORDER BY created_at DESC LIMIT 1")
+        .bind(task_id)
+        .fetch_optional()
+        .await
+        .map_err(|err| {
+            log::error!("Failed to get page {:?}", err);
+            ServiceError::BadRequest("Failed to get page".to_string())
+        })?;
+
+    Ok(page)
 }

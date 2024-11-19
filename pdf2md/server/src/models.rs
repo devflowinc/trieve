@@ -37,7 +37,7 @@ impl TaskMessage for FileTask {
 pub struct ChunkingTask {
     pub id: uuid::Uuid,
     pub file_name: String,
-    pub page_range: (u32, u32),
+    pub page_num: u32,
     pub params: ChunkingParams,
     pub attempt_number: u8,
 }
@@ -94,7 +94,8 @@ pub struct WebhookPayloadData {
     pub pages: u32,
     pub pages_processed: u32,
     pub content: String,
-    pub metadata: String,
+    pub page_num: u32,
+    pub usage: String,
     pub status: String,
     pub timestamp: String,
 }
@@ -107,7 +108,8 @@ impl WebhookPayloadData {
             pages: task.pages,
             pages_processed: task.pages_processed,
             content: page.content.clone(),
-            metadata: page.metadata.clone(),
+            page_num: page.page,
+            usage: page.usage.clone(),
             status: task.status,
             timestamp: task.created_at.to_string(),
         }
@@ -151,7 +153,8 @@ pub struct ChunkClickhouse {
     pub id: String,
     pub task_id: String,
     pub content: String,
-    pub metadata: String,
+    pub page: u32,
+    pub usage: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
 }
@@ -161,7 +164,8 @@ pub struct Chunk {
     pub id: String,
     pub task_id: String,
     pub content: String,
-    pub metadata: serde_json::Value,
+    pub page_num: u32,
+    pub usage: serde_json::Value,
     pub created_at: String,
 }
 
@@ -171,7 +175,8 @@ impl From<ChunkClickhouse> for Chunk {
             id: c.id,
             task_id: c.task_id,
             content: c.content,
-            metadata: serde_json::from_str(&c.metadata).unwrap(),
+            page_num: c.page,
+            usage: serde_json::from_str(&c.usage).unwrap(),
             created_at: c.created_at.to_string(),
         }
     }

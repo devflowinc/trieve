@@ -8,10 +8,7 @@ pub fn poll_task(task_id: &str, base_url: &str, api_key: &str) {
 
         let response: serde_json::Value = request.into_json().expect("Failed to parse response");
 
-        if (response["status"] == "Completed"
-            || response["total_document_pages"].as_i64() != Some(0))
-            && response["pages"].as_array() != Some(&vec![])
-        {
+        if response["status"] == "Completed" || response["status"] == "Failed" {
             println!("{}", response);
             break;
         } else {
