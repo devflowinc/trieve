@@ -66,3 +66,20 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("open-pdf", (e) => {
   loadPDF(e.detail.pdfUrl);
 });
+
+const url = new URL(window.location);
+const taskId = url.searchParams.get("taskId");
+if (taskId) {
+  fetch(`/api/task/${taskId}`, {
+    headers: {
+      Authorization: window.TRIEVE_API_KEY,
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      upsertTaskToStorage(data);
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+    });
+}
