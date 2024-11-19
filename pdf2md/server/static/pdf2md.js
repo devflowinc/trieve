@@ -29,10 +29,13 @@ const defaultTableRow = document.createElement("tr");
 defaultTableRow.innerHTML = defaultTableRowStr;
 
 const upsertTaskToStorage = (task) => {
-  const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-  const filteredTasks = tasks.filter((t) => t.id !== task.id);
-  filteredTasks.unshift(task);
-  localStorage.setItem("tasks", JSON.stringify(filteredTasks));
+  let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+  if (tasks.find((t) => t.id === task.id)) {
+    tasks = tasks.map((t) => (t.id === task.id ? task : t));
+  } else {
+    tasks.unshift(task);
+  }
+  localStorage.setItem("tasks", JSON.stringify(tasks));
 
   updateTaskStatusTable();
 };
@@ -49,7 +52,7 @@ fileUploadInput.addEventListener("change", (event) => {
   const reader = new FileReader();
   reader.onload = (event) => {
     const file_name = file.name;
-    const base64_file = event.target.result;
+    const base64_file = event.target.result.split(",")[1];
 
     const formData = {
       file_name,
@@ -89,7 +92,11 @@ const updateTaskStatusTable = () => {
     row.querySelector(".task-id").innerText = task.id;
     row.querySelector(".task-file-name").innerText = task.file_name;
     row.querySelector(".task-status").innerText = task.status;
-    row.querySelector(".task-status").classList.add(`status-${task.status}`);
+    row
+      .querySelector(".task-status")
+      .classList.add(
+        `status-${task.status.split(" ").join("-").toLowerCase()}`
+      );
     row.querySelector("button").addEventListener("click", () => {
       const url = new URL(window.location);
       url.searchParams.set("taskId", task.id);

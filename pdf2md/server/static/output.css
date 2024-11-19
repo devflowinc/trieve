@@ -585,12 +585,13 @@ video {
   margin-right: auto;
 }
 
-.mt-10 {
-  margin-top: 2.5rem;
+.my-12 {
+  margin-top: 3rem;
+  margin-bottom: 3rem;
 }
 
-.mt-12 {
-  margin-top: 3rem;
+.mt-10 {
+  margin-top: 2.5rem;
 }
 
 .mt-2 {
@@ -935,12 +936,13 @@ video {
     margin-right: -1.5rem;
   }
 
-  .sm\:mt-14 {
-    margin-top: 3.5rem;
+  .sm\:my-24 {
+    margin-top: 6rem;
+    margin-bottom: 6rem;
   }
 
-  .sm\:mt-24 {
-    margin-top: 6rem;
+  .sm\:mt-14 {
+    margin-top: 3.5rem;
   }
 
   .sm\:px-6 {
