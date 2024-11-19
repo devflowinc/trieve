@@ -82,6 +82,9 @@ pub struct UploadFileReqPayload {
     pub target_splits_per_chunk: Option<usize>,
     /// Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
     pub group_tracking_id: Option<String>,
+    /// Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o.
+    /// Default is false.
+    pub use_pdf2md_ocr: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
