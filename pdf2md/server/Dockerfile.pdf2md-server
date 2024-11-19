@@ -3,7 +3,7 @@ FROM rust:1.81-slim-bookworm AS chef
 # it will be cached from the second build onwards
 RUN apt-get update -y && apt-get -y install pkg-config libssl-dev g++ curl
 RUN cargo install cargo-chef 
-WORKDIR app
+WORKDIR /app
 
 FROM chef AS planner
 COPY . .
@@ -23,12 +23,9 @@ WORKDIR /app
 RUN apt-get update -y; \
     apt-get install -y \
     pkg-config \
-    build-essential\
     libssl-dev \
     ca-certificates \
-    ; \
-    mkdir -p /app/tmp
-
+    ;
 
 COPY ./ch_migrations /app/ch_migrations
 COPY --from=builder /app/static /app/static
