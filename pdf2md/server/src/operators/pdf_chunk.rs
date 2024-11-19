@@ -1,7 +1,7 @@
 use crate::{
     errors::ServiceError,
     get_env,
-    models::{ChunkClickhouse, ChunkingTask},
+    models::{ChunkClickhouse, ChunkingTask, ModelParams},
     operators::clickhouse::insert_page,
 };
 use base64::Engine;
@@ -47,14 +47,16 @@ fn get_data_url_from_image(img: DynamicImage) -> Result<String, ServiceError> {
     Ok(final_encoded)
 }
 
-fn get_default_openai_client() -> Client {
+fn get_llm_client(params: ModelParams) -> Client {
     let base_url = get_env!("LLM_BASE_URL", "LLM_BASE_URL should be set").into();
 
-    let llm_api_key: String = get_env!(
-        "LLM_API_KEY",
-        "LLM_API_KEY for openrouter or self-hosted should be set"
-    )
-    .into();
+    let llm_api_key: String = params.llm_api_key.unwrap_or(
+        get_env!(
+            "LLM_API_KEY",
+            "LLM_API_KEY for openrouter or self-hosted should be set"
+        )
+        .into(),
+    );
 
     Client {
         headers: None,
@@ -70,16 +72,23 @@ async fn get_pages_from_image(
     img: DynamicImage,
     prev_md_doc: Option<String>,
     page: u32,
-    task_id: uuid::Uuid,
+    task: ChunkingTask,
     client: Client,
 ) -> Result<ChunkClickhouse, ServiceError> {
-    let llm_model: String = get_env!("LLM_MODEL", "LLM_MODEL should be set").into();
+    let llm_model: String = task
+        .model_params
+        .llm_model
+        .unwrap_or(get_env!("LLM_MODEL", "LLM_MODEL should be set").into());
 
     let data_url = get_data_url_from_image(img)?;
 
     let mut messages = vec![
         ChatMessage::System {
-            content: (ChatMessageContent::Text(CHUNK_SYSTEM_PROMPT.to_string())),
+            content: (ChatMessageContent::Text(
+                task.model_params
+                    .system_prompt
+                    .unwrap_or(CHUNK_SYSTEM_PROMPT.to_string()),
+            )),
             name: None,
         },
         ChatMessage::User {
@@ -140,14 +149,18 @@ async fn get_pages_from_image(
         }
     };
 
+    let mut metadata = serde_json::json!({
+        "page": page,
+    });
+    if let Some(usage) = response.usage {
+        metadata["usage"] = serde_json::json!(usage);
+    }
+
     Ok(ChunkClickhouse {
         id: uuid::Uuid::new_v4().to_string(),
-        task_id: task_id.to_string().clone(),
+        task_id: task.task_id.to_string().clone(),
         content: format_markdown(&content),
-        metadata: serde_json::json!({
-            "page": page,
-        })
-        .to_string(),
+        metadata: metadata.to_string(),
         created_at: OffsetDateTime::now_utc(),
     })
 }
@@ -165,7 +178,6 @@ fn format_markdown(text: &str) -> String {
 pub async fn chunk_pdf(
     data: Vec<u8>,
     task: ChunkingTask,
-    page_range: (u32, u32),
     clickhouse_client: &clickhouse::Client,
 ) -> Result<Vec<ChunkClickhouse>, ServiceError> {
     let pdf = PDF::from_bytes(data)
@@ -177,15 +189,15 @@ pub async fn chunk_pdf(
 
     let mut result_pages = vec![];
 
-    let client = get_default_openai_client();
+    let client = get_llm_client(task.model_params.clone());
     let mut prev_md_doc = None;
 
-    for (page_image, page_num) in pages.into_iter().zip(page_range.0..page_range.1) {
+    for (page_image, page_num) in pages.into_iter().zip(task.page_range.0..task.page_range.1) {
         let page = get_pages_from_image(
             page_image,
             prev_md_doc,
             page_num,
-            task.task_id,
+            task.clone(),
             client.clone(),
         )
         .await?;
