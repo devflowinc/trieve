@@ -182,7 +182,7 @@ pub async fn chunk_sub_pages(
     clickhouse_client: &clickhouse::Client,
     redis_pool: &RedisPool,
 ) -> Result<Vec<ChunkClickhouse>, ServiceError> {
-    log::info!("Chunking pages for {:?} size {}", task.task_id, data.len());
+    log::info!("Chunking pages for {:?} size {}", task.id, data.len());
     let pdf = PDF::from_bytes(data)
         .map_err(|err| ServiceError::BadRequest(format!("Failed to open PDF file {:?}", err)))?;
 
