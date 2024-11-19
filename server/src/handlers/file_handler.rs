@@ -11,8 +11,7 @@ use crate::{
     middleware::auth_middleware::verify_member,
     operators::{
         file_operator::{
-            delete_file_query, get_aws_bucket, get_dataset_file_query,
-            get_file_query,
+            delete_file_query, get_aws_bucket, get_dataset_file_query, get_file_query,
         },
         organization_operator::get_file_size_sum_org,
     },
