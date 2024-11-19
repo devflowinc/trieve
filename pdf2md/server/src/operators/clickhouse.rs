@@ -85,7 +85,7 @@ pub async fn update_task_status(
             format!(
                 "ALTER TABLE file_tasks UPDATE
                     status = '{status}', 
-                    pages_processed = pages_processed + {pages}
+                    pages_processed = {pages}
                 WHERE id = '{task_id}'",
                 status = status,
                 task_id = task_id,
