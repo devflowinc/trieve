@@ -14,7 +14,7 @@ pub struct ErrorResponseBody {
     pub message: String,
 }
 
-#[derive(Debug, Display, Clone)]
+#[derive(Debug, Display, Clone, Eq, PartialEq)]
 pub enum ServiceError {
     #[display("Internal Server Error: {_0}")]
     InternalServerError(String),

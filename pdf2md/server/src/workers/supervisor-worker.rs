@@ -157,7 +157,7 @@ pub async fn chunk_pdf(
             task_id: task.task_id,
             file_name,
             page_range: (start_page, end_page),
-            model_params: task.upload_file_data.clone().into(),
+            params: task.upload_file_data.clone().into(),
             attempt_number: 0,
         })
         .map_err(|_e| ServiceError::BadRequest("Failed to serialize chunking task".to_string()))?;
@@ -174,7 +174,7 @@ pub async fn chunk_pdf(
 
     update_task_status(
         task.task_id,
-        FileTaskStatus::ProcessingFile(num_docs * pages_per_doc),
+        FileTaskStatus::ProcessingFile(max_page_num),
         &clickhouse_client,
     )
     .await?;
