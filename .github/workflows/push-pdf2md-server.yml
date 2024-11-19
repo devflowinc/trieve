@@ -52,7 +52,7 @@ jobs:
         uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          context: pdf2md/
+          context: pdf2md/server/
           file: ./pdf2md/server/Dockerfile.pdf2md-server
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -97,7 +97,7 @@ jobs:
         uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          context: pdf2md/
+          context: pdf2md/server/
           file: ./pdf2md/server/Dockerfile.chunk-worker
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -142,7 +142,7 @@ jobs:
         uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
           platforms: ${{ matrix.platform }}
-          context: pdf2md/
+          context: pdf2md/server/
           file: ./pdf2md/server/Dockerfile.supervisor-worker
           push: true
           tags: ${{ steps.meta.outputs.tags }}
