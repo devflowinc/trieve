@@ -13,8 +13,9 @@ use crate::{
         chunk_operator::{get_chunk_metadatas_from_point_ids, get_random_chunk_metadatas_query},
         clickhouse_operator::EventQueue,
         message_operator::{
-            create_topic_message_query, delete_message_query, get_message_by_sort_for_topic_query,
-            get_messages_for_topic_query, get_topic_messages, stream_response,
+            create_topic_message_query, delete_message_query, get_message_by_id_query,
+            get_message_by_sort_for_topic_query, get_messages_for_topic_query,
+            get_topic_messages_query, stream_response,
         },
         organization_operator::get_message_org_count,
         parse_operator::convert_html_to_text,
@@ -132,7 +133,7 @@ pub struct CreateMessageReqPayload {
         ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
-        ("ApiKey" = ["readonly"]),
+        ("ApiKey" = ["admin"]),
     )
 )]
 #[tracing::instrument(skip(pool, event_queue))]
@@ -187,7 +188,7 @@ pub async fn create_message(
     );
 
     // get the previous messages
-    let mut previous_messages = get_topic_messages(
+    let mut previous_messages = get_topic_messages_query(
         topic_id,
         dataset_org_plan_sub.dataset.id,
         &get_messages_pool,
@@ -247,7 +248,7 @@ pub async fn create_message(
 
 /// Get all messages for a given topic
 ///
-/// Get all messages for a given topic. If the topic is a RAG topic then the response will include Chunks first on each message. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.
+/// If the topic is a RAG topic then the response will include Chunks first on each message. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.
 #[utoipa::path(
     get,
     path = "/messages/{messages_topic_id}",
@@ -259,7 +260,7 @@ pub async fn create_message(
     ),
     params(
         ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
-        ("messages_topic_id" = uuid, description = "The ID of the topic to get messages for."),
+        ("messages_topic_id" = uuid, Path, description = "The ID of the topic to get messages for."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -293,6 +294,43 @@ pub async fn get_all_topic_messages(
             .collect();
 
     Ok(HttpResponse::Ok().json(messages))
+}
+
+/// Get a message by its ID
+///
+/// Quickly get the full object for a given message. From the message, you can get the topic and all messages which exist on that topic.
+#[utoipa::path(
+    get,
+    path = "/message/{message_id}",
+    context_path = "/api",
+    tag = "Message",
+    responses(
+        (status = 200, description = "Message with the given ID", body = Message),
+        (status = 400, description = "Service error relating to getting the message", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("message_id" = uuid, Path, description = "The ID of the message to get."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+#[tracing::instrument(skip(pool))]
+pub async fn get_message_by_id(
+    user: AdminOnly,
+    message_id: web::Path<uuid::Uuid>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let message: models::Message = get_message_by_id_query(
+        message_id.into_inner(),
+        dataset_org_plan_sub.dataset.id,
+        &pool,
+    )
+    .await?;
+
+    Ok(HttpResponse::Ok().json(message))
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -416,7 +454,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
         ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
-        ("ApiKey" = ["readonly"]),
+        ("ApiKey" = ["admin"]),
     )
 )]
 #[tracing::instrument(skip(pool, event_queue, redis_pool))]
@@ -490,7 +528,7 @@ pub async fn edit_message(
         ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
-        ("ApiKey" = ["readonly"]),
+        ("ApiKey" = ["admin"]),
     )
 )]
 #[tracing::instrument(skip(pool, event_queue, redis_pool))]
@@ -513,7 +551,7 @@ pub async fn regenerate_message_patch(
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let mut previous_messages =
-        get_topic_messages(topic_id, dataset_id, &get_messages_pool).await?;
+        get_topic_messages_query(topic_id, dataset_id, &get_messages_pool).await?;
 
     if previous_messages.len() < 2 {
         return Err(
@@ -634,7 +672,7 @@ pub async fn regenerate_message_patch(
         ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
     ),
     security(
-        ("ApiKey" = ["readonly"]),
+        ("ApiKey" = ["admin"]),
     )
 )]
 #[deprecated]

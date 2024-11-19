@@ -2396,6 +2396,7 @@ export type SearchOverGroupsReqPayload = {
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
      */
     slim_chunks?: (boolean) | null;
+    sort_options?: ((SortOptions) | null);
     typo_options?: ((TypoOptions) | null);
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
@@ -3050,6 +3051,11 @@ export type UploadFileReqPayload = {
      * Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.
      */
     time_stamp?: (string) | null;
+    /**
+     * Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o.
+     * Default is false.
+     */
+    use_pdf2md_ocr?: (boolean) | null;
 };
 
 export type UploadFileResult = {
@@ -4104,6 +4110,19 @@ export type RegenerateMessagePatchData = {
 };
 
 export type RegenerateMessagePatchResponse = (string);
+
+export type GetMessageByIdData = {
+    /**
+     * The ID of the message to get.
+     */
+    messageId: string;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetMessageByIdResponse = (Message);
 
 export type GetAllTopicMessagesData = {
     /**
@@ -5528,6 +5547,21 @@ export type $OpenApiTs = {
                 200: string;
                 /**
                  * Service error relating to getting a chat completion
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/message/{message_id}': {
+        get: {
+            req: GetMessageByIdData;
+            res: {
+                /**
+                 * Message with the given ID
+                 */
+                200: Message;
+                /**
+                 * Service error relating to getting the message
                  */
                 400: ErrorResponseBody;
             };

@@ -7,6 +7,7 @@ import {
   CreateMessageReqPayload,
   EditMessageReqPayload,
   GetAllTopicMessagesData,
+  GetMessageByIdData,
   RegenerateMessageReqPayload,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
@@ -358,3 +359,31 @@ export async function getAllMessagesForTopic(
     signal
   );
 }
+
+/**
+ * Quickly get the full object for a given message. From the message, you can get the topic and all messages which exist on that topic.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getMessageById({
+  messageId: "3c90c3cc-1d76-27198-8888-8dd25736052a",
+});
+ * ```
+ */
+export async function getMessageById(
+  /** @hidden */
+  this: TrieveSDK,
+  data: Omit<GetMessageByIdData, "trDataset">,
+  signal?: AbortSignal
+) {
+  return await this.trieve.fetch(
+    "/api/message/{message_id}",
+    "get",
+    {
+      ...data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
+}
+
