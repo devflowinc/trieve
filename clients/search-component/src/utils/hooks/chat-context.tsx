@@ -3,6 +3,8 @@ import { useModalState } from "./modal-context";
 import { Chunk } from "../types";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
+import { cached } from "../cache";
+import { getChunkIdsForGroup } from "../trieve";
 
 type Messages = {
   queryId: string | null;
@@ -65,7 +67,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([]);
   };
 
-  const { currentTag } = useModalState();
+  const { currentTag, currentGroup } = useModalState();
 
   useEffect(() => {
     if (currentTag) {
@@ -128,24 +130,49 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     question?: string;
   }) => {
     setIsLoading(true);
-    const { reader, queryId } = await trieveSDK.createMessageReaderWithQueryId(
-      {
-        topic_id: id || currentTopic,
-        new_message_content: question || currentQuestion,
-        llm_options: {
-          completion_first: false,
+    // TODO: Behave differently for groups
+
+    // Use group search
+    if (currentGroup) {
+      const groupChunkIds = await cached(() => {
+        return getChunkIdsForGroup(currentGroup.id, trieveSDK);
+      }, `chunk-ids-${currentGroup.id}`);
+
+      const { reader, queryId } = await trieveSDK.ragOnChunkReaderWithQueryId(
+        {
+          chunk_ids: groupChunkIds,
+          prev_messages: [
+            {
+              content: question || currentQuestion,
+              role: "user",
+            },
+          ],
+          stream_response: true,
         },
-        page_size: 5,
-        filters:
-          currentTag !== "all"
-            ? {
-                must: [{ field: "tag_set", match_any: [currentTag] }], // Apply tag filter
-              }
-            : null,
-      },
-      chatMessageAbortController.current.signal,
-    );
-    handleReader(reader, queryId);
+        chatMessageAbortController.current.signal,
+      );
+      handleReader(reader, queryId);
+    } else {
+      const { reader, queryId } =
+        await trieveSDK.createMessageReaderWithQueryId(
+          {
+            topic_id: id || currentTopic,
+            new_message_content: question || currentQuestion,
+            llm_options: {
+              completion_first: false,
+            },
+            page_size: 5,
+            filters:
+              currentTag !== "all"
+                ? {
+                    must: [{ field: "tag_set", match_any: [currentTag] }], // Apply tag filter
+                  }
+                : null,
+          },
+          chatMessageAbortController.current.signal,
+        );
+      handleReader(reader, queryId);
+    }
   };
 
   const stopGeneratingMessage = () => {

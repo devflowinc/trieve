@@ -56,6 +56,7 @@ export default function ECommerce() {
               baseUrl={baseUrl}
               datasetId={datasetId}
               problemLink={problemLink}
+              theme={theme}
               brandLogoImgSrcUrl={brandLogoSrcUrl}
               brandName={brandName}
               brandColor={brandColor}
