@@ -297,20 +297,23 @@ pub enum FileTaskStatus {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct PollTaskResponse {
     pub id: String,
+    pub file_name: String,
+    pub file_url: Option<String>,
     pub total_document_pages: u32,
     pub pages_processed: u32,
     pub status: String,
     pub created_at: String,
-    pub pages: Option<Vec<PdfToMdChunk>>,
+    pub pages: Option<Vec<PdfToMdPage>>,
     pub pagination_token: Option<String>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
-pub struct PdfToMdChunk {
+pub struct PdfToMdPage {
     pub id: String,
     pub task_id: String,
     pub content: String,
-    pub metadata: serde_json::Value,
+    pub page_num: u32,
+    pub usage: serde_json::Value,
     pub created_at: String,
 }
 
