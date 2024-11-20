@@ -127,8 +127,19 @@ pub async fn chunk_pdf(
 
     let pages = pdf
         .render(pdf2image::Pages::All, None)
-        .map_err(|err| ServiceError::BadRequest(format!("Failed to render PDF file {:?}", err)))?;
+        .map_err(|err| ServiceError::BadRequest(format!("Failed to render PDF file {:?}", err)))?
+        .into_iter()
+        .skip(1)
+        .collect::<Vec<_>>();
+
     let num_pages = pages.len();
+
+    update_task_status(
+        task.id,
+        FileTaskStatus::ProcessingFile(num_pages as u32),
+        &clickhouse_client,
+    )
+    .await?;
 
     // Process each chunk
     for (i, page) in pages.into_iter().enumerate() {
@@ -164,13 +175,6 @@ pub async fn chunk_pdf(
 
         log::info!("Uploaded page {} of {} to S3", i + 1, num_pages);
     }
-
-    update_task_status(
-        task.id,
-        FileTaskStatus::ProcessingFile(num_pages as u32),
-        &clickhouse_client,
-    )
-    .await?;
 
     Ok(())
 }
