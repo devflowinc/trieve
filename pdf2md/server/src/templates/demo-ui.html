@@ -9,6 +9,15 @@
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css"
 />
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/default.min.css"
+/>
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+<script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/json.min.js"></script>
+<script>
+  hljs.highlightAll();
+</script>
 <style>
   .pdfobject-container {
     height: 75vh;
@@ -31,7 +40,8 @@
         OCR With Intelligence
       </h2>
       <p class="mt-2 text-pretty text-lg/8 text-gray-700">
-        Convert any PDF to LLM-ready Markdown using thrifty vision models like GPT-4o-mini and Gemini-flash-1.5.
+        Convert any PDF to LLM-ready Markdown using thrifty vision models like
+        GPT-4o-mini and Gemini-flash-1.5.
       </p>
     </div>
     <button
@@ -140,17 +150,63 @@ Convert the following PDF page to markdown. Return only the markdown with no exp
   </form>
 </div>
 <div class="px-4 mt-10 sm:mt-14 md:mt-24 max-w-screen-2xl mx-auto">
-  <div class="col-span-2 flex justify-between">
+  <div class="col-span-2 flex justify-between items-center py-1">
     <p id="document-price" class="text-gray-600 text-sm/6"></p>
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        class="inline-flex items-center gap-x-1.5 rounded-md bg-magenta-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600"
+        id="copy-button"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          fill="currentColor"
+          class="bi bi-copy"
+          viewBox="0 0 16 16"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"
+          />
+        </svg>
+        Copy
+      </button>
+      <div class="flex items-center">
+        <button
+          type="button"
+          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-magenta-600 focus:ring-offset-2"
+          role="switch"
+          aria-checked="false"
+          aria-labelledby="json"
+          id="json-switch"
+        >
+          <span
+            aria-hidden="true"
+            class="pointer-events-none inline-block size-5 translate-x-0 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+          ></span>
+        </button>
+        <span class="ml-3 text-sm" id="json">
+          <span class="font-medium text-gray-900">Json</span>
+        </span>
+      </div>
+    </div>
   </div>
   <div id="result-container" class="grid grid-cols-2 gap-4">
     <div id="my-pdf"></div>
     <div id="markdown-container" class="max-h-[75vh] overflow-y-auto"></div>
+    <pre id="json-pre" class="hidden max-h-[75vh] overflow-y-auto">
+      <code class="language-json" id="json-container"></code>
+    </pre>
   </div>
 </div>
 <div class="flow-root">
-  <div class="mt-10 sm:mt-14 md:mt-24 pt-4 border border-gray-900 hidden"></div>
-  <div class="my-4 animate-pulse hidden h-1 bg-gray-700"></div>
+  <div
+    class="mt-10 sm:mt-14 md:mt-24 pt-4 border border-gray-900 bg-magenta-600 translate-x-5 hidden"
+  ></div>
+  <div class="my-4 animate-pulse hidden h-1 bg-gray-700 translate-x-0"></div>
+  <div class="hidden bg-gray-200"></div>
 </div>
 <div
   id="task-status-table-container"
