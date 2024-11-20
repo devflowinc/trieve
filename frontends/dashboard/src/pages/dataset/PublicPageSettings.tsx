@@ -12,6 +12,7 @@ import { createStore } from "solid-js/store";
 import { PublicPageParameters } from "trieve-ts-sdk";
 import { publicPageSearchOptionsSchema } from "../../analytics/utils/schemas/autocomplete";
 import { FiExternalLink } from "solid-icons/fi";
+import { createQuery } from "@tanstack/solid-query";
 
 export interface PublicDatasetOptions {}
 
@@ -46,6 +47,7 @@ export const PublicPageSettings = () => {
         datasetId: datasetId(),
       })
       .then((dataset) => {
+        console.log(dataset);
         // @ts-expect-error Property 'PUBLIC_DATASET' does not exist on type '{}'. [2339]
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         setisPublic(dataset.server_configuration?.PUBLIC_DATASET.enabled);
@@ -54,9 +56,42 @@ export const PublicPageSettings = () => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
           dataset.server_configuration?.PUBLIC_DATASET.extra_params,
         );
+
         setHasLoaded(true);
       });
   };
+
+  const crawlSettingsQuery = createQuery(() => ({
+    queryKey: ["crawl-settings", datasetId()],
+    queryFn: async () => {
+      const result = await trieve.fetch(
+        "/api/dataset/crawl_options/{dataset_id}",
+        "get",
+        {
+          datasetId: datasetId(),
+        },
+      );
+
+      return result.crawl_options ?? null;
+    },
+  }));
+
+  // If the useGroupSearch has not been manually set,
+  // set to true if shopify scraping is enabled
+  createEffect(() => {
+    if (
+      crawlSettingsQuery.data &&
+      crawlSettingsQuery.data.scrape_options?.type === "shopify"
+    ) {
+      //
+      if (
+        extraParams.useGroupSearch === null ||
+        extraParams.useGroupSearch === undefined
+      ) {
+        setExtraParams("useGroupSearch", true);
+      }
+    }
+  });
 
   const unpublishDataset = async () => {
     await trieve.fetch("/api/dataset", "put", {
@@ -336,7 +371,6 @@ export const PublicPageSettings = () => {
                 />
               </div>
               <input
-                placeholder="Search..."
                 checked={extraParams.suggestedQueries || true}
                 type="checkbox"
                 onChange={(e) => {
@@ -356,7 +390,6 @@ export const PublicPageSettings = () => {
                 />
               </div>
               <input
-                placeholder="Search..."
                 checked={extraParams.chat || true}
                 type="checkbox"
                 onChange={(e) => {
@@ -376,7 +409,6 @@ export const PublicPageSettings = () => {
                 />
               </div>
               <input
-                placeholder="Search..."
                 checked={extraParams.type === "ecommerce" || false}
                 type="checkbox"
                 onChange={(e) => {
@@ -399,8 +431,7 @@ export const PublicPageSettings = () => {
                 />
               </div>
               <input
-                placeholder="Search..."
-                checked={extraParams.useGroupSearch || true}
+                checked={extraParams.useGroupSearch || false}
                 type="checkbox"
                 onChange={(e) => {
                   setExtraParams("useGroupSearch", e.currentTarget.checked);
