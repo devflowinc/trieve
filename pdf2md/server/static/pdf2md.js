@@ -62,7 +62,7 @@ const displayTask = (task) => {
   if (!pages) {
     return;
   }
-  const sortedPages = pages.sort((a, b) => a.metadata.page - b.metadata.page);
+  const sortedPages = pages.sort((a, b) => a.page_num - b.page_num);
 
   PDFObject.embed(task.file_url, "#my-pdf", {
     pdfOpenParams: {
@@ -126,8 +126,7 @@ const getTaskPages = async (taskId, taskIdToDisplay) => {
       }
     }
 
-    pages = pages.sort((a, b) => a.metadata.page - b.metadata.page);
-    console.log("final pages", taskId, pages);
+    pages = pages.sort((a, b) => a.page_num - b.page_num);
     task.pages = pages;
     upsertTaskToStorage(task);
     if (taskIdToDisplay === taskId) {
@@ -135,7 +134,7 @@ const getTaskPages = async (taskId, taskIdToDisplay) => {
     }
   } catch (e) {
     console.error(e);
-    Notyf.error({
+    notyf.error({
       message: `Error fetching task pages. Please try again later. ${e}`,
       dismissable: true,
       type: "error",
@@ -231,6 +230,13 @@ const updateTaskStatusTable = () => {
   const firstRow = tbody.querySelector("tr");
   tbody.innerHTML = "";
   const htmlRows = tasks.map((task) => {
+    let completionTokens = 0;
+    let promptTokens = 0;
+    task.pages?.map((page) => {
+      promptTokens += page?.usage?.prompt_tokens || 0;
+      completionTokens += page?.usage?.completion_tokens || 0;
+    });
+
     const row = firstRow
       ? firstRow.cloneNode(true)
       : defaultTableRow.cloneNode(true);
@@ -245,6 +251,9 @@ const updateTaskStatusTable = () => {
       .classList.add(
         `status-${task.status.split(" ").join("-").toLowerCase()}`
       );
+    row.querySelector(".task-prompt-tokens").innerText = promptTokens;
+    row.querySelector(".task-completion-tokens").innerText = completionTokens;
+
     row.querySelector("button").addEventListener("click", () => {
       const url = new URL(window.location);
       url.searchParams.set("taskId", task.id);

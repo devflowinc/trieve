@@ -31,8 +31,7 @@
         OCR With Intelligence
       </h2>
       <p class="mt-2 text-pretty text-lg/8 text-gray-700">
-        Convert any PDF to LLM-ready Markdown using latest-gen vision models
-        like GPT-4o.
+        Convert any PDF to LLM-ready Markdown using vision models like GPT-4o.
       </p>
     </div>
     <button
@@ -175,6 +174,18 @@ Convert the following PDF page to markdown. Return only the markdown with no exp
             >
               Status
             </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Prompt Tokens
+            </th>
+            <th
+              scope="col"
+              class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Completion Tokens
+            </th>
             <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0">
               <span class="sr-only">View</span>
             </th>
@@ -196,6 +207,16 @@ Convert the following PDF page to markdown. Return only the markdown with no exp
               class="task-status whitespace-nowrap px-3 py-4 text-sm text-gray-500"
             >
               lindsay.walton@example.com
+            </td>
+            <td
+              class="task-prompt-tokens whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+            >
+              10
+            </td>
+            <td
+              class="task-completion-tokens whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+            >
+              10
             </td>
             <td
               class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0"
