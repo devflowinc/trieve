@@ -30,6 +30,16 @@ const defaultTableRowStr = `
       lindsay.walton@example.com
     </td>
     <td
+      class="task-prompt-tokens whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+    >
+      10
+    </td>
+    <td
+      class="task-completion-tokens whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+    >
+      10
+    </td>
+    <td
       class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0"
     >
       <button
@@ -87,6 +97,9 @@ const displayTask = (task) => {
       view: "FitH",
     },
   });
+
+  const utilityResultsView = document.getElementById("utility-results-view");
+  utilityResultsView.classList.remove("hidden");
   const resultContainer = document.getElementById("result-container");
   resultContainer.classList.add(...["border", "border-gray-900"]);
 
