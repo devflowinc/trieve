@@ -27,17 +27,14 @@ export const SearchMode = () => {
     mode,
   } = useModalState();
 
-  const {
-    suggestedQueries,
-    refetchSuggestedQueries,
-    isLoadingSuggestedQueries,
-  } = useSuggestedQueries();
+  const { suggestedQueries, getQueries, isLoadingSuggestedQueries } =
+    useSuggestedQueries();
 
   const { switchToChatAndAskQuestion } = useChatState();
 
   const getItemComponent = (
     result: ChunkWithHighlights | GroupChunk[],
-    index: number,
+    index: number
   ) => {
     const chunkOrGroup = isChunksWithHighlights(result);
     const ecommerce = props.type == "ecommerce";
@@ -52,15 +49,20 @@ export const SearchMode = () => {
       );
     } else if (!chunkOrGroup && ecommerce) {
       return (
-        <ProductGroupItem group={result} index={index} requestID={requestID} />
+        <ProductGroupItem
+          key={result[0].group.id}
+          group={result}
+          index={index}
+          requestID={requestID}
+        />
       );
     } else if (chunkOrGroup) {
       return (
         <DocsItem
+          key={result.chunk.id}
           item={result}
           index={index}
           requestID={requestID}
-          key={result.chunk.id}
         />
       );
     } else {
@@ -69,10 +71,10 @@ export const SearchMode = () => {
           <p className="item-group-name">{result[0].group.name}</p>
           {result[0].chunks.map((chunk, index) => (
             <DocsItem
+              key={chunk.chunk.id}
               item={chunk}
               index={index}
               requestID={requestID}
-              key={chunk.chunk.id}
               className="item group"
             />
           ))}
@@ -159,7 +161,7 @@ export const SearchMode = () => {
           <div className={`suggested-queries-wrapper ${props.type}`}>
             <>
               <button
-                onClick={refetchSuggestedQueries}
+                onClick={() => getQueries(new AbortController())}
                 disabled={isLoadingSuggestedQueries}
                 className="suggested-query"
                 title="Refresh suggested queries"

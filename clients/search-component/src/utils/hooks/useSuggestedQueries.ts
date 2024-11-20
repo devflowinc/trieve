@@ -11,7 +11,7 @@ export const useSuggestedQueries = () => {
     SuggestedQueriesResponse["queries"]
   >([]);
 
-  const getQueries = async () => {
+  const getQueries = async (abortController: AbortController) => {
     if (isFetching.current) {
       return;
     }
@@ -20,23 +20,29 @@ export const useSuggestedQueries = () => {
     const queries = await getSuggestedQueries({
       trieve: trieveSDK,
       query,
+      abortController,
     });
     setSuggestedQueries(queries.queries.splice(0, 3));
     isFetching.current = false;
     setIsLoading(false);
   };
 
-  const refetchSuggestedQueries = () => {
-    getQueries();
-  };
-
   useEffect(() => {
-    if (props.defaultSearchQueries == null) {
-      getQueries();
+    const abortController = new AbortController();
+
+    const defaultQueries =
+      props.defaultSearchQueries?.filter((q) => q !== "") ?? [];
+
+    if (!defaultQueries || !defaultQueries.length) {
+      getQueries(abortController);
       return;
     }
-    setSuggestedQueries(props.defaultSearchQueries);
-  }, [])
+    setSuggestedQueries(defaultQueries);
+
+    return () => {
+      abortController.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (!props.suggestedQueries || query === "") {
@@ -46,18 +52,18 @@ export const useSuggestedQueries = () => {
     const abortController = new AbortController();
 
     const timeoutId = setTimeout(async () => {
-      getQueries();
+      getQueries(abortController);
     }, props.debounceMs);
 
     return () => {
       clearTimeout(timeoutId);
-      abortController.abort();
+      abortController.abort("Query changed");
     };
   }, [query]);
 
   return {
     suggestedQueries,
-    refetchSuggestedQueries,
+    getQueries,
     isLoadingSuggestedQueries: isLoading,
   };
 };
