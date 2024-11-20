@@ -21,19 +21,81 @@
 {% endblock %} {% block body %}
 <div
   id="upload-form-container"
-  class="flex justify-center h-[75vh] items-center px-4"
+  class="flex justify-center mt-[10vh] sm:mt-[20vh] items-center px-4"
 >
-  <form class="max-w-md mx-auto">
+  <form class="max-w-lg mx-auto">
     <div class="text-center">
       <h2
         class="text-balance text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl"
       >
         OCR With Intelligence
       </h2>
-      <p class="mt-2 text-pretty text-lg/8 text-gray-600">
+      <p class="mt-2 text-pretty text-lg/8 text-gray-700">
         Convert any PDF to LLM-ready Markdown using latest-gen vision models
         like GPT-4o.
       </p>
+    </div>
+    <button
+      id="expand-advanced-options"
+      class="w-full flex justify-center items-center gap-x-2 my-2 text-gray-600 text-sm/5"
+    >
+      <p>Advanced Options: Change Model + Prompt</p>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        fill="currentColor"
+        class="bi bi-chevron-down"
+        viewBox="0 0 16 16"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"
+        />
+      </svg>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        fill="currentColor"
+        class="bi bi-chevron-up hidden"
+        viewBox="0 0 16 16"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"
+        />
+      </svg>
+    </button>
+    <div id="advanced-options-inputs" class="hidden">
+      <label for="model" class="block text-sm/6 font-medium text-gray-900"
+        >Model</label
+      >
+      <select
+        id="model"
+        name="model"
+        class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 bg-white ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-magenta-600 sm:text-sm/6"
+      >
+        <option value="openai/gpt-4o-mini" selected>4o-mini</option>
+        <option value="openai/chatgpt-4o-latest">4o</option>
+        <option value="google/gemini-flash-1.5-8b">gemini-flash-1.5-8b</option>
+        <option value="google/gemini-flash-1.5">gemini-flash-1.5</option>
+      </select>
+      <label
+        for="conversion-prompt"
+        class="block text-sm/6 font-medium text-gray-900 mt-2"
+        >Conversion prompt</label
+      >
+      <div class="mt-2">
+        <textarea
+          rows="4"
+          name="conversion-prompt"
+          id="conversion-prompt"
+          class="block w-full rounded-md border-0 p-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-magenta-600 sm:text-sm/6"
+        >
+Convert the following PDF page to markdown. Return only the markdown with no explanation text. Do not exclude any content from the page.</textarea
+        >
+      </div>
     </div>
     <div
       class="mt-4 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10"
@@ -76,7 +138,7 @@
 <div class="px-4">
   <div
     id="result-container"
-    class="mt-10 sm:mt-14 md:mt-24 grid grid-cols-2 gap-4 max-w-7xl mx-auto"
+    class="mt-10 sm:mt-14 md:mt-24 grid grid-cols-2 gap-4 max-w-screen-2xl mx-auto"
   >
     <div id="my-pdf"></div>
     <div id="markdown-container" class="max-h-[75vh] overflow-y-auto"></div>
@@ -88,7 +150,7 @@
 </div>
 <div
   id="task-status-table-container"
-  class="my-12 sm:my-24 md:my-50 max-w-7xl mx-auto hidden px-8"
+  class="my-12 sm:my-24 md:my-50 max-w-screen-2xl mx-auto hidden px-8"
 >
   <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
     <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">

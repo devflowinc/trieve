@@ -74,7 +74,7 @@ pub struct UploadFileReqPayload {
     pub llm_api_key: Option<String>,
     /// The System prompt that will be used for the conversion of the file.
     pub system_prompt: Option<String>,
-    /// Optional webhook URL to receive notifications for each page processed.
+    /// Optional webhook URL to receive notifications for each page processed. Default is 'Convert the following PDF page to markdown. Return only the markdown with no explanation text. Do not exclude any content from the page.'
     pub webhook_url: Option<String>,
     /// Optional webhook payload template with placeholder values.
     /// Supports the following template variables:

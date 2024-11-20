@@ -96,7 +96,7 @@ const displayTask = (task) => {
     const pageContainer = document.createElement("div");
     pageContainer.classList.add(...["page-container", "animate-pulse", "pt-4"]);
     pageContainer.innerText =
-      "Your file is being converted. We are pinging the server every 5 seconds to check for status updates. Please be patient!";
+      "Your file is being converted. We are pinging the server every 5 seconds to check for status updates. See the table below for more detailed status information. Please be patient!";
     markdownContainer.appendChild(pageContainer);
   }
 };
@@ -144,6 +144,24 @@ const getTaskPages = async (taskId, taskIdToDisplay) => {
   }
 };
 
+const advancedOptionsButton = document.getElementById(
+  "expand-advanced-options"
+);
+advancedOptionsButton.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  const advancedOptionsInputs = document.getElementById(
+    "advanced-options-inputs"
+  );
+  advancedOptionsInputs.classList.toggle("hidden");
+  advancedOptionsButton
+    .querySelector(".bi-chevron-down")
+    .classList.toggle("hidden");
+  advancedOptionsButton
+    .querySelector(".bi-chevron-up")
+    .classList.toggle("hidden");
+});
+
 const fileUploadInput = document.getElementById("file-upload");
 
 fileUploadInput.addEventListener("change", (event) => {
@@ -158,9 +176,18 @@ fileUploadInput.addEventListener("change", (event) => {
     const file_name = file.name;
     const base64_file = event.target.result.split(",")[1];
 
+    const modelSelect = document.getElementById("model");
+    const model = modelSelect.options[modelSelect.selectedIndex].value;
+
+    const conversionPromptTextarea =
+      document.getElementById("conversion-prompt");
+    const conversionPrompt = conversionPromptTextarea.value;
+
     const formData = {
       file_name,
       base64_file,
+      llm_model: model,
+      system_prompt: conversionPrompt || undefined,
     };
 
     fetch("/api/task", {
@@ -233,7 +260,7 @@ const updateTaskStatusTable = () => {
     tableContainer.classList.remove("hidden");
     tableContainer.classList.add("flow-root");
     const formContainer = document.getElementById("upload-form-container");
-    formContainer.classList.remove("h-[75vh]");
+    formContainer.classList.remove(...["mt-[10vh]", "sm:mt-[20vh]"]);
     formContainer.classList.add(...["mt-10", "sm:mt-14", "md:mt-24"]);
   }
 };

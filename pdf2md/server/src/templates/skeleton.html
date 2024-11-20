@@ -53,14 +53,10 @@
       {% block navbar %}
       <header class="bg-white">
         <nav
-          class="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8 flex-wrap"
+          class="mx-auto flex max-w-screen-2xl items-center justify-between p-6 lg:px-8 flex-wrap"
           aria-label="Global"
         >
-          <a
-            class="flex items-center hover:text-magenta-500"
-            href="https://trieve.ai"
-            target="_blank"
-          >
+          <a class="flex items-center hover:text-magenta-500" href="/">
             <span
               class="self-center text-lg md:text-2xl font-medium whitespace-nowrap"
             >
@@ -73,6 +69,13 @@
             </span>
           </a>
           <div class="flex gap-x-4 gap-y-6 lg:gap-x-12 flex-wrap">
+            <a
+              href="/redoc"
+              class="text-sm/6 font-semibold text-gray-900 hover:text-magenta-500"
+              target="_blank"
+            >
+              API reference
+            </a>
             <a
               href="mailto:humans@trieve.ai"
               class="text-sm/6 font-semibold text-gray-900 hover:text-magenta-500"
