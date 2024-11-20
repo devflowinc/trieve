@@ -1,3 +1,18 @@
+const costsPerM = {
+  "openai/gpt-4o-mini": {
+    input_price: 0.15,
+    output_price: 0.6,
+  },
+  "google/gemini-flash-1.5-8b": {
+    input_price: 0.0375,
+    output_price: 0.15,
+  },
+  "google/gemini-flash-1.5": {
+    input_price: 0.075,
+    output_price: 0.3,
+  },
+};
+
 const defaultTableRowStr = `
     <td
       class="task-id whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0"
@@ -83,6 +98,9 @@ const displayTask = (task) => {
     task.pages_processed
   );
 
+  let completionTokens = 0;
+  let promptTokens = 0;
+
   sortedPages.forEach((page) => {
     const pageContainer = document.createElement("div");
     pageContainer.classList.add("page-container");
@@ -91,6 +109,9 @@ const displayTask = (task) => {
     const spacerDiv = document.createElement("div");
     spacerDiv.classList.add(...["my-4", "h-1", "bg-gray-700"]);
     markdownContainer.appendChild(spacerDiv);
+
+    promptTokens += page?.usage?.prompt_tokens || 0;
+    completionTokens += page?.usage?.completion_tokens || 0;
   });
   if (!sortedPages.length) {
     const pageContainer = document.createElement("div");
@@ -99,9 +120,33 @@ const displayTask = (task) => {
       "Your file is being converted. We are pinging the server every 5 seconds to check for status updates. See the table below for more detailed status information. Please be patient!";
     markdownContainer.appendChild(pageContainer);
   }
+
+  const modelSelect = document.getElementById("model");
+  const model = modelSelect.options[modelSelect.selectedIndex].value;
+  const costPerM = costsPerM[model];
+  const completionCost = (completionTokens * costPerM.output_price) / 1000000;
+  const promptCost = (promptTokens * costPerM.input_price) / 1000000;
+  document.getElementById("document-price").innerText =
+    `Cost: ${new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 5,
+    }).format(promptCost)} (Prompt) + ${new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 5,
+    }).format(completionCost)} (Completion) = ${new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 5,
+    }).format(completionCost + promptCost)}`;
 };
 
 const getTaskPages = async (taskId, taskIdToDisplay) => {
+  if (!taskId) {
+    return;
+  }
+
   try {
     let paginationToken = "";
     let task = null;
@@ -119,7 +164,7 @@ const getTaskPages = async (taskId, taskIdToDisplay) => {
       );
       const taskWithPages = await resp.json();
       task = taskWithPages;
-      pages.push(...taskWithPages.pages);
+      pages.push(...(taskWithPages.pages || []));
       paginationToken = taskWithPages.pagination_token;
       if (!paginationToken) {
         break;
@@ -243,13 +288,13 @@ const updateTaskStatusTable = () => {
     row.querySelector(".task-id").innerText = task.id;
     row.querySelector(".task-file-name").innerText = task.file_name;
     row.querySelector(".task-status").innerText =
-      task.status.toLowerCase() === "completed"
+      task.status?.toLowerCase() === "completed"
         ? task.status
         : `${task.status} | Please wait. Checking for updates every 5 seconds.`;
     row
       .querySelector(".task-status")
       .classList.add(
-        `status-${task.status.split(" ").join("-").toLowerCase()}`
+        `status-${task.status?.split(" ").join("-").toLowerCase()}`
       );
     row.querySelector(".task-prompt-tokens").innerText = promptTokens;
     row.querySelector(".task-completion-tokens").innerText = completionTokens;
@@ -282,7 +327,7 @@ const refreshTasks = () => {
   const taskIdToDisplay = url.searchParams.get("taskId");
   tasks.forEach((task) => {
     if (
-      task.status.toLowerCase() === "completed" &&
+      task.status?.toLowerCase() === "completed" &&
       task.pages &&
       task.pages.length
     ) {
