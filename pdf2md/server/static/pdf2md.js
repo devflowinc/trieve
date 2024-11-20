@@ -254,6 +254,70 @@ copyButton.addEventListener("click", (e) => {
 });
 
 const fileUploadInput = document.getElementById("file-upload");
+const exampleButtonsContainer = document.getElementById(
+  "example-buttons-container"
+);
+exampleButtonsContainer.querySelectorAll("button").forEach((button) => {
+  button.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const imgSrc = button.querySelector("img").getAttribute("src");
+    const pdfSrc = imgSrc.replace(".webp", ".pdf");
+    fetch(pdfSrc).then((response) => {
+      response.blob().then((blob) => {
+        const file = new File([blob], pdfSrc.split("/").pop(), {
+          type: "application/pdf",
+        });
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileUploadInput.files = dataTransfer.files;
+
+        const event = new Event("change", { bubbles: true });
+        fileUploadInput.dispatchEvent(event);
+      });
+    });
+  });
+});
+
+const dropZone = document.getElementById("drop-zone");
+const fileInput = document.getElementById("file-upload");
+dropZone.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.style.borderColor = "#a33eb5";
+});
+
+dropZone.addEventListener("dragleave", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.style.borderColor = "rgba(17, 24, 39, 0.25)";
+});
+
+dropZone.addEventListener("drop", handleDrop);
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.style.borderColor = "rgba(17, 24, 39, 0.25)";
+
+  const dt = e.dataTransfer;
+  const files = dt.files;
+
+  if (files.length) {
+    const file = files[0];
+
+    if (file.type === "application/pdf") {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      fileInput.files = dataTransfer.files;
+
+      const event = new Event("change", { bubbles: true });
+      fileInput.dispatchEvent(event);
+    } else {
+      alert("Please upload a PDF file.");
+    }
+  }
+}
 
 fileUploadInput.addEventListener("change", (event) => {
   const file = event.target.files[0];

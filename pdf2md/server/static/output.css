@@ -698,6 +698,10 @@ video {
   width: 3rem;
 }
 
+.w-28 {
+  width: 7rem;
+}
+
 .w-full {
   width: 100%;
 }
@@ -1170,6 +1174,11 @@ video {
 
 .focus-within\:ring-offset-2:focus-within {
   --tw-ring-offset-width: 2px;
+}
+
+.hover\:border-magenta-500:hover {
+  --tw-border-opacity: 1;
+  border-color: rgb(163 62 181 / var(--tw-border-opacity));
 }
 
 .hover\:bg-magenta-500:hover {
