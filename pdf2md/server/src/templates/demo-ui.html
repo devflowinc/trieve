@@ -94,6 +94,7 @@
         <option value="google/gemini-flash-1.5">
           gemini-flash-1.5 ($0.075/M input)
         </option>
+        <option value="Chunkr">chunkr</option>
       </select>
       <label
         for="conversion-prompt"
@@ -176,10 +177,19 @@ Convert the following PDF page to markdown. Return only the markdown with no exp
           class="w-28"
         />
       </button>
+      <button class="hover:border-magenta-500 border">
+        <img
+          src="https://cdn.trieve.ai/pdf2md/LightGBM%20-%20A%20Highly-Efficient%20Gradient%20Boosting%20Decision%20Tree%20(2017)-pages.webp"
+          class="w-28"
+        />
+      </button>
     </div>
   </form>
 </div>
-<div id="utility-results-view" class="px-4 mt-10 sm:mt-14 md:mt-24 max-w-screen-2xl mx-auto hidden">
+<div
+  id="utility-results-view"
+  class="px-4 mt-10 sm:mt-14 md:mt-24 max-w-screen-2xl mx-auto hidden"
+>
   <div class="col-span-2 flex justify-between items-center py-1">
     <p id="document-price" class="text-gray-600 text-sm/6"></p>
     <div class="flex items-center gap-2">

@@ -1,3 +1,4 @@
+pub mod chunkr;
 pub mod clickhouse;
 pub mod pdf_chunk;
 pub mod redis;

@@ -11,6 +11,10 @@ const costsPerM = {
     input_price: 0.075,
     output_price: 0.3,
   },
+  "Chunkr": {
+    input_price: 0,
+    output_price: 0,
+  },
 };
 
 const defaultTableRowStr = `
@@ -169,8 +173,7 @@ const getTaskPages = async (taskId, taskIdToDisplay) => {
     let pages = [];
     while (true) {
       const resp = await fetch(
-        `/api/task/${taskId}${
-          paginationToken ? `?pagination_token=${paginationToken}` : ""
+        `/api/task/${taskId}${paginationToken ? `?pagination_token=${paginationToken}` : ""
         }`,
         {
           headers: {
@@ -178,9 +181,12 @@ const getTaskPages = async (taskId, taskIdToDisplay) => {
           },
         }
       );
+      if (!resp.ok) {
+        throw new Error(`HTTP error! status: ${resp.status}`);
+      }
       const taskWithPages = await resp.json();
       task = taskWithPages;
-      pages.push(...(taskWithPages.pages || []));
+      pages.push(...(taskWithPages.pages ?? []));
       paginationToken = taskWithPages.pagination_token;
       if (!paginationToken) {
         break;
@@ -258,9 +264,8 @@ copyButton.addEventListener("click", (e) => {
   navigator.clipboard.writeText(textToCopy);
 
   notyf.success({
-    message: `Copied ${
-      jsonSwitch.classList.contains("bg-magenta-600") ? "JSON" : "Markdown"
-    } to clipboard!`,
+    message: `Copied ${jsonSwitch.classList.contains("bg-magenta-600") ? "JSON" : "Markdown"
+      } to clipboard!`,
     dismissable: true,
     position: { x: "center", y: "top" },
   });
@@ -351,9 +356,12 @@ fileUploadInput.addEventListener("change", (event) => {
       document.getElementById("conversion-prompt");
     const conversionPrompt = conversionPromptTextarea.value;
 
+    let provider = model === "Chunkr" ? "Chunkr" : "LLM";
+
     const formData = {
       file_name,
       base64_file,
+      provider,
       llm_model: model,
       system_prompt: conversionPrompt || undefined,
     };

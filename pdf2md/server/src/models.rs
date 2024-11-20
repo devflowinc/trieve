@@ -1,3 +1,4 @@
+use crate::operators::chunkr::{Status, TaskResponse};
 use derive_more::derive::Display;
 use s3::creds::time::OffsetDateTime;
 use utoipa::ToSchema;
@@ -59,7 +60,28 @@ pub struct CreateFileTaskResponse {
     pub id: uuid::Uuid,
     pub file_name: String,
     pub status: FileTaskStatus,
-    pub pos_in_queue: String,
+    /// Only returned if the provider is LLM.
+    pub pos_in_queue: Option<String>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug, ToSchema, Display)]
+pub enum Provider {
+    #[display("Chunkr")]
+    Chunkr,
+    #[display("LLM")]
+    LLM,
+}
+
+impl std::str::FromStr for Provider {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Chunkr" => Ok(Provider::Chunkr),
+            "LLM" => Ok(Provider::LLM),
+            _ => Err(format!("Unknown provider: {}", s)),
+        }
+    }
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug, ToSchema)]
@@ -68,6 +90,8 @@ pub struct UploadFileReqPayload {
     pub file_name: String,
     /// Base64 encoded file. This is the standard base64 encoding.
     pub base64_file: String,
+    /// The provider to use for the task. If Chunkr is used then llm_model, llm_api_key, system_prompt, webhook_url, webhook_payload_template are ignored. If not provided, Chunkr will be used.
+    pub provider: Option<Provider>,
     /// The name of the llm model to use for the task. If not provided, the default model will be used. We support all models from (OpenRouter)[https://openrouter.ai/models]
     pub llm_model: Option<String>,
     /// The API key to use for the llm being used.
@@ -85,6 +109,8 @@ pub struct UploadFileReqPayload {
     ///   Example: {"status": "{{status}}", "data": {"output": "{{result}}"}}
     ///   If not provided, the default template will be used.
     pub webhook_payload_template: Option<String>,
+    /// The API key to use for the Chunkr API.
+    pub chunkr_api_key: Option<String>,
 }
 
 #[derive(Debug)]
@@ -144,8 +170,11 @@ pub struct FileTaskClickhouse {
     pub pages: u32,
     pub pages_processed: u32,
     pub status: String,
+    pub provider: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
+    pub chunkr_task_id: String,
+    pub chunkr_api_key: Option<String>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, clickhouse::Row, Clone)]
@@ -178,6 +207,44 @@ impl From<ChunkClickhouse> for Chunk {
             page_num: c.page,
             usage: serde_json::from_str(&c.usage).unwrap(),
             created_at: c.created_at.to_string(),
+        }
+    }
+}
+
+impl From<TaskResponse> for Vec<Chunk> {
+    fn from(response: TaskResponse) -> Self {
+        if let Some(output) = response.output {
+            let mut page_contents: std::collections::HashMap<u32, String> =
+                std::collections::HashMap::new();
+
+            for chunk in output.chunks {
+                for segment in chunk.segments {
+                    let page_num = segment.page_number;
+                    if let Some(markdown) = segment.markdown {
+                        page_contents
+                            .entry(page_num)
+                            .and_modify(|content| {
+                                content.push_str("\n\n");
+                                content.push_str(&markdown);
+                            })
+                            .or_insert(markdown);
+                    }
+                }
+            }
+
+            page_contents
+                .into_iter()
+                .map(|(page_num, content)| Chunk {
+                    id: uuid::Uuid::new_v4().to_string(),
+                    task_id: response.task_id.clone(),
+                    content,
+                    page_num,
+                    usage: serde_json::json!({}),
+                    created_at: response.created_at.to_string(),
+                })
+                .collect()
+        } else {
+            vec![]
         }
     }
 }
@@ -215,6 +282,7 @@ impl GetTaskResponse {
             pages: None,
         }
     }
+
     pub fn new_with_pages(
         task: FileTaskClickhouse,
         pages: Vec<ChunkClickhouse>,
@@ -230,6 +298,24 @@ impl GetTaskResponse {
             created_at: task.created_at.to_string(),
             pagination_token: pages.last().map(|c| c.id.clone()),
             pages: Some(pages.into_iter().map(Chunk::from).collect()),
+        }
+    }
+
+    pub fn new_with_chunkr(task: FileTaskClickhouse, chunkr_task: TaskResponse) -> Self {
+        let pages = Vec::from(chunkr_task.clone());
+        Self {
+            id: task.id.clone(),
+            file_name: task.file_name.clone(),
+            file_url: Some(chunkr_task.pdf_url.unwrap_or_default()),
+            total_document_pages: task.pages,
+            pages_processed: match chunkr_task.status {
+                Status::Succeeded => task.pages,
+                _ => 0,
+            },
+            status: format!("{}", chunkr_task.status),
+            created_at: task.created_at.to_string(),
+            pagination_token: None,
+            pages: Some(pages),
         }
     }
 }

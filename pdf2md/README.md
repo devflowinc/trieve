@@ -6,7 +6,7 @@
 
 ```bash
 cd server
-cp .env.dist .env
+cp ../.env.dist .env
 ```
 
 ### Start docker dependency services

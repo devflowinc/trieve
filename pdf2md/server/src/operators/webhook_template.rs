@@ -94,6 +94,7 @@ mod tests {
             base64_file: "test".to_string(),
             webhook_url: Some("https://example.com".to_string()),
             file_name: "test.pdf".to_string(),
+            provider: None,
             webhook_payload_template: Some(
                 r#"{
                 "taskInfo": {
@@ -113,6 +114,7 @@ mod tests {
             llm_model: None,
             llm_api_key: None,
             system_prompt: None,
+            chunkr_api_key: None,
         };
 
         let data = WebhookPayloadData {
@@ -145,6 +147,7 @@ mod tests {
             base64_file: "test".to_string(),
             webhook_url: Some("https://example.com".to_string()),
             file_name: "test.pdf".to_string(),
+            provider: None,
             webhook_payload_template: Some(
                 r#"{
                 "metadata": {{metadata}},
@@ -155,6 +158,7 @@ mod tests {
             llm_model: None,
             llm_api_key: None,
             system_prompt: None,
+            chunkr_api_key: None,
         };
 
         let data = WebhookPayloadData {
