@@ -23,7 +23,7 @@
   id="upload-form-container"
   class="flex justify-center mt-[10vh] sm:mt-[20vh] items-center px-4"
 >
-  <form class="max-w-lg mx-auto">
+  <form class="max-w-2xl mx-auto">
     <div class="text-center">
       <h2
         class="text-balance text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl"
@@ -31,7 +31,7 @@
         OCR With Intelligence
       </h2>
       <p class="mt-2 text-pretty text-lg/8 text-gray-700">
-        Convert any PDF to LLM-ready Markdown using vision models like GPT-4o.
+        Convert any PDF to LLM-ready Markdown using thrifty vision models like GPT-4o-mini and Gemini-flash-1.5.
       </p>
     </div>
     <button
@@ -75,10 +75,15 @@
         name="model"
         class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 bg-white ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-magenta-600 sm:text-sm/6"
       >
-        <option value="openai/gpt-4o-mini" selected>4o-mini</option>
-        <option value="openai/chatgpt-4o-latest">4o</option>
-        <option value="google/gemini-flash-1.5-8b">gemini-flash-1.5-8b</option>
-        <option value="google/gemini-flash-1.5">gemini-flash-1.5</option>
+        <option value="openai/gpt-4o-mini" selected>
+          4o-mini ($0.15/M input)
+        </option>
+        <option value="google/gemini-flash-1.5-8b">
+          gemini-flash-1.5-8b ($0.0375/M input)
+        </option>
+        <option value="google/gemini-flash-1.5">
+          gemini-flash-1.5 ($0.075/M input)
+        </option>
       </select>
       <label
         for="conversion-prompt"
@@ -134,11 +139,11 @@ Convert the following PDF page to markdown. Return only the markdown with no exp
     </div>
   </form>
 </div>
-<div class="px-4">
-  <div
-    id="result-container"
-    class="mt-10 sm:mt-14 md:mt-24 grid grid-cols-2 gap-4 max-w-screen-2xl mx-auto"
-  >
+<div class="px-4 mt-10 sm:mt-14 md:mt-24 max-w-screen-2xl mx-auto">
+  <div class="col-span-2 flex justify-between">
+    <p id="document-price" class="text-gray-600 text-sm/6"></p>
+  </div>
+  <div id="result-container" class="grid grid-cols-2 gap-4">
     <div id="my-pdf"></div>
     <div id="markdown-container" class="max-h-[75vh] overflow-y-auto"></div>
   </div>

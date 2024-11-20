@@ -45,7 +45,7 @@ pub async fn get_signed_url(bucket: &Bucket, key: &str) -> Result<String, Servic
     custom_queries.insert("response-content-encoding".into(), "utf-8".into());
 
     let url = bucket
-        .presign_get(key, 3600, Some(custom_queries))
+        .presign_get(key, 86400, Some(custom_queries))
         .await
         .map_err(|e| {
             log::error!("Could not get signed url {:?}", e);
