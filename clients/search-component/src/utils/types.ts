@@ -31,13 +31,13 @@ export type GroupSearchResults = {
 };
 
 export function isChunksWithHighlights(
-  result: ChunkWithHighlights | GroupChunk[]
+  result: ChunkWithHighlights | GroupChunk[],
 ): result is ChunkWithHighlights {
-  return (result as ChunkWithHighlights).highlights !== undefined;
+  return !Array.isArray(result);
 }
 
 export function isGroupChunk(
-  result: ChunkWithHighlights | GroupChunk
+  result: ChunkWithHighlights | GroupChunk,
 ): result is GroupChunk {
   return (result as GroupChunk).group !== undefined;
 }

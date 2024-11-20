@@ -32,7 +32,6 @@ export const OpenModalButton = ({ setOpen }: OpenModalButtonProps) => {
           className={`${props.theme} ${
             props.responsive ?? false ? "responsive" : ""
           }`}
-          key="open-button-container"
         >
           <div className={`${props.responsive ?? false ? "responsive" : ""}`}>
             <svg
@@ -54,7 +53,7 @@ export const OpenModalButton = ({ setOpen }: OpenModalButtonProps) => {
             </div>
           </div>
           <span
-            key="open-button"
+            key={"open-button"}
             className={`open ${props.responsive ?? false ? "responsive" : ""}`}
           >
             {keyCombo.map((key) => (

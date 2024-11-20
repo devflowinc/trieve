@@ -7,7 +7,7 @@ export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
 
   return Object.fromEntries(
-    Object.entries(obj).filter(([key]) => !keys.includes(key))
+    Object.entries(obj).filter(([key]) => !keys.includes(key)),
   );
 };
 
@@ -56,7 +56,7 @@ export const searchWithTrieve = async ({
         search_type: searchOptions.search_type ?? "fulltext",
         ...omit(searchOptions, ["use_autocomplete"]),
       },
-      abortController?.signal
+      abortController?.signal,
     )) as SearchResponseBody;
   } else {
     results = (await trieve.search(
@@ -84,7 +84,7 @@ export const searchWithTrieve = async ({
         search_type: searchOptions.search_type ?? "fulltext",
         ...omit(searchOptions, ["use_autocomplete"]),
       },
-      abortController?.signal
+      abortController?.signal,
     )) as SearchResponseBody;
   }
 
@@ -145,7 +145,7 @@ export const groupSearchWithTrieve = async ({
       search_type: searchOptions.search_type ?? "fulltext",
       ...omit(searchOptions, ["use_autocomplete"]),
     },
-    abortController?.signal
+    abortController?.signal,
   );
 
   const resultsWithHighlight = results.results.map((group) => {
@@ -198,7 +198,7 @@ export const countChunks = async ({
       search_type: "fulltext",
       ...omit(searchOptions, ["search_type"]),
     },
-    abortController?.signal
+    abortController?.signal,
   );
   return results;
 };
@@ -240,7 +240,7 @@ export const getSuggestedQueries = async ({
       search_type: "semantic",
       context: "You are a user searching through a docs website",
     },
-    abortController?.signal
+    abortController?.signal,
   );
 };
 
@@ -257,10 +257,38 @@ export const getSuggestedQuestions = async ({
       search_type: "semantic",
       context: "You are a user searching through a docs website",
     },
-    abortController?.signal
+    abortController?.signal,
   );
 };
 
 export const sendFeedback = async ({ trieve }: { trieve: TrieveSDK }) => {
   return trieve;
+};
+
+export const getChunkIdsForGroup = async (
+  groupId: string,
+  trieve: TrieveSDK,
+): Promise<string[]> => {
+  let moreToFind = true;
+  let page = 1;
+  let chunkIds = [];
+  while (moreToFind) {
+    const results = await trieve.trieve.fetch(
+      "/api/chunk_group/{group_id}/{page}",
+      "get",
+      {
+        datasetId: trieve.datasetId,
+        groupId,
+        page,
+      },
+    );
+    if (results.chunks.length === 0) {
+      moreToFind = false;
+      break;
+    }
+    for (const chunk of results.chunks) {
+      chunkIds.push(chunk.id);
+    }
+  }
+  return chunkIds;
 };

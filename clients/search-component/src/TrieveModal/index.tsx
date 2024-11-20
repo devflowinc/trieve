@@ -61,7 +61,10 @@ const Modal = () => {
             } ${props.type}`.trim()}
           >
             {props.allowSwitchingModes && <ModeSwitch />}
-            <div className="search-container" style={{ display: mode === "search" ? "block" : "none" }}>
+            <div
+              className="search-container"
+              style={{ display: mode === "search" ? "block" : "none" }}
+            >
               <SearchMode />
             </div>
             <div

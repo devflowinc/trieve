@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { Chunk, ChunkWithHighlights, GroupChunk } from "../types";
 import {
+  ChunkGroup,
   CountChunkQueryResponseBody,
   SearchChunksReqPayload,
   TrieveSDK,
@@ -31,6 +32,7 @@ export type currencyPosition = "before" | "after";
 export type ModalTypes = "ecommerce" | "docs";
 export type SearchModes = "chat" | "search";
 export type searchOptions = simpleSearchReqPayload & customAutoCompleteAddOn;
+
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
@@ -118,6 +120,8 @@ const ModalContext = createContext<{
   setContextProps: (props: ModalProps) => void;
   currentTag: string;
   setCurrentTag: React.Dispatch<React.SetStateAction<string>>;
+  currentGroup: ChunkGroup | null;
+  setCurrentGroup: React.Dispatch<React.SetStateAction<ChunkGroup | null>>;
   tagCounts: CountChunkQueryResponseBody[];
 }>({
   props: defaultProps,
@@ -138,6 +142,8 @@ const ModalContext = createContext<{
   setLoadingResults: () => {},
   setCurrentTag: () => {},
   currentTag: "all",
+  currentGroup: null,
+  setCurrentGroup: () => {},
   tagCounts: [],
   setContextProps: () => {},
 });
@@ -167,6 +173,8 @@ const ModalProvider = ({
   const [currentTag, setCurrentTag] = useState(
     props.tags?.find((t) => t.selected)?.tag || "all"
   );
+
+  const [currentGroup, setCurrentGroup] = useState<ChunkGroup | null>(null);
 
   const trieve = new TrieveSDK({
     baseUrl: props.baseUrl,
@@ -340,6 +348,8 @@ const ModalProvider = ({
         modalRef,
         currentTag,
         setCurrentTag,
+        currentGroup,
+        setCurrentGroup,
         tagCounts,
       }}
     >

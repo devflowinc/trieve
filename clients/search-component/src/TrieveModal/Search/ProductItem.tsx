@@ -2,15 +2,23 @@ import { Chunk, ChunkWithHighlights } from "../../utils/types";
 import React, { useRef, useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
+import { ChunkGroup } from "trieve-ts-sdk";
 
 type Props = {
   item: ChunkWithHighlights;
   requestID: string;
   index: number;
   className?: string;
+  group?: ChunkGroup;
 };
 
-export const ProductItem = ({ item, requestID, index, className }: Props) => {
+export const ProductItem = ({
+  item,
+  requestID,
+  index,
+  className,
+  group,
+}: Props) => {
   const { props, trieveSDK } = useModalState();
   const Component = item.chunk.link ? "a" : "button";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,7 +37,7 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
   const chunkHtmlHeadingsDiv = document.createElement("div");
   chunkHtmlHeadingsDiv.innerHTML = item.chunk.chunk_html || "";
   const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-    "h1, h2, h3, h4, h5, h6"
+    "h1, h2, h3, h4, h5, h6",
   );
 
   const $firstHeading = chunkHtmlHeadings[0] ?? document.createElement("h1");
@@ -51,23 +59,27 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
   }
   descriptionHtml = descriptionHtml.replace(/([.,!?;:])/g, "$1 ");
   const [shownImage, setShownImage] = useState<string>(
-    item.chunk?.image_urls?.[0] || ""
+    item.chunk?.image_urls?.[0] || "",
   );
 
-  const title = `${cleanFirstHeading ||
+  const title = `${
+    cleanFirstHeading ||
     item.chunk.metadata?.title ||
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name
-    }`;
+  }`;
 
   const formatPrice = (price: number | null | undefined) => {
     return price
-      ? `${props.currencyPosition === "before" ? props.defaultCurrency ?? "$" : ""
-      }${price}${props.currencyPosition === "after" ? props.defaultCurrency ?? "$" : ""
-      }`
-      : ""
+      ? `${
+          props.currencyPosition === "before"
+            ? props.defaultCurrency ?? "$"
+            : ""
+        }${price}${
+          props.currencyPosition === "after" ? props.defaultCurrency ?? "$" : ""
+        }`
+      : "";
   };
-
 
   const formatedPrice = formatPrice(item.chunk.num_value);
 
@@ -98,7 +110,9 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
       }
     }
   }
-  const formatedPriceRange = `${formatPrice(priceMin)} - ${formatPrice(priceMax)}`;
+  const formatedPriceRange = `${formatPrice(priceMin)} - ${formatPrice(
+    priceMax,
+  )}`;
 
   if (!title.trim() || title == "undefined") {
     return null;
@@ -106,7 +120,7 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
 
   const onResultClick = async (
     chunk: Chunk & { position: number },
-    requestID: string
+    requestID: string,
   ) => {
     if (props.onResultClick) {
       props.onResultClick(chunk);
@@ -134,7 +148,7 @@ export const ProductItem = ({ item, requestID, index, className }: Props) => {
               ...item.chunk,
               position: index,
             },
-            requestID
+            requestID,
           )
         }
         href={item.chunk.link ?? ""}
