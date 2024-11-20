@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supervisor-worker
+  labels:
+    app.kubernetes.io/name: supervisor-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: supervisor-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: supervisor-worker
+    spec:
+      containers:
+      - name: pdf2md-server
+        image: trieve/supervisor-worker
+        envFrom:
+          - configMapRef:
+              name: chunk-worker-config
+
