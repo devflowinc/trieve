@@ -25,6 +25,7 @@ RUN apt-get update -y; \
     pkg-config \
     libssl-dev \
     ca-certificates \
+    poppler-utils \
     ;
 
 COPY ./ch_migrations /app/ch_migrations
