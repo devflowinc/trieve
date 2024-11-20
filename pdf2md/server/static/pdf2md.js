@@ -59,6 +59,7 @@ const upsertTaskToStorage = (task) => {
 
 const displayTask = (task) => {
   const markdownContainer = document.getElementById("markdown-container");
+  const jsonContainer = document.getElementById("json-container");
   const taskId = markdownContainer.getAttribute("data-task-id");
   const taskStatus = markdownContainer.getAttribute("data-task-status");
   const taskNumPagesProcessed = markdownContainer.getAttribute(
@@ -78,6 +79,8 @@ const displayTask = (task) => {
     return;
   }
   const sortedPages = pages.sort((a, b) => a.page_num - b.page_num);
+
+  jsonContainer.innerText = JSON.stringify(task, null, 2);
 
   PDFObject.embed(task.file_url, "#my-pdf", {
     pdfOpenParams: {
@@ -204,6 +207,50 @@ advancedOptionsButton.addEventListener("click", (e) => {
   advancedOptionsButton
     .querySelector(".bi-chevron-up")
     .classList.toggle("hidden");
+});
+
+const jsonSwitch = document.getElementById("json-switch");
+const jsonPre = document.getElementById("json-pre");
+const markdownContainer = document.getElementById("markdown-container");
+jsonSwitch.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (jsonSwitch.classList.contains("bg-magenta-600")) {
+    jsonSwitch.classList.remove("bg-magenta-600");
+    jsonSwitch.classList.add("bg-gray-200");
+    jsonSwitch.querySelector("span").classList.remove("translate-x-5");
+    jsonSwitch.querySelector("span").classList.add("translate-x-0");
+    jsonPre.classList.add("hidden");
+    markdownContainer.classList.remove("hidden");
+  } else {
+    jsonSwitch.classList.add("bg-magenta-600");
+    jsonSwitch.classList.remove("bg-gray-200");
+    jsonSwitch.querySelector("span").classList.add("translate-x-5");
+    jsonSwitch.querySelector("span").classList.remove("translate-x-0");
+    jsonPre.classList.remove("hidden");
+    markdownContainer.classList.add("hidden");
+  }
+});
+
+const copyButton = document.getElementById("copy-button");
+copyButton.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  let textToCopy = "";
+  if (jsonSwitch.classList.contains("bg-magenta-600")) {
+    textToCopy = jsonPre.innerText;
+  } else {
+    textToCopy = markdownContainer.innerText;
+  }
+  navigator.clipboard.writeText(textToCopy);
+
+  notyf.success({
+    message: `Copied ${
+      jsonSwitch.classList.contains("bg-magenta-600") ? "JSON" : "Markdown"
+    } to clipboard!`,
+    dismissable: true,
+    position: { x: "center", y: "top" },
+  });
 });
 
 const fileUploadInput = document.getElementById("file-upload");
