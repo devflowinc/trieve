@@ -24,22 +24,31 @@ macro_rules! process_task_with_retry {
                     log::info!("Processing task: {:?}", task.id);
                     let result = $process_fn(task.clone()).await;
 
-                    if let Err(err) = result {
-                        log::error!("Task processing failed: {:?}", err);
+                    match result {
+                        Ok(_) => {
+                            pdf2md_server::operators::redis::remove_from_processing(
+                                task,
+                                $queue_name,
+                                $redis_conn.clone(),
+                            ).await;
+                        }
+                        Err(err) => {
+                            log::error!("Task processing failed: {:?}", err);
 
-                        // Requeue the failed task
-                        if let Err(requeue_err) = pdf2md_server::operators::redis::readd_to_queue(
-                            task,
-                            err,
-                            $queue_name,
-                            $redis_conn.clone(),
-                            &$clickhouse_client,
-                        )
-                        .await
-                        {
-                            log::error!("Failed to requeue task: {:?}", requeue_err);
-                        } else {
-                            log::info!("Successfully requeued failed task");
+                            // Requeue the failed task
+                            if let Err(requeue_err) = pdf2md_server::operators::redis::readd_to_queue(
+                                task,
+                                err,
+                                $queue_name,
+                                $redis_conn.clone(),
+                                &$clickhouse_client,
+                            )
+                            .await
+                            {
+                                log::error!("Failed to requeue task: {:?}", requeue_err);
+                            } else {
+                                log::info!("Successfully requeued failed task");
+                            }
                         }
                     }
                 }
@@ -50,6 +59,21 @@ macro_rules! process_task_with_retry {
             }
         }
     };
+}
+
+pub async fn remove_from_processing<T: for<'a> serde::Serialize>(
+    payload: T,
+    queue_name: &str,
+    mut redis_connection: redis::aio::MultiplexedConnection,
+) {
+    let serialized_message = serde_json::to_string(&payload).expect("Failed to serialize message");
+
+    let _ = redis::cmd("LREM")
+        .arg(format!("{}_processing", queue_name))
+        .arg(1)
+        .arg(serialized_message)
+        .query_async::<String>(&mut redis_connection)
+        .await;
 }
 
 pub async fn listen_to_redis<T: for<'a> serde::Deserialize<'a>>(
