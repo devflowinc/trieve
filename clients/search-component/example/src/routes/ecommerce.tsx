@@ -18,6 +18,9 @@ export default function ECommerce() {
   const brandColor = import.meta.env.VITE_ACCENT_COLOR;
   const problemLink = import.meta.env.VITE_PROBLEM_LINK;
   const useGroupSearch = import.meta.env.VITE_USE_GROUP_SEARCH == "true";
+  const defaultSearchQueries: string[] = (
+    import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
+  ).split(",");
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -64,6 +67,7 @@ export default function ECommerce() {
                 use_autocomplete: false,
                 search_type: "fulltext",
               }}
+              defaultSearchQueries={defaultSearchQueries}
             />
           </>
         ) : (

@@ -165,7 +165,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all",
+    props.tags?.find((t) => t.selected)?.tag || "all"
   );
 
   const trieve = new TrieveSDK({
@@ -173,35 +173,6 @@ const ModalProvider = ({
     apiKey: props.apiKey,
     datasetId: props.datasetId,
   });
-
-  useEffect(() => {
-    setProps((p) => ({
-      ...p,
-      ...onLoadProps,
-    }));
-  }, [onLoadProps]);
-
-  useEffect(() => {
-    props.onOpenChange?.(open);
-  }, [open]);
-
-  // Use TAB to alternate modes
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        open &&
-        e.ctrlKey &&
-        e.key === "Tab" &&
-        props.allowSwitchingModes !== false
-      ) {
-        setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, props.allowSwitchingModes]);
 
   const search = async (abortController: AbortController) => {
     if (!query) {
@@ -221,8 +192,6 @@ const ModalProvider = ({
           type: props.type,
         });
 
-        // join similar groups
-        // add to hashmap
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
           const title = group.chunks[0].chunk.metadata?.title;
@@ -259,20 +228,6 @@ const ModalProvider = ({
     }
   };
 
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    setLoadingResults(true);
-    const timeout = setTimeout(() => {
-      search(abortController);
-    }, props.debounceMs);
-
-    return () => {
-      clearTimeout(timeout);
-      abortController.abort();
-    };
-  }, [query, currentTag]);
-
   const getTagCounts = async (abortController: AbortController) => {
     if (!query) {
       setTagCounts([]);
@@ -287,8 +242,8 @@ const ModalProvider = ({
               trieve: trieve,
               abortController,
               ...(tag.tag !== "all" && { tag: tag.tag }),
-            }),
-          ),
+            })
+          )
         );
         setTagCounts(numberOfRecords);
       } catch (e) {
@@ -303,6 +258,48 @@ const ModalProvider = ({
       }
     }
   };
+
+  useEffect(() => {
+    setProps((p) => ({
+      ...p,
+      ...onLoadProps,
+    }));
+  }, [onLoadProps]);
+
+  useEffect(() => {
+    props.onOpenChange?.(open);
+  }, [open]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        open &&
+        e.ctrlKey &&
+        e.key === "Tab" &&
+        props.allowSwitchingModes !== false
+      ) {
+        setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, props.allowSwitchingModes]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    setLoadingResults(true);
+    const timeout = setTimeout(() => {
+      search(abortController);
+    }, props.debounceMs);
+
+    return () => {
+      clearTimeout(timeout);
+      abortController.abort();
+    };
+  }, [query, currentTag]);
 
   useEffect(() => {
     const abortController = new AbortController();

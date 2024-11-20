@@ -17,6 +17,9 @@ export default function Home() {
   const brandColor = import.meta.env.VITE_ACCENT_COLOR;
   const problemLink = import.meta.env.VITE_PROBLEM_LINK;
   const useGroupSearch = import.meta.env.VITE_USE_GROUP_SEARCH == "true";
+  const defaultSearchQueries: string[] = (
+    import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
+  ).split(",");
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -51,6 +54,7 @@ export default function Home() {
               baseUrl={baseUrl}
               datasetId={datasetId}
               problemLink={problemLink}
+              defaultSearchQueries={defaultSearchQueries}
               theme={theme}
               tags={[
                 {
@@ -109,11 +113,6 @@ export default function Home() {
                 },
               ]}
               useGroupSearch={useGroupSearch}
-              defaultSearchQueries={[
-                "How to create a chunk?",
-                "Does Trieve use a re-ranker?",
-                "Sending click events",
-              ]}
               defaultAiQuestions={[
                 "What is Trieve?",
                 "How to perform autocomplete search?",

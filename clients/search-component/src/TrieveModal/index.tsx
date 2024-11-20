@@ -23,7 +23,6 @@ const Modal = () => {
       props.brandColor ?? "#CB53EB",
     );
 
-    // depending on the theme, set the background color of ::-webkit-scrollbar-thumb for #trieve-search-modal
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
