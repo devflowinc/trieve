@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chunk-worker
+  labels:
+    app.kubernetes.io/name: chunk-worker
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: chunk-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: chunk-worker
+    spec:
+      containers:
+      - name: chunk-worker
+        image: trieve/chunk-worker
+        envFrom:
+          - configMapRef:
+              name: chunk-worker-config
+

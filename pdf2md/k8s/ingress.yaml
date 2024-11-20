@@ -1,0 +1,10 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pdf2md-ingress
+spec:
+  defaultBackend:
+    service:
+      name: pdf2md-api
+      port:
+        number: 80

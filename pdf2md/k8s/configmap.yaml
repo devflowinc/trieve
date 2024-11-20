@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chunk-worker-config
+data:
+  REDIS_URL: redis://**.*.***.**
+
+  # Clickhouse
+  CLICKHOUSE_URL: http://clickhouse-url:8123
+  CLICKHOUSE_DB: default
+  CLICKHOUSE_USER: default
+  CLICKHOUSE_PASSWORD: password
+
+  # S3
+  S3_ENDPOINT: https://s3bucket.s3.amazonaws.com
+  S3_ACCESS_KEY: ZaaZZaaZZaaZZaaZZaaZ
+  S3_SECRET_KEY: ssssssssssssssssssssTTTTTTTTTTTTTTTTTTTT
+  S3_BUCKET: s3bucket
+  AWS_REGION: us-east-2 # Only needed if using AWS s3
+
+  # PDF2MD conversion worker services
+  LLM_BASE_URL: https://openrouter.ai/api/v1 # Openrouter or openai
+  LLM_API_KEY: sk-*******************************
+  LLM_MODEL: gpt-4o-mini
+
+  # PDF2MD HTTP API server
+  API_KEY: admin # API key for the PDF2MD HTTP API server
