@@ -72,9 +72,9 @@ Workers horizontally scale on-demand to handle high volume periods. Usually `chu
 
 Trieve has used [apache tika](https://tika.apache.org/) to process various filetypes for the past year which means that files with complex layouts and diagrams have been poorly ingested. 
 
-We saw [OmniAI](https://github.com/getomni-ai) launch [xerox](https://github.com/getomni-ai/zerox) and show that 4o-mini was a viable and cheap way to handle these filetypes and decided it was time to integrate something better than Tika into Trieve.
+We saw [OmniAI](https://github.com/getomni-ai) launch [zerox](https://github.com/getomni-ai/zerox) and show that 4o-mini was a viable and cheap way to handle these filetypes and decided it was time to integrate something better than Tika into Trieve.
 
-We previously lightly contributed to [Chunkr](https://github.com/lumina-ai-inc/chunkr) which is a more advanced system that leverages layout detection and dedicated OCR models to process documents, but still felt the need to build something ourselves since it was a bit complex to work into Trieve's local dev and self-hosting setup. Xerox's approach using just a VLLM was ideal and the path we went with.
+We previously lightly contributed to [Chunkr](https://github.com/lumina-ai-inc/chunkr) which is a more advanced system that leverages layout detection and dedicated OCR models to process documents, but still felt the need to build something ourselves since it was a bit complex to work into Trieve's local dev and self-hosting setup. Zerox's approach using just a VLLM was ideal and the path we went with.
 
 We wrote our own API server and pipeline using Rust, Redis queues, and Clickhouse in the Trieve-style to achieve this. Try it using our demo UI hosted at [pdf2md.trieve.ai](https://pdf2md.trieve.ai).
 
