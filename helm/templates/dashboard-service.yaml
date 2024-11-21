@@ -1,18 +1,17 @@
-{{- $name := "dashboard-service" }}
-{{- $selector := "dashboard" }}
 kind: Service
 apiVersion: v1
 metadata:
-  name: {{ $name }}
+  name: dashboard-service
   labels:
-    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/name: dashboard-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   type: ClusterIP
   ports:
-    - port: 80
+    - port: 3002
       targetPort: 80
       protocol: TCP
       name: dashboard
   selector:
-    app.kubernetes.io/name: {{ $selector }}
+    app.kubernetes.io/name: dashboard
     app.kubernetes.io/instance: {{ .Release.Name }}

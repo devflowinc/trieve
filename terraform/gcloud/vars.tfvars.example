@@ -1,0 +1,10 @@
+project = "************-*******-******"
+cluster_name = "trievegcp"
+region = "us-central2"
+zone = "us-central2-a"
+
+postgres-root-password = "password"
+
+qdrant-machine-type = "e2-standard-4"
+standard-machine-type = "e2-highcpu-4"
+gpu-machine-type = "g2-standard-4"

@@ -1,18 +1,17 @@
-{{- $name := "search-service" }}
-{{- $selector := "search" }}
 kind: Service
 apiVersion: v1
 metadata:
-  name: {{ $name }}
+  name: search-service
   labels:
+    app.kubernetes.io/name: search-service
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   type: ClusterIP
   ports:
-    - port: 80
+    - port: 3001
       targetPort: 80
       protocol: TCP
       name: search
   selector:
-    app.kubernetes.io/name: {{ $selector }}
+    app.kubernetes.io/name: search
     app.kubernetes.io/instance: {{ .Release.Name }}

@@ -6,26 +6,32 @@ metadata:
     app.kubernetes.io/name: search
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
+  replicas: {{ .Values.containers.search.replicas | default 1 }}
   selector:
     matchLabels:
       app.kubernetes.io/name: search
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/frontend-configmap.yaml") . | sha256sum }}
       labels:
         app.kubernetes.io/name: search
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
       - name: search
-        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5001/" (ne $.Values.environment "local")) "search" $.Values.containers.search.tag }}
+        livenessProbe:
+          httpGet:
+            path: "/"
+            port: 80
+        readinessProbe:
+          httpGet:
+            path: "/"
+            port: 80
+        image: {{ printf "%s:%s" "trieve/search" $.Values.containers.search.tag }}
         ports:
           - containerPort: 80
-        env:
-          - name: VITE_API_HOST
-            value: {{ $.Values.config.vite.apiHost }}
-          - name: VITE_SEARCH_UI_URL
-            value: {{ $.Values.config.vite.searchUiUrl }}
-          - name: VITE_DASHBOARD_URL
-            value: {{ $.Values.config.vite.dashboardUrl }}
-
+        envFrom:
+          - configMapRef:
+              name: trieve-frontend-config

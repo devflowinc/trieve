@@ -1,17 +1,15 @@
 {{- range $index, $service := .Values.embeddings }}
-{{- $port := (get $service "port") }}
-{{- $name := (get $service "name") }}
 {{- if ne $index 0 }}
 ---
 {{- end }}
-{{- $serviceName := (printf "embedding-%s" $name) }}
-{{- $selector := (printf "embedding-%s" $name) }}
+{{- $name := (printf "embedding-%s" $service.name) }}
 kind: Service
 apiVersion: v1
 metadata:
-  name: {{ $serviceName }}
+  name: {{ $name }}
   labels:
-    app.kubernetes.io/name: {{ $serviceName }}
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
 spec:
   type: ClusterIP
   ports:
@@ -20,6 +18,6 @@ spec:
       protocol: TCP
       name: svc
   selector:
-    app.kubernetes.io/name: {{ $selector }}
+    app.kubernetes.io/name: {{ $name }}
     app.kubernetes.io/instance: {{ $.Release.Name }}
 {{- end }}

@@ -3,18 +3,19 @@ kind: CronJob
 metadata:
   name: clustering-cronjob
 spec:
-  schedule: "0 * * * *"
+  schedule: "1 * * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
         spec:
           containers:
             - name: clustering-task
-              image: trieve/clickhouse-clustering:latest
+              image: {{ printf "%s:%s" "trieve/clickhouse-clustering" .Values.containers.clustering_cron.tag }}
               imagePullPolicy: IfNotPresent
               env:
                 - name: ANTHROPIC_API_KEY
-                  value: {{ .Values.config.trieve.anthropicAPIKey }}
+                  value: {{ .Values.config.trieve.anthropicAPIKey | quote }}
                 - name: CLICKHOUSE_DSN
-                  value: {{ .Values.config.trieve.clickhouseDSN }}
-          restartPolicy: OnFailure
+                  value: {{ .Values.config.analytics.clickhouseDSN }}
+          restartPolicy: Never

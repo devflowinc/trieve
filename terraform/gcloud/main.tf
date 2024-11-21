@@ -4,21 +4,11 @@ terraform {
       source  = "hashicorp/google"
       version = "5.30.0"
     }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "~> 5.0"
+    }
   }
-}
-
-variable "cluster_name" {
-  default = "test-cluster"
-}
-
-variable "project" {}
-
-variable "region" {
-  default = "us-west1"
-}
-
-variable "zone" {
-  default = "us-west1-a"
 }
 
 ###############################################################
@@ -36,16 +26,29 @@ provider "google-beta" {
   project = var.project
 }
 
+# Get the default network as a data source
+data "google_compute_network" "default" {
+  name = "default"
+}
+
 resource "google_compute_network" "vpc_network" {
-  name                    = "gke-vpc-network"
+  name                    = "gke-vpc-network-${var.cluster_name}"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "vpc_subnet" {
-  name          = "k8s-network"
+  name          = "k8s-network-${var.cluster_name}"
   ip_cidr_range = "10.3.0.0/16"
   region        = var.region
   network       = google_compute_network.vpc_network.id
+
+  log_config {
+      aggregation_interval = "INTERVAL_5_SEC"
+      flow_sampling        = 1
+      metadata             = "INCLUDE_ALL_METADATA"
+      filter_expr          = true
+      metadata_fields      = [] 
+  }
 }
 
 ###############################################################
@@ -54,6 +57,8 @@ resource "google_compute_subnetwork" "vpc_subnet" {
 resource "google_container_cluster" "cluster" {
   name             = var.cluster_name
   location         = var.zone
+  network           = google_compute_network.vpc_network.name
+  subnetwork        = google_compute_subnetwork.vpc_subnet.name
 
   # We can't create a cluster with no node pool defined, but we want to only use
   # separately managed node pools. So we create the smallest possible default
@@ -73,21 +78,20 @@ resource "google_container_cluster" "cluster" {
 }
 
 resource "google_container_node_pool" "larger_nodes" {
-  name       = "larger-compute"
+  name       = "larger-compute-${var.cluster_name}"
   location   = var.zone
   cluster    = google_container_cluster.cluster.name
 
-  # enable_autopilot = true
-  node_count = 4
+  node_count = 3
 
   autoscaling {
-    min_node_count = 3
-    max_node_count = 4
+    min_node_count = 0
+    max_node_count = 3
   }
 
   node_config {
-    preemptible  = true
-    machine_type = "c2d-highmem-32"
+    preemptible  = false
+    machine_type = var.qdrant-machine-type
 
     taint {
         effect = "NO_SCHEDULE"
@@ -97,39 +101,38 @@ resource "google_container_node_pool" "larger_nodes" {
   }
 }
 
-resource "google_container_node_pool" "simple_nodes" {
-  name       = "simple-compute"
+resource "google_container_node_pool" "standard_nodes" {
+  name       = "standard-compute-${var.cluster_name}"
   location   = var.zone
   cluster    = google_container_cluster.cluster.name
 
-  # enable_autopilot = true
-  node_count = 3
+  node_count = 1
 
   autoscaling {
-    min_node_count = 1
+    min_node_count = 0
     max_node_count = 3
   }
 
   node_config {
-    preemptible  = true
-    machine_type = "c2d-standard-8"
+    preemptible  = false
+    machine_type = var.standard-machine-type
   }
 }
 
 resource "google_container_node_pool" "gpu_nodes" {
-  name       = "gpu-compute"
+  name       = "gpu-compute-${var.cluster_name}"
   location   = var.zone
   cluster    = google_container_cluster.cluster.name
   node_count = 1
 
   autoscaling {
-    min_node_count = 1
-    max_node_count = 2
+    min_node_count = 0
+    max_node_count = 4
   }
 
   node_config {
-    preemptible  = true
-    machine_type = "g2-standard-4"
+    preemptible  = false
+    machine_type = var.gpu-machine-type
 
     gcfs_config {
       enabled = true   
@@ -145,20 +148,10 @@ resource "google_container_node_pool" "gpu_nodes" {
       gpu_driver_installation_config {
         gpu_driver_version = "LATEST"
       }
-      gpu_sharing_config {
-        gpu_sharing_strategy       = "TIME_SHARING"
-        max_shared_clients_per_gpu = 10
-      }
     }
 
     workload_metadata_config {
       mode = "GCE_METADATA"
-    }
-
-    labels = {
-      cluster_name = var.cluster_name
-      purpose      = "gpu-time-sharing"
-      node_pool    = "gpu-time-sharing"
     }
 
     taint {
