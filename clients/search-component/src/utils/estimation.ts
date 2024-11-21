@@ -79,3 +79,37 @@ export const findCommonName = (names: string[]) => {
   // Return null if no common prefix was found
   return commonPrefix.length > 0 ? commonPrefix : null;
 };
+
+interface HasTitle {
+  title: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
+}
+
+export function uniquifyVariants<T extends HasTitle>(array: T[]): T[] {
+  // Find the common prefix from titles
+  const findCommonPrefix = (strings: string[]): string => {
+    if (strings.length === 0) return "";
+    let prefix = strings[0];
+    for (const str of strings) {
+      while (str.indexOf(prefix) !== 0) {
+        prefix = prefix.slice(0, -1);
+      }
+    }
+    return prefix;
+  };
+
+  if (!array || array.length === 0) {
+    return [];
+  }
+
+  // Get array of titles
+  const titles = array.map((item) => item.title);
+  const commonPrefix = findCommonPrefix(titles);
+
+  // Return new array with transformed titles
+  return array.map((item) => ({
+    ...item,
+    title: item.title.replace(commonPrefix, "").trim(),
+  }));
+}

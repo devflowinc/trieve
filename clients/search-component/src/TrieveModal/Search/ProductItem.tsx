@@ -3,7 +3,7 @@ import React, { useMemo, useRef, useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
 import { ChunkGroup } from "trieve-ts-sdk";
-import { guessTitleAndDesc } from "../../utils/estimation";
+import { guessTitleAndDesc, uniquifyVariants } from "../../utils/estimation";
 
 type Props = {
   item: ChunkWithHighlights;
@@ -20,7 +20,7 @@ export const ProductItem = ({
   index,
   className,
   group,
-  betterGroupName
+  betterGroupName,
 }: Props) => {
   const { props, trieveSDK, chatWithGroup } = useModalState();
   const Component = item.chunk.link ? "a" : "button";
@@ -147,7 +147,7 @@ export const ProductItem = ({
               <h4
                 className={`chunk-title ${props.type}`}
                 dangerouslySetInnerHTML={{
-                  __html: betterGroupName ||title,
+                  __html: betterGroupName || title,
                 }}
               />
               <h6 className="chunk-price">
@@ -163,11 +163,11 @@ export const ProductItem = ({
                 {item.chunk.metadata?.variants?.length > 1 ? (
                   <div className="variants">
                     <span className="variants-title">Variants:</span>
-                    {(
+                    {uniquifyVariants(
                       item.chunk.metadata.variants as unknown as {
                         featured_image: { src: string };
                         title: string;
-                      }[]
+                      }[],
                     )?.map((variant) => (
                       <button
                         key={variant.title}
