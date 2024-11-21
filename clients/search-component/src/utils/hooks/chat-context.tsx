@@ -130,10 +130,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     question?: string;
   }) => {
     setIsLoading(true);
-    // TODO: Behave differently for groups
 
     // Use group search
     if (currentGroup) {
+      // Should already be preloaded when group selected to chat with
       const groupChunkIds = await cached(() => {
         return getChunkIdsForGroup(currentGroup.id, trieveSDK);
       }, `chunk-ids-${currentGroup.id}`);

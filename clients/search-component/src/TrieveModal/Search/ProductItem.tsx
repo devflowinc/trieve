@@ -1,8 +1,9 @@
 import { Chunk, ChunkWithHighlights } from "../../utils/types";
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
 import { ChunkGroup } from "trieve-ts-sdk";
+import { guessTitleAndDesc } from "../../utils/estimation";
 
 type Props = {
   item: ChunkWithHighlights;
@@ -10,6 +11,7 @@ type Props = {
   index: number;
   className?: string;
   group?: ChunkGroup;
+  betterGroupName?: string;
 };
 
 export const ProductItem = ({
@@ -18,56 +20,21 @@ export const ProductItem = ({
   index,
   className,
   group,
+  betterGroupName
 }: Props) => {
-  const { props, trieveSDK } = useModalState();
+  const { props, trieveSDK, chatWithGroup } = useModalState();
   const Component = item.chunk.link ? "a" : "button";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const itemRef = useRef<HTMLButtonElement | HTMLLinkElement | any>(null);
 
-  let descriptionHtml = item.highlights
-    ? item.highlights.join("...")
-    : item.chunk.chunk_html || "";
-  const $descriptionHtml = document.createElement("div");
-  $descriptionHtml.innerHTML = descriptionHtml;
-  $descriptionHtml.querySelectorAll("b").forEach((b) => {
-    return b.replaceWith(b.textContent || "");
-  });
-  descriptionHtml = $descriptionHtml.innerHTML;
-
-  const chunkHtmlHeadingsDiv = document.createElement("div");
-  chunkHtmlHeadingsDiv.innerHTML = item.chunk.chunk_html || "";
-  const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-    "h1, h2, h3, h4, h5, h6",
+  const { title, descriptionHtml } = useMemo(
+    () => guessTitleAndDesc(item),
+    [item],
   );
 
-  const $firstHeading = chunkHtmlHeadings[0] ?? document.createElement("h1");
-  $firstHeading?.querySelectorAll(":not(mark)")?.forEach((tag) => {
-    return tag.replaceWith(tag.textContent || "");
-  });
-  const firstHeadingIdDiv = document.createElement("div");
-  firstHeadingIdDiv.innerHTML = $firstHeading.id;
-  const cleanFirstHeading = $firstHeading?.innerHTML;
-
-  descriptionHtml = descriptionHtml
-    .replace(" </mark>", "</mark> ")
-    .replace(cleanFirstHeading || "", "");
-
-  for (const heading of chunkHtmlHeadings) {
-    const curHeadingText = heading.textContent;
-
-    descriptionHtml = descriptionHtml.replace(curHeadingText || "", "");
-  }
-  descriptionHtml = descriptionHtml.replace(/([.,!?;:])/g, "$1 ");
   const [shownImage, setShownImage] = useState<string>(
     item.chunk?.image_urls?.[0] || "",
   );
-
-  const title = `${
-    cleanFirstHeading ||
-    item.chunk.metadata?.title ||
-    item.chunk.metadata?.page_title ||
-    item.chunk.metadata?.name
-  }`;
 
   const formatPrice = (price: number | null | undefined) => {
     return price
@@ -137,7 +104,17 @@ export const ProductItem = ({
   };
 
   return (
-    <li key={item.chunk.id}>
+    <li className="border border-red-500" key={item.chunk.id}>
+      {group && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            chatWithGroup(group, betterGroupName);
+          }}
+        >
+          CHAT
+        </button>
+      )}
       <Component
         ref={itemRef}
         id={`trieve-search-item-${index + 1}`}
@@ -170,7 +147,7 @@ export const ProductItem = ({
               <h4
                 className={`chunk-title ${props.type}`}
                 dangerouslySetInnerHTML={{
-                  __html: title,
+                  __html: betterGroupName ||title,
                 }}
               />
               <h6 className="chunk-price">
@@ -193,6 +170,7 @@ export const ProductItem = ({
                       }[]
                     )?.map((variant) => (
                       <button
+                        key={variant.title}
                         onClick={(ev) => {
                           ev.preventDefault();
                           ev.stopPropagation();

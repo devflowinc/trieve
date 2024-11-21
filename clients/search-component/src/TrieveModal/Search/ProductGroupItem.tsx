@@ -1,26 +1,45 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { ProductItem } from "./ProductItem";
 import { GroupChunk } from "../../utils/types";
+import { findCommonName, guessTitleAndDesc } from "../../utils/estimation";
 
 type Props = {
   requestID: string;
-  // Group of Groups (with subvariants)
   group: GroupChunk[];
   index: number;
 };
 
 export const ProductGroupItem = ({ index, group, requestID }: Props) => {
-  const [groupItemIndex] = useState(0);
   const selectedItem = useMemo(
-    () => group[groupItemIndex].chunks[0],
-    [groupItemIndex],
+    () => group[0].chunks[0],
+    [],
   );
+
+  // Shopify 
+  const betterGroupName = useMemo(
+    () => {
+      const productNames: string[] = [];
+      group.forEach(
+        g => g.chunks.forEach(c => {
+          const {title} = guessTitleAndDesc(c);
+          productNames.push(title)
+        })
+      )
+
+      // Calculate the overlap of the strings
+      const commonName = findCommonName(productNames);
+      return commonName || undefined;
+    },
+    [group]
+  )
+
 
   return (
     <ProductItem
       item={selectedItem}
       index={index}
-      group={group[groupItemIndex].group}
+      betterGroupName={betterGroupName}
+      group={group[0].group}
       requestID={requestID}
       key={selectedItem.chunk.id}
     />

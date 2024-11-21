@@ -14,9 +14,11 @@ import {
 } from "trieve-ts-sdk";
 import {
   countChunks,
+  getChunkIdsForGroup,
   groupSearchWithTrieve,
   searchWithTrieve,
 } from "../trieve";
+import { cached } from "../cache";
 
 export const ALL_TAG = { tag: "all", label: "All", icon: null };
 
@@ -122,6 +124,7 @@ const ModalContext = createContext<{
   setCurrentTag: React.Dispatch<React.SetStateAction<string>>;
   currentGroup: ChunkGroup | null;
   setCurrentGroup: React.Dispatch<React.SetStateAction<ChunkGroup | null>>;
+  chatWithGroup:(group: ChunkGroup, betterGroupName?: string) => void;
   tagCounts: CountChunkQueryResponseBody[];
 }>({
   props: defaultProps,
@@ -144,6 +147,7 @@ const ModalContext = createContext<{
   currentTag: "all",
   currentGroup: null,
   setCurrentGroup: () => {},
+  chatWithGroup: () => {},
   tagCounts: [],
   setContextProps: () => {},
 });
@@ -267,6 +271,22 @@ const ModalProvider = ({
     }
   };
 
+  const chatWithGroup = async (group: ChunkGroup, betterGroupName?: string) => {
+    // TODO: normalize group name, using results
+    if (betterGroupName) {
+      group.name = betterGroupName;
+    }
+
+    setCurrentGroup(group);
+    setMode("chat");
+    // preload the chunk ids
+    cached(() => {
+      return getChunkIdsForGroup(group.id, trieve);
+    }, `chunk-ids-${group.id}`).catch(e => {
+      console.error(e);
+    });
+  };
+
   useEffect(() => {
     setProps((p) => ({
       ...p,
@@ -350,6 +370,7 @@ const ModalProvider = ({
         setCurrentTag,
         currentGroup,
         setCurrentGroup,
+        chatWithGroup,
         tagCounts,
       }}
     >
