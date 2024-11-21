@@ -2187,6 +2187,78 @@
         ]
       }
     },
+    "/api/chunk_group/count": {
+      "post": {
+        "tags": [
+          "Chunk Group"
+        ],
+        "summary": "Count Chunks in a Group",
+        "description": "Route to get the number of chunks that is in a group",
+        "operationId": "count_group_chunks",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to add a chunk to a group (bookmark it)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetChunkGroupCountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "JSON body representing the group with the count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetChunkGroupCountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting the group with the given tracking id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Group not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      }
+    },
     "/api/chunk_group/group_oriented_search": {
       "post": {
         "tags": [
@@ -9476,7 +9548,8 @@
           "group_chunks_updated",
           "group_chunks_action_failed",
           "crawl_completed",
-          "crawl_failed"
+          "crawl_failed",
+          "crawl_started"
         ]
       },
       "EventTypes": {
@@ -10346,6 +10419,42 @@
             "type": "integer",
             "format": "int64",
             "description": "Total number of unique tags in the dataset."
+          }
+        }
+      },
+      "GetChunkGroupCountRequest": {
+        "type": "object",
+        "properties": {
+          "group_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The Id of the group to get the count for, is not required if group_tracking_id is provided.",
+            "nullable": true
+          },
+          "group_tracking_id": {
+            "type": "string",
+            "description": "The tracking id of the group to get the count for, is not required if group_id is provided.",
+            "nullable": true
+          }
+        }
+      },
+      "GetChunkGroupCountResponse": {
+        "type": "object",
+        "required": [
+          "group_id",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The count of chunks in the given group.",
+            "minimum": 0
+          },
+          "group_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The Id of the group to get the count for."
           }
         }
       },

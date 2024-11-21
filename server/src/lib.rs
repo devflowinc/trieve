@@ -195,6 +195,7 @@ impl Modify for SecurityAddon {
         handlers::user_handler::create_user_api_key,
         handlers::user_handler::delete_user_api_key,
         handlers::group_handler::search_over_groups,
+        handlers::group_handler::count_group_chunks,
         handlers::group_handler::get_recommended_groups,
         handlers::group_handler::get_groups_for_dataset,
         handlers::group_handler::create_chunk_group,
@@ -330,6 +331,8 @@ impl Modify for SecurityAddon {
             handlers::group_handler::GetChunksInGroupResponse,
             handlers::group_handler::RemoveChunkFromGroupReqPayload,
             handlers::group_handler::UpdateGroupByTrackingIDReqPayload,
+            handlers::group_handler::GetChunkGroupCountRequest,
+            handlers::group_handler::GetChunkGroupCountResponse,
             handlers::analytics_handler::RateQueryRequest,
             handlers::group_handler::AddChunkToGroupReqPayload,
             handlers::group_handler::RecommendGroupsResponseBody,
@@ -1023,6 +1026,9 @@ pub fn main() -> std::io::Result<()> {
                                     )
                                 .service(web::resource("/chunks").route(
                                     web::post().to(handlers::group_handler::get_groups_for_chunks),
+                                ))
+                                .service(web::resource("/count").route(
+                                    web::post().to(handlers::group_handler::count_group_chunks),
                                 ))
                                 .service(
                                     web::resource("/search")

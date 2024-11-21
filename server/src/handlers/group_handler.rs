@@ -289,7 +289,7 @@ pub async fn create_chunk_group(
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GroupData {
     pub groups: Vec<ChunkGroupAndFileId>,
-    pub total_pages: i32,
+    pub total_pages: u32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -326,13 +326,15 @@ pub async fn get_groups_for_dataset(
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let groups =
+    let (groups, group_count) =
         get_groups_for_dataset_query(dataset_and_page.page, dataset_and_page.dataset_id, pool)
             .await?;
 
+    let pages = (group_count as u32).div_ceil(10);
+
     Ok(HttpResponse::Ok().json(GroupData {
-        groups: groups.0,
-        total_pages: groups.1.unwrap_or(1),
+        groups,
+        total_pages: pages,
     }))
 }
 
@@ -423,6 +425,84 @@ pub async fn get_chunk_group(
     .await?;
 
     Ok(HttpResponse::Ok().json(group))
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct GetChunkGroupCountRequest {
+    /// The Id of the group to get the count for, is not required if group_tracking_id is provided.
+    pub group_id: Option<uuid::Uuid>,
+    /// The tracking id of the group to get the count for, is not required if group_id is provided.
+    pub group_tracking_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct GetChunkGroupCountResponse {
+    /// The Id of the group to get the count for.
+    pub group_id: uuid::Uuid,
+    /// The count of chunks in the given group.
+    pub count: u64,
+}
+
+/// Count Chunks in a Group
+///
+/// Route to get the number of chunks that is in a group
+#[utoipa::path(
+    post,
+    path = "/chunk_group/count",
+    context_path = "/api",
+    tag = "Chunk Group",
+    request_body(content = GetChunkGroupCountRequest, description = "JSON request payload to add a chunk to a group (bookmark it)", content_type = "application/json"),
+    responses(
+        (status = 200, description = "JSON body representing the group with the count", body = GetChunkGroupCountResponse),
+        (status = 400, description = "Service error relating to getting the group with the given tracking id", body = ErrorResponseBody),
+        (status = 404, description = "Group not found", body = ErrorResponseBody)
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn count_group_chunks(
+    body: web::Json<GetChunkGroupCountRequest>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, ServiceError> {
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
+
+    let group_id = if let Some(group_id) = body.group_id {
+        group_id
+    } else if let Some(group_tracking_id) = body.group_tracking_id.clone() {
+        let groups = get_group_ids_from_tracking_ids_query(
+            vec![group_tracking_id],
+            dataset_org_plan_sub.dataset.id,
+            pool.clone(),
+        )
+        .await?;
+
+        let (group_id, _) = groups
+            .get(0)
+            .ok_or(ServiceError::NotFound("Group not found".into()))?;
+        *group_id
+    } else {
+        return Err(ServiceError::BadRequest(
+            "No group_id or tracking_id provided, please provide at least one".into(),
+        ));
+    };
+
+    // check if group exists
+    get_group_by_id_query(group_id, dataset_org_plan_sub.dataset.id, pool.clone()).await?;
+
+    let group_size =
+        get_group_size_query(group_id, dataset_org_plan_sub.dataset.id, dataset_config).await?;
+
+    Ok(HttpResponse::Ok().json(GetChunkGroupCountResponse {
+        group_id,
+        count: group_size,
+    }))
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]

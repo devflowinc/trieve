@@ -2,9 +2,10 @@ use std::collections::HashSet;
 
 use crate::data::models::{ChunkMetadataTags, DatasetTags};
 use crate::errors::ServiceError;
+use crate::get_env;
 use crate::operators::qdrant_operator::{
-    get_qdrant_collection_from_dataset_config, remove_bookmark_from_qdrant_query,
-    update_group_tag_sets_in_qdrant_query,
+    get_qdrant_collection_from_dataset_config, get_qdrant_connection,
+    remove_bookmark_from_qdrant_query, update_group_tag_sets_in_qdrant_query,
 };
 use crate::{
     data::models::{
@@ -19,6 +20,7 @@ use diesel::prelude::*;
 use diesel::upsert::excluded;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
+use qdrant_client::qdrant;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -168,7 +170,7 @@ pub async fn get_groups_for_dataset_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<(Vec<ChunkGroupAndFileId>, Option<i32>), ServiceError> {
+) -> Result<(Vec<ChunkGroupAndFileId>, i32), ServiceError> {
     use crate::data::schema::chunk_group::dsl as chunk_group_columns;
     use crate::data::schema::dataset_group_counts::dsl as dataset_group_count_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
@@ -184,9 +186,9 @@ pub async fn get_groups_for_dataset_query(
         .first::<i32>(&mut conn)
         .await;
 
-    let group_count: Option<i32> = match group_count_result {
-        Ok(count) => Some(count),
-        Err(_) => return Ok((vec![], None)),
+    let group_count: i32 = match group_count_result {
+        Ok(count) => count,
+        Err(_) => return Ok((vec![], 0)),
     };
 
     let groups = chunk_group_columns::chunk_group
@@ -1125,4 +1127,46 @@ pub async fn get_chunk_metadata_count_in_chunk_group_query(
         })?;
 
     Ok(count)
+}
+
+pub async fn get_group_size_query(
+    group_id: uuid::Uuid,
+    dataset_id: uuid::Uuid,
+    dataset_config: DatasetConfiguration,
+) -> Result<u64, ServiceError> {
+    let qdrant_connection = get_qdrant_connection(
+        Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
+        Some(get_env!("QDRANT_API_KEY", "QDRANT_API_KEY should be set")),
+    )
+    .await?;
+    let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
+
+    let mut filter = qdrant::Filter::default();
+
+    filter.must.push(qdrant::Condition::matches(
+        "dataset_id",
+        dataset_id.to_string(),
+    ));
+    filter.must.push(qdrant::Condition::matches(
+        "group_ids",
+        group_id.to_string(),
+    ));
+
+    let request = qdrant::CountPointsBuilder::new(qdrant_collection)
+        .filter(filter)
+        .build();
+
+    let count = qdrant_connection
+        .count(request)
+        .await
+        .map_err(|err| {
+            log::error!("Error fetching point count {:?}", err);
+            ServiceError::BadRequest("Error fetching point count".to_string())
+        })?
+        .result
+        .map(|x| x.count);
+
+    count.ok_or(ServiceError::BadRequest(
+        "Error getting group size".to_string(),
+    ))
 }

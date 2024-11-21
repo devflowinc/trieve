@@ -1120,7 +1120,7 @@ export type EventReturn = {
     page_count: number;
 };
 
-export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed';
+export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started';
 
 export type EventTypes = {
     /**
@@ -1469,6 +1469,28 @@ export type GetAllTagsResponse = {
      * Total number of unique tags in the dataset.
      */
     total: number;
+};
+
+export type GetChunkGroupCountRequest = {
+    /**
+     * The Id of the group to get the count for, is not required if group_tracking_id is provided.
+     */
+    group_id?: (string) | null;
+    /**
+     * The tracking id of the group to get the count for, is not required if group_id is provided.
+     */
+    group_tracking_id?: (string) | null;
+};
+
+export type GetChunkGroupCountResponse = {
+    /**
+     * The count of chunks in the given group.
+     */
+    count: number;
+    /**
+     * The Id of the group to get the count for.
+     */
+    group_id: string;
 };
 
 export type GetChunksData = {
@@ -3548,6 +3570,19 @@ export type GetGroupsForChunksData = {
 
 export type GetGroupsForChunksResponse = (Array<GroupsForChunk>);
 
+export type CountGroupChunksData = {
+    /**
+     * JSON request payload to add a chunk to a group (bookmark it)
+     */
+    requestBody: GetChunkGroupCountRequest;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type CountGroupChunksResponse = (GetChunkGroupCountResponse);
+
 export type SearchOverGroupsData = {
     /**
      * JSON request payload to semantically search over groups
@@ -4926,6 +4961,25 @@ export type $OpenApiTs = {
                  * Service error relating to getting the groups that the chunk is in
                  */
                 400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/chunk_group/count': {
+        post: {
+            req: CountGroupChunksData;
+            res: {
+                /**
+                 * JSON body representing the group with the count
+                 */
+                200: GetChunkGroupCountResponse;
+                /**
+                 * Service error relating to getting the group with the given tracking id
+                 */
+                400: ErrorResponseBody;
+                /**
+                 * Group not found
+                 */
+                404: ErrorResponseBody;
             };
         };
     };
