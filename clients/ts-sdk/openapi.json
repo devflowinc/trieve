@@ -8170,6 +8170,13 @@
             "type": "boolean",
             "description": "This option will ingest all variants as individual chunks and place them in groups by product id. Turning this off will only scrape 1 variant per product. default: true",
             "nullable": true
+          },
+          "tag_regexes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
           }
         }
       },
