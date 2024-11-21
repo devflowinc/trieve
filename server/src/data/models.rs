@@ -1781,6 +1781,11 @@ pub enum EventType {
     GroupChunksUpdated { group_id: uuid::Uuid },
     #[display(fmt = "group_chunks_action_failed")]
     GroupChunksActionFailed { group_id: uuid::Uuid, error: String },
+    #[display(fmt = "crawl_started")]
+    CrawlStarted {
+        scrape_id: uuid::Uuid,
+        crawl_options: CrawlOptions,
+    },
     #[display(fmt = "crawl_completed")]
     CrawlCompleted {
         scrape_id: uuid::Uuid,
@@ -1810,6 +1815,7 @@ impl EventType {
             EventTypeRequest::GroupChunksUpdated,
             EventTypeRequest::GroupChunksActionFailed,
             EventTypeRequest::CrawlCompleted,
+            EventTypeRequest::CrawlStarted,
             EventTypeRequest::CrawlFailed,
         ]
     }
@@ -6003,6 +6009,8 @@ pub enum EventTypeRequest {
     CrawlCompleted,
     #[display(fmt = "crawl_failed")]
     CrawlFailed,
+    #[display(fmt = "crawl_started")]
+    CrawlStarted,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
