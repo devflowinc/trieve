@@ -5,6 +5,7 @@ import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
 import { cached } from "../cache";
 import { getChunkIdsForGroup } from "../trieve";
+import { ChatMessageProxy, RoleProxy } from "trieve-ts-sdk";
 
 type Messages = {
   queryId: string | null;
@@ -12,6 +13,13 @@ type Messages = {
   text: string;
   additional: Chunk[] | null;
 }[][];
+
+const mapMessageType = (message: Messages[0][0]): ChatMessageProxy => {
+  return {
+    content: message.text,
+    role: message.type as RoleProxy,
+  } satisfies ChatMessageProxy;
+};
 
 function removeBrackets(str: string) {
   let result = str.replace(/\[.*?\]/g, "");
@@ -32,6 +40,7 @@ const ModalContext = createContext<{
   stopGeneratingMessage: () => void;
   clearConversation: () => void;
   switchToChatAndAskQuestion: (query: string) => Promise<void>;
+  cancelGroupChat: () => void;
   isDoneReading?: React.MutableRefObject<boolean>;
   rateChatCompletion: (isPositive: boolean, queryId: string | null) => void;
 }>({
@@ -40,6 +49,7 @@ const ModalContext = createContext<{
   isLoading: false,
   messages: [],
   setCurrentQuestion: () => {},
+  cancelGroupChat: () => {},
   clearConversation: () => {},
   switchToChatAndAskQuestion: async () => {},
   stopGeneratingMessage: () => {},
@@ -47,7 +57,8 @@ const ModalContext = createContext<{
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { query, trieveSDK, modalRef, setMode } = useModalState();
+  const { query, trieveSDK, modalRef, setMode, setCurrentGroup } =
+    useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
   const called = useRef(false);
@@ -171,6 +182,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         {
           chunk_ids: groupChunkIds,
           prev_messages: [
+            ...messages.slice(0, -1).map((m) => mapMessageType(m[0])),
             {
               content: question || currentQuestion,
               role: "user",
@@ -218,6 +230,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         ].filter((a) => a.length),
       );
     }
+  };
+
+  const cancelGroupChat = () => {
+    setCurrentGroup(null);
+    clearConversation();
   };
 
   const askQuestion = async (question?: string) => {
@@ -273,6 +290,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       value={{
         askQuestion,
         isLoading,
+        cancelGroupChat,
         messages,
         currentQuestion,
         setCurrentQuestion,
