@@ -24,7 +24,7 @@ import {
 } from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import BookmarkPopover from "./BookmarkPopover";
-import { FiEye } from "solid-icons/fi";
+import { FiChevronDown, FiChevronUp, FiEye } from "solid-icons/fi";
 import sanitizeHtml from "sanitize-html";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { Tooltip } from "shared/ui";
@@ -94,6 +94,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [expandMetadata, setExpandMetadata] = createSignal(
     props.defaultShowMetadata ?? false,
   );
+  const [showImages, setShowImages] = createSignal(true);
   const [imageLinks, setImageLinks] = createSignal<string[] | null>(null);
 
   createEffect(() => {
@@ -406,9 +407,32 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 </div>
               </Show>
               <Show when={imageLinks() != null}>
-                <For each={imageLinks() ?? []}>
-                  {(link) => <img class="w-40" src={link ?? ""} alt={link} />}
-                </For>
+                <button
+                  class="mt-2 flex w-fit items-center space-x-1 rounded-md border bg-neutral-200/50 px-2 py-1 font-semibold text-magenta-500 hover:bg-neutral-200/90 dark:bg-neutral-700/60 dark:text-magenta-400"
+                  onClick={() => setShowImages((prev) => !prev)}
+                >
+                  <Switch>
+                    <Match when={showImages()}>
+                      Collapse Images <FiChevronUp class="h-5 w-5" />
+                    </Match>
+                    <Match when={!showImages()}>
+                      Expand Images <FiChevronDown class="h-5 w-5" />
+                    </Match>
+                  </Switch>
+                </button>
+                <Show when={showImages()}>
+                  <div class="my-2 flex space-x-2 overflow-x-auto rounded-md pl-2">
+                    <For each={imageLinks() ?? []}>
+                      {(link) => (
+                        <img
+                          class="w-40 rounded-md"
+                          src={link ?? ""}
+                          alt={link}
+                        />
+                      )}
+                    </For>
+                  </div>
+                </Show>
               </Show>
               <Show when={Object.keys(props.chunk.metadata ?? {}).length > 0}>
                 <button
