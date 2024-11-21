@@ -67,9 +67,9 @@ export const findCommonName = (names: string[]) => {
     // Strip non-alphabetic characters from the end
     commonPrefix = commonPrefix.replace(/[^a-zA-Z]+$/, '');
 
-    if (commonPrefix.endsWith(" /X")) {
-      commonPrefix = commonPrefix.slice(0, -3);
-    }
+    // if (commonPrefix.endsWith(" /X")) {
+    //   commonPrefix = commonPrefix.slice(0, -3);
+    // }
     
     // Return null if no common prefix was found
     return commonPrefix.length > 0 ? commonPrefix : null;
