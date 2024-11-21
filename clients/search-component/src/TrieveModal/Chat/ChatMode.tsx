@@ -21,6 +21,7 @@ export const ChatMode = () => {
     askQuestion,
     messages,
     currentQuestion,
+    cancelGroupChat,
     setCurrentQuestion,
     clearConversation,
     isDoneReading,
@@ -83,7 +84,7 @@ export const ChatMode = () => {
             <div>Chatting with {currentGroup.name}</div>
             <button
               onClick={() => {
-                setCurrentGroup(null);
+                cancelGroupChat();
               }}
             >
               <CloseIcon />
