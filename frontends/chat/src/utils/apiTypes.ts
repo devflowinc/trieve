@@ -8,16 +8,15 @@ export interface ChunkMetadata {
   tag_set: string[] | null;
   tracking_id: string | null;
   time_stamp: string | null;
-  file_id: string | null;
-  file_name: string | null;
   metadata: Record<string, never> | null;
-  weight: number | null;
+  dataset_id: string;
+  weight: number;
   location: {
     lat: number;
     lon: number;
   } | null;
   num_value: number | null;
-  dataset_id: string;
+  image_urls: string[] | null;
 }
 
 export const indirectHasOwnProperty = (obj: unknown, prop: string): boolean => {

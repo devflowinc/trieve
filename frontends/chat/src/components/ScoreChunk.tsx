@@ -1,16 +1,30 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { For, Show, createMemo, createSignal, Switch, Match } from "solid-js";
 import {
+  For,
+  Show,
+  createMemo,
+  createSignal,
+  Switch,
+  Match,
+  createEffect,
+} from "solid-js";
+import {
+  ChunkMetadata,
+  indirectHasOwnProperty,
   type ChunkBookmarksDTO,
   type ChunkCollectionDTO,
-  type ChunkMetadataWithVotes,
 } from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
 import { AiOutlineCopy } from "solid-icons/ai";
-import { FiCheck, FiExternalLink } from "solid-icons/fi";
+import {
+  FiCheck,
+  FiChevronDown,
+  FiChevronUp,
+  FiExternalLink,
+} from "solid-icons/fi";
 
 export const sanitzerOptions = {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -40,7 +54,7 @@ export interface ScoreChunkProps {
   chunkCollections: ChunkCollectionDTO[];
   totalCollectionPages: number;
   collection?: boolean;
-  chunk: ChunkMetadataWithVotes;
+  chunk: ChunkMetadata;
   counter: string;
   order?: string;
   initialExpanded?: boolean;
@@ -70,6 +84,8 @@ const ScoreChunk = (props: ScoreChunkProps) => {
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [copied, setCopied] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(false);
+  const [showImages, setShowImages] = createSignal(true);
+  const [imageLinks, setImageLinks] = createSignal<string[] | null>(null);
 
   const copyChunk = () => {
     try {
@@ -97,6 +113,17 @@ const ScoreChunk = (props: ScoreChunkProps) => {
       alert(`Failed to copy to clipboard: ${(err as Error).message}`);
     }
   };
+
+  createEffect(() => {
+    if (
+      !props.chunk.metadata ||
+      !indirectHasOwnProperty(props.chunk, "image_urls")
+    ) {
+      return null;
+    }
+
+    setImageLinks(props.chunk.image_urls);
+  });
 
   const useExpand = createMemo(() => {
     if (!props.chunk.chunk_html) return false;
@@ -201,6 +228,30 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 [{props.chunk.location?.lat}, {props.chunk.location?.lon}]
               </span>
             </div>
+          </Show>
+          <Show when={imageLinks() != null}>
+            <button
+              class="mt-2 flex w-fit items-center space-x-1 rounded-md border bg-neutral-200/50 px-2 py-1 font-semibold text-magenta-500 hover:bg-neutral-200/90 dark:bg-neutral-700/60 dark:text-magenta-400"
+              onClick={() => setShowImages((prev) => !prev)}
+            >
+              <Switch>
+                <Match when={showImages()}>
+                  Collapse Images <FiChevronUp class="h-5 w-5" />
+                </Match>
+                <Match when={!showImages()}>
+                  Expand Images <FiChevronDown class="h-5 w-5" />
+                </Match>
+              </Switch>
+            </button>
+            <Show when={showImages()}>
+              <div class="my-2 flex space-x-2 overflow-x-auto rounded-md pl-2">
+                <For each={imageLinks() ?? []}>
+                  {(link) => (
+                    <img class="w-40 rounded-md" src={link ?? ""} alt={link} />
+                  )}
+                </For>
+              </div>
+            </Show>
           </Show>
           <Show when={Object.keys(props.chunk.metadata ?? {}).length > 0}>
             <button
