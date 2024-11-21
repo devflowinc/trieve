@@ -118,8 +118,12 @@ pub async fn post_invitation(
     .await?;
 
     if added_user_to_org {
-        send_invitation_for_existing_user(email.clone(), org_with_plan_and_sub.organization.name)
-            .await?;
+        send_invitation_for_existing_user(
+            email.clone(),
+            org_with_plan_and_sub.organization.name,
+            invitation_data.redirect_uri,
+        )
+        .await?;
         return Ok(HttpResponse::NoContent().finish());
     }
 
