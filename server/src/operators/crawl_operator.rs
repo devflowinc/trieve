@@ -156,35 +156,6 @@ pub async fn crawl(
     Ok(scrape_id)
 }
 
-pub async fn get_crawl_request(
-    crawl_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<CrawlRequest, ServiceError> {
-    use crate::data::schema::crawl_requests::dsl::*;
-    let mut conn = pool
-        .get()
-        .await
-        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
-    let request = crawl_requests
-        .select((
-            id,
-            url,
-            status,
-            next_crawl_at,
-            interval,
-            crawl_options,
-            scrape_id,
-            dataset_id,
-            created_at,
-        ))
-        .filter(scrape_id.eq(crawl_id))
-        .first::<CrawlRequestPG>(&mut conn)
-        .await
-        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
-
-    Ok(request.into())
-}
-
 pub async fn get_crawl_request_by_dataset_id_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,

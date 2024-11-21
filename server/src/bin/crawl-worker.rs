@@ -3,9 +3,12 @@ use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfi
 use sentry::{Hub, SentryFutureExt};
 use serde::{Deserialize, Serialize};
 use signal_hook::consts::SIGTERM;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use std::{
+    collections::HashSet,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
@@ -102,10 +105,44 @@ fn create_chunk_req_payload(
         base_url, product.handle, variant.id
     );
 
-    let chunk_html = format!(
+    let mut chunk_html = format!(
         "<h1>{} - {}</h1>{}",
         product.title, variant.title, product.body_html
     );
+
+    if let Some(ScrapeOptions::Shopify(CrawlShopifyOptions {
+        tag_regexes: Some(tag_regexes),
+        ..
+    })) = scrape_request.crawl_options.scrape_options.clone()
+    {
+        // Create al regexes, if the regex is invalid, skip it
+        let regexes: Vec<(regex::Regex, String)> = tag_regexes
+            .iter()
+            .filter_map(|pattern| {
+                regex::Regex::new(pattern)
+                    .ok()
+                    .map(|regex| (regex, pattern.to_string()))
+            })
+            .collect();
+
+        // Go through all the tags, and find the ones that match the regexes
+        let tags_string: String = product
+            .tags
+            .iter()
+            .filter_map(|tag| {
+                // Add the pattern if the tag matches the regex
+                regexes
+                    .iter()
+                    .find(|(regex, _)| regex.is_match(tag))
+                    .map(|(_, pattern)| format!("<span>{}</span>", pattern.clone()))
+            })
+            .collect::<HashSet<String>>()
+            .into_iter()
+            .collect::<Vec<String>>()
+            .join("");
+
+        chunk_html = format!("<div>{}</div>\n\n<div>{}</div>", chunk_html, tags_string);
+    }
 
     let group_variants = if let Some(ScrapeOptions::Shopify(CrawlShopifyOptions {
         group_variants: Some(group_variants),
@@ -558,8 +595,9 @@ async fn crawl(
 
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
 
+    log::info!("Starting crawl for scrape_id: {}", scrape_request.id);
     let (page_count, chunks_created) = if let Some(ScrapeOptions::Shopify(_)) =
-        scrape_request.crawl_options.scrape_options
+        scrape_request.crawl_options.scrape_options.clone()
     {
         let mut cur_page = 1;
         let mut chunk_count = 0;

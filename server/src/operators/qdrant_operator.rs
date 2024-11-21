@@ -109,7 +109,9 @@ pub async fn create_new_qdrant_collection_query(
         let collection = qdrant_client
             .collection_exists(collection_name.clone())
             .await
-            .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+            .map_err(|e| {
+                ServiceError::BadRequest(format!("Failed to see if collection exists {}", e))
+            })?;
 
         match collection {
             true => log::info!("Avoided creating collection as it already exists"),
