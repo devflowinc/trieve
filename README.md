@@ -10,9 +10,6 @@
     <a href="https://github.com/devflowinc/trieve/stargazers">
         <img src="https://img.shields.io/github/stars/devflowinc/trieve.svg?style=flat&color=yellow" alt="Github stars"/>
     </a>
-    <a href="https://github.com/devflowinc/trieve/issues">
-        <img src="https://img.shields.io/github/issues/devflowinc/trieve.svg?style=flat&color=success" alt="GitHub issues"/>
-    </a>
     <a href="https://discord.gg/CuJVfgZf54">
         <img src="https://img.shields.io/discord/1130153053056684123.svg?label=Discord&logo=Discord&colorB=7289da&style=flat" alt="Join Discord"/>
     </a>
@@ -25,7 +22,7 @@
     <b>All-in-one solution for search, recommendations, and RAG</b>
 </h2>
 
-[![Trieve dashboard preivew](https://cdn.trieve.ai/dashboard.webp)](https://dashboard.trieve.ai)
+[![Trieve dashboard preivew](https://cdn.trieve.ai/landing-tabs/dark-mode-docsearch.webp)](https://dashboard.trieve.ai)
 
 ## Quick Links
 
