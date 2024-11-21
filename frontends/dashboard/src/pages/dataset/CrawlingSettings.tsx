@@ -37,6 +37,7 @@ export type FlatCrawlOptions = Omit<CrawlOptions, "scrape_options"> & {
   openapi_schema_url?: string;
   openapi_tag?: string;
   group_variants?: boolean | null;
+  tag_regexes?: string[] | null;
 };
 
 export const unflattenCrawlOptions = (
@@ -79,6 +80,7 @@ export const unflattenCrawlOptions = (
       scrape_options: {
         type: "shopify",
         group_variants: options.group_variants,
+        tag_regexes: options.tag_regexes ?? [],
       },
     };
   }
@@ -111,6 +113,7 @@ export const flattenCrawlOptions = (
       ...options,
       type: "shopify",
       group_variants: options.scrape_options.group_variants,
+      tag_regexes: options.scrape_options.tag_regexes,
     };
   } else {
     return {
@@ -426,7 +429,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
 
       <div class="flex items-center gap-2 py-2 pt-4">
         <Show when={isShopify()}>
-          <label class="block pl-4">Group Product Variants?</label>
+          <label class="block">Group Product Variants?</label>
           <input
             onChange={(e) =>
               setOptions("group_variants", e.currentTarget.checked)
@@ -435,6 +438,28 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
             type="checkbox"
           />
+        </Show>
+      </div>
+      <div class="items-center gap-2 py-2 pt-4">
+        <Show when={isShopify()}>
+          <div class="flex items-center gap-2">
+            <div>Important Product Tags (regex)</div>
+            <Tooltip
+              tooltipText="Regex pattern of tags to use from the Shopify API, e.g. 'Men' to include 'Men' if it exists in a product tag."
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+            />
+          </div>
+          <MultiStringInput
+            disabled={!isShopify()}
+            placeholder="Men"
+            addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
+            addLabel="Add Product Tag"
+            onChange={(value) => {
+              setOptions("tag_regexes", value);
+            }}
+            value={options.tag_regexes || []}
+          />
+          <Error error={errors.tag_regexes} />
         </Show>
       </div>
 

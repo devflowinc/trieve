@@ -610,6 +610,7 @@ export type CrawlShopifyOptions = {
      * This option will ingest all variants as individual chunks and place them in groups by product id. Turning this off will only scrape 1 variant per product. default: true
      */
     group_variants?: (boolean) | null;
+    tag_regexes?: Array<(string)> | null;
 };
 
 export type CreateApiKeyReqPayload = {
