@@ -20,6 +20,10 @@ export type ApiKeyRequestParams = {
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
     /**
+     * Options for handling the response for the llm to return when no results are found
+     */
+    no_result_message?: (string) | null;
+    /**
      * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
      */
     page_size?: (number) | null;
@@ -708,6 +712,10 @@ export type CreateMessageReqPayload = {
      */
     new_message_content: string;
     /**
+     * No result message for when there are no chunks found above the score threshold.
+     */
+    no_result_message?: (string) | null;
+    /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
     page_size?: (number) | null;
@@ -1012,6 +1020,10 @@ export type EditMessageReqPayload = {
      * The new content of the message to replace the old content with.
      */
     new_message_content: string;
+    /**
+     * No result message for when there are no chunks found above the score threshold.
+     */
+    no_result_message?: (string) | null;
     /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
@@ -2162,6 +2174,10 @@ export type RegenerateMessageReqPayload = {
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
     llm_options?: ((LLMOptions) | null);
+    /**
+     * No result message for when there are no chunks found above the score threshold.
+     */
+    no_result_message?: (string) | null;
     /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
