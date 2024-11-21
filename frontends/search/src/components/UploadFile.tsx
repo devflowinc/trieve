@@ -138,20 +138,20 @@ export const UploadFile = () => {
       });
 
     const requestBodyTemplate: Omit<RequestBody, "base64_file" | "file_name"> =
-    {
-      link: link() === "" ? undefined : link(),
-      tag_set:
-        tagSet().split(",").length > 0 ? undefined : tagSet().split(","),
-      split_delimiters: splitDelimiters(),
-      target_splits_per_chunk: targetSplitsPerChunk(),
-      rebalance_chunks: rebalanceChunks(),
-      use_pdf2md_ocr: useGptChunking(),
-      group_tracking_id:
-        groupTrackingId() === "" ? undefined : groupTrackingId(),
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      metadata: metadata(),
-      time_stamp: timestamp() ? timestamp() + " 00:00:00" : undefined,
-    };
+      {
+        link: link() === "" ? undefined : link(),
+        tag_set:
+          tagSet().split(",").length > 0 ? undefined : tagSet().split(","),
+        split_delimiters: splitDelimiters(),
+        target_splits_per_chunk: targetSplitsPerChunk(),
+        rebalance_chunks: rebalanceChunks(),
+        use_pdf2md_ocr: useGptChunking(),
+        group_tracking_id:
+          groupTrackingId() === "" ? undefined : groupTrackingId(),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        metadata: metadata(),
+        time_stamp: timestamp() ? timestamp() + " 00:00:00" : undefined,
+      };
 
     const uploadFilePromises = files().map(async (file) => {
       let base64File = await toBase64(file);
@@ -343,10 +343,11 @@ export const UploadFile = () => {
         </Show>
         <div class="m-1 mb-1 flex flex-row gap-2">
           <button
-            class={`rounded border-2 border-magenta p-2 px-4 font-semibold ${showFileInput()
+            class={`rounded border-2 border-magenta p-2 px-4 font-semibold ${
+              showFileInput()
                 ? "bg-magenta-600 text-white"
                 : "text-magenta hover:bg-magenta-500 hover:text-white"
-              }`}
+            }`}
             onClick={() => {
               setFiles([]);
               setShowFileInput(true);
@@ -356,10 +357,11 @@ export const UploadFile = () => {
             Select Files
           </button>
           <button
-            class={`rounded border-2 border-magenta p-2 px-4 font-semibold ${showFolderInput()
+            class={`rounded border-2 border-magenta p-2 px-4 font-semibold ${
+              showFolderInput()
                 ? "bg-magenta-600 text-white"
                 : "text-magenta hover:bg-magenta-500 hover:text-white"
-              }`}
+            }`}
             onClick={() => {
               setFiles([]);
               setShowFolderInput(true);

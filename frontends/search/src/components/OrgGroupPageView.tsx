@@ -1,5 +1,9 @@
 import { FiTrash } from "solid-icons/fi";
-import { isChunkGroupPageDTO, type ChunkGroupDTO } from "../utils/apiTypes";
+import {
+  indirectHasOwnProperty,
+  isChunkGroupPageDTO,
+  type ChunkGroupDTO,
+} from "../utils/apiTypes";
 import {
   For,
   Setter,
@@ -20,6 +24,11 @@ export interface GroupUserPageViewProps {
   setShowConfirmModal: Setter<boolean>;
 }
 
+export type GetChunkGroupCountResponse = {
+  count: number;
+  group_id: string;
+};
+
 export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const datasetAndUserContext = useContext(DatasetAndUserContext);
@@ -27,12 +36,63 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   const $dataset = datasetAndUserContext.currentDataset;
   const $user = datasetAndUserContext.user;
   const [groups, setGroups] = createSignal<ChunkGroupDTO[]>([]);
+  const [groupCounts, setGroupCounts] = createSignal<
+    GetChunkGroupCountResponse[]
+  >([]);
   const [groupPage, setGroupPage] = createSignal(1);
   const [groupPageCount, setGroupPageCount] = createSignal(1);
   const [deleting, setDeleting] = createSignal(false);
   const [loading, setLoading] = createSignal(true);
 
   const serverConfig = useDatasetServerConfig();
+
+  createEffect(() => {
+    const currentDataset = $dataset?.();
+    if (!currentDataset) return;
+
+    const all_counts = groups().map(async (group) => {
+      const response = await fetch(`${apiHost}/chunk_group/count`, {
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ group_id: group.id }),
+        headers: {
+          "X-API-version": "2.0",
+          "TR-Dataset": currentDataset.dataset.id,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const data = await response.json();
+        console.log("data", data);
+        if (
+          data !== null &&
+          typeof data === "object" &&
+          indirectHasOwnProperty(data, "count") &&
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          typeof data.count === "number" &&
+          indirectHasOwnProperty(data, "group_id") &&
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          typeof data.group_id === "string"
+        ) {
+          console.log("Invalid response", data);
+          return {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            group_id: data.group_id,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            count: data.count,
+          } as GetChunkGroupCountResponse;
+        }
+      }
+    });
+
+    void Promise.all(all_counts).then((counts) => {
+      const filteredGroupCounts = counts.filter((c) => c !== undefined);
+      console.log("setGroupCounts", filteredGroupCounts);
+      setGroupCounts(filteredGroupCounts);
+    });
+  });
 
   createEffect(() => {
     const userId = $user?.()?.id;
@@ -149,7 +209,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                     scope="col"
                     class="px-3 py-3.5 text-left text-base font-semibold dark:text-white"
                   >
-                    Description
+                    Chunk Count
                   </th>
                   <th
                     scope="col"
@@ -181,7 +241,10 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                         </a>
                       </td>
                       <td class="whitespace-nowrap text-wrap px-3 py-4 text-sm text-gray-900 dark:text-gray-300">
-                        {group.description}
+                        {
+                          groupCounts().find((c) => c.group_id == group.id)
+                            ?.count
+                        }
                       </td>
                       <td class="whitespace-nowrap px-3 py-4 text-left text-sm text-gray-900 dark:text-gray-300">
                         {getLocalTime(group.created_at).toLocaleDateString() +
