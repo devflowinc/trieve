@@ -271,7 +271,7 @@ export const getChunkIdsForGroup = async (
 ): Promise<string[]> => {
   let moreToFind = true;
   let page = 1;
-  let chunkIds = [];
+  const chunkIds = [];
   while (moreToFind) {
     const results = await trieve.trieve.fetch(
       "/api/chunk_group/{group_id}/{page}",
@@ -289,6 +289,7 @@ export const getChunkIdsForGroup = async (
     for (const chunk of results.chunks) {
       chunkIds.push(chunk.id);
     }
+    page +=1 ;
   }
   return chunkIds;
 };

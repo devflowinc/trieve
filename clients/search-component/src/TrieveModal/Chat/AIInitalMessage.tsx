@@ -5,7 +5,7 @@ import { SuggestedQuestions } from "./SuggestedQuestions";
 import { useChatState } from "../../utils/hooks/chat-context";
 
 export const AIInitialMessage = () => {
-  const { props } = useModalState();
+  const { props, currentGroup } = useModalState();
   const { messages } = useChatState();
 
   return (
@@ -46,11 +46,11 @@ export const AIInitialMessage = () => {
             }}
             className="brand-name"
           >
-            {props.brandName || "Trieve"}
+            {currentGroup?.name || props.brandName || "Trieve"}
           </span>
         </p>
       </span>
-      {!messages.length ? <SuggestedQuestions /> : null}
+      {!messages.length && !currentGroup ? <SuggestedQuestions /> : null}
     </>
   );
 };

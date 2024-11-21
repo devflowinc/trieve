@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { BackIcon } from "../icons";
+import { BackIcon, CloseIcon } from "../icons";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { AIInitialMessage } from "./AIInitalMessage";
 import { useChatState } from "../../utils/hooks/chat-context";
@@ -7,7 +7,7 @@ import { ChatMessage } from "./ChatMessage";
 import { Tags } from "../Tags";
 
 export const ChatMode = () => {
-  const { props, setMode, modalRef, open, setOpen, mode } = useModalState();
+  const { props, setMode, modalRef, open, setOpen, mode, currentGroup, setCurrentGroup } = useModalState();
   const {
     askQuestion,
     messages,
@@ -69,8 +69,23 @@ export const ChatMode = () => {
         </div>
       </div>
       <div className="chat-footer-wrapper">
+          {currentGroup && (
+            <div className="chat-group-disclaimer">
+              <div>
+                Chatting with {currentGroup.name}
+              </div>
+              <button>
+                <CloseIcon />
+              </button>
+            </div>
+          )}
         <div className="input-wrapper chat">
-          <button onClick={() => setMode("search")} className="back-icon">
+          <button onClick={() => {
+              if (currentGroup) {
+                setCurrentGroup(null);
+              }
+              setMode("search")
+            }} className="back-icon">
             <BackIcon />
           </button>
           <form
