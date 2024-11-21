@@ -338,7 +338,12 @@ pub async fn create_chunk(
         timer.add("get dataset count");
     }
 
-    if chunks.len() > 120 {
+    let chunk_limit: usize = std::env::var("BATCH_CHUNK_LIMIT")
+        .unwrap_or("120".to_string())
+        .parse()
+        .unwrap_or(120);
+
+    if chunks.len() > chunk_limit {
         return Err(ServiceError::PayloadTooLarge(
             "Too many chunks provided in bulk. The limit is 120 chunks per bulk upload".to_string(),
         )
