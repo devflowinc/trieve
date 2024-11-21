@@ -22,7 +22,9 @@
     <b>All-in-one solution for search, recommendations, and RAG</b>
 </h2>
 
-[![Trieve dashboard preivew](https://cdn.trieve.ai/landing-tabs/dark-mode-docsearch.webp)](https://dashboard.trieve.ai)
+<a href="https://trieve.ai">
+  <img src="https://cdn.trieve.ai/landing-tabs/light-api.webp">
+</a>
 
 ## Quick Links
 
