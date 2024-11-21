@@ -13,6 +13,16 @@ type Messages = {
   additional: Chunk[] | null;
 }[][];
 
+function removeBrackets(str: string) {
+  let result = str.replace(/\[.*?\]/g, "");
+
+  // Handle unclosed brackets: remove from [ to end
+  result = result.replace(/\[.*$/, "");
+
+  // Replace multiple spaces with single space and trim, but preserve period at end
+  return result.replace(/\s+/g, " ").trim().replace(/\s+\./g, ".");
+}
+
 const ModalContext = createContext<{
   askQuestion: (question?: string) => Promise<void>;
   isLoading: boolean;
@@ -93,7 +103,25 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         const decoder = new TextDecoder();
         const newText = decoder.decode(value);
         textInStream += newText;
-        const [jsonData, text] = textInStream.split("||");
+
+        let text: string = "";
+        let jsonData: string = "";
+
+        if (textInStream.includes("||")) {
+          // The RAG over chunks endpoint returns references last
+          if (currentGroup) {
+            [text, jsonData] = textInStream.split("||");
+          } else {
+            [jsonData, text] = textInStream.split("||");
+          }
+        } else {
+          text = textInStream;
+        }
+
+        if (currentGroup) {
+          text = removeBrackets(text);
+        }
+
         let json;
         try {
           json = JSON.parse(jsonData);
@@ -112,6 +140,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             },
           ],
         ]);
+
         setTimeout(() => {
           modalRef.current?.scroll({
             top: modalRef.current.scrollHeight + 200,
