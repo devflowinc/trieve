@@ -81,7 +81,11 @@ export const ChatMode = () => {
         {currentGroup && (
           <div className="chat-group-disclaimer">
             <div>Chatting with {currentGroup.name}</div>
-            <button>
+            <button
+              onClick={() => {
+                setCurrentGroup(null);
+              }}
+            >
               <CloseIcon />
             </button>
           </div>
@@ -96,9 +100,7 @@ export const ChatMode = () => {
             }}
             className="back-icon"
           >
-            <button>
-              <BackIcon />
-            </button>
+            <BackIcon />
           </button>
           <form
             onSubmit={(e) => {
