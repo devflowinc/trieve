@@ -41,6 +41,8 @@ There's no compelling reason why Rust is necessary for this, but we wanted to ha
     - there will be a future release of this macro in an isolated crate
 - [Clickhouse](https://github.com/ClickHouse/ClickHouse) for task storage
     - we have had a surprising amount of Postgres issues (especially write locks) building Trieve, so Clickhouse as the primary data store here is cool
+- [chm](https://docs.rs/chm/latest/chm/index.html) for Clickhouse migrations
+    - in-house CLI for creating a Clickhouse migrations folder and system
 - [MinIO S3](https://github.com/minio/minio) for file storage
 
 ## How does PDF2MD work?
