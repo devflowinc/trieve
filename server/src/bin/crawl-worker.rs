@@ -823,6 +823,19 @@ async fn scrape_worker(
             }
         }
 
+        event_queue
+            .send(ClickHouseEvent::WorkerEvent(
+                WorkerEvent::from_details(
+                    crawl_request.dataset_id,
+                    models::EventType::CrawlStarted {
+                        scrape_id: crawl_request.scrape_id,
+                        crawl_options: crawl_request.clone().crawl_options,
+                    },
+                )
+                .into(),
+            ))
+            .await;
+
         match crawl(crawl_request.clone(), pool.clone(), redis_pool.clone()).await {
             Ok(scrape_report) => {
                 log::info!("Scrape job completed: {:?}", scrape_report);
