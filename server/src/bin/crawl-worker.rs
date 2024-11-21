@@ -56,16 +56,16 @@ struct ShopifyResponse {
 struct ShopifyVariant {
     id: u64,
     product_id: u64,
-    title: String,
-    price: String,
+    title: Option<String>,
+    price: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct ShopifyProduct {
     id: u64,
-    title: String,
-    body_html: String,
-    handle: String,
+    title: Option<String>,
+    body_html: Option<String>,
+    handle: Option<String>,
     tags: Vec<String>,
     variants: Vec<ShopifyVariant>,
     images: Vec<ShopifyImage>,
@@ -84,9 +84,9 @@ fn create_chunk_req_payload(
 ) -> Result<ChunkReqPayload, ServiceError> {
     let image_urls: Vec<String> = product.images.iter().map(|img| img.src.clone()).collect();
 
-    let mut product_title = product.title.clone();
-    let mut variant_title = variant.title.clone();
-    let mut product_body_html = product.body_html.clone();
+    let mut product_title = product.title.clone().unwrap_or_default();
+    let mut variant_title = variant.title.clone().unwrap_or_default();
+    let mut product_body_html = product.body_html.clone().unwrap_or_default();
 
     if let Some(heading_remove_strings) = &scrape_request.crawl_options.heading_remove_strings {
         heading_remove_strings.iter().for_each(|remove_string| {
@@ -102,12 +102,16 @@ fn create_chunk_req_payload(
 
     let link = format!(
         "{}/products/{}?variant={}",
-        base_url, product.handle, variant.id
+        base_url,
+        product.handle.clone().unwrap_or_default(),
+        variant.id
     );
 
     let mut chunk_html = format!(
         "<h1>{} - {}</h1>{}",
-        product.title, variant.title, product.body_html
+        product.title.clone().unwrap_or_default(),
+        variant.title.clone().unwrap_or_default(),
+        product.body_html.clone().unwrap_or_default()
     );
 
     if let Some(ScrapeOptions::Shopify(CrawlShopifyOptions {
@@ -155,22 +159,22 @@ fn create_chunk_req_payload(
     };
 
     let semantic_boost_phrase = if group_variants {
-        variant.title.clone()
+        variant.title.clone().unwrap_or_default()
     } else {
-        product.title.clone()
+        product.title.clone().unwrap_or_default()
     };
 
     let fulltext_boost_phrase = if group_variants {
-        variant.title.clone()
+        variant.title.clone().unwrap_or_default()
     } else {
-        product.title.clone()
+        product.title.clone().unwrap_or_default()
     };
 
     Ok(ChunkReqPayload {
         chunk_html: Some(chunk_html),
         link: Some(link),
         tag_set: Some(product.tags.clone()),
-        num_value: variant.price.parse().ok(),
+        num_value: variant.price.clone().unwrap_or_default().parse().ok(),
         metadata: serde_json::to_value(product.clone()).ok(),
         tracking_id: if group_variants {
             Some(variant.id.to_string())
@@ -604,7 +608,9 @@ async fn crawl(
 
         loop {
             let mut chunks: Vec<ChunkReqPayload> = Vec::new();
-            let url = format!("{}/products.json?page={}", scrape_request.url, cur_page);
+            let cleaned_url = scrape_request.url.trim_end_matches("/");
+            let url = format!("{}/products.json?page={}", cleaned_url, cur_page);
+
             let response: ShopifyResponse = ureq::get(&url)
                 .call()
                 .map_err(|e| ServiceError::InternalServerError(format!("Failed to fetch: {}", e)))?
@@ -612,6 +618,7 @@ async fn crawl(
                 .map_err(|e| {
                     ServiceError::InternalServerError(format!("Failed to parse JSON: {}", e))
                 })?;
+
             if response.products.is_empty() {
                 break;
             }
@@ -621,7 +628,7 @@ async fn crawl(
                     chunks.push(create_chunk_req_payload(
                         &product,
                         &product.variants[0],
-                        &scrape_request.url,
+                        cleaned_url,
                         &scrape_request,
                     )?);
                 } else {
@@ -629,7 +636,7 @@ async fn crawl(
                         chunks.push(create_chunk_req_payload(
                             &product,
                             variant,
-                            &scrape_request.url,
+                            cleaned_url,
                             &scrape_request,
                         )?);
                     }
