@@ -1,18 +1,31 @@
 resource "google_sql_database_instance" "instance" {
-  name             = "trieve-cloud"
+  name             = "trieve-${var.cluster_name}"
   region           = var.region
   database_version = "POSTGRES_15"
 
-  deletion_protection = false
-  root_password    = "abcABC123!"
+  deletion_protection = true
+  root_password       = var.postgres-root-password
 
   settings {
-    edition = "ENTERPRISE"
+    edition           = "ENTERPRISE_PLUS"
+    availability_type = "REGIONAL"
 
-    disk_size = 100 # GB
+    disk_size       = 100 # GB
     disk_autoresize = true
 
-    tier = "db-custom-4-15360"
+    tier = "db-perf-optimized-N-2"
+
+    insights_config {
+      query_insights_enabled  = true
+      query_plans_per_minute  = 5
+      query_string_length     = 1024
+      record_application_tags = false
+      record_client_address   = false
+    }
+
+    data_cache_config {
+      data_cache_enabled = true
+    }
 
     database_flags {
       name  = "cloudsql.iam_authentication"
@@ -20,7 +33,7 @@ resource "google_sql_database_instance" "instance" {
     }
 
     backup_configuration {
-      enabled = true
+      enabled                        = true
       point_in_time_recovery_enabled = true
     }
 
@@ -31,11 +44,12 @@ resource "google_sql_database_instance" "instance" {
 }
 
 resource "google_redis_instance" "my_memorystore_redis_instance" {
-  name           = "cloud-redis"
-  tier           = "BASIC"
-  memory_size_gb = 5
-  region         = var.region
-  redis_version  = "REDIS_6_X"
+  name               = "${var.cluster_name}-redis"
+  authorized_network = google_compute_network.vpc_network.id
+  tier               = "BASIC"
+  memory_size_gb     = 3
+  region             = var.region
+  redis_version      = "REDIS_6_X"
 }
 
 # google_client_config and kubernetes provider must be explicitly specified like the following.
@@ -48,16 +62,16 @@ provider "kubernetes" {
 }
 
 module "my-app-workload-identity" {
-  source              = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
-  version             = "31.0.0"
+  source  = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
+  version = "31.0.0"
 
-  name                = "${var.cluster_name}-postgres-service-account"
-  namespace           = "default"
-  project_id          = var.project
-  roles               = ["roles/iam.workloadIdentityUser", "roles/cloudsql.client", "roles/storage.admin"]
+  name       = "${var.cluster_name}-postgres-service-account"
+  namespace  = "default"
+  project_id = var.project
+  roles      = ["roles/iam.workloadIdentityUser", "roles/cloudsql.client"]
 }
 
-output k8s_pg_service_account {
+output "k8s_pg_service_account" {
   value = module.my-app-workload-identity.k8s_service_account_name
 }
 

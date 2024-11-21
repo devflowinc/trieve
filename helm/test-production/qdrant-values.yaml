@@ -1,0 +1,17 @@
+replicaCount: 3
+livenessProbe:
+  enabled: false
+tolerations: 
+- key: "qdrant-node"
+  operator: "Exists"
+  effect: "NoSchedule"
+metrics:
+  serviceMonitor:
+    enabled: false
+podDisruptionBudget:
+  enabled: false
+  maxUnavailable: 1
+apiKey: "qdrant-api-key"
+limits:
+  cpu: 1
+  memory: 10Gi

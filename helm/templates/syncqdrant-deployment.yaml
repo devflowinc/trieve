@@ -6,113 +6,22 @@ metadata:
     app.kubernetes.io/name: sync-qdrant
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
-  replicas: 0 # Set to 0 by default
+  replicas: {{ .Values.containers.sync_qdrant.replicas | default 0 }}
   selector:
     matchLabels:
       app.kubernetes.io/name: sync-qdrant
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/backend-configmap.yaml") . | sha256sum }}
       labels:
         app.kubernetes.io/name: sync-qdrant
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
-      serviceAccountName: cloud-postgres-service-account
       containers:
       - name: sync-qdrant
-        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5001/" (ne .Values.environment "local")) "sync_qdrant" .Values.containers.sync_qdrant.tag }}
-        env:
-          - name: ADMIN_API_KEY
-            value: {{ .Values.config.trieve.adminApiKey }}
-          - name: BASE_SERVER_URL
-            value: {{ .Values.config.trieve.baseServerUrl }}
-          - name: REDIS_URL
-            value: {{ ( ternary "redis://:redis@trieve-redis-master.default.svc.cluster.local:6379" .Values.config.redis.uri (eq .Values.config.redis.useSubchart true)) }}
-          - name: QDRANT_URL
-            value: {{ ( ternary "http://trieve-qdrant.default.svc.cluster.local:6334" .Values.config.qdrant.qdrantUrl (eq .Values.config.qdrant.useSubchart true)) }}
-          - name: QDRANT_API_KEY
-            value: {{ .Values.config.qdrant.apiKey }}
-          - name: QUANTIZE_VECTORS
-            value: {{ .Values.config.qdrant.quantizeVectors | quote }}
-          - name: REPLICATION_FACTOR
-            value: {{ .Values.config.qdrant.replicationFactor | quote }}
-          - name: DATABASE_URL
-            value: {{ ( ternary "postgres://postgres:password@trieve-postgresql.default.svc.cluster.local:5432/trieve" .Values.postgres.dbURI (eq .Values.postgres.useSubchart true)) }}
-          - name: SMTP_RELAY
-            value: {{ .Values.config.smtp.relay }}
-          - name: SMTP_USERNAME
-            value: {{ .Values.config.smtp.username }}
-          - name: SMTP_PASSWORD
-            value: {{ .Values.config.smtp.password }}
-          - name: SMTP_EMAIL_ADDRESS
-            value: {{ .Values.config.smtp.emailAddress }}
-          - name: OPENAI_API_KEY
-            value: {{ .Values.config.openai.apiKey }}
-          - name: LLM_API_KEY
-            value: {{ .Values.config.llm.apiKey }}
-          - name: SECRET_KEY
-            value: {{ .Values.config.trieve.secretKey | quote }}
-          - name: SALT
-            value: {{ .Values.config.trieve.salt }}
-          - name: S3_ENDPOINT
-            value: {{ .Values.config.s3.endpoint }}
-          - name: S3_ACCESS_KEY
-            value: {{ .Values.config.s3.accessKey }}
-          - name: S3_SECRET_KEY
-            value: {{ .Values.config.s3.secretKey }}
-          - name: S3_BUCKET
-            value: {{ .Values.config.s3.bucket }}
-          - name: COOKIE_SECURE
-            value: {{ .Values.config.trieve.cookieSecure | quote }}
-          - name: QDRANT_COLLECTION
-            value: {{ .Values.config.qdrant.collection }}
-          - name: TIKA_URL
-            value: tika.default.svc.cluster.local
-          - name: OPENAI_BASE_URL
-            value: {{ .Values.config.openai.baseUrl }}
-          - name: STRIPE_SECRET
-            value: {{ .Values.config.stripe.secret }}
-          - name: STRIPE_WEBHOOK_SECRET
-            value: {{ .Values.config.stripe.webhookSecret }}
-          - name: ADMIN_DASHBOARD_URL
-            value: {{ .Values.config.trieve.adminDashboardUrl }}
-          - name: OIDC_CLIENT_SECRET
-            value: {{ .Values.config.oidc.clientSecret }}
-          - name: OIDC_CLIENT_ID
-            value: {{ .Values.config.oidc.clientId }}
-          - name: OIDC_AUTH_REDIRECT_URL
-            value: {{ .Values.config.oidc.authRedirectUrl }}
-          - name: OIDC_ISSUER_URL
-            value: {{ .Values.config.oidc.issuerUrl }}
-          - name: GPU_SERVER_ORIGIN
-            value: {{ .Values.config.trieve.gpuServerOrigin }}
-          - name: SPARSE_SERVER_QUERY_ORIGIN
-            value: {{ .Values.config.trieve.sparseServerQueryOrigin }}
-          - name: SPARSE_SERVER_DOC_ORIGIN
-            value: {{ .Values.config.trieve.sparseServerDocOrigin }}
-          - name: SPARSE_SERVER_ORIGIN
-            value: {{ .Values.config.trieve.sparseServerOrigin }}
-          - name: EMBEDDING_SERVER_ORIGIN
-            value: {{ .Values.config.trieve.embeddingServerOrigin }}
-          - name: EMBEDDING_SERVER_ORIGIN_BGEM3
-            value: {{ .Values.config.trieve.embeddingServerOriginBGEM3 }}
-          - name: EMBEDDING_SERVER_ORIGIN_JINA_CODE
-            value: {{ .Values.config.trieve.embeddingServerOriginJinaCode }}
-          - name: JINA_CODE_API_KEY
-            value: {{ .Values.config.trieve.jinaCodeApiKey }}
-          - name: RERANKER_SERVER_ORIGIN
-            value: {{ .Values.config.trieve.rerankerServerOrigin }}
-          - name: UNLIMITED
-            value: {{ .Values.config.trieve.unlimited | quote }}
-          - name: REDIS_CONNECTIONS
-            value: {{ .Values.config.redis.connections | quote }}
-          - name: CLICKHOUSE_URL
-            value: {{ .Values.config.analytics.clickhouseUrl | quote }}
-          - name: CLICKHOUSE_DB
-            value: {{ .Values.config.analytics.clickhouseDB | quote }}
-          - name: CLICKHOUSE_USER
-            value: {{ .Values.config.analytics.clickhouseUser | quote }}
-          - name: CLICKHOUSE_PASSWORD
-            value: {{ .Values.config.analytics.clickhousePassword | quote }}
-          - name: USE_ANALYTICS
-            value: {{ .Values.config.analytics.enabled | quote }}
+        image: {{ printf "%s:%s" "trieve/sync_qdrant" .Values.containers.sync_qdrant.tag }}
+        envFrom:
+          - configMapRef:
+              name: trieve-server-config

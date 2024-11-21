@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-sql
+  labels:
+    app.kubernetes.io/name: cloud-sql
+spec:
+  selector:
+    app.kubernetes.io/name: cloud-sql-proxy
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    name: svc
+    protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-sql-proxy
+  labels:
+    app.kubernetes.io/name: cloud-sql-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloud-sql-proxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cloud-sql-proxy
+    spec:
+      serviceAccountName: trievegcp-postgres-service-account
+      containers:
+      - name: cloud-sql-proxy
+        ports:
+          - containerPort: 5432
+        # It is recommended to use the latest version of the Cloud SQL Auth Proxy
+        # Make sure to update on a regular schedule!
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.0
+        args:
+          - "--structured-logs"
+          - "--auto-iam-authn"
+          # Replace DB_PORT with the port the proxy should listen on
+          - "--port=5432"
+          - '--address=0.0.0.0'
+          - studious-lore-405302:us-east1:trieve-trievegcp
+        securityContext:
+          # The default Cloud SQL Auth Proxy image runs as the
+          # "nonroot" user and group (uid: 65532) by default.
+          runAsNonRoot: true
+        # You should use resource requests/limits as a best practice to prevent
+        # pods from consuming too many resources and affecting the execution of
+        # other pods. You should adjust the following values based on what your
+        # application needs. For details, see
+        # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+        resources:
+          requests:
+            # The proxy's memory use scales linearly with the number of active
+            # connections. Fewer open connections will use less memory. Adjust
+            # this value based on your application's requirements.
+            memory: "1Gi"
+            # The proxy's CPU use scales linearly with the amount of IO between
+            # the database and the application. Adjust this value based on your
+            # application's requirements.
+            cpu:    "500m"

@@ -1,19 +1,17 @@
-{{- $name := "chat-service" }}
-{{- $selector := "chat" }}
 kind: Service
 apiVersion: v1
 metadata:
-  name: {{ $name }}
+  name: chat-service
   labels:
-    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/name: chat-service
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   type: ClusterIP
   ports:
-    - port: 80
+    - port: 3000
       targetPort: 80
       protocol: TCP
       name: chat
   selector:
-    app.kubernetes.io/name: {{ $selector }}
+    app.kubernetes.io/name: chat
     app.kubernetes.io/instance: {{ .Release.Name }}

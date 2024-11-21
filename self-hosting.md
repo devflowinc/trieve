@@ -170,65 +170,138 @@ We reccomend using `kind`
 1) Create kind cluster with a local image registry
 
 ```sh
+
 ./scripts/kind-with-registry.sh
+
 ```
 
-2) Install clickhouse operator
+2) Install Trieve Dependencies
+
+Trieve depends on the following:
+- keycloak (or some other oidc compliant X)
+- postgres 
+- Redis
+- clickhouse
+- qdrant
+
+We preconfigure all of these except `qdrant` within `test/`.
+
+Install with `kubectl`, you will need to run this command twice as it contains CRD's
 
 ```sh
-./helm/install-clickhouse-operator.sh
+
+kubectl apply -f ./helm/test
+
 ```
 
-3) Pull docker images from dockerhub and push into kind repository.
+3) Install Qdrant via helm chart
+
+For updated install instructions follow qdrant's guide. https://github.com/qdrant/qdrant-helm/blob/main/charts/qdrant/README.md
 
 ```sh
-./scripts/pull-and-push.sh
+
+helm repo add qdrant https://qdrant.github.io/qdrant-helm
+helm repo update
+helm upgrade -i qdrant qdrant/qdrant --set apiKey="qdrant-api-key"
+
 ```
 
-4) Install clickhouse operator
+
+4) Ensure all Dependencies are installed.
+
+It may take a while for all resources to be available, kind is typically a bit slower than a production cluster.
+
+To verify the installation is correct run `kubectl get all` and verify the output matches that below.
+
+Easiest way to do this is run
 
 ```sh
-./helm/install-clickhouse-operator.sh
+
+kubectl get all
+
 ```
 
-5) Install the helm chart into kubernetes cluster
+```
+NAME                                       READY   STATUS      RESTARTS   AGE
+pod/chi-trieve-clickhouse-cluster1-0-0-0   1/1     Running     0          30m
+pod/keycloak-operator-5d45b88d94-kclw2     1/1     Running     0          31m
+pod/keycloak-postgres-0                    1/1     Running     0          31m
+pod/postgresql-db-0                        1/1     Running     0          31m
+pod/qdrant-0                               1/1     Running     0          22s
+pod/redis-68d8d5bddf-4p5df                 1/1     Running     0          31m
+pod/trieve-keycloak-0                      1/1     Running     0          6m51s
+pod/trieve-realm-xv7hp                     0/1     Completed   0          7m2s
+
+NAME                                         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+service/chi-trieve-clickhouse-cluster1-0-0   ClusterIP   None            <none>        9000/TCP,8123/TCP,9009/TCP   30m
+service/clickhouse-trieve-clickhouse         ClusterIP   None            <none>        8123/TCP,9000/TCP            30m
+service/keycloak-operator                    ClusterIP   10.96.152.103   <none>        80/TCP                       31m
+service/keycloak-postgres                    ClusterIP   10.96.214.23    <none>        5432/TCP                     31m
+service/kubernetes                           ClusterIP   10.96.0.1       <none>        443/TCP                      31m
+service/postgres                             ClusterIP   10.96.217.15    <none>        5432/TCP                     31m
+service/qdrant                               ClusterIP   10.96.44.173    <none>        6333/TCP,6334/TCP,6335/TCP   22s
+service/qdrant-headless                      ClusterIP   None            <none>        6333/TCP,6334/TCP,6335/TCP   22s
+service/redis                                ClusterIP   10.96.172.177   <none>        6379/TCP                     31m
+service/trieve-keycloak-discovery            ClusterIP   None            <none>        7800/TCP                     7m42s
+service/trieve-keycloak-service              ClusterIP   10.96.136.207   <none>        8080/TCP,9000/TCP            7m42s
+
+NAME                                READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/keycloak-operator   1/1     1            1           31m
+deployment.apps/redis               1/1     1            1           31m
+
+NAME                                           DESIRED   CURRENT   READY   AGE
+replicaset.apps/keycloak-operator-5d45b88d94   1         1         1       31m
+replicaset.apps/redis-68d8d5bddf               1         1         1       31m
+
+NAME                                                  READY   AGE
+statefulset.apps/chi-trieve-clickhouse-cluster1-0-0   1/1     30m
+statefulset.apps/keycloak-postgres                    1/1     31m
+statefulset.apps/postgresql-db                        1/1     31m
+statefulset.apps/qdrant                               1/1     22s
+statefulset.apps/trieve-keycloak                      1/1     7m42s
+
+NAME                     STATUS     COMPLETIONS   DURATION   AGE
+job.batch/trieve-realm   Complete   1/1           10s        7m2s
+
+```
+
+6) Setup Trieve `values.yaml`
+
+
+7) Install the Trieve helm chart
+
+The `helm/values.local.yaml` file is preconfigured to work with the dependencies as installed by `test/`.
+They should also be namespace agnostic if you choose a different namespace. Edit any values if needed.
 
 ```sh
-helm install -f helm/local-values.yaml local helm/
-```
 
-6) Edit the coredns entry for auth.localtrieve.com to work as an alias within kubernetes.
-
-```sh
-kubectl edit -n kube-system configmaps/coredns
-```
-
-Add in the following rule within the coredns settings. `rewrite name auth.localtrieve.com keycloak.default.svc.cluster.local`
-
-It should look something like this.
+helm upgrade -i trieve-local -f helm/values.local.yaml helm/
 
 ```
-.:53 {
-    errors
-    health {
-       lameduck 5s
-    }
-    ready
-    kubernetes cluster.local in-addr.arpa ip6.arpa {
-       pods insecure
-       fallthrough in-addr.arpa ip6.arpa
-       ttl 30
-    }
-    prometheus :9153
-    forward . /etc/resolv.conf {
-       max_concurrent 1000
-    }
-    rewrite name auth.localtrieve.com keycloak.default.svc.cluster.local
-    cache 30
-    loop
-    reload
-    loadbalance
-}
+
+kubectl get service | grep service
+kubectl describe ingress/ingress-dashboard
+kubectl get pods | grep dashboard
+
+kubectl get deploy
+
+After installing, `kubectl get deployments` should look like this
+
+```
+NAME                READY   UP-TO-DATE   AVAILABLE   AGE
+bktree-worker       1/1     1            1           14m
+chat                1/1     1            1           14m
+crawl-worker        1/1     1            1           14m
+dashboard           1/1     1            1           14m
+delete-worker       1/1     1            1           14m
+group-worker        1/1     1            1           14m
+ingest              10/10   10           10          14m
+keycloak-operator   1/1     1            1           46m
+redis               1/1     1            1           46m
+search              1/1     1            1           14m
+server              0/3     1            0           14m
+sync-qdrant         0/0     0            0           14m
+word-worker         1/1     1            1           14m
 ```
 
 8) Edit `/etc/hosts` and add the following entries here.
@@ -239,7 +312,21 @@ It should look something like this.
 127.0.0.1  dashboard.localtrieve.com
 127.0.0.1  chat.localtrieve.com
 127.0.0.1  auth.localtrieve.com
+127.0.0.1       trieve-keycloak-service
 ```
+
+and port-forward keycloak
+
+```sh
+kubectl port-forward svc/trieve-keycloak-service 8080:8080
+```
+
+
+9) Trieve is installed and ready to use.
+
+Navigate to `http://dashboard.localtrieve.com`, and make an acocount. (The email does not need to be real).
+
+You should be use everything locally with a local CPU embedding server.
 
 ## AWS EKS
 

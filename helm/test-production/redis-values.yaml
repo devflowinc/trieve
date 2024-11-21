@@ -1,0 +1,17 @@
+metrics:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+auth:
+  password: "password"
+master:
+  disableCommands: []
+  persistence:
+    enabled: false
+  pdb:
+    create: false
+  resources:
+    limits:
+      memory: 1Gi
+replica:
+  replicaCount: 0

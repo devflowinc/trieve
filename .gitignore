@@ -33,12 +33,9 @@ tr-cli/sample-data
 tr-cli/dist
 sample-data
 dashboard/.vite/*
-helm/values.yaml
 kubectl
 *.swp
 *.swo
-helm/values.yaml
-helm/.env
 # Local .terraform directories
 **/.terraform/*
 

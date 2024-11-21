@@ -6,6 +6,7 @@ metadata:
     app.kubernetes.io/name: dashboard
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
+  replicas: {{ .Values.containers.dashboard.replicas | default 1 }}
   selector:
     matchLabels:
       app.kubernetes.io/name: dashboard
@@ -15,18 +16,14 @@ spec:
       labels:
         app.kubernetes.io/name: dashboard
         app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/frontend-configmap.yaml") . | sha256sum }}
     spec:
       containers:
       - name: dashboard
-        image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5001/" (ne .Values.environment "local")) "dashboard" .Values.containers.dashboard.tag }}
+        image: {{ printf "%s:%s" "trieve/dashboard" .Values.containers.dashboard.tag }}
         ports:
           - containerPort: 80
-        env:
-          - name: VITE_API_HOST
-            value: {{ .Values.config.vite.apiHost }}
-          - name: VITE_SEARCH_UI_URL
-            value: {{ .Values.config.vite.searchUiUrl }}
-          - name: VITE_CHAT_UI_URL
-            value: {{ .Values.config.vite.chatUiUrl }}
-          - name: VITE_ANALYTICS_UI_URL
-            value: {{ .Values.config.vite.analyticsUiUrl }}
+        envFrom:
+          - configMapRef:
+              name: trieve-frontend-config

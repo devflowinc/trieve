@@ -1,119 +1,59 @@
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "=3.0.0"
-    }
-  }
+# Generate random resource group name
+resource "random_pet" "rg_name" {
+  prefix = var.resource_group_name_prefix
 }
 
-# variable "cluster_name" {
-#     default = "test-cluster"
-# }
-#
-# variable "location" {
-#     default = "West US2"
-# }
-#
-# ###############################################################
-# # K8s configuration
-# ###############################################################
-# # Set ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_SUBSCRIPTION_ID, ARM_TENANT_ID
-# provider "azurerm" {
-#   features {}
-# }
-#
-# resource "azurerm_resource_group" "trieve-resources" {
-#   name     = "trieve-resources"
-#   location = var.location
-# }
-#
-# resource "azurerm_kubernetes_cluster" "trieve-aks" {
-#   name                = var.cluster_name
-#   location            = azurerm_resource_group.trieve-resources.location
-#   resource_group_name = azurerm_resource_group.trieve-resources.name
-#   dns_prefix          = "treiveaks1"
-#   kubernetes_version  = "1.28.8"
-#
-#   identity {
-#     type = "SystemAssigned"
-#   }
-#
-#   default_node_pool {
-#     name       = "default"
-#     node_count = 1
-#     vm_size    = "Standard_DS2_v2"
-#   }
-#
-#   tags = {
-#     Environment = "Production"
-#   }
-# }
-#
-# resource "azurerm_kubernetes_cluster_node_pool" "general-compute" {
-#   name                  = "general"
-#   kubernetes_cluster_id = azurerm_kubernetes_cluster.trieve-aks.id
-#   vm_size               = "Standard_F16s_v2"
-#   node_count            = 2
-#
-#   tags = {
-#     Environment = "Production"
-#   }
-# }
-#
-# resource "azurerm_kubernetes_cluster_node_pool" "gpu-compute" {
-#   name                  = "gpu"
-#   kubernetes_cluster_id = azurerm_kubernetes_cluster.trieve-aks.id
-#   vm_size               = "Standard_NC4as_T4_v3"
-#   node_count            = 1
-#
-#   tags = {
-#     Environment = "Production"
-#   }
-# }
-
-provider "azurerm" {
-  features {}
+resource "azurerm_resource_group" "rg" {
+  location = var.resource_group_location
+  name     = random_pet.rg_name.id
 }
 
-variable "resource_group_name" {
-  description = "The name of the resource group"
-  default     = "aksrgvk"
+resource "random_pet" "azurerm_kubernetes_cluster_name" {
+  prefix = "cluster"
 }
 
-variable "location" {
-  description = "The Azure region to deploy the resources"
-  default     = "australiasoutheast"
+resource "random_pet" "azurerm_kubernetes_cluster_dns_prefix" {
+  prefix = "dns"
 }
 
-variable "cluster_name" {
-  description = "The name of the AKS cluster"
-  default     = "akscluster0132"
-}
-
-variable "node_count" {
-  description = "The number of nodes in the AKS cluster"
-  default     = 1
-}
-
-resource "azurerm_resource_group" "aks" {
-  name     = var.resource_group_name
-  location = var.location
-}
-
-resource "azurerm_kubernetes_cluster" "aks" {
-  name                = var.cluster_name
-  location            = azurerm_resource_group.aks.location
-  resource_group_name = azurerm_resource_group.aks.name
-  dns_prefix          = "${var.cluster_name}-dns"
-
-  default_node_pool {
-    name       = "default"
-    node_count = var.node_count
-    vm_size    = "Standard_DS2_v2"
-  }
+resource "azurerm_kubernetes_cluster" "k8s" {
+  location            = azurerm_resource_group.rg.location
+  name                = random_pet.azurerm_kubernetes_cluster_name.id
+  resource_group_name = azurerm_resource_group.rg.name
+  dns_prefix          = random_pet.azurerm_kubernetes_cluster_dns_prefix.id
 
   identity {
     type = "SystemAssigned"
   }
+
+  default_node_pool {
+    name       = "agentpool"
+    vm_size    = "Standard_D2_v2"
+    node_count = var.node_count
+  }
+  network_profile {
+    network_plugin    = "kubenet"
+    load_balancer_sku = "standard"
+  }
+
+  http_application_routing_enabled = false
+}
+
+resource "azurerm_kubernetes_cluster_node_pool" "gpu_nodes" {
+  name                  = "gpu"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.k8s.id
+  vm_size               = "Standard_NC4as_T4_v3"
+  node_count            = 1
+
+}
+
+resource "azurerm_kubernetes_cluster_node_pool" "qdrant_nodes" {
+  name                  = "qdrant"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.k8s.id
+  vm_size               = "Standard_B4s_v2"
+  node_count            = 3
+
+  node_taints = [
+    "qdrant-node=present:NoSchedule"
+  ]
 }
