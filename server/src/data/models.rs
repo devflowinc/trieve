@@ -3245,6 +3245,8 @@ pub struct ApiKeyRequestParams {
     pub remove_stop_words: Option<bool>,
     /// Options for handling typos in the search query
     pub typo_options: Option<TypoOptions>,
+    /// Options for handling the response for the llm to return when no results are found
+    pub no_result_message: Option<String>,
 }
 
 impl ApiKeyRequestParams {
@@ -3266,6 +3268,7 @@ impl ApiKeyRequestParams {
             score_threshold: self.score_threshold.or(payload.score_threshold),
             llm_options: payload.llm_options,
             context_options: payload.context_options,
+            no_result_message: self.no_result_message.or(payload.no_result_message),
         }
     }
 
@@ -6747,6 +6750,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub user_id: Option<String>,
             pub use_group_search: Option<bool>,
             pub context_options: Option<ContextOptions>,
+            pub no_result_message: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6778,6 +6782,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             llm_options,
             user_id: helper.user_id,
             context_options,
+            no_result_message: helper.no_result_message,
         })
     }
 }
@@ -6801,6 +6806,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub user_id: Option<String>,
             pub use_group_search: Option<bool>,
             pub context_options: Option<ContextOptions>,
+            pub no_result_message: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6831,6 +6837,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             llm_options,
             user_id: helper.user_id,
             context_options,
+            no_result_message: helper.no_result_message,
         })
     }
 }
@@ -6856,6 +6863,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub llm_options: Option<LLMOptions>,
             pub user_id: Option<String>,
             pub context_options: Option<ContextOptions>,
+            pub no_result_message: Option<String>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -6888,6 +6896,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             user_id: helper.user_id,
             llm_options,
             context_options,
+            no_result_message: helper.no_result_message,
         })
     }
 }

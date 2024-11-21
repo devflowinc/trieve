@@ -142,11 +142,6 @@ export const AfMessage = (props: AfMessageProps) => {
         content = split_content[0];
         setChunkMetadatas(JSON.parse(split_content[1]));
       }
-    } else if (props.content.length > 25) {
-      return {
-        content:
-          "I am stumped and cannot figure out how to respond to this. Try regenerating your response or making a new topic.",
-      };
     }
 
     return {

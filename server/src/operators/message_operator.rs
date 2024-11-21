@@ -641,6 +641,15 @@ pub async fn stream_response(
     )
     .await?;
 
+    if chunk_metadatas.is_empty() && create_message_req_payload.no_result_message.is_some() {
+        let response_stream = stream::iter(vec![Ok::<actix_web::web::Bytes, actix_web::Error>(
+            Bytes::from(create_message_req_payload.no_result_message.unwrap()),
+        )]);
+        return Ok(HttpResponse::Ok()
+            .insert_header(("TR-QueryID", search_id.to_string()))
+            .streaming(response_stream));
+    }
+
     let chunk_data = chunk_metadatas
         .clone()
         .into_iter()

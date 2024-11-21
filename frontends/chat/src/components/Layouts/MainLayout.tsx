@@ -92,6 +92,7 @@ const MainLayout = (props: LayoutProps) => {
   const [minScore, setMinScore] = createSignal<number | null>(null);
   const [streamingCompletion, setStreamingCompletion] =
     createSignal<boolean>(false);
+  const [noResultMessage, setNoResultMessage] = createSignal<string | null>();
   const [completionAbortController, setCompletionAbortController] =
     createSignal<AbortController>(new AbortController());
   const [showFilterModal, setShowFilterModal] = createSignal<boolean>(false);
@@ -231,6 +232,7 @@ const MainLayout = (props: LayoutProps) => {
               use_images: useImages(),
             },
           },
+          no_result_message: noResultMessage(),
           use_group_search: useGroupSearch(),
           search_type: searchType(),
           context_options: contextOptions(),
@@ -546,6 +548,18 @@ const MainLayout = (props: LayoutProps) => {
                       value={minScore() ?? ""}
                       onChange={(e) => {
                         setMinScore(parseFloat(e.target.value));
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="search_query">No Result Message:</label>
+                    <input
+                      type="text"
+                      id="search_query"
+                      class="w-3/4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-700"
+                      value={noResultMessage() ?? ""}
+                      onChange={(e) => {
+                        setNoResultMessage(e.target.value);
                       }}
                     />
                   </div>

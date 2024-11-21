@@ -105,6 +105,8 @@ pub struct CreateMessageReqPayload {
     pub llm_options: Option<LLMOptions>,
     /// Context options to use for the completion. If not specified, all options will default to false.
     pub context_options: Option<ContextOptions>,
+    /// No result message for when there are no chunks found above the score threshold.
+    pub no_result_message: Option<String>,
 }
 
 /// Create message
@@ -359,6 +361,8 @@ pub struct RegenerateMessageReqPayload {
     pub user_id: Option<String>,
     /// Context options to use for the completion. If not specified, all options will default to false.
     pub context_options: Option<ContextOptions>,
+    /// No result message for when there are no chunks found above the score threshold.
+    pub no_result_message: Option<String>,
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -391,6 +395,8 @@ pub struct EditMessageReqPayload {
     pub user_id: Option<String>,
     /// Context options to use for the completion. If not specified, all options will default to false.
     pub context_options: Option<ContextOptions>,
+    /// No result message for when there are no chunks found above the score threshold.
+    pub no_result_message: Option<String>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -409,6 +415,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             llm_options: data.llm_options,
             user_id: data.user_id,
             context_options: data.context_options,
+            no_result_message: data.no_result_message,
         }
     }
 }
@@ -429,6 +436,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             llm_options: data.llm_options,
             user_id: data.user_id,
             context_options: data.context_options,
+            no_result_message: data.no_result_message,
         }
     }
 }

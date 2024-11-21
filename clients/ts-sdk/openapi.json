@@ -6268,6 +6268,11 @@
             ],
             "nullable": true
           },
+          "no_result_message": {
+            "type": "string",
+            "description": "Options for handling the response for the llm to return when no results are found",
+            "nullable": true
+          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -8539,6 +8544,11 @@
             "type": "string",
             "description": "The content of the user message to attach to the topic and then generate an assistant message in response to."
           },
+          "no_result_message": {
+            "type": "string",
+            "description": "No result message for when there are no chunks found above the score threshold.",
+            "nullable": true
+          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -9244,6 +9254,11 @@
             "type": "string",
             "description": "The new content of the message to replace the old content with."
           },
+          "no_result_message": {
+            "type": "string",
+            "description": "No result message for when there are no chunks found above the score threshold.",
+            "nullable": true
+          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -9476,7 +9491,8 @@
           "group_chunks_updated",
           "group_chunks_action_failed",
           "crawl_completed",
-          "crawl_failed"
+          "crawl_failed",
+          "crawl_started"
         ]
       },
       "EventTypes": {
@@ -12697,6 +12713,11 @@
                 "$ref": "#/components/schemas/LLMOptions"
               }
             ],
+            "nullable": true
+          },
+          "no_result_message": {
+            "type": "string",
+            "description": "No result message for when there are no chunks found above the score threshold.",
             "nullable": true
           },
           "page_size": {
