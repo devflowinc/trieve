@@ -1,6 +1,8 @@
 import { ChunkWithHighlights } from "./types";
 
-export const guessTitleAndDesc = (item: ChunkWithHighlights): {
+export const guessTitleAndDesc = (
+  item: ChunkWithHighlights,
+): {
   title: string;
   descriptionHtml: string;
 } => {
@@ -36,42 +38,44 @@ export const guessTitleAndDesc = (item: ChunkWithHighlights): {
     title,
     descriptionHtml,
   };
-}
+};
 
 export const findCommonName = (names: string[]) => {
   // Return null if array is empty
-    if (!names || names.length === 0) return null;
-    
-    // Get the first string as reference
-    const firstString = names[0];
-    
-    let commonPrefix = '';
-    
-    // Iterate through each character of the first string
-    for (let i = 0; i < firstString.length; i++) {
-        const currentChar = firstString[i];
-        
-        // Check if this character exists in the same position for all names
-        // Compare case-insensitively but keep original case
-        const allMatch = names.every(str => 
-            str[i]?.toLowerCase() === currentChar.toLowerCase()
-        );
-        
-        if (allMatch) {
-            commonPrefix += firstString[i];  // Use original case from first string
-        } else {
-            break;
-        }
+  if (!names || names.length === 0) return null;
+
+  // Get the first string as reference
+  const firstString = names[0];
+
+  let commonPrefix = "";
+
+  // Iterate through each character of the first string
+  for (let i = 0; i < firstString.length; i++) {
+    const currentChar = firstString[i];
+
+    // Check if this character exists in the same position for all names
+    // Compare case-insensitively but keep original case
+    const allMatch = names.every(
+      (str) => str[i]?.toLowerCase() === currentChar.toLowerCase(),
+    );
+
+    if (allMatch) {
+      commonPrefix += firstString[i]; // Use original case from first string
+    } else {
+      break;
     }
-    
-    // Strip non-alphabetic characters from the end
-    commonPrefix = commonPrefix.replace(/[^a-zA-Z]+$/, '');
+  }
 
-    // if (commonPrefix.endsWith(" /X")) {
-    //   commonPrefix = commonPrefix.slice(0, -3);
-    // }
-    
-    // Return null if no common prefix was found
-    return commonPrefix.length > 0 ? commonPrefix : null;
+  // Strip non-alphabetic characters from the end
+  commonPrefix = commonPrefix.replace(/[^a-zA-Z]+$/, "");
 
-}
+  if (commonPrefix.endsWith(" /X")) {
+    commonPrefix = commonPrefix.slice(0, -3);
+  }
+
+  // Strip html
+  commonPrefix = commonPrefix.replace(/<[^>]*>/g, "");
+
+  // Return null if no common prefix was found
+  return commonPrefix.length > 0 ? commonPrefix : null;
+};
