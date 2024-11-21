@@ -7,7 +7,16 @@ import { ChatMessage } from "./ChatMessage";
 import { Tags } from "../Tags";
 
 export const ChatMode = () => {
-  const { props, setMode, modalRef, open, setOpen, mode, currentGroup, setCurrentGroup } = useModalState();
+  const {
+    props,
+    setMode,
+    modalRef,
+    open,
+    setOpen,
+    mode,
+    currentGroup,
+    setCurrentGroup,
+  } = useModalState();
   const {
     askQuestion,
     messages,
@@ -69,24 +78,27 @@ export const ChatMode = () => {
         </div>
       </div>
       <div className="chat-footer-wrapper">
-          {currentGroup && (
-            <div className="chat-group-disclaimer">
-              <div>
-                Chatting with {currentGroup.name}
-              </div>
-              <button>
-                <CloseIcon />
-              </button>
-            </div>
-          )}
+        {currentGroup && (
+          <div className="chat-group-disclaimer">
+            <div>Chatting with {currentGroup.name}</div>
+            <button>
+              <CloseIcon />
+            </button>
+          </div>
+        )}
         <div className="input-wrapper chat">
-          <button onClick={() => {
+          <button
+            onClick={() => {
               if (currentGroup) {
                 setCurrentGroup(null);
               }
-              setMode("search")
-            }} className="back-icon">
-            <BackIcon />
+              setMode("search");
+            }}
+            className="back-icon"
+          >
+            <button>
+              <BackIcon />
+            </button>
           </button>
           <form
             onSubmit={(e) => {
@@ -100,7 +112,7 @@ export const ChatMode = () => {
               ref={chatInput}
               value={currentQuestion}
               onChange={(e) => setCurrentQuestion(e.target.value)}
-              placeholder="Ask me anything"
+              placeholder="Ask me anything about"
             />
           </form>
         </div>
