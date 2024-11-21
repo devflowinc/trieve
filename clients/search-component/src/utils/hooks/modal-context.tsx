@@ -124,7 +124,7 @@ const ModalContext = createContext<{
   setCurrentTag: React.Dispatch<React.SetStateAction<string>>;
   currentGroup: ChunkGroup | null;
   setCurrentGroup: React.Dispatch<React.SetStateAction<ChunkGroup | null>>;
-  chatWithGroup:(group: ChunkGroup, betterGroupName?: string) => void;
+  chatWithGroup: (group: ChunkGroup, betterGroupName?: string) => void;
   tagCounts: CountChunkQueryResponseBody[];
 }>({
   props: defaultProps,
@@ -175,7 +175,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all"
+    props.tags?.find((t) => t.selected)?.tag || "all",
   );
 
   const [currentGroup, setCurrentGroup] = useState<ChunkGroup | null>(null);
@@ -254,8 +254,8 @@ const ModalProvider = ({
               trieve: trieve,
               abortController,
               ...(tag.tag !== "all" && { tag: tag.tag }),
-            })
-          )
+            }),
+          ),
         );
         setTagCounts(numberOfRecords);
       } catch (e) {
@@ -282,7 +282,7 @@ const ModalProvider = ({
     // preload the chunk ids
     cached(() => {
       return getChunkIdsForGroup(group.id, trieve);
-    }, `chunk-ids-${group.id}`).catch(e => {
+    }, `chunk-ids-${group.id}`).catch((e) => {
       console.error(e);
     });
   };

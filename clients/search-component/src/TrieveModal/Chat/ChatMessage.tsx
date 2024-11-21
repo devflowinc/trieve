@@ -183,7 +183,7 @@ export const Message = ({
                           (chunk.metadata.heading ||
                             chunk.metadata.title ||
                             chunk.metadata.page_title) &&
-                          chunk.link
+                          chunk.link,
                       )
                       .map((chunk) => [
                         chunk.metadata.heading ||
@@ -194,7 +194,7 @@ export const Message = ({
                       .filter(
                         (link, index, array) =>
                           array.findIndex((item) => item[0] === link[0]) ===
-                            index && link[0]
+                            index && link[0],
                       )
                       .map((link, index) => (
                         <a key={index} href={link[1] as string} target="_blank">
