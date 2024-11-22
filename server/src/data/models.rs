@@ -3702,41 +3702,113 @@ impl UserApiKey {
         }
     }
 }
+#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3",
+    "api_key_hash": "hash",
+    "name": "Trieve",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
+    "role": 1,
+}))]
+#[diesel(table_name = organization_api_key)]
+pub struct OrganizationApiKey {
+    pub id: uuid::Uuid,
+    pub organization_id: uuid::Uuid,
+    pub api_key_hash: String,
+    pub name: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub role: i32,
+    pub dataset_ids: Option<Vec<Option<String>>>,
+    pub scopes: Option<Vec<Option<String>>>,
+    pub params: Option<serde_json::Value>,
+    pub expires_at: Option<chrono::NaiveDateTime>,
+}
+
+impl From<OrganizationApiKey> for UserApiKey {
+    fn from(api_key: OrganizationApiKey) -> Self {
+        UserApiKey {
+            id: api_key.id,
+            user_id: uuid::Uuid::default(),
+            api_key_hash: Some(api_key.api_key_hash),
+            name: api_key.name,
+            created_at: api_key.created_at,
+            updated_at: api_key.updated_at,
+            role: api_key.role,
+            blake3_hash: None,
+            dataset_ids: api_key.dataset_ids,
+            organization_ids: Some(vec![Some(api_key.organization_id.to_string())]),
+            scopes: api_key.scopes,
+            params: api_key.params,
+            expires_at: api_key.expires_at,
+        }
+    }
+}
+
+impl OrganizationApiKey {
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_details(
+        organization_id: uuid::Uuid,
+        api_key_hash: String,
+        name: String,
+        role: ApiKeyRole,
+        dataset_ids: Option<Vec<uuid::Uuid>>,
+        scopes: Option<Vec<String>>,
+        params: Option<ApiKeyRequestParams>,
+        expires_at: Option<chrono::NaiveDateTime>,
+    ) -> Self {
+        OrganizationApiKey {
+            id: uuid::Uuid::new_v4(),
+            organization_id,
+            api_key_hash,
+            name,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+            role: role.into(),
+            dataset_ids: dataset_ids
+                .map(|ids| ids.into_iter().map(|id| Some(id.to_string())).collect()),
+            scopes: scopes.map(|scopes| scopes.into_iter().map(Some).collect()),
+            params: if params.is_some() {
+                serde_json::to_value(params).ok()
+            } else {
+                None
+            },
+            expires_at,
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-    "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
     "role": 1,
     "dataset_ids": ["d0d0d0d0-d0d0-d0d0-d0d0-d0d0d0d0d0d0"],
-    "organization_ids": ["o1o1o1o1-o1o1-o1o1-o1o1-o1o1o1o1o1o1"],
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
 }))]
 pub struct ApiKeyRespBody {
     pub id: uuid::Uuid,
-    pub user_id: uuid::Uuid,
+    pub organization_id: uuid::Uuid,
     pub name: String,
     pub role: i32,
     pub dataset_ids: Option<Vec<String>>,
-    pub organization_ids: Option<Vec<String>>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
 
-impl From<UserApiKey> for ApiKeyRespBody {
-    fn from(api_key: UserApiKey) -> Self {
+impl From<OrganizationApiKey> for ApiKeyRespBody {
+    fn from(api_key: OrganizationApiKey) -> Self {
         ApiKeyRespBody {
             id: api_key.id,
-            user_id: api_key.user_id,
+            organization_id: api_key.organization_id,
             name: api_key.name,
             role: api_key.role,
             dataset_ids: api_key
                 .dataset_ids
-                .map(|ids| ids.into_iter().flatten().collect()),
-            organization_ids: api_key
-                .organization_ids
                 .map(|ids| ids.into_iter().flatten().collect()),
             created_at: api_key.created_at,
             updated_at: api_key.updated_at,

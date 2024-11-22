@@ -6,7 +6,6 @@ import {
   JSX,
   Show,
   useContext,
-  createResource,
 } from "solid-js";
 import {
   Dialog,
@@ -17,11 +16,7 @@ import {
   DisclosureButton,
   DisclosurePanel,
 } from "terracotta";
-import {
-  DatasetAndUsage,
-  fromI32ToUserRole,
-  SetUserApiKeyResponse,
-} from "shared/types";
+import {  SetUserApiKeyResponse } from "shared/types";
 import { UserContext } from "../contexts/UserContext";
 import { createToast } from "./ShowToasts";
 import {
@@ -32,7 +27,6 @@ import {
 import { Item, MultiSelect } from "./MultiSelect";
 import { JsonInput, Tooltip } from "shared/ui";
 import { ApiRoutes, RouteScope } from "./Routes";
-import { Organization } from "trieve-ts-sdk";
 import { z } from "zod";
 import {
   chunkFilterSchema,
@@ -51,10 +45,8 @@ export const ApiKeyGenerateModal = (props: {
 
   const [apiKey, setApiKey] = createSignal<string>("");
   const [name, setName] = createSignal<string>("");
-  const [role, setRole] = createSignal<number>(1);
+  const [role, setRole] = createSignal<number>(0);
   const [generated, setGenerated] = createSignal<boolean>(false);
-  const organizations = createMemo(() => userContext?.user?.()?.orgs ?? []);
-  const [selectedOrgs, setSelectedOrgs] = createSignal<Organization[]>([]);
   const [selectedDatasetIds, setSelectedDatasetIds] = createSignal<Item[]>([]);
   const [selectedRoutes, setSelectedRoutes] = createSignal<Item[]>([]);
   const [defaultParams, setDefaultParams] =
@@ -81,44 +73,23 @@ export const ApiKeyGenerateModal = (props: {
     })
     .strict();
 
-  const [datasetsAndUsages] = createResource(
-    selectedOrgs,
-    async (selected) => {
-      const datasetsAndUsages: Item[] = [];
-      const resolved = await Promise.all(
-        selected.map((org) =>
-          fetch(`${apiHost}/dataset/organization/${org.id}`, {
-            credentials: "include",
-            headers: {
-              "TR-Organization": org.id,
-            },
-          }),
-        ),
-      );
-      for (const res of resolved) {
-        if (res.ok) {
-          const data = (await res.json()) as unknown as DatasetAndUsage[];
-          const mapped = data.map((d) => ({
-            name: d.dataset.name,
-            id: d.dataset.id,
-          }));
-          datasetsAndUsages.push(...mapped);
-        }
-      }
-
-      return datasetsAndUsages;
-    },
-    { initialValue: [] },
-  );
+  const datasetItems: Item[] =
+    userContext.orgDatasets()?.map((dataset) => {
+      return {
+        id: dataset.dataset.id,
+        name: dataset.dataset.name,
+      };
+    }) ?? [];
 
   const generateApiKey = () => {
     if (role() !== 0 && !role()) return;
 
-    void fetch(`${apiHost}/user/api_key`, {
+    void fetch(`${apiHost}/organization/api_key`, {
       credentials: "include",
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "TR-Organization": userContext.selectedOrg().id,
       },
       body: JSON.stringify({
         name: name(),
@@ -126,10 +97,6 @@ export const ApiKeyGenerateModal = (props: {
         dataset_ids:
           selectedDatasetIds().length > 0
             ? selectedDatasetIds().map((d) => d.id)
-            : undefined,
-        organization_ids:
-          selectedOrgs().length > 0
-            ? selectedOrgs().map((org) => org.id)
             : undefined,
         scopes:
           selectedRoutes().length > 0
@@ -262,13 +229,15 @@ export const ApiKeyGenerateModal = (props: {
                             }}
                             value={role()}
                           >
-                            <Show when={currentUserRole()}>
-                              {(currentRole) => (
-                                <option selected value={1}>
-                                  Read + Write -{" "}
-                                  {fromI32ToUserRole(currentRole())} Level
-                                </option>
-                              )}
+                            <Show when={currentUserRole() >= 2}>
+                              <option selected value={2}>
+                                Owner
+                              </option>
+                            </Show>
+                            <Show when={currentUserRole() >= 1}>
+                              <option selected value={1}>
+                                Admin
+                              </option>
                             </Show>
                             <option value={0}>Read Only</option>
                           </select>
@@ -319,26 +288,10 @@ export const ApiKeyGenerateModal = (props: {
                               for="organization"
                               class="block text-sm font-medium leading-6"
                             >
-                              Organizations:
-                            </label>
-                            <MultiSelect
-                              selected={selectedOrgs()}
-                              items={organizations()}
-                              setSelected={(selected: Organization[]) => {
-                                setSelectedOrgs(selected);
-                              }}
-                            />
-                          </div>
-                          <div class="flex items-center space-x-2">
-                            <label
-                              for="organization"
-                              class="block text-sm font-medium leading-6"
-                            >
                               Datasets:
                             </label>
                             <MultiSelect
-                              disabled={selectedOrgs().length === 0}
-                              items={datasetsAndUsages()}
+                              items={datasetItems}
                               selected={selectedDatasetIds()}
                               setSelected={(selected: Item[]) => {
                                 setSelectedDatasetIds(selected);

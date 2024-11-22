@@ -2,11 +2,7 @@ import { Show, createMemo, createSignal, useContext } from "solid-js";
 import { FaRegularTrashCan } from "solid-icons/fa";
 import { ApiKeyGenerateModal } from "./ApiKeyGenerateModal";
 import { UserContext } from "../contexts/UserContext";
-import {
-  ApiKeyRespBody,
-  fromI32ToApiKeyRole,
-  fromI32ToUserRole,
-} from "shared/types";
+import { fromI32ToApiKeyRole, fromI32ToUserRole } from "shared/types";
 import { formatDate } from "../utils/formatters";
 import { createMutation, createQuery } from "@tanstack/solid-query";
 import { useTrieve } from "../hooks/useTrieve";
@@ -16,6 +12,7 @@ import {
   getCoreRowModel,
 } from "@tanstack/solid-table";
 import { TanStackTable } from "shared/ui";
+import { ApiKeyRespBody } from "trieve-ts-sdk";
 
 const colHelp = createColumnHelper<ApiKeyRespBody>();
 
@@ -40,17 +37,22 @@ export const ApiKeys = () => {
   const apiKeysQuery = createQuery(() => ({
     queryKey: ["apiKeys", userContext.selectedOrg().id],
     queryFn: () => {
-      return trieve.fetch<"eject">(`/api/user/api_key`, "get", {}) as Promise<
-        ApiKeyRespBody[]
-      >;
+      return trieve.fetch(`/api/organization/api_key`, "get", {
+        organizationId: userContext.selectedOrg().id,
+      });
     },
   }));
 
   const deleteApiKeyMutation = createMutation(() => ({
     mutationFn: async (id: string) => {
-      return await trieve.fetch("/api/user/api_key/{api_key_id}", "delete", {
-        apiKeyId: id,
-      });
+      return await trieve.fetch(
+        "/api/organization/api_key/{api_key_id}",
+        "delete",
+        {
+          apiKeyId: id,
+          organizationId: userContext.selectedOrg().id,
+        },
+      );
     },
     onSuccess() {
       void apiKeysQuery.refetch();
@@ -79,12 +81,6 @@ export const ApiKeys = () => {
       }),
       colHelp.accessor("dataset_ids", {
         header: "Datasets",
-        cell: (info) => {
-          return info.getValue()?.join(",");
-        },
-      }),
-      colHelp.accessor("organization_ids", {
-        header: "Organizations",
         cell: (info) => {
           return info.getValue()?.join(",");
         },

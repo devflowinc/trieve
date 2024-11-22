@@ -13,7 +13,7 @@ use crate::{
         dataset_operator::get_dataset_and_organization_from_dataset_id_query,
         organization_operator::{
             get_arbitrary_org_owner_from_dataset_id, get_arbitrary_org_owner_from_org_id,
-            get_org_from_id_query,
+            get_assumed_user_by_organization_api_key, get_org_from_id_query,
         },
         user_operator::{get_user_by_id_query, get_user_from_api_key_query},
     },
@@ -312,6 +312,18 @@ async fn auth_with_api_key(
                     }
                 }
             }
+        }
+
+        if let Ok((user, api_key)) =
+            get_assumed_user_by_organization_api_key(authen_header.as_str(), pool.clone()).await
+        {
+            if let Some(ref api_key_params) = api_key.params {
+                let params = serde_json::from_value(api_key_params.clone()).unwrap();
+                insert_api_key_payload(req, params).await.map_err(|_| {
+                    ServiceError::BadRequest("Could not insert api key payload".to_string())
+                })?;
+            }
+            return Ok((Some(user), Some(api_key)));
         }
 
         //TODO: Cache the api key in redis
