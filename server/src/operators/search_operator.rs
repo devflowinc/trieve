@@ -1191,7 +1191,7 @@ pub async fn retrieve_chunks_for_groups(
                 .filter_map(|search_result| {
                     let mut chunk: ChunkMetadataTypes =
                         match metadata_chunks.iter().find(|metadata_chunk| {
-                            metadata_chunk.metadata().qdrant_point_id == search_result.point_id
+                            metadata_chunk.qdrant_point_id() == search_result.point_id
                         }) {
                             Some(metadata_chunk) => metadata_chunk.clone(),
                             None => {
@@ -1347,7 +1347,7 @@ pub async fn get_metadata_from_groups(
                 .filter_map(|search_result| {
                     let chunk: ChunkMetadataTypes =
                         match chunk_metadatas.iter().find(|metadata_chunk| {
-                            metadata_chunk.metadata().qdrant_point_id == search_result.point_id
+                            metadata_chunk.qdrant_point_id() == search_result.point_id
                         }) {
                             Some(metadata_chunk) => metadata_chunk.clone(),
                             None => {
@@ -1426,15 +1426,23 @@ pub async fn retrieve_chunks_from_point_ids(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let metadata_chunks =
-        if data.slim_chunks.unwrap_or(false) && data.search_type != SearchMethod::Hybrid {
-            get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
-        } else if data.content_only.unwrap_or(false) {
-            get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?
-        } else {
-            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
-                .await?
-        };
+    let only_insert_qdrant = std::env::var("ONLY_INSERT_QDRANT")
+        .map(|val| val == "true")
+        .unwrap_or(false);
+
+    let metadata_chunks = if only_insert_qdrant {
+        point_ids
+            .iter()
+            .map(|id| ChunkMetadataTypes::QdrantPointId(*id))
+            .collect()
+    } else if data.slim_chunks.unwrap_or(false) && data.search_type != SearchMethod::Hybrid {
+        get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
+    } else if data.content_only.unwrap_or(false) {
+        get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?
+    } else {
+        get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
+            .await?
+    };
 
     let timer = if let Some(timer) = timer {
         timer.add("fetched from postgres");
@@ -1450,7 +1458,7 @@ pub async fn retrieve_chunks_from_point_ids(
         .filter_map(|search_result| {
             let mut chunk: ChunkMetadataTypes =
                 match metadata_chunks.iter().find(|metadata_chunk| {
-                    metadata_chunk.metadata().qdrant_point_id == search_result.point_id
+                    metadata_chunk.qdrant_point_id() == search_result.point_id
                 }) {
                     Some(metadata_chunk) => metadata_chunk.clone(),
                     None => {
@@ -1471,68 +1479,69 @@ pub async fn retrieve_chunks_from_point_ids(
                 };
 
             let mut highlights: Option<Vec<String>> = None;
-                if let Some(highlight_options)  = &data.highlight_options {
-                        if highlight_options.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) && !matches!(data.query, QueryTypes::Multi(_)) {
-                            let (highlighted_chunk, highlighted_snippets) = match highlight_options.highlight_strategy {
-                                Some(HighlightStrategy::V1) => {
-                                    get_highlights(
-                                            chunk.clone().into(),
-                                            data.query.clone().to_single_query().expect("Should never be multi query"),
-                                            highlight_options.highlight_threshold,
-                                            highlight_options.highlight_delimiters.clone().unwrap_or(vec![
-                                                ".".to_string(),
-                                                "!".to_string(),
-                                                "?".to_string(),
-                                                "\n".to_string(),
-                                                "\t".to_string(),
-                                                ",".to_string(),
-                                            ]),
-                                            highlight_options.highlight_max_length,
-                                            highlight_options.highlight_max_num,
-                                            highlight_options.highlight_window,
-                                            highlight_options.pre_tag.clone(),
-                                            highlight_options.post_tag.clone()
-                                        )
-                                        .unwrap_or((chunk.clone().into(), vec![]))
-                                },
-                                _ => {
-                                    get_highlights_with_exact_match(
-                                            chunk.clone().into(),
-                                            data.query.clone().to_single_query().expect("Should never be multi query"),
-                                            highlight_options.highlight_threshold,
-                                            highlight_options.highlight_delimiters.clone().unwrap_or(vec![
-                                                ".".to_string(),
-                                                "!".to_string(),
-                                                "?".to_string(),
-                                                "\n".to_string(),
-                                                "\t".to_string(),
-                                                ",".to_string(),
-                                            ]),
-                                            highlight_options.highlight_max_length,
-                                            highlight_options.highlight_max_num,
-                                            highlight_options.highlight_window,
-                                            highlight_options.pre_tag.clone(),
-                                            highlight_options.post_tag.clone()
-                                        )
-                                        .unwrap_or((chunk.clone().into(), vec![]))
-                                },
-                            };
 
-                            highlights = Some(highlighted_snippets);
+            if let Some(highlight_options)  = &data.highlight_options {
+                if highlight_options.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) && !only_insert_qdrant && !matches!(data.query, QueryTypes::Multi(_)) {
+                    let (highlighted_chunk, highlighted_snippets) = match highlight_options.highlight_strategy {
+                        Some(HighlightStrategy::V1) => {
+                            get_highlights(
+                                chunk.clone().into(),
+                                data.query.clone().to_single_query().expect("Should never be multi query"),
+                                highlight_options.highlight_threshold,
+                                highlight_options.highlight_delimiters.clone().unwrap_or(vec![
+                                    ".".to_string(),
+                                    "!".to_string(),
+                                    "?".to_string(),
+                                    "\n".to_string(),
+                                    "\t".to_string(),
+                                    ",".to_string(),
+                                ]),
+                                highlight_options.highlight_max_length,
+                                highlight_options.highlight_max_num,
+                                highlight_options.highlight_window,
+                                highlight_options.pre_tag.clone(),
+                                highlight_options.post_tag.clone()
+                            )
+                            .unwrap_or((chunk.clone().into(), vec![]))
+                        },
+                        _ => {
+                            get_highlights_with_exact_match(
+                                chunk.clone().into(),
+                                data.query.clone().to_single_query().expect("Should never be multi query"),
+                                highlight_options.highlight_threshold,
+                                highlight_options.highlight_delimiters.clone().unwrap_or(vec![
+                                    ".".to_string(),
+                                    "!".to_string(),
+                                    "?".to_string(),
+                                    "\n".to_string(),
+                                    "\t".to_string(),
+                                    ",".to_string(),
+                                ]),
+                                highlight_options.highlight_max_length,
+                                highlight_options.highlight_max_num,
+                                highlight_options.highlight_window,
+                                highlight_options.pre_tag.clone(),
+                                highlight_options.post_tag.clone()
+                            )
+                            .unwrap_or((chunk.clone().into(), vec![]))
+                        },
+                    };
 
-                            match chunk {
-                                ChunkMetadataTypes::Metadata(_) => chunk = highlighted_chunk.into(),
-                                ChunkMetadataTypes::Content(_) => {
-                                    chunk =
-                                        <ChunkMetadata as Into<ContentChunkMetadata>>::into(highlighted_chunk)
-                                            .into()
-                                }
-                                _ => unreachable!(
-                                    "If slim_chunks is false, then chunk must be either Metadata or Content"
-                                ),
-                            }
+                    highlights = Some(highlighted_snippets);
+
+                    match chunk {
+                        ChunkMetadataTypes::Metadata(_) => chunk = highlighted_chunk.into(),
+                        ChunkMetadataTypes::Content(_) => {
+                            chunk =
+                                <ChunkMetadata as Into<ContentChunkMetadata>>::into(highlighted_chunk)
+                                    .into()
                         }
+                        _ => unreachable!(
+                            "If slim_chunks is false, then chunk must be either Metadata or Content"
+                        ),
+                    }
                 }
+            }
 
             Some(ScoreChunkDTO {
                 metadata: vec![chunk],
@@ -2205,6 +2214,7 @@ pub async fn search_hybrid_chunks(
                             ChunkMetadataTypes::Metadata(_) => slim_chunk.into(),
                             ChunkMetadataTypes::Content(_) => slim_chunk.into(),
                             ChunkMetadataTypes::ID(_) => metadata,
+                            ChunkMetadataTypes::QdrantPointId(_) => metadata,
                         }
                     })
                     .collect(),

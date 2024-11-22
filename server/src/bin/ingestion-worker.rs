@@ -567,17 +567,27 @@ pub async fn bulk_upload_chunks(
         "calling_BULK_insert_chunk_metadata_query",
     );
 
-    let inserted_chunk_metadatas = bulk_insert_chunk_metadata_query(
+    let only_insert_qdrant = std::env::var("ONLY_INSERT_QDRANT").unwrap_or("false".to_string());
+
+    let inserted_chunk_metadatas = if only_insert_qdrant == "true" {
         ingestion_data
             .clone()
             .into_iter()
             .map(|data| data.into())
-            .collect_vec(),
-        payload.dataset_id,
-        upsert_by_tracking_id_being_used,
-        web_pool.clone(),
-    )
-    .await?;
+            .collect_vec()
+    } else {
+        bulk_insert_chunk_metadata_query(
+            ingestion_data
+                .clone()
+                .into_iter()
+                .map(|data| data.into())
+                .collect_vec(),
+            payload.dataset_id,
+            upsert_by_tracking_id_being_used,
+            web_pool.clone(),
+        )
+        .await?
+    };
 
     insert_tx.finish();
 
@@ -602,6 +612,7 @@ pub async fn bulk_upload_chunks(
     let inserted_chunk_metadata_ids: Vec<uuid::Uuid> = inserted_chunk_metadatas
         .iter()
         .map(|chunk_data| chunk_data.chunk_metadata.id)
+        .unique()
         .collect();
 
     let embedding_transaction = transaction.start_child(
