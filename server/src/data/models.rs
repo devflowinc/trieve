@@ -938,7 +938,7 @@ pub enum NewChunkMetadataTypes {
     ID(SlimChunkMetadataWithArrayTagSet),
     Metadata(ChunkMetadata),
     Content(ContentChunkMetadata),
-    QdrantPointId(uuid::Uuid),
+    QdrantChunkMetadata(QdrantChunkMetadata),
 }
 
 impl From<ChunkMetadataTypes> for NewChunkMetadataTypes {
@@ -953,8 +953,8 @@ impl From<ChunkMetadataTypes> for NewChunkMetadataTypes {
             ChunkMetadataTypes::Content(content_chunk_metadata) => {
                 NewChunkMetadataTypes::Content(content_chunk_metadata)
             }
-            ChunkMetadataTypes::QdrantPointId(qdrant_point_id) => {
-                NewChunkMetadataTypes::QdrantPointId(qdrant_point_id)
+            ChunkMetadataTypes::QdrantChunkMetadata(qdrant_point_id) => {
+                NewChunkMetadataTypes::QdrantChunkMetadata(qdrant_point_id)
             }
         }
     }
@@ -976,8 +976,8 @@ impl ScoreChunkDTO {
                 ChunkMetadataTypes::Content(content_chunk_metadata) => {
                     ChunkMetadataTypes::ID(content_chunk_metadata.into())
                 }
-                ChunkMetadataTypes::QdrantPointId(_) => {
-                    ChunkMetadataTypes::QdrantPointId(uuid::Uuid::nil())
+                ChunkMetadataTypes::QdrantChunkMetadata(qdrant_metadata) => {
+                    ChunkMetadataTypes::QdrantChunkMetadata(qdrant_metadata)
                 }
             })
             .collect();
@@ -1001,7 +1001,17 @@ pub enum ChunkMetadataTypes {
     ID(SlimChunkMetadata),
     Metadata(ChunkMetadataStringTagSet),
     Content(ContentChunkMetadata),
-    QdrantPointId(uuid::Uuid),
+    QdrantChunkMetadata(QdrantChunkMetadata),
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+pub struct QdrantChunkMetadata {
+    pub qdrant_point_id: uuid::Uuid,
+    pub chunk_html: Option<String>,
+    pub tag_set: Option<Vec<String>>,
+    pub images_urls: Option<Vec<String>>,
+    pub link: Option<String>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 impl From<ChunkMetadataTypes> for ChunkMetadata {
@@ -1011,7 +1021,7 @@ impl From<ChunkMetadataTypes> for ChunkMetadata {
             ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata.into(),
             ChunkMetadataTypes::Content(content_chunk_metadata) => content_chunk_metadata.into(),
             // TODO
-            ChunkMetadataTypes::QdrantPointId(_) => ChunkMetadata::default(),
+            ChunkMetadataTypes::QdrantChunkMetadata(_) => ChunkMetadata::default(),
         }
     }
 }
@@ -1041,7 +1051,7 @@ impl ChunkMetadataTypes {
             ChunkMetadataTypes::ID(slim_metadata) => slim_metadata.clone().into(),
             ChunkMetadataTypes::Content(content_metadata) => content_metadata.clone().into(),
             // TODO
-            ChunkMetadataTypes::QdrantPointId(_) => ChunkMetadata::default(),
+            ChunkMetadataTypes::QdrantChunkMetadata(_) => ChunkMetadata::default(),
         }
     }
 
@@ -1050,7 +1060,9 @@ impl ChunkMetadataTypes {
             ChunkMetadataTypes::Metadata(metadata) => metadata.qdrant_point_id,
             ChunkMetadataTypes::ID(slim_metadata) => slim_metadata.qdrant_point_id,
             ChunkMetadataTypes::Content(content_metadata) => content_metadata.qdrant_point_id,
-            ChunkMetadataTypes::QdrantPointId(qdrant_point_id) => *qdrant_point_id,
+            ChunkMetadataTypes::QdrantChunkMetadata(qdrant_metadata) => {
+                qdrant_metadata.qdrant_point_id
+            }
         }
     }
 }
