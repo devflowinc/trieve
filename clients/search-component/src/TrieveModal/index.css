@@ -660,6 +660,16 @@ body {
 
       background-color: var(--tv-zinc-50);
 
+      .ecommerce-secondary-row {
+        @apply flex justify-between items-center;
+
+        .chat-product-button {
+          @apply fill-zinc-400 hover:fill-zinc-800 hover:bg-zinc-200 py-1 rounded
+
+        }
+      }
+
+
       .chunk-path {
         color: var(--tv-zinc-600);
         @apply text-xs line-clamp-1 overflow-ellipsis;
