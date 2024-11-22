@@ -1,4 +1,9 @@
-import { SearchResponseBody, TrieveSDK } from "trieve-ts-sdk";
+import {
+  ChunkMetadata,
+  ChunkMetadataStringTagSet,
+  SearchResponseBody,
+  TrieveSDK,
+} from "trieve-ts-sdk";
 import { Chunk, GroupSearchResults, Props, SearchResults } from "./types";
 import { defaultHighlightOptions, highlightText } from "./highlight";
 import { ModalTypes } from "./hooks/modal-context";
@@ -265,13 +270,15 @@ export const sendFeedback = async ({ trieve }: { trieve: TrieveSDK }) => {
   return trieve;
 };
 
-export const getChunkIdsForGroup = async (
+export type SimpleChunk = ChunkMetadata | ChunkMetadataStringTagSet;
+
+export const getAllChunksForGroup = async (
   groupId: string,
   trieve: TrieveSDK,
-): Promise<string[]> => {
+): Promise<SimpleChunk[]> => {
   let moreToFind = true;
   let page = 1;
-  const chunkIds = [];
+  const chunks = [];
   while (moreToFind) {
     const results = await trieve.trieve.fetch(
       "/api/chunk_group/{group_id}/{page}",
@@ -287,9 +294,9 @@ export const getChunkIdsForGroup = async (
       break;
     }
     for (const chunk of results.chunks) {
-      chunkIds.push(chunk.id);
+      chunks.push(chunk);
     }
-    page +=1 ;
+    page += 1;
   }
-  return chunkIds;
+  return chunks;
 };

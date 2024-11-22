@@ -4,8 +4,8 @@ import { Chunk } from "../types";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
 import { cached } from "../cache";
-import { getChunkIdsForGroup } from "../trieve";
-import { ChatMessageProxy, RoleProxy } from "trieve-ts-sdk";
+import { getAllChunksForGroup } from "../trieve";
+import { ChatMessageProxy, ChunkGroup, RoleProxy } from "trieve-ts-sdk";
 
 type Messages = {
   queryId: string | null;
@@ -31,7 +31,7 @@ function removeBrackets(str: string) {
   return result.replace(/\s+/g, " ").trim().replace(/\s+\./g, ".");
 }
 
-const ModalContext = createContext<{
+const ChatContext = createContext<{
   askQuestion: (question?: string) => Promise<void>;
   isLoading: boolean;
   messages: Messages;
@@ -41,6 +41,7 @@ const ModalContext = createContext<{
   clearConversation: () => void;
   switchToChatAndAskQuestion: (query: string) => Promise<void>;
   cancelGroupChat: () => void;
+  chatWithGroup: (group: ChunkGroup, betterGroupName?: string) => void;
   isDoneReading?: React.MutableRefObject<boolean>;
   rateChatCompletion: (isPositive: boolean, queryId: string | null) => void;
 }>({
@@ -51,6 +52,7 @@ const ModalContext = createContext<{
   setCurrentQuestion: () => {},
   cancelGroupChat: () => {},
   clearConversation: () => {},
+  chatWithGroup: () => {},
   switchToChatAndAskQuestion: async () => {},
   stopGeneratingMessage: () => {},
   rateChatCompletion: () => {},
@@ -174,13 +176,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     // Use group search
     if (currentGroup) {
       // Should already be preloaded when group selected to chat with
-      const groupChunkIds = await cached(() => {
-        return getChunkIdsForGroup(currentGroup.id, trieveSDK);
+      const groupChunks = await cached(() => {
+        return getAllChunksForGroup(currentGroup.id, trieveSDK);
       }, `chunk-ids-${currentGroup.id}`);
 
       const { reader, queryId } = await trieveSDK.ragOnChunkReaderWithQueryId(
         {
-          chunk_ids: groupChunkIds,
+          chunk_ids: groupChunks.map((c) => c.id),
           prev_messages: [
             ...messages.slice(0, -1).map((m) => mapMessageType(m[0])),
             {
@@ -214,6 +216,21 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         );
       handleReader(reader, queryId);
     }
+  };
+
+  const chatWithGroup = async (group: ChunkGroup, betterGroupName?: string) => {
+    if (betterGroupName) {
+      group.name = betterGroupName;
+    }
+    clearConversation();
+    setCurrentGroup(group);
+    setMode("chat");
+    // preload the chunk ids
+    cached(() => {
+      return getAllChunksForGroup(group.id, trieveSDK);
+    }, `chunk-ids-${group.id}`).catch((e) => {
+      console.error(e);
+    });
   };
 
   const stopGeneratingMessage = () => {
@@ -286,7 +303,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ModalContext.Provider
+    <ChatContext.Provider
       value={{
         askQuestion,
         isLoading,
@@ -302,12 +319,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-    </ModalContext.Provider>
+    </ChatContext.Provider>
   );
 }
 
 function useChatState() {
-  const context = useContext(ModalContext);
+  const context = useContext(ChatContext);
   if (!context) {
     throw new Error("useChatState must be used within a ChatProvider");
   }

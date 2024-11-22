@@ -5,6 +5,7 @@ import { AIInitialMessage } from "./AIInitalMessage";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
 import { Tags } from "../Tags";
+import { GroupChatImgCarousel } from "./GroupChatImgCarousel";
 
 export const ChatMode = () => {
   const {
@@ -66,14 +67,15 @@ export const ChatMode = () => {
             <div className="chat-modal-wrapper">
               <div className="ai-message initial-message">
                 <AIInitialMessage />
-                {messages.map((chat, i) => (
-                  <div key={i} className="message-wrapper">
-                    {chat.map((message, idx) => (
-                      <ChatMessage key={idx} idx={idx} message={message} />
-                    ))}
-                  </div>
-                ))}
               </div>
+              <GroupChatImgCarousel />
+              {messages.map((chat, i) => (
+                <div key={i} className="message-wrapper">
+                  {chat.map((message, idx) => (
+                    <ChatMessage key={idx} idx={idx} message={message} />
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </div>
