@@ -29,6 +29,7 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use minijinja::Environment;
+use once_cell::sync::Lazy;
 use openssl::ssl::SslVerifyMode;
 use openssl::ssl::{SslConnector, SslMethod};
 use postgres_openssl::MakeTlsConnector;
@@ -47,6 +48,12 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub const SECONDS_IN_MINUTE: u64 = 60;
 pub const SECONDS_IN_HOUR: u64 = 60 * SECONDS_IN_MINUTE;
 pub const SECONDS_IN_DAY: u64 = 24 * SECONDS_IN_HOUR;
+
+pub static SECRET_KEY: Lazy<String> =
+    Lazy::new(|| std::env::var("SECRET_KEY").unwrap_or_else(|_| "0123".repeat(16)));
+
+pub static SALT: Lazy<String> =
+    Lazy::new(|| std::env::var("SALT").unwrap_or_else(|_| "supersecuresalt".to_string()));
 
 fn run_migrations(url: &str) {
     use diesel::prelude::*;
@@ -142,7 +149,7 @@ impl Modify for SecurityAddon {
             name = "BSL",
             url = "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt",
         ),
-        version = "0.12.1",
+        version = "0.13.0",
     ),
     servers(
         (url = "https://api.trieve.ai",
@@ -191,8 +198,9 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::bulk_delete_chunk,
         handlers::dataset_handler::get_all_tags,
         handlers::user_handler::update_user,
-        handlers::user_handler::create_user_api_key,
-        handlers::user_handler::delete_user_api_key,
+        handlers::organization_handler::create_organization_api_key,
+        handlers::organization_handler::delete_organization_api_key,
+        handlers::organization_handler::get_organization_api_keys,
         handlers::group_handler::search_over_groups,
         handlers::group_handler::count_group_chunks,
         handlers::group_handler::get_recommended_groups,
@@ -336,8 +344,8 @@ impl Modify for SecurityAddon {
             handlers::group_handler::AddChunkToGroupReqPayload,
             handlers::group_handler::RecommendGroupsResponseBody,
             handlers::user_handler::UpdateUserOrgRoleReqPayload,
-            handlers::user_handler::CreateApiKeyReqPayload,
-            handlers::user_handler::CreateApiKeyResponse,
+            handlers::organization_handler::CreateApiKeyReqPayload,
+            handlers::organization_handler::CreateApiKeyResponse,
             operators::group_operator::GroupsForChunk,
             handlers::file_handler::UploadFileReqPayload,
             handlers::file_handler::UploadFileResult,
@@ -705,7 +713,7 @@ pub fn main() -> std::io::Result<()> {
                 .wrap(
                     SessionMiddleware::builder(
                         redis_store.clone(),
-                        Key::from(operators::user_operator::SECRET_KEY.as_bytes()),
+                        Key::from(SECRET_KEY.as_bytes()),
                     )
                     .session_lifecycle(
                         PersistentSession::default().session_ttl(time::Duration::days(1)),
@@ -967,17 +975,6 @@ pub fn main() -> std::io::Result<()> {
                                     web::resource("")
                                         .route(web::put().to(handlers::user_handler::update_user)),
                                 )
-                                .service(
-                                    web::resource("/api_key")
-                                        .route(web::post().to(handlers::user_handler::create_user_api_key))
-                                        .route(web::get().to(handlers::user_handler::get_user_api_keys))
-                                )
-                                .service(
-                                    web::resource("/api_key/{api_key_id}")
-                                        .route(
-                                            web::delete().to(handlers::user_handler::delete_user_api_key),
-                                        ),
-                                )
                         )
                         .service(
                             web::scope("/chunk_group")
@@ -1111,6 +1108,17 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/update_dataset_configs")
                                         .route(web::post().to(handlers::organization_handler::update_all_org_dataset_configs)),
+                                )
+                                .service(
+                                    web::resource("/api_key")
+                                        .route(web::post().to(handlers::organization_handler::create_organization_api_key))
+                                        .route(web::get().to(handlers::organization_handler::get_organization_api_keys))
+                                )
+                                .service(
+                                    web::resource("/api_key/{api_key_id}")
+                                        .route(
+                                            web::delete().to(handlers::organization_handler::delete_organization_api_key),
+                                        ),
                                 )
                                 .service(
                                     web::resource("/{organization_id}/user/{user_id}")

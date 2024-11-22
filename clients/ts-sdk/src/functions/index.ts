@@ -7,6 +7,7 @@ import * as fileMethods from "./file/index";
 import * as eventsMethods from "./events/index";
 import * as datasetsMethods from "./datasets/index";
 import * as userMethods from "./user/index";
+import * as organizationMethods from "./organization/index";
 
 export default {
   ...chunkMethods,
@@ -18,4 +19,5 @@ export default {
   ...eventsMethods,
   ...datasetsMethods,
   ...userMethods,
+  ...organizationMethods,
 };

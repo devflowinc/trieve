@@ -14,7 +14,7 @@ use trieve_server::{
     operators::{
         clickhouse_operator::{ClickHouseEvent, EventQueue},
         dataset_operator::get_dataset_by_id_query,
-        user_operator::hash_function,
+        organization_operator::hash_function,
     },
 };
 use trieve_server::{

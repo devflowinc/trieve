@@ -1,12 +1,16 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
-    data::models::{OrganizationWithSubAndPlan, Pool, RedisPool, UserOrganization, UserRole},
+    data::models::{
+        ApiKeyRequestParams, OrganizationWithSubAndPlan, Pool, RedisPool, UserOrganization,
+        UserRole,
+    },
     errors::ServiceError,
     middleware::auth_middleware::{get_role_for_org, verify_admin, verify_owner},
     operators::{
         organization_operator::{
-            create_organization_query, delete_organization_query, get_org_from_id_query,
-            get_org_usage_by_id_query, get_org_users_by_id_query,
+            create_organization_api_key_query, create_organization_query,
+            delete_organization_api_keys_query, delete_organization_query, get_org_from_id_query,
+            get_org_usage_by_id_query, get_org_users_by_id_query, get_organization_api_keys_query,
             update_all_org_dataset_configs_query, update_organization_query,
         },
         user_operator::{add_user_to_organization, remove_user_from_org_query},
@@ -397,6 +401,133 @@ pub async fn update_all_org_dataset_configs(
     let new_dataset_config = req_payload.dataset_config.clone();
 
     update_all_org_dataset_configs_query(organization_id, new_dataset_config, pool).await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct CreateApiKeyReqPayload {
+    /// The name which will be assigned to the new api key.
+    pub name: String,
+    /// The role which will be assigned to the new api key. Either 0 (read), 1 (Admin) or 2 (Owner). The auth'ed user must have a role greater than or equal to the role being assigned.
+    pub role: i32,
+    /// The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets in the dataset.
+    pub dataset_ids: Option<Vec<uuid::Uuid>>,
+    /// The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes. Specify the routes as a list of strings. For example, ["GET /api/dataset", "POST /api/dataset"].
+    pub scopes: Option<Vec<String>>,
+    /// The expiration date of the api key. If not provided, the api key will not expire. This should be provided in UTC time.
+    pub expires_at: Option<String>,
+    /// The default parameters which will be forcibly used when the api key is given on a request. If not provided, the api key will not have default parameters.
+    pub default_params: Option<ApiKeyRequestParams>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct CreateApiKeyResponse {
+    /// The api key which was created. This is the value which should be used in the Authorization header.
+    api_key: String,
+}
+
+/// Create Organization Api Key
+///
+/// Create a new api key for the organization. Successful response will contain the newly created api key.
+#[utoipa::path(
+    post,
+    path = "/organization/api_key",
+    context_path = "/api",
+    tag = "Organization",
+    request_body(content = CreateApiKeyReqPayload, description = "JSON request payload to create a new organization api key", content_type = "application/json"),
+    responses(
+        (status = 200, description = "JSON body representing the api_key for the organization", body = CreateApiKeyResponse),
+        (status = 400, description = "Service error relating to creating api_key for the organization", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn create_organization_api_key(
+    _user: LoggedUser,
+    data: web::Json<CreateApiKeyReqPayload>,
+    organization: OrganizationWithSubAndPlan,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let new_api_key =
+        create_organization_api_key_query(organization.organization.id, data.into_inner(), pool)
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!(
+                    "Failed to set new API key for organization {}",
+                    err
+                ))
+            })?;
+
+    Ok(HttpResponse::Ok().json(CreateApiKeyResponse {
+        api_key: new_api_key,
+    }))
+}
+
+/// Get Organization Api Keys
+///
+/// Get the api keys which belong to the organization. The actual api key values are not returned, only the ids, names, and creation dates.
+#[utoipa::path(
+    get,
+    path = "/organization/api_key",
+    context_path = "/api",
+    tag = "Organization",
+    responses(
+        (status = 200, description = "JSON body representing the api_key for the organization", body = Vec<ApiKeyRespBody>),
+        (status = 400, description = "Service error relating to creating api_key for the organization", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn get_organization_api_keys(
+    _user: AdminOnly,
+    organization: OrganizationWithSubAndPlan,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let api_keys = get_organization_api_keys_query(organization.organization.id, pool)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
+
+    Ok(HttpResponse::Ok().json(api_keys))
+}
+
+/// Delete Organization Api Key
+///
+/// Delete an api key for the auth'ed organization.
+#[utoipa::path(
+    delete,
+    path = "/organization/api_key/{api_key_id}",
+    context_path = "/api",
+    tag = "Organization",
+    responses(
+        (status = 204, description = "Confirmation that the api key was deleted"),
+        (status = 400, description = "Service error relating to creating api_key for the organization", body = ErrorResponseBody),
+    ),
+    params(
+        ("api_key_id" = uuid::Uuid, Path, description = "The id of the api key to delete"),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn delete_organization_api_key(
+    _user: AdminOnly,
+    organization: OrganizationWithSubAndPlan,
+    data: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    delete_organization_api_keys_query(organization.organization.id, data.into_inner(), pool)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }

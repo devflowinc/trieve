@@ -1,11 +1,8 @@
 use super::auth_handler::LoggedUser;
 use crate::{
-    data::models::{ApiKeyRequestParams, OrganizationWithSubAndPlan, Pool, RedisPool, UserRole},
+    data::models::{OrganizationWithSubAndPlan, Pool, RedisPool, UserRole},
     errors::ServiceError,
-    operators::user_operator::{
-        create_user_api_key_query, delete_user_api_keys_query, get_user_api_keys_query,
-        get_user_by_id_query, update_user_org_role_query,
-    },
+    operators::user_operator::{get_user_by_id_query, update_user_org_role_query},
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -94,119 +91,6 @@ pub async fn update_user(
         redis_pool,
     )
     .await?;
-
-    Ok(HttpResponse::NoContent().finish())
-}
-
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct CreateApiKeyReqPayload {
-    /// The name which will be assigned to the new api key.
-    pub name: String,
-    /// The role which will be assigned to the new api key. Either 0 (read), 1 (read and write at the level of the currently auth'ed user). The auth'ed user must have a role greater than or equal to the role being assigned which means they must be an admin (1) or owner (2) of the organization to assign write permissions with a role of 1.
-    pub role: i32,
-    /// The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets the auth'ed user has access to. If both dataset_ids and organization_ids are provided, the api key will have access to the intersection of the datasets and organizations.
-    pub dataset_ids: Option<Vec<uuid::Uuid>>,
-    /// The organization ids which the api key will have access to. If not provided or empty, the api key will have access to all organizations the auth'ed user has access to.
-    pub organization_ids: Option<Vec<uuid::Uuid>>,
-    /// The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes the auth'ed user has access to. Specify the routes as a list of strings. For example, ["GET /api/dataset", "POST /api/dataset"].
-    pub scopes: Option<Vec<String>>,
-    /// The expiration date of the api key. If not provided, the api key will not expire. This should be provided in UTC time.
-    pub expires_at: Option<String>,
-    /// The default parameters which will be forcibly used when the api key is given on a request. If not provided, the api key will not have default parameters.
-    pub default_params: Option<ApiKeyRequestParams>,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct CreateApiKeyResponse {
-    /// The api key which was created. This is the value which should be used in the Authorization header.
-    api_key: String,
-}
-
-/// Create User Api Key
-///
-/// Create a new api key for the auth'ed user. Successful response will contain the newly created api key. If a write role is assigned the api key will have permission level of the auth'ed user who calls this endpoint.
-#[utoipa::path(
-    post,
-    path = "/user/api_key",
-    context_path = "/api",
-    tag = "User",
-    request_body(content = CreateApiKeyReqPayload, description = "JSON request payload to create a new user api key", content_type = "application/json"),
-    responses(
-        (status = 200, description = "JSON body representing the api_key for the user", body = CreateApiKeyResponse),
-        (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
-    ),
-    security(
-        ("ApiKey" = ["readonly"]),
-    )
-)]
-pub async fn create_user_api_key(
-    user: LoggedUser,
-    data: web::Json<CreateApiKeyReqPayload>,
-    pool: web::Data<Pool>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let new_api_key = create_user_api_key_query(user.id, data.into_inner(), pool)
-        .await
-        .map_err(|_err| ServiceError::BadRequest("Failed to set new API key for user".into()))?;
-
-    Ok(HttpResponse::Ok().json(CreateApiKeyResponse {
-        api_key: new_api_key,
-    }))
-}
-
-/// Get User Api Keys
-///
-/// Get the api keys which belong to the auth'ed user. The actual api key values are not returned, only the ids, names, and creation dates.
-#[utoipa::path(
-    post,
-    path = "/user/api_key",
-    context_path = "/api",
-    tag = "User",
-    responses(
-        (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyRespBody>),
-        (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
-    ),
-    security(
-        ("ApiKey" = ["readonly"]),
-    )
-)]
-pub async fn get_user_api_keys(
-    user: LoggedUser,
-    pool: web::Data<Pool>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let api_keys = get_user_api_keys_query(user.id, pool)
-        .await
-        .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
-
-    Ok(HttpResponse::Ok().json(api_keys))
-}
-
-/// Delete User Api Key
-///
-/// Delete an api key for the auth'ed user.
-#[utoipa::path(
-    delete,
-    path = "/user/api_key/{api_key_id}",
-    context_path = "/api",
-    tag = "User",
-    responses(
-        (status = 204, description = "Confirmation that the api key was deleted"),
-        (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
-    ),
-    params(
-        ("api_key_id" = uuid::Uuid, Path, description = "The id of the api key to delete"),
-    ),
-    security(
-        ("ApiKey" = ["readonly"]),
-    )
-)]
-pub async fn delete_user_api_key(
-    user: LoggedUser,
-    data: web::Path<uuid::Uuid>,
-    pool: web::Data<Pool>,
-) -> Result<HttpResponse, actix_web::Error> {
-    delete_user_api_keys_query(user.id, data.into_inner(), pool)
-        .await
-        .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }

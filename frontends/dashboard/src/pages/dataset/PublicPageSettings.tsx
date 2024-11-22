@@ -117,14 +117,14 @@ export const PublicPageSettings = () => {
   const publishDataset = async () => {
     const name = `${datasetId()}-pregenerated-search-component`;
     if (!isPublic()) {
-      const response = await trieve.fetch("/api/user/api_key", "post", {
+      const response = await trieve.fetch("/api/organization/api_key", "post", {
         data: {
           name: name,
           role: 0,
           dataset_ids: [datasetId()],
-          organization_ids: [selectedOrg().id],
           scopes: ApiRoutes["Search Component Routes"],
         },
+        organizationId: selectedOrg().id,
       });
 
       await trieve.fetch("/api/dataset", "put", {
