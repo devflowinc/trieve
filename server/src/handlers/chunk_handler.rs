@@ -12,9 +12,7 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::middleware::api_version::APIVersion;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
-use crate::operators::chunk_operator::*;
 use crate::operators::clickhouse_operator::{get_latency_from_header, ClickHouseEvent, EventQueue};
-use crate::operators::crawl_operator;
 use crate::operators::dataset_operator::{
     get_dataset_usage_query, ChunkDeleteMessage, DeleteMessage,
 };
@@ -26,6 +24,7 @@ use crate::operators::search_operator::{
     assemble_qdrant_filter, autocomplete_chunks_query, count_chunks_query, search_chunks_query,
     search_hybrid_chunks,
 };
+use crate::operators::{chunk_operator::*, crawl_operator};
 use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -2913,7 +2912,10 @@ pub async fn split_html_content(
     Ok(HttpResponse::Ok().json(SplitHtmlResponse {
         chunks: chunked_content
             .into_iter()
-            .map(|(headings, body)| ChunkedContent { headings, body })
+            .map(|(heading, body)| ChunkedContent {
+                headings: vec![heading],
+                body,
+            })
             .collect(),
     }))
 }

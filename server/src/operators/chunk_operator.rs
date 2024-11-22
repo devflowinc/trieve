@@ -691,7 +691,7 @@ pub async fn bulk_delete_chunks_query(
 
 /// Only inserts, does not try to upsert data
 #[allow(clippy::type_complexity)]
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, insertion_data, dataset_uuid, upsert_by_tracking_id))]
 pub async fn bulk_insert_chunk_metadata_query(
     mut insertion_data: Vec<ChunkData>,
     dataset_uuid: uuid::Uuid,
@@ -846,11 +846,12 @@ pub async fn bulk_insert_chunk_metadata_query(
                     .map(|boost| boost.distance_factor as f64),
             });
         })
+        .unique_by(|boost| boost.chunk_id)
         .collect::<Vec<ChunkBoost>>();
 
     diesel::insert_into(chunk_boosts_columns::chunk_boosts)
         .values(boosts_to_insert)
-        .on_conflict((chunk_boosts_columns::chunk_id,))
+        .on_conflict(chunk_boosts_columns::chunk_id)
         .do_update()
         .set((
             chunk_boosts_columns::fulltext_boost_phrase

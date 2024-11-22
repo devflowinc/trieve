@@ -1271,7 +1271,7 @@ async fn update_chunk(
     Ok(())
 }
 
-#[tracing::instrument(skip(redis_pool, event_queue))]
+#[tracing::instrument(skip(redis_pool, event_queue, error, message))]
 pub async fn readd_error_to_queue(
     message: IngestionMessage,
     error: ServiceError,
