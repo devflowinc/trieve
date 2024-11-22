@@ -104,7 +104,7 @@ export const ProductItem = ({
   };
 
   return (
-    <li className="border" key={item.chunk.id}>
+    <li key={item.chunk.id}>
       {group && (
         <button
           onClick={(e) => {
