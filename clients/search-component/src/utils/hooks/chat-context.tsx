@@ -310,6 +310,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         cancelGroupChat,
         messages,
         currentQuestion,
+        chatWithGroup,
         setCurrentQuestion,
         switchToChatAndAskQuestion,
         clearConversation,

@@ -57,7 +57,7 @@ export const OpenModalButton = ({ setOpen }: OpenModalButtonProps) => {
             className={`open ${props.responsive ?? false ? "responsive" : ""}`}
           >
             {keyCombo.map((key) => (
-              <div key={key.key}>
+              <div key={JSON.stringify(key)}>
                 {key.ctrl ? (
                   <span key="ctrl-present">
                     <span key="mac" className="mac">

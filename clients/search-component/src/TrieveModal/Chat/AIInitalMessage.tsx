@@ -3,6 +3,7 @@ import { useModalState } from "../../utils/hooks/modal-context";
 import { AIIcon } from "../icons";
 import { SuggestedQuestions } from "./SuggestedQuestions";
 import { useChatState } from "../../utils/hooks/chat-context";
+import { GroupChatImgCarousel } from "./GroupChatImgCarousel";
 
 export const AIInitialMessage = () => {
   const { props, currentGroup } = useModalState();
@@ -49,6 +50,7 @@ export const AIInitialMessage = () => {
             {currentGroup?.name || props.brandName || "Trieve"}
           </span>
         </p>
+        <GroupChatImgCarousel />
       </span>
       {!messages.length && !currentGroup ? <SuggestedQuestions /> : null}
     </>
