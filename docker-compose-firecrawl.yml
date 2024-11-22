@@ -2,7 +2,7 @@ name: firecrawl
 services:
   # Firecrawl services
   playwright-service:
-    image: trieve/puppeteer-service-ts:v0.0.6
+    image: trieve/puppeteer-service-ts:v0.0.7
     environment:
       - PORT=3000
       - PROXY_SERVER=${PROXY_SERVER}
@@ -15,7 +15,7 @@ services:
       - backend
 
   firecrawl-api:
-    image: trieve/firecrawl:v0.0.46
+    image: trieve/firecrawl:v0.0.47
     networks:
       - backend
     environment:

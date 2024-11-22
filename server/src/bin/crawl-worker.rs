@@ -500,7 +500,7 @@ async fn get_chunks_with_firecrawl(
         );
 
         for chunk in chunked_html {
-            let heading = chunk.0.last().unwrap_or(&String::new()).clone();
+            let heading = chunk.0.clone();
             let chunk_html = chunk.1.clone();
 
             if chunk_html.is_empty() {
@@ -524,7 +524,7 @@ async fn get_chunks_with_firecrawl(
                 metadata["title"] = json!(page_title.clone());
                 metadata["hierarchy"]
                     .as_array_mut()
-                    .unwrap()
+                    .unwrap_or(&mut vec![])
                     .insert(0, json!(page_title.clone()));
             }
             if !page_description.is_empty() {
@@ -532,6 +532,12 @@ async fn get_chunks_with_firecrawl(
 
                 metadata["description"] = json!(page_description.clone());
             }
+
+            let tracking_hash_val = if heading.is_empty() {
+                chunk_html.clone()
+            } else {
+                heading.clone()
+            };
 
             let chunk = ChunkReqPayload {
                 chunk_html: Some(chunk_html.clone()),
@@ -547,7 +553,7 @@ async fn get_chunks_with_firecrawl(
                         .split_at(3)
                         .1
                         .join("/"),
-                    heading.clone()
+                    tracking_hash_val
                 ))),
                 upsert_by_tracking_id: Some(true),
                 group_tracking_ids: Some(vec![if !page_title.is_empty() {
@@ -555,7 +561,9 @@ async fn get_chunks_with_firecrawl(
                 } else {
                     page_link.clone()
                 }]),
-                fulltext_boost: if scrape_request.crawl_options.boost_titles.unwrap_or(true) {
+                fulltext_boost: if !fulltext_boost_phrase.is_empty()
+                    && scrape_request.crawl_options.boost_titles.unwrap_or(true)
+                {
                     Some(FullTextBoost {
                         phrase: fulltext_boost_phrase,
                         boost_factor: 1.3,
@@ -563,7 +571,9 @@ async fn get_chunks_with_firecrawl(
                 } else {
                     None
                 },
-                semantic_boost: if scrape_request.crawl_options.boost_titles.unwrap_or(true) {
+                semantic_boost: if !semantic_boost_phrase.is_empty()
+                    && scrape_request.crawl_options.boost_titles.unwrap_or(true)
+                {
                     Some(SemanticBoost {
                         phrase: semantic_boost_phrase,
                         distance_factor: 0.3,
