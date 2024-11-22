@@ -35,16 +35,16 @@ export const GroupChatImgCarousel = () => {
   }, [currentGroup]);
 
   return (
-    <div>
+    <>
       {currentGroup && groupCarouselItems ? (
-        <div className="flex gap-2 w-full overflow-x-scroll">
+        <div className="group-chat-carousel">
           {groupCarouselItems.map((image) => (
             <div key={image}>
-              <img className="min-w-[100px]" src={image} />
+              <img className="max-h-[270px]" src={image} />
             </div>
           ))}
         </div>
       ) : undefined}
-    </div>
+    </>
   );
 };

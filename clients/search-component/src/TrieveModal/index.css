@@ -28,7 +28,11 @@ body {
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
 
-    ::-webkit-scrollbar {
+    .group-chat-carousel {
+      @apply pl-2 flex gap-2 w-full overflow-x-auto;
+    }
+
+  ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
@@ -871,9 +875,11 @@ body {
         }
       }
 
+
       .chat-modal-wrapper {
         background-color: var(--tv-zinc-900);
         color: var(--tv-zinc-100);
+
 
         .loading-system {
           @apply w-12;
