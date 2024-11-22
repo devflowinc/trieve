@@ -2306,7 +2306,7 @@ pub async fn get_recommended_chunks(
             let score = recommended_qdrant_results
                 .iter()
                 .find(|recommend_qdrant_result| {
-                    recommend_qdrant_result.point_id == chunk_metadata.metadata().qdrant_point_id
+                    recommend_qdrant_result.point_id == chunk_metadata.qdrant_point_id()
                 })
                 .map(|recommend_qdrant_result| recommend_qdrant_result.score)
                 .unwrap_or(0.0);
