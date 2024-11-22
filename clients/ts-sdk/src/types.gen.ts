@@ -52,10 +52,9 @@ export type ApiKeyRespBody = {
     dataset_ids?: Array<(string)> | null;
     id: string;
     name: string;
-    organization_ids?: Array<(string)> | null;
+    organization_id: string;
     role: number;
     updated_at: string;
-    user_id: string;
 };
 
 export type AuthQuery = {
@@ -619,7 +618,7 @@ export type CrawlShopifyOptions = {
 
 export type CreateApiKeyReqPayload = {
     /**
-     * The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets the auth'ed user has access to. If both dataset_ids and organization_ids are provided, the api key will have access to the intersection of the datasets and organizations.
+     * The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets in the dataset.
      */
     dataset_ids?: Array<(string)> | null;
     default_params?: ((ApiKeyRequestParams) | null);
@@ -632,15 +631,11 @@ export type CreateApiKeyReqPayload = {
      */
     name: string;
     /**
-     * The organization ids which the api key will have access to. If not provided or empty, the api key will have access to all organizations the auth'ed user has access to.
-     */
-    organization_ids?: Array<(string)> | null;
-    /**
-     * The role which will be assigned to the new api key. Either 0 (read), 1 (read and write at the level of the currently auth'ed user). The auth'ed user must have a role greater than or equal to the role being assigned which means they must be an admin (1) or owner (2) of the organization to assign write permissions with a role of 1.
+     * The role which will be assigned to the new api key. Either 0 (read), 1 (Admin) or 2 (Owner). The auth'ed user must have a role greater than or equal to the role being assigned.
      */
     role: number;
     /**
-     * The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes the auth'ed user has access to. Specify the routes as a list of strings. For example, ["GET /api/dataset", "POST /api/dataset"].
+     * The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes. Specify the routes as a list of strings. For example, ["GET /api/dataset", "POST /api/dataset"].
      */
     scopes?: Array<(string)> | null;
 };
@@ -4224,6 +4219,41 @@ export type UpdateOrganizationData = {
 
 export type UpdateOrganizationResponse = (Organization);
 
+export type GetOrganizationApiKeysData = {
+    /**
+     * The organization id to use for the request.
+     */
+    trOrganization: string;
+};
+
+export type GetOrganizationApiKeysResponse = (Array<ApiKeyRespBody>);
+
+export type CreateOrganizationApiKeyData = {
+    /**
+     * JSON request payload to create a new organization api key
+     */
+    requestBody: CreateApiKeyReqPayload;
+    /**
+     * The organization id to use for the request.
+     */
+    trOrganization: string;
+};
+
+export type CreateOrganizationApiKeyResponse = (CreateApiKeyResponse);
+
+export type DeleteOrganizationApiKeyData = {
+    /**
+     * The id of the api key to delete
+     */
+    apiKeyId: string;
+    /**
+     * The organization id to use for the request.
+     */
+    trOrganization: string;
+};
+
+export type DeleteOrganizationApiKeyResponse = (void);
+
 export type UpdateAllOrgDatasetConfigsData = {
     /**
      * The organization data that you want to create
@@ -4436,24 +4466,6 @@ export type UpdateUserData = {
 };
 
 export type UpdateUserResponse = (void);
-
-export type CreateUserApiKeyData = {
-    /**
-     * JSON request payload to create a new user api key
-     */
-    requestBody: CreateApiKeyReqPayload;
-};
-
-export type CreateUserApiKeyResponse = (CreateApiKeyResponse);
-
-export type DeleteUserApiKeyData = {
-    /**
-     * The id of the api key to delete
-     */
-    apiKeyId: string;
-};
-
-export type DeleteUserApiKeyResponse = (void);
 
 export type GetMetricsResponse = (string);
 
@@ -5694,6 +5706,49 @@ export type $OpenApiTs = {
             };
         };
     };
+    '/api/organization/api_key': {
+        get: {
+            req: GetOrganizationApiKeysData;
+            res: {
+                /**
+                 * JSON body representing the api_key for the organization
+                 */
+                200: Array<ApiKeyRespBody>;
+                /**
+                 * Service error relating to creating api_key for the organization
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+        post: {
+            req: CreateOrganizationApiKeyData;
+            res: {
+                /**
+                 * JSON body representing the api_key for the organization
+                 */
+                200: CreateApiKeyResponse;
+                /**
+                 * Service error relating to creating api_key for the organization
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/organization/api_key/{api_key_id}': {
+        delete: {
+            req: DeleteOrganizationApiKeyData;
+            res: {
+                /**
+                 * Confirmation that the api key was deleted
+                 */
+                204: void;
+                /**
+                 * Service error relating to creating api_key for the organization
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
     '/api/organization/update_dataset_configs': {
         post: {
             req: UpdateAllOrgDatasetConfigsData;
@@ -5962,36 +6017,6 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to updating the user
-                 */
-                400: ErrorResponseBody;
-            };
-        };
-    };
-    '/api/user/api_key': {
-        post: {
-            req: CreateUserApiKeyData;
-            res: {
-                /**
-                 * JSON body representing the api_key for the user
-                 */
-                200: CreateApiKeyResponse;
-                /**
-                 * Service error relating to creating api_key for the user
-                 */
-                400: ErrorResponseBody;
-            };
-        };
-    };
-    '/api/user/api_key/{api_key_id}': {
-        delete: {
-            req: DeleteUserApiKeyData;
-            res: {
-                /**
-                 * Confirmation that the api key was deleted
-                 */
-                204: void;
-                /**
-                 * Service error relating to creating api_key for the user
                  */
                 400: ErrorResponseBody;
             };

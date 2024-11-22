@@ -176,6 +176,22 @@ diesel::table! {
 }
 
 diesel::table! {
+    organization_api_key (id) {
+        id -> Uuid,
+        organization_id -> Uuid,
+        api_key_hash -> Text,
+        name -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        role -> Int4,
+        dataset_ids -> Nullable<Array<Nullable<Text>>>,
+        scopes -> Nullable<Array<Nullable<Text>>>,
+        params -> Nullable<Jsonb>,
+        expires_at -> Nullable<Timestamp>,
+    }
+}
+
+diesel::table! {
     organization_usage_counts (id) {
         id -> Uuid,
         org_id -> Uuid,
@@ -308,6 +324,7 @@ diesel::joinable!(groups_from_files -> chunk_group (group_id));
 diesel::joinable!(groups_from_files -> files (file_id));
 diesel::joinable!(messages -> datasets (dataset_id));
 diesel::joinable!(messages -> topics (topic_id));
+diesel::joinable!(organization_api_key -> organizations (organization_id));
 diesel::joinable!(organization_usage_counts -> organizations (org_id));
 diesel::joinable!(stripe_invoices -> organizations (org_id));
 diesel::joinable!(stripe_subscriptions -> organizations (organization_id));
@@ -333,6 +350,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     groups_from_files,
     invitations,
     messages,
+    organization_api_key,
     organization_usage_counts,
     organizations,
     stripe_invoices,

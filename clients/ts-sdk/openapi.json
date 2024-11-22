@@ -5162,6 +5162,174 @@
         ]
       }
     },
+    "/api/organization/api_key": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Get Organization Api Keys",
+        "description": "Get the api keys which belong to the organization. The actual api key values are not returned, only the ids, names, and creation dates.",
+        "operationId": "get_organization_api_keys",
+        "parameters": [
+          {
+            "name": "TR-Organization",
+            "in": "header",
+            "description": "The organization id to use for the request.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON body representing the api_key for the organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyRespBody"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to creating api_key for the organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Create Organization Api Key",
+        "description": "Create a new api key for the organization. Successful response will contain the newly created api key.",
+        "operationId": "create_organization_api_key",
+        "parameters": [
+          {
+            "name": "TR-Organization",
+            "in": "header",
+            "description": "The organization id to use for the request.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to create a new organization api key",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "JSON body representing the api_key for the organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateApiKeyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to creating api_key for the organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/organization/api_key/{api_key_id}": {
+      "delete": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Delete Organization Api Key",
+        "description": "Delete an api key for the auth'ed organization.",
+        "operationId": "delete_organization_api_key",
+        "parameters": [
+          {
+            "name": "api_key_id",
+            "in": "path",
+            "description": "The id of the api key to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "TR-Organization",
+            "in": "header",
+            "description": "The organization id to use for the request.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Confirmation that the api key was deleted"
+          },
+          "400": {
+            "description": "Service error relating to creating api_key for the organization",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      }
+    },
     "/api/organization/update_dataset_configs": {
       "post": {
         "tags": [
@@ -6163,100 +6331,6 @@
         ]
       }
     },
-    "/api/user/api_key": {
-      "post": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Create User Api Key",
-        "description": "Create a new api key for the auth'ed user. Successful response will contain the newly created api key. If a write role is assigned the api key will have permission level of the auth'ed user who calls this endpoint.",
-        "operationId": "create_user_api_key",
-        "requestBody": {
-          "description": "JSON request payload to create a new user api key",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateApiKeyReqPayload"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "JSON body representing the api_key for the user",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateApiKeyResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Service error relating to creating api_key for the user",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKey": [
-              "readonly"
-            ]
-          }
-        ]
-      }
-    },
-    "/api/user/api_key/{api_key_id}": {
-      "delete": {
-        "tags": [
-          "User"
-        ],
-        "summary": "Delete User Api Key",
-        "description": "Delete an api key for the auth'ed user.",
-        "operationId": "delete_user_api_key",
-        "parameters": [
-          {
-            "name": "api_key_id",
-            "in": "path",
-            "description": "The id of the api key to delete",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Confirmation that the api key was deleted"
-          },
-          "400": {
-            "description": "Service error relating to creating api_key for the user",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKey": [
-              "readonly"
-            ]
-          }
-        ]
-      }
-    },
     "/metrics": {
       "post": {
         "tags": [
@@ -6395,7 +6469,7 @@
         "type": "object",
         "required": [
           "id",
-          "user_id",
+          "organization_id",
           "name",
           "role",
           "created_at",
@@ -6420,12 +6494,9 @@
           "name": {
             "type": "string"
           },
-          "organization_ids": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true
+          "organization_id": {
+            "type": "string",
+            "format": "uuid"
           },
           "role": {
             "type": "integer",
@@ -6434,10 +6505,6 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
-          },
-          "user_id": {
-            "type": "string",
-            "format": "uuid"
           }
         },
         "example": {
@@ -6447,12 +6514,9 @@
           ],
           "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "name": "Trieve",
-          "organization_ids": [
-            "o1o1o1o1-o1o1-o1o1-o1o1-o1o1o1o1o1o1"
-          ],
+          "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "role": 1,
-          "updated_at": "2021-01-01 00:00:00.000",
-          "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3"
+          "updated_at": "2021-01-01 00:00:00.000"
         }
       },
       "AuthQuery": {
@@ -8273,7 +8337,7 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets the auth'ed user has access to. If both dataset_ids and organization_ids are provided, the api key will have access to the intersection of the datasets and organizations.",
+            "description": "The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets in the dataset.",
             "nullable": true
           },
           "default_params": {
@@ -8293,26 +8357,17 @@
             "type": "string",
             "description": "The name which will be assigned to the new api key."
           },
-          "organization_ids": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The organization ids which the api key will have access to. If not provided or empty, the api key will have access to all organizations the auth'ed user has access to.",
-            "nullable": true
-          },
           "role": {
             "type": "integer",
             "format": "int32",
-            "description": "The role which will be assigned to the new api key. Either 0 (read), 1 (read and write at the level of the currently auth'ed user). The auth'ed user must have a role greater than or equal to the role being assigned which means they must be an admin (1) or owner (2) of the organization to assign write permissions with a role of 1."
+            "description": "The role which will be assigned to the new api key. Either 0 (read), 1 (Admin) or 2 (Owner). The auth'ed user must have a role greater than or equal to the role being assigned."
           },
           "scopes": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes the auth'ed user has access to. Specify the routes as a list of strings. For example, [\"GET /api/dataset\", \"POST /api/dataset\"].",
+            "description": "The routes which the api key will have access to. If not provided or empty, the api key will have access to all routes. Specify the routes as a list of strings. For example, [\"GET /api/dataset\", \"POST /api/dataset\"].",
             "nullable": true
           }
         }

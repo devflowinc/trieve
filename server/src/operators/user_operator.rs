@@ -1,21 +1,15 @@
 use crate::data::models::{
-    ApiKeyRespBody, ApiKeyRole, Organization, RedisPool, SlimUser, UserApiKey, UserOrganization,
-    UserRole,
+    ApiKeyRole, Organization, RedisPool, SlimUser, UserApiKey, UserOrganization, UserRole,
 };
+use crate::operators::organization_operator::hash_function;
 use crate::{
     data::models::{Pool, User},
     errors::ServiceError,
-    handlers::user_handler::CreateApiKeyReqPayload,
 };
 use actix_web::{web, HttpRequest};
-use argon2::Config;
-use chrono::NaiveDateTime;
-use dateparser::DateTimeUtc;
 use diesel::prelude::*;
-use diesel_async::{scoped_futures::ScopedFutureExt, AsyncConnection, RunQueryDsl};
-use once_cell::sync::Lazy;
-use rand::distributions::Alphanumeric;
-use rand::Rng;
+use diesel_async::scoped_futures::ScopedFutureExt;
+use diesel_async::{AsyncConnection, RunQueryDsl};
 use redis::AsyncCommands;
 
 pub async fn get_user_by_id_query(
@@ -197,80 +191,51 @@ pub async fn update_user_org_role_query(
     Ok(())
 }
 
-pub fn generate_api_key() -> String {
-    let rng = rand::thread_rng();
-    let api_key: String = format!(
-        "tr-{}",
-        rng.sample_iter(&Alphanumeric)
-            .take(32)
-            .map(char::from)
-            .collect::<String>()
-    );
-
-    api_key
-}
-
-pub static SECRET_KEY: Lazy<String> =
-    Lazy::new(|| std::env::var("SECRET_KEY").unwrap_or_else(|_| "0123".repeat(16)));
-
-pub static SALT: Lazy<String> =
-    Lazy::new(|| std::env::var("SALT").unwrap_or_else(|_| "supersecuresalt".to_string()));
-
-pub fn hash_argon2_api_key(password: &str) -> Result<String, ServiceError> {
-    let config = Config {
-        secret: SECRET_KEY.as_bytes(),
-        ..Config::original()
-    };
-    argon2::hash_encoded(password.as_bytes(), SALT.as_bytes(), &config).map_err(|_err| {
-        ServiceError::BadRequest("Error processing password, try again".to_string())
-    })
-}
-
-pub fn hash_function(password: &str) -> String {
-    blake3::hash(password.as_bytes()).to_string()
-}
-
-pub async fn create_user_api_key_query(
-    user_id: uuid::Uuid,
-    data: CreateApiKeyReqPayload,
+pub async fn create_user_query(
+    user_oidc_subject: String,
+    email: String,
+    name: Option<String>,
+    role: UserRole,
+    org_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<String, ServiceError> {
-    let raw_api_key = generate_api_key();
-    let hashed_api_key = hash_function(&raw_api_key);
+) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
+    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
+    use crate::data::schema::users::dsl as users_columns;
 
     let mut conn = pool.get().await.map_err(|_e| {
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
-    let expiry = {
-        data.expires_at
-            .clone()
-            .and_then(|ts| -> Option<NaiveDateTime> {
-                ts.parse::<DateTimeUtc>()
-                    .ok()
-                    .map(|date| date.0.naive_utc())
-            })
-    };
+    let user = User::from_details_with_id(user_oidc_subject, email, name);
+    let user_org = UserOrganization::from_details(user.id, org_id, role);
 
-    let api_key_struct = UserApiKey::from_details(
-        user_id,
-        hashed_api_key.clone(),
-        data.name,
-        data.role.into(),
-        data.dataset_ids,
-        data.organization_ids,
-        data.scopes,
-        data.default_params,
-        expiry,
-    );
+    let user_org = conn
+        .transaction::<_, diesel::result::Error, _>(|conn| {
+            async move {
+                let user = diesel::insert_into(users_columns::users)
+                    .values(&user)
+                    .get_result::<User>(conn)
+                    .await?;
 
-    diesel::insert_into(crate::data::schema::user_api_key::dsl::user_api_key)
-        .values(&api_key_struct)
-        .execute(&mut conn)
+                let user_org = diesel::insert_into(user_organizations_columns::user_organizations)
+                    .values(&user_org)
+                    .get_result::<UserOrganization>(conn)
+                    .await?;
+
+                Ok((user, vec![user_org]))
+            }
+            .scope_boxed()
+        })
         .await
-        .map_err(|_| ServiceError::BadRequest("Error setting api key".to_string()))?;
+        .map_err(|_| {
+            ServiceError::InternalServerError(
+                "Failed to create user, likely that organization_id is invalid".to_string(),
+            )
+        })?;
 
-    Ok(raw_api_key)
+    let user_org = get_user_by_id_query(&user_org.0.id, pool).await?;
+
+    Ok(user_org)
 }
 
 pub async fn get_user_from_api_key_query(
@@ -344,171 +309,8 @@ pub async fn get_user_from_api_key_query(
                 first_user_org.3.clone(),
             ))
         }
-        None => {
-            let argon2_hash = hash_argon2_api_key(api_key)?;
-
-            let user_orgs_orgs: Vec<(User, UserOrganization, Organization, UserApiKey)> =
-                users_columns::users
-                    .inner_join(user_organizations_columns::user_organizations)
-                    .inner_join(organization_columns::organizations.on(
-                        organization_columns::id.eq(user_organizations_columns::organization_id),
-                    ))
-                    .inner_join(user_api_key_columns::user_api_key)
-                    .filter(user_api_key_columns::api_key_hash.eq(argon2_hash.clone()))
-                    .filter(
-                        user_api_key_columns::expires_at
-                            .is_null()
-                            .or(user_api_key_columns::expires_at.ge(diesel::dsl::now.nullable())),
-                    )
-                    .filter(organization_columns::deleted.eq(0))
-                    .select((
-                        User::as_select(),
-                        UserOrganization::as_select(),
-                        Organization::as_select(),
-                        UserApiKey::as_select(),
-                    ))
-                    .load::<(User, UserOrganization, Organization, UserApiKey)>(&mut conn)
-                    .await
-                    .map_err(|_| ServiceError::BadRequest("API Key Incorrect".to_string()))?;
-
-            match user_orgs_orgs.get(0) {
-                Some(first_user_org) => {
-                    let user = first_user_org.0.clone();
-                    let mut user_orgs = user_orgs_orgs
-                        .iter()
-                        .map(|user_org| user_org.1.clone())
-                        .collect::<Vec<UserOrganization>>();
-
-                    user_orgs.iter_mut().for_each(|user_org| {
-                        if user_orgs_orgs
-                            .iter()
-                            .find(|user_org_org| user_org_org.1.id == user_org.id)
-                            .unwrap()
-                            .3
-                            .role
-                            == 0
-                        {
-                            user_org.role = 0;
-                        }
-                    });
-
-                    let orgs = user_orgs_orgs
-                        .iter()
-                        .map(|user_org_org| user_org_org.2.clone())
-                        .collect::<Vec<Organization>>();
-
-                    diesel::update(
-                        user_api_key_columns::user_api_key
-                            .filter(user_api_key_columns::api_key_hash.eq(argon2_hash)),
-                    )
-                    .set(user_api_key_columns::blake3_hash.eq(api_key_hash))
-                    .execute(&mut conn)
-                    .await
-                    .map_err(|_| ServiceError::BadRequest("Error updating api key".to_string()))?;
-
-                    Ok((
-                        SlimUser::from_details(user, user_orgs, orgs),
-                        first_user_org.3.clone(),
-                    ))
-                }
-                None => Err(ServiceError::BadRequest("API Key Incorrect".to_string())),
-            }
-        }
+        None => Err(ServiceError::BadRequest("API Key Incorrect".to_string())),
     }
-}
-
-pub async fn get_user_api_keys_query(
-    user_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<Vec<ApiKeyRespBody>, ServiceError> {
-    use crate::data::schema::user_api_key::dsl as user_api_key_columns;
-
-    let mut conn = pool.get().await.map_err(|_e| {
-        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
-    })?;
-
-    let api_keys = user_api_key_columns::user_api_key
-        .filter(user_api_key_columns::user_id.eq(user_id))
-        .select(UserApiKey::as_select())
-        .load::<UserApiKey>(&mut conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Error loading user api keys".to_string()))?;
-
-    let api_keys = api_keys
-        .into_iter()
-        .map(|api_key| api_key.into())
-        .collect::<Vec<ApiKeyRespBody>>();
-    Ok(api_keys)
-}
-
-pub async fn delete_user_api_keys_query(
-    user_id: uuid::Uuid,
-    api_key_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<(), ServiceError> {
-    use crate::data::schema::user_api_key::dsl as user_api_key_columns;
-
-    let mut conn = pool.get().await.map_err(|_e| {
-        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
-    })?;
-
-    diesel::delete(
-        user_api_key_columns::user_api_key
-            .filter(user_api_key_columns::user_id.eq(user_id))
-            .filter(user_api_key_columns::id.eq(api_key_id)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(|_| ServiceError::BadRequest("Error deleting user api key".to_string()))?;
-
-    Ok(())
-}
-
-pub async fn create_user_query(
-    user_oidc_subject: String,
-    email: String,
-    name: Option<String>,
-    role: UserRole,
-    org_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
-    use crate::data::schema::user_organizations::dsl as user_organizations_columns;
-    use crate::data::schema::users::dsl as users_columns;
-
-    let mut conn = pool.get().await.map_err(|_e| {
-        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
-    })?;
-
-    let user = User::from_details_with_id(user_oidc_subject, email, name);
-    let user_org = UserOrganization::from_details(user.id, org_id, role);
-
-    let user_org = conn
-        .transaction::<_, diesel::result::Error, _>(|conn| {
-            async move {
-                let user = diesel::insert_into(users_columns::users)
-                    .values(&user)
-                    .get_result::<User>(conn)
-                    .await?;
-
-                let user_org = diesel::insert_into(user_organizations_columns::user_organizations)
-                    .values(&user_org)
-                    .get_result::<UserOrganization>(conn)
-                    .await?;
-
-                Ok((user, vec![user_org]))
-            }
-            .scope_boxed()
-        })
-        .await
-        .map_err(|_| {
-            ServiceError::InternalServerError(
-                "Failed to create user, likely that organization_id is invalid".to_string(),
-            )
-        })?;
-
-    let user_org = get_user_by_id_query(&user_org.0.id, pool).await?;
-
-    Ok(user_org)
 }
 
 pub async fn add_user_to_organization(

@@ -1,20 +1,24 @@
 use crate::{
     data::models::{
-        Dataset, DatasetConfiguration, Organization, OrganizationUsageCount,
-        OrganizationWithSubAndPlan, Pool, RedisPool, SlimUser, StripePlan, StripeSubscription,
-        User, UserOrganization,
+        ApiKeyRespBody, Dataset, DatasetConfiguration, Organization, OrganizationApiKey,
+        OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, RedisPool, SlimUser, StripePlan,
+        StripeSubscription, User, UserApiKey, UserOrganization,
     },
     errors::ServiceError,
+    handlers::organization_handler::CreateApiKeyReqPayload,
     operators::dataset_operator::soft_delete_dataset_by_id_query,
     randutil,
 };
 use actix_web::{web, HttpRequest};
+use chrono::NaiveDateTime;
+use dateparser::DateTimeUtc;
 use diesel::{
     prelude::*, result::DatabaseErrorKind, sql_query, ExpressionMethods, JoinOnDsl,
     NullableExpressionMethods, SelectableHelper, Table,
 };
 use diesel_async::RunQueryDsl;
 use itertools::Itertools;
+use rand::{distributions::Alphanumeric, Rng};
 use redis::AsyncCommands;
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
@@ -653,4 +657,148 @@ pub async fn update_all_org_dataset_configs_query(
         })?;
 
     Ok(())
+}
+
+pub fn generate_api_key() -> String {
+    let rng = rand::thread_rng();
+    let api_key: String = format!(
+        "tr-{}",
+        rng.sample_iter(&Alphanumeric)
+            .take(32)
+            .map(char::from)
+            .collect::<String>()
+    );
+
+    api_key
+}
+
+pub fn hash_function(password: &str) -> String {
+    blake3::hash(password.as_bytes()).to_string()
+}
+
+pub async fn create_organization_api_key_query(
+    organization_id: uuid::Uuid,
+    data: CreateApiKeyReqPayload,
+    pool: web::Data<Pool>,
+) -> Result<String, ServiceError> {
+    let raw_api_key = generate_api_key();
+    let hashed_api_key = hash_function(&raw_api_key);
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    let expiry = {
+        data.expires_at
+            .clone()
+            .and_then(|ts| -> Option<NaiveDateTime> {
+                ts.parse::<DateTimeUtc>()
+                    .ok()
+                    .map(|date| date.0.naive_utc())
+            })
+    };
+
+    let api_key_struct = OrganizationApiKey::from_details(
+        organization_id,
+        hashed_api_key.clone(),
+        data.name,
+        data.role.into(),
+        data.dataset_ids,
+        data.scopes,
+        data.default_params,
+        expiry,
+    );
+
+    diesel::insert_into(crate::data::schema::organization_api_key::dsl::organization_api_key)
+        .values(&api_key_struct)
+        .execute(&mut conn)
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Error setting api key {}", err)))?;
+
+    Ok(raw_api_key)
+}
+
+pub async fn get_organization_api_keys_query(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<ApiKeyRespBody>, ServiceError> {
+    use crate::data::schema::organization_api_key::dsl as organization_api_key_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    let api_keys = organization_api_key_columns::organization_api_key
+        .filter(organization_api_key_columns::organization_id.eq(organization_id))
+        .select(OrganizationApiKey::as_select())
+        .load::<OrganizationApiKey>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Error loading organization api keys".to_string()))?;
+
+    let api_keys = api_keys
+        .into_iter()
+        .map(|api_key| api_key.into())
+        .collect::<Vec<ApiKeyRespBody>>();
+    Ok(api_keys)
+}
+
+pub async fn delete_organization_api_keys_query(
+    organization_id: uuid::Uuid,
+    api_key_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::organization_api_key::dsl as organization_api_key_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    diesel::delete(
+        organization_api_key_columns::organization_api_key
+            .filter(organization_api_key_columns::organization_id.eq(organization_id))
+            .filter(organization_api_key_columns::id.eq(api_key_id)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|_| ServiceError::BadRequest("Error deleting organization api key".to_string()))?;
+
+    Ok(())
+}
+
+pub async fn get_assumed_user_by_organization_api_key(
+    api_key: &str,
+    pool: web::Data<Pool>,
+) -> Result<(SlimUser, UserApiKey), ServiceError> {
+    use crate::data::schema::organization_api_key::dsl as organization_api_key_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    let api_key: OrganizationApiKey = organization_api_key_columns::organization_api_key
+        .filter(organization_api_key_columns::api_key_hash.eq(hash_function(api_key)))
+        .select(OrganizationApiKey::as_select())
+        .first::<OrganizationApiKey>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::Unauthorized)?;
+
+    let organization = get_org_from_id_query(api_key.organization_id, pool.clone()).await?;
+
+    let user = SlimUser {
+        id: api_key.organization_id,
+        email: "".to_string(),
+        name: Some("".to_string()),
+        created_at: chrono::Utc::now().naive_utc(),
+        user_orgs: vec![UserOrganization {
+            id: uuid::Uuid::new_v4(),
+            user_id: api_key.organization_id,
+            organization_id: api_key.organization_id,
+            role: api_key.role,
+            created_at: chrono::Utc::now().naive_utc(),
+            updated_at: chrono::Utc::now().naive_utc(),
+        }],
+        orgs: vec![organization.organization],
+    };
+
+    Ok((user, api_key.into()))
 }
