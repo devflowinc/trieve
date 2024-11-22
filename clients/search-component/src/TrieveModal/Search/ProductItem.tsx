@@ -3,6 +3,7 @@ import React, { useMemo, useRef, useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
 import { ChunkGroup } from "trieve-ts-sdk";
+import { ChatIcon } from "../icons";
 import { guessTitleAndDesc, uniquifyVariants } from "../../utils/estimation";
 
 type Props = {
@@ -105,16 +106,6 @@ export const ProductItem = ({
 
   return (
     <li key={item.chunk.id}>
-      {group && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            chatWithGroup(group, betterGroupName);
-          }}
-        >
-          CHAT
-        </button>
-      )}
       <Component
         ref={itemRef}
         id={`trieve-search-item-${index + 1}`}
@@ -150,9 +141,24 @@ export const ProductItem = ({
                   __html: betterGroupName || title,
                 }}
               />
-              <h6 className="chunk-price">
-                {priceMin !== priceMax ? formatedPriceRange : formatedPrice}
-              </h6>
+              <div className="ecommerce-secondary-row">
+                <h6 className="chunk-price">
+                  {priceMin !== priceMax ? formatedPriceRange : formatedPrice}
+                </h6>
+                {group && (
+                  <button
+                    title={`Chat with ${betterGroupName || group.name}`}
+                    className="chat-product-button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      chatWithGroup(group, betterGroupName);
+                    }}
+                  >
+                    <ChatIcon />
+                  </button>
+                )}
+              </div>
               <p
                 className="description"
                 dangerouslySetInnerHTML={{
