@@ -5,6 +5,7 @@ import { sendCtrData } from "../../utils/trieve";
 import { ChunkGroup } from "trieve-ts-sdk";
 import { ChatIcon } from "../icons";
 import { guessTitleAndDesc, uniquifyVariants } from "../../utils/estimation";
+import { useChatState } from "../../utils/hooks/chat-context";
 
 type Props = {
   item: ChunkWithHighlights;
@@ -23,7 +24,8 @@ export const ProductItem = ({
   group,
   betterGroupName,
 }: Props) => {
-  const { props, trieveSDK, chatWithGroup } = useModalState();
+  const { props, trieveSDK } = useModalState();
+  const { chatWithGroup } = useChatState();
   const Component = item.chunk.link ? "a" : "button";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const itemRef = useRef<HTMLButtonElement | HTMLLinkElement | any>(null);
