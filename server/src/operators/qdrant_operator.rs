@@ -908,6 +908,7 @@ pub async fn search_over_groups_qdrant_query(
                             PointIdOptions::Uuid(id) => Some(SearchResult {
                                 score: hit.score,
                                 point_id: uuid::Uuid::parse_str(&id).ok()?,
+                                payload: hit.payload.clone(),
                             }),
                             PointIdOptions::Num(_) => None,
                         })
@@ -1027,6 +1028,10 @@ pub async fn search_qdrant_query(
         return Ok((vec![], 0, vec![]));
     }
 
+    let only_insert_qdrant = std::env::var("ONLY_INSERT_QDRANT")
+        .map(|val| val == "true")
+        .unwrap_or(false);
+
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let qdrant_client = get_qdrant_connection(
@@ -1061,24 +1066,46 @@ pub async fn search_qdrant_query(
                 _ => query.score_threshold,
             };
 
-            QueryPoints {
-                collection_name: qdrant_collection.to_string(),
-                limit: Some(query.limit),
-                offset: Some(offset),
-                prefetch,
-                using: vector_name,
-                query: Some(qdrant_query),
-                score_threshold,
-                with_payload: Some(WithPayloadSelector::from(false)),
-                with_vectors: Some(WithVectorsSelector::from(false)),
-                timeout: Some(60),
-                filter: Some(query.filter.clone()),
-                params: Some(SearchParams {
-                    exact: Some(false),
-                    indexed_only: Some(dataset_config.INDEXED_ONLY),
+            if only_insert_qdrant {
+                QueryPoints {
+                    collection_name: qdrant_collection.to_string(),
+                    limit: Some(query.limit),
+                    offset: Some(offset),
+                    prefetch,
+                    using: vector_name,
+                    query: Some(qdrant_query),
+                    score_threshold,
+                    with_payload: Some(WithPayloadSelector::from(true)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
+                    timeout: Some(60),
+                    filter: Some(query.filter.clone()),
+                    params: Some(SearchParams {
+                        exact: Some(false),
+                        indexed_only: Some(dataset_config.INDEXED_ONLY),
+                        ..Default::default()
+                    }),
                     ..Default::default()
-                }),
-                ..Default::default()
+                }
+            } else {
+                QueryPoints {
+                    collection_name: qdrant_collection.to_string(),
+                    limit: Some(query.limit),
+                    offset: Some(offset),
+                    prefetch,
+                    using: vector_name,
+                    query: Some(qdrant_query),
+                    score_threshold,
+                    with_payload: Some(WithPayloadSelector::from(false)),
+                    with_vectors: Some(WithVectorsSelector::from(false)),
+                    timeout: Some(60),
+                    filter: Some(query.filter.clone()),
+                    params: Some(SearchParams {
+                        exact: Some(false),
+                        indexed_only: Some(dataset_config.INDEXED_ONLY),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }
             }
         })
         .collect::<Vec<QueryPoints>>();
@@ -1118,6 +1145,7 @@ pub async fn search_qdrant_query(
                         PointIdOptions::Uuid(id) => Some(SearchResult {
                             score: scored_point.score,
                             point_id: uuid::Uuid::parse_str(&id).ok()?,
+                            payload: scored_point.payload.clone(),
                         }),
                         PointIdOptions::Num(_) => None,
                     },
@@ -1363,6 +1391,7 @@ pub async fn recommend_qdrant_groups_query(
                     PointIdOptions::Uuid(id) => Some(SearchResult {
                         score: hit.score,
                         point_id: uuid::Uuid::parse_str(&id).ok()?,
+                        payload: hit.payload.clone(),
                     }),
                     PointIdOptions::Num(_) => None,
                 })

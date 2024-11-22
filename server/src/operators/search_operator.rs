@@ -17,8 +17,9 @@ use super::typo_operator::correct_query;
 use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes,
     ConditionType, ContentChunkMetadata, Dataset, DatasetConfiguration, GeoInfoWithBias,
-    HasIDCondition, QdrantSortBy, QueryTypes, ReRankOptions, RedisPool, ScoreChunk, ScoreChunkDTO,
-    SearchMethod, SlimChunkMetadata, SortByField, SortBySearchType, UnifiedId,
+    HasIDCondition, QdrantChunkMetadata, QdrantSortBy, QueryTypes, ReRankOptions, RedisPool,
+    ScoreChunk, ScoreChunkDTO, SearchMethod, SlimChunkMetadata, SortByField, SortBySearchType,
+    UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
@@ -38,6 +39,8 @@ use diesel::dsl::sql;
 use diesel::sql_types::{Bool, Float, Text};
 use diesel::{ExpressionMethods, JoinOnDsl, PgArrayExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
+use qdrant_client::qdrant;
+use qdrant_client::qdrant::value::Kind;
 
 use itertools::Itertools;
 use simple_server_timing_header::Timer;
@@ -53,6 +56,7 @@ use std::collections::{HashMap, HashSet};
 pub struct SearchResult {
     pub score: f32,
     pub point_id: uuid::Uuid,
+    pub payload: HashMap<String, qdrant_client::qdrant::Value>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1431,9 +1435,27 @@ pub async fn retrieve_chunks_from_point_ids(
         .unwrap_or(false);
 
     let metadata_chunks = if only_insert_qdrant {
-        point_ids
+        search_chunk_query_results
+            .search_results
             .iter()
-            .map(|id| ChunkMetadataTypes::QdrantPointId(*id))
+            .map(|search_result| {
+                let chunk_html: Option<String> = match search_result.payload.get("content") {
+                    Some(qdrant::Value {
+                        kind: Some(Kind::StringValue(content)),
+                        ..
+                    }) => Some(content.clone()),
+                    _ => None,
+                };
+
+                ChunkMetadataTypes::QdrantChunkMetadata(QdrantChunkMetadata {
+                    qdrant_point_id: search_result.point_id,
+                    chunk_html,
+                    tag_set: None,
+                    images_urls: None,
+                    link: None,
+                    metadata: None,
+                })
+            })
             .collect()
     } else if data.slim_chunks.unwrap_or(false) && data.search_type != SearchMethod::Hybrid {
         get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?
@@ -2214,7 +2236,7 @@ pub async fn search_hybrid_chunks(
                             ChunkMetadataTypes::Metadata(_) => slim_chunk.into(),
                             ChunkMetadataTypes::Content(_) => slim_chunk.into(),
                             ChunkMetadataTypes::ID(_) => metadata,
-                            ChunkMetadataTypes::QdrantPointId(_) => metadata,
+                            ChunkMetadataTypes::QdrantChunkMetadata(_) => metadata,
                         }
                     })
                     .collect(),
