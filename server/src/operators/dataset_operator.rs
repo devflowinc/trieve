@@ -27,7 +27,6 @@ use time::{format_description, OffsetDateTime};
 
 use super::clickhouse_operator::EventQueue;
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_dataset_query(
     new_dataset: Dataset,
     pool: web::Data<Pool>,
@@ -56,7 +55,6 @@ pub async fn create_dataset_query(
     Ok(new_dataset)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_datasets_query(
     datasets: Vec<Dataset>,
     upsert: Option<bool>,
@@ -107,7 +105,6 @@ pub async fn create_datasets_query(
     Ok(created_or_upserted_datasets)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_by_id_query(
     id: UnifiedId,
     pool: web::Data<Pool>,
@@ -138,7 +135,6 @@ pub async fn get_dataset_by_id_query(
     Ok(dataset)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_deleted_dataset_by_unifiedid_query(
     id: UnifiedId,
     pool: web::Data<Pool>,
@@ -167,7 +163,6 @@ pub async fn get_deleted_dataset_by_unifiedid_query(
     Ok(dataset)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_all_dataset_ids(pool: web::Data<Pool>) -> Result<Vec<uuid::Uuid>, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
     let mut conn = pool
@@ -185,7 +180,6 @@ pub async fn get_all_dataset_ids(pool: web::Data<Pool>) -> Result<Vec<uuid::Uuid
     Ok(datasets)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_and_organization_from_dataset_id_query(
     id: UnifiedId,
     org_id: Option<uuid::Uuid>,
@@ -306,7 +300,6 @@ impl DeleteMessage {
     }
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn soft_delete_dataset_by_id_query(
     id: uuid::Uuid,
     dataset_config: DatasetConfiguration,
@@ -544,7 +537,6 @@ pub async fn clear_dataset_query(
     Ok(())
 }
 
-#[tracing::instrument(skip_all)]
 pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     deleted_at: chrono::NaiveDateTime,
@@ -655,7 +647,6 @@ pub async fn delete_dataset_by_id_query(
     Ok(dataset)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn update_dataset_query(
     id: uuid::Uuid,
     name: String,
@@ -708,7 +699,6 @@ pub async fn update_dataset_query(
     Ok(new_dataset)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_datasets_by_organization_id(
     org_id: uuid::Uuid,
     pagination: GetDatasetsPagination,
@@ -879,7 +869,6 @@ pub struct WordDatasetCount {
     pub count: i32,
 }
 
-#[tracing::instrument(skip(clickhouse_client))]
 pub async fn scroll_words_from_dataset(
     dataset_id: uuid::Uuid,
     offset: uuid::Uuid,

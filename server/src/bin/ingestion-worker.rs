@@ -7,7 +7,6 @@ use qdrant_client::qdrant::{PointStruct, Vector};
 use signal_hook::consts::SIGTERM;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
-use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{
     self, ChunkBoost, ChunkMetadata, DatasetConfiguration, QdrantPayload, UnifiedId, WorkerEvent,
 };
@@ -47,13 +46,9 @@ pub enum IngestionMessage {
 
 fn main() {
     dotenvy::dotenv().ok();
-    tracing_subscriber::Registry::default()
-        .with(
-            tracing_subscriber::fmt::layer().with_filter(
-                EnvFilter::from_default_env()
-                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-            ),
-        )
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
         .init();
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
@@ -133,7 +128,6 @@ fn main() {
         });
 }
 
-#[tracing::instrument(skip(should_terminate, web_pool, redis_pool, event_queue))]
 async fn ingestion_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
@@ -358,7 +352,6 @@ impl From<ChunkDataWithEmbeddingText> for models::ChunkData {
     }
 }
 
-#[tracing::instrument(skip(payload, web_pool))]
 pub async fn bulk_upload_chunks(
     payload: BulkUploadIngestionMessage,
     dataset_config: DatasetConfiguration,
@@ -765,7 +758,6 @@ pub async fn bulk_upload_chunks(
     Ok(inserted_chunk_metadata_ids)
 }
 
-#[tracing::instrument(skip(payload, web_pool))]
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
     dataset_config: DatasetConfiguration,
@@ -1031,11 +1023,13 @@ async fn upload_chunk(
         let mut vector_payload =
             HashMap::from([("sparse_vectors".to_string(), Vector::from(splade_vector))]);
 
-        if embedding_vector.is_some() && vector_name.is_some() {
-            vector_payload.insert(
-                vector_name.unwrap().to_string(),
-                Vector::from(embedding_vector.unwrap()),
-            );
+        if let Some(embedding_vector) = embedding_vector.clone() {
+            if let Some(vector_name) = vector_name {
+                vector_payload.insert(
+                    vector_name.to_string(),
+                    Vector::from(embedding_vector.clone()),
+                );
+            }
         }
 
         if let Some(bm25_vector) = bm25_vector.clone() {
@@ -1074,7 +1068,6 @@ async fn upload_chunk(
     Ok(chunk_metadata_id)
 }
 
-#[tracing::instrument(skip(web_pool))]
 async fn update_chunk(
     payload: UpdateIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
@@ -1222,7 +1215,6 @@ async fn update_chunk(
     Ok(())
 }
 
-#[tracing::instrument(skip(redis_pool, event_queue, error, message))]
 pub async fn readd_error_to_queue(
     message: IngestionMessage,
     error: ServiceError,

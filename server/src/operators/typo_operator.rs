@@ -767,7 +767,6 @@ pub struct CorrectedQuery {
     pub corrected: bool,
 }
 
-#[tracing::instrument(skip(redis_pool))]
 pub async fn correct_query(
     query: ParsedQuery,
     dataset_id: uuid::Uuid,
@@ -784,7 +783,6 @@ pub async fn correct_query(
             Ok(result)
         }
         None => {
-            let dataset_id = dataset_id;
             let redis_pool = redis_pool.clone();
             log::info!("Pulling new BK tree from Redis");
             let tree = match BkTree::from_redis(dataset_id, redis_pool).await {

@@ -300,7 +300,6 @@ pub enum CreateChunkReqPayloadEnum {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(redis_pool, pool))]
 pub async fn create_chunk(
     create_chunk_data: web::Json<CreateChunkReqPayloadEnum>,
     pool: web::Data<Pool>,
@@ -464,7 +463,6 @@ pub async fn create_chunk(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn delete_chunk(
     chunk_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -499,7 +497,7 @@ pub struct BulkDeleteChunkPayload {
 /// Bulk Delete Chunks
 ///
 /// Delete multiple chunks using a filter. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
-#[tracing::instrument(skip(redis_pool))]
+
 #[utoipa::path(
     delete,
     path = "/chunk",
@@ -568,7 +566,6 @@ pub async fn bulk_delete_chunk(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
@@ -674,7 +671,6 @@ pub struct UpdateIngestionMessage {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn update_chunk(
     update_chunk_data: web::Json<UpdateChunkReqPayload>,
     pool: web::Data<Pool>,
@@ -842,7 +838,7 @@ pub struct UpdateChunkByTrackingIdData {
     )
 )]
 #[deprecated]
-#[tracing::instrument(skip(pool, redis_pool))]
+
 pub async fn update_chunk_by_tracking_id(
     update_chunk_data: web::Json<UpdateChunkByTrackingIdData>,
     pool: web::Data<Pool>,
@@ -1224,7 +1220,6 @@ pub fn parse_query(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn search_chunks(
     data: web::Json<SearchChunksReqPayload>,
     _user: LoggedUser,
@@ -1469,7 +1464,6 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn autocomplete(
     data: web::Json<AutocompleteReqPayload>,
     _user: LoggedUser,
@@ -1593,7 +1587,6 @@ pub struct ScrollChunksReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn scroll_dataset_chunks(
     data: web::Json<ScrollChunksReqPayload>,
     _user: LoggedUser,
@@ -1687,7 +1680,6 @@ pub async fn scroll_dataset_chunks(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_chunk_by_id(
     chunk_id: web::Path<uuid::Uuid>,
     _user: LoggedUser,
@@ -1785,7 +1777,6 @@ pub struct CountChunkQueryResponseBody {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn count_chunks(
     data: web::Json<CountChunksReqPayload>,
     _user: LoggedUser,
@@ -1872,7 +1863,6 @@ pub async fn count_chunks(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_chunk_by_tracking_id(
     tracking_id: web::Path<String>,
     _user: LoggedUser,
@@ -1932,7 +1922,6 @@ pub struct GetChunksData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_chunks_by_ids(
     chunk_payload: web::Json<GetChunksData>,
     _user: LoggedUser,
@@ -2004,7 +1993,6 @@ pub struct GetTrackingChunksData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_chunks_by_tracking_ids(
     chunk_payload: web::Json<GetTrackingChunksData>,
     _user: LoggedUser,
@@ -2115,7 +2103,6 @@ pub enum RecommendResponseTypes {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
 pub async fn get_recommended_chunks(
     data: web::Json<RecommendChunksRequest>,
     pool: web::Data<Pool>,
@@ -2466,7 +2453,6 @@ pub struct GenerateOffChunksReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
 pub async fn generate_off_chunks(
     data: web::Json<GenerateOffChunksReqPayload>,
     pool: web::Data<Pool>,
@@ -2898,7 +2884,6 @@ pub struct ChunkedContent {
         ),
     ),
 )]
-#[tracing::instrument]
 pub async fn split_html_content(
     body: web::Json<ChunkHtmlContentReqPayload>,
 ) -> Result<HttpResponse, ServiceError> {

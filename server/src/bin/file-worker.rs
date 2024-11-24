@@ -6,7 +6,6 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::{
     data::models::{self, FileWorkerMessage},
     errors::ServiceError,
@@ -22,13 +21,9 @@ use trieve_server::{
 
 fn main() {
     dotenvy::dotenv().ok();
-    tracing_subscriber::Registry::default()
-        .with(
-            tracing_subscriber::fmt::layer().with_filter(
-                EnvFilter::from_default_env()
-                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-            ),
-        )
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
         .init();
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
@@ -531,7 +526,6 @@ async fn upload_file(
     Ok(Some(file_id))
 }
 
-#[tracing::instrument(skip(redis_pool, event_queue))]
 pub async fn readd_error_to_queue(
     mut payload: FileWorkerMessage,
     error: ServiceError,

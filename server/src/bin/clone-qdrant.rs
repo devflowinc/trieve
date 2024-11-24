@@ -2,7 +2,6 @@ use qdrant_client::{
     qdrant::{PointStruct, UpsertPointsBuilder},
     Qdrant,
 };
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
     errors::ServiceError, operators::qdrant_operator::scroll_qdrant_collection_ids_custom_url,
 };
@@ -11,13 +10,9 @@ use trieve_server::{
 async fn main() -> Result<(), ServiceError> {
     dotenvy::dotenv().ok();
 
-    tracing_subscriber::Registry::default()
-        .with(
-            tracing_subscriber::fmt::layer().with_filter(
-                EnvFilter::from_default_env()
-                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-            ),
-        )
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
         .init();
 
     let origin_qdrant_url =

@@ -201,7 +201,6 @@ fn check_x_api_access(req: &actix_web::HttpRequest) -> bool {
         ("X-API-KEY" = []),
     )
 )]
-#[tracing::instrument(skip(redis_pool))]
 pub async fn get_metrics(
     req: actix_web::HttpRequest,
     metrics: web::Data<Metrics>,

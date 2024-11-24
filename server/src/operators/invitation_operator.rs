@@ -6,7 +6,7 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
 /// Diesel query
-#[tracing::instrument(skip(pool))]
+
 pub async fn create_invitation_query(
     email: String,
     organization_id: uuid::Uuid,
@@ -30,7 +30,6 @@ pub async fn create_invitation_query(
     Ok(inserted_invitation)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_invitation_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -50,7 +49,6 @@ pub async fn get_invitation_by_id_query(
     Ok(invitation)
 }
 
-#[tracing::instrument]
 pub async fn send_invitation(
     inv_url: String,
     invitation: Invitation,
@@ -75,7 +73,6 @@ pub async fn send_invitation(
     send_email(sg_email_content, invitation.email, None)
 }
 
-#[tracing::instrument]
 pub async fn send_invitation_for_existing_user(
     email: String,
     org_name: String,
@@ -98,7 +95,6 @@ pub async fn send_invitation_for_existing_user(
     send_email(sg_email_content, email, None)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn set_invitation_used(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -121,7 +117,6 @@ pub async fn set_invitation_used(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn check_inv_valid(
     inv_code: uuid::Uuid,
     email: String,

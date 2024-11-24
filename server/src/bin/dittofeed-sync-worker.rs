@@ -1,6 +1,5 @@
 use chm::tools::migrations::SetupArgs;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
-use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::{
     errors::ServiceError,
     establish_connection, get_env,
@@ -15,13 +14,9 @@ use trieve_server::{
 async fn main() -> Result<(), ServiceError> {
     dotenvy::dotenv().ok();
     log::info!("Starting ditto sync worker service thread");
-    tracing_subscriber::Registry::default()
-        .with(
-            tracing_subscriber::fmt::layer().with_filter(
-                EnvFilter::from_default_env()
-                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-            ),
-        )
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
         .init();
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");

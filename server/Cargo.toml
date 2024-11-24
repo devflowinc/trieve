@@ -146,11 +146,7 @@ regex-split = "0.1.0"
 simple-server-timing-header = "0.1.1"
 ndarray = "0.15.6"
 ureq = { version = "2.9.6", features = ["json"] }
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = [
-    "env-filter",
-    "registry",
-] }
+env_logger = "0.11.5"
 tokio-postgres = "0.7.10"
 postgres-openssl = "0.5.0"
 openssl = "0.10.64"

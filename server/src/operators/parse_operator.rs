@@ -6,7 +6,6 @@ use std::cmp;
 
 use crate::errors::ServiceError;
 
-#[tracing::instrument]
 pub fn convert_html_to_text(html: &str) -> String {
     let dom = Html::parse_fragment(html);
     let text = dom.root_element().text().collect::<String>();
@@ -26,7 +25,6 @@ pub fn extract_text_from_html(html: &str) -> String {
         .join(" ")
 }
 
-#[tracing::instrument]
 pub fn coarse_remove_large_chunks(cur_chunks: Vec<String>) -> Vec<String> {
     let max_chunk_len = 10000;
     let mut chunks = cur_chunks;
@@ -71,7 +69,6 @@ pub fn build_chunking_regex(delimiters: Vec<String>) -> Result<Regex, regex::Err
     Ok(re)
 }
 
-#[tracing::instrument]
 pub fn coarse_doc_chunker(
     document: String,
     split_pattern: Option<Regex>,
@@ -135,7 +132,6 @@ pub fn coarse_doc_chunker(
     coarse_remove_large_chunks(groups)
 }
 
-#[tracing::instrument(skip(embeddings))]
 pub fn average_embeddings(embeddings: Vec<Vec<f32>>) -> Result<Vec<f32>, ServiceError> {
     let first_embedding_len = match embeddings.first() {
         Some(embedding) => embedding.len(),

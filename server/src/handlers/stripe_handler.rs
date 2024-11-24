@@ -23,7 +23,6 @@ use utoipa::ToSchema;
 
 use super::auth_handler::OwnerOnly;
 
-#[tracing::instrument(skip(pool))]
 pub async fn webhook(
     req: HttpRequest,
     payload: web::Bytes,
@@ -250,7 +249,6 @@ pub struct GetDirectPaymentLinkData {
         ("organization_id" = uuid::Uuid, Path, description = "id of the organization you want to subscribe to the plan"),
     ),
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn direct_to_payment_link(
     path_data: web::Path<GetDirectPaymentLinkData>,
     pool: web::Data<Pool>,
@@ -301,7 +299,6 @@ pub async fn direct_to_payment_link(
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn cancel_subscription(
     subscription_id: web::Path<uuid::Uuid>,
     user: OwnerOnly,
@@ -347,7 +344,6 @@ pub struct UpdateSubscriptionData {
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn update_subscription_plan(
     path_data: web::Path<UpdateSubscriptionData>,
     user: OwnerOnly,
@@ -388,7 +384,6 @@ pub async fn update_subscription_plan(
         (status = 400, description = "Service error relating to getting all plans", body = ErrorResponseBody),
     ),
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_all_plans(pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
     let stripe_plans = get_all_plans_query(pool)
         .await
@@ -416,10 +411,9 @@ pub async fn get_all_plans(pool: web::Data<Pool>) -> Result<HttpResponse, actix_
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_all_invoices(
     pool: web::Data<Pool>,
-    user: OwnerOnly,
+    _user: OwnerOnly,
     path_data: web::Path<uuid::Uuid>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let org_id = path_data.into_inner();
@@ -451,10 +445,9 @@ pub struct CreateSetupCheckoutSessionResPayload {
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn create_setup_checkout_session(
     pool: web::Data<Pool>,
-    user: OwnerOnly,
+    _user: OwnerOnly,
     path_data: web::Path<uuid::Uuid>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let org_id = path_data.into_inner();

@@ -25,7 +25,6 @@ use base64::{
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[tracing::instrument]
 pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
     let split_s = s.split('/').last();
 
@@ -113,11 +112,10 @@ pub struct UploadFileResult {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn upload_file_handler(
     data: web::Json<UploadFileReqPayload>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -229,7 +227,6 @@ pub async fn upload_file_handler(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_file_handler(
     file_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -273,7 +270,6 @@ pub struct FileData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_files_handler(
     data: web::Path<DatasetFileQuery>,
     pool: web::Data<Pool>,
@@ -331,7 +327,6 @@ pub async fn get_dataset_files_handler(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn delete_file_handler(
     file_id: web::Path<uuid::Uuid>,
     query: web::Query<DeleteGroupData>,
@@ -359,7 +354,6 @@ pub struct GetImageResponse {
     pub signed_url: String,
 }
 
-#[tracing::instrument]
 pub async fn get_signed_url(
     file_name: web::Path<String>,
     _user: LoggedUser,

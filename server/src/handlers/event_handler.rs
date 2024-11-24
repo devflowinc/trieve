@@ -43,7 +43,6 @@ pub struct GetEventsData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(clickhouse_client))]
 pub async fn get_events(
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,

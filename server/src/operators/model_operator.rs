@@ -42,11 +42,10 @@ pub struct EmbeddingInner {
     embedding: Vec<f32>,
 }
 
-#[tracing::instrument]
 pub async fn get_dense_vector(
     message: String,
     semantic_boost: Option<SemanticBoost>,
-    embed_type: &str,
+    _embed_type: &str,
     dataset_config: DatasetConfiguration,
 ) -> Result<Vec<f32>, ServiceError> {
     let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
@@ -107,8 +106,6 @@ pub async fn get_dense_vector(
         input,
         truncate: true,
     };
-
-    
 
     web::block(move || {
         let embeddings_resp_a = ureq::post(&format!(
@@ -174,7 +171,6 @@ pub async fn get_dense_vector(
     .map_err(|err| ServiceError::BadRequest(format!("Thread error {:?}", err)))?
 }
 
-#[tracing::instrument]
 pub async fn get_sparse_vector(
     message: String,
     fulltext_boost: Option<FullTextBoost>,
@@ -301,7 +297,6 @@ pub async fn get_sparse_vector(
     .map_err(|err| ServiceError::BadRequest(format!("Thread error {:?}", err)))?
 }
 
-#[tracing::instrument]
 pub async fn get_dense_vectors(
     content_and_distances: Vec<(String, Option<SemanticBoost>)>,
     embed_type: &str,
@@ -563,7 +558,6 @@ pub struct CustomSparseEmbedData {
     pub truncate: bool,
 }
 
-#[tracing::instrument]
 pub async fn get_sparse_vectors(
     content_and_boosts: Vec<(String, Option<FullTextBoost>)>,
     embed_type: &str,
@@ -836,7 +830,6 @@ pub struct CrossEncoderData {
     pub truncate: bool,
 }
 
-#[tracing::instrument]
 pub async fn cross_encoder(
     query: String,
     page_size: u64,

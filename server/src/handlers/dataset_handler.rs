@@ -131,7 +131,6 @@ pub struct CreateDatasetReqPayload {
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn create_dataset(
     data: web::Json<CreateDatasetReqPayload>,
     pool: web::Data<Pool>,
@@ -272,7 +271,6 @@ pub struct UpdateDatasetReqPayload {
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn update_dataset(
     data: web::Json<UpdateDatasetReqPayload>,
     pool: web::Data<Pool>,
@@ -360,7 +358,6 @@ pub struct GetCrawlOptionsResponse {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_crawl_options(
     pool: web::Data<Pool>,
     dataset_id: web::Path<uuid::Uuid>,
@@ -401,7 +398,6 @@ pub async fn get_dataset_crawl_options(
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool, redis_pool))]
 pub async fn delete_dataset(
     data: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -447,7 +443,6 @@ pub async fn delete_dataset(
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(redis_pool))]
 pub async fn clear_dataset(
     data: web::Path<uuid::Uuid>,
     redis_pool: web::Data<RedisPool>,
@@ -491,7 +486,6 @@ pub async fn clear_dataset(
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn delete_dataset_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
@@ -536,7 +530,6 @@ pub async fn delete_dataset_by_tracking_id(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_dataset(
     pool: web::Data<Pool>,
     dataset_id: web::Path<uuid::Uuid>,
@@ -577,11 +570,10 @@ pub async fn get_dataset(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_usage_by_dataset_id(
     pool: web::Data<Pool>,
     dataset_id: web::Path<uuid::Uuid>,
-    user: AdminOnly,
+    _user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let usage = get_dataset_usage_query(dataset_id.into_inner(), pool)
         .await
@@ -611,7 +603,6 @@ pub async fn get_usage_by_dataset_id(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
@@ -662,7 +653,6 @@ pub struct GetDatasetsPagination {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_datasets_from_organization(
     organization_id: web::Path<uuid::Uuid>,
     pagination: web::Query<GetDatasetsPagination>,

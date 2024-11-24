@@ -5,7 +5,6 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::{
     data::models::RedisPool,
     errors::ServiceError,
@@ -20,13 +19,9 @@ use trieve_server::{
 #[allow(clippy::print_stdout)]
 fn main() {
     dotenvy::dotenv().ok();
-    tracing_subscriber::Registry::default()
-        .with(
-            tracing_subscriber::fmt::layer().with_filter(
-                EnvFilter::from_default_env()
-                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-            ),
-        )
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
         .init();
 
     let should_terminate = Arc::new(AtomicBool::new(false));

@@ -23,7 +23,6 @@ use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
 use std::collections::HashMap;
 
-#[tracing::instrument]
 pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
     let aws_region_name = std::env::var("AWS_REGION").unwrap_or("".to_string());
     let s3_endpoint = get_env!("S3_ENDPOINT", "S3_ENDPOINT should be set").into();
@@ -58,7 +57,6 @@ pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
     Ok(aws_bucket)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_file_query(
     file_id: uuid::Uuid,
     file_size: i64,
@@ -95,7 +93,6 @@ pub async fn create_file_query(
     Ok(created_file)
 }
 
-#[tracing::instrument]
 pub fn preprocess_file_to_chunks(
     html_content: String,
     upload_file_data: UploadFileReqPayload,
@@ -122,11 +119,10 @@ pub fn preprocess_file_to_chunks(
         target_splits_per_chunk,
     );
 
-    return Ok(chunk_htmls);
+    Ok(chunk_htmls)
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool, redis_conn, event_queue))]
 pub async fn create_file_chunks(
     created_file_id: uuid::Uuid,
     upload_file_data: UploadFileReqPayload,
@@ -279,7 +275,6 @@ pub async fn create_file_chunks(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_file_query(
     file_uuid: uuid::Uuid,
     dataset_id: uuid::Uuid,
@@ -325,7 +320,6 @@ pub async fn get_file_query(
     Ok(file_dto)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_dataset_file_query(
     dataset_id: uuid::Uuid,
     page: u64,
@@ -359,7 +353,6 @@ pub async fn get_dataset_file_query(
     Ok(file_metadata)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn delete_file_query(
     file_uuid: uuid::Uuid,
     delete_chunks: Option<bool>,

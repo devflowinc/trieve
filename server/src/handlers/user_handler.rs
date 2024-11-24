@@ -39,7 +39,6 @@ pub struct UpdateUserOrgRoleReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn update_user(
     data: web::Json<UpdateUserOrgRoleReqPayload>,
     user: LoggedUser,
@@ -140,7 +139,6 @@ pub struct CreateApiKeyResponse {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn create_user_api_key(
     user: LoggedUser,
     data: web::Json<CreateApiKeyReqPayload>,
@@ -171,7 +169,6 @@ pub async fn create_user_api_key(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_user_api_keys(
     user: LoggedUser,
     pool: web::Data<Pool>,
@@ -202,7 +199,6 @@ pub async fn get_user_api_keys(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn delete_user_api_key(
     user: LoggedUser,
     data: web::Path<uuid::Uuid>,

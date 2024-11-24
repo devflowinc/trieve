@@ -44,10 +44,9 @@ pub struct CreateTopicReqPayload {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn create_topic(
     data: web::Json<CreateTopicReqPayload>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -119,10 +118,9 @@ pub struct CloneTopicReqPayload {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn clone_topic(
     data: web::Json<CloneTopicReqPayload>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -177,10 +175,9 @@ pub struct DeleteTopicData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn delete_topic(
     topic_id: web::Path<uuid::Uuid>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -219,10 +216,9 @@ pub struct UpdateTopicReqPayload {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn update_topic(
     data: web::Json<UpdateTopicReqPayload>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -259,9 +255,8 @@ pub async fn update_topic(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_all_topics_for_owner_id(
-    user: AdminOnly,
+    _user: AdminOnly,
     owner_id: web::Path<String>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,

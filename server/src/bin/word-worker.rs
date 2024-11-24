@@ -12,7 +12,6 @@ use std::{
         Arc,
     },
 };
-use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::{
     data::models,
     errors::ServiceError,
@@ -28,13 +27,9 @@ use trieve_server::{
 #[allow(clippy::print_stdout)]
 fn main() -> Result<(), ServiceError> {
     dotenvy::dotenv().ok();
-    tracing_subscriber::Registry::default()
-        .with(
-            tracing_subscriber::fmt::layer().with_filter(
-                EnvFilter::from_default_env()
-                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-            ),
-        )
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
         .init();
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
@@ -328,7 +323,6 @@ async fn process_chunks(
     Ok(())
 }
 
-#[tracing::instrument(skip(redis_pool))]
 pub async fn readd_error_to_queue(
     mut message: ProcessWordsFromDatasetMessage,
     error: ServiceError,

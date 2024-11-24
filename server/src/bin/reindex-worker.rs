@@ -4,7 +4,6 @@ use qdrant_client::{
     qdrant::{self, GetPointsBuilder, PointId, RetrievedPoint, UpsertPointsBuilder},
     Qdrant,
 };
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use trieve_server::{
     data::models::{MigratePointMessage, MigrationMode},
     errors::ServiceError,
@@ -16,13 +15,9 @@ use trieve_server::{
 #[tokio::main]
 async fn main() -> Result<(), ServiceError> {
     dotenvy::dotenv().ok();
-    tracing_subscriber::Registry::default()
-        .with(
-            tracing_subscriber::fmt::layer().with_filter(
-                EnvFilter::from_default_env()
-                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-            ),
-        )
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
         .init();
 
     let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
@@ -161,7 +156,6 @@ async fn main() -> Result<(), ServiceError> {
     }
 }
 
-#[tracing::instrument(skip(qdrant_client, points))]
 pub async fn migrate_bm25(
     qdrant_client: Qdrant,
     points: Vec<RetrievedPoint>,

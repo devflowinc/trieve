@@ -32,7 +32,6 @@ use minijinja::Environment;
 use openssl::ssl::SslVerifyMode;
 use openssl::ssl::{SslConnector, SslMethod};
 use postgres_openssl::MakeTlsConnector;
-use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use ureq::json;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
@@ -534,17 +533,12 @@ impl Modify for SecurityAddon {
 )]
 pub struct ApiDoc;
 
-#[tracing::instrument]
 pub fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
 
-    tracing_subscriber::Registry::default()
-        .with(
-            tracing_subscriber::fmt::layer().with_filter(
-                EnvFilter::from_default_env()
-                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-            ),
-        )
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .filter_level(log::LevelFilter::Info)
         .init();
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL should be set");
