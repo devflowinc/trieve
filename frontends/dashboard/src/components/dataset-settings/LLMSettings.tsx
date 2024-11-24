@@ -282,7 +282,7 @@ export const LLMSettings = (props: {
                   System Prompt
                   <Tooltip
                     body={<AiOutlineInfoCircle />}
-                    tooltipText="System prompt is guide the system towards a high level object or goal."
+                    tooltipText="Guides the system towards a higher-level object or goal."
                   />
                 </label>
                 <textarea
