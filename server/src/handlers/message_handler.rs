@@ -4,8 +4,9 @@ use super::{
 };
 use crate::{
     data::models::{
-        self, ChunkMetadata, ContextOptions, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        HighlightOptions, LLMOptions, Pool, RedisPool, SearchMethod, SuggestType,
+        self, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataTypes, ContextOptions,
+        DatasetAndOrgWithSubAndPlan, DatasetConfiguration, HighlightOptions, LLMOptions, Pool,
+        QdrantChunkMetadata, RedisPool, SearchMethod, SuggestType,
     },
     errors::ServiceError,
     get_env,
@@ -758,6 +759,7 @@ pub async fn get_suggested_queries(
 
     let base_url = dataset_config.LLM_BASE_URL.clone();
     let default_model = dataset_config.LLM_DEFAULT_MODEL.clone();
+    let qdrant_only = dataset_config.QDRANT_ONLY;
 
     let base_url = if base_url.is_empty() {
         "https://api.openai.com/api/v1".into()
@@ -835,7 +837,7 @@ pub async fn get_suggested_queries(
                         assemble_qdrant_filter(filters, None, None, dataset_id, pool.clone())
                             .await?;
 
-                    let (qdrant_point_ids, _) = scroll_dataset_points(
+                    let (search_results, _) = scroll_dataset_points(
                         10,
                         Some(chunk.qdrant_point_id),
                         None,
@@ -843,12 +845,28 @@ pub async fn get_suggested_queries(
                         filter,
                     )
                     .await?;
-
-                    get_chunk_metadatas_from_point_ids(qdrant_point_ids.clone(), pool)
-                        .await?
-                        .into_iter()
-                        .map(ChunkMetadata::from)
-                        .collect()
+                    if qdrant_only {
+                        search_results
+                            .iter()
+                            .map(|search_result| {
+                                ChunkMetadata::from(ChunkMetadataTypes::Metadata(
+                                    ChunkMetadataStringTagSet::from(QdrantChunkMetadata::from(
+                                        search_result.clone(),
+                                    )),
+                                ))
+                            })
+                            .collect()
+                    } else {
+                        let qdrant_point_ids: Vec<uuid::Uuid> = search_results
+                            .iter()
+                            .map(|search_result| search_result.point_id)
+                            .collect();
+                        get_chunk_metadatas_from_point_ids(qdrant_point_ids.clone(), pool)
+                            .await?
+                            .into_iter()
+                            .map(ChunkMetadata::from)
+                            .collect()
+                    }
                 }
                 None => vec![],
             }

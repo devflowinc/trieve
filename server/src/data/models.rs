@@ -28,7 +28,7 @@ use crate::operators::chunk_operator::{
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
-    get_metadata_filter_condition, GroupScoreChunk,
+    get_metadata_filter_condition, GroupScoreChunk, SearchResult,
 };
 use actix_web::web;
 use chrono::{DateTime, NaiveDateTime};
@@ -47,6 +47,7 @@ use diesel::{
 use itertools::Itertools;
 use minijinja::Environment;
 use openai_dive::v1::resources::chat::{ChatMessage, ChatMessageContent};
+use qdrant_client::qdrant::value::Kind;
 use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon, GeoRadius};
 use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
 use rand::Rng;
@@ -938,7 +939,6 @@ pub enum NewChunkMetadataTypes {
     ID(SlimChunkMetadataWithArrayTagSet),
     Metadata(ChunkMetadata),
     Content(ContentChunkMetadata),
-    QdrantChunkMetadata(QdrantChunkMetadata),
 }
 
 impl From<ChunkMetadataTypes> for NewChunkMetadataTypes {
@@ -952,9 +952,6 @@ impl From<ChunkMetadataTypes> for NewChunkMetadataTypes {
             }
             ChunkMetadataTypes::Content(content_chunk_metadata) => {
                 NewChunkMetadataTypes::Content(content_chunk_metadata)
-            }
-            ChunkMetadataTypes::QdrantChunkMetadata(qdrant_point_id) => {
-                NewChunkMetadataTypes::QdrantChunkMetadata(qdrant_point_id)
             }
         }
     }
@@ -975,9 +972,6 @@ impl ScoreChunkDTO {
                 }
                 ChunkMetadataTypes::Content(content_chunk_metadata) => {
                     ChunkMetadataTypes::ID(content_chunk_metadata.into())
-                }
-                ChunkMetadataTypes::QdrantChunkMetadata(qdrant_metadata) => {
-                    ChunkMetadataTypes::QdrantChunkMetadata(qdrant_metadata)
                 }
             })
             .collect();
@@ -1001,17 +995,194 @@ pub enum ChunkMetadataTypes {
     ID(SlimChunkMetadata),
     Metadata(ChunkMetadataStringTagSet),
     Content(ContentChunkMetadata),
-    QdrantChunkMetadata(QdrantChunkMetadata),
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct QdrantChunkMetadata {
+    pub link: Option<String>,
     pub qdrant_point_id: uuid::Uuid,
     pub chunk_html: Option<String>,
-    pub tag_set: Option<Vec<String>>,
-    pub images_urls: Option<Vec<String>>,
-    pub link: Option<String>,
     pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub dataset_id: uuid::Uuid,
+    pub weight: f64,
+    pub location: Option<GeoInfo>,
+    pub image_urls: Option<Vec<String>>,
+    pub tag_set: Option<Vec<String>>,
+    pub num_value: Option<f64>,
+}
+
+impl From<SearchResult> for QdrantChunkMetadata {
+    fn from(search_result: SearchResult) -> Self {
+        let link: Option<String> = match search_result.payload.get("link") {
+            Some(qdrant::Value {
+                kind: Some(Kind::StringValue(link)),
+                ..
+            }) => Some(link.clone()),
+            _ => None,
+        };
+        let chunk_html: Option<String> = match search_result.payload.get("content") {
+            Some(qdrant::Value {
+                kind: Some(Kind::StringValue(content)),
+                ..
+            }) => Some(content.clone()),
+            _ => None,
+        };
+        let metadata: Option<serde_json::Value> = match search_result.payload.get("metadata") {
+            Some(qdrant::Value {
+                kind: Some(Kind::StructValue(metadata)),
+                ..
+            }) => {
+                let mut metadata_map = serde_json::Map::new();
+                for (key, value) in metadata.fields.iter() {
+                    match value {
+                        qdrant::Value {
+                            kind: Some(Kind::StringValue(value)),
+                            ..
+                        } => {
+                            metadata_map
+                                .insert(key.clone(), serde_json::Value::String(value.clone()));
+                        }
+                        qdrant::Value {
+                            kind: Some(Kind::IntegerValue(value)),
+                            ..
+                        } => {
+                            metadata_map.insert(
+                                key.clone(),
+                                serde_json::Value::Number(
+                                    serde_json::Number::from_f64(*value as f64).unwrap(),
+                                ),
+                            );
+                        }
+                        _ => {}
+                    }
+                }
+                Some(serde_json::Value::Object(metadata_map))
+            }
+            _ => None,
+        };
+        let tracking_id: Option<String> = match search_result.payload.get("tracking_id") {
+            Some(qdrant::Value {
+                kind: Some(Kind::StringValue(tracking_id)),
+                ..
+            }) => Some(tracking_id.clone()),
+            _ => None,
+        };
+        let time_stamp: Option<NaiveDateTime> = match search_result.payload.get("time_stamp") {
+            Some(qdrant::Value {
+                kind: Some(Kind::StringValue(time_stamp)),
+                ..
+            }) => Some(NaiveDateTime::parse_from_str(time_stamp, "%Y-%m-%d %H:%M:%S%.f").unwrap()),
+            _ => None,
+        };
+        let dataset_id: uuid::Uuid = match search_result.payload.get("dataset_id") {
+            Some(qdrant::Value {
+                kind: Some(Kind::StringValue(dataset_id)),
+                ..
+            }) => uuid::Uuid::parse_str(dataset_id).unwrap(),
+            _ => uuid::Uuid::new_v4(),
+        };
+        let weight: f64 = match search_result.payload.get("weight") {
+            Some(qdrant::Value {
+                kind: Some(Kind::IntegerValue(weight)),
+                ..
+            }) => *weight as f64,
+            Some(qdrant::Value {
+                kind: Some(Kind::DoubleValue(weight)),
+                ..
+            }) => *weight,
+            _ => 0 as f64,
+        };
+        let location = match search_result.payload.get("location") {
+            Some(qdrant::Value {
+                kind: Some(Kind::StructValue(location)),
+                ..
+            }) => {
+                let lat = match location.fields.get("lat") {
+                    Some(qdrant::Value {
+                        kind: Some(Kind::DoubleValue(lat)),
+                        ..
+                    }) => *lat,
+                    _ => 0.0,
+                };
+                let lon = match location.fields.get("lon") {
+                    Some(qdrant::Value {
+                        kind: Some(Kind::DoubleValue(lon)),
+                        ..
+                    }) => *lon,
+                    _ => 0.0,
+                };
+                Some(GeoInfo {
+                    lat: GeoTypes::Float(lat),
+                    lon: GeoTypes::Float(lon),
+                })
+            }
+            _ => None,
+        };
+        let images_urls: Option<Vec<String>> = match search_result.payload.get("image_urls") {
+            Some(qdrant::Value {
+                kind: Some(Kind::ListValue(image_urls)),
+                ..
+            }) => Some(
+                image_urls
+                    .iter()
+                    .map(|url| match url {
+                        qdrant::Value {
+                            kind: Some(Kind::StringValue(url)),
+                            ..
+                        } => url.clone(),
+                        _ => "".to_string(),
+                    })
+                    .collect(),
+            ),
+            _ => None,
+        };
+        let tag_set: Option<Vec<String>> = match search_result.payload.get("tag_set") {
+            Some(qdrant::Value {
+                kind: Some(Kind::ListValue(tag_set)),
+                ..
+            }) => Some(
+                tag_set
+                    .iter()
+                    .map(|url| match url {
+                        qdrant::Value {
+                            kind: Some(Kind::StringValue(url)),
+                            ..
+                        } => url.clone(),
+                        _ => "".to_string(),
+                    })
+                    .collect(),
+            ),
+            _ => None,
+        };
+        let num_value: Option<f64> = match search_result.payload.get("num_value") {
+            Some(qdrant::Value {
+                kind: Some(Kind::IntegerValue(num_value)),
+                ..
+            }) => Some(*num_value as f64),
+            Some(qdrant::Value {
+                kind: Some(Kind::DoubleValue(num_value)),
+                ..
+            }) => Some(*num_value),
+            _ => None,
+        };
+
+        QdrantChunkMetadata {
+            link,
+            qdrant_point_id: search_result.point_id,
+            chunk_html,
+            metadata,
+            tracking_id,
+            time_stamp,
+            dataset_id,
+            weight,
+            location,
+            image_urls: images_urls,
+            tag_set,
+            num_value,
+        }
+    }
 }
 
 impl From<ChunkMetadataTypes> for ChunkMetadata {
@@ -1020,8 +1191,6 @@ impl From<ChunkMetadataTypes> for ChunkMetadata {
             ChunkMetadataTypes::ID(slim_chunk_metadata) => slim_chunk_metadata.into(),
             ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata.into(),
             ChunkMetadataTypes::Content(content_chunk_metadata) => content_chunk_metadata.into(),
-            // TODO
-            ChunkMetadataTypes::QdrantChunkMetadata(_) => ChunkMetadata::default(),
         }
     }
 }
@@ -1050,8 +1219,6 @@ impl ChunkMetadataTypes {
             ChunkMetadataTypes::Metadata(metadata) => metadata.clone().into(),
             ChunkMetadataTypes::ID(slim_metadata) => slim_metadata.clone().into(),
             ChunkMetadataTypes::Content(content_metadata) => content_metadata.clone().into(),
-            // TODO
-            ChunkMetadataTypes::QdrantChunkMetadata(_) => ChunkMetadata::default(),
         }
     }
 
@@ -1060,9 +1227,6 @@ impl ChunkMetadataTypes {
             ChunkMetadataTypes::Metadata(metadata) => metadata.qdrant_point_id,
             ChunkMetadataTypes::ID(slim_metadata) => slim_metadata.qdrant_point_id,
             ChunkMetadataTypes::Content(content_metadata) => content_metadata.qdrant_point_id,
-            ChunkMetadataTypes::QdrantChunkMetadata(qdrant_metadata) => {
-                qdrant_metadata.qdrant_point_id
-            }
         }
     }
 }
@@ -1168,6 +1332,33 @@ impl From<ChunkMetadata> for ChunkMetadataStringTagSet {
                     .map(|tag| tag.unwrap_or_default())
                     .join(",")
             }),
+            num_value: chunk.num_value,
+        }
+    }
+}
+
+impl From<QdrantChunkMetadata> for ChunkMetadataStringTagSet {
+    fn from(chunk: QdrantChunkMetadata) -> Self {
+        ChunkMetadataStringTagSet {
+            id: uuid::Uuid::default(),
+            link: chunk.link,
+            qdrant_point_id: chunk.qdrant_point_id,
+            created_at: chrono::Utc::now().naive_local(),
+            updated_at: chrono::Utc::now().naive_local(),
+            chunk_html: chunk.chunk_html,
+            metadata: chunk.metadata,
+            tracking_id: chunk.tracking_id,
+            time_stamp: chunk.time_stamp,
+            dataset_id: chunk.dataset_id,
+            weight: chunk.weight,
+            location: chunk.location,
+            image_urls: chunk.image_urls.map(|image_urls| {
+                image_urls
+                    .into_iter()
+                    .map(Some)
+                    .collect::<Vec<Option<String>>>()
+            }),
+            tag_set: chunk.tag_set.map(|tags| tags.into_iter().join(",")),
             num_value: chunk.num_value,
         }
     }
@@ -2012,6 +2203,16 @@ pub struct DatasetUsageCount {
     pub id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub chunk_count: i32,
+}
+
+impl DatasetUsageCount {
+    pub fn from_details(dataset_id: uuid::Uuid, chunk_count: i32) -> Self {
+        DatasetUsageCount {
+            id: uuid::Uuid::new_v4(),
+            dataset_id,
+            chunk_count,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -3579,15 +3780,19 @@ impl From<String> for UnifiedId {
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct QdrantPayload {
-    pub tag_set: Option<Vec<Option<String>>>,
     pub link: Option<String>,
     pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
     pub time_stamp: Option<i64>,
+    pub num_value: Option<f64>,
     pub dataset_id: uuid::Uuid,
+    pub weight: f64,
+    pub location: Option<GeoInfo>,
+    pub image_urls: Option<Vec<Option<String>>>,
+    pub tag_set: Option<Vec<Option<String>>>,
+    // different than QdrantChunkMetadata
     pub content: String,
     pub group_ids: Option<Vec<uuid::Uuid>>,
-    pub location: Option<GeoInfo>,
-    pub num_value: Option<f64>,
     pub group_tag_set: Option<Vec<Option<String>>>,
 }
 
@@ -3608,39 +3813,45 @@ impl QdrantPayload {
         group_tag_set: Option<Vec<Option<String>>>,
     ) -> Self {
         QdrantPayload {
-            tag_set: chunk_metadata.tag_set,
             link: chunk_metadata.link,
             metadata: chunk_metadata.metadata,
+            tracking_id: chunk_metadata.tracking_id,
             time_stamp: chunk_metadata.time_stamp.map(|x| x.timestamp()),
+            num_value: chunk_metadata.num_value,
             dataset_id: dataset_id.unwrap_or(chunk_metadata.dataset_id),
+            weight: chunk_metadata.weight,
+            location: chunk_metadata.location,
+            image_urls: chunk_metadata.image_urls,
+            tag_set: chunk_metadata.tag_set,
             content: convert_html_to_text(&chunk_metadata.chunk_html.unwrap_or_default()),
             group_ids,
-            location: chunk_metadata.location,
-            num_value: chunk_metadata.num_value,
             group_tag_set,
         }
     }
 
     pub fn new_from_point(point: RetrievedPoint, group_ids: Option<Vec<uuid::Uuid>>) -> Self {
         QdrantPayload {
-            tag_set: point.payload.get("tag_set").cloned().map(|x| {
-                x.as_list()
-                    .unwrap_or_default()
-                    .iter()
-                    .map(|value| Some(value.to_string()))
-                    .collect()
-            }),
             link: point.payload.get("link").cloned().map(|x| x.to_string()),
             metadata: point
                 .payload
                 .get("metadata")
                 .cloned()
                 .map(|value| value.into()),
+            tracking_id: point
+                .payload
+                .get("tracking_id")
+                .cloned()
+                .map(|x| x.to_string()),
             time_stamp: point
                 .payload
                 .get("time_stamp")
                 .cloned()
                 .and_then(|x| x.as_integer()),
+            num_value: point
+                .payload
+                .get("num_value")
+                .cloned()
+                .and_then(|x| x.as_double()),
             dataset_id: point
                 .payload
                 .get("dataset_id")
@@ -3649,23 +3860,38 @@ impl QdrantPayload {
                 .as_str()
                 .map(|s| uuid::Uuid::parse_str(s).unwrap())
                 .unwrap_or_default(),
-            group_ids,
+            weight: point
+                .payload
+                .get("weight")
+                .cloned()
+                .and_then(|x| x.as_double())
+                .unwrap_or_default(),
+            location: point
+                .payload
+                .get("location")
+                .cloned()
+                .and_then(|value| serde_json::from_value(value.into()).ok()),
+            image_urls: point.payload.get("image_urls").cloned().map(|x| {
+                x.as_list()
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|value| Some(value.to_string()))
+                    .collect()
+            }),
+            tag_set: point.payload.get("tag_set").cloned().map(|x| {
+                x.as_list()
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|value| Some(value.to_string()))
+                    .collect()
+            }),
             content: point
                 .payload
                 .get("content")
                 .cloned()
                 .unwrap_or_default()
                 .to_string(),
-            location: point
-                .payload
-                .get("location")
-                .cloned()
-                .and_then(|value| serde_json::from_value(value.into()).ok()),
-            num_value: point
-                .payload
-                .get("num_value")
-                .cloned()
-                .and_then(|x| x.as_double()),
+            group_ids,
             group_tag_set: point.payload.get("group_tag_set").cloned().map(|x| {
                 x.as_list()
                     .unwrap_or_default()
@@ -3680,13 +3906,6 @@ impl QdrantPayload {
 impl From<RetrievedPoint> for QdrantPayload {
     fn from(point: RetrievedPoint) -> Self {
         QdrantPayload {
-            tag_set: point.payload.get("tag_set").cloned().map(|x| {
-                x.as_list()
-                    .unwrap_or_default()
-                    .iter()
-                    .map(|value| Some(value.to_string().replace(['"', '\\'], "")))
-                    .collect()
-            }),
             link: point
                 .payload
                 .get("link")
@@ -3697,11 +3916,21 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .get("metadata")
                 .cloned()
                 .map(|value| value.into()),
+            tracking_id: point
+                .payload
+                .get("tracking_id")
+                .cloned()
+                .map(|x| x.to_string()),
             time_stamp: point
                 .payload
                 .get("time_stamp")
                 .cloned()
                 .and_then(|x| x.as_integer()),
+            num_value: point
+                .payload
+                .get("num_value")
+                .cloned()
+                .and_then(|x| x.as_double()),
             dataset_id: point
                 .payload
                 .get("dataset_id")
@@ -3710,11 +3939,30 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .as_str()
                 .and_then(|s| uuid::Uuid::parse_str(s).ok())
                 .unwrap_or_default(),
-            group_ids: point.payload.get("group_ids").cloned().map(|x| {
+            weight: point
+                .payload
+                .get("weight")
+                .cloned()
+                .and_then(|x| x.as_double())
+                .unwrap_or_default(),
+            location: point
+                .payload
+                .get("location")
+                .cloned()
+                .and_then(|value| serde_json::from_value(value.into()).ok())
+                .unwrap_or_default(),
+            image_urls: point.payload.get("image_urls").cloned().map(|x| {
                 x.as_list()
                     .unwrap_or_default()
                     .iter()
-                    .filter_map(|value| value.to_string().parse().ok())
+                    .map(|value| Some(value.to_string()))
+                    .collect()
+            }),
+            tag_set: point.payload.get("tag_set").cloned().map(|x| {
+                x.as_list()
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|value| Some(value.to_string().replace(['"', '\\'], "")))
                     .collect()
             }),
             content: point
@@ -3724,17 +3972,13 @@ impl From<RetrievedPoint> for QdrantPayload {
                 .unwrap_or_default()
                 .to_string()
                 .replace(['"', '\\'], ""),
-            location: point
-                .payload
-                .get("location")
-                .cloned()
-                .and_then(|value| serde_json::from_value(value.into()).ok())
-                .unwrap_or_default(),
-            num_value: point
-                .payload
-                .get("num_value")
-                .cloned()
-                .and_then(|x| x.as_double()),
+            group_ids: point.payload.get("group_ids").cloned().map(|x| {
+                x.as_list()
+                    .unwrap_or_default()
+                    .iter()
+                    .filter_map(|value| value.to_string().parse().ok())
+                    .collect()
+            }),
             group_tag_set: point.payload.get("group_tag_set").cloned().map(|x| {
                 x.as_list()
                     .unwrap_or_default()

@@ -1028,9 +1028,7 @@ pub async fn search_qdrant_query(
         return Ok((vec![], 0, vec![]));
     }
 
-    let only_insert_qdrant = std::env::var("ONLY_INSERT_QDRANT")
-        .map(|val| val == "true")
-        .unwrap_or(false);
+    let only_insert_qdrant = dataset_config.QDRANT_ONLY;
 
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
@@ -1931,7 +1929,7 @@ pub async fn scroll_dataset_points(
     sort_by: Option<SortByField>,
     dataset_config: DatasetConfiguration,
     filter: Filter,
-) -> Result<(Vec<uuid::Uuid>, Option<uuid::Uuid>), ServiceError> {
+) -> Result<(Vec<SearchResult>, Option<uuid::Uuid>), ServiceError> {
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
     let mut scroll_points_params = ScrollPointsBuilder::new(qdrant_collection);
 
@@ -1957,15 +1955,19 @@ pub async fn scroll_dataset_points(
     )
     .await?;
 
-    let qdrant_point_ids = qdrant_client
-        .scroll(scroll_points_params.with_payload(false).with_vectors(false))
+    let scroll_response = qdrant_client
+        .scroll(
+            scroll_points_params
+                .with_payload(dataset_config.QDRANT_ONLY)
+                .with_vectors(false),
+        )
         .await
         .map_err(|err| {
             log::error!("Failed to scroll points from qdrant: {:?}", err);
             ServiceError::BadRequest(format!("Failed to scroll points from qdrant: {:?}", err))
         })?;
 
-    let point_ids = qdrant_point_ids
+    let point_ids = scroll_response
         .result
         .iter()
         .filter_map(|point| {
@@ -1975,14 +1977,19 @@ pub async fn scroll_dataset_points(
                     return None;
                 }
             };
+            let payload = point.payload.clone();
 
-            Some(point_id)
+            Some(SearchResult {
+                score: 0 as f32,
+                point_id,
+                payload,
+            })
         })
-        .collect::<Vec<uuid::Uuid>>();
+        .collect::<Vec<SearchResult>>();
 
     Ok((
         point_ids,
-        qdrant_point_ids
+        scroll_response
             .next_page_offset
             .map(|point| match point.point_id_options {
                 Some(PointIdOptions::Uuid(id)) => uuid::Uuid::parse_str(&id).unwrap(),

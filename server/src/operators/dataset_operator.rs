@@ -5,6 +5,7 @@ use crate::data::models::{
 };
 use crate::handlers::chunk_handler::ChunkFilter;
 use crate::handlers::dataset_handler::{GetDatasetsPagination, TagsWithCount};
+use crate::operators::chunk_operator::bulk_delete_chunks_query;
 use crate::operators::clickhouse_operator::ClickHouseEvent;
 use crate::operators::qdrant_operator::{
     delete_points_from_qdrant, get_qdrant_collection_from_dataset_config,
@@ -406,6 +407,12 @@ pub async fn clear_dataset_query(
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::files::dsl as files_column;
 
+    if dataset_config.LOCKED {
+        return Err(ServiceError::BadRequest(
+            "Cannot clear a locked dataset".to_string(),
+        ));
+    }
+
     let mut conn = pool.get().await.map_err(|_e| {
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
@@ -552,14 +559,25 @@ pub async fn delete_dataset_by_id_query(
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
-    clear_dataset_query(
-        id,
-        deleted_at,
-        pool.clone(),
-        event_queue.clone(),
-        dataset_config.clone(),
-    )
-    .await?;
+    if dataset_config.QDRANT_ONLY {
+        bulk_delete_chunks_query(None, deleted_at, id, dataset_config.clone(), pool.clone())
+            .await
+            .map_err(|err| {
+                log::error!("Failed to bulk delete chunks: {:?}", err);
+                err
+            })?;
+
+        log::info!("Bulk deleted chunks for dataset: {:?}", id);
+    } else {
+        clear_dataset_query(
+            id,
+            deleted_at,
+            pool.clone(),
+            event_queue.clone(),
+            dataset_config.clone(),
+        )
+        .await?;
+    }
 
     let dataset: Dataset =
         diesel::delete(datasets_columns::datasets.filter(datasets_columns::id.eq(id)))

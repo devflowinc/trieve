@@ -15,11 +15,11 @@ use super::qdrant_operator::{
 };
 use super::typo_operator::correct_query;
 use crate::data::models::{
-    convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata, ChunkMetadataTypes,
-    ConditionType, ContentChunkMetadata, Dataset, DatasetConfiguration, GeoInfoWithBias,
-    HasIDCondition, QdrantChunkMetadata, QdrantSortBy, QueryTypes, ReRankOptions, RedisPool,
-    ScoreChunk, ScoreChunkDTO, SearchMethod, SlimChunkMetadata, SortByField, SortBySearchType,
-    UnifiedId,
+    convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata,
+    ChunkMetadataStringTagSet, ChunkMetadataTypes, ConditionType, ContentChunkMetadata, Dataset,
+    DatasetConfiguration, GeoInfoWithBias, HasIDCondition, QdrantChunkMetadata, QdrantSortBy,
+    QueryTypes, ReRankOptions, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
+    SlimChunkMetadata, SortByField, SortBySearchType, UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
@@ -39,18 +39,14 @@ use diesel::dsl::sql;
 use diesel::sql_types::{Bool, Float, Text};
 use diesel::{ExpressionMethods, JoinOnDsl, PgArrayExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
-use qdrant_client::qdrant;
-use qdrant_client::qdrant::value::Kind;
-
 use itertools::Itertools;
-use simple_server_timing_header::Timer;
-use utoipa::ToSchema;
-
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::qdrant::Filter;
 use qdrant_client::qdrant::{Condition, HasIdCondition, PointId};
 use serde::{Deserialize, Serialize};
+use simple_server_timing_header::Timer;
 use std::collections::{HashMap, HashSet};
+use utoipa::ToSchema;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SearchResult {
@@ -1404,6 +1400,7 @@ pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
     timer: Option<&mut Timer>,
     data: &SearchChunksReqPayload,
+    only_insert_qdrant: bool,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let parent_span = sentry::configure_scope(|scope| scope.get_span());
@@ -1430,31 +1427,14 @@ pub async fn retrieve_chunks_from_point_ids(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let only_insert_qdrant = std::env::var("ONLY_INSERT_QDRANT")
-        .map(|val| val == "true")
-        .unwrap_or(false);
-
     let metadata_chunks = if only_insert_qdrant {
         search_chunk_query_results
             .search_results
             .iter()
             .map(|search_result| {
-                let chunk_html: Option<String> = match search_result.payload.get("content") {
-                    Some(qdrant::Value {
-                        kind: Some(Kind::StringValue(content)),
-                        ..
-                    }) => Some(content.clone()),
-                    _ => None,
-                };
-
-                ChunkMetadataTypes::QdrantChunkMetadata(QdrantChunkMetadata {
-                    qdrant_point_id: search_result.point_id,
-                    chunk_html,
-                    tag_set: None,
-                    images_urls: None,
-                    link: None,
-                    metadata: None,
-                })
+                ChunkMetadataTypes::Metadata(ChunkMetadataStringTagSet::from(
+                    QdrantChunkMetadata::from(search_result.clone()),
+                ))
             })
             .collect()
     } else if data.slim_chunks.unwrap_or(false) && data.search_type != SearchMethod::Hybrid {
@@ -1503,7 +1483,7 @@ pub async fn retrieve_chunks_from_point_ids(
             let mut highlights: Option<Vec<String>> = None;
 
             if let Some(highlight_options)  = &data.highlight_options {
-                if highlight_options.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) && !only_insert_qdrant && !matches!(data.query, QueryTypes::Multi(_)) {
+                if highlight_options.highlight_results.unwrap_or(true) && !data.slim_chunks.unwrap_or(false) && !matches!(data.query, QueryTypes::Multi(_)) {
                     let (highlighted_chunk, highlighted_snippets) = match highlight_options.highlight_strategy {
                         Some(HighlightStrategy::V1) => {
                             get_highlights(
@@ -1557,7 +1537,7 @@ pub async fn retrieve_chunks_from_point_ids(
                             chunk =
                                 <ChunkMetadata as Into<ContentChunkMetadata>>::into(highlighted_chunk)
                                     .into()
-                        }
+                        },
                         _ => unreachable!(
                             "If slim_chunks is false, then chunk must be either Metadata or Content"
                         ),
@@ -1996,6 +1976,7 @@ pub async fn search_chunks_query(
         search_chunk_query_results,
         Some(timer),
         &data,
+        config.QDRANT_ONLY,
         pool.clone(),
     )
     .await?;
@@ -2173,6 +2154,7 @@ pub async fn search_hybrid_chunks(
         search_chunk_query_results,
         Some(timer),
         &data,
+        config.QDRANT_ONLY,
         pool.clone(),
     )
     .await?;
@@ -2236,7 +2218,6 @@ pub async fn search_hybrid_chunks(
                             ChunkMetadataTypes::Metadata(_) => slim_chunk.into(),
                             ChunkMetadataTypes::Content(_) => slim_chunk.into(),
                             ChunkMetadataTypes::ID(_) => metadata,
-                            ChunkMetadataTypes::QdrantChunkMetadata(_) => metadata,
                         }
                     })
                     .collect(),
@@ -2333,6 +2314,7 @@ pub async fn search_groups_query(
         search_semantic_chunk_query_results,
         None,
         &web::Json(data.clone().into()),
+        config.QDRANT_ONLY,
         pool.clone(),
     )
     .await?;
@@ -2492,6 +2474,7 @@ pub async fn search_hybrid_groups(
         qdrant_results,
         None,
         &web::Json(data.clone().into()),
+        config.QDRANT_ONLY,
         pool.clone(),
     )
     .await?;
@@ -3054,6 +3037,7 @@ pub async fn autocomplete_chunks_query(
         search_chunk_query_results.clone(),
         None,
         &data.clone().into(),
+        config.QDRANT_ONLY,
         pool.clone(),
     )
     .await?;

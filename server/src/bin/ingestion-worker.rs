@@ -21,7 +21,7 @@ use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
     get_row_count_for_organization_id_query, insert_chunk_boost, insert_chunk_metadata_query,
-    update_chunk_boost_query, update_chunk_metadata_query,
+    update_chunk_boost_query, update_chunk_metadata_query, update_dataset_chunk_count,
 };
 use trieve_server::operators::clickhouse_operator::{ClickHouseEvent, EventQueue};
 use trieve_server::operators::dataset_operator::{
@@ -567,9 +567,9 @@ pub async fn bulk_upload_chunks(
         "calling_BULK_insert_chunk_metadata_query",
     );
 
-    let only_insert_qdrant = std::env::var("ONLY_INSERT_QDRANT").unwrap_or("false".to_string());
+    let only_insert_qdrant = dataset_config.QDRANT_ONLY;
 
-    let inserted_chunk_metadatas = if only_insert_qdrant == "true" {
+    let inserted_chunk_metadatas = if only_insert_qdrant {
         ingestion_data
             .clone()
             .into_iter()
@@ -733,7 +733,13 @@ pub async fn bulk_upload_chunks(
     ))
     .then(
         |(chunk_data, embedding_vector, splade_vector, bm25_vector)| async {
-            let qdrant_point_id = chunk_data.chunk_metadata.qdrant_point_id;
+            let mut qdrant_point_id = chunk_data.chunk_metadata.qdrant_point_id;
+            if only_insert_qdrant {
+                if let Some(tracking_id) = chunk_data.clone().chunk_metadata.tracking_id {
+                    qdrant_point_id =
+                        uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_OID, tracking_id.as_bytes());
+                }
+            }
 
             let chunk_tags: Option<Vec<Option<String>>> =
                 if let Some(ref group_ids) = chunk_data.group_ids {
@@ -789,7 +795,6 @@ pub async fn bulk_upload_chunks(
                 );
             }
 
-            // If qdrant_point_id does not exist, does not get written to qdrant
             Ok(PointStruct::new(
                 qdrant_point_id.to_string(),
                 vector_payload,
@@ -816,18 +821,31 @@ pub async fn bulk_upload_chunks(
         "calling_BULK_create_new_qdrant_points_query",
     );
 
-    let create_point_result =
+    let create_point_result: Result<(), ServiceError> =
         bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
 
     insert_tx.finish();
 
-    if let Err(err) = create_point_result {
-        if !upsert_by_tracking_id_being_used {
-            bulk_revert_insert_chunk_metadata_query(inserted_chunk_metadata_ids, web_pool.clone())
+    if !only_insert_qdrant {
+        if let Err(err) = create_point_result {
+            if !upsert_by_tracking_id_being_used {
+                bulk_revert_insert_chunk_metadata_query(
+                    inserted_chunk_metadata_ids,
+                    web_pool.clone(),
+                )
                 .await?;
-        }
+            }
 
-        return Err(err);
+            return Err(err);
+        }
+    } else {
+        create_point_result?;
+        update_dataset_chunk_count(
+            payload.dataset_id,
+            inserted_chunk_metadata_ids.len() as i32,
+            web_pool.clone(),
+        )
+        .await?;
     }
 
     Ok(inserted_chunk_metadata_ids)
@@ -841,14 +859,16 @@ async fn upload_chunk(
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
 ) -> Result<uuid::Uuid, ServiceError> {
-    let tx_ctx = sentry::TransactionContext::new(
-        "ingestion worker upload_chunk",
-        "ingestion worker upload_chunk",
-    );
-    let transaction = sentry::start_transaction(tx_ctx);
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
-
+    let dataset_id = payload.dataset_id;
+    let qdrant_only = dataset_config.QDRANT_ONLY;
     let mut qdrant_point_id = uuid::Uuid::new_v4();
+    if qdrant_only {
+        if let Some(tracking_id) = payload.chunk.tracking_id.clone() {
+            qdrant_point_id =
+                uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_OID, tracking_id.as_bytes());
+        }
+    }
+
     let content = match payload.chunk.convert_html_to_text.unwrap_or(true) {
         true => convert_html_to_text(&(payload.chunk.chunk_html.clone().unwrap_or_default())),
         false => payload.chunk.chunk_html.clone().unwrap_or_default(),
@@ -1015,44 +1035,50 @@ async fn upload_chunk(
 
     //if collision is not nil, insert chunk with collision
     let chunk_metadata_id = {
+        let original_id = payload.ingest_specific_chunk_metadata.id;
+        let mut inserted_chunk_id = original_id;
         payload.ingest_specific_chunk_metadata.qdrant_point_id = qdrant_point_id;
 
-        let insert_tx = transaction.start_child(
-            "calling_insert_chunk_metadata_query",
-            "calling_insert_chunk_metadata_query",
-        );
-
-        let inserted_chunk = insert_chunk_metadata_query(
-            chunk_metadata.clone(),
-            payload.chunk.group_ids.clone(),
-            payload.dataset_id,
-            payload.upsert_by_tracking_id,
-            web_pool.clone(),
-        )
-        .await?;
-
-        if payload.chunk.fulltext_boost.is_some() || payload.chunk.semantic_boost.is_some() {
-            insert_chunk_boost(
-                ChunkBoost {
-                    chunk_id: inserted_chunk.id,
-                    fulltext_boost_phrase: payload.chunk.fulltext_boost.clone().map(|x| x.phrase),
-                    fulltext_boost_factor: payload.chunk.fulltext_boost.map(|x| x.boost_factor),
-                    semantic_boost_phrase: payload.chunk.semantic_boost.clone().map(|x| x.phrase),
-                    semantic_boost_factor: payload
-                        .chunk
-                        .semantic_boost
-                        .map(|x| x.distance_factor as f64),
-                },
+        let group_tag_set = if qdrant_only {
+            None
+        } else {
+            let inserted_chunk = insert_chunk_metadata_query(
+                chunk_metadata.clone(),
+                payload.chunk.group_ids.clone(),
+                payload.dataset_id,
+                payload.upsert_by_tracking_id,
                 web_pool.clone(),
             )
             .await?;
-        }
+            inserted_chunk_id = inserted_chunk.id;
 
-        insert_tx.finish();
+            if payload.chunk.fulltext_boost.is_some() || payload.chunk.semantic_boost.is_some() {
+                insert_chunk_boost(
+                    ChunkBoost {
+                        chunk_id: inserted_chunk.id,
+                        fulltext_boost_phrase: payload
+                            .chunk
+                            .fulltext_boost
+                            .clone()
+                            .map(|x| x.phrase),
+                        fulltext_boost_factor: payload.chunk.fulltext_boost.map(|x| x.boost_factor),
+                        semantic_boost_phrase: payload
+                            .chunk
+                            .semantic_boost
+                            .clone()
+                            .map(|x| x.phrase),
+                        semantic_boost_factor: payload
+                            .chunk
+                            .semantic_boost
+                            .map(|x| x.distance_factor as f64),
+                    },
+                    web_pool.clone(),
+                )
+                .await?;
+            }
 
-        qdrant_point_id = inserted_chunk.qdrant_point_id;
+            qdrant_point_id = inserted_chunk.qdrant_point_id;
 
-        let chunk_tags: Option<Vec<Option<String>>> =
             if let Some(ref group_ids) = payload.chunk.group_ids {
                 Some(
                     get_groups_from_group_ids_query(group_ids.clone(), web_pool.clone())
@@ -1065,10 +1091,11 @@ async fn upload_chunk(
                 )
             } else {
                 None
-            };
+            }
+        };
 
         let qdrant_payload =
-            QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None, chunk_tags);
+            QdrantPayload::new(chunk_metadata, payload.chunk.group_ids, None, group_tag_set);
 
         let vector_name = match &embedding_vector {
             Some(embedding_vector) => match embedding_vector.len() {
@@ -1109,28 +1136,27 @@ async fn upload_chunk(
             vector_payload,
             qdrant_payload,
         );
-        let insert_tx = transaction.start_child(
-            "calling_bulk_create_new_qdrant_points_query",
-            "calling_bulk_create_new_qdrant_points_query",
-        );
 
-        if let Err(e) = bulk_upsert_qdrant_points_query(vec![point], dataset_config).await {
+        let upsert_qdrant_point_result =
+            bulk_upsert_qdrant_points_query(vec![point], dataset_config).await;
+
+        if let Err(e) = upsert_qdrant_point_result {
             log::error!("Failed to create qdrant point: {:?}", e);
 
-            if payload.upsert_by_tracking_id {
-                bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk.id], web_pool.clone())
+            if !qdrant_only && (payload.upsert_by_tracking_id || original_id == inserted_chunk_id) {
+                bulk_revert_insert_chunk_metadata_query(vec![inserted_chunk_id], web_pool.clone())
                     .await?;
             }
 
             return Err(e);
         };
+        if qdrant_only {
+            update_dataset_chunk_count(dataset_id, 1_i32, web_pool.clone()).await?;
+        }
 
-        insert_tx.finish();
-
-        inserted_chunk.id
+        inserted_chunk_id
     };
 
-    transaction.finish();
     Ok(chunk_metadata_id)
 }
 

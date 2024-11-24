@@ -7,7 +7,7 @@
       "name": "Debug executable 'trieve-server'",
       "cargo": {
         "args": [
-          "+nightly",
+          "+default",
           "build",
           "--manifest-path=./server/Cargo.toml",
           "--bin=trieve-server",

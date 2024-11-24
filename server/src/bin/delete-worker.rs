@@ -314,6 +314,29 @@ pub async fn delete_or_clear_dataset(
 
     if delete_worker_message.empty_dataset {
         log::info!("Clearing dataset {:?}", delete_worker_message.dataset_id);
+
+        if dataset_config.QDRANT_ONLY {
+            bulk_delete_chunks_query(
+                None,
+                delete_worker_message.deleted_at,
+                delete_worker_message.dataset_id,
+                dataset_config.clone(),
+                web_pool.clone(),
+            )
+            .await
+            .map_err(|err| {
+                log::error!("Failed to bulk delete chunks: {:?}", err);
+                err
+            })?;
+
+            log::info!(
+                "Bulk deleted chunks for dataset: {:?}",
+                delete_worker_message.dataset_id
+            );
+
+            return Ok(());
+        }
+
         clear_dataset_query(
             delete_worker_message.dataset_id,
             delete_worker_message.deleted_at,
@@ -412,7 +435,7 @@ pub async fn bulk_delete_chunks(
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
 
     bulk_delete_chunks_query(
-        chunk_delete_message.filter,
+        Some(chunk_delete_message.filter),
         chunk_delete_message.deleted_at,
         chunk_delete_message.dataset_id,
         dataset_config,
