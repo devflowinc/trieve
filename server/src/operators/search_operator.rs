@@ -447,21 +447,6 @@ pub async fn retrieve_qdrant_points_query(
     get_total_pages: bool,
     config: &DatasetConfiguration,
 ) -> Result<SearchChunkQueryResult, ServiceError> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child("Qdrant Points Query", "retrieve_qdrant_points_query")
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new(
-                "Qdrant Points Query",
-                "retrieve_qdrant_points_query",
-            );
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
     let page = if page == 0 { 1 } else { page };
 
     let (point_ids, count, batch_lengths) = search_qdrant_query(
@@ -1012,23 +997,6 @@ pub async fn retrieve_group_qdrant_points_query(
     get_total_pages: bool,
     config: &DatasetConfiguration,
 ) -> Result<SearchOverGroupsQueryResult, ServiceError> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child(
-                "Qdrant Group Points Query",
-                "retrieve_group_qdrant_points_query",
-            )
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new(
-                "Qdrant Group Points Query",
-                "retrieve_group_qdrant_points_query",
-            );
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
     let page = if page == 0 { 1 } else { page };
     let (point_ids, count) = search_over_groups_qdrant_query(
         page,
@@ -1199,10 +1167,6 @@ pub async fn retrieve_chunks_for_groups(
                                     "Failed to find chunk for qdrant_point_id for retrieve_chunks_for_groups: {:?}",
                                     search_result.point_id
                                 );
-                                sentry::capture_message(
-                                    &format!("Failed to find chunk for qdrant_point_id for retrieve_chunks_for_groups: {:?}", search_result.point_id),
-                                    sentry::Level::Error,
-                                );
 
                                 return None;
                             },
@@ -1355,11 +1319,6 @@ pub async fn get_metadata_from_groups(
                                     "Failed to find chunk for qdrant_point_id for get_metadata_from_groups: {:?}",
                                     search_result.point_id
                                 );
-                                sentry::capture_message(
-                                    &format!("Failed to find chunk for qdrant_point_id for get_metadata_from_groups: {:?}", search_result.point_id),
-                                    sentry::Level::Error,
-                                );
-
                                 return None;
                             },
                         };
@@ -1403,24 +1362,6 @@ pub async fn retrieve_chunks_from_point_ids(
     only_insert_qdrant: bool,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child(
-                "Retrieve Chunks from point IDS",
-                "Retrieve Chunks from point IDS",
-            )
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new(
-                "Retrieve Chunks from point IDS",
-                "Retrieve Chunks from point IDS",
-            );
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
     let point_ids = search_chunk_query_results
         .search_results
         .iter()
@@ -1467,13 +1408,6 @@ pub async fn retrieve_chunks_from_point_ids(
                         log::error!(
                             "Failed to find chunk from qdrant_point_id for retrieve_chunks_from_point_ids: {:?}",
                             search_result.point_id
-                        );
-                        sentry::capture_message(
-                            &format!(
-                                "Failed to find chunk from qdrant_point_id for retrieve_chunks_from_point_ids: {:?}",
-                                search_result.point_id
-                            ),
-                            sentry::Level::Error,
                         );
 
                         return None;
@@ -1881,18 +1815,6 @@ pub async fn search_chunks_query(
     config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child("semantic search", "Search Semantic Chunks")
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new("semantic search", "Search Semantic Chunks");
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
     let mut parsed_query = parsed_query.clone();
     let mut corrected_query = None;
 
@@ -2021,7 +1943,6 @@ pub async fn search_chunks_query(
     );
 
     timer.add("reranking");
-    transaction.finish();
 
     result_chunks.corrected_query = corrected_query.map(|c| c.query);
 
@@ -2039,18 +1960,6 @@ pub async fn search_hybrid_chunks(
     config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child("hybrid search", "Search Hybrid Chunks")
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new("hybrid search", "Search Hybrid Chunks");
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
     let mut parsed_query = parsed_query.clone();
     let mut corrected_query = None;
 
@@ -2227,7 +2136,6 @@ pub async fn search_hybrid_chunks(
             .collect();
     }
 
-    transaction.finish();
     Ok(reranked_chunks)
 }
 
@@ -2929,8 +2837,6 @@ pub async fn autocomplete_chunks_query(
     config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-
     let mut parsed_query = parsed_query.clone();
     let mut corrected_query = None;
 
@@ -2948,17 +2854,6 @@ pub async fn autocomplete_chunks_query(
         data.query.clone_from(&parsed_query.query);
         timer.add("corrected query");
     }
-
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child("semantic search", "Search Semantic Chunks")
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new("semantic search", "Search Semantic Chunks");
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
 
     timer.add("start to create dense embedding vector");
 
@@ -3091,7 +2986,6 @@ pub async fn autocomplete_chunks_query(
     result_chunks.score_chunks = reranked_chunks;
 
     timer.add("reranking");
-    transaction.finish();
 
     result_chunks.corrected_query = corrected_query.map(|c| c.query);
 

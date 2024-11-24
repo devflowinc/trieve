@@ -4,7 +4,6 @@ use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfi
 use futures_util::StreamExt;
 use itertools::{izip, Itertools};
 use qdrant_client::qdrant::{PointStruct, Vector};
-use sentry::{Hub, SentryFutureExt};
 use signal_hook::consts::SIGTERM;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
@@ -48,41 +47,14 @@ pub enum IngestionMessage {
 
 fn main() {
     dotenvy::dotenv().ok();
-    let sentry_url = std::env::var("SENTRY_URL");
-    let _guard = if let Ok(sentry_url) = sentry_url {
-        let guard = sentry::init((
-            sentry_url,
-            sentry::ClientOptions {
-                release: sentry::release_name!(),
-                traces_sample_rate: 1.0,
-                ..Default::default()
-            },
-        ));
-
-        tracing_subscriber::Registry::default()
-            .with(sentry::integrations::tracing::layer())
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::from_default_env()
-                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-                ),
-            )
-            .init();
-
-        log::info!("Sentry monitoring enabled");
-        Some(guard)
-    } else {
-        tracing_subscriber::Registry::default()
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::from_default_env()
-                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-                ),
-            )
-            .init();
-
-        None
-    };
+    tracing_subscriber::Registry::default()
+        .with(
+            tracing_subscriber::fmt::layer().with_filter(
+                EnvFilter::from_default_env()
+                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+            ),
+        )
+        .init();
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
 
@@ -105,67 +77,60 @@ fn main() {
         .enable_all()
         .build()
         .expect("Failed to create tokio runtime")
-        .block_on(
-            async move {
-                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-                let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
-                    .unwrap_or("2".to_string())
-                    .parse()
-                    .unwrap_or(2);
+        .block_on(async move {
+            let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+            let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
+                .unwrap_or("2".to_string())
+                .parse()
+                .unwrap_or(2);
 
-                let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
-                    .expect("Failed to connect to redis");
+            let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
+                .expect("Failed to connect to redis");
 
-                let redis_pool = bb8_redis::bb8::Pool::builder()
-                    .max_size(redis_connections)
-                    .connection_timeout(std::time::Duration::from_secs(2))
-                    .build(redis_manager)
-                    .await
-                    .expect("Failed to create redis pool");
+            let redis_pool = bb8_redis::bb8::Pool::builder()
+                .max_size(redis_connections)
+                .connection_timeout(std::time::Duration::from_secs(2))
+                .build(redis_manager)
+                .await
+                .expect("Failed to create redis pool");
 
-                let web_redis_pool = actix_web::web::Data::new(redis_pool);
+            let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
-                let event_queue = if std::env::var("USE_ANALYTICS")
-                    .unwrap_or("false".to_string())
-                    .parse()
-                    .unwrap_or(false)
-                {
-                    log::info!("Analytics enabled");
+            let event_queue = if std::env::var("USE_ANALYTICS")
+                .unwrap_or("false".to_string())
+                .parse()
+                .unwrap_or(false)
+            {
+                log::info!("Analytics enabled");
 
-                    let clickhouse_client = clickhouse::Client::default()
-                        .with_url(
-                            std::env::var("CLICKHOUSE_URL")
-                                .unwrap_or("http://localhost:8123".to_string()),
-                        )
-                        .with_user(
-                            std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()),
-                        )
-                        .with_password(
-                            std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()),
-                        )
-                        .with_database(
-                            std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
-                        )
-                        .with_option("async_insert", "1")
-                        .with_option("wait_for_async_insert", "0");
+                let clickhouse_client = clickhouse::Client::default()
+                    .with_url(
+                        std::env::var("CLICKHOUSE_URL")
+                            .unwrap_or("http://localhost:8123".to_string()),
+                    )
+                    .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
+                    .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
+                    .with_database(
+                        std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
+                    )
+                    .with_option("async_insert", "1")
+                    .with_option("wait_for_async_insert", "0");
 
-                    let mut event_queue = EventQueue::new(clickhouse_client.clone());
-                    event_queue.start_service();
-                    event_queue
-                } else {
-                    log::info!("Analytics disabled");
-                    EventQueue::default()
-                };
-                let web_event_queue = actix_web::web::Data::new(event_queue);
+                let mut event_queue = EventQueue::new(clickhouse_client.clone());
+                event_queue.start_service();
+                event_queue
+            } else {
+                log::info!("Analytics disabled");
+                EventQueue::default()
+            };
+            let web_event_queue = actix_web::web::Data::new(event_queue);
 
-                let should_terminate = Arc::new(AtomicBool::new(false));
-                signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
-                    .expect("Failed to register shutdown hook");
+            let should_terminate = Arc::new(AtomicBool::new(false));
+            signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
+                .expect("Failed to register shutdown hook");
 
-                ingestion_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
-            }
-            .bind_hub(Hub::new_from_top(Hub::current())),
-        );
+            ingestion_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
+        });
 }
 
 #[tracing::instrument(skip(should_terminate, web_pool, redis_pool, event_queue))]
@@ -245,11 +210,6 @@ async fn ingestion_worker(
             }
         };
 
-        let processing_chunk_ctx = sentry::TransactionContext::new(
-            "ingestion worker processing chunk",
-            "ingestion worker processing chunk",
-        );
-        let transaction = sentry::start_transaction(processing_chunk_ctx);
         let ingestion_message: IngestionMessage = match serde_json::from_str(&serialized_message) {
             Ok(message) => message,
             Err(err) => {
@@ -257,7 +217,6 @@ async fn ingestion_worker(
                     "Failed to deserialize message, was not an IngestionMessage: {:?}",
                     err
                 );
-                transaction.finish();
                 continue;
             }
         };
@@ -284,7 +243,6 @@ async fn ingestion_worker(
                 )
                 .await;
                 log::error!("Failed to get dataset; likely does not exist: {:?}", err);
-                transaction.finish();
                 continue;
             }
         };
@@ -373,7 +331,6 @@ async fn ingestion_worker(
                 }
             }
         }
-        transaction.finish();
     }
 }
 
@@ -408,17 +365,6 @@ pub async fn bulk_upload_chunks(
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
-    let tx_ctx = sentry::TransactionContext::new(
-        "ingestion worker bulk_upload_chunk",
-        "ingestion worker bulk_upload_chunk",
-    );
-    let transaction = sentry::start_transaction(tx_ctx);
-
-    let precompute_transaction = transaction.start_child(
-        "precomputing_data_before_insert",
-        "precomputing some important data before insert",
-    );
-
     let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
     if unlimited == "false" {
         let dataset_org_plan_sub = get_dataset_and_organization_from_dataset_id_query(
@@ -556,16 +502,8 @@ pub async fn bulk_upload_chunks(
             }
         }
 
-        transaction.finish();
         return Ok(chunk_ids);
     }
-
-    precompute_transaction.finish();
-
-    let insert_tx = transaction.start_child(
-        "calling_BULK_insert_chunk_metadata_query",
-        "calling_BULK_insert_chunk_metadata_query",
-    );
 
     let only_insert_qdrant = dataset_config.QDRANT_ONLY;
 
@@ -588,8 +526,6 @@ pub async fn bulk_upload_chunks(
         )
         .await?
     };
-
-    insert_tx.finish();
 
     if inserted_chunk_metadatas.is_empty() {
         // All collisions
@@ -614,11 +550,6 @@ pub async fn bulk_upload_chunks(
         .map(|chunk_data| chunk_data.chunk_metadata.id)
         .unique()
         .collect();
-
-    let embedding_transaction = transaction.start_child(
-        "calling_create_all_embeddings",
-        "calling_create_all_embeddings",
-    );
 
     let embedding_vectors = match dataset_config.SEMANTIC_ENABLED {
         true => {
@@ -652,14 +583,6 @@ pub async fn bulk_upload_chunks(
         }
         false => vec![None; embedding_content_and_boosts.len()],
     };
-
-    // Assuming split average is false, Assume Explicit Vectors don't exist
-    embedding_transaction.finish();
-
-    let embedding_transaction = transaction.start_child(
-        "calling_create_SPLADE_embeddings",
-        "calling_create_SPLADE_embeddings",
-    );
 
     let content_and_boosts: Vec<(String, Option<FullTextBoost>, Option<SemanticBoost>)> =
         ingestion_data
@@ -722,8 +645,6 @@ pub async fn bulk_upload_chunks(
     } else {
         vec![None; content_and_boosts.len()]
     };
-
-    embedding_transaction.finish();
 
     let qdrant_points = tokio_stream::iter(izip!(
         inserted_chunk_metadatas.clone(),
@@ -816,15 +737,8 @@ pub async fn bulk_upload_chunks(
         .filter_map(|point| point.ok())
         .collect();
 
-    let insert_tx = transaction.start_child(
-        "calling_BULK_create_new_qdrant_points_query",
-        "calling_BULK_create_new_qdrant_points_query",
-    );
-
     let create_point_result: Result<(), ServiceError> =
         bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
-
-    insert_tx.finish();
 
     if !only_insert_qdrant {
         if let Err(err) = create_point_result {

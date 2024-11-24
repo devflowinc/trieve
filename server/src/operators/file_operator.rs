@@ -50,10 +50,6 @@ pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
 
     let aws_bucket = Bucket::new(s3_bucket_name, aws_region, aws_credentials)
         .map_err(|e| {
-            sentry::capture_message(
-                &format!("Could not create or get bucket {:?}", e),
-                sentry::Level::Error,
-            );
             log::error!("Could not create or get bucket {:?}", e);
             ServiceError::BadRequest("Could not create or get bucket".to_string())
         })?

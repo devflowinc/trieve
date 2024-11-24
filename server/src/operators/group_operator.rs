@@ -830,10 +830,6 @@ pub async fn check_group_ids_exist_query(
         .await
         .map_err(|e| {
             log::error!("Error getting group ids for exist check {:?}", e);
-            sentry::capture_message(
-                &format!("Error getting group ids for exist check {:?}", e),
-                sentry::Level::Error,
-            );
 
             ServiceError::BadRequest("Failed to load group ids for exist check".to_string())
         })?;

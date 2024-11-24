@@ -28,7 +28,6 @@ use actix_web::{
 use core::error;
 use futures_util::future::LocalBoxFuture;
 use redis::AsyncCommands;
-use sentry::Transaction;
 use std::{
     future::{ready, Ready},
     rc::Rc,
@@ -53,33 +52,20 @@ where
         // Clone the Rc pointers so we can move them into the async block.
         let srv = self.service.clone();
         Box::pin(async move {
-            let tx_ctx =
-                sentry::TransactionContext::new("middleware", "get dataset, org, and/or user");
-            let transaction = sentry::start_transaction(tx_ctx);
-            sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
-
             let pool = req.app_data::<web::Data<Pool>>().unwrap().to_owned();
 
-            let get_user_span = transaction.start_child("get_user", "Getting user");
-
-            let mut user = get_user(&mut req, transaction.clone(), pool.clone()).await;
+            let mut user = get_user(&mut req, pool.clone()).await;
             let mut api_key = None;
             if user.is_none() {
-                (user, api_key) =
-                    auth_with_api_key(&mut req, transaction.clone(), pool.clone()).await?;
+                (user, api_key) = auth_with_api_key(&mut req, pool.clone()).await?;
             }
 
             if let Some(user) = user.clone() {
                 req.extensions_mut().insert(user);
             }
 
-            get_user_span.finish();
-
             let org_id = match get_dataset_id_from_headers(req.headers()) {
                 Some(dataset_id) => {
-                    let get_dataset_and_org_span = transaction
-                        .start_child("get_dataset_and_org", "Getting dataset and organization");
-
                     let dataset_org_plan_sub = match dataset_id.parse::<uuid::Uuid>() {
                         Ok(dataset_id) => {
                             get_dataset_and_organization_from_dataset_id_query(
@@ -110,8 +96,6 @@ where
                             }
                         }
                     };
-
-                    get_dataset_and_org_span.finish();
 
                     if let Some(user_api_key) = api_key {
                         if let Some(api_key_org_ids) = user_api_key.organization_ids {
@@ -180,9 +164,6 @@ where
             };
 
             if let Some(ref user) = user {
-                let find_user_org_span =
-                    transaction.start_child("find_user_org_role", "Finding user org role");
-
                 let user_org = user
                     .user_orgs
                     .iter()
@@ -199,11 +180,7 @@ where
                 }?;
 
                 req.extensions_mut().insert(org_role);
-
-                find_user_org_span.finish();
             }
-
-            transaction.finish();
 
             let res = srv.call(req).await?;
 
@@ -212,13 +189,7 @@ where
     }
 }
 
-async fn get_user(
-    req: &mut ServiceRequest,
-    tx: Transaction,
-    pool: web::Data<Pool>,
-) -> Option<LoggedUser> {
-    let get_user_from_identity_span =
-        tx.start_child("get_user_from_identity", "Getting user from identity");
+async fn get_user(req: &mut ServiceRequest, pool: web::Data<Pool>) -> Option<LoggedUser> {
     let (http_req, pl) = req.parts_mut();
     if let Ok(identity) = Identity::from_request(http_req, pl).into_inner() {
         if let Ok(user_json) = identity.id() {
@@ -252,7 +223,6 @@ async fn get_user(
             }
         }
     }
-    get_user_from_identity_span.finish();
 
     None
 }
@@ -319,7 +289,6 @@ fn get_org_id_from_headers(headers: &HeaderMap) -> Option<String> {
 
 async fn auth_with_api_key(
     req: &mut ServiceRequest,
-    tx: Transaction,
     pool: web::Data<Pool>,
 ) -> Result<(Option<LoggedUser>, Option<UserApiKey>), ServiceError> {
     if let Some(authen_header) = get_api_key_from_headers(req.headers()) {
@@ -345,9 +314,6 @@ async fn auth_with_api_key(
             }
         }
 
-        let get_user_from_api_key_span =
-            tx.start_child("get_user_from_api_key", "Getting user from api key");
-
         //TODO: Cache the api key in redis
         if let Ok((user, api_key)) =
             get_user_from_api_key_query(authen_header.as_str(), pool.clone()).await
@@ -360,8 +326,6 @@ async fn auth_with_api_key(
             }
             return Ok((Some(user), Some(api_key)));
         }
-
-        get_user_from_api_key_span.finish();
     }
 
     Ok((None, None))

@@ -853,21 +853,18 @@ pub async fn add_words_to_dataset(
 
     let mut words_inserter = clickhouse_client.insert("words_datasets").map_err(|e| {
         log::error!("Error inserting words_datasets: {:?}", e);
-        sentry::capture_message("Error inserting words_datasets", sentry::Level::Error);
         ServiceError::InternalServerError(format!("Error inserting words_datasets: {:?}", e))
     })?;
 
     for row in rows {
         words_inserter.write(&row).await.map_err(|e| {
             log::error!("Error inserting words_datasets: {:?}", e);
-            sentry::capture_message("Error inserting words_datasets", sentry::Level::Error);
             ServiceError::InternalServerError(format!("Error inserting words_datasets: {:?}", e))
         })?;
     }
 
     words_inserter.end().await.map_err(|e| {
         log::error!("Error inserting words_datasets: {:?}", e);
-        sentry::capture_message("Error inserting words_datasets", sentry::Level::Error);
         ServiceError::InternalServerError(format!("Error inserting words_datasets: {:?}", e))
     })?;
 
@@ -913,10 +910,6 @@ pub async fn scroll_words_from_dataset(
                 )
                 .map_err(|e| {
                     log::error!("Error formatting last processed time: {:?}", e);
-                    sentry::capture_message(
-                        "Error formatting last processed time",
-                        sentry::Level::Error,
-                    );
                     ServiceError::InternalServerError(format!(
                         "Error formatting last processed time: {:?}",
                         e
@@ -933,7 +926,6 @@ pub async fn scroll_words_from_dataset(
         .await
         .map_err(|e| {
             log::error!("Error fetching words from dataset: {:?}", e);
-            sentry::capture_message("Error fetching words from dataset", sentry::Level::Error);
             ServiceError::InternalServerError(format!("Error fetching words from dataset: {:?}", e))
         })?;
 
@@ -962,7 +954,6 @@ pub async fn update_dataset_last_processed_query(
         .await
         .map_err(|e| {
             log::error!("Error updating last processed time: {:?}", e);
-            sentry::capture_message("Error updating last processed time", sentry::Level::Error);
             ServiceError::InternalServerError(format!(
                 "Error updating last processed time: {:?}",
                 e

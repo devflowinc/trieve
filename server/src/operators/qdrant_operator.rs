@@ -415,7 +415,6 @@ pub async fn bulk_upsert_qdrant_points_query(
         .upsert_points(UpsertPointsBuilder::new(qdrant_collection, points))
         .await
         .map_err(|err| {
-            sentry::capture_message(&format!("Error {:?}", err), sentry::Level::Error);
             log::error!("Failed inserting chunk to qdrant {:?}", err);
             ServiceError::BadRequest(format!("Failed inserting chunk to qdrant {:?}", err))
         })?;
@@ -481,7 +480,6 @@ pub async fn create_new_qdrant_point_query(
         .upsert_points(UpsertPointsBuilder::new(qdrant_collection, vec![point]))
         .await
         .map_err(|err| {
-            sentry::capture_message(&format!("Error {:?}", err), sentry::Level::Error);
             log::error!("Failed inserting chunk to qdrant {:?}", err);
             ServiceError::BadRequest(format!("Failed inserting chunk to qdrant {:?}", err))
         })?;
@@ -1469,10 +1467,6 @@ pub async fn delete_points_from_qdrant(
         .await
         .map_err(|err| {
             log::info!("Failed to delete points from qdrant {:?}", err);
-            sentry::capture_message(
-                &format!("Failed to delete points from qdrant {:?}", err),
-                sentry::Level::Error,
-            );
             ServiceError::BadRequest("Failed to delete points from qdrant".to_string())
         })?;
 

@@ -1424,10 +1424,6 @@ pub async fn set_search_query_rating_query(
         .await
         .map_err(|err| {
             log::error!("Error altering to ClickHouse search_queries: {:?}", err);
-            sentry::capture_message(
-                &format!("Error altering to ClickHouse search_queries: {:?}", err),
-                sentry::Level::Error,
-            );
             ServiceError::InternalServerError(
                 "Error altering to ClickHouse search_queries".to_string(),
             )
@@ -1461,10 +1457,6 @@ pub async fn set_rag_query_rating_query(
         .await
         .map_err(|err| {
             log::error!("Error altering to ClickHouse rag_queries: {:?}", err);
-            sentry::capture_message(
-                &format!("Error altering to ClickHouse rag_queries: {:?}", err),
-                sentry::Level::Error,
-            );
             ServiceError::InternalServerError(
                 "Error altering to ClickHouse rag_queries".to_string(),
             )

@@ -149,35 +149,10 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
 
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child(
-                "Get metadata of points",
-                "Hitting Postgres to fetch metadata",
-            )
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new(
-                "Get metadata of points",
-                "Hitting Postgres to fetch metadata",
-            );
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
-    let chunk_search_span = transaction.start_child(
-        "Fetching matching points from qdrant",
-        "Fetching matching points from qdrant",
-    );
-
-    // Fetch the chunk metadatas for root chunks
     let chunk_metadatas = {
         let mut conn = pool.get().await.map_err(|_e| {
             ServiceError::InternalServerError("Failed to get postgres connection".to_string())
         })?;
-        // Get tagset and chunk metadatatable
 
         let chunk_metadata_pair: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
             chunk_metadata_columns::chunk_metadata
@@ -214,9 +189,6 @@ pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
             .collect::<Vec<ChunkMetadataTypes>>()
     };
 
-    chunk_search_span.finish();
-    transaction.finish();
-    // Return only the chunk metadata
     Ok(chunk_metadatas)
 }
 
@@ -291,29 +263,6 @@ pub async fn get_content_chunk_from_point_ids_query(
 ) -> Result<Vec<ChunkMetadataTypes>, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child(
-                "Get content chunk metadata of points",
-                "Hitting Postgres to fetch content chunk metadata",
-            )
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new(
-                "Get content chunk metadata of points",
-                "Hitting Postgres to fetch content chunk metadata",
-            );
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
-    let get_content_chunks_span = transaction.start_child(
-        "Fetching matching points to content chunks from qdrant",
-        "Fetching matching points to content chunks from qdrant",
-    );
-
     let content_chunks = {
         let mut conn = pool.get().await.map_err(|_e| {
             ServiceError::InternalServerError("Failed to get postgres connection".to_string())
@@ -342,8 +291,6 @@ pub async fn get_content_chunk_from_point_ids_query(
             .map(|content_chunk| content_chunk.clone().into())
             .collect::<Vec<ChunkMetadataTypes>>()
     };
-
-    get_content_chunks_span.finish();
 
     Ok(content_chunks)
 }
@@ -1105,25 +1052,19 @@ pub async fn insert_chunk_metadata_query(
         .on_conflict_do_nothing()
         .execute(&mut conn)
         .await
-        .map_err(|e| {
-            sentry::capture_message(
-                &format!("Failed to insert chunk_metadata: {:?}", e),
-                sentry::Level::Error,
-            );
-            match e {
-                diesel::result::Error::DatabaseError(
-                    diesel::result::DatabaseErrorKind::UniqueViolation,
-                    _,
-                ) => ServiceError::DuplicateTrackingId(
-                    chunk_data.tracking_id.clone().unwrap_or("".to_string()),
-                ),
-                diesel::result::Error::NotFound => ServiceError::DuplicateTrackingId(
-                    chunk_data.tracking_id.clone().unwrap_or("".to_string()),
-                ),
-                _ => {
-                    log::error!("Failed to insert chunk_metadata: {:?}", e);
-                    ServiceError::BadRequest(format!("Failed to insert chunk_metadata {:}", e))
-                }
+        .map_err(|e| match e {
+            diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::UniqueViolation,
+                _,
+            ) => ServiceError::DuplicateTrackingId(
+                chunk_data.tracking_id.clone().unwrap_or("".to_string()),
+            ),
+            diesel::result::Error::NotFound => ServiceError::DuplicateTrackingId(
+                chunk_data.tracking_id.clone().unwrap_or("".to_string()),
+            ),
+            _ => {
+                log::error!("Failed to insert chunk_metadata: {:?}", e);
+                ServiceError::BadRequest(format!("Failed to insert chunk_metadata {:}", e))
             }
         })?;
 
@@ -1276,10 +1217,6 @@ pub async fn bulk_revert_insert_chunk_metadata_query(
         .execute(&mut conn)
         .await
         .map_err(|e| {
-            sentry::capture_message(
-                &format!("Failed to revert insert transaction: {:?}", e),
-                sentry::Level::Error,
-            );
             log::error!("Failed to revert insert transaction: {:?}", e);
 
             ServiceError::BadRequest("Failed to revert insert transaction".to_string())

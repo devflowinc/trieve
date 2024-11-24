@@ -1,12 +1,10 @@
+use chm::tools::migrations::SetupArgs;
+use rand::Rng;
+use signal_hook::consts::SIGTERM;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-
-use chm::tools::migrations::SetupArgs;
-use rand::Rng;
-use sentry::{Hub, SentryFutureExt};
-use signal_hook::consts::SIGTERM;
 use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::{
     data::models::RedisPool,
@@ -22,41 +20,14 @@ use trieve_server::{
 #[allow(clippy::print_stdout)]
 fn main() {
     dotenvy::dotenv().ok();
-    let sentry_url = std::env::var("SENTRY_URL");
-    let _guard = if let Ok(sentry_url) = sentry_url {
-        let guard = sentry::init((
-            sentry_url,
-            sentry::ClientOptions {
-                release: sentry::release_name!(),
-                traces_sample_rate: 1.0,
-                ..Default::default()
-            },
-        ));
-
-        tracing_subscriber::Registry::default()
-            .with(sentry::integrations::tracing::layer())
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::from_default_env()
-                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-                ),
-            )
-            .init();
-
-        log::info!("Sentry monitoring enabled");
-        Some(guard)
-    } else {
-        tracing_subscriber::Registry::default()
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::from_default_env()
-                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-                ),
-            )
-            .init();
-
-        None
-    };
+    tracing_subscriber::Registry::default()
+        .with(
+            tracing_subscriber::fmt::layer().with_filter(
+                EnvFilter::from_default_env()
+                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+            ),
+        )
+        .init();
 
     let should_terminate = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
@@ -66,56 +37,48 @@ fn main() {
         .enable_all()
         .build()
         .expect("Failed to create tokio runtime")
-        .block_on(
-            async move {
-                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-                let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
-                    .unwrap_or("2".to_string())
-                    .parse()
-                    .unwrap_or(2);
+        .block_on(async move {
+            let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+            let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
+                .unwrap_or("2".to_string())
+                .parse()
+                .unwrap_or(2);
 
-                let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
-                    .expect("Failed to connect to redis");
+            let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
+                .expect("Failed to connect to redis");
 
-                let redis_pool = bb8_redis::bb8::Pool::builder()
-                    .max_size(redis_connections)
-                    .connection_timeout(std::time::Duration::from_secs(2))
-                    .build(redis_manager)
-                    .await
-                    .expect("Failed to create redis pool");
+            let redis_pool = bb8_redis::bb8::Pool::builder()
+                .max_size(redis_connections)
+                .connection_timeout(std::time::Duration::from_secs(2))
+                .build(redis_manager)
+                .await
+                .expect("Failed to create redis pool");
 
-                let web_redis_pool = actix_web::web::Data::new(redis_pool);
+            let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
-                let args = SetupArgs {
-                    url: Some(get_env!("CLICKHOUSE_URL", "CLICKHOUSE_URL is not set").to_string()),
-                    user: Some(
-                        get_env!("CLICKHOUSE_USER", "CLICKHOUSE_USER is not set").to_string(),
-                    ),
-                    password: Some(
-                        get_env!("CLICKHOUSE_PASSWORD", "CLICKHOUSE_PASSWORD is not set")
-                            .to_string(),
-                    ),
-                    database: Some(
-                        get_env!("CLICKHOUSE_DB", "CLICKHOUSE_DB is not set").to_string(),
-                    ),
-                };
+            let args = SetupArgs {
+                url: Some(get_env!("CLICKHOUSE_URL", "CLICKHOUSE_URL is not set").to_string()),
+                user: Some(get_env!("CLICKHOUSE_USER", "CLICKHOUSE_USER is not set").to_string()),
+                password: Some(
+                    get_env!("CLICKHOUSE_PASSWORD", "CLICKHOUSE_PASSWORD is not set").to_string(),
+                ),
+                database: Some(get_env!("CLICKHOUSE_DB", "CLICKHOUSE_DB is not set").to_string()),
+            };
 
-                let clickhouse_client = clickhouse::Client::default()
-                    .with_url(args.url.as_ref().unwrap())
-                    .with_user(args.user.as_ref().unwrap())
-                    .with_password(args.password.as_ref().unwrap())
-                    .with_database(args.database.as_ref().unwrap())
-                    .with_option("async_insert", "1")
-                    .with_option("wait_for_async_insert", "0");
+            let clickhouse_client = clickhouse::Client::default()
+                .with_url(args.url.as_ref().unwrap())
+                .with_user(args.user.as_ref().unwrap())
+                .with_password(args.password.as_ref().unwrap())
+                .with_database(args.database.as_ref().unwrap())
+                .with_option("async_insert", "1")
+                .with_option("wait_for_async_insert", "0");
 
-                let should_terminate = Arc::new(AtomicBool::new(false));
-                signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
-                    .expect("Failed to register shutdown hook");
+            let should_terminate = Arc::new(AtomicBool::new(false));
+            signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
+                .expect("Failed to register shutdown hook");
 
-                bktree_worker(should_terminate, web_redis_pool, clickhouse_client).await
-            }
-            .bind_hub(Hub::new_from_top(Hub::current())),
-        );
+            bktree_worker(should_terminate, web_redis_pool, clickhouse_client).await
+        });
 }
 
 #[allow(clippy::print_stdout)]
