@@ -1353,7 +1353,7 @@ pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
     timer: Option<&mut Timer>,
     data: &SearchChunksReqPayload,
-    only_insert_qdrant: bool,
+    qdrant_only: bool,
     pool: web::Data<Pool>,
 ) -> Result<SearchChunkQueryResponseBody, actix_web::Error> {
     let point_ids = search_chunk_query_results
@@ -1362,7 +1362,7 @@ pub async fn retrieve_chunks_from_point_ids(
         .map(|point| point.point_id)
         .collect::<Vec<_>>();
 
-    let metadata_chunks = if only_insert_qdrant {
+    let metadata_chunks = if qdrant_only {
         search_chunk_query_results
             .search_results
             .iter()

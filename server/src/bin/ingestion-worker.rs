@@ -215,6 +215,7 @@ async fn ingestion_worker(
             }
         };
 
+        log::info!("Selecting dataset for ingestion message");
         let dataset_result: Result<models::Dataset, ServiceError> = match ingestion_message.clone()
         {
             IngestionMessage::Update(payload) => {
@@ -244,6 +245,11 @@ async fn ingestion_worker(
 
         match ingestion_message.clone() {
             IngestionMessage::BulkUpload(payload) => {
+                log::info!(
+                    "Starting bulk upload of {} chunks for dataset_id: {:?}",
+                    payload.ingestion_messages.len(),
+                    payload.dataset_id
+                );
                 match bulk_upload_chunks(
                     payload.clone(),
                     dataset_config.clone(),
@@ -275,7 +281,7 @@ async fn ingestion_worker(
                             .await;
                     }
                     Err(err) => {
-                        log::error!("Failed to upload chunk: {:?}", err);
+                        log::error!("Failed to upload chunks: {:?}", err);
 
                         let _ = readd_error_to_queue(
                             ingestion_message,
@@ -359,13 +365,20 @@ pub async fn bulk_upload_chunks(
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<uuid::Uuid>, ServiceError> {
     let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
-    if unlimited == "false" {
+    if unlimited == "false" && !dataset_config.QDRANT_ONLY {
+        log::info!("Getting dataset, organization, and its plan+subscription information for dataset_id: {:?}", payload.dataset_id);
+
         let dataset_org_plan_sub = get_dataset_and_organization_from_dataset_id_query(
             models::UnifiedId::TrieveUuid(payload.dataset_id),
             None,
             web_pool.clone(),
         )
         .await?;
+
+        log::info!(
+            "Getting row count for organization_id {:?}",
+            dataset_org_plan_sub.organization.organization.id
+        );
 
         let chunk_count = get_row_count_for_organization_id_query(
             dataset_org_plan_sub.organization.organization.id,
@@ -478,8 +491,12 @@ pub async fn bulk_upload_chunks(
         .collect();
 
     if split_average_being_used {
+        log::info!(
+            "Uploading {} chunks one by one due to split_avg",
+            ingestion_data.len()
+        );
+
         let mut chunk_ids = vec![];
-        // Split average or Collisions
         for (message, ingestion_data) in izip!(payload.ingestion_messages, ingestion_data) {
             let upload_chunk_result = upload_chunk(
                 message,
@@ -498,15 +515,16 @@ pub async fn bulk_upload_chunks(
         return Ok(chunk_ids);
     }
 
-    let only_insert_qdrant = dataset_config.QDRANT_ONLY;
+    let qdrant_only = dataset_config.QDRANT_ONLY;
 
-    let inserted_chunk_metadatas = if only_insert_qdrant {
+    let inserted_chunk_metadatas = if qdrant_only {
         ingestion_data
             .clone()
             .into_iter()
             .map(|data| data.into())
             .collect_vec()
     } else {
+        log::info!("Inserting {} chunks into database", ingestion_data.len());
         bulk_insert_chunk_metadata_query(
             ingestion_data
                 .clone()
@@ -546,6 +564,10 @@ pub async fn bulk_upload_chunks(
 
     let embedding_vectors = match dataset_config.SEMANTIC_ENABLED {
         true => {
+            log::info!(
+                "Creating embeddings for {} chunks",
+                embedding_content_and_boosts.len()
+            );
             let vectors = match get_dense_vectors(
                 embedding_content_and_boosts
                     .iter()
@@ -566,6 +588,7 @@ pub async fn bulk_upload_chunks(
                         )
                         .await?;
                     }
+                    log::error!("Failed to create embeddings: {:?}", err);
                     Err(ServiceError::InternalServerError(format!(
                         "Failed to create embeddings: {:?}",
                         err
@@ -590,6 +613,10 @@ pub async fn bulk_upload_chunks(
             .collect();
 
     let splade_vectors = if dataset_config.FULLTEXT_ENABLED {
+        log::info!(
+            "Creating sparse vectors for {} chunks",
+            content_and_boosts.len()
+        );
         match get_sparse_vectors(
             content_and_boosts
                 .iter()
@@ -602,6 +629,7 @@ pub async fn bulk_upload_chunks(
         {
             Ok(vectors) => Ok(vectors),
             Err(err) => {
+                log::error!("Failed to create sparse vectors: {:?}", err);
                 if !upsert_by_tracking_id_being_used {
                     bulk_revert_insert_chunk_metadata_query(
                         inserted_chunk_metadata_ids.clone(),
@@ -648,15 +676,19 @@ pub async fn bulk_upload_chunks(
     .then(
         |(chunk_data, embedding_vector, splade_vector, bm25_vector)| async {
             let mut qdrant_point_id = chunk_data.chunk_metadata.qdrant_point_id;
-            if only_insert_qdrant {
+            if qdrant_only {
                 if let Some(tracking_id) = chunk_data.clone().chunk_metadata.tracking_id {
                     qdrant_point_id =
                         uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_OID, tracking_id.as_bytes());
                 }
             }
 
-            let chunk_tags: Option<Vec<Option<String>>> =
+            let chunk_tags: Option<Vec<Option<String>>> = if !qdrant_only {
                 if let Some(ref group_ids) = chunk_data.group_ids {
+                    log::info!(
+                        "Getting group tags for chunk with group_ids: {:?}",
+                        group_ids
+                    );
                     Some(
                         get_groups_from_group_ids_query(group_ids.clone(), web_pool.clone())
                             .await?
@@ -668,7 +700,10 @@ pub async fn bulk_upload_chunks(
                     )
                 } else {
                     None
-                };
+                }
+            } else {
+                None
+            };
 
             let payload = QdrantPayload::new(
                 chunk_data.chunk_metadata,
@@ -730,10 +765,11 @@ pub async fn bulk_upload_chunks(
         .filter_map(|point| point.ok())
         .collect();
 
+    log::info!("Bulk upserting {} qdrant points", qdrant_points.len());
     let create_point_result: Result<(), ServiceError> =
         bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
 
-    if !only_insert_qdrant {
+    if !qdrant_only {
         if let Err(err) = create_point_result {
             if !upsert_by_tracking_id_being_used {
                 bulk_revert_insert_chunk_metadata_query(
@@ -746,7 +782,10 @@ pub async fn bulk_upload_chunks(
             return Err(err);
         }
     } else {
-        create_point_result?;
+        log::info!(
+            "Updating dataset chunk count by {}",
+            inserted_chunk_metadata_ids.len()
+        );
         update_dataset_chunk_count(
             payload.dataset_id,
             inserted_chunk_metadata_ids.len() as i32,
