@@ -1,12 +1,12 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
 use crate::data::models::{
-    escape_quotes, ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet,
+    escape_quotes, ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataTypes,
     ChunkMetadataWithScore, ConditionType, ContextOptions, CountSearchMethod,
     DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo, HighlightOptions, ImageConfig,
-    IngestSpecificChunkMetadata, Pool, QueryTypes, RagQueryEventClickhouse, RecommendType,
-    RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO,
-    SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore, SortByField, SortOptions,
-    TypoOptions, UnifiedId, UpdateSpecificChunkMetadata,
+    IngestSpecificChunkMetadata, Pool, QdrantChunkMetadata, QueryTypes, RagQueryEventClickhouse,
+    RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
+    ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore,
+    SortByField, SortOptions, TypoOptions, UnifiedId, UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -1627,35 +1627,51 @@ pub async fn scroll_dataset_chunks(
         None => None,
     };
 
-    let (qdrant_point_ids, _) = scroll_dataset_points(
+    let (search_results, _) = scroll_dataset_points(
         data.page_size.unwrap_or(10),
         qdrant_point_id_of_offset_chunk,
         data.sort_by.clone(),
-        dataset_config,
+        dataset_config.clone(),
         filter,
     )
     .await?;
 
-    let chunks: Vec<ChunkMetadata> =
-        get_chunk_metadatas_from_point_ids(qdrant_point_ids.clone(), pool)
-            .await?
-            .into_iter()
-            .map(ChunkMetadata::from)
+    let chunks = if dataset_config.QDRANT_ONLY {
+        search_results
+            .iter()
+            .map(|search_result| {
+                ChunkMetadata::from(ChunkMetadataTypes::Metadata(
+                    ChunkMetadataStringTagSet::from(QdrantChunkMetadata::from(
+                        search_result.clone(),
+                    )),
+                ))
+            })
+            .collect()
+    } else {
+        let qdrant_point_ids: Vec<uuid::Uuid> = search_results
+            .iter()
+            .map(|search_result| search_result.point_id)
             .collect();
 
-    let ordered_chunks = qdrant_point_ids
-        .into_iter()
-        .filter_map(|point_id| {
-            chunks
-                .iter()
-                .find(|chunk| chunk.qdrant_point_id == point_id)
-                .cloned()
-        })
-        .collect();
+        let chunk_metadatas: Vec<ChunkMetadata> =
+            get_chunk_metadatas_from_point_ids(qdrant_point_ids.clone(), pool)
+                .await?
+                .into_iter()
+                .map(ChunkMetadata::from)
+                .collect();
 
-    let resp = ScrollChunksResponseBody {
-        chunks: ordered_chunks,
+        qdrant_point_ids
+            .into_iter()
+            .filter_map(|point_id| {
+                chunk_metadatas
+                    .iter()
+                    .find(|chunk| chunk.qdrant_point_id == point_id)
+                    .cloned()
+            })
+            .collect()
     };
+
+    let resp = ScrollChunksResponseBody { chunks };
 
     Ok(HttpResponse::Ok().json(resp))
 }

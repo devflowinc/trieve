@@ -104,7 +104,7 @@ rust-argon2 = "2"
 serde_json = { version = "1" }
 serde = { version = "1" }
 time = { version = "0.3" }
-uuid = { version = "1", features = ["v4", "serde"] }
+uuid = { version = "1", features = ["v4", "serde", "v5"] }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
 openai_dive = { git = "https://github.com/devflowinc/openai-client.git", branch = "bugfix/parallel-tool-calls-public", features = ["stream"] }

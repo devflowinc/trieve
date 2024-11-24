@@ -1,8 +1,8 @@
 use crate::data::models::{
     uuid_between, ChunkBoost, ChunkBoostChangeset, ChunkData, ChunkGroup, ChunkGroupBookmark,
     ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes, ContentChunkMetadata, Dataset,
-    DatasetConfiguration, DatasetTags, IngestSpecificChunkMetadata, SlimChunkMetadata,
-    SlimChunkMetadataTable, UnifiedId,
+    DatasetConfiguration, DatasetTags, DatasetUsageCount, IngestSpecificChunkMetadata,
+    SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
 use crate::handlers::chunk_handler::{ChunkFilter, UploadIngestionMessage};
@@ -605,7 +605,7 @@ pub async fn get_metadata_from_tracking_ids_query(
 }
 
 pub async fn bulk_delete_chunks_query(
-    filter: ChunkFilter,
+    filter: Option<ChunkFilter>,
     deleted_at: chrono::NaiveDateTime,
     dataset_id: uuid::Uuid,
     dataset_config: DatasetConfiguration,
@@ -614,7 +614,13 @@ pub async fn bulk_delete_chunks_query(
     use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
-    let filter = assemble_qdrant_filter(Some(filter), None, None, dataset_id, pool.clone()).await?;
+    if dataset_config.LOCKED {
+        return Err(ServiceError::BadRequest(
+            "Cannot bulk delete a locked dataset".to_string(),
+        ));
+    }
+
+    let filter = assemble_qdrant_filter(filter, None, None, dataset_id, pool.clone()).await?;
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
     let mut conn = pool
         .clone()
@@ -625,64 +631,86 @@ pub async fn bulk_delete_chunks_query(
     let mut first_iteration = true;
 
     while offset.is_some() || first_iteration {
-        let (point_ids, offset_id) =
+        let (search_results, offset_id) =
             scroll_dataset_points(100, offset, None, dataset_config.clone(), filter.clone())
                 .await?;
+        let qdrant_point_ids: Vec<uuid::Uuid> = search_results
+            .iter()
+            .map(|search_result| search_result.point_id)
+            .collect();
 
-        log::info!("Deleting {:?} chunks with point_ids", point_ids.len());
+        log::info!(
+            "Deleting {:?} chunks with point_ids",
+            qdrant_point_ids.len()
+        );
 
-        let deleted_point_ids = conn
-            .transaction::<_, diesel::result::Error, _>(|conn| {
-                async move {
-                    {
-                        let deleted_ids_uuids: Vec<(uuid::Uuid, uuid::Uuid)> = diesel::delete(
-                            chunk_metadata_columns::chunk_metadata
-                                .filter(
-                                    chunk_metadata_columns::qdrant_point_id
-                                        .eq_any(point_ids.clone()),
-                                )
-                                .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
-                                .filter(chunk_metadata_columns::created_at.le(deleted_at)),
-                        )
-                        .returning((
-                            chunk_metadata_columns::id,
-                            chunk_metadata_columns::qdrant_point_id,
-                        ))
-                        .get_results::<(uuid::Uuid, uuid::Uuid)>(conn)
-                        .await?;
+        if !dataset_config.QDRANT_ONLY {
+            let deleted_point_ids = conn
+                .transaction::<_, diesel::result::Error, _>(|conn| {
+                    async move {
+                        {
+                            let deleted_ids_uuids: Vec<(uuid::Uuid, uuid::Uuid)> = diesel::delete(
+                                chunk_metadata_columns::chunk_metadata
+                                    .filter(
+                                        chunk_metadata_columns::qdrant_point_id
+                                            .eq_any(qdrant_point_ids.clone()),
+                                    )
+                                    .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+                                    .filter(chunk_metadata_columns::created_at.le(deleted_at)),
+                            )
+                            .returning((
+                                chunk_metadata_columns::id,
+                                chunk_metadata_columns::qdrant_point_id,
+                            ))
+                            .get_results::<(uuid::Uuid, uuid::Uuid)>(conn)
+                            .await?;
 
-                        let (deleted_ids, deleted_point_ids): (Vec<uuid::Uuid>, Vec<uuid::Uuid>) =
-                            deleted_ids_uuids.into_iter().unzip();
+                            let (deleted_ids, deleted_point_ids): (
+                                Vec<uuid::Uuid>,
+                                Vec<uuid::Uuid>,
+                            ) = deleted_ids_uuids.into_iter().unzip();
 
-                        diesel::delete(
-                            chunk_group_bookmarks_columns::chunk_group_bookmarks
-                                .filter(
-                                    chunk_group_bookmarks_columns::chunk_metadata_id
-                                        .eq_any(deleted_ids.clone()),
-                                )
-                                .filter(chunk_group_bookmarks_columns::created_at.le(deleted_at)),
-                        )
-                        .execute(conn)
-                        .await?;
+                            diesel::delete(
+                                chunk_group_bookmarks_columns::chunk_group_bookmarks
+                                    .filter(
+                                        chunk_group_bookmarks_columns::chunk_metadata_id
+                                            .eq_any(deleted_ids.clone()),
+                                    )
+                                    .filter(
+                                        chunk_group_bookmarks_columns::created_at.le(deleted_at),
+                                    ),
+                            )
+                            .execute(conn)
+                            .await?;
 
-                        Ok(deleted_point_ids)
+                            Ok(deleted_point_ids)
+                        }
                     }
-                }
-                .scope_boxed()
-            })
-            .await;
+                    .scope_boxed()
+                })
+                .await;
 
-        match deleted_point_ids {
-            Ok(point_ids) => {
-                delete_points_from_qdrant(point_ids, qdrant_collection.clone()).await?;
+            match deleted_point_ids {
+                Ok(point_ids) => {
+                    delete_points_from_qdrant(point_ids, qdrant_collection.clone()).await?;
+                }
+                Err(e) => {
+                    log::error!("Failed to delete chunks: {:?}", e);
+                    return Err(ServiceError::BadRequest(
+                        "Failed to delete chunks".to_string(),
+                    ));
+                }
             }
-            Err(e) => {
-                log::error!("Failed to delete chunks: {:?}", e);
-                return Err(ServiceError::BadRequest(
-                    "Failed to delete chunks".to_string(),
-                ));
-            }
+        } else {
+            delete_points_from_qdrant(qdrant_point_ids.clone(), qdrant_collection.clone()).await?;
+            update_dataset_chunk_count(
+                dataset_id,
+                -(qdrant_point_ids.clone().len() as i32),
+                pool.clone(),
+            )
+            .await?;
         }
+
         offset = offset_id;
         first_iteration = false;
     }
@@ -2747,6 +2775,50 @@ pub async fn scroll_chunk_ids_for_dictionary_query(
         return Ok(None);
     }
     Ok(Some(chunk_ids))
+}
+
+pub async fn update_dataset_chunk_count(
+    dataset_id: uuid::Uuid,
+    amount_to_increase: i32,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::dataset_usage_counts::dsl as dataset_usage_counts_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let updated_count = diesel::update(
+        dataset_usage_counts_columns::dataset_usage_counts
+            .filter(dataset_usage_counts_columns::dataset_id.eq(dataset_id))
+            .filter(dataset_usage_counts_columns::chunk_count.is_not_null()),
+    )
+    .set(
+        dataset_usage_counts_columns::chunk_count
+            .eq(dataset_usage_counts_columns::chunk_count + amount_to_increase),
+    )
+    .returning(dataset_usage_counts_columns::chunk_count)
+    .execute(&mut conn)
+    .await;
+    match updated_count {
+        Ok(_) => Ok(()),
+        Err(_) => {
+            let new_dataset_usage_count =
+                DatasetUsageCount::from_details(dataset_id, amount_to_increase);
+            diesel::insert_into(dataset_usage_counts_columns::dataset_usage_counts)
+                .values(&new_dataset_usage_count)
+                .execute(&mut conn)
+                .await
+                .map_err(|_| {
+                    log::error!("Failed to insert new dataset usage count");
+                    ServiceError::InternalServerError(
+                        "Failed to insert new dataset usage count".to_string(),
+                    )
+                })?;
+            Ok(())
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Row)]

@@ -915,7 +915,9 @@ pub async fn cross_encoder(
             .map(|x| {
                 let chunk = match x.metadata[0].clone() {
                     ChunkMetadataTypes::Metadata(metadata) => Ok(metadata.clone()),
-                    _ => Err(ServiceError::BadRequest("Metadata not found".to_string())),
+                    _ => Err(ServiceError::BadRequest(
+                        "ChunkMetadtaStringTagSet not found for chunk in results".to_string(),
+                    )),
                 }?;
 
                 Ok(convert_html_to_text(
@@ -969,9 +971,10 @@ pub async fn cross_encoder(
                         .map(|x| {
                             let chunk = match x.metadata[0].clone() {
                                 ChunkMetadataTypes::Metadata(metadata) => Ok(metadata.clone()),
-                                _ => {
-                                    Err(ServiceError::BadRequest("Metadata not found".to_string()))
-                                }
+                                _ => Err(ServiceError::BadRequest(
+                                    "ChunkMetadtaStringTagSet not found for chunk in results"
+                                        .to_string(),
+                                )),
                             }?;
 
                             Ok(convert_html_to_text(
