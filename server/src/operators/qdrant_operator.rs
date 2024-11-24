@@ -1019,7 +1019,7 @@ pub async fn search_qdrant_query(
         return Ok((vec![], 0, vec![]));
     }
 
-    let only_insert_qdrant = dataset_config.QDRANT_ONLY;
+    let qdrant_only = dataset_config.QDRANT_ONLY;
 
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
@@ -1055,7 +1055,7 @@ pub async fn search_qdrant_query(
                 _ => query.score_threshold,
             };
 
-            if only_insert_qdrant {
+            if qdrant_only {
                 QueryPoints {
                     collection_name: qdrant_collection.to_string(),
                     limit: Some(query.limit),
