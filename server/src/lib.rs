@@ -457,6 +457,7 @@ impl Modify for SecurityAddon {
             data::models::SlimUser,
             data::models::UserOrganization,
             data::models::QdrantSortBy,
+            data::models::QdrantChunkMetadata,
             data::models::SortOptions,
             data::models::ContextOptions,
             data::models::LLMOptions,

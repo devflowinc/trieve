@@ -272,6 +272,35 @@ export const GeneralServerSettings = (props: {
                 />
               </div>
             </div>
+
+            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
+              <input
+                type="checkbox"
+                name="qdrantOnly"
+                id="qdrantOnly"
+                checked={!!props.serverConfig().QDRANT_ONLY}
+                onInput={(e) =>
+                  props.setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      QDRANT_ONLY: e.currentTarget.checked,
+                    };
+                  })
+                }
+              />
+              <div class="flex items-center">
+                <label
+                  for="embeddingSize"
+                  class="mr-2 block text-sm font-medium leading-6"
+                >
+                  Qdrant Only
+                </label>
+                <Tooltip
+                  body={<AiOutlineInfoCircle />}
+                  tooltipText="If enabled, chunks will only be stored in Qdrant."
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
