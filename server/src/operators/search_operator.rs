@@ -157,7 +157,7 @@ pub async fn get_qdrant_ids_from_condition(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool))]
+
 pub async fn assemble_qdrant_filter(
     filters: Option<ChunkFilter>,
     quote_words: Option<Vec<String>>,
@@ -440,7 +440,7 @@ impl RetrievePointQuery {
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument]
+
 pub async fn retrieve_qdrant_points_query(
     qdrant_searches: Vec<QdrantSearchQuery>,
     page: u64,
@@ -472,7 +472,6 @@ pub async fn retrieve_qdrant_points_query(
     })
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_metadata_filter_condition(
     filter: &FieldCondition,
     dataset_id: uuid::Uuid,
@@ -679,7 +678,6 @@ pub async fn get_metadata_filter_condition(
     Ok(metadata_filter)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_group_metadata_filter_condition(
     filter: &FieldCondition,
     dataset_id: uuid::Uuid,
@@ -857,7 +855,6 @@ pub async fn get_group_metadata_filter_condition(
     Ok(metadata_filter)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_group_tag_set_filter_condition(
     filter: &FieldCondition,
     dataset_id: uuid::Uuid,
@@ -1116,7 +1113,6 @@ pub enum SearchOverGroupsResponseTypes {
     V1(DeprecatedSearchOverGroupsResponseBody),
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     data: &SearchOverGroupsReqPayload,
@@ -1271,7 +1267,6 @@ pub async fn retrieve_chunks_for_groups(
     })
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_metadata_from_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     slim_chunks: Option<bool>,
@@ -1352,7 +1347,6 @@ pub async fn get_metadata_from_groups(
     Ok(group_chunks)
 }
 
-#[tracing::instrument(skip(pool, timer))]
 #[inline(never)]
 /// Retrieve chunks from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
 pub async fn retrieve_chunks_from_point_ids(
@@ -1498,7 +1492,6 @@ pub async fn retrieve_chunks_from_point_ids(
     })
 }
 
-#[tracing::instrument]
 pub fn rerank_chunks(
     chunks: Vec<ScoreChunkDTO>,
     tag_weights: Option<HashMap<String, f32>>,
@@ -1585,7 +1578,6 @@ pub fn rerank_chunks(
     reranked_chunks
 }
 
-#[tracing::instrument]
 pub fn rerank_groups(
     groups: Vec<GroupScoreChunk>,
     tag_weights: Option<HashMap<String, f32>>,
@@ -1805,7 +1797,6 @@ async fn get_qdrant_vector(
     }
 }
 
-#[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn search_chunks_query(
     mut data: SearchChunksReqPayload,
     parsed_query: ParsedQueryTypes,
@@ -1950,7 +1941,7 @@ pub async fn search_chunks_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(timer, pool, redis_pool))]
+
 pub async fn search_hybrid_chunks(
     mut data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
@@ -2140,7 +2131,7 @@ pub async fn search_hybrid_chunks(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool, timer, redis_pool))]
+
 pub async fn search_groups_query(
     mut data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQueryTypes,
@@ -2275,7 +2266,7 @@ pub async fn search_groups_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool, timer, redis_pool))]
+
 pub async fn search_hybrid_groups(
     mut data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQuery,
@@ -2471,7 +2462,6 @@ pub async fn search_hybrid_groups(
     })
 }
 
-#[tracing::instrument(skip(timer, pool))]
 pub async fn search_over_groups_query(
     mut data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQueryTypes,
@@ -2644,7 +2634,6 @@ async fn cross_encoder_for_groups(
     Ok(group_results)
 }
 
-#[tracing::instrument(skip(timer, pool))]
 pub async fn hybrid_search_over_groups(
     mut data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQuery,
@@ -2827,7 +2816,6 @@ pub async fn hybrid_search_over_groups(
     Ok(result_chunks)
 }
 
-#[tracing::instrument(skip(timer, pool, redis_pool))]
 pub async fn autocomplete_chunks_query(
     mut data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
@@ -2992,7 +2980,6 @@ pub async fn autocomplete_chunks_query(
     Ok(result_chunks)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn count_chunks_query(
     data: CountChunksReqPayload,
     parsed_query: ParsedQueryTypes,

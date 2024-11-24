@@ -111,7 +111,6 @@ impl FromRequest for OwnerOnly {
 
 //test
 
-#[tracing::instrument]
 pub async fn build_oidc_client() -> CoreClient {
     let issuer_url = get_env!(
         "OIDC_ISSUER_URL",
@@ -163,7 +162,6 @@ pub async fn build_oidc_client() -> CoreClient {
     )
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_account(
     email: String,
     name: String,
@@ -238,7 +236,6 @@ pub struct LogoutRequest {
         (status = 204, description = "Confirmation that your current auth token has been invalidated. This does not invalidate your API key."),
     ),
 )]
-#[tracing::instrument(skip(id))]
 pub async fn logout(
     id: Identity,
     data: web::Query<LogoutRequest>,
@@ -318,7 +315,6 @@ pub struct LoginState {
         (status = 400, description = "OAuth error likely with OIDC provider.", body = ErrorResponseBody),
     )
 )]
-#[tracing::instrument(skip(oidc_client, session))]
 pub async fn login(
     req: HttpRequest,
     session: Session,
@@ -389,7 +385,6 @@ pub async fn login(
         (status = 400, description = "Email or password empty or incorrect", body = ErrorResponseBody),
     )
 )]
-#[tracing::instrument(skip(session, oidc_client, pool, clickhouse_client, redis_pool))]
 pub async fn callback(
     req: HttpRequest,
     session: Session,
@@ -603,7 +598,6 @@ pub async fn callback(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_me(
     logged_user: LoggedUser,
     pool: web::Data<Pool>,
@@ -628,7 +622,6 @@ pub async fn get_me(
         (status = 400, description = "Service error relating to making an embedding or overall service health", body = ErrorResponseBody),
     ),
 )]
-#[tracing::instrument]
 pub async fn health_check() -> Result<HttpResponse, actix_web::Error> {
     Ok(HttpResponse::Ok().finish())
 }

@@ -18,7 +18,6 @@ use rand::distributions::Alphanumeric;
 use rand::Rng;
 use redis::AsyncCommands;
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_user_by_id_query(
     user_id: &uuid::Uuid,
     pool: web::Data<Pool>,
@@ -83,7 +82,6 @@ pub async fn get_user_by_id_query(
     }
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_user_by_oidc_subject_query(
     oidc_subject: &str,
     pool: web::Data<Pool>,
@@ -125,7 +123,6 @@ pub async fn get_user_by_oidc_subject_query(
     Ok((user, user_orgs, orgs))
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn add_existing_user_to_org(
     email: String,
     organization_id: uuid::Uuid,
@@ -163,7 +160,6 @@ pub async fn add_existing_user_to_org(
     }
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn update_user_org_role_query(
     user_id: uuid::Uuid,
     organization_id: uuid::Uuid,
@@ -201,7 +197,6 @@ pub async fn update_user_org_role_query(
     Ok(())
 }
 
-#[tracing::instrument]
 pub fn generate_api_key() -> String {
     let rng = rand::thread_rng();
     let api_key: String = format!(
@@ -221,7 +216,6 @@ pub static SECRET_KEY: Lazy<String> =
 pub static SALT: Lazy<String> =
     Lazy::new(|| std::env::var("SALT").unwrap_or_else(|_| "supersecuresalt".to_string()));
 
-#[tracing::instrument]
 pub fn hash_argon2_api_key(password: &str) -> Result<String, ServiceError> {
     let config = Config {
         secret: SECRET_KEY.as_bytes(),
@@ -232,12 +226,10 @@ pub fn hash_argon2_api_key(password: &str) -> Result<String, ServiceError> {
     })
 }
 
-#[tracing::instrument]
 pub fn hash_function(password: &str) -> String {
     blake3::hash(password.as_bytes()).to_string()
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_user_api_key_query(
     user_id: uuid::Uuid,
     data: CreateApiKeyReqPayload,
@@ -281,7 +273,6 @@ pub async fn create_user_api_key_query(
     Ok(raw_api_key)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_user_from_api_key_query(
     api_key: &str,
     pool: web::Data<Pool>,
@@ -426,7 +417,6 @@ pub async fn get_user_from_api_key_query(
     }
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_user_api_keys_query(
     user_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -451,7 +441,6 @@ pub async fn get_user_api_keys_query(
     Ok(api_keys)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn delete_user_api_keys_query(
     user_id: uuid::Uuid,
     api_key_id: uuid::Uuid,
@@ -475,7 +464,6 @@ pub async fn delete_user_api_keys_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_user_query(
     user_oidc_subject: String,
     email: String,
@@ -523,10 +511,9 @@ pub async fn create_user_query(
     Ok(user_org)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn add_user_to_organization(
-    req: Option<&HttpRequest>,
-    calling_user_id: Option<uuid::Uuid>,
+    _req: Option<&HttpRequest>,
+    _calling_user_id: Option<uuid::Uuid>,
     user_org: UserOrganization,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
@@ -561,7 +548,6 @@ pub async fn add_user_to_organization(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool, api_key))]
 pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), ServiceError> {
     use crate::data::schema::organizations::dsl as organization_columns;
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;

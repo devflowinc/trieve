@@ -43,7 +43,6 @@ pub struct ChatCompletionDTO {
     pub completion_tokens: i32,
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_topic_messages_query(
     messages_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -69,7 +68,6 @@ pub async fn get_topic_messages_query(
     Ok(topic_messages)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_message_by_id_query(
     message_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -95,7 +93,6 @@ pub async fn get_message_by_id_query(
     Ok(message)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_messages_query(
     new_messages: Vec<Message>,
     pool: &web::Data<Pool>,
@@ -118,7 +115,6 @@ pub async fn create_messages_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_generic_system_message(
     system_prompt: String,
     messages_topic_id: uuid::Uuid,
@@ -143,7 +139,6 @@ pub async fn create_generic_system_message(
     Ok(system_message)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_topic_message_query(
     config: &DatasetConfiguration,
     previous_messages: Vec<Message>,
@@ -176,7 +171,6 @@ pub async fn create_topic_message_query(
     Ok(ret_messages)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_message_by_sort_for_topic_query(
     message_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -203,7 +197,6 @@ pub async fn get_message_by_sort_for_topic_query(
         })
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_messages_for_topic_query(
     message_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -229,7 +222,6 @@ pub async fn get_messages_for_topic_query(
         })
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn delete_message_query(
     given_message_id: uuid::Uuid,
     given_topic_id: uuid::Uuid,
@@ -558,7 +550,7 @@ pub async fn get_rag_chunks_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool, redis_pool, event_queue))]
+
 pub async fn stream_response(
     messages: Vec<models::Message>,
     topic_id: uuid::Uuid,
@@ -566,7 +558,7 @@ pub async fn stream_response(
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
     redis_pool: web::Data<RedisPool>,
-    dataset_config: DatasetConfiguration,
+    _dataset_config: DatasetConfiguration,
     create_message_req_payload: CreateMessageReqPayload,
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -1037,7 +1029,6 @@ pub async fn stream_response(
         .streaming(chunk_stream.chain(completion_stream)))
 }
 
-#[tracing::instrument]
 pub async fn get_topic_string(
     model: String,
     first_message: String,

@@ -3,7 +3,6 @@ use crate::{diesel::prelude::*, errors::ServiceError};
 use actix_web::web;
 use diesel_async::RunQueryDsl;
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_topic_query(topic: Topic, pool: &web::Data<Pool>) -> Result<(), ServiceError> {
     use crate::data::schema::topics::dsl::*;
 
@@ -22,7 +21,6 @@ pub async fn create_topic_query(topic: Topic, pool: &web::Data<Pool>) -> Result<
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn delete_topic_query(
     topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -47,7 +45,6 @@ pub async fn delete_topic_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn update_topic_query(
     topic_id: uuid::Uuid,
     topic_name: String,
@@ -73,7 +70,6 @@ pub async fn update_topic_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_topic_query(
     topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -94,7 +90,6 @@ pub async fn get_topic_query(
         .map_err(|_db_error| ServiceError::BadRequest("This topic does not exist".to_string()))
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_topic_for_owner_id_query(
     owner_id: String,
     topic_id: uuid::Uuid,
@@ -121,7 +116,6 @@ pub async fn get_topic_for_owner_id_query(
         })
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_all_topics_for_owner_id_query(
     topic_owner_id: String,
     given_dataset_id: uuid::Uuid,

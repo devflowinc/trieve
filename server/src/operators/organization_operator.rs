@@ -19,7 +19,7 @@ use redis::AsyncCommands;
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
 /// for the user
-#[tracing::instrument(skip(pool))]
+
 pub async fn create_organization_query(
     name: &str,
     pool: web::Data<Pool>,
@@ -57,7 +57,6 @@ pub async fn create_organization_query(
     Ok(new_organization)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn update_organization_query(
     id: uuid::Uuid,
     name: &str,
@@ -111,10 +110,9 @@ pub async fn update_organization_query(
     Ok(updated_organization)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn delete_organization_query(
-    req: Option<&HttpRequest>,
-    calling_user_id: Option<uuid::Uuid>,
+    _req: Option<&HttpRequest>,
+    _calling_user_id: Option<uuid::Uuid>,
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
@@ -236,7 +234,6 @@ pub async fn delete_organization_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_org_id_from_subscription_id_query(
     subscription_id: String,
     pool: web::Data<Pool>,
@@ -267,7 +264,6 @@ pub async fn get_org_id_from_subscription_id_query(
     Ok(org)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_org_from_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -314,7 +310,6 @@ pub async fn get_org_from_id_query(
     Ok(org_with_plan_sub)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_org_dataset_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -343,7 +338,6 @@ pub async fn get_org_dataset_count(
     Ok(dataset_count)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_user_org_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -365,7 +359,6 @@ pub async fn get_user_org_count(
     Ok(user_count)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_message_org_count(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -389,7 +382,6 @@ pub async fn get_message_org_count(
     Ok(messages_count)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_file_size_sum_org(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -413,7 +405,6 @@ pub async fn get_file_size_sum_org(
     Ok(file_size_sums)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_org_usage_by_id_query(
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -444,7 +435,6 @@ pub async fn get_org_usage_by_id_query(
     Ok(org_usage_count)
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_org_users_by_id_query(
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -486,7 +476,6 @@ pub async fn get_org_users_by_id_query(
         .collect_vec())
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_arbitrary_org_owner_from_org_id(
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -535,7 +524,6 @@ pub async fn get_arbitrary_org_owner_from_org_id(
     ))
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn get_arbitrary_org_owner_from_dataset_id(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,

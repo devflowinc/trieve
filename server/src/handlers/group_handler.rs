@@ -34,7 +34,6 @@ use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
 use utoipa::{IntoParams, ToSchema};
 
-#[tracing::instrument(skip(pool))]
 pub async fn dataset_owns_group(
     unified_group_id: UnifiedId,
     dataset_id: uuid::Uuid,
@@ -178,7 +177,6 @@ impl From<Vec<ChunkGroup>> for CreateChunkGroupResponseEnum {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn create_chunk_group(
     create_group_data: web::Json<CreateChunkGroupReqPayloadEnum>,
     _user: AdminOnly,
@@ -319,7 +317,6 @@ pub struct DatasetGroupQuery {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_groups_for_dataset(
     dataset_and_page: web::Path<DatasetGroupQuery>,
     _dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -366,7 +363,7 @@ pub struct GetGroupByTrackingIDData {
     )
 )]
 /// get_group_by_tracking_id
-#[tracing::instrument(skip(pool))]
+
 pub async fn get_group_by_tracking_id(
     data: web::Path<GetGroupByTrackingIDData>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -410,7 +407,6 @@ pub struct GetGroupData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_chunk_group(
     group_id: web::Path<uuid::Uuid>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -541,7 +537,7 @@ pub struct UpdateGroupByTrackingIDReqPayload {
     )
 )]
 #[deprecated]
-#[tracing::instrument(skip(pool))]
+
 pub async fn update_group_by_tracking_id(
     data: web::Json<UpdateGroupByTrackingIDReqPayload>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -602,7 +598,6 @@ pub struct DeleteGroupByTrackingIDData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn delete_group_by_tracking_id(
     tracking_id: web::Path<String>,
     data: web::Query<DeleteGroupByTrackingIDData>,
@@ -663,7 +658,6 @@ pub struct DeleteGroupData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn delete_chunk_group(
     group_id: web::Path<uuid::Uuid>,
     data: web::Query<DeleteGroupData>,
@@ -736,7 +730,6 @@ pub struct UpdateChunkGroupReqPayload {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn update_chunk_group(
     data: web::Json<UpdateChunkGroupReqPayload>,
     pool: web::Data<Pool>,
@@ -828,7 +821,6 @@ pub struct AddChunkToGroupReqPayload {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group(
     body: web::Json<AddChunkToGroupReqPayload>,
     group_id: web::Path<uuid::Uuid>,
@@ -883,7 +875,6 @@ pub async fn add_chunk_to_group(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn add_chunk_to_group_by_tracking_id(
     data: web::Json<AddChunkToGroupReqPayload>,
     tracking_id: web::Path<String>,
@@ -984,7 +975,6 @@ pub enum GetChunksInGroupResponse {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_chunks_in_group(
     group_data: web::Path<GetChunksInGroupPathParams>,
     pool: web::Data<Pool>,
@@ -1042,7 +1032,6 @@ pub struct GetChunksInGroupByTrackingIdReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_chunks_in_group_by_tracking_id(
     path_data: web::Path<GetChunksInGroupByTrackingIdReqPayload>,
     pool: web::Data<Pool>,
@@ -1098,7 +1087,6 @@ pub struct GetGroupsForChunksReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_groups_for_chunks(
     data: web::Json<GetGroupsForChunksReqPayload>,
     pool: web::Data<Pool>,
@@ -1142,7 +1130,6 @@ pub struct RemoveChunkFromGroupReqPayload {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn remove_chunk_from_group(
     group_id: web::Path<uuid::Uuid>,
     body: Option<web::Json<RemoveChunkFromGroupReqPayload>>,
@@ -1238,7 +1225,6 @@ pub enum RecommendGroupsResponse {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
 pub async fn get_recommended_groups(
     data: web::Json<RecommendGroupsReqPayload>,
     pool: web::Data<Pool>,
@@ -1578,7 +1564,6 @@ impl SearchWithinGroupResults {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn search_within_group(
     data: web::Json<SearchWithinGroupReqPayload>,
     pool: web::Data<Pool>,
@@ -1765,7 +1750,6 @@ pub struct SearchOverGroupsReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn search_over_groups(
     data: web::Json<SearchOverGroupsReqPayload>,
     pool: web::Data<Pool>,

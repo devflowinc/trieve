@@ -17,7 +17,6 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[tracing::instrument]
 pub fn email_regex() -> regex::Regex {
     regex::Regex::new(r"^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*")
         .unwrap()
@@ -60,7 +59,6 @@ pub struct InvitationData {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn post_invitation(
     invitation_data: web::Json<InvitationData>,
     pool: web::Data<Pool>,
@@ -166,7 +164,6 @@ pub struct InvitationWithUrl {
     registration_url: String,
 }
 
-#[tracing::instrument(skip(pool))]
 pub async fn create_invitation(
     app_url: String,
     email: String,
@@ -209,7 +206,6 @@ pub async fn create_invitation(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_invitations(
     user: AdminOnly,
     organization_id: web::Path<uuid::Uuid>,
@@ -243,7 +239,6 @@ pub async fn get_invitations(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn delete_invitation(
     user: AdminOnly,
     invitation_id: web::Path<uuid::Uuid>,

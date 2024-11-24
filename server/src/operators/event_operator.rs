@@ -12,7 +12,7 @@ pub struct EventReturn {
     pub event_types: Vec<String>,
     pub page_count: i32,
 }
-#[tracing::instrument(skip(clickhouse_client))]
+
 pub async fn get_events_query(
     dataset_id: uuid::Uuid,
     page: i64,

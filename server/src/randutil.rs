@@ -1,6 +1,5 @@
 use rand::Rng;
 
-#[tracing::instrument]
 pub fn random_organization_name() -> String {
     let words: Vec<&str> = include_str!("4-letter-words.txt").lines().collect();
     let mut rng = rand::thread_rng();

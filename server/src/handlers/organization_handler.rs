@@ -39,7 +39,6 @@ use utoipa::ToSchema;
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_organization(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -75,7 +74,6 @@ pub async fn get_organization(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn delete_organization(
     req: HttpRequest,
     organization_id: web::Path<uuid::Uuid>,
@@ -127,7 +125,6 @@ pub struct UpdateOrganizationReqPayload {
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn update_organization(
     organization: web::Json<UpdateOrganizationReqPayload>,
     pool: web::Data<Pool>,
@@ -185,7 +182,6 @@ pub struct CreateOrganizationReqPayload {
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn create_organization(
     req: HttpRequest,
     organization: web::Json<CreateOrganizationReqPayload>,
@@ -230,7 +226,6 @@ pub async fn create_organization(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_organization_usage(
     organization: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -267,7 +262,6 @@ pub async fn get_organization_usage(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_organization_users(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -389,7 +383,6 @@ pub struct UpdateAllOrgDatasetConfigsReqPayload {
         ("ApiKey" = ["owner"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn update_all_org_dataset_configs(
     req_payload: web::Json<UpdateAllOrgDatasetConfigsReqPayload>,
     pool: web::Data<Pool>,

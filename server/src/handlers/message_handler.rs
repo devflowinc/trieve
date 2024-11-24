@@ -139,10 +139,9 @@ pub struct CreateMessageReqPayload {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue))]
 pub async fn create_message(
     data: web::Json<CreateMessageReqPayload>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     event_queue: web::Data<EventQueue>,
     pool: web::Data<Pool>,
@@ -269,9 +268,8 @@ pub async fn create_message(
         ("ApiKey" = ["readonly"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_all_topic_messages(
-    user: LoggedUser,
+    _user: LoggedUser,
     messages_topic_id: web::Path<uuid::Uuid>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
@@ -319,9 +317,8 @@ pub async fn get_all_topic_messages(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_message_by_id(
-    user: AdminOnly,
+    _user: AdminOnly,
     message_id: web::Path<uuid::Uuid>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
@@ -466,7 +463,6 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn edit_message(
     data: web::Json<EditMessageReqPayload>,
     user: AdminOnly,
@@ -540,10 +536,9 @@ pub async fn edit_message(
         ("ApiKey" = ["admin"]),
     )
 )]
-#[tracing::instrument(skip(pool, event_queue, redis_pool))]
 pub async fn regenerate_message_patch(
     data: web::Json<RegenerateMessageReqPayload>,
-    user: AdminOnly,
+    _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
@@ -685,7 +680,7 @@ pub async fn regenerate_message_patch(
     )
 )]
 #[deprecated]
-#[tracing::instrument(skip(pool, event_queue, redis_pool))]
+
 pub async fn regenerate_message(
     data: web::Json<RegenerateMessageReqPayload>,
     user: AdminOnly,
@@ -745,7 +740,6 @@ pub struct SuggestedQueriesResponse {
     )
 
 )]
-#[tracing::instrument(skip(pool))]
 pub async fn get_suggested_queries(
     data: web::Json<SuggestedQueriesReqPayload>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,

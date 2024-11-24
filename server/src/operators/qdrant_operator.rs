@@ -33,7 +33,6 @@ use qdrant_client::{
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, str::FromStr};
 
-#[tracing::instrument(skip(qdrant_url, qdrant_api_key))]
 pub async fn get_qdrant_connection(
     qdrant_url: Option<&str>,
     qdrant_api_key: Option<&str>,
@@ -72,7 +71,7 @@ pub fn get_qdrant_collection_from_dataset_config(dataset_config: &DatasetConfigu
 }
 
 /// Create Qdrant collection and indexes needed
-#[tracing::instrument(skip(qdrant_url, qdrant_api_key))]
+
 pub async fn create_new_qdrant_collection_query(
     qdrant_url: Option<&str>,
     qdrant_api_key: Option<&str>,
@@ -391,7 +390,6 @@ pub async fn create_new_qdrant_collection_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(points))]
 pub async fn bulk_upsert_qdrant_points_query(
     points: Vec<PointStruct>,
     dataset_config: DatasetConfiguration,
@@ -422,7 +420,6 @@ pub async fn bulk_upsert_qdrant_points_query(
     Ok(())
 }
 
-#[tracing::instrument(skip(embedding_vector, pool))]
 pub async fn create_new_qdrant_point_query(
     point_id: uuid::Uuid,
     embedding_vector: Vec<f32>,
@@ -488,7 +485,7 @@ pub async fn create_new_qdrant_point_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(updated_vector, web_pool))]
+
 pub async fn update_qdrant_point_query(
     metadata: ChunkMetadata,
     updated_vector: Option<Vec<f32>>,
@@ -613,7 +610,6 @@ pub async fn update_qdrant_point_query(
     Ok(())
 }
 
-#[tracing::instrument]
 pub async fn add_bookmark_to_qdrant_query(
     point_id: uuid::Uuid,
     group_id: uuid::Uuid,
@@ -689,7 +685,6 @@ pub async fn add_bookmark_to_qdrant_query(
     Ok(())
 }
 
-#[tracing::instrument]
 pub async fn remove_bookmark_from_qdrant_query(
     point_id: uuid::Uuid,
     group_id: uuid::Uuid,
@@ -789,7 +784,6 @@ pub struct QdrantSearchQuery {
     pub group_size: Option<u64>,
 }
 
-#[tracing::instrument]
 #[allow(clippy::too_many_arguments)]
 pub async fn search_over_groups_qdrant_query(
     page: u64,
@@ -1015,7 +1009,6 @@ fn get_prefetch_query(
     }
 }
 
-#[tracing::instrument]
 pub async fn search_qdrant_query(
     page: u64,
     queries: Vec<QdrantSearchQuery>,
@@ -1161,7 +1154,7 @@ pub struct QdrantRecommendResult {
 }
 
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(skip(pool))]
+
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,
@@ -1407,7 +1400,6 @@ pub async fn recommend_qdrant_groups_query(
     Ok(group_recommendation_results)
 }
 
-#[tracing::instrument]
 pub async fn point_ids_exists_in_qdrant(
     point_ids: Vec<uuid::Uuid>,
     dataset_config: DatasetConfiguration,
