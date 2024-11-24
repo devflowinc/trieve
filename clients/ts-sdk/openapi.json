@@ -7505,6 +7505,9 @@
           },
           {
             "$ref": "#/components/schemas/ContentChunkMetadata"
+          },
+          {
+            "$ref": "#/components/schemas/QdrantChunkMetadata"
           }
         ]
       },
@@ -8556,6 +8559,7 @@
             "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
             "N_RETRIEVALS_TO_INCLUDE": 8,
             "PRESENCE_PENALTY": 0.0,
+            "QDRANT_ONLY": false,
             "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
             "SEMANTIC_ENABLED": true,
             "STOP_TOKENS": [
@@ -8840,6 +8844,7 @@
             "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
             "N_RETRIEVALS_TO_INCLUDE": 8,
             "PRESENCE_PENALTY": 0.0,
+            "QDRANT_ONLY": false,
             "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
             "SEMANTIC_ENABLED": true,
             "STOP_TOKENS": [
@@ -9050,6 +9055,11 @@
             ],
             "nullable": true
           },
+          "QDRANT_ONLY": {
+            "type": "boolean",
+            "description": "Whether or not to insert chunks into Postgres",
+            "nullable": true
+          },
           "RAG_PROMPT": {
             "type": "string",
             "description": "The prompt to use for the RAG model",
@@ -9110,6 +9120,7 @@
           "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
           "N_RETRIEVALS_TO_INCLUDE": 8,
           "PRESENCE_PENALTY": 0.0,
+          "QDRANT_ONLY": false,
           "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
           "SEMANTIC_ENABLED": true,
           "STOP_TOKENS": [
@@ -11293,6 +11304,9 @@
           },
           {
             "$ref": "#/components/schemas/ContentChunkMetadata"
+          },
+          {
+            "$ref": "#/components/schemas/QdrantChunkMetadata"
           }
         ]
       },
@@ -11778,6 +11792,43 @@
           "light",
           "dark"
         ]
+      },
+      "QdrantChunkMetadata": {
+        "type": "object",
+        "required": [
+          "qdrant_point_id"
+        ],
+        "properties": {
+          "chunk_html": {
+            "type": "string",
+            "nullable": true
+          },
+          "images_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "link": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "nullable": true
+          },
+          "qdrant_point_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tag_set": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        }
       },
       "QdrantSortBy": {
         "oneOf": [
@@ -15232,6 +15283,7 @@
             "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
             "N_RETRIEVALS_TO_INCLUDE": 8,
             "PRESENCE_PENALTY": 0.0,
+            "QDRANT_ONLY": false,
             "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
             "SEMANTIC_ENABLED": true,
             "STOP_TOKENS": [
@@ -15532,6 +15584,7 @@
             "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
             "N_RETRIEVALS_TO_INCLUDE": 8,
             "PRESENCE_PENALTY": 0.0,
+            "QDRANT_ONLY": false,
             "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
             "SEMANTIC_ENABLED": true,
             "STOP_TOKENS": [

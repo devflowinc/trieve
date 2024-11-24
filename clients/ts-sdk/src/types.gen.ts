@@ -342,7 +342,7 @@ export type ChunkMetadataStringTagSet = {
     weight: number;
 };
 
-export type ChunkMetadataTypes = SlimChunkMetadata | ChunkMetadataStringTagSet | ContentChunkMetadata;
+export type ChunkMetadataTypes = SlimChunkMetadata | ChunkMetadataStringTagSet | ContentChunkMetadata | QdrantChunkMetadata;
 
 export type ChunkMetadataWithPosition = {
     chunk: ChunkMetadata;
@@ -928,6 +928,10 @@ export type DatasetConfigurationDTO = {
      */
     PRESENCE_PENALTY?: (number) | null;
     PUBLIC_DATASET?: ((PublicDatasetOptions) | null);
+    /**
+     * Whether or not to insert chunks into Postgres
+     */
+    QDRANT_ONLY?: (boolean) | null;
     /**
      * The prompt to use for the RAG model
      */
@@ -1787,7 +1791,7 @@ export type MultiQuery = {
     weight: number;
 };
 
-export type NewChunkMetadataTypes = SlimChunkMetadataWithArrayTagSet | ChunkMetadata | ContentChunkMetadata;
+export type NewChunkMetadataTypes = SlimChunkMetadataWithArrayTagSet | ChunkMetadata | ContentChunkMetadata | QdrantChunkMetadata;
 
 export type Organization = {
     created_at: string;
@@ -1908,6 +1912,15 @@ export type PublicPageSearchOptions = {
 };
 
 export type PublicPageTheme = 'light' | 'dark';
+
+export type QdrantChunkMetadata = {
+    chunk_html?: (string) | null;
+    images_urls?: Array<(string)> | null;
+    link?: (string) | null;
+    metadata?: unknown;
+    qdrant_point_id: string;
+    tag_set?: Array<(string)> | null;
+};
 
 /**
  * Sort by lets you specify a method to sort the results by. If not specified, this defaults to the score of the chunks. If specified, this can be any key in the chunk metadata. This key must be a numeric value within the payload.

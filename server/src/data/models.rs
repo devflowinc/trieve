@@ -1917,6 +1917,7 @@ pub struct DatasetEventCount {
         "BM25_AVG_LEN": 256.0,
         "FULLTEXT_ENABLED": true,
         "SEMANTIC_ENABLED": true,
+        "QDRANT_ONLY": false,
         "EMBEDDING_QUERY_PREFIX": "",
         "USE_MESSAGE_TO_QUERY_PROMPT": false,
         "FREQUENCY_PENALTY": 0.0,
@@ -2074,6 +2075,7 @@ pub enum DistanceMetric {
     "BM25_AVG_LEN": 256.0,
     "FULLTEXT_ENABLED": true,
     "SEMANTIC_ENABLED": true,
+    "QDRANT_ONLY": false,
     "EMBEDDING_QUERY_PREFIX": "",
     "USE_MESSAGE_TO_QUERY_PROMPT": false,
     "FREQUENCY_PENALTY": 0.0,
@@ -2105,6 +2107,7 @@ pub struct DatasetConfiguration {
     pub BM25_AVG_LEN: f32,
     pub FULLTEXT_ENABLED: bool,
     pub SEMANTIC_ENABLED: bool,
+    pub QDRANT_ONLY: bool,
     pub EMBEDDING_QUERY_PREFIX: String,
     pub USE_MESSAGE_TO_QUERY_PROMPT: bool,
     pub FREQUENCY_PENALTY: Option<f64>,
@@ -2145,6 +2148,7 @@ pub struct PublicDatasetOptions {
     "BM25_AVG_LEN": 256.0,
     "FULLTEXT_ENABLED": true,
     "SEMANTIC_ENABLED": true,
+    "QDRANT_ONLY": false,
     "EMBEDDING_QUERY_PREFIX": "",
     "USE_MESSAGE_TO_QUERY_PROMPT": false,
     "FREQUENCY_PENALTY": 0.0,
@@ -2194,6 +2198,8 @@ pub struct DatasetConfigurationDTO {
     pub FULLTEXT_ENABLED: Option<bool>,
     /// Whether to use semantic search
     pub SEMANTIC_ENABLED: Option<bool>,
+    /// Whether or not to insert chunks into Postgres
+    pub QDRANT_ONLY: Option<bool>,
     /// The prefix to use for the embedding query
     pub EMBEDDING_QUERY_PREFIX: Option<String>,
     /// Whether to use the message to query prompt
@@ -2240,6 +2246,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             BM25_AVG_LEN: dto.BM25_AVG_LEN.unwrap_or(256.0),
             FULLTEXT_ENABLED: dto.FULLTEXT_ENABLED.unwrap_or(true),
             SEMANTIC_ENABLED: dto.SEMANTIC_ENABLED.unwrap_or(true),
+            QDRANT_ONLY: dto.QDRANT_ONLY.unwrap_or(false),
             EMBEDDING_QUERY_PREFIX: dto.EMBEDDING_QUERY_PREFIX.unwrap_or("".to_string()),
             USE_MESSAGE_TO_QUERY_PROMPT: dto.USE_MESSAGE_TO_QUERY_PROMPT.unwrap_or(false),
             FREQUENCY_PENALTY: dto.FREQUENCY_PENALTY,
@@ -2281,6 +2288,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
             BM25_AVG_LEN: Some(config.BM25_AVG_LEN),
             FULLTEXT_ENABLED: Some(config.FULLTEXT_ENABLED),
             SEMANTIC_ENABLED: Some(config.SEMANTIC_ENABLED),
+            QDRANT_ONLY: Some(config.QDRANT_ONLY),
             EMBEDDING_QUERY_PREFIX: Some(config.EMBEDDING_QUERY_PREFIX),
             USE_MESSAGE_TO_QUERY_PROMPT: Some(config.USE_MESSAGE_TO_QUERY_PROMPT),
             FREQUENCY_PENALTY: config.FREQUENCY_PENALTY,
@@ -2326,6 +2334,7 @@ impl Default for DatasetConfiguration {
             BM25_AVG_LEN: 256.0,
             FULLTEXT_ENABLED: true,
             SEMANTIC_ENABLED: true,
+            QDRANT_ONLY: false,
             EMBEDDING_QUERY_PREFIX: "".to_string(),
             USE_MESSAGE_TO_QUERY_PROMPT: false,
             FREQUENCY_PENALTY: None,
@@ -2498,6 +2507,11 @@ impl DatasetConfiguration {
                 .unwrap_or(&json!(true))
                 .as_bool()
                 .unwrap_or(true),
+            QDRANT_ONLY: configuration
+                .get("QDRANT_ONLY")
+                .unwrap_or(&json!(false))
+                .as_bool()
+                .unwrap_or(false),
             BM25_ENABLED: configuration
                 .get("BM25_ENABLED")
                 .or(std::env::var("BM25_ACTIVE").ok().map(|val| json!(
@@ -2616,6 +2630,7 @@ impl DatasetConfiguration {
             "BM25_AVG_LEN": self.BM25_AVG_LEN,
             "FULLTEXT_ENABLED": self.FULLTEXT_ENABLED,
             "SEMANTIC_ENABLED": self.SEMANTIC_ENABLED,
+            "QDRANT_ONLY": self.QDRANT_ONLY,
             "EMBEDDING_QUERY_PREFIX": self.EMBEDDING_QUERY_PREFIX,
             "USE_MESSAGE_TO_QUERY_PROMPT": self.USE_MESSAGE_TO_QUERY_PROMPT,
             "FREQUENCY_PENALTY": self.FREQUENCY_PENALTY,
@@ -2720,6 +2735,7 @@ impl DatasetConfigurationDTO {
             SEMANTIC_ENABLED: self
                 .SEMANTIC_ENABLED
                 .unwrap_or(curr_dataset_config.SEMANTIC_ENABLED),
+            QDRANT_ONLY: self.QDRANT_ONLY.unwrap_or(curr_dataset_config.QDRANT_ONLY),
             EMBEDDING_QUERY_PREFIX: self
                 .EMBEDDING_QUERY_PREFIX
                 .clone()

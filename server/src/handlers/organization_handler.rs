@@ -351,6 +351,7 @@ pub async fn remove_user_from_org(
         "BM25_AVG_LEN": 256.0,
         "FULLTEXT_ENABLED": true,
         "SEMANTIC_ENABLED": true,
+        "QDRANT_ONLY": false,
         "EMBEDDING_QUERY_PREFIX": "",
         "USE_MESSAGE_TO_QUERY_PROMPT": false,
         "FREQUENCY_PENALTY": 0.0,
