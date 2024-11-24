@@ -15,41 +15,14 @@ use trieve_server::{
 async fn main() -> Result<(), ServiceError> {
     dotenvy::dotenv().ok();
     log::info!("Starting ditto sync worker service thread");
-    let sentry_url = std::env::var("SENTRY_URL");
-    let _guard = if let Ok(sentry_url) = sentry_url {
-        let guard = sentry::init((
-            sentry_url,
-            sentry::ClientOptions {
-                release: sentry::release_name!(),
-                traces_sample_rate: 1.0,
-                ..Default::default()
-            },
-        ));
-
-        tracing_subscriber::Registry::default()
-            .with(sentry::integrations::tracing::layer())
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::from_default_env()
-                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-                ),
-            )
-            .init();
-
-        log::info!("Sentry monitoring enabled");
-        Some(guard)
-    } else {
-        tracing_subscriber::Registry::default()
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::from_default_env()
-                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-                ),
-            )
-            .init();
-
-        None
-    };
+    tracing_subscriber::Registry::default()
+        .with(
+            tracing_subscriber::fmt::layer().with_filter(
+                EnvFilter::from_default_env()
+                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+            ),
+        )
+        .init();
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
 

@@ -1,6 +1,5 @@
 use actix_web::web;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
-use sentry::{Hub, SentryFutureExt};
 use serde::{Deserialize, Serialize};
 use signal_hook::consts::SIGTERM;
 use std::{
@@ -822,12 +821,6 @@ async fn scrape_worker(
 
             continue;
         };
-
-        let processing_chunk_ctx = sentry::TransactionContext::new(
-            "file worker processing file",
-            "file worker processing file",
-        );
-        let transaction = sentry::start_transaction(processing_chunk_ctx);
         let crawl_request: CrawlRequest =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
@@ -913,48 +906,19 @@ async fn scrape_worker(
                 let _ = readd_error_to_queue(crawl_request, err, redis_pool.clone()).await;
             }
         };
-
-        transaction.finish();
     }
 }
 
 fn main() {
     dotenvy::dotenv().ok();
-    let sentry_url = std::env::var("SENTRY_URL");
-    let _guard = if let Ok(sentry_url) = sentry_url {
-        let guard = sentry::init((
-            sentry_url,
-            sentry::ClientOptions {
-                release: sentry::release_name!(),
-                traces_sample_rate: 1.0,
-                ..Default::default()
-            },
-        ));
-
-        tracing_subscriber::Registry::default()
-            .with(sentry::integrations::tracing::layer())
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::from_default_env()
-                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-                ),
-            )
-            .init();
-
-        log::info!("Sentry monitoring enabled");
-        Some(guard)
-    } else {
-        tracing_subscriber::Registry::default()
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::from_default_env()
-                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
-                ),
-            )
-            .init();
-
-        None
-    };
+    tracing_subscriber::Registry::default()
+        .with(
+            tracing_subscriber::fmt::layer().with_filter(
+                EnvFilter::from_default_env()
+                    .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+            ),
+        )
+        .init();
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
 
@@ -977,66 +941,59 @@ fn main() {
         .enable_all()
         .build()
         .expect("Failed to create tokio runtime")
-        .block_on(
-            async move {
-                let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-                let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
-                    .unwrap_or("2".to_string())
-                    .parse()
-                    .unwrap_or(2);
+        .block_on(async move {
+            let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+            let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
+                .unwrap_or("2".to_string())
+                .parse()
+                .unwrap_or(2);
 
-                let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
-                    .expect("Failed to connect to redis");
+            let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
+                .expect("Failed to connect to redis");
 
-                let redis_pool = bb8_redis::bb8::Pool::builder()
-                    .max_size(redis_connections)
-                    .connection_timeout(std::time::Duration::from_secs(2))
-                    .build(redis_manager)
-                    .await
-                    .expect("Failed to create redis pool");
+            let redis_pool = bb8_redis::bb8::Pool::builder()
+                .max_size(redis_connections)
+                .connection_timeout(std::time::Duration::from_secs(2))
+                .build(redis_manager)
+                .await
+                .expect("Failed to create redis pool");
 
-                let web_redis_pool = actix_web::web::Data::new(redis_pool);
+            let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
-                let should_terminate = Arc::new(AtomicBool::new(false));
-                signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
-                    .expect("Failed to register shutdown hook");
+            let should_terminate = Arc::new(AtomicBool::new(false));
+            signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
+                .expect("Failed to register shutdown hook");
 
-                let event_queue = if std::env::var("USE_ANALYTICS")
-                    .unwrap_or("false".to_string())
-                    .parse()
-                    .unwrap_or(false)
-                {
-                    log::info!("Analytics enabled");
+            let event_queue = if std::env::var("USE_ANALYTICS")
+                .unwrap_or("false".to_string())
+                .parse()
+                .unwrap_or(false)
+            {
+                log::info!("Analytics enabled");
 
-                    let clickhouse_client = clickhouse::Client::default()
-                        .with_url(
-                            std::env::var("CLICKHOUSE_URL")
-                                .unwrap_or("http://localhost:8123".to_string()),
-                        )
-                        .with_user(
-                            std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()),
-                        )
-                        .with_password(
-                            std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()),
-                        )
-                        .with_database(
-                            std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
-                        )
-                        .with_option("async_insert", "1")
-                        .with_option("wait_for_async_insert", "0");
+                let clickhouse_client = clickhouse::Client::default()
+                    .with_url(
+                        std::env::var("CLICKHOUSE_URL")
+                            .unwrap_or("http://localhost:8123".to_string()),
+                    )
+                    .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
+                    .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
+                    .with_database(
+                        std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
+                    )
+                    .with_option("async_insert", "1")
+                    .with_option("wait_for_async_insert", "0");
 
-                    let mut event_queue = EventQueue::new(clickhouse_client.clone());
-                    event_queue.start_service();
-                    event_queue
-                } else {
-                    log::info!("Analytics disabled");
-                    EventQueue::default()
-                };
-                let web_event_queue = actix_web::web::Data::new(event_queue);
-                scrape_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
-            }
-            .bind_hub(Hub::new_from_top(Hub::current())),
-        );
+                let mut event_queue = EventQueue::new(clickhouse_client.clone());
+                event_queue.start_service();
+                event_queue
+            } else {
+                log::info!("Analytics disabled");
+                EventQueue::default()
+            };
+            let web_event_queue = actix_web::web::Data::new(event_queue);
+            scrape_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
+        });
 }
 
 #[tracing::instrument(skip(redis_pool))]

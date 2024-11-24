@@ -42,20 +42,17 @@ pub async fn send_to_clickhouse(
 
     let mut rag_queries_inserter = clickhouse_client.insert("rag_queries").map_err(|e| {
         log::error!("Error inserting rag queries: {:?}", e);
-        sentry::capture_message("Error inserting rag queries", sentry::Level::Error);
         ServiceError::InternalServerError(format!("Error inserting rag queries: {:?}", e))
     })?;
 
     let mut recommendations_inserter =
         clickhouse_client.insert("recommendations").map_err(|e| {
             log::error!("Error inserting recommendations: {:?}", e);
-            sentry::capture_message("Error inserting recommendations", sentry::Level::Error);
             ServiceError::InternalServerError(format!("Error inserting recommendations: {:?}", e))
         })?;
 
     let mut worker_events_inserter = clickhouse_client.insert("dataset_events").map_err(|e| {
         log::error!("Error inserting recommendations: {:?}", e);
-        sentry::capture_message("Error inserting recommendations", sentry::Level::Error);
         ServiceError::InternalServerError(format!("Error inserting recommendations: {:?}", e))
     })?;
 
@@ -89,10 +86,6 @@ pub async fn send_to_clickhouse(
                         .await
                         .map_err(|err| {
                             log::error!("Error writing to ClickHouse search_queries: {:?}", err);
-                            sentry::capture_message(
-                                &format!("Error writing to ClickHouse search_queries: {:?}", err),
-                                sentry::Level::Error,
-                            );
                             ServiceError::InternalServerError(
                                 "Error writing to ClickHouse search_queries".to_string(),
                             )
@@ -103,10 +96,6 @@ pub async fn send_to_clickhouse(
             ClickHouseEvent::RecommendationEvent(event) => {
                 recommendations_inserter.write(&event).await.map_err(|e| {
                     log::error!("Error writing recommendation event: {:?}", e);
-                    sentry::capture_message(
-                        "Error writing recommendation event",
-                        sentry::Level::Error,
-                    );
                     ServiceError::InternalServerError(format!(
                         "Error writing recommendation event: {:?}",
                         e
@@ -116,7 +105,6 @@ pub async fn send_to_clickhouse(
             ClickHouseEvent::RagQueryEvent(event) => {
                 rag_queries_inserter.write(&event).await.map_err(|e| {
                     log::error!("Error writing rag query event: {:?}", e);
-                    sentry::capture_message("Error writing rag query event", sentry::Level::Error);
                     ServiceError::InternalServerError(format!(
                         "Error writing rag query event: {:?}",
                         e
@@ -126,7 +114,6 @@ pub async fn send_to_clickhouse(
             ClickHouseEvent::WorkerEvent(event) => {
                 worker_events_inserter.write(&event).await.map_err(|e| {
                     log::error!("Error writing worker event: {:?}", e);
-                    sentry::capture_message("Error writing worker event", sentry::Level::Error);
                     ServiceError::InternalServerError(format!(
                         "Error writing worker event: {:?}",
                         e
@@ -143,30 +130,20 @@ pub async fn send_to_clickhouse(
             .await
             .map_err(|err| {
                 log::error!("Error writing to ClickHouse search_queries: {:?}", err);
-                sentry::capture_message(
-                    &format!("Error writing to ClickHouse search_queries: {:?}", err),
-                    sentry::Level::Error,
-                );
                 ServiceError::InternalServerError("Error writing to ClickHouse search_queries".to_string())
             })?;
     }
 
     rag_queries_inserter.end().await.map_err(|e| {
         log::error!("Error ending rag queries inserter: {:?}", e);
-        sentry::capture_message("Error ending rag queries inserter", sentry::Level::Error);
         ServiceError::InternalServerError(format!("Error ending rag queries inserter: {:?}", e))
     })?;
     recommendations_inserter.end().await.map_err(|e| {
         log::error!("Error ending recommendations inserter: {:?}", e);
-        sentry::capture_message(
-            "Error ending recommendations inserter",
-            sentry::Level::Error,
-        );
         ServiceError::InternalServerError(format!("Error ending recommendations inserter: {:?}", e))
     })?;
     worker_events_inserter.end().await.map_err(|e| {
         log::error!("Error ending worker events inserter: {:?}", e);
-        sentry::capture_message("Error ending worker events inserter", sentry::Level::Error);
         ServiceError::InternalServerError(format!("Error ending worker events inserter: {:?}", e))
     })?;
 
@@ -202,10 +179,6 @@ impl EventQueue {
                         if Instant::now().0.duration_since(timer.0).as_secs() > 10 || events.len() > 1000 {
                             if let Err(e) = send_to_clickhouse(events.clone(), &clickhouse_client).await {
                                 log::error!("Error sending events to clickhouse: {:?}", e);
-                                sentry::capture_message(
-                                    "Error sending events to clickhouse",
-                                    sentry::Level::Error,
-                                );
                             }
                             events.clear();
                             timer = Instant::now();
@@ -215,10 +188,6 @@ impl EventQueue {
                         if !events.is_empty() {
                             if let Err(e) = send_to_clickhouse(events.clone(), &clickhouse_client).await {
                                 log::error!("Error sending events to clickhouse: {:?}", e);
-                                sentry::capture_message(
-                                    "Error sending events to clickhouse",
-                                    sentry::Level::Error,
-                                );
                             }
                             events.clear();
                             timer = Instant::now();

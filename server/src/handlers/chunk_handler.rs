@@ -1262,9 +1262,6 @@ pub async fn search_chunks(
 
     data.score_threshold = data.score_threshold.filter(|threshold| *threshold != 0.0);
 
-    let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
-    let transaction = sentry::start_transaction(tx_ctx);
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type {
@@ -1334,8 +1331,6 @@ pub async fn search_chunks(
         .await;
 
     timer.add("send_to_clickhouse");
-
-    transaction.finish();
 
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
@@ -1493,10 +1488,6 @@ pub async fn autocomplete(
         data.remove_stop_words,
     );
 
-    let tx_ctx = sentry::TransactionContext::new("search", "search_chunks");
-    let transaction = sentry::start_transaction(tx_ctx);
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone().into())));
-
     let mut timer = Timer::new();
 
     let result_chunks = autocomplete_chunks_query(
@@ -1546,8 +1537,6 @@ pub async fn autocomplete(
         .await;
 
     timer.add("send_to_clickhouse");
-
-    transaction.finish();
 
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()

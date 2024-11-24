@@ -49,31 +49,8 @@ pub async fn get_dense_vector(
     embed_type: &str,
     dataset_config: DatasetConfiguration,
 ) -> Result<Vec<f32>, ServiceError> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child("get_dense_vector", "Create semantic dense embedding")
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new(
-                "get_dense_vector",
-                "Create semantic dense embedding",
-            );
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
     let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
     let config_embedding_base_url = dataset_config.EMBEDDING_BASE_URL;
-    transaction.set_data(
-        "EMBEDDING_SERVER",
-        config_embedding_base_url.as_str().into(),
-    );
-    transaction.set_data(
-        "EMBEDDING_MODEL",
-        dataset_config.EMBEDDING_MODEL_NAME.as_str().into(),
-    );
 
     let embedding_base_url = match config_embedding_base_url.as_str() {
         "" => get_env!("OPENAI_BASE_URL", "OPENAI_BASE_URL must be set").to_string(),
@@ -131,7 +108,9 @@ pub async fn get_dense_vector(
         truncate: true,
     };
 
-    let resp = web::block(move || {
+    
+
+    web::block(move || {
         let embeddings_resp_a = ureq::post(&format!(
             "{}/embeddings?api-version=2023-05-15",
             embedding_base_url
@@ -192,10 +171,7 @@ pub async fn get_dense_vector(
         }
     })
     .await
-    .map_err(|err| ServiceError::BadRequest(format!("Thread error {:?}", err)))?;
-
-    transaction.finish();
-    resp
+    .map_err(|err| ServiceError::BadRequest(format!("Thread error {:?}", err)))?
 }
 
 #[tracing::instrument]
@@ -332,21 +308,6 @@ pub async fn get_dense_vectors(
     dataset_config: DatasetConfiguration,
     reqwest_client: reqwest::Client,
 ) -> Result<Vec<Vec<f32>>, ServiceError> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child("get_dense_vector", "Create semantic dense embedding")
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new(
-                "get_dense_vector",
-                "Create semantic dense embedding",
-            );
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
     let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API_KEY should be set");
     let config_embedding_base_url = dataset_config.EMBEDDING_BASE_URL;
     let embedding_base_url = match config_embedding_base_url.as_str() {
@@ -576,7 +537,6 @@ pub async fn get_dense_vectors(
             .collect();
     }
 
-    transaction.finish();
     Ok(content_vectors)
 }
 
@@ -883,21 +843,6 @@ pub async fn cross_encoder(
     results: Vec<ScoreChunkDTO>,
     dataset_config: &DatasetConfiguration,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
-    let parent_span = sentry::configure_scope(|scope| scope.get_span());
-    let transaction: sentry::TransactionOrSpan = match &parent_span {
-        Some(parent) => parent
-            .start_child("Cross Encoder", "Cross Encode semantic and hybrid chunks")
-            .into(),
-        None => {
-            let ctx = sentry::TransactionContext::new(
-                "Cross Encoder",
-                "Cross Encode semantic and hybrid chunks",
-            );
-            sentry::start_transaction(ctx).into()
-        }
-    };
-    sentry::configure_scope(|scope| scope.set_span(Some(transaction.clone())));
-
     let server_origin: String = dataset_config.RERANKER_BASE_URL.clone();
 
     let embedding_server_call = format!("{}/rerank", server_origin);
@@ -1045,7 +990,6 @@ pub async fn cross_encoder(
 
     results.truncate(page_size.try_into().unwrap());
 
-    transaction.finish();
     Ok(results)
 }
 
