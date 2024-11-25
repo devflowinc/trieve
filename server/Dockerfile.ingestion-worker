@@ -3,7 +3,7 @@ FROM rust:1.81-slim-bookworm AS chef
 # it will be cached from the second build onwards
 RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev g++ curl
 RUN cargo install cargo-chef 
-WORKDIR app
+WORKDIR /app
 
 FROM chef AS planner
 COPY . .
@@ -18,11 +18,13 @@ COPY . .
 RUN cargo build --release --features "runtime-env" --bin "ingestion-worker"
 
 FROM debian:bookworm-slim AS runtime
-RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates 
+RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates curl redis-tools
+RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b134/subtrace-linux-amd64 \
+    && chmod +x ./subtrace
 WORKDIR /app
 COPY ./migrations/ /app/migrations
 COPY --from=builder /app/target/release/ingestion-worker /app/ingestion-worker
 
 
 EXPOSE 8090
-ENTRYPOINT ["/app/ingestion-worker"]
+ENTRYPOINT ["./subtrace", "run", "--tls-false", "--", "/app/ingestion-worker"]
