@@ -46,6 +46,7 @@ Name | Type | Description | Notes
 **show_floating_button** | **bool** |  | [optional] 
 **show_floating_input** | **bool** |  | [optional] 
 **show_floating_search_icon** | **bool** |  | [optional] 
+**show_result_highlights** | **bool** |  | [optional] 
 **single_product_options** | [**SingleProductOptions**](SingleProductOptions.md) |  | [optional] 
 **suggested_queries** | **bool** |  | [optional] 
 **tab_messages** | [**List[PublicPageTabMessage]**](PublicPageTabMessage.md) |  | [optional] 

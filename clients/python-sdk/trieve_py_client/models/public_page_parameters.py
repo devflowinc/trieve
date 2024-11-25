@@ -77,6 +77,7 @@ class PublicPageParameters(BaseModel):
     show_floating_button: Optional[StrictBool] = Field(default=None, alias="showFloatingButton")
     show_floating_input: Optional[StrictBool] = Field(default=None, alias="showFloatingInput")
     show_floating_search_icon: Optional[StrictBool] = Field(default=None, alias="showFloatingSearchIcon")
+    show_result_highlights: Optional[StrictBool] = Field(default=None, alias="showResultHighlights")
     single_product_options: Optional[SingleProductOptions] = Field(default=None, alias="singleProductOptions")
     suggested_queries: Optional[StrictBool] = Field(default=None, alias="suggestedQueries")
     tab_messages: Optional[List[PublicPageTabMessage]] = Field(default=None, alias="tabMessages")
@@ -89,7 +90,7 @@ class PublicPageParameters(BaseModel):
     video_link: Optional[StrictStr] = Field(default=None, alias="videoLink")
     video_position: Optional[StrictStr] = Field(default=None, alias="videoPosition")
     z_index: Optional[StrictInt] = Field(default=None, alias="zIndex")
-    __properties: ClassVar[List[str]] = ["allowSwitchingModes", "analytics", "apiKey", "baseUrl", "brandColor", "brandFontFamily", "brandLogoImgSrcUrl", "brandName", "buttonTriggers", "chat", "creatorLinkedInUrl", "creatorName", "currencyPosition", "datasetId", "debounceMs", "defaultAiQuestions", "defaultCurrency", "defaultImageQuestion", "defaultSearchMode", "defaultSearchQueries", "floatingButtonPosition", "floatingSearchIconPosition", "followupQuestions", "forBrandName", "headingPrefix", "heroPattern", "hideDrawnText", "inline", "inlineHeader", "isTestMode", "navLogoImgSrcUrl", "numberOfSuggestions", "openGraphMetadata", "openLinksInNewTab", "placeholder", "problemLink", "responsive", "searchOptions", "showFloatingButton", "showFloatingInput", "showFloatingSearchIcon", "singleProductOptions", "suggestedQueries", "tabMessages", "tags", "theme", "type", "useGroupSearch", "useLocal", "usePagefind", "videoLink", "videoPosition", "zIndex"]
+    __properties: ClassVar[List[str]] = ["allowSwitchingModes", "analytics", "apiKey", "baseUrl", "brandColor", "brandFontFamily", "brandLogoImgSrcUrl", "brandName", "buttonTriggers", "chat", "creatorLinkedInUrl", "creatorName", "currencyPosition", "datasetId", "debounceMs", "defaultAiQuestions", "defaultCurrency", "defaultImageQuestion", "defaultSearchMode", "defaultSearchQueries", "floatingButtonPosition", "floatingSearchIconPosition", "followupQuestions", "forBrandName", "headingPrefix", "heroPattern", "hideDrawnText", "inline", "inlineHeader", "isTestMode", "navLogoImgSrcUrl", "numberOfSuggestions", "openGraphMetadata", "openLinksInNewTab", "placeholder", "problemLink", "responsive", "searchOptions", "showFloatingButton", "showFloatingInput", "showFloatingSearchIcon", "showResultHighlights", "singleProductOptions", "suggestedQueries", "tabMessages", "tags", "theme", "type", "useGroupSearch", "useLocal", "usePagefind", "videoLink", "videoPosition", "zIndex"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -368,6 +369,11 @@ class PublicPageParameters(BaseModel):
         if self.show_floating_search_icon is None and "show_floating_search_icon" in self.model_fields_set:
             _dict['showFloatingSearchIcon'] = None
 
+        # set to None if show_result_highlights (nullable) is None
+        # and model_fields_set contains the field
+        if self.show_result_highlights is None and "show_result_highlights" in self.model_fields_set:
+            _dict['showResultHighlights'] = None
+
         # set to None if single_product_options (nullable) is None
         # and model_fields_set contains the field
         if self.single_product_options is None and "single_product_options" in self.model_fields_set:
@@ -481,6 +487,7 @@ class PublicPageParameters(BaseModel):
             "showFloatingButton": obj.get("showFloatingButton"),
             "showFloatingInput": obj.get("showFloatingInput"),
             "showFloatingSearchIcon": obj.get("showFloatingSearchIcon"),
+            "showResultHighlights": obj.get("showResultHighlights"),
             "singleProductOptions": SingleProductOptions.from_dict(obj["singleProductOptions"]) if obj.get("singleProductOptions") is not None else None,
             "suggestedQueries": obj.get("suggestedQueries"),
             "tabMessages": [PublicPageTabMessage.from_dict(_item) for _item in obj["tabMessages"]] if obj.get("tabMessages") is not None else None,

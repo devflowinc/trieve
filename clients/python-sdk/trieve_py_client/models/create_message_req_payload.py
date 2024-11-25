@@ -43,6 +43,7 @@ class CreateMessageReqPayload(BaseModel):
     llm_options: Optional[LLMOptions] = None
     new_message_content: Optional[StrictStr] = Field(default=None, description="The content of the user message to attach to the topic and then generate an assistant message in response to.")
     no_result_message: Optional[StrictStr] = Field(default=None, description="No result message for when there are no chunks found above the score threshold.")
+    only_include_docs_used: Optional[StrictBool] = Field(default=None, description="Only include docs used in the completion. If not specified, this defaults to false.")
     page_size: Optional[Annotated[int, Field(strict=True, ge=0)]] = Field(default=None, description="Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.")
     score_threshold: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, description="Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.")
     search_query: Optional[StrictStr] = Field(default=None, description="Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.")
@@ -51,7 +52,7 @@ class CreateMessageReqPayload(BaseModel):
     topic_id: StrictStr = Field(description="The ID of the topic to attach the message to.")
     use_group_search: Optional[StrictBool] = Field(default=None, description="If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.")
     user_id: Optional[StrictStr] = Field(default=None, description="The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.")
-    __properties: ClassVar[List[str]] = ["audio_input", "concat_user_messages_query", "context_options", "filters", "highlight_options", "image_urls", "llm_options", "new_message_content", "no_result_message", "page_size", "score_threshold", "search_query", "search_type", "sort_options", "topic_id", "use_group_search", "user_id"]
+    __properties: ClassVar[List[str]] = ["audio_input", "concat_user_messages_query", "context_options", "filters", "highlight_options", "image_urls", "llm_options", "new_message_content", "no_result_message", "only_include_docs_used", "page_size", "score_threshold", "search_query", "search_type", "sort_options", "topic_id", "use_group_search", "user_id"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -152,6 +153,11 @@ class CreateMessageReqPayload(BaseModel):
         if self.no_result_message is None and "no_result_message" in self.model_fields_set:
             _dict['no_result_message'] = None
 
+        # set to None if only_include_docs_used (nullable) is None
+        # and model_fields_set contains the field
+        if self.only_include_docs_used is None and "only_include_docs_used" in self.model_fields_set:
+            _dict['only_include_docs_used'] = None
+
         # set to None if page_size (nullable) is None
         # and model_fields_set contains the field
         if self.page_size is None and "page_size" in self.model_fields_set:
@@ -208,6 +214,7 @@ class CreateMessageReqPayload(BaseModel):
             "llm_options": LLMOptions.from_dict(obj["llm_options"]) if obj.get("llm_options") is not None else None,
             "new_message_content": obj.get("new_message_content"),
             "no_result_message": obj.get("no_result_message"),
+            "only_include_docs_used": obj.get("only_include_docs_used"),
             "page_size": obj.get("page_size"),
             "score_threshold": obj.get("score_threshold"),
             "search_query": obj.get("search_query"),
