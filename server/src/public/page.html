@@ -31,9 +31,6 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
-      {% if hero_pattern -%}
-      background-image: url("{{hero_pattern|safe}}");
-      {% endif -%}
     }
 
     .corner-logo {
@@ -77,7 +74,7 @@
   </script>
 </head>
 
-<body>
+<body style="{{ body_style }}; {{ background_color }}">
     {% if logged_in %}
     <a class="dev-back-button" href="{{dashboard_url}}/dataset/{{params.datasetId}}/public-page">Back To Dashboard</a>
     {% else %}

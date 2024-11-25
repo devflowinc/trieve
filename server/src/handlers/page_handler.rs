@@ -105,6 +105,21 @@ pub struct PublicPageSearchOptions {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct HeroPattern {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hero_pattern_svg: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hero_pattern_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub foreground_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub foreground_opacity: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background_color: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dataset_id: Option<uuid::Uuid>,
@@ -154,7 +169,7 @@ pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub debounce_ms: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub hero_pattern: Option<String>,
+    pub hero_pattern: Option<HeroPattern>,
 }
 
 #[utoipa::path(
@@ -194,16 +209,29 @@ pub async fn public_page(
 
     if config.PUBLIC_DATASET.enabled {
         let templ = templates.get_template("page.html").unwrap();
-        let hero_pattern = config.PUBLIC_DATASET.extra_params
+
+        let hero_pattern = config
+            .PUBLIC_DATASET
+            .extra_params
             .as_ref()
-            .and_then(|params| params.hero_pattern.clone())
-            .unwrap_or_default();
+            .and_then(|params| params.hero_pattern.clone());
+
+        let body_style = hero_pattern
+            .as_ref()
+            .and_then(|p| p.hero_pattern_svg.as_ref())
+            .map(|url| format!("background-image: url('{url}')"));
+        let background_color = hero_pattern
+            .as_ref()
+            .and_then(|p| p.background_color.as_ref())
+            .map(|color| format!("background-color: {color}"));
 
         let response_body = templ
             .render(context! {
                 logged_in,
                 dashboard_url,
-                hero_pattern,
+                background_color,
+                has_hero_pattern => hero_pattern.is_some(),
+                body_style,
                 params => PublicPageParameters {
                     dataset_id: Some(dataset_id),
                     base_url: Some(base_server_url.to_string()),

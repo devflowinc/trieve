@@ -1614,6 +1614,14 @@ export type HeadQueryResponse = {
     queries: Array<HeadQueries>;
 };
 
+export type HeroPattern = {
+    backgroundColor?: (string) | null;
+    foregroundColor?: (string) | null;
+    foregroundOpacity?: (number) | null;
+    heroPatternName?: (string) | null;
+    heroPatternSvg?: (string) | null;
+};
+
 /**
  * Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
  */
@@ -1848,6 +1856,7 @@ export type PublicPageParameters = {
     defaultCurrency?: (string) | null;
     defaultSearchMode?: (string) | null;
     defaultSearchQueries?: Array<(string)> | null;
+    heroPattern?: ((HeroPattern) | null);
     placeholder?: (string) | null;
     problemLink?: (string) | null;
     responsive?: (boolean) | null;
@@ -1856,7 +1865,6 @@ export type PublicPageParameters = {
     theme?: ((PublicPageTheme) | null);
     type?: (string) | null;
     useGroupSearch?: (boolean) | null;
-    heroPattern?: (string) | null;
 };
 
 export type PublicPageSearchOptions = {
