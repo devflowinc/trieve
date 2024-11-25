@@ -3,7 +3,7 @@ FROM rust:1.81-slim-bookworm AS chef
 # it will be cached from the second build onwards
 RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev g++ curl
 RUN cargo install cargo-chef 
-WORKDIR app
+WORKDIR /app
 
 FROM chef AS planner
 COPY . .
@@ -31,12 +31,10 @@ RUN apt-get update -y; \
     redis-tools \
     ;
 
-RUN curl -fsSL https://github.com/subtrace/subtrace/releases/download/b134/subtrace-linux-amd64 -o /app/subtrace && chmod +x /app/subtrace
-
 COPY ./migrations/ /app/migrations
 COPY ./ch_migrations /app/ch_migrations
 COPY ./src/public/ /app/src/public
 COPY --from=builder /app/target/release/trieve-server /app/trieve-server
 
 EXPOSE 8090
-ENTRYPOINT ["/app/subtrace", "run", "--tls-false", "--", "/app/trieve-server"]
+ENTRYPOINT ["/app/trieve-server"]

@@ -12,7 +12,7 @@
       "name": "BSL",
       "url": "https://github.com/devflowinc/trieve/blob/main/LICENSE.txt"
     },
-    "version": "0.12.1"
+    "version": "0.13.0"
   },
   "servers": [
     {
@@ -7569,9 +7569,6 @@
           },
           {
             "$ref": "#/components/schemas/ContentChunkMetadata"
-          },
-          {
-            "$ref": "#/components/schemas/QdrantChunkMetadata"
           }
         ]
       },
@@ -11359,9 +11356,6 @@
           },
           {
             "$ref": "#/components/schemas/ContentChunkMetadata"
-          },
-          {
-            "$ref": "#/components/schemas/QdrantChunkMetadata"
           }
         ]
       },
@@ -11851,14 +11845,20 @@
       "QdrantChunkMetadata": {
         "type": "object",
         "required": [
-          "qdrant_point_id"
+          "qdrant_point_id",
+          "dataset_id",
+          "weight"
         ],
         "properties": {
           "chunk_html": {
             "type": "string",
             "nullable": true
           },
-          "images_urls": {
+          "dataset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "image_urls": {
             "type": "array",
             "items": {
               "type": "string"
@@ -11869,7 +11869,20 @@
             "type": "string",
             "nullable": true
           },
+          "location": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GeoInfo"
+              }
+            ],
+            "nullable": true
+          },
           "metadata": {
+            "nullable": true
+          },
+          "num_value": {
+            "type": "number",
+            "format": "double",
             "nullable": true
           },
           "qdrant_point_id": {
@@ -11882,6 +11895,19 @@
               "type": "string"
             },
             "nullable": true
+          },
+          "time_stamp": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "tracking_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "weight": {
+            "type": "number",
+            "format": "double"
           }
         }
       },

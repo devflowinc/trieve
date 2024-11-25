@@ -341,7 +341,7 @@ export type ChunkMetadataStringTagSet = {
     weight: number;
 };
 
-export type ChunkMetadataTypes = SlimChunkMetadata | ChunkMetadataStringTagSet | ContentChunkMetadata | QdrantChunkMetadata;
+export type ChunkMetadataTypes = SlimChunkMetadata | ChunkMetadataStringTagSet | ContentChunkMetadata;
 
 export type ChunkMetadataWithPosition = {
     chunk: ChunkMetadata;
@@ -1786,7 +1786,7 @@ export type MultiQuery = {
     weight: number;
 };
 
-export type NewChunkMetadataTypes = SlimChunkMetadataWithArrayTagSet | ChunkMetadata | ContentChunkMetadata | QdrantChunkMetadata;
+export type NewChunkMetadataTypes = SlimChunkMetadataWithArrayTagSet | ChunkMetadata | ContentChunkMetadata;
 
 export type Organization = {
     created_at: string;
@@ -1910,11 +1910,17 @@ export type PublicPageTheme = 'light' | 'dark';
 
 export type QdrantChunkMetadata = {
     chunk_html?: (string) | null;
-    images_urls?: Array<(string)> | null;
+    dataset_id: string;
+    image_urls?: Array<(string)> | null;
     link?: (string) | null;
+    location?: ((GeoInfo) | null);
     metadata?: unknown;
+    num_value?: (number) | null;
     qdrant_point_id: string;
     tag_set?: Array<(string)> | null;
+    time_stamp?: (string) | null;
+    tracking_id?: (string) | null;
+    weight: number;
 };
 
 /**
