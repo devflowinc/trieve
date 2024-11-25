@@ -16,7 +16,7 @@ import {
   DisclosureButton,
   DisclosurePanel,
 } from "terracotta";
-import {  SetUserApiKeyResponse } from "shared/types";
+import { SetUserApiKeyResponse } from "shared/types";
 import { UserContext } from "../contexts/UserContext";
 import { createToast } from "./ShowToasts";
 import {
@@ -214,7 +214,7 @@ export const ApiKeyGenerateModal = (props: {
                           for="organization"
                           class="block text-sm font-medium leading-6 sm:pt-1.5"
                         >
-                          Perms
+                          Perm Level
                         </label>
                         <div class="mt-2 sm:col-span-2 sm:mt-0">
                           <select
