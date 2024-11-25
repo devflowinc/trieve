@@ -3033,6 +3033,9 @@ impl DatasetConfigurationDTO {
                     use_group_search: page_parameters_self
                         .use_group_search
                         .or(page_parameters_curr.use_group_search),
+                    hero_pattern: page_parameters_self
+                        .hero_pattern
+                        .or(page_parameters_curr.hero_pattern),
                 }),
             },
         }
