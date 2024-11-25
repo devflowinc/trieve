@@ -13,6 +13,7 @@ import { PublicPageParameters } from "trieve-ts-sdk";
 import { publicPageSearchOptionsSchema } from "../../analytics/utils/schemas/autocomplete";
 import { FiExternalLink } from "solid-icons/fi";
 import { createQuery } from "@tanstack/solid-query";
+import { HeroPatterns } from "./HeroPatterns";
 
 export interface PublicDatasetOptions {}
 
@@ -34,6 +35,10 @@ export const PublicPageSettings = () => {
   const publicUrl = createMemo(() => {
     return `${apiHost.slice(0, -4)}/public_page/${datasetId()}`;
   });
+
+  const [heroPattern, setHeroPattern] = createSignal("Blank");
+  const [foregroundColor, setForegroundColor] = createSignal("#000000");
+  const [foregroundOpacity, setForegroundOpacity] = createSignal(50);
 
   const trieve = useTrieve();
 
@@ -113,6 +118,18 @@ export const PublicPageSettings = () => {
 
     setisPublic(false);
   };
+
+  createEffect(() => {
+    const pattern = heroPattern();
+    if (pattern === "Blank") {
+      setExtraParams("heroPattern", "");
+    } else {
+      const color = foregroundColor().replace("#", "");
+      const opacity = foregroundOpacity() / 100;
+      console.log(HeroPatterns[pattern](color, opacity));
+      setExtraParams("heroPattern", HeroPatterns[pattern](color, opacity));
+    }
+  });
 
   const publishDataset = async () => {
     const name = `${datasetId()}-pregenerated-search-component`;
@@ -205,7 +222,7 @@ export const PublicPageSettings = () => {
       <Show when={isPublic() && hasLoaded()}>
         <div class="mt-4 flex content-center items-center gap-1.5 gap-x-2.5">
           <span class="font-medium">Published Url:</span>{" "}
-          <a class="text-magenta-400" href={publicUrl()}>
+          <a class="text-magenta-400" href={publicUrl()} target="_blank">
             {publicUrl()}
           </a>
           <CopyButton size={15} text={publicUrl()} />
@@ -534,6 +551,50 @@ export const PublicPageSettings = () => {
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
           </div>
+          <div class="grow">
+            <div class="flex items-center gap-1">
+              <label class="block">Hero Pattern</label>
+              <Tooltip
+                tooltipText="Choose a hero pattern for the search component"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
+            <Select
+              display={(option) => option}
+              onSelected={(option) => {
+                setHeroPattern(option);
+              }}
+              class="bg-white py-1"
+              selected={heroPattern()}
+              options={Object.keys(HeroPatterns)}
+            />
+          </div>
+          <Show when={heroPattern() !== "Blank"}>
+            <div class="grow">
+              <label class="block" for="">
+                Foreground Color
+              </label>
+              <input
+                type="color"
+                onInput={(e) => {
+                  setForegroundColor(e.currentTarget.value.replace("#", ""));
+                }}
+              />
+            </div>
+            <div class="grow">
+              <label class="block" for="">
+                Foreground Opacity
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                onInput={(e) => {
+                  setForegroundOpacity(parseInt(e.currentTarget.value));
+                }}
+              />
+            </div>
+          </Show>
         </div>
         <details class="mb-4 mt-4">
           <summary class="cursor-pointer text-sm font-medium">
@@ -562,7 +623,6 @@ export const PublicPageSettings = () => {
                   class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
               </div>
-
               <div class="grow">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">

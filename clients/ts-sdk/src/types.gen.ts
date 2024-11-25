@@ -1856,6 +1856,7 @@ export type PublicPageParameters = {
     theme?: ((PublicPageTheme) | null);
     type?: (string) | null;
     useGroupSearch?: (boolean) | null;
+    heroPattern?: (string) | null;
 };
 
 export type PublicPageSearchOptions = {

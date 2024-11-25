@@ -153,6 +153,8 @@ pub struct PublicPageParameters {
     pub currency_position: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub debounce_ms: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hero_pattern: Option<String>,
 }
 
 #[utoipa::path(
@@ -192,10 +194,16 @@ pub async fn public_page(
 
     if config.PUBLIC_DATASET.enabled {
         let templ = templates.get_template("page.html").unwrap();
+        let hero_pattern = config.PUBLIC_DATASET.extra_params
+            .as_ref()
+            .and_then(|params| params.hero_pattern.clone())
+            .unwrap_or_default();
+
         let response_body = templ
             .render(context! {
                 logged_in,
                 dashboard_url,
+                hero_pattern,
                 params => PublicPageParameters {
                     dataset_id: Some(dataset_id),
                     base_url: Some(base_server_url.to_string()),
