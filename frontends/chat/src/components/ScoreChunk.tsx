@@ -79,8 +79,6 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     (import.meta.env.VITE_SEARCH_UI_URL as string | undefined) ??
     "https://search.trieve.ai";
 
-  const linesBeforeShowMore = 12;
-
   const [expanded, setExpanded] = createSignal(props.initialExpanded ?? false);
   const [copied, setCopied] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(false);
@@ -127,7 +125,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
 
   const useExpand = createMemo(() => {
     if (!props.chunk.chunk_html) return false;
-    return props.chunk.chunk_html.split(" ").length > 20 * linesBeforeShowMore;
+    return props.chunk.chunk_html.split(" ").length > 20 * 15;
   });
 
   return (
@@ -344,11 +342,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           "text-ellipsis max-w-[100%] w-full break-words space-y-5 leading-normal !text-black dark:!text-white":
             true,
         }}
-        style={
-          useExpand() && !expanded()
-            ? { "-webkit-line-clamp": linesBeforeShowMore }
-            : {}
-        }
+        style={useExpand() && !expanded() ? { "-webkit-line-clamp": 15 } : {}}
         // eslint-disable-next-line solid/no-innerhtml, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         innerHTML={sanitizeHtml(
           props.chunk.chunk_html !== undefined
@@ -361,10 +355,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
       />
       <Show when={useExpand()}>
         <button
-          classList={{
-            "ml-2 font-semibold": true,
-            "text-neutral-300 dark:text-neutral-500": !props.showExpand,
-          }}
+          class="ml-2 font-semibold !text-black dark:!text-white"
           disabled={!props.showExpand}
           onClick={() => setExpanded((prev) => !prev)}
         >
