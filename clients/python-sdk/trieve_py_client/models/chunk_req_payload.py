@@ -35,6 +35,7 @@ class ChunkReqPayload(BaseModel):
     fulltext_boost: Optional[FullTextBoost] = None
     group_ids: Optional[List[StrictStr]] = Field(default=None, description="Group ids are the Trieve generated ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these Trieve generated ids must be created first, it cannot be arbitrarily created through this route.")
     group_tracking_ids: Optional[List[StrictStr]] = Field(default=None, description="Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. If a group with the tracking_id does not exist, it will be created.")
+    high_priority: Optional[StrictBool] = Field(default=None, description="High Priority allows you to place this chunk into a priority queue with its own ingestion workers. Can only be used by users with a Custom Pro plan.")
     image_urls: Optional[List[StrictStr]] = Field(default=None, description="Image urls are a list of urls to images that are associated with the chunk. This is useful for when you want to associate images with a chunk.")
     link: Optional[StrictStr] = Field(default=None, description="Link to the chunk. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation.")
     location: Optional[GeoInfo] = None
@@ -48,7 +49,7 @@ class ChunkReqPayload(BaseModel):
     tracking_id: Optional[StrictStr] = Field(default=None, description="Tracking_id is a string which can be used to identify a chunk. This is useful for when you are coordinating with an external system and want to use the tracking_id to identify the chunk.")
     upsert_by_tracking_id: Optional[StrictBool] = Field(default=None, description="Upsert when a chunk with the same tracking_id exists. By default this is false, and chunks will be ignored if another with the same tracking_id exists. If this is true, the chunk will be updated if a chunk with the same tracking_id exists.")
     weight: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, description="Weight is a float which can be used to bias search results. This is useful for when you want to bias search results for a chunk. The magnitude only matters relative to other chunks in the chunk's dataset dataset.")
-    __properties: ClassVar[List[str]] = ["chunk_html", "convert_html_to_text", "fulltext_boost", "group_ids", "group_tracking_ids", "image_urls", "link", "location", "metadata", "num_value", "semantic_boost", "semantic_content", "split_avg", "tag_set", "time_stamp", "tracking_id", "upsert_by_tracking_id", "weight"]
+    __properties: ClassVar[List[str]] = ["chunk_html", "convert_html_to_text", "fulltext_boost", "group_ids", "group_tracking_ids", "high_priority", "image_urls", "link", "location", "metadata", "num_value", "semantic_boost", "semantic_content", "split_avg", "tag_set", "time_stamp", "tracking_id", "upsert_by_tracking_id", "weight"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -122,6 +123,11 @@ class ChunkReqPayload(BaseModel):
         # and model_fields_set contains the field
         if self.group_tracking_ids is None and "group_tracking_ids" in self.model_fields_set:
             _dict['group_tracking_ids'] = None
+
+        # set to None if high_priority (nullable) is None
+        # and model_fields_set contains the field
+        if self.high_priority is None and "high_priority" in self.model_fields_set:
+            _dict['high_priority'] = None
 
         # set to None if image_urls (nullable) is None
         # and model_fields_set contains the field
@@ -205,6 +211,7 @@ class ChunkReqPayload(BaseModel):
             "fulltext_boost": FullTextBoost.from_dict(obj["fulltext_boost"]) if obj.get("fulltext_boost") is not None else None,
             "group_ids": obj.get("group_ids"),
             "group_tracking_ids": obj.get("group_tracking_ids"),
+            "high_priority": obj.get("high_priority"),
             "image_urls": obj.get("image_urls"),
             "link": obj.get("link"),
             "location": GeoInfo.from_dict(obj["location"]) if obj.get("location") is not None else None,

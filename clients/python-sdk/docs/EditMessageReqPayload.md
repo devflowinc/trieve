@@ -15,6 +15,7 @@ Name | Type | Description | Notes
 **message_sort_order** | **int** | The sort order of the message to edit. | 
 **new_message_content** | **str** | The new content of the message to replace the old content with. | [optional] 
 **no_result_message** | **str** | No result message for when there are no chunks found above the score threshold. | [optional] 
+**only_include_docs_used** | **bool** | Only include docs used in the completion. If not specified, this defaults to false. | [optional] 
 **page_size** | **int** | Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None. | [optional] 
 **score_threshold** | **float** | Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0. | [optional] 
 **search_query** | **str** | Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None. | [optional] 

@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **fulltext_boost** | [**FullTextBoost**](FullTextBoost.md) |  | [optional] 
 **group_ids** | **List[str]** | Group ids are the Trieve generated ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these Trieve generated ids must be created first, it cannot be arbitrarily created through this route. | [optional] 
 **group_tracking_ids** | **List[str]** | Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. If a group with the tracking_id does not exist, it will be created. | [optional] 
+**high_priority** | **bool** | High Priority allows you to place this chunk into a priority queue with its own ingestion workers. Can only be used by users with a Custom Pro plan. | [optional] 
 **image_urls** | **List[str]** | Image urls are a list of urls to images that are associated with the chunk. This is useful for when you want to associate images with a chunk. | [optional] 
 **link** | **str** | Link to the chunk. This can also be any string. Frequently, this is a link to the source of the chunk. The link value will not affect the embedding creation. | [optional] 
 **location** | [**GeoInfo**](GeoInfo.md) |  | [optional] 
