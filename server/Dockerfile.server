@@ -27,8 +27,11 @@ RUN apt-get update -y; \
     libssl-dev \
     libpq-dev \
     ca-certificates \
-    ; \
-    mkdir -p /app/tmp
+    curl \
+    redis-tools \
+    ;
+
+RUN curl -fsSL https://github.com/subtrace/subtrace/releases/download/b119/subtrace-linux-amd64 -o /app/subtrace && chmod +x /app/subtrace
 
 COPY ./migrations/ /app/migrations
 COPY ./ch_migrations /app/ch_migrations
@@ -36,4 +39,4 @@ COPY ./src/public/ /app/src/public
 COPY --from=builder /app/target/release/trieve-server /app/trieve-server
 
 EXPOSE 8090
-ENTRYPOINT ["/app/trieve-server"]
+ENTRYPOINT ["/app/subtrace", "run", "--tls-false", "--", "/app/trieve-server"]
