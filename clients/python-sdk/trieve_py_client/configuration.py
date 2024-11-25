@@ -409,7 +409,7 @@ conf = trieve_py_client.Configuration(
                "OS: {env}\n"\
                "Python Version: {pyversion}\n"\
                "Version of the API: 0.13.0\n"\
-               "SDK Package Version: 0.12.11".\
+               "SDK Package Version: 0.12.12".\
                format(env=sys.platform, pyversion=sys.version)
 
     def get_host_settings(self):

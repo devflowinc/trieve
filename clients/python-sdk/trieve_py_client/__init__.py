@@ -15,7 +15,7 @@
 """  # noqa: E501
 
 
-__version__ = "0.12.11"
+__version__ = "0.12.12"
 
 # import apis into sdk package
 from trieve_py_client.api.analytics_api import AnalyticsApi

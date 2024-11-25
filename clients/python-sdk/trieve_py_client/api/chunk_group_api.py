@@ -4571,14 +4571,18 @@ class ChunkGroupApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._search_within_group_serialize(
-            tr_dataset=tr_dataset,
-            search_within_group_req_payload=search_within_group_req_payload,
-            x_api_version=x_api_version,
-            _request_auth=_request_auth,
-            _content_type=_content_type,
-            _headers=_headers,
-            _host_index=_host_index
+        payload = self.api_client.sanitize_for_serialization(search_within_group_req_payload)
+
+        url = self.api_client.configuration.host + "/api/chunk_group/search"
+        headers = {
+            "TR-Dataset": tr_dataset,
+            "Authorization": self.api_client.configuration.api_key["ApiKey"],
+            "Content-Type": "application/json",
+            "X-API-Version": "V2"
+        }
+
+        response = requests.request(
+            "POST", url, json=payload, headers=headers
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
