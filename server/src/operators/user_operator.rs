@@ -412,7 +412,7 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
         user.id,
         api_key_hash,
         "default".to_string(),
-        ApiKeyRole::ReadAndWrite,
+        ApiKeyRole::Admin,
         None,
         None,
         None,
