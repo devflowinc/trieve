@@ -3453,13 +3453,15 @@ impl ChunkMetadataTags {
 #[derive(Debug)]
 pub enum ApiKeyRole {
     Read = 0,
-    ReadAndWrite = 1,
+    Admin = 1,
+    Owner = 2,
 }
 
 impl From<i32> for ApiKeyRole {
     fn from(role: i32) -> Self {
         match role {
-            1 => ApiKeyRole::ReadAndWrite,
+            2 => ApiKeyRole::Owner,
+            1 => ApiKeyRole::Admin,
             _ => ApiKeyRole::Read,
         }
     }
@@ -3468,7 +3470,8 @@ impl From<i32> for ApiKeyRole {
 impl From<ApiKeyRole> for i32 {
     fn from(role: ApiKeyRole) -> Self {
         match role {
-            ApiKeyRole::ReadAndWrite => 1,
+            ApiKeyRole::Owner => 2,
+            ApiKeyRole::Admin => 1,
             ApiKeyRole::Read => 0,
         }
     }

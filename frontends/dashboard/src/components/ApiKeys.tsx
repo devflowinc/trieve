@@ -71,7 +71,7 @@ export const ApiKeys = () => {
         header: "Name",
       }),
       colHelp.accessor("role", {
-        header: "Perms",
+        header: "Perm Level",
         cell: (info) => {
           if (currentUserRole() > 0) {
             return fromI32ToUserRole(info.getValue());
@@ -82,7 +82,7 @@ export const ApiKeys = () => {
       colHelp.accessor("dataset_ids", {
         header: "Datasets",
         cell: (info) => {
-          return info.getValue()?.join(",");
+          return info.getValue()?.join(",") ?? "All Datasets";
         },
       }),
       colHelp.accessor("created_at", {
