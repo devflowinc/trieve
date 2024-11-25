@@ -254,6 +254,29 @@ const SearchForm = (props: {
                     e.currentTarget.style.height = "auto";
                     e.currentTarget.style.height =
                       e.currentTarget.scrollHeight + "px";
+
+                    const searchTextarea = document.getElementById(
+                      "search-query-textarea",
+                    );
+                    searchTextarea?.focus();
+                    setTimeout(() => {
+                      searchTextarea?.focus();
+                    }, 50);
+                    setTimeout(() => {
+                      searchTextarea?.focus();
+                    }, 100);
+                    setTimeout(() => {
+                      searchTextarea?.focus();
+                    }, 200);
+                    setTimeout(() => {
+                      searchTextarea?.focus();
+                    }, 300);
+                    setTimeout(() => {
+                      searchTextarea?.focus();
+                    }, 400);
+                    setTimeout(() => {
+                      searchTextarea?.focus();
+                    }, 500);
                   }}
                   onKeyDown={(e) => {
                     if (
