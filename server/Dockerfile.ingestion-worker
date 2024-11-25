@@ -18,9 +18,21 @@ COPY . .
 RUN cargo build --release --features "runtime-env" --bin "ingestion-worker"
 
 FROM debian:bookworm-slim AS runtime
-RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates curl redis-tools
-RUN curl -fsSL https://github.com/subtrace/subtrace/releases/download/b119/subtrace-linux-amd64 -o /app/subtrace && chmod +x /app/subtrace
+
 WORKDIR /app
+
+RUN apt-get update -y; \
+    apt-get install -y \
+    pkg-config \
+    build-essential\
+    libssl-dev \
+    libpq-dev \
+    ca-certificates \
+    curl \
+    redis-tools \
+    ;
+
+RUN curl -fsSL https://github.com/subtrace/subtrace/releases/download/b134/subtrace-linux-amd64 -o /app/subtrace && chmod +x /app/subtrace
 COPY ./migrations/ /app/migrations
 COPY --from=builder /app/target/release/ingestion-worker /app/ingestion-worker
 

@@ -31,7 +31,7 @@ RUN apt-get update -y; \
     redis-tools \
     ;
 
-RUN curl -fsSL https://github.com/subtrace/subtrace/releases/download/b119/subtrace-linux-amd64 -o /app/subtrace && chmod +x /app/subtrace
+RUN curl -fsSL https://github.com/subtrace/subtrace/releases/download/b134/subtrace-linux-amd64 -o /app/subtrace && chmod +x /app/subtrace
 
 COPY ./migrations/ /app/migrations
 COPY ./ch_migrations /app/ch_migrations
