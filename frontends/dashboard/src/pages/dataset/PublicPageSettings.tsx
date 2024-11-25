@@ -37,22 +37,21 @@ export const PublicPageSettings = () => {
   });
 
   const [heroPattern, setHeroPattern] = createSignal("Blank");
-  const [foregroundColor, setForegroundColor] = createSignal("#000000");
+  const [foregroundColor, setForegroundColor] = createSignal("#ffffff");
   const [foregroundOpacity, setForegroundOpacity] = createSignal(50);
+  const [backgroundColor, setBackgroundColor] = createSignal("#ffffff");
 
   const trieve = useTrieve();
 
   createEffect(() => {
-    fetchDataset();
-  });
-
-  const fetchDataset = () => {
+    const curExtraParams = {
+      ...extraParams,
+    };
     void trieve
       .fetch("/api/dataset/{dataset_id}", "get", {
         datasetId: datasetId(),
       })
       .then((dataset) => {
-        console.log(dataset);
         // @ts-expect-error Property 'PUBLIC_DATASET' does not exist on type '{}'. [2339]
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         setisPublic(dataset.server_configuration?.PUBLIC_DATASET.enabled);
@@ -62,9 +61,23 @@ export const PublicPageSettings = () => {
           dataset.server_configuration?.PUBLIC_DATASET.extra_params,
         );
 
+        setHeroPattern(curExtraParams.heroPattern?.heroPatternName || "Blank");
+
+        setForegroundColor(
+          curExtraParams.heroPattern?.foregroundColor || "#000000",
+        );
+
+        setForegroundOpacity(
+          (curExtraParams.heroPattern?.foregroundOpacity || 0.5) * 100,
+        );
+
+        setBackgroundColor(
+          curExtraParams.heroPattern?.backgroundColor || "#000000",
+        );
+
         setHasLoaded(true);
       });
-  };
+  });
 
   const crawlSettingsQuery = createQuery(() => ({
     queryKey: ["crawl-settings", datasetId()],
@@ -88,7 +101,6 @@ export const PublicPageSettings = () => {
       crawlSettingsQuery.data &&
       crawlSettingsQuery.data.scrape_options?.type === "shopify"
     ) {
-      //
       if (
         extraParams.useGroupSearch === null ||
         extraParams.useGroupSearch === undefined
@@ -121,13 +133,29 @@ export const PublicPageSettings = () => {
 
   createEffect(() => {
     const pattern = heroPattern();
-    if (pattern === "Blank") {
-      setExtraParams("heroPattern", "");
-    } else {
-      const color = foregroundColor().replace("#", "");
-      const opacity = foregroundOpacity() / 100;
-      console.log(HeroPatterns[pattern](color, opacity));
-      setExtraParams("heroPattern", HeroPatterns[pattern](color, opacity));
+    const color = foregroundColor();
+    const opacity = foregroundOpacity() / 100;
+
+    if (hasLoaded()) {
+      if (pattern === "Blank") {
+        setExtraParams("heroPattern", {
+          heroPatternSvg: "",
+          heroPatternName: "",
+          foregroundColor: "#ffffff",
+          foregroundOpacity: 0.5,
+          backgroundColor: "#ffffff",
+        });
+      } else {
+        const heroPattern = {
+          heroPatternSvg: HeroPatterns[pattern](color, opacity),
+          heroPatternName: pattern,
+          foregroundColor: color,
+          foregroundOpacity: opacity,
+          backgroundColor: backgroundColor(),
+        };
+
+        setExtraParams("heroPattern", heroPattern);
+      }
     }
   });
 
@@ -570,29 +598,49 @@ export const PublicPageSettings = () => {
             />
           </div>
           <Show when={heroPattern() !== "Blank"}>
-            <div class="grow">
-              <label class="block" for="">
-                Foreground Color
-              </label>
-              <input
-                type="color"
-                onInput={(e) => {
-                  setForegroundColor(e.currentTarget.value.replace("#", ""));
-                }}
-              />
-            </div>
-            <div class="grow">
-              <label class="block" for="">
-                Foreground Opacity
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                onInput={(e) => {
-                  setForegroundOpacity(parseInt(e.currentTarget.value));
-                }}
-              />
+            <div class="flex grow flex-row items-center justify-start">
+              <div class="grow">
+                <label class="block" for="">
+                  Foreground Color
+                </label>
+                <input
+                  type="color"
+                  onChange={(e) => {
+                    setForegroundColor(e.currentTarget.value);
+                  }}
+                  value={foregroundColor()}
+                />
+              </div>
+              <div class="grow">
+                <label class="block" for="">
+                  Foreground Opacity
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  onChange={(e) => {
+                    setForegroundOpacity(parseInt(e.currentTarget.value));
+                  }}
+                  value={foregroundOpacity()}
+                />
+              </div>
+              <div class="grow">
+                <Show
+                  when={heroPattern() !== "Blank" && heroPattern() !== "Solid"}
+                >
+                  <label class="block" for="">
+                    Background Color
+                  </label>
+                  <input
+                    type="color"
+                    onChange={(e) => {
+                      setBackgroundColor(e.currentTarget.value);
+                    }}
+                    value={backgroundColor()}
+                  />
+                </Show>
+              </div>
             </div>
           </Show>
         </div>
@@ -763,7 +811,7 @@ export const PublicPageSettings = () => {
             Save
           </button>
           <button
-            class="inline-flex justify-center rounded-md border-2 border-magenta-500 px-3 py-2 text-sm font-semibold text-magenta-500 shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
+            class="inline-flex justify-center rounded-md border-2 border-magenta-500 px-3 py-2 text-sm font-semibold text-magenta-500 shadow-sm hover:bg-magenta-600 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
             onClick={() => {
               void unpublishDataset();
             }}

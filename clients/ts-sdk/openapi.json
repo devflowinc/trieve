@@ -10939,6 +10939,32 @@
           }
         }
       },
+      "HeroPattern": {
+        "type": "object",
+        "properties": {
+          "backgroundColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "foregroundColor": {
+            "type": "string",
+            "nullable": true
+          },
+          "foregroundOpacity": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "heroPatternName": {
+            "type": "string",
+            "nullable": true
+          },
+          "heroPatternSvg": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "HighlightOptions": {
         "type": "object",
         "description": "Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.",
@@ -11656,6 +11682,14 @@
             "items": {
               "type": "string"
             },
+            "nullable": true
+          },
+          "heroPattern": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeroPattern"
+              }
+            ],
             "nullable": true
           },
           "placeholder": {
