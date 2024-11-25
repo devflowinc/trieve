@@ -4512,11 +4512,12 @@ class ChunkGroupApi:
 
         payload = self.api_client.sanitize_for_serialization(search_within_group_req_payload)
 
-        url = "https://api.trieve.ai/api/chunk_group/search"
+        url = self.api_client.configuration.host + "/api/chunk_group/search"
         headers = {
             "TR-Dataset": tr_dataset,
             "Authorization": self.api_client.configuration.api_key["ApiKey"],
             "Content-Type": "application/json",
+            "X-API-Version": "V2"
         }
 
         response = requests.request(
