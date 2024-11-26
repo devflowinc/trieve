@@ -1454,7 +1454,7 @@ class ChunkApi:
             ),
         ],
         search_chunks_req_payload: Annotated[
-            ChunkReqPayload | List[ChunkReqPayload],
+            SearchChunksReqPayload,
             Field(
                 description="JSON request payload to semantically search for chunks (chunks)"
             ),
