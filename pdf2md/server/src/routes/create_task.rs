@@ -34,7 +34,7 @@ async fn create_task(
     let provider = upload_file_data
         .provider
         .clone()
-        .unwrap_or(Provider::Chunkr);
+        .unwrap_or(Provider::LLM);
 
     let mut clickhouse_task = models::FileTaskClickhouse {
         id: uuid::Uuid::new_v4().to_string(),
