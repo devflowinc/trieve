@@ -9,15 +9,20 @@ import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { JsonInput, MultiStringInput, Select, Tooltip } from "shared/ui";
 import { createStore } from "solid-js/store";
-import { PublicPageParameters } from "trieve-ts-sdk";
+import { Dataset, PublicPageParameters } from "trieve-ts-sdk";
 import { publicPageSearchOptionsSchema } from "../../analytics/utils/schemas/autocomplete";
 import { FiExternalLink } from "solid-icons/fi";
 import { createQuery } from "@tanstack/solid-query";
 import { HeroPatterns } from "./HeroPatterns";
 
-export interface PublicDatasetOptions {}
-
-export const defaultCrawlOptions: PublicDatasetOptions = {};
+export type DatasetWithPublicPage = Dataset & {
+  server_configuration: {
+    PUBLIC_DATASET?: {
+      extra_params: PublicPageParameters;
+      enabled: boolean;
+    };
+  };
+};
 
 export const PublicPageSettings = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -44,38 +49,27 @@ export const PublicPageSettings = () => {
   const trieve = useTrieve();
 
   createEffect(() => {
-    void trieve
-      .fetch("/api/dataset/{dataset_id}", "get", {
+    void (
+      trieve.fetch<"eject">("/api/dataset/{dataset_id}", "get", {
         datasetId: datasetId(),
-      })
-      .then((dataset) => {
-        // @ts-expect-error Property 'PUBLIC_DATASET' does not exist on type '{}'. [2339]
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        setisPublic(dataset.server_configuration?.PUBLIC_DATASET.enabled);
-        // @ts-expect-error typescript: Property 'PUBLIC_DATASET' does not exist on type '{}'.
-        const params = dataset.server_configuration!.PUBLIC_DATASET.extra_params as  unknown as PublicPageParameters;
-        setExtraParams(
-          // @ts-expect-error Property 'PUBLIC_DATASET' does not exist on type '{}'. [2339]
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
-          dataset.server_configuration?.PUBLIC_DATASET.extra_params,
-        );
+      }) as Promise<DatasetWithPublicPage>
+    ).then((dataset) => {
+      setisPublic(!!dataset.server_configuration?.PUBLIC_DATASET?.enabled);
+      setExtraParams(
+        dataset?.server_configuration?.PUBLIC_DATASET?.extra_params || {},
+      );
 
-        setHeroPattern(params.heroPattern?.heroPatternName || "Blank");
+      const params =
+        dataset?.server_configuration?.PUBLIC_DATASET?.extra_params;
+      setHeroPattern(params?.heroPattern?.heroPatternName || "Blank");
+      setForegroundColor(params?.heroPattern?.foregroundColor || "#000000");
+      setForegroundOpacity(
+        (params?.heroPattern?.foregroundOpacity || 0.5) * 100,
+      );
+      setBackgroundColor(params?.heroPattern?.backgroundColor || "#000000");
 
-        setForegroundColor(
-          params.heroPattern?.foregroundColor || "#000000",
-        );
-
-        setForegroundOpacity(
-          (params.heroPattern?.foregroundOpacity || 0.5) * 100,
-        );
-
-        setBackgroundColor(
-          params.heroPattern?.backgroundColor || "#000000",
-        );
-
-        setHasLoaded(true);
-      });
+      setHasLoaded(true);
+    });
   });
 
   const crawlSettingsQuery = createQuery(() => ({
@@ -597,52 +591,52 @@ export const PublicPageSettings = () => {
             />
           </div>
         </div>
-          <Show when={heroPattern() !== "Blank"}>
-            <div class="flex pt-4 gap-4 flex-row items-center justify-start">
-              <div class="">
+        <Show when={heroPattern() !== "Blank"}>
+          <div class="flex flex-row items-center justify-start gap-4 pt-4">
+            <div class="">
+              <label class="block" for="">
+                Foreground Color
+              </label>
+              <input
+                type="color"
+                onChange={(e) => {
+                  setForegroundColor(e.currentTarget.value);
+                }}
+                value={foregroundColor()}
+              />
+            </div>
+            <div class="">
+              <label class="block" for="">
+                Foreground Opacity
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                onChange={(e) => {
+                  setForegroundOpacity(parseInt(e.currentTarget.value));
+                }}
+                value={foregroundOpacity()}
+              />
+            </div>
+            <div class="">
+              <Show
+                when={heroPattern() !== "Blank" && heroPattern() !== "Solid"}
+              >
                 <label class="block" for="">
-                  Foreground Color
+                  Background Color
                 </label>
                 <input
                   type="color"
                   onChange={(e) => {
-                    setForegroundColor(e.currentTarget.value);
+                    setBackgroundColor(e.currentTarget.value);
                   }}
-                  value={foregroundColor()}
+                  value={backgroundColor()}
                 />
-              </div>
-              <div class="">
-                <label class="block" for="">
-                  Foreground Opacity
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  onChange={(e) => {
-                    setForegroundOpacity(parseInt(e.currentTarget.value));
-                  }}
-                  value={foregroundOpacity()}
-                />
-              </div>
-              <div class="">
-                <Show
-                  when={heroPattern() !== "Blank" && heroPattern() !== "Solid"}
-                >
-                  <label class="block" for="">
-                    Background Color
-                  </label>
-                  <input
-                    type="color"
-                    onChange={(e) => {
-                      setBackgroundColor(e.currentTarget.value);
-                    }}
-                    value={backgroundColor()}
-                  />
-                </Show>
-              </div>
+              </Show>
             </div>
-          </Show>
+          </div>
+        </Show>
         <details class="mb-4 mt-4">
           <summary class="cursor-pointer text-sm font-medium">
             Advanced Settings
