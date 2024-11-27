@@ -28,6 +28,9 @@
 
     body {
       font-family: Arial, Helvetica, sans-serif;
+      { % if hero_pattern % }
+      background-image: url({{ hero_pattern|safe }});
+      { % endif % }
     }
 
     nav {
@@ -115,7 +118,7 @@
   </script>
 </head>
 
-<body>
+<body style="{{body_style}}; {{ background_color }}">
   <nav>
     <a href="https://trieve.ai">
       <img class="corner-logo"
