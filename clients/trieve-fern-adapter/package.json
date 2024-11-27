@@ -25,6 +25,7 @@
     "typescript-eslint": "^8.16.0"
   },
   "dependencies": {
+    "@trojs/openapi-dereference": "^1.0.0",
     "commander": "^12.1.0",
     "happy-dom": "^15.11.6",
     "marked": "^15.0.2",
