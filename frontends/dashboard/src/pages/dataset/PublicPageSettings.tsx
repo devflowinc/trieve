@@ -44,9 +44,6 @@ export const PublicPageSettings = () => {
   const trieve = useTrieve();
 
   createEffect(() => {
-    const curExtraParams = {
-      ...extraParams,
-    };
     void trieve
       .fetch("/api/dataset/{dataset_id}", "get", {
         datasetId: datasetId(),
@@ -55,24 +52,26 @@ export const PublicPageSettings = () => {
         // @ts-expect-error Property 'PUBLIC_DATASET' does not exist on type '{}'. [2339]
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         setisPublic(dataset.server_configuration?.PUBLIC_DATASET.enabled);
+        // @ts-expect-error typescript: Property 'PUBLIC_DATASET' does not exist on type '{}'.
+        const params = dataset.server_configuration!.PUBLIC_DATASET.extra_params as  unknown as PublicPageParameters;
         setExtraParams(
           // @ts-expect-error Property 'PUBLIC_DATASET' does not exist on type '{}'. [2339]
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
           dataset.server_configuration?.PUBLIC_DATASET.extra_params,
         );
 
-        setHeroPattern(curExtraParams.heroPattern?.heroPatternName || "Blank");
+        setHeroPattern(params.heroPattern?.heroPatternName || "Blank");
 
         setForegroundColor(
-          curExtraParams.heroPattern?.foregroundColor || "#000000",
+          params.heroPattern?.foregroundColor || "#000000",
         );
 
         setForegroundOpacity(
-          (curExtraParams.heroPattern?.foregroundOpacity || 0.5) * 100,
+          (params.heroPattern?.foregroundOpacity || 0.5) * 100,
         );
 
         setBackgroundColor(
-          curExtraParams.heroPattern?.backgroundColor || "#000000",
+          params.heroPattern?.backgroundColor || "#000000",
         );
 
         setHasLoaded(true);
