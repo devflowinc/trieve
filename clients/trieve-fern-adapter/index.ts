@@ -1,11 +1,15 @@
+#!/usr/bin/env node
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Command } from 'commander';
 import { parse } from 'yaml';
 import { Window } from 'happy-dom';
 import fs from 'node:fs';
+import { join } from 'node:path';
 import { TrieveSDK, ChunkReqPayload } from 'trieve-ts-sdk';
 import { marked } from 'marked';
 import { dereferenceSync } from '@trojs/openapi-dereference';
+import pluralize from 'pluralize'
 
 const splitHtmlIntoHeadAndBodies = (html: Element): [string, string][] => {
   const headingRegex = /h\d/gi;
@@ -120,7 +124,7 @@ const extractChunksFromPath = async (
       .filter((x) => x);
     const metadata: any = {
       url: link,
-      heirarchy: tag_set,
+      hierarchy: tag_set,
       heading: heading,
     };
 
@@ -196,11 +200,13 @@ const extractChunksFromOpenapiSpec = async (
         const operationId = pathData[method].operationId;
         const summary = pathData[method].summary;
         const description = pathData[method].description;
-        const pageLink = `${siteUrl}/${apiRefParent}/${summary?.split(' ').join('-').toLowerCase() ?? path}`;
+        const [namespace, ...parts] = summary?.toLowerCase().split(' ') ?? []
+        const endpoint = namespace ? join(pluralize(parts.join('-')), namespace) : path
+        const pageLink = `${siteUrl}/${apiRefParent}/${endpoint}`;
         const metadata = {
           operation_id: operationId,
           url: pageLink,
-          heirarchy: [
+          hierarchy: [
             apiRefParent,
             summary?.split(' ').join('-').toLowerCase() ?? path,
           ],
@@ -337,8 +343,8 @@ try {
     }
     console.info('Waiting on delete...');
   }
-} catch (err) {
-  console.info('Dataset not found, creating...', err);
+} catch {
+  console.info('Dataset not found, creating...');
   try {
     const createdDataset = await trieve.createDataset({
       tracking_id: trieveDatasetTrackingId,

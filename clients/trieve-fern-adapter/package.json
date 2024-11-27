@@ -15,6 +15,7 @@
   "devDependencies": {
     "@eslint/js": "^9.15.0",
     "@types/node": "^22.10.0",
+    "@types/pluralize": "^0.0.33",
     "@typescript-eslint/eslint-plugin": "^8.16.0",
     "@typescript-eslint/parser": "^8.16.0",
     "eslint": "^9.15.0",
@@ -29,6 +30,7 @@
     "commander": "^12.1.0",
     "happy-dom": "^15.11.6",
     "marked": "^15.0.2",
+    "pluralize": "^8.0.0",
     "trieve-ts-sdk": "^0.0.35",
     "yaml": "^2.6.1"
   }
