@@ -596,9 +596,10 @@ export const PublicPageSettings = () => {
               options={Object.keys(HeroPatterns)}
             />
           </div>
+        </div>
           <Show when={heroPattern() !== "Blank"}>
-            <div class="flex grow flex-row items-center justify-start">
-              <div class="grow">
+            <div class="flex pt-4 gap-4 flex-row items-center justify-start">
+              <div class="">
                 <label class="block" for="">
                   Foreground Color
                 </label>
@@ -610,7 +611,7 @@ export const PublicPageSettings = () => {
                   value={foregroundColor()}
                 />
               </div>
-              <div class="grow">
+              <div class="">
                 <label class="block" for="">
                   Foreground Opacity
                 </label>
@@ -624,7 +625,7 @@ export const PublicPageSettings = () => {
                   value={foregroundOpacity()}
                 />
               </div>
-              <div class="grow">
+              <div class="">
                 <Show
                   when={heroPattern() !== "Blank" && heroPattern() !== "Solid"}
                 >
@@ -642,7 +643,6 @@ export const PublicPageSettings = () => {
               </div>
             </div>
           </Show>
-        </div>
         <details class="mb-4 mt-4">
           <summary class="cursor-pointer text-sm font-medium">
             Advanced Settings
