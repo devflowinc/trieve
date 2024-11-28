@@ -1,5 +1,6 @@
 use crate::data::models::{
-    ApiKeyRole, Organization, RedisPool, SlimUser, UserApiKey, UserOrganization, UserRole,
+    ApiKeyRespBody, ApiKeyRole, Organization, RedisPool, SlimUser, UserApiKey, UserOrganization,
+    UserRole,
 };
 use crate::operators::organization_operator::hash_function;
 use crate::{
@@ -552,4 +553,51 @@ pub async fn get_all_users_query(pool: web::Data<Pool>) -> Result<Vec<SlimUser>,
     }
 
     Ok(unique_slim_users)
+}
+
+pub async fn get_user_api_keys_query(
+    user_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Vec<ApiKeyRespBody>, ServiceError> {
+    use crate::data::schema::user_api_key::dsl as user_api_key_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    let api_keys = user_api_key_columns::user_api_key
+        .filter(user_api_key_columns::user_id.eq(user_id))
+        .select(UserApiKey::as_select())
+        .load::<UserApiKey>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Error loading user api keys".to_string()))?;
+
+    let api_keys = api_keys
+        .into_iter()
+        .map(|api_key| api_key.into())
+        .collect::<Vec<ApiKeyRespBody>>();
+    Ok(api_keys)
+}
+
+pub async fn delete_user_api_keys_query(
+    user_id: uuid::Uuid,
+    api_key_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::user_api_key::dsl as user_api_key_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    diesel::delete(
+        user_api_key_columns::user_api_key
+            .filter(user_api_key_columns::user_id.eq(user_id))
+            .filter(user_api_key_columns::id.eq(api_key_id)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|_| ServiceError::BadRequest("Error deleting user api key".to_string()))?;
+
+    Ok(())
 }

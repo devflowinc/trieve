@@ -6331,6 +6331,92 @@
         ]
       }
     },
+    "/api/user/api_key": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get User Api Keys",
+        "description": "Get the api keys which belong to the auth'ed user. The actual api key values are not returned, only the ids, names, and creation dates.",
+        "operationId": "get_user_api_keys",
+        "responses": {
+          "200": {
+            "description": "JSON body representing the api_key for the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyRespBody"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to creating api_key for the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/user/api_key/{api_key_id}": {
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Delete User Api Key",
+        "description": "Delete an api key for the auth'ed user.",
+        "operationId": "delete_user_api_key",
+        "parameters": [
+          {
+            "name": "api_key_id",
+            "in": "path",
+            "description": "The id of the api key to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Confirmation that the api key was deleted"
+          },
+          "400": {
+            "description": "Service error relating to creating api_key for the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      }
+    },
     "/metrics": {
       "post": {
         "tags": [
@@ -6497,6 +6583,13 @@
           "organization_id": {
             "type": "string",
             "format": "uuid"
+          },
+          "organization_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
           },
           "role": {
             "type": "integer",
@@ -15920,6 +16013,92 @@
           "time_stamp": {
             "type": "string"
           }
+        }
+      },
+      "UserApiKey": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "name",
+          "created_at",
+          "updated_at",
+          "role"
+        ],
+        "properties": {
+          "api_key_hash": {
+            "type": "string",
+            "nullable": true
+          },
+          "blake3_hash": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataset_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "nullable": true
+            },
+            "nullable": true
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "organization_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "nullable": true
+            },
+            "nullable": true
+          },
+          "params": {
+            "nullable": true
+          },
+          "role": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "nullable": true
+            },
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "example": {
+          "api_key_hash": "hash",
+          "blake3_hash": "hash",
+          "created_at": "2021-01-01 00:00:00.000",
+          "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "name": "Trieve",
+          "role": 1,
+          "updated_at": "2021-01-01 00:00:00.000",
+          "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3"
         }
       },
       "UserOrganization": {

@@ -53,6 +53,7 @@ export type ApiKeyRespBody = {
     id: string;
     name: string;
     organization_id: string;
+    organization_ids?: Array<(string)> | null;
     role: number;
     updated_at: string;
 };
@@ -3129,6 +3130,22 @@ export type UsageGraphPoint = {
     time_stamp: string;
 };
 
+export type UserApiKey = {
+    api_key_hash?: (string) | null;
+    blake3_hash?: (string) | null;
+    created_at: string;
+    dataset_ids?: Array<((string) | null)> | null;
+    expires_at?: (string) | null;
+    id: string;
+    name: string;
+    organization_ids?: Array<((string) | null)> | null;
+    params?: unknown;
+    role: number;
+    scopes?: Array<((string) | null)> | null;
+    updated_at: string;
+    user_id: string;
+};
+
 export type UserOrganization = {
     created_at: string;
     id: string;
@@ -4481,6 +4498,17 @@ export type UpdateUserData = {
 };
 
 export type UpdateUserResponse = (void);
+
+export type GetUserApiKeysResponse = (Array<ApiKeyRespBody>);
+
+export type DeleteUserApiKeyData = {
+    /**
+     * The id of the api key to delete
+     */
+    apiKeyId: string;
+};
+
+export type DeleteUserApiKeyResponse = (void);
 
 export type GetMetricsResponse = (string);
 
@@ -6032,6 +6060,35 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to updating the user
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/user/api_key': {
+        get: {
+            res: {
+                /**
+                 * JSON body representing the api_key for the user
+                 */
+                200: Array<ApiKeyRespBody>;
+                /**
+                 * Service error relating to creating api_key for the user
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/user/api_key/{api_key_id}': {
+        delete: {
+            req: DeleteUserApiKeyData;
+            res: {
+                /**
+                 * Confirmation that the api key was deleted
+                 */
+                204: void;
+                /**
+                 * Service error relating to creating api_key for the user
                  */
                 400: ErrorResponseBody;
             };

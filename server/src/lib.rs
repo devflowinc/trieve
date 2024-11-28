@@ -198,6 +198,8 @@ impl Modify for SecurityAddon {
         handlers::chunk_handler::bulk_delete_chunk,
         handlers::dataset_handler::get_all_tags,
         handlers::user_handler::update_user,
+        handlers::user_handler::get_user_api_keys,
+        handlers::user_handler::delete_user_api_key,
         handlers::organization_handler::create_organization_api_key,
         handlers::organization_handler::delete_organization_api_key,
         handlers::organization_handler::get_organization_api_keys,
@@ -318,6 +320,7 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::GetAllTagsResponse,
             handlers::dataset_handler::GetCrawlOptionsResponse,
             handlers::dataset_handler::Datasets,
+            data::models::UserApiKey,
             handlers::group_handler::RecommendGroupsReqPayload,
             handlers::group_handler::RecommendGroupsResponse,
             handlers::group_handler::SearchWithinGroupReqPayload,
@@ -975,6 +978,16 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("")
                                         .route(web::put().to(handlers::user_handler::update_user)),
+                                )
+                                .service(
+                                    web::resource("/api_key")
+                                        .route(web::get().to(handlers::user_handler::get_user_api_keys))
+                                )
+                                .service(
+                                    web::resource("/api_key/{api_key_id}")
+                                        .route(
+                                            web::delete().to(handlers::user_handler::delete_user_api_key),
+                                        ),
                                 )
                         )
                         .service(
