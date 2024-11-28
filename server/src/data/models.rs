@@ -3804,6 +3804,7 @@ pub struct ApiKeyRespBody {
     pub organization_id: uuid::Uuid,
     pub name: String,
     pub role: i32,
+    pub organization_ids: Option<Vec<String>>,
     pub dataset_ids: Option<Vec<String>>,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -3816,8 +3817,28 @@ impl From<OrganizationApiKey> for ApiKeyRespBody {
             organization_id: api_key.organization_id,
             name: api_key.name,
             role: api_key.role,
+            organization_ids: None,
             dataset_ids: api_key
                 .dataset_ids
+                .map(|ids| ids.into_iter().flatten().collect()),
+            created_at: api_key.created_at,
+            updated_at: api_key.updated_at,
+        }
+    }
+}
+
+impl From<UserApiKey> for ApiKeyRespBody {
+    fn from(api_key: UserApiKey) -> Self {
+        ApiKeyRespBody {
+            id: api_key.id,
+            name: api_key.name,
+            organization_id: uuid::Uuid::default(),
+            role: api_key.role,
+            dataset_ids: api_key
+                .dataset_ids
+                .map(|ids| ids.into_iter().flatten().collect()),
+            organization_ids: api_key
+                .organization_ids
                 .map(|ids| ids.into_iter().flatten().collect()),
             created_at: api_key.created_at,
             updated_at: api_key.updated_at,

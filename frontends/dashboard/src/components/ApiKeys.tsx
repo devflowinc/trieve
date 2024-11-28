@@ -43,6 +43,23 @@ export const ApiKeys = () => {
     },
   }));
 
+  const userApiKeysQuery = createQuery(() => ({
+    queryKey: ["userApiKeys", userContext.selectedOrg().id],
+    queryFn: () => {
+      return trieve.fetch(`/api/user/api_key`, "get");
+    },
+  }));
+  const userApiKeyDeleteApiKeyMutation = createMutation(() => ({
+    mutationFn: async (id: string) => {
+      return await trieve.fetch("/api/user/api_key/{api_key_id}", "delete", {
+        apiKeyId: id,
+      });
+    },
+    onSuccess() {
+      void apiKeysQuery.refetch();
+    },
+  }));
+
   const deleteApiKeyMutation = createMutation(() => ({
     mutationFn: async (id: string) => {
       return await trieve.fetch(
@@ -122,6 +139,76 @@ export const ApiKeys = () => {
     });
   });
 
+  const userApiKeyTable = createMemo(() => {
+    if (!userApiKeysQuery.data) {
+      return null;
+    }
+    const columns = [
+      colHelp.accessor("id", {
+        header: "ID",
+      }),
+      colHelp.accessor("name", {
+        header: "Name",
+      }),
+      colHelp.accessor("role", {
+        header: "Perm Level",
+        cell: (info) => {
+          if (currentUserRole() > 0) {
+            return fromI32ToUserRole(info.getValue());
+          }
+          return fromI32ToApiKeyRole(info.getValue());
+        },
+      }),
+      colHelp.accessor("organization_ids", {
+        header: "Organizations",
+        cell: (info) => {
+          const value = info.getValue() as string[] | undefined;
+          return value?.join(",") ?? "All Organizations";
+        },
+      }),
+      colHelp.accessor("dataset_ids", {
+        header: "Datasets",
+        cell: (info) => {
+          return info.getValue()?.join(",") ?? "All Datasets";
+        },
+      }),
+      colHelp.accessor("created_at", {
+        header: "Created At",
+        cell: (info) => {
+          return formatDate(new Date(info.getValue()));
+        },
+      }),
+      colHelp.display({
+        header: " ",
+        cell: (info) => {
+          return (
+            <button
+              type="button"
+              class="inline-flex justify-center px-3 py-2 text-sm text-red-500"
+              onClick={(e) => {
+                e.preventDefault();
+                const result = window.confirm(
+                  "Are you sure you want to delete this API key?",
+                );
+                if (!result) {
+                  return;
+                }
+                userApiKeyDeleteApiKeyMutation.mutate(info.row.original.id);
+              }}
+            >
+              <FaRegularTrashCan class="h-4 w-4" />
+            </button>
+          );
+        },
+      }),
+    ];
+    return createSolidTable({
+      columns: columns,
+      data: userApiKeysQuery.data as ApiKeyRespBody[],
+      getCoreRowModel: getCoreRowModel(),
+    });
+  });
+
   return (
     <>
       <div class="flex flex-col">
@@ -153,9 +240,22 @@ export const ApiKeys = () => {
           </div>
         </Show>
       </div>
+      <Show when={userApiKeysQuery.data?.length !== 0}>
+        <div class="flex items-end justify-between pb-2 pt-2">
+          <div class="text-lg font-medium">User API Keys (deprecated)</div>
+        </div>
+        <Show when={(userApiKeysQuery.data?.length || -1) > 0}>
+          <div class="inline-block min-w-full overflow-x-auto rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-sm">
+            <Show when={userApiKeyTable()}>
+              {(table) => <TanStackTable table={table()} />}
+            </Show>
+          </div>
+        </Show>
+      </Show>
       <ApiKeyGenerateModal
         onCreated={() => {
           void apiKeysQuery.refetch();
+          void userApiKeysQuery.refetch();
         }}
         openModal={openModal}
         closeModal={() => setOpenModal(false)}

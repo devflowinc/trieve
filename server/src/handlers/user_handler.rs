@@ -2,7 +2,10 @@ use super::auth_handler::LoggedUser;
 use crate::{
     data::models::{OrganizationWithSubAndPlan, Pool, RedisPool, UserRole},
     errors::ServiceError,
-    operators::user_operator::{get_user_by_id_query, update_user_org_role_query},
+    operators::user_operator::{
+        delete_user_api_keys_query, get_user_api_keys_query, get_user_by_id_query,
+        update_user_org_role_query,
+    },
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -91,6 +94,64 @@ pub async fn update_user(
         redis_pool,
     )
     .await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+/// Get User Api Keys
+///
+/// Get the api keys which belong to the auth'ed user. The actual api key values are not returned, only the ids, names, and creation dates.
+#[utoipa::path(
+    get,
+    path = "/user/api_key",
+    context_path = "/api",
+    tag = "User",
+    responses(
+        (status = 200, description = "JSON body representing the api_key for the user", body = Vec<ApiKeyRespBody>),
+        (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn get_user_api_keys(
+    user: LoggedUser,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let api_keys = get_user_api_keys_query(user.id, pool)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
+
+    Ok(HttpResponse::Ok().json(api_keys))
+}
+
+/// Delete User Api Key
+///
+/// Delete an api key for the auth'ed user.
+#[utoipa::path(
+    delete,
+    path = "/user/api_key/{api_key_id}",
+    context_path = "/api",
+    tag = "User",
+    responses(
+        (status = 204, description = "Confirmation that the api key was deleted"),
+        (status = 400, description = "Service error relating to creating api_key for the user", body = ErrorResponseBody),
+    ),
+    params(
+        ("api_key_id" = uuid::Uuid, Path, description = "The id of the api key to delete"),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn delete_user_api_key(
+    user: LoggedUser,
+    data: web::Path<uuid::Uuid>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    delete_user_api_keys_query(user.id, data.into_inner(), pool)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }
