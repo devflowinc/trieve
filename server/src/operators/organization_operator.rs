@@ -777,6 +777,11 @@ pub async fn get_assumed_user_by_organization_api_key(
 
     let api_key: OrganizationApiKey = organization_api_key_columns::organization_api_key
         .filter(organization_api_key_columns::api_key_hash.eq(hash_function(api_key)))
+        .filter(
+            organization_api_key_columns::expires_at
+                .is_null()
+                .or(organization_api_key_columns::expires_at.ge(diesel::dsl::now.nullable())),
+        )
         .select(OrganizationApiKey::as_select())
         .first::<OrganizationApiKey>(&mut conn)
         .await

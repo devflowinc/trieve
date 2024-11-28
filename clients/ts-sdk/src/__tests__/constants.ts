@@ -8,11 +8,11 @@ export const TRIEVE = new TrieveSDK({
   organizationId: "de73679c-707f-4fc2-853e-994c910d944c",
 });
 
-// export const TRIEVELOCAL = new TrieveSDK({
+// export const TRIEVE = new TrieveSDK({
 //   baseUrl: "http://localhost:8090",
-//   organizationId: "f8bd8fc0-0f66-48d3-92be-a2e5f74c7952",
-//   datasetId: "506effe8-c460-4ec0-8576-6dd6ef1a57f0",
-//   apiKey: "tr-x5I18LghGCL22qXYQS6BrlJbqAOPI7Tz",
+//   organizationId: "967d4740-d8f0-4f3a-8a62-3c1297e5f6c4",
+//   datasetId: "88fb2a53-17bd-4311-9763-051dc5c9c476",
+//   apiKey: "tr-5OiU6tPsjgcMz0AeujPbKlBJFqeXVJ9G",
 // });
 
 export const EXAMPLE_TOPIC_ID = "f85984e1-7818-4971-b300-2f462fe1a5a2";
