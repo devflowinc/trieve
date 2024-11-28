@@ -1,6 +1,6 @@
 use super::{
     group_operator::get_groups_from_group_ids_query,
-    search_operator::{assemble_qdrant_filter, SearchResult},
+    search_operator::{assemble_qdrant_filter, SearchResult, SearchResultTrait},
 };
 use crate::{
     data::models::{
@@ -17,11 +17,11 @@ use itertools::Itertools;
 use qdrant_client::{
     qdrant::{
         group_id::Kind, point_id::PointIdOptions, quantization_config::Quantization, query,
-        BinaryQuantization, CreateCollectionBuilder, CreateFieldIndexCollectionBuilder,
-        DeleteFieldIndexCollectionBuilder, DeletePointsBuilder, Distance, FieldType, Filter,
-        GetPointsBuilder, HnswConfigDiff, OrderBy, PointId, PointStruct, PrefetchQuery,
-        QuantizationConfig, Query, QueryBatchPoints, QueryPointGroups, QueryPoints,
-        RecommendPointGroups, RecommendPoints, RecommendStrategy, RetrievedPoint,
+        vectors::VectorsOptions, BinaryQuantization, CreateCollectionBuilder,
+        CreateFieldIndexCollectionBuilder, DeleteFieldIndexCollectionBuilder, DeletePointsBuilder,
+        Distance, FieldType, Filter, GetPointsBuilder, HnswConfigDiff, OrderBy, PointId,
+        PointStruct, PrefetchQuery, QuantizationConfig, Query, QueryBatchPoints, QueryPointGroups,
+        QueryPoints, RecommendPointGroups, RecommendPoints, RecommendStrategy, RetrievedPoint,
         ScrollPointsBuilder, SearchBatchPoints, SearchParams, SearchPointGroups, SearchPoints,
         SetPayloadPointsBuilder, SparseIndexConfig, SparseVectorConfig, SparseVectorParams,
         TextIndexParamsBuilder, TokenizerType, UpsertPointsBuilder, UuidIndexParamsBuilder, Value,
@@ -766,6 +766,34 @@ pub struct GroupSearchResults {
     pub hits: Vec<SearchResult>,
 }
 
+impl SearchResultTrait for GroupSearchResults {
+    fn score(&self) -> f32 {
+        self.hits.get(0).map_or(0.0, |hit| hit.score)
+    }
+
+    fn point_id(&self) -> uuid::Uuid {
+        self.hits
+            .get(0)
+            .map_or(uuid::Uuid::default(), |hit| hit.point_id)
+    }
+
+    fn payload(&self) -> HashMap<String, qdrant_client::qdrant::Value> {
+        self.hits
+            .get(0)
+            .map_or(HashMap::new(), |hit| hit.payload.clone())
+    }
+
+    fn set_score(&mut self, score: f32) {
+        if let Some(hit) = self.hits.get_mut(0) {
+            hit.score = score;
+        }
+    }
+
+    fn embedding(&self) -> Option<Vec<f32>> {
+        self.hits.get(0).and_then(|hit| hit.embedding.clone())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum VectorType {
     SpladeSparse(Vec<(u32, f32)>),
@@ -790,6 +818,7 @@ pub async fn search_over_groups_qdrant_query(
     queries: Vec<QdrantSearchQuery>,
     dataset_config: DatasetConfiguration,
     get_total_pages: bool,
+    use_mmr: bool,
 ) -> Result<(Vec<GroupSearchResults>, u64), ServiceError> {
     if queries.is_empty() || queries.iter().all(|query| query.limit == 0) {
         return Ok((vec![], 0));
@@ -800,6 +829,8 @@ pub async fn search_over_groups_qdrant_query(
         .map(|query| query.group_size.unwrap_or(1))
         .max()
         .unwrap_or(3);
+
+    let get_payload = dataset_config.QDRANT_ONLY;
 
     let limit = queries.iter().map(|query| query.limit).max().unwrap_or(10);
 
@@ -847,8 +878,8 @@ pub async fn search_over_groups_qdrant_query(
                 using: vector_name,
                 query: Some(qdrant_query),
                 score_threshold,
-                with_payload: Some(WithPayloadSelector::from(false)),
-                with_vectors: Some(WithVectorsSelector::from(false)),
+                with_payload: Some(WithPayloadSelector::from(get_payload)),
+                with_vectors: Some(WithVectorsSelector::from(use_mmr)),
                 timeout: Some(60),
                 filter: Some(query.filter.clone()),
                 params: Some(SearchParams {
@@ -901,6 +932,18 @@ pub async fn search_over_groups_qdrant_query(
                                 score: hit.score,
                                 point_id: uuid::Uuid::parse_str(&id).ok()?,
                                 payload: hit.payload.clone(),
+                                embedding: hit.vectors.clone().map(|v| match v.vectors_options {
+                                    Some(VectorsOptions::Vectors(named_v)) => named_v
+                                        .vectors
+                                        .into_iter()
+                                        .filter(|v| v.1.indices.is_none())
+                                        .map(|v| v.1.data)
+                                        .collect::<Vec<_>>()
+                                        .get(0)
+                                        .unwrap_or(&vec![])
+                                        .clone(),
+                                    _ => vec![],
+                                }),
                             }),
                             PointIdOptions::Num(_) => None,
                         })
@@ -1014,12 +1057,13 @@ pub async fn search_qdrant_query(
     queries: Vec<QdrantSearchQuery>,
     dataset_config: DatasetConfiguration,
     get_total_pages: bool,
+    use_mmr: bool,
 ) -> Result<(Vec<SearchResult>, u64, Vec<usize>), ServiceError> {
     if queries.is_empty() || queries.iter().all(|query| query.limit == 0) {
         return Ok((vec![], 0, vec![]));
     }
 
-    let qdrant_only = dataset_config.QDRANT_ONLY;
+    let get_payload = dataset_config.QDRANT_ONLY;
 
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
@@ -1055,46 +1099,24 @@ pub async fn search_qdrant_query(
                 _ => query.score_threshold,
             };
 
-            if qdrant_only {
-                QueryPoints {
-                    collection_name: qdrant_collection.to_string(),
-                    limit: Some(query.limit),
-                    offset: Some(offset),
-                    prefetch,
-                    using: vector_name,
-                    query: Some(qdrant_query),
-                    score_threshold,
-                    with_payload: Some(WithPayloadSelector::from(true)),
-                    with_vectors: Some(WithVectorsSelector::from(false)),
-                    timeout: Some(60),
-                    filter: Some(query.filter.clone()),
-                    params: Some(SearchParams {
-                        exact: Some(false),
-                        indexed_only: Some(dataset_config.INDEXED_ONLY),
-                        ..Default::default()
-                    }),
+            QueryPoints {
+                collection_name: qdrant_collection.to_string(),
+                limit: Some(query.limit),
+                offset: Some(offset),
+                prefetch,
+                using: vector_name,
+                query: Some(qdrant_query),
+                score_threshold,
+                with_payload: Some(WithPayloadSelector::from(get_payload)),
+                with_vectors: Some(WithVectorsSelector::from(use_mmr)),
+                timeout: Some(60),
+                filter: Some(query.filter.clone()),
+                params: Some(SearchParams {
+                    exact: Some(false),
+                    indexed_only: Some(dataset_config.INDEXED_ONLY),
                     ..Default::default()
-                }
-            } else {
-                QueryPoints {
-                    collection_name: qdrant_collection.to_string(),
-                    limit: Some(query.limit),
-                    offset: Some(offset),
-                    prefetch,
-                    using: vector_name,
-                    query: Some(qdrant_query),
-                    score_threshold,
-                    with_payload: Some(WithPayloadSelector::from(false)),
-                    with_vectors: Some(WithVectorsSelector::from(false)),
-                    timeout: Some(60),
-                    filter: Some(query.filter.clone()),
-                    params: Some(SearchParams {
-                        exact: Some(false),
-                        indexed_only: Some(dataset_config.INDEXED_ONLY),
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                }
+                }),
+                ..Default::default()
             }
         })
         .collect::<Vec<QueryPoints>>();
@@ -1135,6 +1157,20 @@ pub async fn search_qdrant_query(
                             score: scored_point.score,
                             point_id: uuid::Uuid::parse_str(&id).ok()?,
                             payload: scored_point.payload.clone(),
+                            embedding: scored_point.vectors.clone().map(|v| {
+                                match v.vectors_options {
+                                    Some(VectorsOptions::Vectors(named_v)) => named_v
+                                        .vectors
+                                        .into_iter()
+                                        .filter(|v| v.1.indices.is_none())
+                                        .map(|v| v.1.data)
+                                        .collect::<Vec<_>>()
+                                        .get(0)
+                                        .unwrap_or(&vec![])
+                                        .clone(),
+                                    _ => vec![],
+                                }
+                            }),
                         }),
                         PointIdOptions::Num(_) => None,
                     },
@@ -1165,7 +1201,7 @@ pub async fn recommend_qdrant_query(
     dataset_id: uuid::Uuid,
     dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
-) -> Result<Vec<QdrantRecommendResult>, ServiceError> {
+) -> Result<Vec<SearchResult>, ServiceError> {
     let qdrant_collection = get_qdrant_collection_from_dataset_config(&dataset_config);
 
     let recommend_strategy = match strategy {
@@ -1255,12 +1291,14 @@ pub async fn recommend_qdrant_query(
                 }
             };
 
-            Some(QdrantRecommendResult {
+            Some(SearchResult {
                 point_id,
                 score: point.score,
+                payload: point.payload.clone(),
+                embedding: None,
             })
         })
-        .collect::<Vec<QdrantRecommendResult>>();
+        .collect::<Vec<SearchResult>>();
 
     Ok(recommended_point_ids)
 }
@@ -1381,6 +1419,7 @@ pub async fn recommend_qdrant_groups_query(
                         score: hit.score,
                         point_id: uuid::Uuid::parse_str(&id).ok()?,
                         payload: hit.payload.clone(),
+                        embedding: None,
                     }),
                     PointIdOptions::Num(_) => None,
                 })
@@ -1969,6 +2008,7 @@ pub async fn scroll_dataset_points(
                 score: 0 as f32,
                 point_id,
                 payload,
+                embedding: None,
             })
         })
         .collect::<Vec<SearchResult>>();

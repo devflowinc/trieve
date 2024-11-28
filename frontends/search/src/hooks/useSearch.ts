@@ -68,6 +68,10 @@ export interface SearchOptions {
   prioritize_domain_specifc_words: boolean | null;
   disableOnWords: string[];
   sort_by: SortByField | SortBySearchType;
+  mmr: {
+    use_mmr: boolean;
+    mmr_lambda?: number;
+  };
   pageSize: number;
   getTotalPages: boolean;
   highlightResults: boolean;
@@ -97,6 +101,9 @@ const initalState: SearchOptions = {
   groupUniqueSearch: false,
   sort_by: {
     field: "",
+  },
+  mmr: {
+    use_mmr: false,
   },
   pageSize: 10,
   getTotalPages: true,
@@ -146,6 +153,7 @@ const fromStateToParams = (state: SearchOptions): Params => {
     oneTypoWordRangeMax: state.oneTypoWordRangeMax?.toString() ?? "6",
     twoTypoWordRangeMin: state.twoTypoWordRangeMin.toString(),
     twoTypoWordRangeMax: state.twoTypoWordRangeMax?.toString() ?? "",
+    mmr: JSON.stringify(state.mmr),
     prioritize_domain_specifc_words:
       state.prioritize_domain_specifc_words?.toString() ?? "",
     disableOnWords: state.disableOnWords.join(","),
@@ -189,6 +197,11 @@ const fromParamsToState = (
       initalState.sort_by,
     pageSize: parseInt(params.pageSize ?? "10"),
     getTotalPages: (params.getTotalPages ?? "true") === "true",
+    mmr:
+      (JSON.parse(params.mmr ?? "{}") as {
+        use_mmr: boolean;
+        mmr_lambda?: number;
+      }) ?? initalState.mmr,
     correctTypos: (params.correctTypos ?? "false") === "true",
     oneTypoWordRangeMin: parseInt(params.oneTypoWordRangeMin ?? "4"),
     oneTypoWordRangeMax: parseIntOrNull(params.oneTypoWordRangeMax),

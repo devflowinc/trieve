@@ -1193,6 +1193,46 @@ const SearchForm = (props: {
                             }}
                           />
                         </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>Use MMR:</label>
+                          <input
+                            class="h-4 w-4"
+                            type="checkbox"
+                            checked={tempSearchValues().mmr.use_mmr}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  mmr: {
+                                    ...prev.mmr,
+                                    use_mmr: e.target.checked,
+                                  },
+                                };
+                              });
+                            }}
+                          />
+                        </div>
+                        <div class="flex items-center justify-between space-x-2 p-1">
+                          <label>MMR Lambda:</label>
+                          <input
+                            class="w-16 rounded border border-neutral-400 p-0.5 text-black"
+                            type="number"
+                            value={tempSearchValues().mmr.mmr_lambda}
+                            onChange={(e) => {
+                              setTempSearchValues((prev) => {
+                                return {
+                                  ...prev,
+                                  mmr: {
+                                    ...prev.mmr,
+                                    mmr_lambda: parseFloat(
+                                      e.currentTarget.value,
+                                    ),
+                                  },
+                                };
+                              });
+                            }}
+                          />
+                        </div>
                         <div class="px-1 font-bold">Search Refinement</div>
                         <div class="flex items-center justify-between space-x-2 p-1">
                           <label>Use Quote Negated Words:</label>

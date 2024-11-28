@@ -3520,6 +3520,7 @@ impl ApiKeyRequestParams {
             new_message_content: payload.new_message_content,
             topic_id: payload.topic_id,
             user_id: payload.user_id,
+            sort_options: payload.sort_options,
             highlight_options: self.highlight_options.or(payload.highlight_options),
             search_type: self.search_type.or(payload.search_type),
             use_group_search: payload.use_group_search,
@@ -6670,6 +6671,17 @@ pub struct SortOptions {
     pub use_weights: Option<bool>,
     /// Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.
     pub tag_weights: Option<HashMap<String, f32>>,
+    /// Set use_mmr to true to use the Maximal Marginal Relevance algorithm to rerank the results. If not specified, this defaults to false.
+    pub mmr: Option<MmrOptions>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+/// MMR Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+pub struct MmrOptions {
+    /// Set use_mmr to true to use the Maximal Marginal Relevance algorithm to rerank the results.
+    pub use_mmr: bool,
+    /// Set mmr_lambda to a value between 0.0 and 1.0 to control the tradeoff between relevance and diversity. Closer to 1.0 will give more diverse results, closer to 0.0 will give more relevant results. If not specified, this defaults to 0.5.
+    pub mmr_lambda: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
@@ -6790,6 +6802,9 @@ fn extract_sort_highlight_options(
     if let Some(value) = other.remove("tag_weights") {
         sort_options.tag_weights = serde_json::from_value(value).ok();
     }
+    if let Some(value) = other.remove("mmr") {
+        sort_options.mmr = serde_json::from_value(value).ok();
+    }
 
     // Extract highlight options
     if let Some(value) = other.remove("highlight_results") {
@@ -6818,6 +6833,7 @@ fn extract_sort_highlight_options(
         && sort_options.location_bias.is_none()
         && sort_options.use_weights.is_none()
         && sort_options.tag_weights.is_none()
+        && sort_options.mmr.is_none()
     {
         None
     } else {
@@ -7143,6 +7159,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub search_type: Option<SearchMethod>,
             pub concat_user_messages_query: Option<bool>,
             pub search_query: Option<String>,
+            pub sort_options: Option<SortOptions>,
             pub page_size: Option<u64>,
             pub filters: Option<ChunkFilter>,
             pub score_threshold: Option<f32>,
@@ -7172,6 +7189,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             new_message_content: helper.new_message_content,
             topic_id: helper.topic_id,
             highlight_options,
+            sort_options: helper.sort_options,
             search_type: helper.search_type,
             use_group_search: helper.use_group_search,
             concat_user_messages_query: helper.concat_user_messages_query,
@@ -7198,6 +7216,8 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub highlight_options: Option<HighlightOptions>,
             pub search_type: Option<SearchMethod>,
             pub concat_user_messages_query: Option<bool>,
+            pub sort_options: Option<SortOptions>,
+
             pub search_query: Option<String>,
             pub page_size: Option<u64>,
             pub filters: Option<ChunkFilter>,
@@ -7227,6 +7247,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
         Ok(RegenerateMessageReqPayload {
             topic_id: helper.topic_id,
             highlight_options,
+            sort_options: helper.sort_options,
             search_type: helper.search_type,
             concat_user_messages_query: helper.concat_user_messages_query,
             search_query: helper.search_query,
@@ -7254,6 +7275,8 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub new_message_content: String,
             pub highlight_options: Option<HighlightOptions>,
             pub search_type: Option<SearchMethod>,
+            pub sort_options: Option<SortOptions>,
+
             pub use_group_search: Option<bool>,
             pub concat_user_messages_query: Option<bool>,
             pub search_query: Option<String>,
@@ -7284,6 +7307,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
         Ok(EditMessageReqPayload {
             topic_id: helper.topic_id,
             message_sort_order: helper.message_sort_order,
+            sort_options: helper.sort_options,
             new_message_content: helper.new_message_content,
             highlight_options,
             search_type: helper.search_type,

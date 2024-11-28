@@ -348,6 +348,7 @@ pub async fn get_rag_chunks_query(
                     .page_size
                     .unwrap_or(n_retrievals_to_include.try_into().unwrap_or(8)),
             ),
+            sort_options: create_message_req_payload.sort_options,
             highlight_options: create_message_req_payload.highlight_options,
             filters: create_message_req_payload.filters,
             group_size: Some(1),
@@ -453,6 +454,7 @@ pub async fn get_rag_chunks_query(
             search_type: search_type.clone(),
             query: QueryTypes::Single(query.clone()),
             score_threshold: create_message_req_payload.score_threshold,
+            sort_options: create_message_req_payload.sort_options,
             page_size: Some(
                 create_message_req_payload
                     .page_size

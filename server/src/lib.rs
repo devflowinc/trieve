@@ -495,6 +495,7 @@ impl Modify for SecurityAddon {
             data::models::OrganizationUsageCount,
             data::models::Dataset,
             data::models::DatasetAndUsage,
+            data::models::MmrOptions,
             data::models::DatasetUsageCount,
             data::models::DatasetDTO,
             data::models::DatasetUsageCount,

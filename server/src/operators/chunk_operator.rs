@@ -138,7 +138,7 @@ pub struct ChunkMetadataWithQdrantId {
     pub qdrant_id: uuid::Uuid,
 }
 
-pub async fn get_chunk_metadatas_and_collided_chunks_from_point_ids_query(
+pub async fn get_chunk_metadatas_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<Vec<ChunkMetadataTypes>, ServiceError> {

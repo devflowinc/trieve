@@ -251,6 +251,7 @@ const ResultsPage = (props: ResultsPageProps) => {
       if (!dataset) return;
 
       let sort_by;
+      let mmr;
 
       if (isSortBySearchType(props.search.debounced.sort_by)) {
         props.search.debounced.sort_by.rerank_type != ""
@@ -260,6 +261,12 @@ const ResultsPage = (props: ResultsPageProps) => {
         props.search.debounced.sort_by.field != ""
           ? (sort_by = props.search.debounced.sort_by)
           : (sort_by = undefined);
+      }
+
+      if (!props.search.debounced.mmr.use_mmr) {
+        mmr = undefined;
+      } else {
+        mmr = props.search.debounced.mmr;
       }
 
       const query =
@@ -280,6 +287,7 @@ const ResultsPage = (props: ResultsPageProps) => {
         score_threshold: props.search.debounced.scoreThreshold,
         sort_options: {
           sort_by: sort_by,
+          mmr: mmr,
         },
         slim_chunks: props.search.debounced.slimChunks ?? false,
         page_size: props.search.debounced.pageSize ?? 10,
