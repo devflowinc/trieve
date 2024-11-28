@@ -1,7 +1,7 @@
 use super::chunk_operator::{
-    get_chunk_metadatas_and_collided_chunks_from_point_ids_query,
-    get_content_chunk_from_point_ids_query, get_highlights, get_highlights_with_exact_match,
-    get_qdrant_ids_from_chunk_ids_query, get_slim_chunks_from_point_ids_query, HighlightStrategy,
+    get_chunk_metadatas_from_point_ids_query, get_content_chunk_from_point_ids_query,
+    get_highlights, get_highlights_with_exact_match, get_qdrant_ids_from_chunk_ids_query,
+    get_slim_chunks_from_point_ids_query, HighlightStrategy,
 };
 use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
@@ -17,9 +17,9 @@ use super::typo_operator::correct_query;
 use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata,
     ChunkMetadataStringTagSet, ChunkMetadataTypes, ConditionType, ContentChunkMetadata, Dataset,
-    DatasetConfiguration, HasIDCondition, QdrantChunkMetadata, QdrantSortBy, QueryTypes,
-    ReRankOptions, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod, SlimChunkMetadata,
-    SortByField, SortBySearchType, SortOptions, UnifiedId,
+    DatasetConfiguration, HasIDCondition, MmrOptions, QdrantChunkMetadata, QdrantSortBy,
+    QueryTypes, ReRankOptions, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
+    SlimChunkMetadata, SortByField, SortBySearchType, SortOptions, UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
@@ -48,11 +48,42 @@ use simple_server_timing_header::Timer;
 use std::collections::{HashMap, HashSet};
 use utoipa::ToSchema;
 
+pub trait SearchResultTrait {
+    fn score(&self) -> f32;
+    fn set_score(&mut self, score: f32);
+    fn point_id(&self) -> uuid::Uuid;
+    fn payload(&self) -> HashMap<String, qdrant_client::qdrant::Value>;
+    fn embedding(&self) -> Option<Vec<f32>>;
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SearchResult {
     pub score: f32,
     pub point_id: uuid::Uuid,
     pub payload: HashMap<String, qdrant_client::qdrant::Value>,
+    pub embedding: Option<Vec<f32>>,
+}
+
+impl SearchResultTrait for SearchResult {
+    fn score(&self) -> f32 {
+        self.score
+    }
+
+    fn set_score(&mut self, score: f32) {
+        self.score = score;
+    }
+
+    fn point_id(&self) -> uuid::Uuid {
+        self.point_id
+    }
+
+    fn payload(&self) -> HashMap<String, qdrant_client::qdrant::Value> {
+        self.payload.clone()
+    }
+
+    fn embedding(&self) -> Option<Vec<f32>> {
+        self.embedding.clone()
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -439,21 +470,96 @@ impl RetrievePointQuery {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
+    let dot_product: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
+    let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
+    let norm_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+
+    if norm_a == 0.0 || norm_b == 0.0 {
+        0.0
+    } else {
+        dot_product / (norm_a * norm_b)
+    }
+}
+
+pub fn apply_mmr<T: SearchResultTrait + Clone>(
+    mut docs: Vec<T>,
+    lambda: f32,
+    max_results: usize,
+) -> Vec<T> {
+    if docs.is_empty() || docs.iter().any(|doc| doc.embedding().is_none()) {
+        return vec![];
+    }
+
+    let mut selected_indices = Vec::with_capacity(max_results);
+    let mut remaining_indices: Vec<usize> = (0..docs.len()).collect();
+
+    let (first_idx_pos, &first_idx) = remaining_indices
+        .iter()
+        .enumerate()
+        .max_by(|(_, &a), (_, &b)| docs[a].score().partial_cmp(&docs[b].score()).unwrap())
+        .unwrap();
+
+    selected_indices.push(first_idx);
+    remaining_indices.remove(first_idx_pos);
+
+    // Iteratively select documents
+    while selected_indices.len() < max_results && !remaining_indices.is_empty() {
+        let mut best_score = f32::NEG_INFINITY;
+        let mut best_idx_pos = 0;
+
+        // Calculate MMR score for each remaining document
+        for (idx_pos, &idx) in remaining_indices.iter().enumerate() {
+            // Calculate similarity to already selected documents
+            let max_similarity = selected_indices
+                .iter()
+                .map(|&sel_idx| {
+                    cosine_similarity(
+                        docs[idx].embedding().as_ref().unwrap().as_slice(),
+                        docs[sel_idx].embedding().as_ref().unwrap().as_slice(),
+                    )
+                })
+                .fold(f32::NEG_INFINITY, |a, b| a.max(b));
+
+            // Calculate MMR score
+            let mmr_score = lambda * docs[idx].score() * (1.0 - (1.0 - lambda) * max_similarity);
+
+            docs[idx].set_score(mmr_score);
+
+            if mmr_score > best_score {
+                best_score = mmr_score;
+                best_idx_pos = idx_pos;
+            }
+        }
+
+        selected_indices.push(remaining_indices[best_idx_pos]);
+        remaining_indices.remove(best_idx_pos);
+    }
+    log::info!("Selected indices: {:?}", selected_indices);
+    // Return document IDs in selection order
+    selected_indices
+        .iter()
+        .map(|&idx| docs[idx].clone())
+        .collect()
+}
 
 pub async fn retrieve_qdrant_points_query(
     qdrant_searches: Vec<QdrantSearchQuery>,
     page: u64,
+    mmr_options: Option<MmrOptions>,
     get_total_pages: bool,
     config: &DatasetConfiguration,
 ) -> Result<SearchChunkQueryResult, ServiceError> {
     let page = if page == 0 { 1 } else { page };
+
+    let use_mmr = mmr_options.is_some() && mmr_options.as_ref().unwrap().use_mmr;
 
     let (point_ids, count, batch_lengths) = search_qdrant_query(
         page,
         qdrant_searches.clone(),
         config.clone(),
         get_total_pages,
+        use_mmr,
     )
     .await?;
 
@@ -991,15 +1097,18 @@ pub struct SearchOverGroupsQueryResult {
 pub async fn retrieve_group_qdrant_points_query(
     qdrant_searches: Vec<QdrantSearchQuery>,
     page: u64,
+    mmr_options: Option<MmrOptions>,
     get_total_pages: bool,
     config: &DatasetConfiguration,
 ) -> Result<SearchOverGroupsQueryResult, ServiceError> {
     let page = if page == 0 { 1 } else { page };
+    let use_mmr = mmr_options.is_some() && mmr_options.as_ref().unwrap().use_mmr;
     let (point_ids, count) = search_over_groups_qdrant_query(
         page,
         qdrant_searches.clone(),
         config.clone(),
         get_total_pages,
+        use_mmr,
     )
     .await?;
 
@@ -1125,15 +1234,11 @@ pub async fn retrieve_chunks_for_groups(
         .flat_map(|hit| hit.hits.iter().map(|point| point.point_id).collect_vec())
         .collect_vec();
 
-    let metadata_chunks = match data.slim_chunks.unwrap_or(false)
-        && data.search_type != SearchMethod::Hybrid
-    {
-        true => get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?,
-        _ => {
-            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
-                .await?
-        }
-    };
+    let metadata_chunks =
+        match data.slim_chunks.unwrap_or(false) && data.search_type != SearchMethod::Hybrid {
+            true => get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?,
+            _ => get_chunk_metadatas_from_point_ids_query(point_ids, pool.clone()).await?,
+        };
 
     let groups = get_groups_from_group_ids_query(
         search_over_groups_query_result
@@ -1280,10 +1385,7 @@ pub async fn get_metadata_from_groups(
 
     let chunk_metadatas = match slim_chunks {
         Some(true) => get_slim_chunks_from_point_ids_query(point_ids, pool.clone()).await?,
-        _ => {
-            get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
-                .await?
-        }
+        _ => get_chunk_metadatas_from_point_ids_query(point_ids, pool.clone()).await?,
     };
 
     let groups = get_groups_from_group_ids_query(
@@ -1377,8 +1479,7 @@ pub async fn retrieve_chunks_from_point_ids(
     } else if data.content_only.unwrap_or(false) {
         get_content_chunk_from_point_ids_query(point_ids, pool.clone()).await?
     } else {
-        get_chunk_metadatas_and_collided_chunks_from_point_ids_query(point_ids, pool.clone())
-            .await?
+        get_chunk_metadatas_from_point_ids_query(point_ids, pool.clone()).await?
     };
 
     let timer = if let Some(timer) = timer {
@@ -1494,6 +1595,7 @@ pub async fn retrieve_chunks_from_point_ids(
 
 pub fn rerank_chunks(
     chunks: Vec<ScoreChunkDTO>,
+    search_results: Vec<SearchResult>,
     sort_options: Option<SortOptions>,
 ) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
@@ -1619,6 +1721,31 @@ pub fn rerank_chunks(
             })
             .collect::<Vec<ScoreChunkDTO>>();
     }
+
+    if sort_options.mmr.is_some()
+        && sort_options
+            .mmr
+            .as_ref()
+            .map(|m| m.use_mmr)
+            .unwrap_or(false)
+    {
+        let lambda = sort_options.mmr.unwrap().mmr_lambda.unwrap_or(0.3);
+        let max_result = search_results.len();
+        let reranked_results = apply_mmr(search_results, lambda, max_result);
+
+        reranked_chunks = reranked_chunks
+            .iter_mut()
+            .map(|chunk| {
+                let search_result = reranked_results
+                    .iter()
+                    .find(|result| result.point_id == chunk.metadata[0].qdrant_point_id())
+                    .unwrap();
+                chunk.score = search_result.score.into();
+                chunk.clone()
+            })
+            .collect::<Vec<ScoreChunkDTO>>();
+    }
+
     reranked_chunks.sort_by(|a, b| {
         b.score
             .partial_cmp(&a.score)
@@ -1630,6 +1757,7 @@ pub fn rerank_chunks(
 
 pub fn rerank_groups(
     groups: Vec<GroupScoreChunk>,
+    search_results: Vec<GroupSearchResults>,
     sort_options: Option<SortOptions>,
 ) -> Vec<GroupScoreChunk> {
     let mut reranked_groups = Vec::new();
@@ -1754,6 +1882,33 @@ pub fn rerank_groups(
                     }
                 }
                 first_chunk.score *= tag_score as f64;
+                group.clone()
+            })
+            .collect::<Vec<GroupScoreChunk>>();
+    }
+
+    if sort_options.mmr.is_some()
+        && sort_options
+            .mmr
+            .as_ref()
+            .map(|m| m.use_mmr)
+            .unwrap_or(false)
+    {
+        let lambda = sort_options.mmr.unwrap().mmr_lambda.unwrap_or(0.3);
+        let max_result = search_results.len();
+        let reranked_results = apply_mmr(search_results, lambda, max_result);
+
+        reranked_groups = reranked_groups
+            .iter_mut()
+            .map(|group| {
+                let search_result = reranked_results
+                    .iter()
+                    .find(|result| {
+                        result.point_id() == group.metadata[0].metadata[0].qdrant_point_id()
+                    })
+                    .unwrap();
+                let first_chunk = group.metadata.get_mut(0).unwrap();
+                first_chunk.score = search_result.score().into();
                 group.clone()
             })
             .collect::<Vec<GroupScoreChunk>>();
@@ -1978,6 +2133,7 @@ pub async fn search_chunks_query(
     let search_chunk_query_results = retrieve_qdrant_points_query(
         vec![qdrant_query],
         data.page.unwrap_or(1),
+        data.sort_options.as_ref().and_then(|d| d.mmr.clone()),
         data.get_total_pages.unwrap_or(false),
         config,
     )
@@ -1986,7 +2142,7 @@ pub async fn search_chunks_query(
     timer.add("fetched from qdrant");
 
     let mut result_chunks = retrieve_chunks_from_point_ids(
-        search_chunk_query_results,
+        search_chunk_query_results.clone(),
         Some(timer),
         &data,
         config.QDRANT_ONLY,
@@ -2017,7 +2173,11 @@ pub async fn search_chunks_query(
         result_chunks.score_chunks
     };
 
-    result_chunks.score_chunks = rerank_chunks(rerank_chunks_input, data.sort_options);
+    result_chunks.score_chunks = rerank_chunks(
+        rerank_chunks_input,
+        search_chunk_query_results.search_results,
+        data.sort_options,
+    );
 
     timer.add("reranking");
 
@@ -2131,13 +2291,14 @@ pub async fn search_hybrid_chunks(
     let search_chunk_query_results = retrieve_qdrant_points_query(
         qdrant_queries,
         data.page.unwrap_or(1),
+        data.sort_options.as_ref().and_then(|d| d.mmr.clone()),
         data.get_total_pages.unwrap_or(false),
         config,
     )
     .await?;
 
     let result_chunks = retrieve_chunks_from_point_ids(
-        search_chunk_query_results,
+        search_chunk_query_results.clone(),
         Some(timer),
         &data,
         config.QDRANT_ONLY,
@@ -2161,7 +2322,11 @@ pub async fn search_hybrid_chunks(
                 cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
             }
 
-            rerank_chunks(cross_encoder_results, data.sort_options)
+            rerank_chunks(
+                cross_encoder_results,
+                search_chunk_query_results.search_results,
+                data.sort_options,
+            )
         };
 
         reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
@@ -2276,13 +2441,14 @@ pub async fn search_groups_query(
     let search_semantic_chunk_query_results = retrieve_qdrant_points_query(
         vec![qdrant_query],
         data.page.unwrap_or(1),
+        data.sort_options.as_ref().and_then(|d| d.mmr.clone()),
         data.get_total_pages.unwrap_or(false),
         config,
     )
     .await?;
 
     let mut result_chunks = retrieve_chunks_from_point_ids(
-        search_semantic_chunk_query_results,
+        search_semantic_chunk_query_results.clone(),
         None,
         &web::Json(data.clone().into()),
         config.QDRANT_ONLY,
@@ -2313,7 +2479,11 @@ pub async fn search_groups_query(
         result_chunks.score_chunks
     };
 
-    result_chunks.score_chunks = rerank_chunks(rerank_chunks_input, data.sort_options);
+    result_chunks.score_chunks = rerank_chunks(
+        rerank_chunks_input,
+        search_semantic_chunk_query_results.search_results,
+        data.sort_options,
+    );
 
     Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
@@ -2415,6 +2585,7 @@ pub async fn search_hybrid_groups(
     let mut qdrant_results = retrieve_qdrant_points_query(
         qdrant_queries,
         data.page.unwrap_or(1),
+        data.sort_options.as_ref().and_then(|d| d.mmr.clone()),
         data.get_total_pages.unwrap_or(false),
         config,
     )
@@ -2428,7 +2599,7 @@ pub async fn search_hybrid_groups(
         .collect();
 
     let result_chunks = retrieve_chunks_from_point_ids(
-        qdrant_results,
+        qdrant_results.clone(),
         None,
         &web::Json(data.clone().into()),
         config.QDRANT_ONLY,
@@ -2454,7 +2625,11 @@ pub async fn search_hybrid_groups(
                 config,
             )
             .await?;
-            let score_chunks = rerank_chunks(cross_encoder_results, data.sort_options);
+            let score_chunks = rerank_chunks(
+                cross_encoder_results,
+                qdrant_results.search_results,
+                data.sort_options,
+            );
 
             score_chunks
                 .iter()
@@ -2470,7 +2645,11 @@ pub async fn search_hybrid_groups(
             )
             .await?;
 
-            rerank_chunks(cross_encoder_results, data.sort_options)
+            rerank_chunks(
+                cross_encoder_results,
+                qdrant_results.search_results,
+                data.sort_options,
+            )
         };
 
         if let Some(score_threshold) = data.score_threshold {
@@ -2567,6 +2746,7 @@ pub async fn search_over_groups_query(
     let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
         vec![qdrant_query],
         data.page.unwrap_or(1),
+        data.sort_options.as_ref().and_then(|d| d.mmr.clone()),
         data.get_total_pages.unwrap_or(false),
         config,
     )
@@ -2595,7 +2775,11 @@ pub async fn search_over_groups_query(
 
     timer.add("fetched from postgres");
 
-    result_chunks.group_chunks = rerank_groups(result_chunks.group_chunks, data.sort_options);
+    result_chunks.group_chunks = rerank_groups(
+        result_chunks.group_chunks,
+        search_over_groups_qdrant_result.search_results,
+        data.sort_options,
+    );
 
     result_chunks.corrected_query = corrected_query.map(|c| c.query);
 
@@ -2745,6 +2929,7 @@ pub async fn hybrid_search_over_groups(
     let mut qdrant_results = retrieve_group_qdrant_points_query(
         qdrant_queries,
         data.page.unwrap_or(1),
+        data.sort_options.as_ref().and_then(|d| d.mmr.clone()),
         data.get_total_pages.unwrap_or(false),
         config,
     )
@@ -2807,7 +2992,11 @@ pub async fn hybrid_search_over_groups(
         });
     }
 
-    reranked_chunks = rerank_groups(reranked_chunks, data.sort_options);
+    reranked_chunks = rerank_groups(
+        reranked_chunks,
+        qdrant_results.search_results,
+        data.sort_options,
+    );
 
     let result_chunks = DeprecatedSearchOverGroupsResponseBody {
         group_chunks: reranked_chunks,
@@ -2913,8 +3102,14 @@ pub async fn autocomplete_chunks_query(
         );
     };
 
-    let search_chunk_query_results =
-        retrieve_qdrant_points_query(qdrant_query, 1, false, config).await?;
+    let search_chunk_query_results = retrieve_qdrant_points_query(
+        qdrant_query,
+        1,
+        data.sort_options.as_ref().and_then(|d| d.mmr.clone()),
+        false,
+        config,
+    )
+    .await?;
 
     timer.add("fetching from qdrant");
 
@@ -2942,8 +3137,16 @@ pub async fn autocomplete_chunks_query(
         (result_chunks.score_chunks.as_slice(), empty_vec)
     };
 
-    let mut reranked_chunks = rerank_chunks(before_increase.to_vec(), data.sort_options.clone());
-    reranked_chunks.extend(rerank_chunks(after_increase.to_vec(), data.sort_options));
+    let mut reranked_chunks = rerank_chunks(
+        before_increase.to_vec(),
+        search_chunk_query_results.search_results.clone(),
+        data.sort_options.clone(),
+    );
+    reranked_chunks.extend(rerank_chunks(
+        after_increase.to_vec(),
+        search_chunk_query_results.search_results,
+        data.sort_options,
+    ));
 
     result_chunks.score_chunks = reranked_chunks;
 

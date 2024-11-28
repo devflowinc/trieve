@@ -6,7 +6,7 @@ use crate::{
     data::models::{
         self, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataTypes, ContextOptions,
         DatasetAndOrgWithSubAndPlan, DatasetConfiguration, HighlightOptions, LLMOptions, Pool,
-        QdrantChunkMetadata, RedisPool, SearchMethod, SuggestType,
+        QdrantChunkMetadata, RedisPool, SearchMethod, SortOptions, SuggestType,
     },
     errors::ServiceError,
     get_env,
@@ -98,6 +98,8 @@ pub struct CreateMessageReqPayload {
     pub search_query: Option<String>,
     /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
     pub page_size: Option<u64>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
@@ -349,6 +351,8 @@ pub struct RegenerateMessageReqPayload {
     pub search_query: Option<String>,
     /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
     pub page_size: Option<u64>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
@@ -381,6 +385,8 @@ pub struct EditMessageReqPayload {
     pub concat_user_messages_query: Option<bool>,
     /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
     pub search_query: Option<String>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
     /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
     pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
@@ -404,6 +410,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             topic_id: data.topic_id,
             highlight_options: data.highlight_options,
             search_type: data.search_type,
+            sort_options: data.sort_options,
             use_group_search: data.use_group_search,
             concat_user_messages_query: data.concat_user_messages_query,
             search_query: data.search_query,
@@ -426,6 +433,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             highlight_options: data.highlight_options,
             search_type: data.search_type,
             use_group_search: data.use_group_search,
+            sort_options: data.sort_options,
             concat_user_messages_query: data.concat_user_messages_query,
             search_query: data.search_query,
             page_size: data.page_size,
