@@ -19,7 +19,7 @@ use crate::data::models::{
     ChunkMetadataStringTagSet, ChunkMetadataTypes, ConditionType, ContentChunkMetadata, Dataset,
     DatasetConfiguration, GeoInfoWithBias, HasIDCondition, QdrantChunkMetadata, QdrantSortBy,
     QueryTypes, ReRankOptions, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
-    SlimChunkMetadata, SortByField, SortBySearchType, UnifiedId,
+    SlimChunkMetadata, SortByField, SortBySearchType, SortOptions, UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
@@ -1494,12 +1494,16 @@ pub async fn retrieve_chunks_from_point_ids(
 
 pub fn rerank_chunks(
     chunks: Vec<ScoreChunkDTO>,
-    tag_weights: Option<HashMap<String, f32>>,
-    use_weights: Option<bool>,
-    query_location: Option<GeoInfoWithBias>,
+    sort_options: Option<SortOptions>,
 ) -> Vec<ScoreChunkDTO> {
     let mut reranked_chunks = Vec::new();
-    if use_weights.unwrap_or(true) {
+    if sort_options.is_none() {
+        return chunks;
+    }
+
+    let sort_options = sort_options.unwrap();
+
+    if sort_options.use_weights.unwrap_or(true) {
         chunks.into_iter().for_each(|mut chunk| {
             if chunk.metadata[0].metadata().weight == 0.0 {
                 chunk.score *= 1.0;
@@ -1512,8 +1516,54 @@ pub fn rerank_chunks(
         reranked_chunks = chunks;
     }
 
-    if query_location.is_some() && query_location.unwrap().bias > 0.0 {
-        let info_with_bias = query_location.unwrap();
+    if sort_options.recency_bias.is_some() && sort_options.recency_bias.unwrap() > 0.0 {
+        let recency_weight = sort_options.recency_bias.unwrap();
+        let min_timestamp = reranked_chunks
+            .iter()
+            .filter_map(|chunk| chunk.metadata[0].metadata().time_stamp)
+            .min();
+        let max_timestamp = reranked_chunks
+            .iter()
+            .filter_map(|chunk| chunk.metadata[0].metadata().time_stamp)
+            .max();
+        let max_score = reranked_chunks
+            .iter()
+            .map(|chunk| chunk.score)
+            .max_by(|a, b| a.partial_cmp(b).unwrap());
+        let min_score = reranked_chunks
+            .iter()
+            .map(|chunk| chunk.score)
+            .min_by(|a, b| a.partial_cmp(b).unwrap());
+
+        if let (Some(min), Some(max)) = (min_timestamp, max_timestamp) {
+            let min_duration = chrono::Utc::now().signed_duration_since(min.and_utc());
+            let max_duration = chrono::Utc::now().signed_duration_since(max.and_utc());
+
+            reranked_chunks = reranked_chunks
+                .iter_mut()
+                .map(|chunk| {
+                    if let Some(time_stamp) = chunk.metadata[0].metadata().time_stamp {
+                        let duration =
+                            chrono::Utc::now().signed_duration_since(time_stamp.and_utc());
+                        let normalized_recency_score = (duration.num_seconds() as f32
+                            - min_duration.num_seconds() as f32)
+                            / (max_duration.num_seconds() as f32
+                                - min_duration.num_seconds() as f32);
+
+                        let normalized_chunk_score = (chunk.score - min_score.unwrap_or(0.0))
+                            / (max_score.unwrap_or(1.0) - min_score.unwrap_or(0.0));
+
+                        chunk.score = (normalized_chunk_score * (1.0 / recency_weight) as f64)
+                            + (recency_weight * normalized_recency_score) as f64
+                    }
+                    chunk.clone()
+                })
+                .collect::<Vec<ScoreChunkDTO>>();
+        }
+    }
+
+    if sort_options.location_bias.is_some() && sort_options.location_bias.unwrap().bias > 0.0 {
+        let info_with_bias = sort_options.location_bias.unwrap();
         let query_location = info_with_bias.location;
         let location_bias = info_with_bias.bias;
         let distances = reranked_chunks
@@ -1550,7 +1600,7 @@ pub fn rerank_chunks(
             .collect::<Vec<ScoreChunkDTO>>();
     }
 
-    if let Some(tag_weights) = tag_weights {
+    if let Some(tag_weights) = sort_options.tag_weights {
         reranked_chunks = reranked_chunks
             .iter_mut()
             .map(|chunk| {
@@ -1917,21 +1967,7 @@ pub async fn search_chunks_query(
         result_chunks.score_chunks
     };
 
-    result_chunks.score_chunks = rerank_chunks(
-        rerank_chunks_input,
-        data.sort_options
-            .as_ref()
-            .map(|d| d.tag_weights.clone())
-            .unwrap_or_default(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.use_weights)
-            .unwrap_or_default(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.location_bias)
-            .unwrap_or_default(),
-    );
+    result_chunks.score_chunks = rerank_chunks(rerank_chunks_input, data.sort_options);
 
     timer.add("reranking");
 
@@ -2075,21 +2111,7 @@ pub async fn search_hybrid_chunks(
                 cross_encoder_results.retain(|chunk| chunk.score >= score_threshold.into());
             }
 
-            rerank_chunks(
-                cross_encoder_results,
-                data.sort_options
-                    .as_ref()
-                    .map(|d| d.tag_weights.clone())
-                    .unwrap_or_default(),
-                data.sort_options
-                    .as_ref()
-                    .map(|d| d.use_weights)
-                    .unwrap_or_default(),
-                data.sort_options
-                    .as_ref()
-                    .map(|d| d.location_bias)
-                    .unwrap_or_default(),
-            )
+            rerank_chunks(cross_encoder_results, data.sort_options)
         };
 
         reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
@@ -2241,21 +2263,7 @@ pub async fn search_groups_query(
         result_chunks.score_chunks
     };
 
-    result_chunks.score_chunks = rerank_chunks(
-        rerank_chunks_input,
-        data.sort_options
-            .as_ref()
-            .map(|d| d.tag_weights.clone())
-            .unwrap_or_default(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.use_weights)
-            .unwrap_or_default(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.location_bias)
-            .unwrap_or_default(),
-    );
+    result_chunks.score_chunks = rerank_chunks(rerank_chunks_input, data.sort_options);
 
     Ok(SearchWithinGroupResults {
         bookmarks: result_chunks.score_chunks,
@@ -2396,21 +2404,7 @@ pub async fn search_hybrid_groups(
                 config,
             )
             .await?;
-            let score_chunks = rerank_chunks(
-                cross_encoder_results,
-                data.sort_options
-                    .as_ref()
-                    .map(|d| d.tag_weights.clone())
-                    .unwrap_or_default(),
-                data.sort_options
-                    .as_ref()
-                    .map(|d| d.use_weights)
-                    .unwrap_or_default(),
-                data.sort_options
-                    .as_ref()
-                    .map(|d| d.location_bias)
-                    .unwrap_or_default(),
-            );
+            let score_chunks = rerank_chunks(cross_encoder_results, data.sort_options);
 
             score_chunks
                 .iter()
@@ -2426,21 +2420,7 @@ pub async fn search_hybrid_groups(
             )
             .await?;
 
-            rerank_chunks(
-                cross_encoder_results,
-                data.sort_options
-                    .as_ref()
-                    .map(|d| d.tag_weights.clone())
-                    .unwrap_or_default(),
-                data.sort_options
-                    .as_ref()
-                    .map(|d| d.use_weights)
-                    .unwrap_or_default(),
-                data.sort_options
-                    .as_ref()
-                    .map(|d| d.location_bias)
-                    .unwrap_or_default(),
-            )
+            rerank_chunks(cross_encoder_results, data.sort_options)
         };
 
         if let Some(score_threshold) = data.score_threshold {
@@ -2940,36 +2920,8 @@ pub async fn autocomplete_chunks_query(
         (result_chunks.score_chunks.as_slice(), empty_vec)
     };
 
-    let mut reranked_chunks = rerank_chunks(
-        before_increase.to_vec(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.tag_weights.clone())
-            .unwrap_or_default(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.use_weights)
-            .unwrap_or_default(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.location_bias)
-            .unwrap_or_default(),
-    );
-    reranked_chunks.extend(rerank_chunks(
-        after_increase.to_vec(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.tag_weights.clone())
-            .unwrap_or_default(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.use_weights)
-            .unwrap_or_default(),
-        data.sort_options
-            .as_ref()
-            .map(|d| d.location_bias)
-            .unwrap_or_default(),
-    ));
+    let mut reranked_chunks = rerank_chunks(before_increase.to_vec(), data.sort_options.clone());
+    reranked_chunks.extend(rerank_chunks(after_increase.to_vec(), data.sort_options));
 
     result_chunks.score_chunks = reranked_chunks;
 
