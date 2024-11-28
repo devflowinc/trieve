@@ -1772,6 +1772,7 @@ pub async fn count_chunks(
     data: web::Json<CountChunksReqPayload>,
     _user: LoggedUser,
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_config =
@@ -1801,8 +1802,12 @@ pub async fn count_chunks(
     let limit = match data.limit {
         Some(limit) => limit,
         None => {
-            let dataset_usage =
-                get_dataset_usage_query(dataset_org_plan_sub.dataset.id, pool.clone()).await?;
+            let dataset_usage = get_dataset_usage_query(
+                dataset_org_plan_sub.dataset.id,
+                pool.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
             dataset_usage.chunk_count as u64
         }
     };

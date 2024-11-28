@@ -45,7 +45,15 @@ export const DatasetOverview = () => {
   const [page, setPage] = createSignal(0);
   const [datasetSearchQuery, setDatasetSearchQuery] = createSignal("");
   const [usage, setUsage] = createSignal<
-    Record<string, { chunk_count: number }>
+    Record<
+      string,
+      {
+        chunk_count: number;
+        search_count: number;
+        rag_count: number;
+        recommendations_count: number;
+      }
+    >
   >({});
 
   const {
@@ -87,7 +95,7 @@ export const DatasetOverview = () => {
 
       setUsage((prevUsage) => ({
         ...prevUsage,
-        [datasetId]: { chunk_count: newCount },
+        [datasetId]: { ...newData },
       }));
 
       createToast({
@@ -210,6 +218,42 @@ export const DatasetOverview = () => {
         },
       }),
 
+      colHelp.display({
+        header: "Search Count",
+        cell(info) {
+          const datasetId = info.row.original.dataset.id;
+          return (
+            <div class="flex flex-row content-center items-center gap-1">
+              {curUsage[datasetId]?.search_count ?? 0}{" "}
+            </div>
+          );
+        },
+      }),
+
+      colHelp.display({
+        header: "RAG Count",
+        cell(info) {
+          const datasetId = info.row.original.dataset.id;
+          return (
+            <div class="flex flex-row content-center items-center gap-1">
+              {curUsage[datasetId]?.rag_count ?? 0}{" "}
+            </div>
+          );
+        },
+      }),
+
+      colHelp.display({
+        header: "Recommendation Count",
+        cell(info) {
+          const datasetId = info.row.original.dataset.id;
+          return (
+            <div class="flex flex-row content-center items-center gap-1">
+              {curUsage[datasetId]?.recommendations_count ?? 0}{" "}
+            </div>
+          );
+        },
+      }),
+
       colHelp.accessor("dataset.id", {
         header: "ID",
         cell(props) {
@@ -282,7 +326,15 @@ export const DatasetOverview = () => {
     }
 
     const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
-    const newUsage: Record<string, { chunk_count: number }> = {};
+    const newUsage: Record<
+      string,
+      {
+        chunk_count: number;
+        search_count: number;
+        rag_count: number;
+        recommendations_count: number;
+      }
+    > = {};
     const abortController = new AbortController();
 
     const fetchUsage = (datasetId: string) => {

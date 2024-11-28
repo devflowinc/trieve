@@ -572,10 +572,11 @@ pub async fn get_dataset(
 )]
 pub async fn get_usage_by_dataset_id(
     pool: web::Data<Pool>,
+    clickhouse_client: web::Data<clickhouse::Client>,
     dataset_id: web::Path<uuid::Uuid>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let usage = get_dataset_usage_query(dataset_id.into_inner(), pool)
+    let usage = get_dataset_usage_query(dataset_id.into_inner(), pool, clickhouse_client.get_ref())
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 

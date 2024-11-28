@@ -1,7 +1,7 @@
 use crate::data::models::{
     DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetConfiguration, DatasetUsageCount,
-    Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription, UnifiedId,
-    WordDataset,
+    DatasetUsageCountPostgres, Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan,
+    StripeSubscription, UnifiedId, WordDataset,
 };
 use crate::handlers::chunk_handler::ChunkFilter;
 use crate::handlers::dataset_handler::{GetDatasetsPagination, TagsWithCount};
@@ -717,18 +717,18 @@ pub async fn get_datasets_by_organization_id(
         .filter(datasets_columns::deleted.eq(0))
         .filter(datasets_columns::organization_id.eq(org_id))
         .order(datasets_columns::created_at.desc())
-        .select((Dataset::as_select(), DatasetUsageCount::as_select()))
+        .select((Dataset::as_select(), DatasetUsageCountPostgres::as_select()))
         .into_boxed();
 
     let dataset_and_usages = match pagination.limit {
         Some(limit) => get_datasets_query
             .offset(pagination.offset.unwrap_or(0))
             .limit(limit)
-            .load::<(Dataset, DatasetUsageCount)>(&mut conn)
+            .load::<(Dataset, DatasetUsageCountPostgres)>(&mut conn)
             .await
             .map_err(|_| ServiceError::NotFound("Could not find organization".to_string()))?,
         None => get_datasets_query
-            .load::<(Dataset, DatasetUsageCount)>(&mut conn)
+            .load::<(Dataset, DatasetUsageCountPostgres)>(&mut conn)
             .await
             .map_err(|_| ServiceError::NotFound("Could not find organization".to_string()))?,
     };
@@ -744,21 +744,95 @@ pub async fn get_datasets_by_organization_id(
 pub async fn get_dataset_usage_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
+    clickhouse_client: &clickhouse::Client,
 ) -> Result<DatasetUsageCount, ServiceError> {
     use crate::data::schema::dataset_usage_counts::dsl as dataset_usage_counts_columns;
 
-    let mut conn = pool
-        .get()
-        .await
-        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+    let search_clickhouse_query = format!(
+        "SELECT count() FROM search_queries WHERE dataset_id = '{}'",
+        dataset_id
+    );
 
-    let dataset_usage = dataset_usage_counts_columns::dataset_usage_counts
-        .filter(dataset_usage_counts_columns::dataset_id.eq(dataset_id))
-        .first::<DatasetUsageCount>(&mut conn)
-        .await
-        .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
+    let rag_clickhouse_query = format!(
+        "SELECT count() FROM rag_queries WHERE dataset_id = '{}'",
+        dataset_id
+    );
 
-    Ok(dataset_usage)
+    let recommendations_clickhouse_query = format!(
+        "SELECT count() FROM recommendations WHERE dataset_id = '{}'",
+        dataset_id
+    );
+    let postgres_handle = tokio::spawn(async move {
+        let mut conn = pool.get().await.map_err(|_| {
+            ServiceError::BadRequest("Could not get database connection".to_string())
+        })?;
+
+        let dataset_usage = dataset_usage_counts_columns::dataset_usage_counts
+            .filter(dataset_usage_counts_columns::dataset_id.eq(dataset_id))
+            .first::<DatasetUsageCountPostgres>(&mut conn)
+            .await
+            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
+
+        Ok::<DatasetUsageCountPostgres, ServiceError>(dataset_usage)
+    });
+    let search_clickhouse_client = clickhouse_client.clone();
+    let search_usage_handle = tokio::spawn(async move {
+        let search_count = search_clickhouse_client
+            .query(&search_clickhouse_query)
+            .fetch_all::<i64>()
+            .await
+            .map_err(|e| {
+                log::error!("Error fetching search count: {:?}", e);
+                ServiceError::InternalServerError(format!("Error fetching search count: {:?}", e))
+            })?;
+        Ok::<i64, ServiceError>(search_count[0])
+    });
+
+    let rag_clickhouse_client = clickhouse_client.clone();
+    let rag_usage_handle = tokio::spawn(async move {
+        let rag_count = rag_clickhouse_client
+            .query(&rag_clickhouse_query)
+            .fetch_all::<i64>()
+            .await
+            .map_err(|e| {
+                log::error!("Error fetching rag count: {:?}", e);
+                ServiceError::InternalServerError(format!("Error fetching rag count: {:?}", e))
+            })?;
+        Ok::<i64, ServiceError>(rag_count[0])
+    });
+
+    let recommendations_clickhouse_client = clickhouse_client.clone();
+    let recommendations_usage_handle = tokio::spawn(async move {
+        let recommendations_count = recommendations_clickhouse_client
+            .query(&recommendations_clickhouse_query)
+            .fetch_all::<i64>()
+            .await
+            .map_err(|e| {
+                log::error!("Error fetching recommendations count: {:?}", e);
+                ServiceError::InternalServerError(format!(
+                    "Error fetching recommendations count: {:?}",
+                    e
+                ))
+            })?;
+        Ok::<i64, ServiceError>(recommendations_count[0])
+    });
+
+    let (dataset_usage, search_count, rag_count, recommendations_count) = tokio::try_join!(
+        postgres_handle,
+        search_usage_handle,
+        rag_usage_handle,
+        recommendations_usage_handle
+    )
+    .map_err(|_| ServiceError::InternalServerError("Failed to get dataset usage".to_string()))?;
+
+    let result = DatasetUsageCount::from_details(
+        dataset_usage?,
+        search_count?,
+        rag_count?,
+        recommendations_count?,
+    );
+
+    Ok(result)
 }
 
 pub async fn get_tags_in_dataset_query(

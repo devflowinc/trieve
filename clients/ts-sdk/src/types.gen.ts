@@ -839,7 +839,7 @@ export type DatasetAnalytics = {
 
 export type DatasetAndUsage = {
     dataset: DatasetDTO;
-    dataset_usage: DatasetUsageCount;
+    dataset_usage: DatasetUsageCountPostgres;
 };
 
 /**
@@ -968,6 +968,15 @@ export type DatasetDTO = {
 };
 
 export type DatasetUsageCount = {
+    chunk_count: number;
+    dataset_id: string;
+    id: string;
+    rag_count: number;
+    recommendations_count: number;
+    search_count: number;
+};
+
+export type DatasetUsageCountPostgres = {
     chunk_count: number;
     dataset_id: string;
     id: string;

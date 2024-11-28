@@ -9053,7 +9053,7 @@
             "$ref": "#/components/schemas/DatasetDTO"
           },
           "dataset_usage": {
-            "$ref": "#/components/schemas/DatasetUsageCount"
+            "$ref": "#/components/schemas/DatasetUsageCountPostgres"
           }
         },
         "example": {
@@ -9321,6 +9321,48 @@
         }
       },
       "DatasetUsageCount": {
+        "type": "object",
+        "required": [
+          "id",
+          "dataset_id",
+          "chunk_count",
+          "search_count",
+          "rag_count",
+          "recommendations_count"
+        ],
+        "properties": {
+          "chunk_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dataset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rag_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recommendations_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "search_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "example": {
+          "chunk_count": 100,
+          "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3"
+        }
+      },
+      "DatasetUsageCountPostgres": {
         "type": "object",
         "required": [
           "id",

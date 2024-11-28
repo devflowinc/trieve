@@ -1,7 +1,7 @@
 use crate::data::models::{
     uuid_between, ChunkBoost, ChunkBoostChangeset, ChunkData, ChunkGroup, ChunkGroupBookmark,
     ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes, ContentChunkMetadata, Dataset,
-    DatasetConfiguration, DatasetTags, DatasetUsageCount, IngestSpecificChunkMetadata,
+    DatasetConfiguration, DatasetTags, DatasetUsageCountPostgres, IngestSpecificChunkMetadata,
     SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
@@ -2716,7 +2716,7 @@ pub async fn update_dataset_chunk_count(
         Ok(_) => Ok(()),
         Err(_) => {
             let new_dataset_usage_count =
-                DatasetUsageCount::from_details(dataset_id, amount_to_increase);
+                DatasetUsageCountPostgres::from_details(dataset_id, amount_to_increase);
             diesel::insert_into(dataset_usage_counts_columns::dataset_usage_counts)
                 .values(&new_dataset_usage_count)
                 .execute(&mut conn)

@@ -2199,18 +2199,51 @@ impl From<Dataset> for DatasetDTO {
     "chunk_count": 100,
 }))]
 #[diesel(table_name = dataset_usage_counts)]
-pub struct DatasetUsageCount {
+pub struct DatasetUsageCountPostgres {
     pub id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub chunk_count: i32,
 }
 
-impl DatasetUsageCount {
+impl DatasetUsageCountPostgres {
     pub fn from_details(dataset_id: uuid::Uuid, chunk_count: i32) -> Self {
-        DatasetUsageCount {
+        DatasetUsageCountPostgres {
             id: uuid::Uuid::new_v4(),
             dataset_id,
             chunk_count,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "chunk_count": 100,
+}))]
+pub struct DatasetUsageCount {
+    pub id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub chunk_count: i32,
+    pub search_count: i64,
+    pub rag_count: i64,
+    pub recommendations_count: i64,
+}
+
+impl DatasetUsageCount {
+    pub fn from_details(
+        dataset_usage: DatasetUsageCountPostgres,
+        search_count: i64,
+        rag_count: i64,
+        recommendations_count: i64,
+    ) -> Self {
+        DatasetUsageCount {
+            id: dataset_usage.id,
+            dataset_id: dataset_usage.dataset_id,
+            chunk_count: dataset_usage.chunk_count,
+            search_count,
+            rag_count,
+            recommendations_count,
         }
     }
 }
@@ -2233,11 +2266,11 @@ impl DatasetUsageCount {
 }))]
 pub struct DatasetAndUsage {
     pub dataset: DatasetDTO,
-    pub dataset_usage: DatasetUsageCount,
+    pub dataset_usage: DatasetUsageCountPostgres,
 }
 
 impl DatasetAndUsage {
-    pub fn from_components(dataset: DatasetDTO, dataset_usage: DatasetUsageCount) -> Self {
+    pub fn from_components(dataset: DatasetDTO, dataset_usage: DatasetUsageCountPostgres) -> Self {
         DatasetAndUsage {
             dataset,
             dataset_usage,

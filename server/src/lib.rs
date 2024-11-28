@@ -494,7 +494,7 @@ impl Modify for SecurityAddon {
             data::models::OrganizationUsageCount,
             data::models::Dataset,
             data::models::DatasetAndUsage,
-            data::models::DatasetUsageCount,
+            data::models::DatasetUsageCountPostgres,
             data::models::DatasetDTO,
             data::models::DatasetUsageCount,
             data::models::StripePlan,
