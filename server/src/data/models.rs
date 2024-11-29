@@ -3039,6 +3039,9 @@ impl DatasetConfigurationDTO {
                             .or(page_parameters_curr.hero_pattern)
                             .unwrap_or_default(),
                     ),
+                    role_messages: page_parameters_self
+                        .role_messages
+                        .or(page_parameters_curr.role_messages),
                 }),
             },
         }

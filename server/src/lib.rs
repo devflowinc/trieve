@@ -268,6 +268,7 @@ impl Modify for SecurityAddon {
         schemas(
             handlers::page_handler::PublicPageTheme,
             handlers::page_handler::PublicPageParameters,
+            handlers::page_handler::PublicPageRoleMessage,
             handlers::page_handler::HeroPattern,
             handlers::auth_handler::AuthQuery,
             handlers::topic_handler::CreateTopicReqPayload,

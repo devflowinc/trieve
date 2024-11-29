@@ -120,6 +120,14 @@ pub struct HeroPattern {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct PublicPageRoleMessage {
+    title: String,
+    tab_inner_html: String,
+    show_component_code: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dataset_id: Option<uuid::Uuid>,
@@ -170,6 +178,8 @@ pub struct PublicPageParameters {
     pub debounce_ms: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hero_pattern: Option<HeroPattern>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role_messages: Option<Vec<PublicPageRoleMessage>>,
 }
 
 #[utoipa::path(
