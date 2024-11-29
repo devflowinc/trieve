@@ -11797,6 +11797,13 @@
             "type": "boolean",
             "nullable": true
           },
+          "roleMessages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicPageRoleMessage"
+            },
+            "nullable": true
+          },
           "searchOptions": {
             "allOf": [
               {
@@ -11824,6 +11831,25 @@
           "useGroupSearch": {
             "type": "boolean",
             "nullable": true
+          }
+        }
+      },
+      "PublicPageRoleMessage": {
+        "type": "object",
+        "required": [
+          "title",
+          "tabInnerHtml",
+          "showComponentCode"
+        ],
+        "properties": {
+          "showComponentCode": {
+            "type": "boolean"
+          },
+          "tabInnerHtml": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
           }
         }
       },

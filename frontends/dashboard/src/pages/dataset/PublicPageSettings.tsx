@@ -1,217 +1,18 @@
-import { createSignal, createEffect, Show, useContext } from "solid-js";
-import { createToast } from "../../components/ShowToasts";
-import { ApiRoutes } from "../../components/Routes";
-import { DatasetContext } from "../../contexts/DatasetContext";
-import { UserContext } from "../../contexts/UserContext";
-import { useTrieve } from "../../hooks/useTrieve";
-import { createMemo } from "solid-js";
+import { Show } from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { JsonInput, MultiStringInput, Select, Tooltip } from "shared/ui";
-import { createStore } from "solid-js/store";
-import { Dataset, PublicPageParameters } from "trieve-ts-sdk";
 import { publicPageSearchOptionsSchema } from "../../analytics/utils/schemas/autocomplete";
 import { FiExternalLink } from "solid-icons/fi";
-import { createQuery } from "@tanstack/solid-query";
+
+import {
+  PublicPageProvider,
+  usePublicPage,
+} from "../../hooks/usePublicPageSettings";
 import { HeroPatterns } from "./HeroPatterns";
+import { createStore } from "solid-js/store";
 
-export type DatasetWithPublicPage = Dataset & {
-  server_configuration: {
-    PUBLIC_DATASET?: {
-      extra_params: PublicPageParameters;
-      enabled: boolean;
-    };
-  };
-};
-
-export const PublicPageSettings = () => {
-  const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
-
-  const [extraParams, setExtraParams] = createStore<PublicPageParameters>({});
-  const [searchOptionsError, setSearchOptionsError] = createSignal<
-    string | null
-  >(null);
-  const [isPublic, setisPublic] = createSignal<boolean>(false);
-  const [hasLoaded, setHasLoaded] = createSignal(false);
-
-  const { datasetId } = useContext(DatasetContext);
-  const { selectedOrg } = useContext(UserContext);
-
-  const publicUrl = createMemo(() => {
-    return `${apiHost.slice(0, -4)}/public_page/${datasetId()}`;
-  });
-
-  const [heroPattern, setHeroPattern] = createSignal("Blank");
-  const [foregroundColor, setForegroundColor] = createSignal("#ffffff");
-  const [foregroundOpacity, setForegroundOpacity] = createSignal(50);
-  const [backgroundColor, setBackgroundColor] = createSignal("#ffffff");
-
-  const trieve = useTrieve();
-
-  createEffect(() => {
-    void (
-      trieve.fetch<"eject">("/api/dataset/{dataset_id}", "get", {
-        datasetId: datasetId(),
-      }) as Promise<DatasetWithPublicPage>
-    ).then((dataset) => {
-      setisPublic(!!dataset.server_configuration?.PUBLIC_DATASET?.enabled);
-      setExtraParams(
-        dataset?.server_configuration?.PUBLIC_DATASET?.extra_params || {},
-      );
-
-      const params =
-        dataset?.server_configuration?.PUBLIC_DATASET?.extra_params;
-      setHeroPattern(params?.heroPattern?.heroPatternName || "Blank");
-      setForegroundColor(params?.heroPattern?.foregroundColor || "#000000");
-      setForegroundOpacity(
-        (params?.heroPattern?.foregroundOpacity || 0.5) * 100,
-      );
-      setBackgroundColor(params?.heroPattern?.backgroundColor || "#000000");
-
-      setHasLoaded(true);
-    });
-  });
-
-  const crawlSettingsQuery = createQuery(() => ({
-    queryKey: ["crawl-settings", datasetId()],
-    queryFn: async () => {
-      const result = await trieve.fetch(
-        "/api/dataset/crawl_options/{dataset_id}",
-        "get",
-        {
-          datasetId: datasetId(),
-        },
-      );
-
-      return result.crawl_options ?? null;
-    },
-  }));
-
-  // If the useGroupSearch has not been manually set,
-  // set to true if shopify scraping is enabled
-  createEffect(() => {
-    if (
-      crawlSettingsQuery.data &&
-      crawlSettingsQuery.data.scrape_options?.type === "shopify"
-    ) {
-      if (
-        extraParams.useGroupSearch === null ||
-        extraParams.useGroupSearch === undefined
-      ) {
-        setExtraParams("useGroupSearch", true);
-      }
-    }
-  });
-
-  const unpublishDataset = async () => {
-    await trieve.fetch("/api/dataset", "put", {
-      organizationId: selectedOrg().id,
-      data: {
-        dataset_id: datasetId(),
-        server_configuration: {
-          PUBLIC_DATASET: {
-            enabled: false,
-          },
-        },
-      },
-    });
-
-    createToast({
-      type: "info",
-      title: `Made dataset ${datasetId()} private`,
-    });
-
-    setisPublic(false);
-  };
-
-  createEffect(() => {
-    const pattern = heroPattern();
-    const color = foregroundColor();
-    const opacity = foregroundOpacity() / 100;
-
-    if (hasLoaded()) {
-      if (pattern === "Blank") {
-        setExtraParams("heroPattern", {
-          heroPatternSvg: "",
-          heroPatternName: "",
-          foregroundColor: "#ffffff",
-          foregroundOpacity: 0.5,
-          backgroundColor: "#ffffff",
-        });
-      } else {
-        const heroPattern = {
-          heroPatternSvg: HeroPatterns[pattern](color, opacity),
-          heroPatternName: pattern,
-          foregroundColor: color,
-          foregroundOpacity: opacity,
-          backgroundColor: backgroundColor(),
-        };
-
-        setExtraParams("heroPattern", heroPattern);
-      }
-    }
-  });
-
-  const publishDataset = async () => {
-    const name = `${datasetId()}-pregenerated-search-component`;
-    if (!isPublic()) {
-      const response = await trieve.fetch("/api/organization/api_key", "post", {
-        data: {
-          name: name,
-          role: 0,
-          dataset_ids: [datasetId()],
-          scopes: ApiRoutes["Search Component Routes"],
-        },
-        organizationId: selectedOrg().id,
-      });
-
-      await trieve.fetch("/api/dataset", "put", {
-        organizationId: selectedOrg().id,
-        data: {
-          dataset_id: datasetId(),
-          server_configuration: {
-            PUBLIC_DATASET: {
-              enabled: true,
-              // @ts-expect-error Object literal may only specify known properties, and 'api_key' does not exist in type 'PublicDatasetOptions'. [2353]
-              api_key: response.api_key,
-              extra_params: {
-                ...extraParams,
-              },
-            },
-          },
-        },
-      });
-
-      createToast({
-        type: "info",
-        title: `Created API key for ${datasetId()} named ${name}`,
-      });
-    } else {
-      await trieve.fetch("/api/dataset", "put", {
-        organizationId: selectedOrg().id,
-        data: {
-          dataset_id: datasetId(),
-          server_configuration: {
-            PUBLIC_DATASET: {
-              enabled: true,
-              extra_params: {
-                ...extraParams,
-              },
-            },
-          },
-        },
-      });
-
-      createToast({
-        type: "info",
-        title: `Updated Public settings for ${name}`,
-      });
-    }
-
-    setExtraParams(extraParams);
-    setisPublic(true);
-  };
-
+export const PublicPageSettingsPage = () => {
   return (
     <div class="rounded border border-neutral-300 bg-white p-4 shadow">
       <div class="flex items-end justify-between pb-2">
@@ -224,6 +25,26 @@ export const PublicPageSettings = () => {
           </p>
         </div>
       </div>
+      <PublicPageProvider>
+        <PublicPageControls />
+      </PublicPageProvider>
+    </div>
+  );
+};
+
+const PublicPageControls = () => {
+  const {
+    extraParams,
+    setExtraParams,
+    isPublic,
+    publishDataset,
+    unpublishDataset,
+    publicUrl,
+    searchOptionsError,
+  } = usePublicPage();
+
+  return (
+    <>
       <Show when={!isPublic()}>
         <div class="flex items-center space-x-2">
           <button
@@ -240,7 +61,7 @@ export const PublicPageSettings = () => {
           />
         </div>
       </Show>
-      <Show when={isPublic() && hasLoaded()}>
+      <Show when={isPublic()}>
         <div class="mt-4 flex content-center items-center gap-1.5 gap-x-2.5">
           <span class="font-medium">Published Url:</span>{" "}
           <a class="text-magenta-400" href={publicUrl()} target="_blank">
@@ -390,7 +211,7 @@ export const PublicPageSettings = () => {
                 />
               </div>
               <input
-                checked={extraParams.analytics || true}
+                checked={extraParams.analytics || false}
                 type="checkbox"
                 onChange={(e) => {
                   setExtraParams("analytics", e.currentTarget.checked);
@@ -479,35 +300,7 @@ export const PublicPageSettings = () => {
             </div>
           </div>
         </div>
-
-        <div class="p-2">
-          <div> Search Options </div>
-          <JsonInput
-            onValueChange={(value) => {
-              const result = publicPageSearchOptionsSchema.safeParse(value);
-
-              if (result.success) {
-                setExtraParams("searchOptions", result.data);
-                setSearchOptionsError(null);
-              } else {
-                setSearchOptionsError(
-                  result.error.errors.at(0)?.message ||
-                    "Invalid Search Options",
-                );
-              }
-            }}
-            value={() => {
-              return extraParams?.searchOptions || {};
-            }}
-            onError={(message) => {
-              setSearchOptionsError(message);
-            }}
-          />
-          <Show when={searchOptionsError()}>
-            <div class="text-red-500">{searchOptionsError()}</div>
-          </Show>
-        </div>
-
+        <SearchOptions />
         <div class="mt-4 grid grid-cols-2 gap-4">
           <div class="grow">
             <div class="flex items-center gap-1">
@@ -583,15 +376,15 @@ export const PublicPageSettings = () => {
             <Select
               display={(option) => option}
               onSelected={(option) => {
-                setHeroPattern(option);
+                setExtraParams("heroPattern", "heroPatternName", option);
               }}
               class="bg-white py-1"
-              selected={heroPattern()}
+              selected={extraParams.heroPattern?.heroPatternName || "Blank"}
               options={Object.keys(HeroPatterns)}
             />
           </div>
         </div>
-        <Show when={heroPattern() !== "Blank"}>
+        <Show when={extraParams["heroPattern"]?.heroPatternName !== "Blank"}>
           <div class="flex flex-row items-center justify-start gap-4 pt-4">
             <div class="">
               <label class="block" for="">
@@ -600,9 +393,13 @@ export const PublicPageSettings = () => {
               <input
                 type="color"
                 onChange={(e) => {
-                  setForegroundColor(e.currentTarget.value);
+                  setExtraParams(
+                    "heroPattern",
+                    "foregroundColor",
+                    e.currentTarget.value,
+                  );
                 }}
-                value={foregroundColor()}
+                value={extraParams.heroPattern?.foregroundColor || "#ffffff"}
               />
             </div>
             <div class="">
@@ -614,14 +411,23 @@ export const PublicPageSettings = () => {
                 min="0"
                 max="100"
                 onChange={(e) => {
-                  setForegroundOpacity(parseInt(e.currentTarget.value));
+                  setExtraParams(
+                    "heroPattern",
+                    "foregroundOpacity",
+                    parseInt(e.currentTarget.value) / 100,
+                  );
                 }}
-                value={foregroundOpacity()}
+                value={
+                  (extraParams.heroPattern?.foregroundOpacity || 0.5) * 100
+                }
               />
             </div>
             <div class="">
               <Show
-                when={heroPattern() !== "Blank" && heroPattern() !== "Solid"}
+                when={
+                  extraParams.heroPattern?.heroPatternName !== "Blank" &&
+                  extraParams.heroPattern?.heroPatternName !== "Solid"
+                }
               >
                 <label class="block" for="">
                   Background Color
@@ -629,9 +435,13 @@ export const PublicPageSettings = () => {
                 <input
                   type="color"
                   onChange={(e) => {
-                    setBackgroundColor(e.currentTarget.value);
+                    setExtraParams(
+                      "heroPattern",
+                      "backgroundColor",
+                      e.currentTarget.value,
+                    );
                   }}
-                  value={backgroundColor()}
+                  value={extraParams.heroPattern?.backgroundColor || "#ffffff"}
                 />
               </Show>
             </div>
@@ -793,7 +603,9 @@ export const PublicPageSettings = () => {
           </div>
         </details>
 
-        <div class="space-x-1.5">
+        <RoleOptions />
+
+        <div class="space-x-1.5 pt-8">
           <button
             class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900 disabled:opacity-40"
             onClick={() => {
@@ -812,6 +624,92 @@ export const PublicPageSettings = () => {
             Make Private
           </button>
         </div>
+      </Show>
+    </>
+  );
+};
+
+export const RoleOptions = () => {
+  const { extraParams: params, setExtraParams: setParams } = usePublicPage();
+
+  // We know params.roleMessages is an array because of effect in hook
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const [messages, setMessages] = createStore(params.roleMessages!);
+
+  const AddRoleMessageButton = () => {
+    return (
+      <button
+        class="inline-flex justify-center rounded-md border-2 border-magenta-500 px-3 py-2 text-sm font-semibold text-magenta-500 shadow-sm hover:bg-magenta-600 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
+        onClick={() => {
+          setMessages(messages.length, {
+            title: "Role Message",
+            tabInnerHtml: "<div>Role Message</div>",
+            showComponentCode: false,
+          });
+        }}
+      >
+        Add Role Message
+      </button>
+    );
+  };
+
+  return (
+    <details>
+      <summary class="cursor-pointer text-sm font-medium">
+        Role Messages{" "}
+      </summary>
+      <Show
+        fallback={<AddRoleMessageButton />}
+        when={messages && messages.length > 0}
+      >
+        <div>Have messages</div>
+      </Show>
+    </details>
+  );
+};
+
+export const SearchOptions = () => {
+  const {
+    extraParams,
+    setExtraParams,
+    searchOptionsError,
+    setSearchOptionsError,
+  } = usePublicPage();
+  return (
+    <div class="p-2">
+      <div class="flex items-baseline justify-between">
+        <div>Search Options</div>
+        <a
+          href="https://ts-sdk.trieve.ai/types/types_gen.SearchChunksReqPayload.html"
+          target="_blank"
+          class="text-sm opacity-65"
+        >
+          View Schema
+        </a>
+      </div>
+      <JsonInput
+        theme="light"
+        onValueChange={(value) => {
+          const result = publicPageSearchOptionsSchema.safeParse(value);
+
+          if (result.success) {
+            setExtraParams("searchOptions", result.data);
+            setSearchOptionsError(null);
+          } else {
+            setSearchOptionsError(
+              result.error.errors.at(0)?.message || "Invalid Search Options",
+            );
+          }
+        }}
+        value={() => {
+          return extraParams?.searchOptions || {};
+        }}
+        onError={(message) => {
+          setSearchOptionsError(message);
+        }}
+      />
+      <Show when={searchOptionsError()}>
+        <div class="text-red-500">{searchOptionsError()}</div>
       </Show>
     </div>
   );
