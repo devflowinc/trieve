@@ -786,6 +786,7 @@ pub async fn bulk_upload_chunks(
             "Updating dataset chunk count by {}",
             inserted_chunk_metadata_ids.len()
         );
+        create_point_result?;
         update_dataset_chunk_count(
             payload.dataset_id,
             inserted_chunk_metadata_ids.len() as i32,
