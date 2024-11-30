@@ -728,7 +728,7 @@ export const TabOptions = () => {
   return (
     <details open={messages.length > 0}>
       <summary class="cursor-pointer text-sm font-medium">Tab Messages</summary>
-      <div class="flex gap-2 pt-2">
+      <div class="flex items-end gap-2 overflow-y-auto pt-2">
         <For each={messages}>
           {(message, index) => (
             <div class="flex flex-row gap-2">
@@ -737,9 +737,9 @@ export const TabOptions = () => {
                   setSelectedTabIndex(index);
                 }}
                 classList={{
-                  "bg-neutral-200/70 hover:bg-neutral-200 p-2 px-4 rounded-t-md":
+                  "bg-neutral-200/70 border-neutral-200 border hover:bg-neutral-200 p-2 px-4 rounded-t-md":
                     true,
-                  "!bg-magenta-100/50 hover:bg-magenta-100/80 text-magenta-900":
+                  "!bg-magenta-100/50 border-transparent hover:bg-magenta-100/80 text-magenta-900":
                     index() === selectedTabIndex(),
                 }}
               >
@@ -758,7 +758,7 @@ export const TabOptions = () => {
             setSelectedTabIndex(messages.length - 1);
           }}
           classList={{
-            "ml-4 flex items-center gap-2 border border-neutral-300 hover:bg-neutral-200 bg-neutral-100 p-2":
+            "ml-4 rounded flex items-center gap-2 border border-neutral-300 hover:bg-neutral-200 py-1 bg-neutral-100 p-2":
               true,
             "border-b-transparent": selectedTabIndex() !== null,
           }}

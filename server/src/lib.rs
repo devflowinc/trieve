@@ -1263,7 +1263,8 @@ pub fn main() -> std::io::Result<()> {
                                 web::resource("/ctr")
                                     .route(web::put().to(handlers::analytics_handler::send_ctr_data))
                             )
-                        ),
+                        )
+                        .service(actix_files::Files::new("/static", "./static").prefer_utf8(true)),
                 )
         })
         .bind(("0.0.0.0", 8090))?
