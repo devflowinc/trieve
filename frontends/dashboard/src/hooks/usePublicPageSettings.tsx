@@ -94,6 +94,7 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
     // Selecting another pattern builds the svg field
     createEffect(() => {
       const pattern = extraParams.heroPattern?.heroPatternName;
+      const foreground = extraParams.heroPattern?.foregroundColor;
       if (hasLoaded()) {
         if (pattern == "Blank" || !pattern) {
           setExtraParams("heroPattern", {
@@ -101,8 +102,13 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
             heroPatternSvg: "",
             foregroundColor: "#ffffff",
             foregroundOpacity: 0.5,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#f3f3f3",
           });
+        } else if (pattern == "Solid") {
+          setExtraParams("heroPattern", (prev) => ({
+            ...prev,
+            backgroundColor: foreground,
+          }));
         } else {
           setExtraParams("heroPattern", (prev) => ({
             ...prev,

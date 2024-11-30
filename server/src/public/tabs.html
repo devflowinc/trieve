@@ -1,0 +1,72 @@
+<!-- <script src="https://cdn.jsdelivr.net/gh/jitbit/HtmlSanitizer@master/HtmlSanitizer.js"></script> -->
+
+<template id="tab-template">
+    {% include "search-component-code.html" %}
+</template>
+<div id="tab-container">
+  <div id="tab-header">
+    <div id="tab-buttons">
+      {% for tab in tabs %}
+        <button class="tab-button" data-tab-id="{{ tab.title }}">{{ tab.title }}</button>
+      {% endfor %}
+    </div>
+  </div>
+  <div id="tab-content">
+    <div class="tab-content">
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import sanitizeHtml from 'https://cdn.jsdelivr.net/npm/sanitize-html@1.27.5/+esm'
+  console.log(sanitizeHtml.defaults);
+
+  function sanitize(html) {
+    return sanitizeHtml(html, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'img' ]),
+      allowedAttributes: {...sanitizeHtml.defaults.allowedAttributes, '*': [
+            'src',
+            'alt',
+            'width',
+            'height',
+            'style',
+            'class',
+            'id',
+      ]}
+    })
+  }
+
+  window.tabData = {{ tabs | tojson }};
+
+  function setOpenTab(tabIndex) {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach((tabButton, index) => {
+      if (index === tabIndex) {
+        tabButton.classList.add('active');
+      } else {
+        tabButton.classList.remove('active');
+      }
+    });
+    const tabContent = document.querySelector('.tab-content');
+    tabContent.innerHTML = sanitize(window.tabData[tabIndex].tabInnerHtml);
+    let tab = window.tabData[tabIndex];
+    if (tab.showComponentCode) {
+      let template = document.getElementById('tab-template');
+      let clone = template.content.cloneNode(true);
+      tabContent.appendChild(clone);
+      hljs.highlightAll();
+    }
+  }
+
+  const buttons = document.querySelectorAll('.tab-button');
+  buttons.forEach((button, index) => {
+    button.addEventListener('click', () => {
+      setOpenTab(index);
+    });
+  });
+
+  window.onload = () => {
+    setOpenTab(0);
+  }
+</script>
+
