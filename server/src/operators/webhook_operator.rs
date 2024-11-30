@@ -49,18 +49,8 @@ pub async fn publish_content<T: Into<ChunkReqPayload>>(
 ) -> Result<(), ServiceError> {
     let chunk: ChunkReqPayload = value.into();
 
-    let full_dataset =
-        get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id), pool.clone()).await?;
-
-    let dataset_config = DatasetConfiguration::from_json(full_dataset.server_configuration.clone());
-
-    let (upsert_message, _) = create_chunk_metadata(
-        vec![chunk.clone()],
-        dataset_id,
-        dataset_config,
-        pool.clone(),
-    )
-    .await?;
+    let (upsert_message, _) =
+        create_chunk_metadata(vec![chunk.clone()], dataset_id, pool.clone()).await?;
 
     let mut redis_conn = redis_pool
         .get()

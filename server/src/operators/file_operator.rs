@@ -219,9 +219,6 @@ pub async fn create_file_chunks(
         ));
     }
 
-    let dataset_config =
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
-
     let chunk_segments = chunks
         .chunks(120)
         .map(|chunk_segment| chunk_segment.to_vec())
@@ -230,13 +227,9 @@ pub async fn create_file_chunks(
     let mut serialized_messages: Vec<String> = vec![];
 
     for chunk_segment in chunk_segments {
-        let (ingestion_message, _) = create_chunk_metadata(
-            chunk_segment,
-            dataset_org_plan_sub.dataset.id,
-            dataset_config.clone(),
-            pool.clone(),
-        )
-        .await?;
+        let (ingestion_message, _) =
+            create_chunk_metadata(chunk_segment, dataset_org_plan_sub.dataset.id, pool.clone())
+                .await?;
 
         let serialized_message: String =
             serde_json::to_string(&ingestion_message).map_err(|_| {

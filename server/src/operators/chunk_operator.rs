@@ -2429,7 +2429,6 @@ pub async fn get_row_count_for_organization_id_query(
 pub async fn create_chunk_metadata(
     chunks: Vec<ChunkReqPayload>,
     dataset_uuid: uuid::Uuid,
-    _dataset_configuration: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<(BulkUploadIngestionMessage, Vec<ChunkMetadata>), ServiceError> {
     let mut ingestion_messages = vec![];
