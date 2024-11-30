@@ -348,9 +348,6 @@ pub async fn create_chunk(
         .into());
     }
 
-    let dataset_config =
-        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
-
     let chunks = chunks.into_iter().map(|chunk| {
         let non_empty_tracking_id = chunk
             .tracking_id
@@ -368,18 +365,12 @@ pub async fn create_chunk(
     let (non_upsert_chunk_ingestion_message, non_upsert_chunk_metadatas) = create_chunk_metadata(
         non_upsert_chunks,
         dataset_org_plan_sub.dataset.id,
-        dataset_config.clone(),
         pool.clone(),
     )
     .await?;
 
-    let (upsert_chunk_ingestion_message, upsert_chunk_metadatas) = create_chunk_metadata(
-        upsert_chunks,
-        dataset_org_plan_sub.dataset.id,
-        dataset_config.clone(),
-        pool.clone(),
-    )
-    .await?;
+    let (upsert_chunk_ingestion_message, upsert_chunk_metadatas) =
+        create_chunk_metadata(upsert_chunks, dataset_org_plan_sub.dataset.id, pool.clone()).await?;
 
     let chunk_metadatas = non_upsert_chunk_metadatas
         .clone()

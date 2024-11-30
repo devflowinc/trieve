@@ -13,14 +13,11 @@ use trieve_server::{
     data::models::{self, WorkerEvent},
     operators::{
         clickhouse_operator::{ClickHouseEvent, EventQueue},
-        dataset_operator::get_dataset_by_id_query,
         organization_operator::hash_function,
     },
 };
 use trieve_server::{
-    data::models::{
-        CrawlRequest, CrawlShopifyOptions, DatasetConfiguration, RedisPool, ScrapeOptions,
-    },
+    data::models::{CrawlRequest, CrawlShopifyOptions, RedisPool, ScrapeOptions},
     operators::crawl_operator::{get_crawl_from_firecrawl, Status},
 };
 use trieve_server::{
@@ -595,18 +592,6 @@ async fn crawl(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<ScrapeReport, ServiceError> {
-    let dataset = get_dataset_by_id_query(
-        trieve_server::data::models::UnifiedId::TrieveUuid(scrape_request.dataset_id),
-        pool.clone(),
-    )
-    .await
-    .map_err(|e| {
-        log::error!("Error getting dataset config: {:?}", e);
-        ServiceError::InternalServerError("Error getting dataset config".to_string())
-    })?;
-
-    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
-
     log::info!("Starting crawl for scrape_id: {}", scrape_request.id);
     let (page_count, chunks_created) = if let Some(ScrapeOptions::Shopify(_)) =
         scrape_request.crawl_options.scrape_options.clone()
@@ -654,13 +639,9 @@ async fn crawl(
             let chunks_to_upload = chunks.chunks(120);
 
             for chunk in chunks_to_upload {
-                let (chunk_ingestion_message, chunk_metadatas) = create_chunk_metadata(
-                    chunk.to_vec(),
-                    scrape_request.dataset_id,
-                    dataset_config.clone(),
-                    pool.clone(),
-                )
-                .await?;
+                let (chunk_ingestion_message, chunk_metadatas) =
+                    create_chunk_metadata(chunk.to_vec(), scrape_request.dataset_id, pool.clone())
+                        .await?;
 
                 let mut redis_conn = redis_pool
                     .get()
@@ -695,13 +676,9 @@ async fn crawl(
         let chunks_to_upload = chunks.chunks(120);
 
         for chunk in chunks_to_upload {
-            let (chunk_ingestion_message, chunk_metadatas) = create_chunk_metadata(
-                chunk.to_vec(),
-                scrape_request.dataset_id,
-                dataset_config.clone(),
-                pool.clone(),
-            )
-            .await?;
+            let (chunk_ingestion_message, chunk_metadatas) =
+                create_chunk_metadata(chunk.to_vec(), scrape_request.dataset_id, pool.clone())
+                    .await?;
 
             let mut redis_conn = redis_pool
                 .get()
