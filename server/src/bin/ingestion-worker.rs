@@ -769,19 +769,16 @@ pub async fn bulk_upload_chunks(
     let create_point_result: Result<(), ServiceError> =
         bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
 
-    if !qdrant_only {
-        if let Err(err) = create_point_result {
-            if !upsert_by_tracking_id_being_used {
-                bulk_revert_insert_chunk_metadata_query(
-                    inserted_chunk_metadata_ids,
-                    web_pool.clone(),
-                )
+    if let Err(err) = create_point_result {
+        if !upsert_by_tracking_id_being_used || !qdrant_only {
+            bulk_revert_insert_chunk_metadata_query(inserted_chunk_metadata_ids, web_pool.clone())
                 .await?;
-            }
-
-            return Err(err);
         }
-    } else {
+
+        return Err(err);
+    }
+
+    if qdrant_only {
         log::info!(
             "Updating dataset chunk count by {}",
             inserted_chunk_metadata_ids.len()
