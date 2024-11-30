@@ -1,9 +1,9 @@
-import { Show } from "solid-js";
+import { createEffect, createSignal, For, Show } from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { JsonInput, MultiStringInput, Select, Tooltip } from "shared/ui";
 import { publicPageSearchOptionsSchema } from "../../analytics/utils/schemas/autocomplete";
-import { FiExternalLink } from "solid-icons/fi";
+import { FiExternalLink, FiPlus, FiTrash } from "solid-icons/fi";
 
 import {
   PublicPageProvider,
@@ -11,6 +11,7 @@ import {
 } from "../../hooks/usePublicPageSettings";
 import { HeroPatterns } from "./HeroPatterns";
 import { createStore } from "solid-js/store";
+import { PublicPageTabMessage } from "trieve-ts-sdk";
 
 export const PublicPageSettingsPage = () => {
   return (
@@ -603,7 +604,7 @@ const PublicPageControls = () => {
           </div>
         </details>
 
-        <RoleOptions />
+        <TabOptions />
 
         <div class="space-x-1.5 pt-8">
           <button
@@ -629,40 +630,153 @@ const PublicPageControls = () => {
   );
 };
 
-export const RoleOptions = () => {
-  const { extraParams: params, setExtraParams: setParams } = usePublicPage();
+export const TabOptions = () => {
+  const { extraParams: params } = usePublicPage();
 
-  // We know params.roleMessages is an array because of effect in hook
+  // We know params.tabMessages is an array because of effect in hook
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const [messages, setMessages] = createStore(params.roleMessages!);
+  const [messages, setMessages] = createStore(params.tabMessages!);
 
-  const AddRoleMessageButton = () => {
+  const [selectedTabIndex, setSelectedTabIndex] = createSignal<number | null>(
+    null,
+  );
+
+  createEffect(() => {
+    if (messages.length > 0 && selectedTabIndex() === null) {
+      setSelectedTabIndex(0);
+    }
+  });
+
+  const TabConfig = (props: {
+    index: number;
+    message: PublicPageTabMessage;
+  }) => {
+    const [nameRequiredWarning, setNameRequiredWarning] = createSignal(false);
     return (
-      <button
-        class="inline-flex justify-center rounded-md border-2 border-magenta-500 px-3 py-2 text-sm font-semibold text-magenta-500 shadow-sm hover:bg-magenta-600 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900"
-        onClick={() => {
-          setMessages(messages.length, {
-            title: "Role Message",
-            tabInnerHtml: "<div>Role Message</div>",
-            showComponentCode: false,
-          });
-        }}
-      >
-        Add Role Message
-      </button>
+      <>
+        <button
+          onClick={() => {
+            setMessages([
+              ...messages.slice(0, props.index),
+              ...messages.slice(props.index + 1),
+            ]);
+            setSelectedTabIndex(null);
+          }}
+          class="absolute right-2 top-2 flex items-center gap-2 rounded border border-neutral-200 bg-neutral-100 p-1 text-sm font-medium text-neutral-500 hover:bg-neutral-200"
+        >
+          <FiTrash />
+          Delete Tab
+        </button>
+        <div class="flex gap-6">
+          <div>
+            <label class="block">Tab Name</label>
+            <input
+              onFocusOut={(e) => {
+                if (e.currentTarget.value === "") {
+                  setNameRequiredWarning(true);
+                }
+              }}
+              placeholder={`Tab ${props.index + 1}`}
+              class="block w-full max-w-md rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              value={props.message.title || ""}
+              onInput={(e) => {
+                setMessages(props.index, {
+                  ...props.message,
+                  title: e.currentTarget.value,
+                });
+              }}
+            />
+            <Show when={nameRequiredWarning() && props.message.title === ""}>
+              <div class="text-sm text-red-500">Tab name is required</div>
+            </Show>
+          </div>
+          <div class="flex items-end gap-2">
+            <label>Show Component Code</label>
+            <input
+              type="checkbox"
+              class="-translate-y-1"
+              checked={props.message.showComponentCode || false}
+              onChange={(e) => {
+                setMessages(props.index, {
+                  ...props.message,
+                  showComponentCode: e.currentTarget.checked,
+                });
+              }}
+            />
+          </div>
+        </div>
+        <label class="block pt-4" for="">
+          Message HTML
+          <div class="text-xs text-neutral-500">
+            This is the HTML that will be displayed on the public page under
+            that tab
+          </div>
+        </label>
+        <HtmlEditor
+          value={props.message.tabInnerHtml || ""}
+          onValueChange={(value) => {
+            setMessages(props.index, {
+              ...props.message,
+              tabInnerHtml: value,
+            });
+          }}
+        />
+      </>
     );
   };
 
   return (
-    <details>
-      <summary class="cursor-pointer text-sm font-medium">
-        Role Messages{" "}
-      </summary>
-      <Show
-        fallback={<AddRoleMessageButton />}
-        when={messages && messages.length > 0}
-      >
-        <div>Have messages</div>
+    <details open={messages.length > 0}>
+      <summary class="cursor-pointer text-sm font-medium">Tab Messages</summary>
+      <div class="flex gap-2 pt-2">
+        <For each={messages}>
+          {(message, index) => (
+            <div class="flex flex-row gap-2">
+              <button
+                onClick={() => {
+                  setSelectedTabIndex(index);
+                }}
+                classList={{
+                  "bg-neutral-200/70 hover:bg-neutral-200 p-2 px-4 rounded-t-md":
+                    true,
+                  "!bg-magenta-100/50 hover:bg-magenta-100/80 text-magenta-900":
+                    index() === selectedTabIndex(),
+                }}
+              >
+                {message.title || `Tab ${index() + 1}`}
+              </button>
+            </div>
+          )}
+        </For>
+        <button
+          onClick={() => {
+            setMessages(messages.length, {
+              title: "",
+              tabInnerHtml: "",
+              showComponentCode: false,
+            });
+            setSelectedTabIndex(messages.length - 1);
+          }}
+          classList={{
+            "ml-4 flex items-center gap-2 border border-neutral-300 hover:bg-neutral-200 bg-neutral-100 p-2":
+              true,
+            "border-b-transparent": selectedTabIndex() !== null,
+          }}
+        >
+          <FiPlus />
+          Add Tab
+        </button>
+      </div>
+      {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
+      <Show when={selectedTabIndex() != null && messages[selectedTabIndex()!]}>
+        <div class="relative border border-neutral-200 p-4">
+          <TabConfig
+            /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+            index={selectedTabIndex()!}
+            /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+            message={messages[selectedTabIndex()!]}
+          />
+        </div>
       </Show>
     </details>
   );
@@ -712,5 +826,22 @@ export const SearchOptions = () => {
         <div class="text-red-500">{searchOptionsError()}</div>
       </Show>
     </div>
+  );
+};
+
+// Text area switches between preview and input
+const HtmlEditor = (props: {
+  value: string;
+  onValueChange: (value: string) => void;
+}) => {
+  return (
+    <textarea
+      class="w-full rounded border border-neutral-300 px-3 py-1.5 font-mono shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+      rows={6}
+      value={props.value}
+      onInput={(e) => {
+        props.onValueChange(e.currentTarget.value);
+      }}
+    />
   );
 };

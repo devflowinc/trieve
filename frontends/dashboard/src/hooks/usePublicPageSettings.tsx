@@ -83,10 +83,10 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
     // context blocks until it's set
     createEffect(() => {
       if (
-        extraParams.roleMessages === undefined ||
-        extraParams.roleMessages === null
+        extraParams.tabMessages === undefined ||
+        extraParams.tabMessages === null
       ) {
-        setExtraParams("roleMessages", []);
+        setExtraParams("tabMessages", []);
       }
     });
 
@@ -215,7 +215,7 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
       unpublishDataset,
       publishDataset,
       get ready() {
-        return hasLoaded() && !!extraParams.roleMessages;
+        return hasLoaded() && !!extraParams.tabMessages;
       },
     };
   });

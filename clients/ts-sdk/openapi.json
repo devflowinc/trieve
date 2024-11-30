@@ -11797,13 +11797,6 @@
             "type": "boolean",
             "nullable": true
           },
-          "roleMessages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PublicPageRoleMessage"
-            },
-            "nullable": true
-          },
           "searchOptions": {
             "allOf": [
               {
@@ -11814,6 +11807,13 @@
           },
           "suggestedQueries": {
             "type": "boolean",
+            "nullable": true
+          },
+          "tabMessages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicPageTabMessage"
+            },
             "nullable": true
           },
           "theme": {
@@ -11831,25 +11831,6 @@
           "useGroupSearch": {
             "type": "boolean",
             "nullable": true
-          }
-        }
-      },
-      "PublicPageRoleMessage": {
-        "type": "object",
-        "required": [
-          "title",
-          "tabInnerHtml",
-          "showComponentCode"
-        ],
-        "properties": {
-          "showComponentCode": {
-            "type": "boolean"
-          },
-          "tabInnerHtml": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
           }
         }
       },
@@ -11986,6 +11967,25 @@
           },
           "score_threshold": 0.5,
           "search_type": "semantic"
+        }
+      },
+      "PublicPageTabMessage": {
+        "type": "object",
+        "required": [
+          "title",
+          "tabInnerHtml",
+          "showComponentCode"
+        ],
+        "properties": {
+          "showComponentCode": {
+            "type": "boolean"
+          },
+          "tabInnerHtml": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
         }
       },
       "PublicPageTheme": {
@@ -15039,6 +15039,12 @@
                 "$ref": "#/components/schemas/GeoInfoWithBias"
               }
             ],
+            "nullable": true
+          },
+          "recency_bias": {
+            "type": "number",
+            "format": "float",
+            "description": "Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.",
             "nullable": true
           },
           "sort_by": {
