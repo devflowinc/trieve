@@ -210,10 +210,6 @@ export type ChatMessageProxy = {
  */
 export type ChunkFilter = {
     /**
-     * JOSNB prefilter tells the server to perform a full scan over the metadata JSONB column instead of using the filtered HNSW. Datasets on the enterprise plan with custom metadata indices will perform better with the filtered HNSW instead. When false, the server will use the filtered HNSW index to filter chunks. When true, the server will perform a full scan over the metadata JSONB column to filter chunks. Default is true.
-     */
-    jsonb_prefilter?: (boolean) | null;
-    /**
      * All of these field conditions have to match for the chunk to be included in the result set.
      */
     must?: Array<ConditionType> | null;

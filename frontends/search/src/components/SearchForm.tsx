@@ -60,10 +60,7 @@ const SearchForm = (props: {
     // eslint-disable-next-line solid/reactivity
     tempSearchValues().filters?.should ?? [],
   );
-  const [jsonbPrefilter, setJsonbPrefilter] = createSignal<boolean>(
-    // eslint-disable-next-line solid/reactivity
-    tempSearchValues().filters?.jsonb_prefilter ?? true,
-  );
+
   const [rerankQuery, setRerankQuery] = createSignal<string>("");
 
   const saveFilters = (setShowFilterModal: (filter: boolean) => void) => {
@@ -71,8 +68,8 @@ const SearchForm = (props: {
       must: mustFilters(),
       must_not: mustNotFilters(),
       should: shouldFilters(),
-      jsonb_prefilter: jsonbPrefilter(),
     };
+    console.log(filters);
     props.search.setSearch("filters", filters);
     setShowFilterModal(false);
   };
@@ -604,26 +601,6 @@ const SearchForm = (props: {
                             + Add Filter
                           </button>
                           <div class="flex-1" />
-                          <label
-                            aria-label="Change JSONB Prefilter"
-                            class="flex items-center gap-x-1"
-                          >
-                            <Tooltip
-                              body={
-                                <BsQuestionCircle class="h-4 w-4 rounded-full fill-current" />
-                              }
-                              tooltipText="Only uncheck if on the enterprise plan and you wish to use custom indices for metadata filters."
-                            />
-                            <span>JSONB Prefilter:</span>
-                          </label>
-                          <input
-                            type="checkbox"
-                            class="rounded-md border border-neutral-400 bg-neutral-100 dark:border-neutral-900 dark:bg-neutral-800"
-                            onChange={(e) => {
-                              setJsonbPrefilter(e.currentTarget.checked);
-                            }}
-                            checked={jsonbPrefilter()}
-                          />
                           <button
                             type="button"
                             class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
@@ -654,6 +631,7 @@ const SearchForm = (props: {
                                   ) => {
                                     const newFilters = mustFilters();
                                     newFilters[index()] = newFilter;
+                                    console.log("new must", newFilters);
                                     setMustFilters(newFilters);
                                   };
 

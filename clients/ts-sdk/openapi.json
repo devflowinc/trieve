@@ -7190,11 +7190,6 @@
         "type": "object",
         "description": "Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.",
         "properties": {
-          "jsonb_prefilter": {
-            "type": "boolean",
-            "description": "JOSNB prefilter tells the server to perform a full scan over the metadata JSONB column instead of using the filtered HNSW. Datasets on the enterprise plan with custom metadata indices will perform better with the filtered HNSW instead. When false, the server will use the filtered HNSW index to filter chunks. When true, the server will perform a full scan over the metadata JSONB column to filter chunks. Default is true.",
-            "nullable": true
-          },
           "must": {
             "type": "array",
             "items": {

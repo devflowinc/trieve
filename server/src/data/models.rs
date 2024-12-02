@@ -27,8 +27,8 @@ use crate::operators::chunk_operator::{
 };
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::search_operator::{
-    get_group_metadata_filter_condition, get_group_tag_set_filter_condition,
-    get_metadata_filter_condition, GroupScoreChunk, SearchResult,
+    get_group_metadata_filter_condition, get_group_tag_set_filter_condition, GroupScoreChunk,
+    SearchResult,
 };
 use actix_web::web;
 use chrono::{DateTime, NaiveDateTime};
@@ -4293,21 +4293,12 @@ pub fn get_range(range: Range) -> Result<qdrant::Range, ServiceError> {
 impl FieldCondition {
     pub async fn convert_to_qdrant_condition(
         &self,
-        jsonb_prefilter: Option<bool>,
         dataset_id: uuid::Uuid,
         pool: web::Data<Pool>,
     ) -> Result<Option<qdrant::Condition>, ServiceError> {
         if (self.match_all.is_some() || self.match_any.is_some()) && self.range.is_some() {
             return Err(ServiceError::BadRequest(
                 "Cannot have both match and range conditions".to_string(),
-            ));
-        }
-
-        if jsonb_prefilter.unwrap_or(true) && self.field.starts_with("metadata.") {
-            return Ok(Some(
-                get_metadata_filter_condition(self, dataset_id, pool)
-                    .await?
-                    .into(),
             ));
         }
 
