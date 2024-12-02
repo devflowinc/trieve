@@ -1,194 +1,218 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+  <head>
+    <link rel="stylesheet" href="/static/output.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/trieve-search-component@0.2.4/dist/index.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Maven+Pro:wght@400..900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="https://cdn.trieve.ai/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="https://cdn.trieve.ai/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="https://cdn.trieve.ai/favicon-16x16.png"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/default.min.css"
+    />
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
 
-<head>
-  <link rel="stylesheet" href="https://unpkg.com/trieve-search-component@0.2.4/dist/index.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Maven+Pro:wght@400..900&amp;display=swap" rel="stylesheet">
-  <link rel="apple-touch-icon" sizes="180x180" href="https://cdn.trieve.ai/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="https://cdn.trieve.ai/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="https://cdn.trieve.ai/favicon-16x16.png" />
-  <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/default.min.css">
-  <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+    <!-- and it's easy to individually load additional languages -->
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/go.min.js"></script>
 
-  <!-- and it's easy to individually load additional languages -->
-  <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/go.min.js"></script>
+    <script>
+      hljs.highlightAll();
+    </script>
 
-  <script>hljs.highlightAll();</script>
+    <style>
+      *,
+      *:before,
+      *:after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-  <style>
-    *,
-    *:before,
-    *:after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        { % if hero_pattern % }
+        background-image: url({{ hero_pattern|safe }});
+        { % else % }
+        background-color: red;
+        { % endif % }
+      }
 
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      { % if hero_pattern % }
-      background-image: url({{ hero_pattern|safe }});
-      { % else % }
-      background-color: red;
-      { % endif % }
-    }
+      nav {
+        padding: 8px;
+        padding-inline: 18px;
+        display: flex;
+        justify-content: space-between;
+        background-color: white;
+        border-bottom: 1px solid #d4d4d4;
+      }
 
-    nav {
-      padding: 8px;
-      padding-inline: 18px;
-      display: flex;
-      justify-content: space-between;
-      background-color: white;
-      border-bottom: 1px solid #d4d4d4;
-    }
+      .nav-icon:hover {
+        fill: #A33EB5;
 
-    .nav-icon:hover {
-      fill: #A33EB5;
+      }
 
-    }
+      .action-link {
+        background-color: #A33EB5;
+        padding: 8px;
+        padding-left: 12px;
+        border-radius: 4px;
+        color: white;
+        gap: 12px;
+        fill: white;
+      }
+      .action-link:hover {
+        background-color: #802f8f;
+      }
 
-    .action-link {
-      background-color: #A33EB5;
-      padding: 8px;
-      padding-left: 12px;
-      border-radius: 4px;
-      color: white;
-      gap: 12px;
-      fill: white;
-    }
-    .action-link:hover {
-      background-color: #802f8f;
-    }
+      a {
+        color: #370D3E;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: start;
+        gap: 4px;
+        text-decoration-line: none;
+      }
 
-    a {
-      color: #370D3E;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: start;
-      gap: 4px;
-      text-decoration-line: none;
-    }
+      a:hover {
+        text-decoration-line: underline;
+      }
 
-    a:hover {
-      text-decoration-line: underline;
-    }
+      .nav-icon {
+        /* display: inline-flex; */
+        width: 14px;
+      }
 
-    .nav-icon {
-      /* display: inline-flex; */
-      width: 14px;
-    }
+      #nav-links {
+        display: flex;
+        align-items: center;
+        justify-content: right;
+        gap: 24px;
+      }
 
-    #nav-links {
-      display: flex;
-      align-items: center;
-      justify-content: right;
-      gap: 24px;
-    }
+      main {
+        overflow: hidden;
+        font-family: 'Maven Pro', sans-serif;
+        line-height: 1.6;
+        position: relative;
+        display: flex;
+        position: relative;
+        flex-direction: column;
+        padding-top: 48px;
+        gap: 40px;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-    main {
-      overflow: hidden;
-      font-family: 'Maven Pro', sans-serif;
-      line-height: 1.6;
-      position: relative;
-      display: flex;
-      position: relative;
-      flex-direction: column;
-      padding-top: 48px;
-      gap: 40px;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-    }
+      .corner-logo {
+        max-width: 120px;
+        max-height: 80px;
+      }
 
-    .corner-logo {
-      max-width: 120px;
-      max-height: 80px;
-    }
+      .dev-back-button {
+        background-color: #f5f5f5;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e5e5;
+        color: black;
+        padding: 0.3rem;
+        font-size: 0.8rem;
+        position: fixed;
+        bottom: 0.5rem;
+        left: 0.5rem;
+        text-decoration: none;
+      }
 
-    .dev-back-button {
-      background-color: #f5f5f5;
-      border-radius: 0.5rem;
-      border: 1px solid #e5e5e5;
-      color: black;
-      padding: 0.3rem;
-      font-size: 0.8rem;
-      position: fixed;
-      bottom: 0.5rem;
-      left: 0.5rem;
-      text-decoration: none;
-    }
+      .basic {
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      }
 
-    .basic {
-      padding: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-    }
+      #tab-container {
+        margin-top: 80px;
+        min-width: 80vw;
+      }
 
-    #tab-container {
-      margin-top: 80px;
-      min-width: 80vw;
-    }
+      #tab-content {
+        border: 1px solid #d4d4d4;
+        padding: 0.9rem;
+        background-color: white;
+      }
 
-    #tab-content {
-      border: 1px solid #d4d4d4;
-      padding: 0.9rem;
-      background-color: white;
-    }
+      pre {
+        padding: 0rem;
+      }
 
-    pre {
-      padding: 0rem;
-    }
+      .tab-button {
+        background-color: #e5e5e5;
+        border-radius: 0.4rem 0.4rem 0rem 0rem;
+        border: 1px solid #d4d4d4;
+        border-bottom-color: transparent;
+        color: black;
+        padding: 0.4rem;
+        padding-top: 0.5rem;
+        font-size: 0.9rem;
+        padding-inline: 1.0rem;
+        text-decoration: none;
+        cursor: pointer;
+      }
 
-    .tab-button {
-      background-color: #e5e5e5;
-      border-radius: 0.4rem 0.4rem 0rem 0rem;
-      border: 1px solid #d4d4d4;
-      border-bottom-color: transparent;
-      color: black;
-      padding: 0.4rem;
-      padding-top: 0.5rem;
-      font-size: 0.9rem;
-      padding-inline: 1.0rem;
-      text-decoration: none;
-      cursor: pointer;
-    }
+      .tab-button.active {
+        background-color: white;
+      }
+    </style>
 
-    .tab-button.active {
-      background-color: white;
-    }
-  </style>
+    <script type="module">
+      import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.4/dist/vanilla/index.js';
+      window.addEventListener('load', () => {
+        const root = document.getElementById('root');
+        renderToDiv(root, {
+          ... {{params | tojson}}
+        })
+      });
+    </script>
+  </head>
 
-  <script type="module">
-    import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.4/dist/vanilla/index.js';
-    window.addEventListener('load', () => {
-      const root = document.getElementById('root');
-      renderToDiv(root, {
-        ... {{params | tojson}}
-      })
-    });
-  </script>
-</head>
-
-<body style="{{body_style}}; {{ background_color }}">
-  {% include "navbar.html" %}
-  <main>
-    <div class="basic">
-      <div id="root">
+  <body style="{{body_style}}; {{ background_color }}">
+    {% include "navbar.html" %}
+    <main>
+      <div class="basic">
+        <div id="root"></div>
+        {% if tabs|length > 0 %} {% include "tabs.html" %} {% else %} {% include
+        "search-component-code.html" %} {% endif %}
       </div>
-        {% if tabs|length > 0 %}
-          {% include "tabs.html" %}
-        {% else %}
-          {% include "search-component-code.html" %}
-        {% endif %}
-    </div>
-  </main>
-  {% if logged_in %}
-  <a class="dev-back-button" href="{{dashboard_url}}/dataset/{{params.datasetId}}/public-page">Back To Dashboard</a>
-  {% endif %}
-</body>
-
+    </main>
+    {% if logged_in %}
+    <a
+      class="dev-back-button"
+      href="{{dashboard_url}}/dataset/{{params.datasetId}}/public-page"
+      >Back To Dashboard</a
+    >
+    {% endif %}
+  </body>
 </html>

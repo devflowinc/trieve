@@ -758,7 +758,7 @@ export const TabOptions = () => {
             setSelectedTabIndex(messages.length - 1);
           }}
           classList={{
-            "ml-4 flex items-center gap-2 border border-neutral-300 hover:bg-neutral-200 py-1 bg-neutral-100 p-2":
+            "ml-4 rounded flex items-center gap-2 border border-neutral-300 hover:bg-neutral-200 py-1 bg-neutral-100 p-2":
               true,
             "border-b-transparent": selectedTabIndex() !== null,
           }}
