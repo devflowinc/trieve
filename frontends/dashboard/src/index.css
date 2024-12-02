@@ -69,6 +69,10 @@ pre.shiki {
   }
 }
 
+.jsoneditor.jsoneditor-mode-code {
+  @apply border-neutral-300;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

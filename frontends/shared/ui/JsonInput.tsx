@@ -23,7 +23,7 @@ export const JsonInput = (props: JsonInputProps) => {
       editorRef = new JSONEditor(containerRef, {
         theme:
           props.theme === "light"
-            ? "ace/theme/github-light"
+            ? "ace/theme/trieve-light"
             : "ace/theme/trieve",
         statusBar: false,
         mainMenuBar: false,
