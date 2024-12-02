@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Show, For, createSignal, createEffect } from "solid-js";
 
 export interface FieldFilter {
@@ -11,7 +9,8 @@ export interface FieldFilter {
     } | null;
     radius?: number | null;
   } | null;
-  match?: (string | number)[] | null;
+  match_any?: (string | number)[] | null;
+  match_all?: (string | number)[] | null;
   range?: {
     gte?: number | null;
     lte?: number | null;
@@ -31,19 +30,13 @@ export interface HasIdFilter {
   tracking_ids: string[] | null;
 }
 
+export type Filter = FieldFilter | HasIdFilter;
+
 export interface Filters {
   must: Filter[];
   must_not: Filter[];
   should: Filter[];
-  jsonb_prefilter?: boolean | null;
 }
-
-export interface FilterItemProps {
-  initialFilter: Filter;
-  onFilterChange: (filter: Filter) => void;
-}
-
-export type Filter = FieldFilter | HasIdFilter;
 
 export function filterIsHasIdFilter(filter: Filter): filter is HasIdFilter {
   return (
@@ -65,10 +58,15 @@ export function filterAsFieldFilter(filter: Filter): FieldFilter | null {
   return filterIsFieldFilter(filter) ? filter : null;
 }
 
+export interface FilterItemProps {
+  initialFilter: Filter;
+  onFilterChange: (filter: Filter) => void;
+}
+
 export const FilterItem = (props: FilterItemProps) => {
   const [curFilter, setCurFilter] = createSignal<Filter>(props.initialFilter);
 
-  let initialTempFilterMode = "match";
+  let initialTempFilterMode = "match_any";
   let initialTempFilterField = "tag_set";
 
   if (filterIsFieldFilter(props.initialFilter) && props.initialFilter != null) {
@@ -127,8 +125,12 @@ export const FilterItem = (props: FilterItemProps) => {
     lte: filterAsFieldFilter(props.initialFilter)?.date_range?.lte ?? null,
   });
 
-  const [match, setMatch] = createSignal<(string | number)[] | null>(
-    filterAsFieldFilter(props.initialFilter)?.match ?? null,
+  const [matchAny, setMatchAny] = createSignal<(string | number)[] | null>(
+    filterAsFieldFilter(props.initialFilter)?.match_any ?? null,
+  );
+
+  const [matchAll, setMatchAll] = createSignal<(string | number)[] | null>(
+    filterAsFieldFilter(props.initialFilter)?.match_all ?? null,
   );
 
   const [idFilterText, setIdFilterText] = createSignal<string[]>(
@@ -139,6 +141,8 @@ export const FilterItem = (props: FilterItemProps) => {
 
   createEffect(() => {
     const changedField = tempFilterField();
+    const curMatchAll =
+      filterAsFieldFilter(props.initialFilter)?.match_all ?? [];
 
     if (changedField === "ids") {
       setCurFilter({
@@ -151,10 +155,11 @@ export const FilterItem = (props: FilterItemProps) => {
         tracking_ids: idFilterText(),
       } as HasIdFilter);
     } else {
-      setTempFilterMode("match");
+      setTempFilterMode(
+        (curMatchAll?.length ?? 0) > 0 ? "match_all" : "match_any",
+      );
       return;
     }
-    setTempFilterMode("has_id_filter");
   });
 
   createEffect(() => {
@@ -170,37 +175,137 @@ export const FilterItem = (props: FilterItemProps) => {
           },
           radius: location().radius,
         },
+        match_any: null,
+        match_all: null,
+        range: null,
+        date_range: null,
+      });
+      setMatchAll(null);
+      setMatchAny(null);
+      setRange({
+        gt: null,
+        lt: null,
+        gte: null,
+        lte: null,
+      });
+      setDateRange({
+        gt: null,
+        lt: null,
+        gte: null,
+        lte: null,
       });
     }
 
     if (changedMode === "range") {
       setCurFilter({
         field: tempFilterField(),
+        match_any: null,
+        match_all: null,
         range: {
           gt: range().gt,
           lt: range().lt,
           gte: range().gte,
           lte: range().lte,
         },
+        date_range: null,
+      });
+      setMatchAll(null);
+      setMatchAny(null);
+      setDateRange({
+        gt: null,
+        lt: null,
+        gte: null,
+        lte: null,
+      });
+      setLocation({
+        lat: null,
+        lon: null,
+        radius: null,
       });
     }
 
-    if (changedMode === "match") {
+    if (changedMode === "match_any") {
       setCurFilter({
         field: tempFilterField(),
-        match: match(),
+        match_any: matchAny(),
+        match_all: null,
+        range: null,
+        date_range: null,
+      });
+      setMatchAll(null);
+      setRange({
+        gt: null,
+        lt: null,
+        gte: null,
+        lte: null,
+      });
+      setDateRange({
+        gt: null,
+        lt: null,
+        gte: null,
+        lte: null,
+      });
+      setLocation({
+        lat: null,
+        lon: null,
+        radius: null,
+      });
+    }
+
+    if (changedMode === "match_all") {
+      console.log("match_all");
+      setCurFilter({
+        field: tempFilterField(),
+        match_any: null,
+        match_all: matchAll(),
+        range: null,
+        date_range: null,
+      } satisfies FieldFilter);
+      setMatchAny(null);
+      setRange({
+        gt: null,
+        lt: null,
+        gte: null,
+        lte: null,
+      });
+      setDateRange({
+        gt: null,
+        lt: null,
+        gte: null,
+        lte: null,
+      });
+      setLocation({
+        lat: null,
+        lon: null,
+        radius: null,
       });
     }
 
     if (changedMode === "date_range") {
       setCurFilter({
         field: tempFilterField(),
+        match_any: null,
+        match_all: null,
+        range: null,
         date_range: {
           gt: dateRange().gt,
           lt: dateRange().lt,
           gte: dateRange().gte,
           lte: dateRange().lte,
         },
+      });
+      setMatchAll(null);
+      setMatchAny(null);
+      setRange({
+        gt: null,
+        lt: null,
+        gte: null,
+        lte: null,
+      });
+      setLocation({
+        lat: null,
+        lon: null,
+        radius: null,
       });
     }
   });
@@ -281,7 +386,15 @@ export const FilterItem = (props: FilterItemProps) => {
             }}
             value={tempFilterMode()}
           >
-            <For each={["match", "geo_radius", "range", "date_range"]}>
+            <For
+              each={[
+                "match_any",
+                "match_all",
+                "geo_radius",
+                "range",
+                "date_range",
+              ]}
+            >
               {(filter_mode) => {
                 return (
                   <option
@@ -307,7 +420,7 @@ export const FilterItem = (props: FilterItemProps) => {
                 type="number"
                 placeholder="Latitude"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setLocation({
                     ...location(),
                     lat: parseFloat(e.currentTarget.value),
@@ -322,7 +435,7 @@ export const FilterItem = (props: FilterItemProps) => {
                 type="number"
                 placeholder="Longitude"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setLocation({
                     ...location(),
                     lon: parseFloat(e.currentTarget.value),
@@ -337,7 +450,7 @@ export const FilterItem = (props: FilterItemProps) => {
                 type="number"
                 placeholder="Radius"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setLocation({
                     ...location(),
                     radius: parseFloat(e.currentTarget.value),
@@ -356,7 +469,7 @@ export const FilterItem = (props: FilterItemProps) => {
                 type="number"
                 placeholder="Greater Than"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setRange({
                     ...range(),
                     gt: parseFloat(e.currentTarget.value),
@@ -369,7 +482,7 @@ export const FilterItem = (props: FilterItemProps) => {
                 type="number"
                 placeholder="Less Than"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setRange({
                     ...range(),
                     lt: parseFloat(e.currentTarget.value),
@@ -386,7 +499,7 @@ export const FilterItem = (props: FilterItemProps) => {
                 type="number"
                 placeholder="Greater Than or Equal"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setRange({
                     ...range(),
                     gte: parseFloat(e.currentTarget.value),
@@ -399,7 +512,7 @@ export const FilterItem = (props: FilterItemProps) => {
                 type="number"
                 placeholder="Less Than or Equal"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setRange({
                     ...range(),
                     lte: parseFloat(e.currentTarget.value),
@@ -417,7 +530,7 @@ export const FilterItem = (props: FilterItemProps) => {
               <input
                 type="date"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setDateRange({
                     ...dateRange(),
                     gt: e.currentTarget.value + " 00:00:00",
@@ -430,7 +543,7 @@ export const FilterItem = (props: FilterItemProps) => {
                 type="date"
                 placeholder="Less Than"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setDateRange({
                     ...dateRange(),
                     lt: e.currentTarget.value + " 00:00:00",
@@ -447,7 +560,7 @@ export const FilterItem = (props: FilterItemProps) => {
                 type="date"
                 placeholder="Greater Than or Equal"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setDateRange({
                     ...dateRange(),
                     gte: e.currentTarget.value + " 00:00:00",
@@ -460,7 +573,7 @@ export const FilterItem = (props: FilterItemProps) => {
                 type="date"
                 placeholder="Less Than or Equal"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
+                onInput={(e) => {
                   setDateRange({
                     ...dateRange(),
                     lte: e.currentTarget.value + " 00:00:00",
@@ -471,18 +584,34 @@ export const FilterItem = (props: FilterItemProps) => {
             </div>
           </div>
         </Show>
-        <Show when={tempFilterMode() === "match"}>
+        <Show when={tempFilterMode() === "match_any"}>
           <div class="flex flex-col gap-y-1 py-2 pl-4">
             <div class="grid grid-cols-2 items-center">
-              <label aria-label="Match">Comma Separated Values:</label>
+              <label aria-label="Match Any">Comma Separated Values:</label>
               <input
                 type="text"
                 placeholder="h1, h2, h3"
                 class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
-                onChange={(e) => {
-                  setMatch(e.currentTarget.value.split(","));
+                onInput={(e) => {
+                  setMatchAny(e.currentTarget.value.split(","));
                 }}
-                value={(match() ?? []).join(",")}
+                value={(matchAny() ?? []).join(",")}
+              />
+            </div>
+          </div>
+        </Show>
+        <Show when={tempFilterMode() === "match_all"}>
+          <div class="flex flex-col gap-y-1 py-2 pl-4">
+            <div class="grid grid-cols-2 items-center">
+              <label aria-label="Match All">Comma Separated Values:</label>
+              <input
+                type="text"
+                placeholder="h1, h2, h3"
+                class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                onInput={(e) => {
+                  setMatchAll(e.currentTarget.value.split(","));
+                }}
+                value={(matchAll() ?? []).join(",")}
               />
             </div>
           </div>
@@ -498,6 +627,7 @@ export const FilterItem = (props: FilterItemProps) => {
               placeholder="h1, h2, h3"
               class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
+                console.log("setIdFilterText");
                 setIdFilterText(e.currentTarget.value.split(","));
               }}
               value={idFilterText()}

@@ -7190,11 +7190,6 @@
         "type": "object",
         "description": "Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.",
         "properties": {
-          "jsonb_prefilter": {
-            "type": "boolean",
-            "description": "JOSNB prefilter tells the server to perform a full scan over the metadata JSONB column instead of using the filtered HNSW. Datasets on the enterprise plan with custom metadata indices will perform better with the filtered HNSW instead. When false, the server will use the filtered HNSW index to filter chunks. When true, the server will perform a full scan over the metadata JSONB column to filter chunks. Default is true.",
-            "nullable": true
-          },
           "must": {
             "type": "array",
             "items": {
@@ -15013,6 +15008,12 @@
                 "$ref": "#/components/schemas/GeoInfoWithBias"
               }
             ],
+            "nullable": true
+          },
+          "recency_bias": {
+            "type": "number",
+            "format": "float",
+            "description": "Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.",
             "nullable": true
           },
           "sort_by": {

@@ -210,10 +210,6 @@ export type ChatMessageProxy = {
  */
 export type ChunkFilter = {
     /**
-     * JOSNB prefilter tells the server to perform a full scan over the metadata JSONB column instead of using the filtered HNSW. Datasets on the enterprise plan with custom metadata indices will perform better with the filtered HNSW instead. When false, the server will use the filtered HNSW index to filter chunks. When true, the server will perform a full scan over the metadata JSONB column to filter chunks. Default is true.
-     */
-    jsonb_prefilter?: (boolean) | null;
-    /**
      * All of these field conditions have to match for the chunk to be included in the result set.
      */
     must?: Array<ConditionType> | null;
@@ -2720,6 +2716,10 @@ export type SortBySearchType = {
  */
 export type SortOptions = {
     location_bias?: ((GeoInfoWithBias) | null);
+    /**
+     * Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
+     */
+    recency_bias?: (number) | null;
     sort_by?: ((QdrantSortBy) | null);
     /**
      * Tag weights is a JSON object which can be used to boost the ranking of chunks with certain tags. This is useful for when you want to be able to bias towards chunks with a certain tag on the fly. The keys are the tag names and the values are the weights.

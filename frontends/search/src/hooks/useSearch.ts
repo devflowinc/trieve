@@ -123,7 +123,6 @@ const initalState: SearchOptions = {
     must: [],
     must_not: [],
     should: [],
-    jsonb_prefilter: true,
   } as Filters,
   multiQueries: [],
   scoringOptions: undefined,
