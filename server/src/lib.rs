@@ -771,6 +771,7 @@ pub fn main() -> std::io::Result<()> {
                     web::resource("/public_page/{dataset_id}")
                         .route(web::get().to(handlers::page_handler::public_page))
                 )
+                .service(actix_files::Files::new("/static", "./static").prefer_utf8(true))
                 // everything under '/api/' route
                 .service(
                     web::scope("/api")
@@ -1263,8 +1264,7 @@ pub fn main() -> std::io::Result<()> {
                                 web::resource("/ctr")
                                     .route(web::put().to(handlers::analytics_handler::send_ctr_data))
                             )
-                        )
-                        .service(actix_files::Files::new("/static", "./static").prefer_utf8(true)),
+                        ),
                 )
         })
         .bind(("0.0.0.0", 8090))?

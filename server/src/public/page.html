@@ -6,12 +6,6 @@
       rel="stylesheet"
       href="https://unpkg.com/trieve-search-component@0.2.4/dist/index.css"
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Maven+Pro:wght@400..900&amp;display=swap"
-      rel="stylesheet"
-    />
     <link
       rel="apple-touch-icon"
       sizes="180x180"
@@ -34,15 +28,22 @@
       href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/default.min.css"
     />
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
-
-    <!-- and it's easy to individually load additional languages -->
-    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/go.min.js"></script>
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js"></script>
 
     <script>
       hljs.highlightAll();
+
+      window.paramsData = {{params | tojson}};
     </script>
 
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Maven+Pro:wght@400..900&display=swap');
+
+      :root {
+        --brand-color: #a33eb5;
+        --brand-color: {{params.brandColor}};
+      }
+
       *,
       *:before,
       *:after {
@@ -52,43 +53,37 @@
       }
 
       body {
-        font-family: Arial, Helvetica, sans-serif;
-        { % if hero_pattern % }
-        background-image: url({{ hero_pattern|safe }});
-        { % else % }
-        background-color: red;
-        { % endif % }
+        overflow: hidden;
       }
 
       nav {
-        padding: 8px;
-        padding-inline: 18px;
-        display: flex;
-        justify-content: space-between;
-        background-color: white;
-        border-bottom: 1px solid #d4d4d4;
+        border-color: var(--brand-color);
+      }
+
+      .nav-icon {
+        width: 18px;
       }
 
       .nav-icon:hover {
-        fill: #A33EB5;
-
+        fill: var(--brand-color);
       }
 
       .action-link {
-        background-color: #A33EB5;
+        background-color: var(--brand-color);
         padding: 8px;
         padding-left: 12px;
-        border-radius: 4px;
+        padding-right: 12px;
+        border-radius: 0.25rem;
         color: white;
-        gap: 12px;
         fill: white;
       }
+
       .action-link:hover {
         background-color: #802f8f;
       }
 
       a {
-        color: #370D3E;
+        color: var(--brand-color);
         font-weight: 500;
         display: inline-flex;
         align-items: start;
@@ -100,21 +95,8 @@
         text-decoration-line: underline;
       }
 
-      .nav-icon {
-        /* display: inline-flex; */
-        width: 14px;
-      }
-
-      #nav-links {
-        display: flex;
-        align-items: center;
-        justify-content: right;
-        gap: 24px;
-      }
-
       main {
-        overflow: hidden;
-        font-family: 'Maven Pro', sans-serif;
+        font-family: "Maven Pro", sans-serif;
         line-height: 1.6;
         position: relative;
         display: flex;
@@ -153,13 +135,9 @@
         flex-direction: column;
       }
 
-      #tab-container {
-        margin-top: 80px;
-        min-width: 80vw;
-      }
-
       #tab-content {
-        border: 1px solid #d4d4d4;
+        border: 1px solid var(--brand-color);
+        border-radius: 0.25rem;
         padding: 0.9rem;
         background-color: white;
       }
@@ -169,21 +147,22 @@
       }
 
       .tab-button {
-        background-color: #e5e5e5;
-        border-radius: 0.4rem 0.4rem 0rem 0rem;
-        border: 1px solid #d4d4d4;
+        background-color: #ffffff;
+        border-radius: 0.25rem 0.25rem 0rem 0rem;
+        border: 1px solid var(--brand-color);
         border-bottom-color: transparent;
         color: black;
         padding: 0.4rem;
         padding-top: 0.5rem;
         font-size: 0.9rem;
-        padding-inline: 1.0rem;
+        padding-inline: 1rem;
         text-decoration: none;
         cursor: pointer;
       }
 
       .tab-button.active {
-        background-color: white;
+        background-color: var(--brand-color);
+        color: white;
       }
     </style>
 
@@ -215,4 +194,82 @@
     >
     {% endif %}
   </body>
+
+  <canvas id="canvas"></canvas>
+
+  <script src="https://unpkg.com/roughjs@latest/bundled/rough.js"></script>
+  <script type="module">
+    import { annotate } from "https://unpkg.com/rough-notation?module";
+
+    // Get the target element and its position
+    let targetElement = document.getElementById("open-trieve-modal");
+    while (!targetElement) {
+      targetElement = document.getElementById("open-trieve-modal");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    const circleAnimation = annotate(targetElement, {
+      type: "circle",
+      color: window.paramsData.brandColor || "black",
+      padding: 22,
+    });
+    const rect = targetElement.getBoundingClientRect();
+
+    // Get the bottom right corner coordinates
+    const endX = rect.right + 128;
+    const endY = rect.bottom + 45;
+
+    // Calculate start point (will be above and to the left of the end point)
+    const startX = rect.right + 35; // 200px to the left
+    const startY = rect.bottom - 15; // 100px up
+
+    // Create canvas and set its position
+    const canvas = document.getElementById("canvas");
+    canvas.style.position = "absolute";
+    canvas.style.left = "0";
+    canvas.style.top = "0";
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.zIndex = "-1";
+
+    // Initialize Rough.js
+    const rc = rough.canvas(canvas);
+
+    // Create the curved arrow
+    rc.path(
+      `M ${startX} ${startY}
+         Q ${startX + 85} ${endY - 85} ${endX} ${endY}`,
+      {
+        stroke: window.paramsData.brandColor || "black",
+        strokeWidth: 2,
+        roughness: 3,
+        bowing: 3,
+      }
+    );
+
+    // Add arrowhead
+    const arrowSize = 10;
+    rc.line(startX, startY, startX + arrowSize, startY + arrowSize, {
+      stroke: window.paramsData.brandColor || "black",
+      strokeWidth: 2,
+    });
+    rc.line(startX, startY, startX + arrowSize, startY - arrowSize, {
+      stroke: window.paramsData.brandColor || "black",
+      strokeWidth: 2,
+    });
+
+    await Promise.all([
+      document.fonts.load("16px Architects Daughter"),
+      document.fonts.load("16px cursive"),
+    ]);
+
+    const ctx = canvas.getContext("2d");
+    // Use Architects Daughter font with a fallback of cursive
+    // Swap font display if the font loads after the text is drawn
+    ctx.font = "16px Architects Daughter, cursive";
+    ctx.fontDisplay = "swap";
+    ctx.fillStyle = window.paramsData.brandColor || "black";
+    ctx.fillText("Try Me!", endX - 6, endY + 17);
+
+    circleAnimation.show();
+  </script>
 </html>
