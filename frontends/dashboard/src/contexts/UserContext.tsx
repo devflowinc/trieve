@@ -8,6 +8,7 @@ import {
   createMemo,
   createResource,
   createSignal,
+  on,
 } from "solid-js";
 import { createToast } from "../components/ShowToasts";
 import { redirect, useSearchParams } from "@solidjs/router";
@@ -55,7 +56,7 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
 
   const trieve = useTrieve();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [user, setUser] = createSignal<SlimUser | null>(null);
   const [isNewUser, setIsNewUser] = createSignal(false);
@@ -103,9 +104,11 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
       window.localStorage.setItem("trieve:user", JSON.stringify(data));
 
       // Grab org id from localstorage
-      const possibleOrgId = window.localStorage.getItem(
-        `${data.id}:selectedOrg`,
-      );
+      let possibleOrgId = window.localStorage.getItem(`${data.id}:selectedOrg`);
+      if (searchParams["org"]) {
+        possibleOrgId = searchParams["org"];
+      }
+
       if (possibleOrgId) {
         const matchingOrg = data.orgs.find((org) => org.id === possibleOrgId);
         if (matchingOrg) {
@@ -162,6 +165,13 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
     }
   };
 
+  // Set the orgid in the query params
+  createEffect(
+    on(selectedOrgId, (orgId) => {
+      setSearchParams({ ...searchParams, org: orgId });
+    }),
+  );
+
   const setSelectedOrg = (orgId: string) => {
     localStorage.setItem(`${user()?.id}:selectedOrg`, orgId);
     const org = user()?.orgs.find((org) => org.id === orgId);
@@ -211,9 +221,6 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
                 }}
               >
                 {props.children}
-                <Show when={isNewUser()}>
-                  <div>New user!!</div>
-                </Show>
               </UserContext.Provider>
             )}
           </Show>
