@@ -1,25 +1,25 @@
 <!-- <script src="https://cdn.jsdelivr.net/gh/jitbit/HtmlSanitizer@master/HtmlSanitizer.js"></script> -->
 
 <template id="tab-template">
-    {% include "search-component-code.html" %}
+  {% include "search-component-code.html" %}
 </template>
-<div id="tab-container">
+<div id="tab-container" class="max-w-2xl mt-20 w-full p-4 mx-auto">
   <div id="tab-header">
     <div id="tab-buttons">
       {% for tab in tabs %}
-        <button class="tab-button" data-tab-id="{{ tab.title }}">{{ tab.title }}</button>
+      <button class="tab-button" data-tab-id="{{ tab.title }}">
+        {{ tab.title }}
+      </button>
       {% endfor %}
     </div>
   </div>
   <div id="tab-content">
-    <div class="tab-content">
-    </div>
+    <div class="tab-content flex flex-col gap-4"></div>
   </div>
 </div>
 
 <script type="module">
   import sanitizeHtml from 'https://cdn.jsdelivr.net/npm/sanitize-html@1.27.5/+esm'
-  console.log(sanitizeHtml.defaults);
 
   function sanitize(html) {
     return sanitizeHtml(html, {
@@ -56,6 +56,10 @@
       tabContent.appendChild(clone);
       hljs.highlightAll();
     }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('tab', tabIndex);
+    window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
   }
 
   const buttons = document.querySelectorAll('.tab-button');
@@ -66,7 +70,9 @@
   });
 
   window.onload = () => {
-    setOpenTab(0);
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabIndex = Number(urlParams.get('tab')) || 0;
+
+    setOpenTab(tabIndex);
   }
 </script>
-

@@ -3,7 +3,7 @@ use crate::{
     get_env, Templates,
 };
 use actix_web::{get, HttpResponse};
-use minijinja::context;
+use minijinja::{context, path_loader, Environment};
 
 #[utoipa::path(
   get,
