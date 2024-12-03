@@ -825,6 +825,10 @@ video {
   overflow-y: auto;
 }
 
+.overflow-x-hidden {
+  overflow-x: hidden;
+}
+
 .whitespace-nowrap {
   white-space: nowrap;
 }
@@ -1253,6 +1257,10 @@ video {
 
   .sm\:mt-\[20vh\] {
     margin-top: 20vh;
+  }
+
+  .sm\:overflow-y-hidden {
+    overflow-y: hidden;
   }
 
   .sm\:px-6 {
