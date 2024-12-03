@@ -51,12 +51,12 @@ export const SearchAnalyticsPage = () => {
 
         <LowConfidenceQueries width={1} params={analyticsFilters} />
 
-        <CTRSearchQueries width={1} params={analyticsFilters} />
+        <CTRSearchQueries width={2} params={analyticsFilters} />
         <Card
           class="flex flex-col justify-between px-4"
           title="No Result Queries"
           subtitle="Searches with no results"
-          width={1}
+          width={2}
         >
           <NoResultQueries params={analyticsFilters} />
         </Card>
