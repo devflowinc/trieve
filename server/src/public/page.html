@@ -27,10 +27,11 @@
       rel="stylesheet"
       href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/default.min.css"
     />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js"></script>
 
-    <script>
+    <script type="module">
       hljs.highlightAll();
 
       window.paramsData = {{params | tojson}};
@@ -50,10 +51,6 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
-      }
-
-      body {
-        overflow: hidden;
       }
 
       nav {
@@ -95,6 +92,10 @@
         text-decoration-line: underline;
       }
 
+      body {
+        min-height: 100vh;
+      }
+
       main {
         font-family: "Maven Pro", sans-serif;
         line-height: 1.6;
@@ -105,8 +106,6 @@
         padding-top: 48px;
         gap: 40px;
         width: 100vw;
-        height: 100vh;
-        overflow: hidden;
       }
 
       .corner-logo {
@@ -215,7 +214,11 @@
     const rect = targetElement.getBoundingClientRect();
 
     // Get the bottom right corner coordinates
-    const endX = rect.right + 128;
+    let endX = rect.right + 128;
+    if (endX > window.innerWidth) {
+      endX = window.innerWidth - 100;
+    }
+
     const endY = rect.bottom + 45;
 
     // Calculate start point (will be above and to the left of the end point)
