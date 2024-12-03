@@ -18,7 +18,7 @@ export const Card = (props: CardProps) => {
         "grid-column": `span ${props.width} / span ${props.width}`,
       }}
       class={cn(
-        "rounded-md border border-neutral-300 bg-white p-4 shadow-sm",
+        "overflow-x-auto rounded-md border border-neutral-300 bg-white p-4 shadow-sm",
         classStuff.class,
       )}
     >
