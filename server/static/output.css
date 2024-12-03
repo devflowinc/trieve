@@ -584,10 +584,6 @@ video {
   display: flex;
 }
 
-.hidden {
-  display: none;
-}
-
 .w-full {
   width: 100%;
 }
@@ -608,16 +604,24 @@ video {
   flex-direction: column;
 }
 
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
 .items-center {
   align-items: center;
 }
 
-.justify-between {
-  justify-content: space-between;
+.justify-center {
+  justify-content: center;
 }
 
 .gap-1 {
   gap: 0.25rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
 }
 
 .gap-4 {
@@ -656,4 +660,14 @@ video {
 
 .underline {
   text-decoration-line: underline;
+}
+
+@media (min-width: 640px) {
+  .sm\:\!flex-row {
+    flex-direction: row !important;
+  }
+
+  .sm\:justify-between {
+    justify-content: space-between;
+  }
 }
