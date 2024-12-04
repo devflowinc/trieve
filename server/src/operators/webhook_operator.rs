@@ -45,12 +45,10 @@ pub async fn publish_content<T: Into<ChunkReqPayload>>(
     dataset_id: uuid::Uuid,
     value: T,
     redis_pool: web::Data<RedisPool>,
-    pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     let chunk: ChunkReqPayload = value.into();
 
-    let (upsert_message, _) =
-        create_chunk_metadata(vec![chunk.clone()], dataset_id, pool.clone()).await?;
+    let (upsert_message, _) = create_chunk_metadata(vec![chunk.clone()], dataset_id).await?;
 
     let mut redis_conn = redis_pool
         .get()

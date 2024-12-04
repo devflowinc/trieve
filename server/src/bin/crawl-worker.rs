@@ -640,8 +640,7 @@ async fn crawl(
 
             for chunk in chunks_to_upload {
                 let (chunk_ingestion_message, chunk_metadatas) =
-                    create_chunk_metadata(chunk.to_vec(), scrape_request.dataset_id, pool.clone())
-                        .await?;
+                    create_chunk_metadata(chunk.to_vec(), scrape_request.dataset_id).await?;
 
                 let mut redis_conn = redis_pool
                     .get()
@@ -677,8 +676,7 @@ async fn crawl(
 
         for chunk in chunks_to_upload {
             let (chunk_ingestion_message, chunk_metadatas) =
-                create_chunk_metadata(chunk.to_vec(), scrape_request.dataset_id, pool.clone())
-                    .await?;
+                create_chunk_metadata(chunk.to_vec(), scrape_request.dataset_id).await?;
 
             let mut redis_conn = redis_pool
                 .get()
