@@ -8,7 +8,8 @@ use signal_hook::consts::SIGTERM;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use trieve_server::data::models::{
-    self, ChunkBoost, ChunkData, ChunkMetadata, DatasetConfiguration, QdrantPayload, UnifiedId, WorkerEvent
+    self, ChunkBoost, ChunkData, ChunkGroup, ChunkMetadata, DatasetConfiguration, QdrantPayload,
+    UnifiedId, WorkerEvent,
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
@@ -25,7 +26,9 @@ use trieve_server::operators::clickhouse_operator::{ClickHouseEvent, EventQueue}
 use trieve_server::operators::dataset_operator::{
     get_dataset_and_organization_from_dataset_id_query, get_dataset_by_id_query,
 };
-use trieve_server::operators::group_operator::get_groups_from_group_ids_query;
+use trieve_server::operators::group_operator::{
+    create_groups_query, get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
+};
 use trieve_server::operators::model_operator::{
     get_bm25_embeddings, get_dense_vector, get_dense_vectors, get_sparse_vectors,
 };
@@ -375,6 +378,56 @@ pub async fn bulk_upload_chunks(
         }
     }
 
+    let mut group_tracking_ids_to_group_ids: HashMap<String, uuid::Uuid> = HashMap::new();
+
+    let all_group_tracking_ids: Vec<String> = payload
+        .ingestion_messages
+        .iter()
+        .flat_map(|chunk| chunk.chunk.group_tracking_ids.clone().unwrap_or_default())
+        .unique()
+        .collect();
+
+    if !all_group_tracking_ids.is_empty() {
+        get_group_ids_from_tracking_ids_query(
+            all_group_tracking_ids.clone(),
+            payload.dataset_id,
+            web_pool.clone(),
+        )
+        .await?
+        .iter()
+        .for_each(|(group_id, tracking_id)| {
+            if let Some(tracking_id) = tracking_id {
+                group_tracking_ids_to_group_ids.insert(tracking_id.clone(), *group_id);
+            }
+        });
+
+        let new_groups: Vec<ChunkGroup> = all_group_tracking_ids
+            .iter()
+            .filter_map(|group_tracking_id| {
+                if !group_tracking_ids_to_group_ids.contains_key(group_tracking_id) {
+                    Some(ChunkGroup::from_details(
+                        Some(group_tracking_id.clone()),
+                        None,
+                        payload.dataset_id,
+                        Some(group_tracking_id.to_string()),
+                        None,
+                        None,
+                    ))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        log::info!("Creating {} new groups", new_groups.len());
+        let created_groups = create_groups_query(new_groups, true, web_pool.clone()).await?;
+
+        created_groups.iter().for_each(|group| {
+            if let Some(tracking_id) = &group.tracking_id {
+                group_tracking_ids_to_group_ids.insert(tracking_id.clone(), group.id);
+            }
+        });
+    }
     // Being blocked out because it is difficult to create multiple split_avg embeddings in batch
     let split_average_being_used = payload
         .ingestion_messages
@@ -445,11 +498,29 @@ pub async fn bulk_upload_chunks(
                 num_value: message.chunk.num_value,
             };
 
+            let group_ids_from_group_tracking_ids: Vec<uuid::Uuid> =
+                if let Some(group_tracking_ids) = message.chunk.group_tracking_ids.clone() {
+                    group_tracking_ids
+                        .iter()
+                        .filter_map(|tracking_id| group_tracking_ids_to_group_ids.get(tracking_id))
+                        .copied()
+                        .collect()
+                } else {
+                    vec![]
+                };
+
+            let initial_group_ids = message.chunk.group_ids.clone().unwrap_or_default();
+            let deduped_group_ids = group_ids_from_group_tracking_ids
+                .into_iter()
+                .chain(initial_group_ids.into_iter())
+                .unique()
+                .collect::<Vec<uuid::Uuid>>();
+
             ChunkData {
                 chunk_metadata,
                 content: content.clone(),
                 embedding_content: message.chunk.semantic_content.clone().unwrap_or(content),
-                group_ids: message.chunk.group_ids.clone(),
+                group_ids: Some(deduped_group_ids),
                 upsert_by_tracking_id: message.upsert_by_tracking_id,
                 fulltext_boost: message
                     .chunk
@@ -494,13 +565,11 @@ pub async fn bulk_upload_chunks(
     let qdrant_only = dataset_config.QDRANT_ONLY;
 
     let inserted_chunk_metadatas = if qdrant_only {
-        ingestion_data
-            .clone()
+        ingestion_data.clone()
     } else {
         log::info!("Inserting {} chunks into database", ingestion_data.len());
         bulk_insert_chunk_metadata_query(
-            ingestion_data
-                .clone(),
+            ingestion_data.clone(),
             payload.dataset_id,
             upsert_by_tracking_id_being_used,
             web_pool.clone(),
