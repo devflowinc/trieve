@@ -7188,7 +7188,7 @@
       },
       "ChunkFilter": {
         "type": "object",
-        "description": "Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.",
+        "description": "ChunkFilter is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.",
         "properties": {
           "must": {
             "type": "array",
@@ -8097,9 +8097,10 @@
             "$ref": "#/components/schemas/FieldCondition"
           },
           {
-            "$ref": "#/components/schemas/HasIDCondition"
+            "$ref": "#/components/schemas/HasChunkIDCondition"
           }
-        ]
+        ],
+        "description": "Filters can be constructed using either fields on the chunk objects, ids or tracking ids of chunks, and finally ids or tracking ids of groups."
       },
       "ContentChunkMetadata": {
         "type": "object",
@@ -8787,6 +8788,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/SearchMethod"
+              }
+            ],
+            "nullable": true
+          },
+          "sort_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SortOptions"
               }
             ],
             "nullable": true
@@ -9508,6 +9517,14 @@
             ],
             "nullable": true
           },
+          "sort_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SortOptions"
+              }
+            ],
+            "nullable": true
+          },
           "topic_id": {
             "type": "string",
             "format": "uuid",
@@ -10176,6 +10193,7 @@
       },
       "FieldCondition": {
         "type": "object",
+        "description": "FieldCondition is a JSON object which can be used to filter chunks by a field. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.",
         "required": [
           "field"
         ],
@@ -10190,7 +10208,7 @@
           },
           "field": {
             "type": "string",
-            "description": "Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`."
+            "description": "Field is the name of the field to filter on. Commonly used fields are `timestamp`, `link`, `tag_set`, `location`, `num_value`, `group_ids`, and `group_tracking_ids`. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`."
           },
           "geo_bounding_box": {
             "allOf": [
@@ -10976,8 +10994,9 @@
           }
         }
       },
-      "HasIDCondition": {
+      "HasChunkIDCondition": {
         "type": "object",
+        "description": "HasChunkIDCondition is a JSON object which can be used to filter chunks by their ids or tracking ids. This is useful for when you want to filter chunks by their ids or tracking ids.",
         "properties": {
           "ids": {
             "type": "array",
@@ -10985,6 +11004,7 @@
               "type": "string",
               "format": "uuid"
             },
+            "description": "Ids of the chunks to apply a match_any condition with. Only chunks with one of these ids will be returned.",
             "nullable": true
           },
           "tracking_ids": {
@@ -10992,6 +11012,7 @@
             "items": {
               "type": "string"
             },
+            "description": "Tracking ids of the chunks to apply a match_any condition with. Only chunks with one of these tracking ids will be returned.",
             "nullable": true
           }
         }
@@ -11439,6 +11460,25 @@
           "sort_order": 1,
           "topic_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "updated_at": "2021-01-01 00:00:00.000"
+        }
+      },
+      "MmrOptions": {
+        "type": "object",
+        "description": "MMR Options lets you specify different methods to rerank the chunks in the result set using Maximal Marginal Relevance. If not specified, this defaults to the score of the chunks.",
+        "required": [
+          "use_mmr"
+        ],
+        "properties": {
+          "mmr_lambda": {
+            "type": "number",
+            "format": "float",
+            "description": "Set mmr_lambda to a value between 0.0 and 1.0 to control the tradeoff between relevance and diversity. Closer to 1.0 will give more diverse results, closer to 0.0 will give more relevant results. If not specified, this defaults to 0.5.",
+            "nullable": true
+          },
+          "use_mmr": {
+            "type": "boolean",
+            "description": "Set use_mmr to true to use the Maximal Marginal Relevance algorithm to rerank the results."
+          }
         }
       },
       "MultiQuery": {
@@ -13131,6 +13171,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/SearchMethod"
+              }
+            ],
+            "nullable": true
+          },
+          "sort_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SortOptions"
               }
             ],
             "nullable": true
@@ -15032,6 +15080,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/GeoInfoWithBias"
+              }
+            ],
+            "nullable": true
+          },
+          "mmr": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MmrOptions"
               }
             ],
             "nullable": true

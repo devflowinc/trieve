@@ -4204,14 +4204,20 @@ pub struct LocationPolygon {
 #[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(untagged)]
+/// Filters can be constructed using either fields on the chunk objects, ids or tracking ids of chunks, and finally ids or tracking ids of groups.
 pub enum ConditionType {
+    #[schema(title = "FieldCondition")]
     Field(FieldCondition),
-    HasID(HasIDCondition),
+    #[schema(title = "HasChunkIDCondition")]
+    HasChunkId(HasChunkIDCondition),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
-pub struct HasIDCondition {
+/// HasChunkIDCondition is a JSON object which can be used to filter chunks by their ids or tracking ids. This is useful for when you want to filter chunks by their ids or tracking ids.
+pub struct HasChunkIDCondition {
+    /// Ids of the chunks to apply a match_any condition with. Only chunks with one of these ids will be returned.
     pub ids: Option<Vec<uuid::Uuid>>,
+    /// Tracking ids of the chunks to apply a match_any condition with. Only chunks with one of these tracking ids will be returned.
     pub tracking_ids: Option<Vec<String>>,
 }
 
@@ -4226,8 +4232,9 @@ pub struct HasIDCondition {
         "lt": 1.0
     }
 }))]
+/// FieldCondition is a JSON object which can be used to filter chunks by a field. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
 pub struct FieldCondition {
-    /// Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
+    /// Field is the name of the field to filter on. Commonly used fields are `timestamp`, `link`, `tag_set`, `location`, `num_value`, `group_ids`, and `group_tracking_ids`. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
     pub field: String,
     /// Match any lets you pass in an array of values that will return results if any of the items match. The match value will be used to check for an exact substring match on the metadata values for each existing chunk. If both match_all and match_any are provided, the match_any condition will be used.
     #[serde(alias = "match")]

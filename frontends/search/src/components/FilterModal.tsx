@@ -339,6 +339,8 @@ export const FilterItem = (props: FilterItemProps) => {
               "location",
               "metadata",
               "num_value",
+              "group_tracking_ids",
+              "group_ids",
               "tracking_ids",
               "ids",
             ]}
