@@ -53,6 +53,7 @@ import { BiRegularXCircle } from "solid-icons/bi";
 import { createToast } from "./ShowToasts";
 import { FiEye } from "solid-icons/fi";
 import { useCtrClickForChunk } from "../hooks/useCtrAnalytics";
+import { ChunkGroupAndFileId } from "trieve-ts-sdk";
 
 export interface GroupPageProps {
   groupID: string;
@@ -77,7 +78,9 @@ export const GroupPage = (props: GroupPageProps) => {
   >(searchChunkMetadatasWithVotes);
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
-  const [groupInfo, setGroupInfo] = createSignal<ChunkGroupDTO | null>(null);
+  const [groupInfo, setGroupInfo] = createSignal<ChunkGroupAndFileId | null>(
+    null,
+  );
   const [chunkGroups, setChunkGroups] = createSignal<ChunkGroupDTO[]>([]);
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [fetchingGroups, setFetchingGroups] = createSignal(false);
@@ -367,7 +370,7 @@ export const GroupPage = (props: GroupPageProps) => {
     });
   };
 
-  const handleDownloadFile = (group: ChunkGroupDTO | null) => {
+  const handleDownloadFile = (group: ChunkGroupAndFileId | null) => {
     const datasetId = $dataset?.()?.dataset.id;
     if (group && group.file_id && datasetId) {
       void downloadFile(group.file_id, datasetId);
@@ -408,6 +411,9 @@ export const GroupPage = (props: GroupPageProps) => {
     const body = {
       group_id: groupInfo()?.id,
       name: groupInfo()?.name,
+      tracking_id:
+        groupInfo()?.tracking_id == "" ? null : groupInfo()?.tracking_id,
+      tag_set: groupInfo()?.tag_set,
       description: groupInfo()?.description,
     };
     void fetch(`${apiHost}/chunk_group`, {
@@ -536,7 +542,7 @@ export const GroupPage = (props: GroupPageProps) => {
       </Show>
       <div class="mx-auto flex w-full max-w-screen-2xl flex-col items-center space-y-2 px-4">
         <div class="flex w-full items-center justify-end space-x-2">
-          <Show when={groupInfo()?.file_id}>
+          <Show when={groupInfo()?.file_id ?? ""}>
             <button
               title="Download uploaded file"
               class="h-fit text-neutral-400 dark:text-neutral-300"
@@ -587,6 +593,43 @@ export const GroupPage = (props: GroupPageProps) => {
                   setGroupInfo({
                     ...curGroupInfo,
                     name: e.target.value,
+                  });
+                }
+              }}
+            />
+            <h1 class="text-md min-[320px]:text-md sm:text-md text-left font-bold">
+              Tracking ID:
+            </h1>
+            <input
+              type="text"
+              class="max-h-fit w-full rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
+              value={groupInfo()?.tracking_id ?? ""}
+              onInput={(e) => {
+                const curGroupInfo = groupInfo();
+                if (curGroupInfo) {
+                  setGroupInfo({
+                    ...curGroupInfo,
+                    tracking_id: e.target.value,
+                  });
+                }
+              }}
+            />
+            <h1 class="text-md min-[320px]:text-md sm:text-md text-left font-bold">
+              Tag Set (Comma Separated):
+            </h1>
+            <input
+              type="text"
+              class="max-h-fit w-full rounded-md bg-neutral-200 px-2 py-1 dark:bg-neutral-700"
+              value={groupInfo()?.tag_set?.join(",") ?? ""}
+              onInput={(e) => {
+                const curGroupInfo = groupInfo();
+                if (curGroupInfo) {
+                  setGroupInfo({
+                    ...curGroupInfo,
+                    tag_set: e.target.value
+                      .split(",")
+                      .map((t) => t.trim())
+                      .filter((t) => t.length > 0),
                   });
                 }
               }}
