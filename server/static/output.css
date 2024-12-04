@@ -584,10 +584,6 @@ video {
   display: flex;
 }
 
-.hidden {
-  display: none;
-}
-
 .w-full {
   width: 100%;
 }
@@ -620,20 +616,16 @@ video {
   justify-content: center;
 }
 
-.justify-between {
-  justify-content: space-between;
-}
-
 .gap-1 {
   gap: 0.25rem;
 }
 
-.gap-4 {
-  gap: 1rem;
-}
-
 .gap-2 {
   gap: 0.5rem;
+}
+
+.gap-4 {
+  gap: 1rem;
 }
 
 .border {

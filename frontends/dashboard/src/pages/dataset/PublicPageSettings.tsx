@@ -185,7 +185,7 @@ const PublicPageControls = () => {
                     <div class="max-w-[58px]">
                       <img
                         src={url()}
-                        class="max-h-[58px] max-w-[58px] rounded-full"
+                        class="max-h-[58px] max-w-[58px]"
                         alt="Brand Logo"
                       />
                     </div>
@@ -345,8 +345,32 @@ const PublicPageControls = () => {
                 class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
+            <div class="flex gap-2">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Open Graph
+                </label>
+                <Tooltip
+                  tooltipText="Generate Open Graph meta tags."
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                checked={!!extraParams.openGraphMetadata}
+                type="checkbox"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setExtraParams("openGraphMetadata", {});
+                  } else {
+                    setExtraParams("openGraphMetadata", null);
+                  }
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
           </div>
         </div>
+        <OgOptions />
         <SearchOptions />
         <div class="mt-4 grid grid-cols-2 gap-4">
           <div class="grow">
@@ -650,8 +674,6 @@ const PublicPageControls = () => {
           </div>
         </details>
 
-        <OgOptions />
-
         <TabOptions />
 
         <div class="space-x-1.5 pt-8">
@@ -897,24 +919,13 @@ const HtmlEditor = (props: {
 export const OgOptions = () => {
   const { extraParams, setExtraParams } = usePublicPage();
 
-  const [defaultOpen] = createSignal(
-    !!extraParams.openGraphMetadata?.title ||
-      !!extraParams.openGraphMetadata?.image ||
-      !!extraParams.openGraphMetadata?.description,
-  );
-
-  // Need to cover image
   return (
-    <details open={defaultOpen()} class="pt-2">
-      <summary class="cursor-pointer text-sm font-medium">
-        Open Graph Options
-      </summary>
-
+    <Show when={extraParams.openGraphMetadata}>
       <div class="flex gap-4 pt-2">
         <div class="grow">
-          <label class="block">Title</label>
+          <label class="block">OG Title</label>
           <input
-            placeholder={`Title of the page`}
+            placeholder="Title of the page"
             value={extraParams.openGraphMetadata?.title || ""}
             onInput={(e) => {
               setExtraParams("openGraphMetadata", {
@@ -926,9 +937,9 @@ export const OgOptions = () => {
           />
         </div>
         <div class="grow">
-          <label class="block">Image</label>
+          <label class="block">OG Image</label>
           <input
-            placeholder={`Image URL`}
+            placeholder="Image URL"
             value={extraParams.openGraphMetadata?.image || ""}
             onInput={(e) => {
               setExtraParams("openGraphMetadata", {
@@ -942,10 +953,10 @@ export const OgOptions = () => {
       </div>
       <div class="flex gap-4 pb-2 pt-2">
         <div class="grow">
-          <label class="block">Description</label>
+          <label class="block">OG Description</label>
           <textarea
             cols={2}
-            placeholder={`Description of the page`}
+            placeholder="Description of the page"
             value={extraParams.openGraphMetadata?.description || ""}
             onInput={(e) => {
               setExtraParams("openGraphMetadata", {
@@ -957,6 +968,6 @@ export const OgOptions = () => {
           />
         </div>
       </div>
-    </details>
+    </Show>
   );
 };
