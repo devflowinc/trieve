@@ -948,7 +948,7 @@ pub async fn update_chunk_by_tracking_id(
         }
     ]
 }))]
-/// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+/// ChunkFilter is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
 pub struct ChunkFilter {
     /// Only one of these field conditions has to match for the chunk to be included in the result set.
     pub should: Option<Vec<ConditionType>>,

@@ -206,7 +206,7 @@ export type ChatMessageProxy = {
 };
 
 /**
- * Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+ * ChunkFilter is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
  */
 export type ChunkFilter = {
     /**
@@ -485,7 +485,10 @@ export type ClusterAnalyticsFilter = {
 
 export type ClusterAnalyticsResponse = SearchClusterResponse | SearchQueryResponse;
 
-export type ConditionType = FieldCondition | HasIDCondition;
+/**
+ * Filters can be constructed using either fields on the chunk objects, ids or tracking ids of chunks, and finally ids or tracking ids of groups.
+ */
+export type ConditionType = FieldCondition | HasChunkIDCondition;
 
 export type ContentChunkMetadata = {
     chunk_html?: (string) | null;
@@ -720,6 +723,7 @@ export type CreateMessageReqPayload = {
      */
     search_query?: (string) | null;
     search_type?: ((SearchMethod) | null);
+    sort_options?: ((SortOptions) | null);
     /**
      * The ID of the topic to attach the message to.
      */
@@ -1033,6 +1037,7 @@ export type EditMessageReqPayload = {
      */
     search_query?: (string) | null;
     search_type?: ((SearchMethod) | null);
+    sort_options?: ((SortOptions) | null);
     /**
      * The id of the topic to edit the message at the given sort order for.
      */
@@ -1329,10 +1334,13 @@ export type event_type = 'view';
 
 export type EventTypesFilter = 'add_to_cart' | 'purchase' | 'view' | 'click' | 'filter_clicked';
 
+/**
+ * FieldCondition is a JSON object which can be used to filter chunks by a field. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
+ */
 export type FieldCondition = {
     date_range?: ((DateRange) | null);
     /**
-     * Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
+     * Field is the name of the field to filter on. Commonly used fields are `timestamp`, `link`, `tag_set`, `location`, `num_value`, `group_ids`, and `group_tracking_ids`. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
      */
     field: string;
     geo_bounding_box?: ((LocationBoundingBox) | null);
@@ -1597,8 +1605,17 @@ export type GroupsForChunk = {
     slim_groups: Array<ChunkGroupAndFileId>;
 };
 
-export type HasIDCondition = {
+/**
+ * HasChunkIDCondition is a JSON object which can be used to filter chunks by their ids or tracking ids. This is useful for when you want to filter chunks by their ids or tracking ids.
+ */
+export type HasChunkIDCondition = {
+    /**
+     * Ids of the chunks to apply a match_any condition with. Only chunks with one of these ids will be returned.
+     */
     ids?: Array<(string)> | null;
+    /**
+     * Tracking ids of the chunks to apply a match_any condition with. Only chunks with one of these tracking ids will be returned.
+     */
     tracking_ids?: Array<(string)> | null;
 };
 
@@ -1775,6 +1792,20 @@ export type Message = {
     sort_order: number;
     topic_id: string;
     updated_at: string;
+};
+
+/**
+ * MMR Options lets you specify different methods to rerank the chunks in the result set using Maximal Marginal Relevance. If not specified, this defaults to the score of the chunks.
+ */
+export type MmrOptions = {
+    /**
+     * Set mmr_lambda to a value between 0.0 and 1.0 to control the tradeoff between relevance and diversity. Closer to 1.0 will give more diverse results, closer to 0.0 will give more relevant results. If not specified, this defaults to 0.5.
+     */
+    mmr_lambda?: (number) | null;
+    /**
+     * Set use_mmr to true to use the Maximal Marginal Relevance algorithm to rerank the results.
+     */
+    use_mmr: boolean;
 };
 
 /**
@@ -2218,6 +2249,7 @@ export type RegenerateMessageReqPayload = {
      */
     search_query?: (string) | null;
     search_type?: ((SearchMethod) | null);
+    sort_options?: ((SortOptions) | null);
     /**
      * The id of the topic to regenerate the last message for.
      */
@@ -2723,6 +2755,7 @@ export type SortBySearchType = {
  */
 export type SortOptions = {
     location_bias?: ((GeoInfoWithBias) | null);
+    mmr?: ((MmrOptions) | null);
     /**
      * Recency Bias lets you determine how much of an effect the recency of chunks will have on the search results. If not specified, this defaults to 0.0. We recommend setting this to 1.0 for a gentle reranking of the results, >3.0 for a strong reranking of the results.
      */

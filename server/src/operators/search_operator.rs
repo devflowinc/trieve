@@ -17,7 +17,7 @@ use super::typo_operator::correct_query;
 use crate::data::models::{
     convert_to_date_time, ChunkGroup, ChunkGroupAndFileId, ChunkMetadata,
     ChunkMetadataStringTagSet, ChunkMetadataTypes, ConditionType, ContentChunkMetadata, Dataset,
-    DatasetConfiguration, HasIDCondition, MmrOptions, QdrantChunkMetadata, QdrantSortBy,
+    DatasetConfiguration, HasChunkIDCondition, MmrOptions, QdrantChunkMetadata, QdrantSortBy,
     QueryTypes, ReRankOptions, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
     SlimChunkMetadata, SortByField, SortBySearchType, SortOptions, UnifiedId,
 };
@@ -157,7 +157,7 @@ async fn convert_group_tracking_ids_to_group_ids(
 }
 
 pub async fn get_qdrant_ids_from_condition(
-    cond: HasIDCondition,
+    cond: HasChunkIDCondition,
     pool: web::Data<Pool>,
 ) -> Result<Vec<String>, ServiceError> {
     if let Some(ids) = cond.ids {
@@ -220,7 +220,7 @@ pub async fn assemble_qdrant_filter(
                             filter.should.push(condition);
                         }
                     }
-                    ConditionType::HasID(cond) => {
+                    ConditionType::HasChunkId(cond) => {
                         filter.should.push(Condition::has_id(
                             get_qdrant_ids_from_condition(cond, pool.clone()).await?,
                         ));
@@ -245,7 +245,7 @@ pub async fn assemble_qdrant_filter(
                             filter.must.push(condition);
                         }
                     }
-                    ConditionType::HasID(cond) => {
+                    ConditionType::HasChunkId(cond) => {
                         filter.must.push(Condition::has_id(
                             get_qdrant_ids_from_condition(cond, pool.clone()).await?,
                         ));
@@ -270,7 +270,7 @@ pub async fn assemble_qdrant_filter(
                             filter.must_not.push(condition);
                         }
                     }
-                    ConditionType::HasID(cond) => {
+                    ConditionType::HasChunkId(cond) => {
                         filter.must_not.push(Condition::has_id(
                             get_qdrant_ids_from_condition(cond, pool.clone()).await?,
                         ));
