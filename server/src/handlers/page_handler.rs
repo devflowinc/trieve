@@ -163,7 +163,7 @@ pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub brand_logo_img_src_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub chat_logo_img_src_url: Option<String>,
+    pub nav_logo_img_src_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub problem_link: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -1883,7 +1883,6 @@ export type PublicPageParameters = {
     brandLogoImgSrcUrl?: (string) | null;
     brandName?: (string) | null;
     chat?: (boolean) | null;
-    chatLogoImgSrcUrl?: (string) | null;
     currencyPosition?: (string) | null;
     datasetId?: (string) | null;
     debounceMs?: (number) | null;
@@ -1892,6 +1891,7 @@ export type PublicPageParameters = {
     defaultSearchMode?: (string) | null;
     defaultSearchQueries?: Array<(string)> | null;
     heroPattern?: ((HeroPattern) | null);
+    navLogoImgSrcUrl?: (string) | null;
     openGraphMetadata?: ((OpenGraphMetadata) | null);
     placeholder?: (string) | null;
     problemLink?: (string) | null;

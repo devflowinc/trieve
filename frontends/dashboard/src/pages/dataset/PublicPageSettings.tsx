@@ -196,7 +196,7 @@ const PublicPageControls = () => {
             <div class="grow">
               <div class="flex items-center gap-1">
                 <label class="block" for="">
-                  Brand Chat Logo Link
+                  Brand Navbar Logo Link
                 </label>
                 <Tooltip
                   tooltipText="URL for your brand's logo that will be displayed in the search component. Square aspect ratio is ideal."
@@ -206,13 +206,13 @@ const PublicPageControls = () => {
               <div class="flex grow items-center gap-2">
                 <input
                   placeholder="https://cdn.trieve.ai/favicon.ico"
-                  value={extraParams.chatLogoImgSrcUrl || ""}
+                  value={extraParams.navLogoImgSrcUrl || ""}
                   onInput={(e) => {
-                    setExtraParams("chatLogoImgSrcUrl", e.currentTarget.value);
+                    setExtraParams("navLogoImgSrcUrl", e.currentTarget.value);
                   }}
                   class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
-                <Show when={extraParams.chatLogoImgSrcUrl}>
+                <Show when={extraParams.navLogoImgSrcUrl}>
                   {(url) => (
                     <div class="max-w-[58px]">
                       <img

@@ -3000,9 +3000,9 @@ impl DatasetConfigurationDTO {
                     brand_logo_img_src_url: page_parameters_self
                         .brand_logo_img_src_url
                         .or(page_parameters_curr.brand_logo_img_src_url),
-                    chat_logo_img_src_url: page_parameters_self
-                        .chat_logo_img_src_url
-                        .or(page_parameters_curr.chat_logo_img_src_url),
+                    nav_logo_img_src_url: page_parameters_self
+                        .nav_logo_img_src_url
+                        .or(page_parameters_curr.nav_logo_img_src_url),
                     problem_link: page_parameters_self
                         .problem_link
                         .or(page_parameters_curr.problem_link),

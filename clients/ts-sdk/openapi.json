@@ -11793,10 +11793,6 @@
             "type": "boolean",
             "nullable": true
           },
-          "chatLogoImgSrcUrl": {
-            "type": "string",
-            "nullable": true
-          },
           "currencyPosition": {
             "type": "string",
             "nullable": true
@@ -11839,6 +11835,10 @@
                 "$ref": "#/components/schemas/HeroPattern"
               }
             ],
+            "nullable": true
+          },
+          "navLogoImgSrcUrl": {
+            "type": "string",
             "nullable": true
           },
           "openGraphMetadata": {
