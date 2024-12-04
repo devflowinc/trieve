@@ -395,6 +395,7 @@ impl Modify for SecurityAddon {
             operators::chunk_operator::HighlightStrategy,
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
             handlers::page_handler::PublicPageSearchOptions,
+            handlers::page_handler::OpenGraphMetadata,
             data::models::DateRange,
             data::models::FieldCondition,
             data::models::Range,

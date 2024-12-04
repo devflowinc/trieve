@@ -128,6 +128,14 @@ pub struct PublicPageTabMessage {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct OpenGraphMetadata {
+    title: Option<String>,
+    image: Option<String>,
+    description: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dataset_id: Option<uuid::Uuid>,
@@ -155,6 +163,8 @@ pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub brand_logo_img_src_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub chat_logo_img_src_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub problem_link: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub brand_color: Option<String>,
@@ -180,6 +190,8 @@ pub struct PublicPageParameters {
     pub hero_pattern: Option<HeroPattern>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tab_messages: Option<Vec<PublicPageTabMessage>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub open_graph_metadata: Option<OpenGraphMetadata>,
 }
 
 #[utoipa::path(

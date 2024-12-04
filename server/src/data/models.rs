@@ -3000,6 +3000,9 @@ impl DatasetConfigurationDTO {
                     brand_logo_img_src_url: page_parameters_self
                         .brand_logo_img_src_url
                         .or(page_parameters_curr.brand_logo_img_src_url),
+                    chat_logo_img_src_url: page_parameters_self
+                        .chat_logo_img_src_url
+                        .or(page_parameters_curr.chat_logo_img_src_url),
                     problem_link: page_parameters_self
                         .problem_link
                         .or(page_parameters_curr.problem_link),
@@ -3042,6 +3045,9 @@ impl DatasetConfigurationDTO {
                     tab_messages: page_parameters_self
                         .tab_messages
                         .or(page_parameters_curr.tab_messages),
+                    open_graph_metadata: page_parameters_self
+                        .open_graph_metadata
+                        .or(page_parameters_curr.open_graph_metadata),
                 }),
             },
         }
