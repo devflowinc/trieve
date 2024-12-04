@@ -1338,6 +1338,10 @@ export type EventTypesFilter = 'add_to_cart' | 'purchase' | 'view' | 'click' | '
  * FieldCondition is a JSON object which can be used to filter chunks by a field. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
  */
 export type FieldCondition = {
+    /**
+     * Boolean is a true false value for a field. This only works for boolean fields. You can specify this if you want values to be true or false.
+     */
+    boolean?: (boolean) | null;
     date_range?: ((DateRange) | null);
     /**
      * Field is the name of the field to filter on. Commonly used fields are `timestamp`, `link`, `tag_set`, `location`, `num_value`, `group_ids`, and `group_tracking_ids`. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.

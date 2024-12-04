@@ -17,6 +17,7 @@ export interface FieldFilter {
     gt?: number | null;
     lt?: number | null;
   } | null;
+  boolean?: boolean | null;
   date_range?: {
     gte?: string | null;
     lte?: string | null;
@@ -70,9 +71,10 @@ export const FilterItem = (props: FilterItemProps) => {
   let initialTempFilterField = "tag_set";
 
   if (filterIsFieldFilter(props.initialFilter) && props.initialFilter != null) {
-    const fieldMode: ["geo_radius", "range", "date_range"] = [
+    const fieldMode: ["geo_radius", "range", "boolean", "date_range"] = [
       "geo_radius",
       "range",
+      "boolean",
       "date_range",
     ];
 
@@ -125,6 +127,10 @@ export const FilterItem = (props: FilterItemProps) => {
     lte: filterAsFieldFilter(props.initialFilter)?.date_range?.lte ?? null,
   });
 
+  const [boolean, setBoolean] = createSignal<boolean | null>(
+    filterAsFieldFilter(props.initialFilter)?.boolean ?? null,
+  );
+
   const [matchAny, setMatchAny] = createSignal<(string | number)[] | null>(
     filterAsFieldFilter(props.initialFilter)?.match_any ?? null,
   );
@@ -141,8 +147,7 @@ export const FilterItem = (props: FilterItemProps) => {
 
   createEffect(() => {
     const changedField = tempFilterField();
-    const curMatchAll =
-      filterAsFieldFilter(props.initialFilter)?.match_all ?? [];
+    const curFieldFilter = filterAsFieldFilter(props.initialFilter);
 
     if (changedField === "ids") {
       setCurFilter({
@@ -155,9 +160,25 @@ export const FilterItem = (props: FilterItemProps) => {
         tracking_ids: idFilterText(),
       } as HasIdFilter);
     } else {
-      setTempFilterMode(
-        (curMatchAll?.length ?? 0) > 0 ? "match_all" : "match_any",
-      );
+      if (curFieldFilter?.match_all?.length) {
+        setTempFilterMode("match_all");
+      } else if (curFieldFilter?.match_any?.length) {
+        setTempFilterMode("match_any");
+      } else if (
+        curFieldFilter?.geo_radius?.center ||
+        curFieldFilter?.geo_radius?.radius
+      ) {
+        setTempFilterMode("geo_radius");
+      } else if (curFieldFilter?.range?.gt || curFieldFilter?.range?.lt) {
+        setTempFilterMode("range");
+      } else if (curFieldFilter?.boolean != null) {
+        setTempFilterMode("boolean");
+      } else if (
+        curFieldFilter?.date_range?.gt ||
+        curFieldFilter?.date_range?.lt
+      ) {
+        setTempFilterMode("date_range");
+      }
       return;
     }
   });
@@ -211,6 +232,36 @@ export const FilterItem = (props: FilterItemProps) => {
       });
       setMatchAll(null);
       setMatchAny(null);
+      setDateRange({
+        gt: null,
+        lt: null,
+        gte: null,
+        lte: null,
+      });
+      setLocation({
+        lat: null,
+        lon: null,
+        radius: null,
+      });
+    }
+
+    if (changedMode === "boolean") {
+      setCurFilter({
+        field: tempFilterField(),
+        match_any: null,
+        match_all: null,
+        range: null,
+        date_range: null,
+        boolean: boolean(),
+      });
+      setMatchAll(null);
+      setMatchAny(null);
+      setRange({
+        gt: null,
+        lt: null,
+        gte: null,
+        lte: null,
+      });
       setDateRange({
         gt: null,
         lt: null,
@@ -328,7 +379,9 @@ export const FilterItem = (props: FilterItemProps) => {
           value={
             tempFilterField().startsWith("metadata")
               ? "metadata"
-              : tempFilterField()
+              : tempFilterField().startsWith("group_metadata")
+                ? "group_metadata"
+                : tempFilterField()
           }
         >
           <For
@@ -341,6 +394,7 @@ export const FilterItem = (props: FilterItemProps) => {
               "num_value",
               "group_tracking_ids",
               "group_ids",
+              "group_metadata",
               "tracking_ids",
               "ids",
             ]}
@@ -375,6 +429,22 @@ export const FilterItem = (props: FilterItemProps) => {
             />
           </div>
         </Show>
+        <Show when={tempFilterField().startsWith("group_metadata")}>
+          <div>
+            <span class="p-2">.</span>
+            <input
+              type="text"
+              placeholder="field"
+              class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+              onChange={(e) => {
+                setTempFilterField("group_metadata." + e.currentTarget.value);
+              }}
+              value={tempFilterField()
+                .replace("group_metadata", "")
+                .replace(".", "")}
+            />
+          </div>
+        </Show>
       </div>
       <Show when={filterIsFieldFilter(curFilter())}>
         <div class="w-full">
@@ -394,20 +464,21 @@ export const FilterItem = (props: FilterItemProps) => {
                 "match_all",
                 "geo_radius",
                 "range",
+                "boolean",
                 "date_range",
               ]}
             >
-              {(filter_mode) => {
+              {(filterMode) => {
                 return (
                   <option
                     classList={{
                       "flex w-full items-center justify-between rounded p-1":
                         true,
                       "bg-neutral-300 dark:bg-neutral-900":
-                        filter_mode === tempFilterMode(),
+                        filterMode === tempFilterMode(),
                     }}
                   >
-                    {filter_mode}
+                    {filterMode}
                   </option>
                 );
               }}
@@ -522,6 +593,23 @@ export const FilterItem = (props: FilterItemProps) => {
                 }}
                 value={range().lte ?? ""}
               />
+            </div>
+          </div>
+        </Show>
+        <Show when={tempFilterMode() === "boolean"}>
+          <div class="flex flex-col gap-y-1 py-2 pl-4">
+            <div class="grid grid-cols-2 items-center">
+              <label aria-label="Match Any">Boolean:</label>
+              <select
+                class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                onChange={(e) => {
+                  setBoolean(e.currentTarget.value === "true");
+                }}
+                value={boolean() ? "true" : "false"}
+              >
+                <option>true</option>
+                <option>false</option>
+              </select>
             </div>
           </div>
         </Show>

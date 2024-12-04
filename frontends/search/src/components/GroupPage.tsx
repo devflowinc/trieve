@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
@@ -7,7 +9,6 @@ import {
   createEffect,
   createSignal,
   For,
-  onMount,
   onCleanup,
   Switch,
   Match,
@@ -49,11 +50,16 @@ import {
 } from "../hooks/useSearch";
 import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
-import { BiRegularXCircle } from "solid-icons/bi";
+import {
+  BiRegularChevronDown,
+  BiRegularChevronUp,
+  BiRegularXCircle,
+} from "solid-icons/bi";
 import { createToast } from "./ShowToasts";
 import { FiEye } from "solid-icons/fi";
 import { useCtrClickForChunk } from "../hooks/useCtrAnalytics";
 import { ChunkGroupAndFileId } from "trieve-ts-sdk";
+import { JsonInput } from "shared/ui";
 
 export interface GroupPageProps {
   groupID: string;
@@ -86,6 +92,8 @@ export const GroupPage = (props: GroupPageProps) => {
   const [fetchingGroups, setFetchingGroups] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [editing, setEditing] = createSignal(false);
+  const [descendTagSet, setDescendTagSet] = createSignal(false);
+  const [expandGroupMetadata, setExpandGroupMetadata] = createSignal(false);
   const $currentUser = datasetAndUserContext.user;
   const [totalPages, setTotalPages] = createSignal(0);
   const [loadingRecommendations, setLoadingRecommendations] =
@@ -118,12 +126,17 @@ export const GroupPage = (props: GroupPageProps) => {
     note: "",
   });
 
-  onMount(() => {
+  createEffect(() => {
     fetchBookmarks();
+    const urlParams = new URLSearchParams(window.location.search);
+    const editSearch = urlParams.get("edit") === "true";
+    setEditing(editSearch);
   });
 
   createEffect((prevGroupId) => {
     const curGroupId = props.groupID;
+    const urlParams = new URLSearchParams(window.location.search);
+    const editSearch = urlParams.get("edit") === "true";
     if (curGroupId !== prevGroupId) {
       setPage(1);
       setGroupRecommendations(false);
@@ -131,7 +144,7 @@ export const GroupPage = (props: GroupPageProps) => {
       setRecommendedChunks([]);
       setLoadingRecommendations(false);
       setSearchLoading(false);
-      setEditing(false);
+      setEditing(editSearch);
     }
 
     return curGroupId;
@@ -415,6 +428,8 @@ export const GroupPage = (props: GroupPageProps) => {
         groupInfo()?.tracking_id == "" ? null : groupInfo()?.tracking_id,
       tag_set: groupInfo()?.tag_set,
       description: groupInfo()?.description,
+      metadata: groupInfo()?.metadata,
+      update_chunks: descendTagSet(),
     };
     void fetch(`${apiHost}/chunk_group`, {
       method: "PUT",
@@ -429,6 +444,9 @@ export const GroupPage = (props: GroupPageProps) => {
       setFetchingGroups(false);
       if (response.ok) {
         setEditing(false);
+        const searchParams = new URLSearchParams(window.location.search);
+        searchParams.set("edit", "false");
+        navigate(`?${searchParams.toString()}`);
       }
     });
   };
@@ -525,6 +543,58 @@ export const GroupPage = (props: GroupPageProps) => {
     });
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderMetadataElements = (value: any) => {
+    if (Array.isArray(value)) {
+      // Determine if the array consists solely of objects
+      const allObjects = value.every(
+        (item) => typeof item === "object" && item !== null,
+      );
+
+      return (
+        <div>
+          <For each={value}>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {(item: any, itemIndex: () => number) => (
+              <span>
+                {typeof item === "object"
+                  ? renderMetadataElements(item)
+                  : item.toString()}
+                {itemIndex() < value.length - 1 &&
+                  (allObjects ? (
+                    <hr class="my-2 border-neutral-400 dark:border-neutral-400" />
+                  ) : (
+                    <span>, </span>
+                  ))}
+              </span>
+            )}
+          </For>
+        </div>
+      );
+    } else if (typeof value === "object" && value !== null) {
+      return (
+        <div class="pl-2">
+          <For each={Object.keys(value)}>
+            {(subKey: string) => (
+              <div>
+                <div class="flex space-x-1">
+                  <span class="font-semibold italic text-neutral-700 dark:text-neutral-200">
+                    {subKey}:
+                  </span>
+                  <span class="text-neutral-700 dark:text-neutral-300">
+                    {renderMetadataElements(value[subKey])}
+                  </span>
+                </div>
+              </div>
+            )}
+          </For>
+        </div>
+      );
+    } else {
+      return value !== null && value !== undefined ? value.toString() : "null";
+    }
+  };
+
   return (
     <>
       <Show when={openChat()}>
@@ -567,14 +637,80 @@ export const GroupPage = (props: GroupPageProps) => {
           </button>
         </div>
         <Show when={!editing()}>
-          <div class="flex w-full items-center justify-center">
-            <h1 class="min-[320px]:text-xl max-w-screen-2xl break-all text-center text-lg sm:text-3xl">
-              {groupInfo()?.name}
-            </h1>
-          </div>
-          <Show when={groupInfo()?.description.length ?? (0 > 0 && !editing())}>
-            <div class="mx-auto flex max-w-screen-2xl justify-items-center gap-x-2 text-center">
-              {groupInfo()?.description}
+          <Show when={groupInfo()?.name}>
+            <div class="flex space-x-2">
+              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                Name:{" "}
+              </span>
+              <span class="line-clamp-1 break-all">{groupInfo()?.name}</span>
+            </div>
+          </Show>
+          <Show when={groupInfo()?.tag_set?.length}>
+            <div class="flex space-x-2">
+              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                Tag Set:{" "}
+              </span>
+              <span class="line-clamp-1 break-all">
+                {groupInfo()?.tag_set?.join(",")}
+              </span>
+            </div>
+          </Show>
+          <Show when={groupInfo()?.description}>
+            <div class="flex gap-x-2">
+              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                Description:{" "}
+              </span>
+              <span class="line-clamp-1 break-all">
+                {groupInfo()?.description}
+              </span>
+            </div>
+          </Show>
+          <Show when={Object.keys(groupInfo()?.metadata ?? {}).length > 0}>
+            <button
+              class="mt-2 flex w-fit items-center space-x-1 rounded-md border bg-neutral-200/50 px-2 py-1 font-semibold text-magenta-500 hover:bg-neutral-200/90 dark:bg-neutral-700/60 dark:text-magenta-400"
+              onClick={() => setExpandGroupMetadata((prev) => !prev)}
+            >
+              <span>
+                {expandGroupMetadata()
+                  ? "Collapse Metadata"
+                  : "Expand Metadata"}
+              </span>
+              <Switch>
+                <Match when={expandGroupMetadata()}>
+                  <BiRegularChevronUp class="h-5 w-5 fill-current" />
+                </Match>
+                <Match when={!expandGroupMetadata()}>
+                  <BiRegularChevronDown class="h-5 w-5 fill-current" />
+                </Match>
+              </Switch>
+            </button>
+          </Show>
+          <Show when={expandGroupMetadata()}>
+            <div class="pl-2 pt-2">
+              <For each={Object.keys(groupInfo()?.metadata ?? {})}>
+                {(key) => (
+                  <Show
+                    when={
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      (groupInfo()?.metadata as any)[key] !== undefined
+                    }
+                  >
+                    <div class="mb-4">
+                      <div class="flex space-x-2">
+                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                          {key}:{" "}
+                        </span>
+                        <span class="line-clamp-1 break-all">
+                          {groupInfo()?.metadata &&
+                            renderMetadataElements(
+                              (groupInfo()?.metadata as any)[key],
+                            )}
+                        </span>
+                      </div>
+                    </div>
+                  </Show>
+                )}
+              </For>
             </div>
           </Show>
         </Show>
@@ -635,6 +771,17 @@ export const GroupPage = (props: GroupPageProps) => {
               }}
             />
             <h1 class="text-md min-[320px]:text-md sm:text-md text-left font-bold">
+              Descend Tag Set Update to Chunks:
+            </h1>
+            <input
+              class="mt-1 h-4 w-4"
+              type="checkbox"
+              checked={descendTagSet()}
+              onChange={(e) => {
+                setDescendTagSet(e.target.checked);
+              }}
+            />
+            <h1 class="text-md min-[320px]:text-md sm:text-md text-left font-bold">
               Description:
             </h1>
             <textarea
@@ -650,6 +797,21 @@ export const GroupPage = (props: GroupPageProps) => {
                 }
               }}
             />
+            <h1 class="text-md min-[320px]:text-md sm:text-md text-left font-bold">
+              Metadata:
+            </h1>
+            <JsonInput
+              onValueChange={(j) => {
+                const curGroupInfo = groupInfo();
+                if (curGroupInfo) {
+                  setGroupInfo({
+                    ...curGroupInfo,
+                    metadata: j,
+                  });
+                }
+              }}
+              value={() => groupInfo()?.metadata ?? {}}
+            />
           </div>
           <div class="mt-4 flex w-full max-w-screen-2xl justify-end gap-x-2">
             <button
@@ -657,7 +819,14 @@ export const GroupPage = (props: GroupPageProps) => {
                 "flex space-x-2 rounded bg-neutral-500 p-2 text-white": true,
                 "animate-pulse": fetchingGroups(),
               }}
-              onClick={() => setEditing(false)}
+              onClick={() => {
+                setEditing(false);
+                const searchParams = new URLSearchParams(
+                  window.location.search,
+                );
+                searchParams.set("edit", "false");
+                navigate(`?${searchParams.toString()}`);
+              }}
             >
               Cancel
             </button>

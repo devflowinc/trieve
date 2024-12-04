@@ -1,3 +1,5 @@
+import { ChunkGroupAndFileId } from "trieve-ts-sdk";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface ChunkMetadata {
   id: string;
@@ -502,7 +504,7 @@ export const isDatasetAndUsageDTO = (
 };
 
 export interface GroupScoreChunkDTO {
-  group: ChunkGroup;
+  group: ChunkGroupAndFileId;
   chunks: ScoreChunkDTO[];
   file_id?: string;
 }

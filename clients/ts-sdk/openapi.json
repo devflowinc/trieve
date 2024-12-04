@@ -10198,6 +10198,11 @@
           "field"
         ],
         "properties": {
+          "boolean": {
+            "type": "boolean",
+            "description": "Boolean is a true false value for a field. This only works for boolean fields. You can specify this if you want values to be true or false.",
+            "nullable": true
+          },
           "date_range": {
             "allOf": [
               {

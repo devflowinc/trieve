@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -127,6 +129,58 @@ const ScoreChunk = (props: ScoreChunkProps) => {
     if (!props.chunk.chunk_html) return false;
     return props.chunk.chunk_html.split(" ").length > 20 * 15;
   });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderMetadataElements = (value: any) => {
+    if (Array.isArray(value)) {
+      // Determine if the array consists solely of objects
+      const allObjects = value.every(
+        (item) => typeof item === "object" && item !== null,
+      );
+
+      return (
+        <div>
+          <For each={value}>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {(item: any, itemIndex: () => number) => (
+              <span>
+                {typeof item === "object"
+                  ? renderMetadataElements(item)
+                  : item.toString()}
+                {itemIndex() < value.length - 1 &&
+                  (allObjects ? (
+                    <hr class="my-2 border-neutral-400 dark:border-neutral-400" />
+                  ) : (
+                    <span>, </span>
+                  ))}
+              </span>
+            )}
+          </For>
+        </div>
+      );
+    } else if (typeof value === "object" && value !== null) {
+      return (
+        <div class="pl-2">
+          <For each={Object.keys(value)}>
+            {(subKey: string) => (
+              <div>
+                <div class="flex space-x-1">
+                  <span class="font-semibold italic text-neutral-700 dark:text-neutral-200">
+                    {subKey}:
+                  </span>
+                  <span class="text-neutral-700 dark:text-neutral-300">
+                    {renderMetadataElements(value[subKey])}
+                  </span>
+                </div>
+              </div>
+            )}
+          </For>
+        </div>
+      );
+    } else {
+      return value !== null && value !== undefined ? value.toString() : "null";
+    }
+  };
 
   return (
     <div
@@ -270,65 +324,28 @@ const ScoreChunk = (props: ScoreChunkProps) => {
             </button>
           </Show>
           <Show when={expandMetadata()}>
-            <div class="pl-2">
+            <div class="pl-2 pt-2">
               <For each={Object.keys(props.chunk.metadata ?? {})}>
-                {(key) => {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-                  const value = (props.chunk.metadata as any)[key];
-                  return (
-                    <Show when={value}>
+                {(key) => (
+                  <Show
+                    when={
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      (props.chunk.metadata as any)[key] !== undefined
+                    }
+                  >
+                    <div class="mb-4">
                       <div class="flex space-x-2">
                         <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                           {key}:{" "}
                         </span>
                         <span class="line-clamp-1 break-all">
-                          <Show
-                            when={
-                              typeof value === "object" &&
-                              value !== null &&
-                              !Array.isArray(value)
-                            }
-                            fallback={
-                              Array.isArray(value) && value.length > 0 ? (
-                                <div class="pl-4">
-                                  <For each={value}>
-                                    {(item, index) => (
-                                      <span>
-                                        <span>{item}</span>
-                                        {index() < value.length - 1 && (
-                                          <span>, </span>
-                                        )}
-                                      </span>
-                                    )}
-                                  </For>
-                                </div>
-                              ) : (
-                                value
-                              )
-                            }
-                          >
-                            <div class="pl-2">
-                              <For each={Object.keys(value)}>
-                                {(subKey) => (
-                                  <div class="flex space-x-1">
-                                    <span class="font-semibold italic text-neutral-700 dark:text-neutral-200">
-                                      {subKey}:
-                                    </span>
-                                    <span class="text-neutral-700 dark:text-neutral-300">
-                                      {typeof value[subKey] === "object"
-                                        ? JSON.stringify(value[subKey], null, 2)
-                                        : value[subKey]}
-                                    </span>
-                                  </div>
-                                )}
-                              </For>
-                            </div>
-                          </Show>
+                          {props.chunk.metadata &&
+                            renderMetadataElements(props.chunk.metadata[key])}
                         </span>
                       </div>
-                    </Show>
-                  );
-                }}
+                    </div>
+                  </Show>
+                )}
               </For>
             </div>
           </Show>
