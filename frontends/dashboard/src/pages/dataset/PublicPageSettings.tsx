@@ -81,25 +81,6 @@ const PublicPageControls = () => {
           <div class="grow">
             <div class="flex items-center gap-1">
               <label class="block" for="">
-                Brand Logo Link
-              </label>
-              <Tooltip
-                tooltipText="URL for your brand's logo that will be displayed in the search component"
-                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-              />
-            </div>
-            <input
-              placeholder="https://cdn.trieve.ai/favicon.ico"
-              value={extraParams.brandLogoImgSrcUrl || ""}
-              onInput={(e) => {
-                setExtraParams("brandLogoImgSrcUrl", e.currentTarget.value);
-              }}
-              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
-          <div class="grow">
-            <div class="flex items-center gap-1">
-              <label class="block" for="">
                 Brand Name
               </label>
               <Tooltip
@@ -157,31 +138,96 @@ const PublicPageControls = () => {
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
           </div>
+          <div class="grow">
+            <div class="flex items-center gap-1">
+              <label class="block" for="">
+                Problem Link
+              </label>
+              <Tooltip
+                tooltipText="Contact link for users to report issues (e.g. mailto: or support URL)"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
+            <input
+              placeholder="mailto:humans@trieve.ai"
+              value={extraParams.problemLink || ""}
+              onInput={(e) => {
+                setExtraParams("problemLink", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
         </div>
 
-        <div class="mt-4 flex">
-          <div class="flex grow">
+        <div class="mt-4 flex items-start gap-8">
+          <div class="flex grow flex-col gap-2">
             <div class="grow">
               <div class="flex items-center gap-1">
                 <label class="block" for="">
-                  Problem Link
+                  Brand Logo Link
                 </label>
                 <Tooltip
-                  tooltipText="Contact link for users to report issues (e.g. mailto: or support URL)"
+                  tooltipText="URL for your brand's logo that will be displayed in the navbar of the public page."
                   body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
                 />
               </div>
-              <input
-                placeholder="mailto:humans@trieve.ai"
-                value={extraParams.problemLink || ""}
-                onInput={(e) => {
-                  setExtraParams("problemLink", e.currentTarget.value);
-                }}
-                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
+              <div class="flex grow items-center gap-2">
+                <input
+                  placeholder="https://cdn.trieve.ai/favicon.ico"
+                  value={extraParams.brandLogoImgSrcUrl || ""}
+                  onInput={(e) => {
+                    setExtraParams("brandLogoImgSrcUrl", e.currentTarget.value);
+                  }}
+                  class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+                <Show when={extraParams.brandLogoImgSrcUrl}>
+                  {(url) => (
+                    <div class="max-w-[58px]">
+                      <img
+                        src={url()}
+                        class="max-h-[58px] max-w-[58px] rounded-full"
+                        alt="Brand Logo"
+                      />
+                    </div>
+                  )}
+                </Show>
+              </div>
+            </div>
+            <div class="grow">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Brand Chat Logo Link
+                </label>
+                <Tooltip
+                  tooltipText="URL for your brand's logo that will be displayed in the search component. Square aspect ratio is ideal."
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <div class="flex grow items-center gap-2">
+                <input
+                  placeholder="https://cdn.trieve.ai/favicon.ico"
+                  value={extraParams.chatLogoImgSrcUrl || ""}
+                  onInput={(e) => {
+                    setExtraParams("chatLogoImgSrcUrl", e.currentTarget.value);
+                  }}
+                  class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+                <Show when={extraParams.chatLogoImgSrcUrl}>
+                  {(url) => (
+                    <div class="max-w-[58px]">
+                      <img
+                        src={url()}
+                        class="max-h-[58px] max-w-[58px]"
+                        alt="Brand Logo"
+                      />
+                    </div>
+                  )}
+                </Show>
+              </div>
             </div>
           </div>
-          <div class="ml-3 grid grow grid-cols-2 items-center gap-1.5 p-1.5">
+
+          <div class="grid grid-cols-2 items-start gap-2 gap-x-9 pt-4">
             <div class="flex gap-2">
               <div class="flex items-center gap-1">
                 <label class="block" for="">
@@ -448,7 +494,7 @@ const PublicPageControls = () => {
             </div>
           </div>
         </Show>
-        <details class="mb-4 mt-4">
+        <details class="pt-4">
           <summary class="cursor-pointer text-sm font-medium">
             Advanced Settings
           </summary>
@@ -604,6 +650,8 @@ const PublicPageControls = () => {
           </div>
         </details>
 
+        <OgOptions />
+
         <TabOptions />
 
         <div class="space-x-1.5 pt-8">
@@ -726,7 +774,7 @@ export const TabOptions = () => {
   };
 
   return (
-    <details open={messages.length > 0}>
+    <details class="pt-2" open={messages.length > 0}>
       <summary class="cursor-pointer text-sm font-medium">Tab Messages</summary>
       <div class="flex items-end gap-2 overflow-y-auto pt-2">
         <For each={messages}>
@@ -843,5 +891,72 @@ const HtmlEditor = (props: {
         props.onValueChange(e.currentTarget.value);
       }}
     />
+  );
+};
+
+export const OgOptions = () => {
+  const { extraParams, setExtraParams } = usePublicPage();
+
+  const [defaultOpen] = createSignal(
+    !!extraParams.openGraphMetadata?.title ||
+      !!extraParams.openGraphMetadata?.image ||
+      !!extraParams.openGraphMetadata?.description,
+  );
+
+  // Need to cover image
+  return (
+    <details open={defaultOpen()} class="pt-2">
+      <summary class="cursor-pointer text-sm font-medium">
+        Open Graph Options
+      </summary>
+
+      <div class="flex gap-4 pt-2">
+        <div class="grow">
+          <label class="block">Title</label>
+          <input
+            placeholder={`Title of the page`}
+            value={extraParams.openGraphMetadata?.title || ""}
+            onInput={(e) => {
+              setExtraParams("openGraphMetadata", {
+                ...extraParams.openGraphMetadata,
+                title: e.currentTarget.value,
+              });
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+        <div class="grow">
+          <label class="block">Image</label>
+          <input
+            placeholder={`Image URL`}
+            value={extraParams.openGraphMetadata?.image || ""}
+            onInput={(e) => {
+              setExtraParams("openGraphMetadata", {
+                ...extraParams.openGraphMetadata,
+                image: e.currentTarget.value,
+              });
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+      </div>
+      <div class="flex gap-4 pb-2 pt-2">
+        <div class="grow">
+          <label class="block">Description</label>
+          <textarea
+            cols={2}
+            placeholder={`Description of the page`}
+            value={extraParams.openGraphMetadata?.description || ""}
+            onInput={(e) => {
+              setExtraParams("openGraphMetadata", {
+                ...extraParams.openGraphMetadata,
+                description: e.currentTarget.value,
+              });
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+      </div>
+    </details>
   );
 };

@@ -1824,6 +1824,12 @@ export type MultiQuery = {
 
 export type NewChunkMetadataTypes = SlimChunkMetadataWithArrayTagSet | ChunkMetadata | ContentChunkMetadata;
 
+export type OpenGraphMetadata = {
+    description?: (string) | null;
+    image?: (string) | null;
+    title?: (string) | null;
+};
+
 export type Organization = {
     created_at: string;
     deleted: number;
@@ -1877,6 +1883,7 @@ export type PublicPageParameters = {
     brandLogoImgSrcUrl?: (string) | null;
     brandName?: (string) | null;
     chat?: (boolean) | null;
+    chatLogoImgSrcUrl?: (string) | null;
     currencyPosition?: (string) | null;
     datasetId?: (string) | null;
     debounceMs?: (number) | null;
@@ -1885,6 +1892,7 @@ export type PublicPageParameters = {
     defaultSearchMode?: (string) | null;
     defaultSearchQueries?: Array<(string)> | null;
     heroPattern?: ((HeroPattern) | null);
+    openGraphMetadata?: ((OpenGraphMetadata) | null);
     placeholder?: (string) | null;
     problemLink?: (string) | null;
     responsive?: (boolean) | null;

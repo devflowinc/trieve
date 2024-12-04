@@ -11513,6 +11513,23 @@
           }
         ]
       },
+      "OpenGraphMetadata": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "image": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "Organization": {
         "type": "object",
         "required": [
@@ -11776,6 +11793,10 @@
             "type": "boolean",
             "nullable": true
           },
+          "chatLogoImgSrcUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "currencyPosition": {
             "type": "string",
             "nullable": true
@@ -11816,6 +11837,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/HeroPattern"
+              }
+            ],
+            "nullable": true
+          },
+          "openGraphMetadata": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OpenGraphMetadata"
               }
             ],
             "nullable": true
