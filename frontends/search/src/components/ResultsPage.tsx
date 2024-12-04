@@ -681,19 +681,20 @@ const ResultsPage = (props: ResultsPageProps) => {
                 return (
                   <div class="flex w-full max-w-screen-2xl flex-col gap-4">
                     <div
-                      onClick={toggle}
                       classList={{
                         "flex items-center space-x-4 rounded bg-neutral-100 px-4 py-4 dark:bg-neutral-800":
                           true,
                         "-mb-2": groupExpanded(),
                       }}
                     >
-                      <Show when={groupExpanded()}>
-                        <FaSolidChevronUp />
-                      </Show>
-                      <Show when={!groupExpanded()}>
-                        <FaSolidChevronDown />
-                      </Show>
+                      <button onClick={toggle}>
+                        <Show when={groupExpanded()}>
+                          <FaSolidChevronUp />
+                        </Show>
+                        <Show when={!groupExpanded()}>
+                          <FaSolidChevronDown />
+                        </Show>
+                      </button>
                       <div class="flex w-full items-center">
                         <div class="w-full">
                           <div class="flex space-x-2">

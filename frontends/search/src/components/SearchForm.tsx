@@ -69,7 +69,6 @@ const SearchForm = (props: {
       must_not: mustNotFilters(),
       should: shouldFilters(),
     };
-    console.log(filters);
     props.search.setSearch("filters", filters);
     setShowFilterModal(false);
   };
@@ -631,7 +630,6 @@ const SearchForm = (props: {
                                   ) => {
                                     const newFilters = mustFilters();
                                     newFilters[index()] = newFilter;
-                                    console.log("new must", newFilters);
                                     setMustFilters(newFilters);
                                   };
 
