@@ -2293,6 +2293,8 @@ pub struct DatasetConfiguration {
     pub LLM_BASE_URL: String,
     #[serde(skip_serializing)]
     pub LLM_API_KEY: String,
+    #[serde(skip_serializing)]
+    pub RERANKER_API_KEY: String,
     pub EMBEDDING_BASE_URL: String,
     pub EMBEDDING_MODEL_NAME: String,
     pub RERANKER_BASE_URL: String,
@@ -2369,6 +2371,9 @@ pub struct DatasetConfigurationDTO {
     #[serde(skip_serializing)]
     /// The API key for the LLM API
     pub LLM_API_KEY: Option<String>,
+    #[serde(skip_serializing)]
+    /// The API key for the Reranker API
+    pub RERANKER_API_KEY: Option<String>,
     /// The base URL for the embedding API
     pub EMBEDDING_BASE_URL: Option<String>,
     /// The name of the embedding model to use
@@ -2432,6 +2437,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
         DatasetConfiguration {
             LLM_BASE_URL: dto.LLM_BASE_URL.unwrap_or("https://api.openai.com/v1".to_string()),
             LLM_API_KEY: dto.LLM_API_KEY.unwrap_or("".to_string()),
+            RERANKER_API_KEY: dto.RERANKER_API_KEY.unwrap_or("".to_string()),
             EMBEDDING_BASE_URL: dto.EMBEDDING_BASE_URL.unwrap_or("https://api.openai.com/v1".to_string()),
             EMBEDDING_MODEL_NAME: dto.EMBEDDING_MODEL_NAME.unwrap_or("text-embedding-3-small".to_string()),
             RERANKER_BASE_URL: dto.RERANKER_BASE_URL.unwrap_or("".to_string()),
@@ -2474,6 +2480,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
         DatasetConfigurationDTO {
             LLM_BASE_URL: Some(config.LLM_BASE_URL),
             LLM_API_KEY: Some(config.LLM_API_KEY),
+            RERANKER_API_KEY: Some(config.RERANKER_API_KEY),
             EMBEDDING_BASE_URL: Some(config.EMBEDDING_BASE_URL),
             EMBEDDING_MODEL_NAME: Some(config.EMBEDDING_MODEL_NAME),
             RERANKER_BASE_URL: Some(config.RERANKER_BASE_URL),
@@ -2520,6 +2527,7 @@ impl Default for DatasetConfiguration {
         DatasetConfiguration {
             LLM_BASE_URL: "https://api.openai.com/v1".to_string(),
             LLM_API_KEY: "".to_string(),
+            RERANKER_API_KEY: "".to_string(),
             EMBEDDING_BASE_URL: "https://api.openai.com/v1".to_string(),
             EMBEDDING_MODEL_NAME: "text-embedding-3-small".to_string(),
             RERANKER_BASE_URL: "".to_string(),
@@ -2584,6 +2592,18 @@ impl DatasetConfiguration {
                 .unwrap_or("https://api.openai.com/v1".to_string()),
             LLM_API_KEY: configuration
                 .get("LLM_API_KEY")
+                .unwrap_or(&json!("".to_string()))
+                .as_str()
+                .map(|s| {
+                    if s.is_empty() {
+                        "".to_string()
+                    } else {
+                        s.to_string()
+                    }
+                })
+                .unwrap_or("".to_string()),
+            RERANKER_API_KEY: configuration
+                .get("RERANKER_API_KEY")
                 .unwrap_or(&json!("".to_string()))
                 .as_str()
                 .map(|s| {
@@ -2818,6 +2838,7 @@ impl DatasetConfiguration {
         json!({
             "LLM_BASE_URL": self.LLM_BASE_URL,
             "LLM_API_KEY": self.LLM_API_KEY,
+            "RERANKER_API_KEY": self.RERANKER_API_KEY,
             "EMBEDDING_BASE_URL": self.EMBEDDING_BASE_URL,
             "EMBEDDING_MODEL_NAME": self.EMBEDDING_MODEL_NAME,
             "MESSAGE_TO_QUERY_PROMPT": self.MESSAGE_TO_QUERY_PROMPT,
@@ -2888,6 +2909,10 @@ impl DatasetConfigurationDTO {
                 .LLM_API_KEY
                 .clone()
                 .unwrap_or(curr_dataset_config.LLM_API_KEY),
+            RERANKER_API_KEY: self
+                .RERANKER_API_KEY
+                .clone()
+                .unwrap_or(curr_dataset_config.RERANKER_API_KEY),
             EMBEDDING_BASE_URL: self
                 .EMBEDDING_BASE_URL
                 .clone()
