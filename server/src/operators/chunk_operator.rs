@@ -1,14 +1,11 @@
 use crate::data::models::{
-    uuid_between, ChunkBoost, ChunkBoostChangeset, ChunkData, ChunkGroup, ChunkGroupBookmark,
+    uuid_between, ChunkBoost, ChunkBoostChangeset, ChunkData, ChunkGroupBookmark,
     ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes, ContentChunkMetadata, Dataset,
     DatasetConfiguration, DatasetTags, DatasetUsageCount, IngestSpecificChunkMetadata,
     SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
 use crate::handlers::chunk_handler::{ChunkFilter, UploadIngestionMessage};
-use crate::operators::group_operator::{
-    check_group_ids_exist_query, get_group_ids_from_tracking_ids_query,
-};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
     delete_points_from_qdrant, get_qdrant_collection_from_dataset_config, scroll_dataset_points,
@@ -34,7 +31,6 @@ use std::collections::{HashMap, HashSet};
 use time::OffsetDateTime;
 use utoipa::ToSchema;
 
-use super::group_operator::create_groups_query;
 use super::search_operator::assemble_qdrant_filter;
 
 pub async fn get_chunk_metadatas_from_point_ids(
@@ -2429,60 +2425,10 @@ pub async fn get_row_count_for_organization_id_query(
 pub async fn create_chunk_metadata(
     chunks: Vec<ChunkReqPayload>,
     dataset_uuid: uuid::Uuid,
-    pool: web::Data<Pool>,
 ) -> Result<(BulkUploadIngestionMessage, Vec<ChunkMetadata>), ServiceError> {
     let mut ingestion_messages = vec![];
 
     let mut chunk_metadatas = vec![];
-
-    let mut group_tracking_ids_to_group_ids: HashMap<String, uuid::Uuid> = HashMap::new();
-
-    let all_group_tracking_ids: Vec<String> = chunks
-        .iter()
-        .flat_map(|chunk| chunk.group_tracking_ids.clone().unwrap_or_default())
-        .unique()
-        .collect();
-
-    if !all_group_tracking_ids.is_empty() {
-        get_group_ids_from_tracking_ids_query(
-            all_group_tracking_ids.clone(),
-            dataset_uuid,
-            pool.clone(),
-        )
-        .await?
-        .iter()
-        .for_each(|(group_id, tracking_id)| {
-            if let Some(tracking_id) = tracking_id {
-                group_tracking_ids_to_group_ids.insert(tracking_id.clone(), *group_id);
-            }
-        });
-
-        let new_groups: Vec<ChunkGroup> = all_group_tracking_ids
-            .iter()
-            .filter_map(|group_tracking_id| {
-                if !group_tracking_ids_to_group_ids.contains_key(group_tracking_id) {
-                    Some(ChunkGroup::from_details(
-                        Some(group_tracking_id.clone()),
-                        None,
-                        dataset_uuid,
-                        Some(group_tracking_id.to_string()),
-                        None,
-                        None,
-                    ))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let created_groups = create_groups_query(new_groups, true, pool.clone()).await?;
-
-        created_groups.iter().for_each(|group| {
-            if let Some(tracking_id) = &group.tracking_id {
-                group_tracking_ids_to_group_ids.insert(tracking_id.clone(), group.id);
-            }
-        });
-    }
 
     for chunk in chunks {
         let chunk_tag_set = chunk
@@ -2528,46 +2474,6 @@ pub async fn create_chunk_metadata(
         );
         chunk_metadatas.push(chunk_metadata.clone());
 
-        if let Some(group_ids) = chunk.group_ids.clone() {
-            let existent_group_ids = check_group_ids_exist_query(
-                chunk.group_ids.clone().unwrap_or_default(),
-                dataset_uuid,
-                pool.clone(),
-            )
-            .await?;
-
-            for group_id in group_ids {
-                if !existent_group_ids.contains(&group_id) {
-                    return Err(ServiceError::BadRequest(format!(
-                        "Group with id {} does not exist",
-                        group_id
-                    )));
-                }
-            }
-        }
-
-        let group_ids_from_group_tracking_ids: Vec<uuid::Uuid> =
-            if let Some(group_tracking_ids) = chunk.group_tracking_ids.clone() {
-                group_tracking_ids
-                    .iter()
-                    .filter_map(|tracking_id| group_tracking_ids_to_group_ids.get(tracking_id))
-                    .copied()
-                    .collect()
-            } else {
-                vec![]
-            };
-
-        let initial_group_ids = chunk.group_ids.clone().unwrap_or_default();
-        let mut chunk_only_group_ids = chunk.clone();
-        let deduped_group_ids = group_ids_from_group_tracking_ids
-            .into_iter()
-            .chain(initial_group_ids.into_iter())
-            .unique()
-            .collect::<Vec<uuid::Uuid>>();
-
-        chunk_only_group_ids.group_ids = Some(deduped_group_ids);
-        chunk_only_group_ids.group_tracking_ids = None;
-
         let upload_message = UploadIngestionMessage {
             ingest_specific_chunk_metadata: IngestSpecificChunkMetadata {
                 id: chunk_metadata.id,
@@ -2575,7 +2481,7 @@ pub async fn create_chunk_metadata(
                 dataset_id: dataset_uuid,
             },
             dataset_id: dataset_uuid,
-            chunk: chunk_only_group_ids.clone(),
+            chunk: chunk.clone(),
             upsert_by_tracking_id: chunk.upsert_by_tracking_id.unwrap_or(false),
         };
 

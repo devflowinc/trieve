@@ -136,15 +136,13 @@ pub async fn builder_io_webhook(
     };
 
     match payload.operation {
-        Operation::Publish => {
-            publish_content(dataset_id, payload.new_value, redis_pool, pool).await?
-        }
+        Operation::Publish => publish_content(dataset_id, payload.new_value, redis_pool).await?,
         Operation::Delete => delete_content(dataset_id, payload.new_value, pool).await?,
         Operation::Unpublish => delete_content(dataset_id, payload.new_value, pool).await?,
         Operation::Archive => delete_content(dataset_id, payload.new_value, pool).await?,
 
         Operation::ScheduledStart => {
-            publish_content(dataset_id, payload.new_value, redis_pool, pool).await?
+            publish_content(dataset_id, payload.new_value, redis_pool).await?
         }
         Operation::ScheduledEnd => delete_content(dataset_id, payload.new_value, pool).await?,
     }

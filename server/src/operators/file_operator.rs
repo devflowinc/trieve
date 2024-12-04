@@ -228,8 +228,7 @@ pub async fn create_file_chunks(
 
     for chunk_segment in chunk_segments {
         let (ingestion_message, _) =
-            create_chunk_metadata(chunk_segment, dataset_org_plan_sub.dataset.id, pool.clone())
-                .await?;
+            create_chunk_metadata(chunk_segment, dataset_org_plan_sub.dataset.id).await?;
 
         let serialized_message: String =
             serde_json::to_string(&ingestion_message).map_err(|_| {

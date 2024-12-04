@@ -362,15 +362,11 @@ pub async fn create_chunk(
     let (upsert_chunks, non_upsert_chunks): (Vec<ChunkReqPayload>, Vec<ChunkReqPayload>) =
         chunks.partition(|chunk| chunk.upsert_by_tracking_id.unwrap_or(false));
 
-    let (non_upsert_chunk_ingestion_message, non_upsert_chunk_metadatas) = create_chunk_metadata(
-        non_upsert_chunks,
-        dataset_org_plan_sub.dataset.id,
-        pool.clone(),
-    )
-    .await?;
+    let (non_upsert_chunk_ingestion_message, non_upsert_chunk_metadatas) =
+        create_chunk_metadata(non_upsert_chunks, dataset_org_plan_sub.dataset.id).await?;
 
     let (upsert_chunk_ingestion_message, upsert_chunk_metadatas) =
-        create_chunk_metadata(upsert_chunks, dataset_org_plan_sub.dataset.id, pool.clone()).await?;
+        create_chunk_metadata(upsert_chunks, dataset_org_plan_sub.dataset.id).await?;
 
     let chunk_metadatas = non_upsert_chunk_metadatas
         .clone()
