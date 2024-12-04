@@ -6667,7 +6667,7 @@ pub struct SortOptions {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
-/// MMR Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+/// MMR Options lets you specify different methods to rerank the chunks in the result set using Maximal Marginal Relevance. If not specified, this defaults to the score of the chunks.
 pub struct MmrOptions {
     /// Set use_mmr to true to use the Maximal Marginal Relevance algorithm to rerank the results.
     pub use_mmr: bool,

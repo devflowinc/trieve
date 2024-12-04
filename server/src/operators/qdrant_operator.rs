@@ -873,7 +873,11 @@ pub async fn search_over_groups_qdrant_query(
 
             QueryPointGroups {
                 collection_name: qdrant_collection.to_string(),
-                limit: Some(query.limit * page),
+                limit: if use_mmr && query.limit < 20 {
+                    Some(query.limit * 2)
+                } else {
+                    Some(query.limit * page)
+                },
                 prefetch,
                 using: vector_name,
                 query: Some(qdrant_query),
@@ -1101,7 +1105,11 @@ pub async fn search_qdrant_query(
 
             QueryPoints {
                 collection_name: qdrant_collection.to_string(),
-                limit: Some(query.limit),
+                limit: if use_mmr && query.limit < 20 {
+                    Some(query.limit * 2)
+                } else {
+                    Some(query.limit * page)
+                },
                 offset: Some(offset),
                 prefetch,
                 using: vector_name,

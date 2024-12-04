@@ -100,10 +100,10 @@ pub struct CreateMessageReqPayload {
     pub page_size: Option<u64>,
     /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
     pub sort_options: Option<SortOptions>,
-    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<ChunkFilter>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
     pub score_threshold: Option<f32>,
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    pub filters: Option<ChunkFilter>,
     /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
     pub llm_options: Option<LLMOptions>,
     /// Context options to use for the completion. If not specified, all options will default to false.

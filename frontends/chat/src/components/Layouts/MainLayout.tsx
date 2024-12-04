@@ -79,6 +79,8 @@ const MainLayout = (props: LayoutProps) => {
   >(null);
 
   const [useImages, setUseImages] = createSignal<boolean | null>(null);
+  const [useMmr, setUseMmr] = createSignal<boolean | null>(false);
+  const [mmrLambda, setMmrLambda] = createSignal<number | null>(0.5);
   const [useGroupSearch, setUseGroupSearch] = createSignal<boolean | null>(
     null,
   );
@@ -232,6 +234,12 @@ const MainLayout = (props: LayoutProps) => {
               use_images: useImages(),
             },
           },
+          sort_options: {
+            mmr: {
+              use_mmr: useMmr(),
+              mmr_lambda: mmrLambda(),
+            },
+          },
           no_result_message: noResultMessage(),
           use_group_search: useGroupSearch(),
           search_type: searchType(),
@@ -344,6 +352,13 @@ const MainLayout = (props: LayoutProps) => {
                         filters: getFiltersFromStorage(dataset.dataset.id),
                         concat_user_messages_query: concatUserMessagesQuery(),
                         page_size: pageSize(),
+                        sort_options: {
+                          mmr: {
+                            use_mmr: useMmr(),
+                            mmr_lambda: mmrLambda(),
+                          },
+                        },
+                        use_group_search: useGroupSearch(),
                         search_query:
                           searchQuery() != "" ? searchQuery() : undefined,
                         score_threshold: minScore(),
@@ -511,6 +526,33 @@ const MainLayout = (props: LayoutProps) => {
                       checked={useGroupSearch() ?? false}
                       onChange={(e) => {
                         setUseGroupSearch(e.target.checked);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <div class="flex items-center gap-x-2">
+                      <label for="concat_user_messages">Use MMR</label>
+                    </div>
+                    <input
+                      type="checkbox"
+                      id="concat_user_messages"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={useMmr() ?? false}
+                      onChange={(e) => {
+                        setUseMmr(e.target.checked);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="search_query">MMR Lambda:</label>
+                    <input
+                      type="text"
+                      id="search_query"
+                      class="w-12 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-700"
+                      step={"any"}
+                      value={mmrLambda() ?? ""}
+                      onChange={(e) => {
+                        setMmrLambda(parseFloat(e.target.value));
                       }}
                     />
                   </div>
