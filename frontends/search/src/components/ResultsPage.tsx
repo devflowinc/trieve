@@ -45,10 +45,12 @@ import {
 } from "../hooks/useSearch";
 import { downloadFile } from "../utils/downloadFile";
 import ScoreChunk from "./ScoreChunk";
-import { FiEye } from "solid-icons/fi";
+import { FiEdit, FiEye } from "solid-icons/fi";
 import { ServerTimings } from "./ServerTimings";
 import { VsChevronRight } from "solid-icons/vs";
 import { useCtrClickForChunk } from "../hooks/useCtrAnalytics";
+import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
+import { Tooltip } from "shared/ui";
 
 export interface ResultsPageProps {
   search: SearchStore;
@@ -478,6 +480,58 @@ const ResultsPage = (props: ResultsPageProps) => {
     }
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderMetadataElements = (value: any) => {
+    if (Array.isArray(value)) {
+      // Determine if the array consists solely of objects
+      const allObjects = value.every(
+        (item) => typeof item === "object" && item !== null,
+      );
+
+      return (
+        <div>
+          <For each={value}>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {(item: any, itemIndex: () => number) => (
+              <span>
+                {typeof item === "object"
+                  ? renderMetadataElements(item)
+                  : item.toString()}
+                {itemIndex() < value.length - 1 &&
+                  (allObjects ? (
+                    <hr class="my-2 border-neutral-400 dark:border-neutral-400" />
+                  ) : (
+                    <span>, </span>
+                  ))}
+              </span>
+            )}
+          </For>
+        </div>
+      );
+    } else if (typeof value === "object" && value !== null) {
+      return (
+        <div class="pl-2">
+          <For each={Object.keys(value)}>
+            {(subKey: string) => (
+              <div>
+                <div class="flex space-x-1">
+                  <span class="font-semibold italic text-neutral-700 dark:text-neutral-200">
+                    {subKey}:
+                  </span>
+                  <span class="text-neutral-700 dark:text-neutral-300">
+                    {renderMetadataElements(value[subKey])}
+                  </span>
+                </div>
+              </div>
+            )}
+          </For>
+        </div>
+      );
+    } else {
+      return value !== null && value !== undefined ? value.toString() : "null";
+    }
+  };
+
   return (
     <>
       <Show when={openChat()}>
@@ -673,6 +727,8 @@ const ResultsPage = (props: ResultsPageProps) => {
             <For each={groupResultChunks()}>
               {(groupResult) => {
                 const [groupExpanded, setGroupExpanded] = createSignal(true);
+                const [expandGroupMetadata, setExpandGroupMetadata] =
+                  createSignal(false);
 
                 const toggle = () => {
                   setGroupExpanded(!groupExpanded());
@@ -727,6 +783,81 @@ const ResultsPage = (props: ResultsPageProps) => {
                               </div>
                             </div>
                           </Show>
+                          <Show when={groupResult.group.tag_set?.length}>
+                            <div class="flex w-full flex-row justify-between">
+                              <div class="flex space-x-2">
+                                <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                  Tag Set:{" "}
+                                </span>
+                                <span class="line-clamp-1 break-all">
+                                  {groupResult.group.tag_set?.join(",")}
+                                </span>
+                              </div>
+                            </div>
+                          </Show>
+                          <Show
+                            when={
+                              Object.keys(groupResult.group.metadata ?? {})
+                                .length > 0
+                            }
+                          >
+                            <button
+                              class="mt-2 flex w-fit items-center space-x-1 rounded-md border bg-neutral-200/50 px-2 py-1 font-semibold text-magenta-500 hover:bg-neutral-200/90 dark:bg-neutral-700/60 dark:text-magenta-400"
+                              onClick={() =>
+                                setExpandGroupMetadata((prev) => !prev)
+                              }
+                            >
+                              <span>
+                                {expandGroupMetadata()
+                                  ? "Collapse Metadata"
+                                  : "Expand Metadata"}
+                              </span>
+                              <Switch>
+                                <Match when={expandGroupMetadata()}>
+                                  <BiRegularChevronUp class="h-5 w-5 fill-current" />
+                                </Match>
+                                <Match when={!expandGroupMetadata()}>
+                                  <BiRegularChevronDown class="h-5 w-5 fill-current" />
+                                </Match>
+                              </Switch>
+                            </button>
+                          </Show>
+                          <Show when={expandGroupMetadata()}>
+                            <div class="pl-2 pt-2">
+                              <For
+                                each={Object.keys(
+                                  groupResult.group.metadata ?? {},
+                                )}
+                              >
+                                {(key) => (
+                                  <Show
+                                    when={
+                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                      (groupResult.group.metadata as any)[
+                                        key
+                                      ] !== undefined
+                                    }
+                                  >
+                                    <div class="mb-4">
+                                      <div class="flex space-x-2">
+                                        <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                          {key}:{" "}
+                                        </span>
+                                        <span class="line-clamp-1 break-all">
+                                          {groupResult.group.metadata &&
+                                            renderMetadataElements(
+                                              groupResult.group.metadata[
+                                                key as keyof typeof groupResult.group.metadata
+                                              ],
+                                            )}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </Show>
+                                )}
+                              </For>
+                            </div>
+                          </Show>
                         </div>
                         <div class="flex items-center space-x-3">
                           <Show when={groupResult.file_id}>
@@ -740,6 +871,18 @@ const ResultsPage = (props: ResultsPageProps) => {
                               </button>
                             )}
                           </Show>
+                          <Tooltip
+                            body={
+                              <a
+                                href={`/group/${
+                                  groupResult.group.id
+                                }?dataset=${dataset()?.dataset.id}&edit=true`}
+                              >
+                                <FiEdit class="h-5 w-5" />
+                              </a>
+                            }
+                            tooltipText="Edit chunk"
+                          />
                           <a
                             title="Open group to edit, view its chunks, or test group recommendations"
                             href={`/group/${

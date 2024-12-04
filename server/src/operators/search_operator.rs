@@ -122,6 +122,7 @@ async fn convert_group_tracking_ids_to_group_ids(
                 match_all: None,
                 date_range: None,
                 range: None,
+                boolean: None,
                 geo_bounding_box: None,
                 geo_polygon: None,
                 geo_radius: None,
@@ -149,6 +150,7 @@ async fn convert_group_tracking_ids_to_group_ids(
                 match_all: Some(correct_matches),
                 date_range: None,
                 range: None,
+                boolean: None,
                 geo_bounding_box: None,
                 geo_polygon: None,
                 geo_radius: None,
@@ -616,16 +618,16 @@ pub async fn get_metadata_filter_condition(
                         key, string_val
                     )));
                 }
-                MatchCondition::Integer(id_val) => {
+                MatchCondition::Integer(int_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, int_val
                     )));
                 }
-                MatchCondition::Float(id_val) => {
+                MatchCondition::Float(float_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, float_val
                     )));
                 }
             }
@@ -639,16 +641,16 @@ pub async fn get_metadata_filter_condition(
                         key, string_val
                     )));
                 }
-                MatchCondition::Integer(id_val) => {
+                MatchCondition::Integer(int_val) => {
                     query = query.or_filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, int_val
                     )));
                 }
-                MatchCondition::Float(id_val) => {
+                MatchCondition::Float(float_val) => {
                     query = query.or_filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, float_val
                     )));
                 }
             }
@@ -662,16 +664,16 @@ pub async fn get_metadata_filter_condition(
                         key, string_val
                     )));
                 }
-                MatchCondition::Integer(id_val) => {
+                MatchCondition::Integer(int_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, int_val
                     )));
                 }
-                MatchCondition::Float(id_val) => {
+                MatchCondition::Float(float_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, float_val
                     )));
                 }
             }
@@ -685,16 +687,16 @@ pub async fn get_metadata_filter_condition(
                         key, string_val
                     )));
                 }
-                MatchCondition::Integer(id_val) => {
+                MatchCondition::Integer(int_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, int_val
                     )));
                 }
-                MatchCondition::Float(id_val) => {
+                MatchCondition::Float(float_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, float_val
                     )));
                 }
             }
@@ -730,6 +732,12 @@ pub async fn get_metadata_filter_condition(
                     .bind::<Float, _>(lte as f32),
             );
         };
+    }
+
+    if let Some(boolean) = &filter.boolean {
+        query = query.filter(
+            sql::<Text>(&format!("chunk_metadata.metadata->>'{}'", key)).eq(boolean.to_string()),
+        );
     }
 
     if let Some(date_range) = &filter.date_range {
@@ -834,16 +842,16 @@ pub async fn get_group_metadata_filter_condition(
                         key, string_val
                     )));
                 }
-                MatchCondition::Integer(id_val) => {
+                MatchCondition::Integer(int_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, int_val
                     )));
                 }
-                MatchCondition::Float(id_val) => {
+                MatchCondition::Float(float_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, float_val
                     )));
                 }
             }
@@ -857,16 +865,16 @@ pub async fn get_group_metadata_filter_condition(
                         key, string_val
                     )));
                 }
-                MatchCondition::Integer(id_val) => {
+                MatchCondition::Integer(int_val) => {
                     query = query.or_filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, int_val
                     )));
                 }
-                MatchCondition::Float(id_val) => {
+                MatchCondition::Float(float_val) => {
                     query = query.or_filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, float_val
                     )));
                 }
             }
@@ -880,16 +888,16 @@ pub async fn get_group_metadata_filter_condition(
                         key, string_val
                     )));
                 }
-                MatchCondition::Integer(id_val) => {
+                MatchCondition::Integer(int_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, int_val
                     )));
                 }
-                MatchCondition::Float(id_val) => {
+                MatchCondition::Float(float_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, float_val
                     )));
                 }
             }
@@ -903,16 +911,16 @@ pub async fn get_group_metadata_filter_condition(
                         key, string_val
                     )));
                 }
-                MatchCondition::Integer(id_val) => {
+                MatchCondition::Integer(int_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, int_val
                     )));
                 }
-                MatchCondition::Float(id_val) => {
+                MatchCondition::Float(float_val) => {
                     query = query.filter(sql::<Bool>(&format!(
                         "chunk_metadata.metadata @> '{{\"{}\":\"{}\"}}'",
-                        key, id_val
+                        key, float_val
                     )));
                 }
             }
@@ -946,10 +954,19 @@ pub async fn get_group_metadata_filter_condition(
         };
     }
 
-    let qdrant_point_ids: Vec<uuid::Uuid> = query
-        .load::<uuid::Uuid>(&mut conn)
-        .await
-        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
+    if let Some(boolean) = &filter.boolean {
+        query = query.filter(
+            sql::<Text>(&format!("chunk_group.metadata->>'{}'", key)).eq(boolean.to_string()),
+        );
+    }
+
+    let qdrant_point_ids: Vec<uuid::Uuid> =
+        query.load::<uuid::Uuid>(&mut conn).await.map_err(|_| {
+            ServiceError::BadRequest(
+                "Failed to load qdrant_point_ids from pg for get_group_metadata_filter_condition"
+                    .to_string(),
+            )
+        })?;
 
     let matching_point_ids: Vec<PointId> = qdrant_point_ids
         .iter()

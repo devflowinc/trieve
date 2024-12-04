@@ -4174,7 +4174,7 @@ impl MatchCondition {
 
     pub fn to_i64(&self) -> i64 {
         match self {
-            MatchCondition::Text(text) => text.parse().unwrap(),
+            MatchCondition::Text(text) => text.parse().unwrap_or_default(),
             MatchCondition::Integer(int) => *int,
             MatchCondition::Float(float) => *float as i64,
         }
@@ -4182,7 +4182,7 @@ impl MatchCondition {
 
     pub fn to_f64(&self) -> f64 {
         match self {
-            MatchCondition::Text(text) => text.parse().unwrap(),
+            MatchCondition::Text(text) => text.parse().unwrap_or_default(),
             MatchCondition::Integer(int) => *int as f64,
             MatchCondition::Float(float) => *float,
         }
@@ -4249,6 +4249,8 @@ pub struct FieldCondition {
     pub match_all: Option<Vec<MatchCondition>>,
     /// Range is a JSON object which can be used to filter chunks by a range of values. This only works for numerical fields. You can specify this if you want values in a certain range.
     pub range: Option<Range>,
+    /// Boolean is a true false value for a field. This only works for boolean fields. You can specify this if you want values to be true or false.
+    pub boolean: Option<bool>,
     /// Date range is a JSON object which can be used to filter chunks by a range of dates. This only works for date fields. You can specify this if you want values in a certain range. You must provide ISO 8601 combined date and time without timezone.
     pub date_range: Option<DateRange>,
     /// Geo Bounding Box search is useful for when you want to find points inside a rectangular area. This is useful for when you want to filter chunks by location. The bounding box is defined by two points: the top-left and bottom-right corners of the box.
@@ -4309,9 +4311,11 @@ impl FieldCondition {
         dataset_id: uuid::Uuid,
         pool: web::Data<Pool>,
     ) -> Result<Option<qdrant::Condition>, ServiceError> {
-        if (self.match_all.is_some() || self.match_any.is_some()) && self.range.is_some() {
+        if (self.match_all.is_some() || self.match_any.is_some())
+            && (self.range.is_some() || self.boolean.is_some())
+        {
             return Err(ServiceError::BadRequest(
-                "Cannot have both match and range conditions".to_string(),
+                "Cannot have both a match and range or boolean conditions".to_string(),
             ));
         }
 
@@ -4343,6 +4347,13 @@ impl FieldCondition {
             let range = get_range(range)?;
             return Ok(Some(qdrant::Condition::range(self.field.as_str(), range)));
         };
+
+        if let Some(boolean) = self.boolean {
+            return Ok(Some(qdrant::Condition::matches(
+                self.field.as_str(),
+                boolean,
+            )));
+        }
 
         if let Some(geo_bounding_box) = self.geo_bounding_box.clone() {
             let top_left = geo_bounding_box.top_left;
@@ -4473,7 +4484,7 @@ impl FieldCondition {
             }
         } else {
             Err(ServiceError::BadRequest(
-                "No filter condition provided. Field must not be null and date_range, range, geo_bounding_box, geo_radius, geo_polygon, match_any, or match_all must be populated.".to_string(),
+                "No filter condition provided. Field must not be null and date_range, range, boolean, geo_bounding_box, geo_radius, geo_polygon, match_any, or match_all must be populated.".to_string(),
             ))
         }
     }
