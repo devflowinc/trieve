@@ -900,7 +900,7 @@ pub async fn cross_encoder(
             .map(|docs_chunk| {
                 let query = query.clone();
                 let cur_client = reqwest::Client::new();
-                let embedding_api_key = get_env!("OPENAI_API_KEY", "OPENAI_API should be set");
+                let embedding_api_key = dataset_config.RERANKER_API_KEY.clone();
                 let url = embedding_server_call.clone();
 
                 let vectors_resp = async move {
