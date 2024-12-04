@@ -5442,6 +5442,7 @@ pub struct RecommendationCTRMetrics {
 pub struct ChunkData {
     pub chunk_metadata: ChunkMetadata,
     pub content: String,
+    pub embedding_content: String,
     pub group_ids: Option<Vec<uuid::Uuid>>,
     pub upsert_by_tracking_id: bool,
     pub fulltext_boost: Option<FullTextBoost>,

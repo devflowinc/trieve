@@ -8,7 +8,7 @@ use signal_hook::consts::SIGTERM;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use trieve_server::data::models::{
-    self, ChunkBoost, ChunkMetadata, DatasetConfiguration, QdrantPayload, UnifiedId, WorkerEvent,
+    self, ChunkBoost, ChunkData, ChunkMetadata, DatasetConfiguration, QdrantPayload, UnifiedId, WorkerEvent
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
@@ -334,30 +334,6 @@ async fn ingestion_worker(
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ChunkDataWithEmbeddingText {
-    pub chunk_metadata: ChunkMetadata,
-    pub content: String,
-    pub embedding_content: String,
-    pub group_ids: Option<Vec<uuid::Uuid>>,
-    pub upsert_by_tracking_id: bool,
-    pub fulltext_boost: Option<FullTextBoost>,
-    pub semantic_boost: Option<SemanticBoost>,
-}
-
-impl From<ChunkDataWithEmbeddingText> for models::ChunkData {
-    fn from(data: ChunkDataWithEmbeddingText) -> Self {
-        models::ChunkData {
-            chunk_metadata: data.chunk_metadata,
-            content: data.content,
-            group_ids: data.group_ids,
-            upsert_by_tracking_id: data.upsert_by_tracking_id,
-            fulltext_boost: data.fulltext_boost,
-            semantic_boost: data.semantic_boost,
-        }
-    }
-}
-
 pub async fn bulk_upload_chunks(
     payload: BulkUploadIngestionMessage,
     dataset_config: DatasetConfiguration,
@@ -410,7 +386,7 @@ pub async fn bulk_upload_chunks(
         .iter()
         .any(|message| message.upsert_by_tracking_id);
 
-    let ingestion_data: Vec<ChunkDataWithEmbeddingText> = payload
+    let ingestion_data: Vec<ChunkData> = payload
         .ingestion_messages
         .iter()
         .map(|message| {
@@ -469,7 +445,7 @@ pub async fn bulk_upload_chunks(
                 num_value: message.chunk.num_value,
             };
 
-            ChunkDataWithEmbeddingText {
+            ChunkData {
                 chunk_metadata,
                 content: content.clone(),
                 embedding_content: message.chunk.semantic_content.clone().unwrap_or(content),
@@ -520,17 +496,11 @@ pub async fn bulk_upload_chunks(
     let inserted_chunk_metadatas = if qdrant_only {
         ingestion_data
             .clone()
-            .into_iter()
-            .map(|data| data.into())
-            .collect_vec()
     } else {
         log::info!("Inserting {} chunks into database", ingestion_data.len());
         bulk_insert_chunk_metadata_query(
             ingestion_data
-                .clone()
-                .into_iter()
-                .map(|data| data.into())
-                .collect_vec(),
+                .clone(),
             payload.dataset_id,
             upsert_by_tracking_id_being_used,
             web_pool.clone(),
@@ -683,7 +653,8 @@ pub async fn bulk_upload_chunks(
                 }
             }
 
-            let chunk_tags: Option<Vec<Option<String>>> = if !qdrant_only {
+            let group_tag_set: Option<Vec<Option<String>>> = if !qdrant_only {
+                // ENSURE chunk_data.group_ids is accruate
                 if let Some(ref group_ids) = chunk_data.group_ids {
                     log::info!(
                         "Getting group tags for chunk with group_ids: {:?}",
@@ -709,7 +680,7 @@ pub async fn bulk_upload_chunks(
                 chunk_data.chunk_metadata,
                 chunk_data.group_ids,
                 None,
-                chunk_tags,
+                group_tag_set,
             );
 
             let mut vector_payload = HashMap::from([(
@@ -797,7 +768,7 @@ pub async fn bulk_upload_chunks(
 async fn upload_chunk(
     mut payload: UploadIngestionMessage,
     dataset_config: DatasetConfiguration,
-    ingestion_data: ChunkDataWithEmbeddingText,
+    ingestion_data: ChunkData,
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
 ) -> Result<uuid::Uuid, ServiceError> {
