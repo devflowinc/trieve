@@ -106,12 +106,15 @@ async fn convert_group_tracking_ids_to_group_ids(
                 .map(|item| item.to_string())
                 .collect::<Vec<String>>();
 
-            let correct_matches: Vec<MatchCondition> =
+            let mut correct_matches: Vec<MatchCondition> =
                 get_group_ids_from_tracking_ids_query(matches, dataset_id, pool.clone())
                     .await?
                     .iter()
                     .map(|(id, _)| MatchCondition::Text(id.to_string()))
                     .collect();
+            if correct_matches.is_empty() {
+                correct_matches.push(MatchCondition::Text(uuid::Uuid::default().to_string()));
+            }
 
             Ok(FieldCondition {
                 field: "group_ids".to_string(),
@@ -128,13 +131,17 @@ async fn convert_group_tracking_ids_to_group_ids(
                 .iter()
                 .map(|item| item.to_string())
                 .collect::<Vec<String>>();
+            let matches_len = matches.len();
 
-            let correct_matches: Vec<MatchCondition> =
+            let mut correct_matches: Vec<MatchCondition> =
                 get_group_ids_from_tracking_ids_query(matches, dataset_id, pool.clone())
                     .await?
                     .iter()
                     .map(|(id, _)| MatchCondition::Text(id.to_string()))
                     .collect();
+            if matches_len != correct_matches.len() {
+                correct_matches.push(MatchCondition::Text(uuid::Uuid::default().to_string()));
+            }
 
             Ok(FieldCondition {
                 field: "group_ids".to_string(),
@@ -148,7 +155,8 @@ async fn convert_group_tracking_ids_to_group_ids(
             })
         } else {
             Err(ServiceError::BadRequest(
-                "match_any key not found for group_tracking_ids".to_string(),
+                "group_tracking_ids filter can only be used with match_all or match_any clauses"
+                    .to_string(),
             ))?
         }
     } else {
@@ -2819,31 +2827,25 @@ async fn cross_encoder_for_groups(
 ) -> Result<Vec<GroupScoreChunk>, actix_web::Error> {
     let score_chunks = groups_chunks
         .iter()
-        .map(|group| {
-            group
-                .metadata
-                .clone()
-                .get(0)
-                .expect("Group should have at least one chunk")
-                .clone()
-        })
+        .filter_map(|group| group.metadata.clone().get(0).cloned().clone())
         .collect_vec();
 
     let cross_encoder_results = cross_encoder(query, page_size, score_chunks, config).await?;
     let mut group_results = cross_encoder_results
         .into_iter()
-        .map(|score_chunk| {
-            let mut group = groups_chunks
-                .iter()
-                .find(|group| {
-                    group.metadata.iter().any(|chunk| {
-                        chunk.metadata[0].metadata().id == score_chunk.metadata[0].metadata().id
-                    })
+        .filter_map(|score_chunk| {
+            match groups_chunks.iter().find(|group| {
+                group.metadata.iter().any(|chunk| {
+                    chunk.metadata[0].metadata().id == score_chunk.metadata[0].metadata().id
                 })
-                .expect("Group not found")
-                .clone();
-            group.metadata[0].score = score_chunk.score;
-            group
+            }) {
+                Some(group) => {
+                    let mut group = group.clone();
+                    group.metadata[0].score = score_chunk.score;
+                    Some(group)
+                }
+                None => None,
+            }
         })
         .collect_vec();
 

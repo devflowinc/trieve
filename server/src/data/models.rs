@@ -4411,56 +4411,63 @@ impl FieldCondition {
         }
 
         if let Some(match_any) = &self.match_any {
-            match match_any.first().ok_or(ServiceError::BadRequest(
-                "Should have at least one value for match".to_string(),
-            ))? {
-                MatchCondition::Text(_) => Ok(Some(qdrant::Condition::matches(
-                    self.field.as_str(),
-                    match_any.iter().map(|x| x.to_string()).collect_vec(),
-                ))),
-                MatchCondition::Integer(_) | MatchCondition::Float(_) => {
-                    Ok(Some(qdrant::Condition::matches(
+            if let Some(first_match_any) = match_any.first() {
+                match first_match_any {
+                    MatchCondition::Text(_) => Ok(Some(qdrant::Condition::matches(
                         self.field.as_str(),
-                        match_any
-                            .iter()
-                            .map(|x: &MatchCondition| x.to_i64())
-                            .collect_vec(),
-                    )))
+                        match_any.iter().map(|x| x.to_string()).collect_vec(),
+                    ))),
+                    MatchCondition::Integer(_) | MatchCondition::Float(_) => {
+                        Ok(Some(qdrant::Condition::matches(
+                            self.field.as_str(),
+                            match_any
+                                .iter()
+                                .map(|x: &MatchCondition| x.to_i64())
+                                .collect_vec(),
+                        )))
+                    }
                 }
+            } else {
+                Ok(None)
             }
         } else if let Some(match_all) = &self.match_all {
-            match match_all.first().ok_or(ServiceError::BadRequest(
-                "Should have at least one value for match".to_string(),
-            ))? {
-                MatchCondition::Text(_) => Ok(Some(
-                    qdrant::Filter::must(
-                        match_all
-                            .iter()
-                            .map(|cond| {
-                                qdrant::Condition::matches(
-                                    self.field.as_str(),
-                                    vec![cond.to_string()],
-                                )
-                            })
-                            .collect_vec(),
-                    )
-                    .into(),
-                )),
-                MatchCondition::Integer(_) | MatchCondition::Float(_) => Ok(Some(
-                    qdrant::Filter::must(
-                        match_all
-                            .iter()
-                            .map(|cond| {
-                                qdrant::Condition::matches(self.field.as_str(), vec![cond.to_i64()])
-                            })
-                            .collect_vec(),
-                    )
-                    .into(),
-                )),
+            if let Some(first_match_all) = match_all.first() {
+                match first_match_all {
+                    MatchCondition::Text(_) => Ok(Some(
+                        qdrant::Filter::must(
+                            match_all
+                                .iter()
+                                .map(|cond| {
+                                    qdrant::Condition::matches(
+                                        self.field.as_str(),
+                                        vec![cond.to_string()],
+                                    )
+                                })
+                                .collect_vec(),
+                        )
+                        .into(),
+                    )),
+                    MatchCondition::Integer(_) | MatchCondition::Float(_) => Ok(Some(
+                        qdrant::Filter::must(
+                            match_all
+                                .iter()
+                                .map(|cond| {
+                                    qdrant::Condition::matches(
+                                        self.field.as_str(),
+                                        vec![cond.to_i64()],
+                                    )
+                                })
+                                .collect_vec(),
+                        )
+                        .into(),
+                    )),
+                }
+            } else {
+                Ok(None)
             }
         } else {
             Err(ServiceError::BadRequest(
-                "No filter condition provided".to_string(),
+                "No filter condition provided. Field must not be null and date_range, range, geo_bounding_box, geo_radius, geo_polygon, match_any, or match_all must be populated.".to_string(),
             ))
         }
     }
