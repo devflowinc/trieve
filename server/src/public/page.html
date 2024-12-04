@@ -28,6 +28,21 @@
       href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/default.min.css"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    {% if params.openGraphMetadata %}
+      {% if params.openGraphMetadata.title %}
+      <meta property="og:title" content="{{params.openGraphMetadata.title}}" />
+      {% endif %}
+      <meta property="og:url" content="{{params.baseUrl}}/public_page/{{params.datasetId}}" />
+      <meta property="og:type" content="website" />
+      {% if params.openGraphMetadata.image %}
+      <meta property="og:image" content="{{params.openGraphMetadata.image}}" />
+      {% endif %}
+      {% if params.openGraphMetadata.description %}
+      <meta property="og:description" content="{{params.openGraphMetadata.description}}" />
+      {% endif %}
+    {% endif %}
+
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js"></script>
 
