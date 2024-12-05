@@ -21,9 +21,17 @@ spec:
     spec:
       containers:
       - name: ingest
+        {{- if .Values.config.trieve.useSubtrace }}
         securityContext:
           capabilities:
             add: ["SYS_PTRACE"]
+        command: 
+          - "./subtrace-linux-amd64"
+          - "run"
+          - "-tls=false"
+          - "--"
+          - "/app/ingestion-worker"
+        {{- end }}
         resources:
           {{- toYaml .Values.containers.server.resources | nindent 12 }}
         image: {{ printf "%s:%s" "trieve/ingest" .Values.containers.ingest.tag }}
