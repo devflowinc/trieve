@@ -204,7 +204,7 @@ export const ApiKeys = () => {
     ];
     return createSolidTable({
       columns: columns,
-      data: userApiKeysQuery.data as ApiKeyRespBody[],
+      data: userApiKeysQuery.data,
       getCoreRowModel: getCoreRowModel(),
     });
   });

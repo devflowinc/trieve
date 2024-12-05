@@ -348,7 +348,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                 body={
                                   <FaRegularCircleQuestion class="h-3 w-3 text-black" />
                                 }
-                                tooltipText="Dense vector models are used for semantic search. jina-base-en provides the best balance of latency and relevance quality. Only change this if you have a specific requirement. Custom models are supported on the enterprise plan."
+                                tooltipText="Reranker Model for re-ranking search results."
                               />
                             </label>
                             <select
@@ -372,8 +372,7 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                                 setServerConfig((prev) => {
                                   return {
                                     ...prev,
-                                    RERANKER_MODEL_NAME: selectedModel?.name,
-                                    RERANKER_BASE_URL: selectedModel?.url
+                                    RERANKER_MODEL_NAME: selectedModel?.id,
                                   };
                                 });
                               }}
