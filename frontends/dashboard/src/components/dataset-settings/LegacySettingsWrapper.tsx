@@ -18,6 +18,7 @@ export type DatasetConfig = Exclude<
   "PUBLIC_DATASET"
 > & {
   LLM_API_KEY?: string | null;
+  RERANKER_API_KEY?: string | null;
   PUBLIC_DATASET?: {
     enabled: boolean;
     api_key: string;
