@@ -41,5 +41,4 @@ COPY --from=builder /app/static /app/static
 COPY --from=builder /app/target/release/trieve-server /app/trieve-server
 
 EXPOSE 8090
-ENTRYPOINT ["./subtrace-linux-amd64", "run", "--", "/app/trieve-server"]
-
+ENTRYPOINT ["./subtrace-linux-amd64", "run", "-tls=false", "--", "/app/trieve-server"]
