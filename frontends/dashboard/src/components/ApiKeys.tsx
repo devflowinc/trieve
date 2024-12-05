@@ -233,7 +233,7 @@ export const ApiKeys = () => {
           </div>
         </Show>
         <Show when={(apiKeysQuery.data?.length || -1) > 0}>
-          <div class="inline-block min-w-full overflow-x-auto rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-sm">
+          <div class="inline-block w-full overflow-x-auto rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-sm">
             <Show when={table()}>
               {(table) => <TanStackTable table={table()} />}
             </Show>
@@ -241,11 +241,11 @@ export const ApiKeys = () => {
         </Show>
       </div>
       <Show when={userApiKeysQuery.data?.length !== 0}>
-        <div class="flex items-end justify-between pb-2 pt-2">
+        <div class="mt-4 flex items-end justify-between pb-2 pt-2">
           <div class="text-lg font-medium">User API Keys (deprecated)</div>
         </div>
         <Show when={(userApiKeysQuery.data?.length || -1) > 0}>
-          <div class="inline-block min-w-full overflow-x-auto rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-sm">
+          <div class="inline-block w-full overflow-x-auto rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-sm">
             <Show when={userApiKeyTable()}>
               {(table) => <TanStackTable table={table()} />}
             </Show>

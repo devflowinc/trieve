@@ -128,7 +128,7 @@ export const ApiKeyGenerateModal = (props: {
     if (props.openModal() && !prevOpen) {
       setApiKey("");
       setName("");
-      setRole(1);
+      setRole(2);
       setGenerated(false);
     }
 
