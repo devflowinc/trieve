@@ -54,7 +54,7 @@ pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
         })?
         .with_path_style();
 
-    Ok(aws_bucket)
+    Ok(*aws_bucket)
 }
 
 pub async fn create_file_query(

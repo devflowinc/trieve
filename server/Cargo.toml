@@ -107,7 +107,9 @@ time = { version = "0.3" }
 uuid = { version = "1", features = ["v4", "serde", "v5"] }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
-openai_dive = { git = "https://github.com/devflowinc/openai-client.git", branch = "bugfix/parallel-tool-calls-public", features = ["stream"] }
+openai_dive = { git = "https://github.com/devflowinc/openai-client.git", branch = "bugfix/parallel-tool-calls-public", features = [
+    "stream",
+] }
 tokio = { version = "1.27.0", features = ["rt-multi-thread"] }
 tokio-stream = "0.1.12"
 futures-util = "0.3.28"
@@ -116,7 +118,7 @@ actix = "0.13.0"
 futures = "0.3.28"
 crossbeam-channel = "0.5.8"
 qdrant-client = "1.12.1"
-rust-s3 = { version = "0.34.0" }
+rust-s3 = { version = "0.35.1" }
 base64 = "0.22.0"
 glob = "0.3.1"
 itertools = "0.13.0"

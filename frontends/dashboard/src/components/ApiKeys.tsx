@@ -210,7 +210,7 @@ export const ApiKeys = () => {
   });
 
   return (
-    <>
+    <div class="pr-4">
       <div class="flex flex-col">
         <div class="flex items-end justify-between pb-2">
           <div class="text-lg font-medium">API Keys</div>
@@ -260,6 +260,6 @@ export const ApiKeys = () => {
         openModal={openModal}
         closeModal={() => setOpenModal(false)}
       />
-    </>
+    </div>
   );
 };

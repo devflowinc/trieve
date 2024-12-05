@@ -4,8 +4,8 @@ use super::{
 };
 use crate::{
     data::models::{
-        DatasetAndOrgWithSubAndPlan, DatasetConfiguration, File, FileAndGroupId, FileWorkerMessage,
-        Pool, RedisPool,
+        ChunkReqPayloadMappings, CsvJsonlWorkerMessage, DatasetAndOrgWithSubAndPlan,
+        DatasetConfiguration, File, FileAndGroupId, FileWorkerMessage, Pool, RedisPool,
     },
     errors::ServiceError,
     middleware::auth_middleware::verify_member,
@@ -42,8 +42,7 @@ pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example = json!({
     "file_name": "example.pdf",
-    "file_mime_type": "application/pdf",
-    "base64_file": "base64_encoded_file",
+    "base64_file": "<base64_encoded_file>",
     "tag_set": ["tag1", "tag2"],
     "description": "This is an example file",
     "link": "https://example.com",
@@ -82,19 +81,19 @@ pub struct UploadFileReqPayload {
     pub target_splits_per_chunk: Option<usize>,
     /// Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
     pub group_tracking_id: Option<String>,
-    /// Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o.
-    /// Default is false.
+    /// Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o. Default is false.
     pub use_pdf2md_ocr: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-pub struct UploadFileResult {
+pub struct UploadFileResponseBody {
+    /// File object information. Id, name, tag_set, etc.
     pub file_metadata: File,
 }
 
 /// Upload File
 ///
-/// Upload a file to S3 attached to the server. The file will be converted to HTML with tika and chunked algorithmically, images will be OCR'ed with tesseract. The resulting chunks will be indexed and searchable. Optionally, you can only upload the file and manually create chunks associated to the file after. See docs.trieve.ai and/or contact us for more details and tips. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.
+/// Upload a file to S3 bucket attached to your dataset. You can select between a naive chunking strategy where the text is extracted with Apache Tika and split into segments with a target number of segments per chunk OR you can use a vision LLM to convert the file to markdown and create chunks per page. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.
 #[utoipa::path(
     post,
     path = "/file",
@@ -102,7 +101,7 @@ pub struct UploadFileResult {
     tag = "File",
     request_body(content = UploadFileReqPayload, description = "JSON request payload to upload a file", content_type = "application/json"),
     responses(
-        (status = 200, description = "Confirmation that the file is uploading", body = UploadFileResult),
+        (status = 200, description = "Confirmation that the file is uploading", body = UploadFileResponseBody),
         (status = 400, description = "Service error relating to uploading the file", body = ErrorResponseBody),
     ),
     params(
@@ -188,17 +187,17 @@ pub async fn upload_file_handler(
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-    let result = UploadFileResult {
+    let result = UploadFileResponseBody {
         file_metadata: File::from_details(
             Some(file_id),
             &upload_file_data.file_name,
-            decoded_file_data.len().try_into().unwrap(),
+            decoded_file_data.len().try_into().unwrap_or_default(),
             upload_file_data
                 .tag_set
                 .map(|t| t.into_iter().map(Some).collect()),
-            None,
-            None,
-            None,
+            upload_file_data.metadata.clone(),
+            upload_file_data.link.clone(),
+            upload_file_data.time_stamp.clone(),
             dataset_org_plan_sub.dataset.id,
         ),
     };
@@ -206,16 +205,16 @@ pub async fn upload_file_handler(
     Ok(HttpResponse::Ok().json(result))
 }
 
-/// Get File
+/// Get File Signed URL
 ///
-/// Download a file based on its id.
+/// Get a signed s3 url corresponding to the file_id requested such that you can download the file.
 #[utoipa::path(
     get,
     path = "/file/{file_id}",
     context_path = "/api",
     tag = "File",
     responses(
-        (status = 200, description = "The signed s3 url corresponding to the file_id requested", body = FileDTO),
+        (status = 200, description = "The file's information and s3_url where the original file can be downloaded", body = FileDTO),
         (status = 400, description = "Service error relating to finding the file", body = ErrorResponseBody),
         (status = 404, description = "File not found", body = ErrorResponseBody),
     ),
@@ -236,6 +235,133 @@ pub async fn get_file_handler(
     let file = get_file_query(file_id.into_inner(), dataset_org_plan_sub.dataset.id, pool).await?;
 
     Ok(HttpResponse::Ok().json(file))
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example = json!({
+    "file_name": "example.pdf",
+    "tag_set": ["tag1", "tag2"],
+    "description": "This is an example file",
+    "link": "https://example.com",
+    "time_stamp": "2021-01-01 00:00:00.000Z",
+    "metadata": {
+        "key1": "value1",
+        "key2": "value2"
+    },
+}))]
+pub struct CreatePresignedUrlForCsvJsonlReqPayload {
+    /// Name of the file being uploaded, including the extension. Will be used to determine CSV or JSONL for processing.
+    pub file_name: String,
+    /// Tag set is a comma separated list of tags which will be passed down to the chunks made from the file. Each tag will be joined with what's creatd per row of the CSV or JSONL file.
+    pub tag_set: Option<Vec<String>>,
+    /// Description is an optional convience field so you do not have to remember what the file contains or is about. It will be included on the group resulting from the file which will hold its chunk.
+    pub description: Option<String>,
+    /// Link to the file. This can also be any string. This can be used to filter when searching for the file's resulting chunks. The link value will not affect embedding creation.
+    pub link: Option<String>,
+    /// Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.
+    pub time_stamp: Option<String>,
+    /// Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. Will be passed down to the file's chunks.
+    pub metadata: Option<serde_json::Value>,
+    /// Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
+    pub group_tracking_id: Option<String>,
+    /// Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set and image_urls can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used.
+    pub mappings: Option<ChunkReqPayloadMappings>,
+    /// Upsert by tracking_id. If true, chunks will be upserted by tracking_id. If false, chunks with the same tracking_id as another already existing chunk will be ignored. Defaults to true.
+    pub upsert_by_tracking_id: Option<bool>,
+    /// Amount to multiplicatevly increase the frequency of the tokens in the boost phrase for each row's chunk by. Applies to fulltext (SPLADE) and keyword (BM25) search.
+    pub fulltext_boost_factor: Option<f64>,
+    /// Arbitrary float (positive or negative) specifying the multiplicate factor to apply before summing the phrase vector with the chunk_html embedding vector. Applies to semantic (embedding model) search.
+    pub semantic_boost_factor: Option<f64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct CreatePresignedUrlForCsvJsonResponseBody {
+    /// File object information. Id, name, tag_set, etc.
+    pub file_metadata: File,
+    /// Signed URL to upload the file to.
+    pub presigned_put_url: String,
+}
+
+/// Create Presigned CSV/JSONL S3 PUT URL
+///
+/// This route is useful for uploading very large CSV or JSONL files. Once you have completed the upload, chunks will be automatically created from the file for each line in the CSV or JSONL file. The chunks will be indexed and searchable. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.
+#[utoipa::path(
+    post,
+    path = "/file/csv_or_jsonl",
+    context_path = "/api",
+    tag = "File",
+    request_body(content = CreatePresignedUrlForCsvJsonlReqPayload, description = "JSON request payload to upload a CSV or JSONL file", content_type = "application/json"),
+    responses(
+        (status = 200, description = "File object information and signed put URL", body = CreatePresignedUrlForCsvJsonResponseBody),
+        (status = 400, description = "Service error relating to uploading the file", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn create_presigned_url_for_csv_jsonl(
+    data: web::Json<CreatePresignedUrlForCsvJsonlReqPayload>,
+    _user: AdminOnly,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    redis_pool: web::Data<RedisPool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let create_presigned_put_url_data = data.into_inner();
+
+    let file_id = uuid::Uuid::new_v4();
+
+    let bucket = get_aws_bucket()?;
+    let presigned_put_url = bucket
+        .presign_put(file_id.to_string(), 86400, None, None)
+        .await
+        .map_err(|e| {
+            log::error!("Could not get presigned put url: {:?}", e);
+            ServiceError::BadRequest("Could not get presigned put url".to_string())
+        })?;
+
+    let message = CsvJsonlWorkerMessage {
+        file_id,
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        create_presigned_put_url_data: create_presigned_put_url_data.clone(),
+        attempt_number: 0,
+    };
+
+    let serialized_message = serde_json::to_string(&message).map_err(|e| {
+        log::error!("Could not serialize message: {:?}", e);
+        ServiceError::BadRequest("Could not serialize message".to_string())
+    })?;
+
+    redis::cmd("lpush")
+        .arg("csv_jsonl_ingestion")
+        .arg(&serialized_message)
+        .query_async::<_, ()>(&mut *redis_conn)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    let result = CreatePresignedUrlForCsvJsonResponseBody {
+        file_metadata: File::from_details(
+            Some(file_id),
+            &create_presigned_put_url_data.file_name,
+            0,
+            create_presigned_put_url_data
+                .tag_set
+                .map(|t| t.into_iter().map(Some).collect()),
+            create_presigned_put_url_data.metadata.clone(),
+            create_presigned_put_url_data.link.clone(),
+            create_presigned_put_url_data.time_stamp.clone(),
+            dataset_org_plan_sub.dataset.id,
+        ),
+        presigned_put_url,
+    };
+
+    Ok(HttpResponse::Ok().json(result))
 }
 
 #[derive(Deserialize, Debug, Serialize, ToSchema)]
