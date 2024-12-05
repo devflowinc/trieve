@@ -31,6 +31,9 @@ RUN apt-get update -y; \
     redis-tools \
     ;
 
+RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b143/subtrace-linux-amd64 \
+    && chmod +x ./subtrace
+
 COPY ./migrations/ /app/migrations
 COPY ./ch_migrations /app/ch_migrations
 COPY ./src/public/ /app/src/public
@@ -38,4 +41,5 @@ COPY --from=builder /app/static /app/static
 COPY --from=builder /app/target/release/trieve-server /app/trieve-server
 
 EXPOSE 8090
-ENTRYPOINT ["/app/trieve-server"]
+ENTRYPOINT ["./subtrace", "run", "--", "/app/trieve-server"]
+

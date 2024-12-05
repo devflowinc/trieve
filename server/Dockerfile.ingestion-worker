@@ -32,9 +32,12 @@ RUN apt-get update -y; \
     redis-tools \
     ;
 
+RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b143/subtrace-linux-amd64 \
+    && chmod +x ./subtrace
+
 COPY ./migrations/ /app/migrations
 COPY --from=builder /app/target/release/ingestion-worker /app/ingestion-worker
 
 
 EXPOSE 8090
-ENTRYPOINT ["/app/ingestion-worker"]
+ENTRYPOINT ["./subtrace", "run", "--", "/app/ingestion-worker"]
