@@ -937,6 +937,10 @@ export type DatasetConfigurationDTO = {
      */
     RERANKER_BASE_URL?: (string) | null;
     /**
+     * The model name for the Reranker API
+     */
+    RERANKER_MODEL_NAME?: (string) | null;
+    /**
      * Whether to use semantic search
      */
     SEMANTIC_ENABLED?: (boolean) | null;

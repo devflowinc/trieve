@@ -20,6 +20,7 @@ import { useNavigate } from "@solidjs/router";
 import {
   availableDistanceMetrics,
   availableEmbeddingModels,
+  availableRerankerModels,
 } from "shared/types";
 import { createToast } from "./ShowToasts";
 import { createNewDataset } from "../api/createDataset";
@@ -337,6 +338,55 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
                             </select>
                           </div>
 
+                          <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
+                            <label
+                              for="embeddingSize"
+                              class="flex h-full items-center gap-2 pt-1.5 text-sm font-medium leading-6"
+                            >
+                              Reranker Model{" "}
+                              <Tooltip
+                                body={
+                                  <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                                }
+                                tooltipText="Dense vector models are used for semantic search. jina-base-en provides the best balance of latency and relevance quality. Only change this if you have a specific requirement. Custom models are supported on the enterprise plan."
+                              />
+                            </label>
+                            <select
+                              id="embeddingSize"
+                              name="embeddingSize"
+                              class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                              value={
+                                availableRerankerModels.find(
+                                  (model) =>
+                                    model.id ===
+                                    serverConfig.RERANKER_MODEL_NAME,
+                                )?.name ?? availableRerankerModels[0].name
+                              }
+                              onChange={(e) => {
+                                const selectedModel =
+                                  availableRerankerModels.find(
+                                    (model) =>
+                                      model.name === e.currentTarget.value,
+                                  );
+
+                                setServerConfig((prev) => {
+                                  return {
+                                    ...prev,
+                                    RERANKER_MODEL_NAME: selectedModel?.name,
+                                    RERANKER_BASE_URL: selectedModel?.url
+                                  };
+                                });
+                              }}
+                            >
+                              <For each={availableRerankerModels}>
+                                {(model) => (
+                                  <option value={model.name}>
+                                    {model.name}
+                                  </option>
+                                )}
+                              </For>
+                            </select>
+                          </div>
                           <div class="content-center py-4 sm:grid sm:grid-cols-3 sm:items-start sm:gap-4">
                             <label
                               for="distanceMetric"

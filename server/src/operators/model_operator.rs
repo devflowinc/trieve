@@ -830,12 +830,34 @@ pub struct CrossEncoderData {
     pub truncate: bool,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CohereRerankCall {
+    pub model: String,
+    pub query: String,
+    pub documents: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CohereRerankResponse {
+    pub results: Vec<CohereScorePair>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CohereScorePair {
+    pub index: usize,
+    pub relevance_score: f32,
+}
+
 pub async fn cross_encoder(
     query: String,
     page_size: u64,
     results: Vec<ScoreChunkDTO>,
     dataset_config: &DatasetConfiguration,
 ) -> Result<Vec<ScoreChunkDTO>, actix_web::Error> {
+    let default_server_origin = get_env!(
+        "RERANKER_SERVER_ORIGIN",
+        "RERANKER_SERVER_ORIGIN must be set"
+    );
     let server_origin: String = dataset_config.RERANKER_BASE_URL.clone();
 
     let embedding_server_call = format!("{}/rerank", server_origin);
@@ -863,45 +885,78 @@ pub async fn cross_encoder(
                 ))
             })
             .collect::<Result<Vec<String>, ServiceError>>()?;
-        let resp = ureq::post(&embedding_server_call)
-            .set("Content-Type", "application/json")
-            .set(
-                "Authorization",
-                &format!(
-                    "Bearer {}",
-                    get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
-                ),
-            )
-            .send_json(CrossEncoderData {
-                query: query.clone(),
-                texts: request_docs,
-                truncate: true,
-            })
-            .map_err(|err| {
-                ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
-            })?
-            .into_json::<Vec<ScorePair>>()
-            .map_err(|_e| {
-                log::error!(
-                    "Failed parsing response from custom embedding server {:?}",
-                    _e
-                );
-                ServiceError::BadRequest(
-                    "Failed parsing response from custom embedding server".to_string(),
-                )
-            })?;
 
-        resp.into_iter().for_each(|pair| {
-            results.index_mut(pair.index).score = pair.score as f64;
-        });
+        let reranker_api_key = dataset_config.RERANKER_API_KEY.clone();
+        if server_origin != default_server_origin {
+            // Assume cohere
+            let reranker_model_name = dataset_config.RERANKER_MODEL_NAME.clone();
+            let resp = ureq::post(&embedding_server_call)
+                .set("Content-Type", "application/json")
+                .set(
+                    "Authorization",
+                    &format!("Bearer {}", reranker_api_key.clone()),
+                )
+                .send_json(CohereRerankCall {
+                    model: reranker_model_name.clone(),
+                    query: query.clone(),
+                    documents: request_docs,
+                })
+                .map_err(|err| {
+                    ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+                })?
+                .into_json::<CohereRerankResponse>()
+                .map_err(|_e| {
+                    log::error!(
+                        "Failed parsing response from custom embedding server {:?}",
+                        _e
+                    );
+                    ServiceError::BadRequest(
+                        "Failed parsing response from custom embedding server".to_string(),
+                    )
+                })?;
+
+            resp.results.into_iter().for_each(|pair| {
+                results.index_mut(pair.index).score = pair.relevance_score as f64;
+            });
+        } else {
+            let resp = ureq::post(&embedding_server_call)
+                .set("Content-Type", "application/json")
+                .set(
+                    "Authorization",
+                    &format!("Bearer {}", reranker_api_key.clone()),
+                )
+                .send_json(CrossEncoderData {
+                    query: query.clone(),
+                    texts: request_docs,
+                    truncate: true,
+                })
+                .map_err(|err| {
+                    ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+                })?
+                .into_json::<Vec<ScorePair>>()
+                .map_err(|_e| {
+                    log::error!(
+                        "Failed parsing response from custom embedding server {:?}",
+                        _e
+                    );
+                    ServiceError::BadRequest(
+                        "Failed parsing response from custom embedding server".to_string(),
+                    )
+                })?;
+
+            resp.into_iter().for_each(|pair| {
+                results.index_mut(pair.index).score = pair.score as f64;
+            });
+        }
     } else {
         let vec_futures: Vec<_> = results
             .chunks_mut(20)
             .map(|docs_chunk| {
-                let query = query.clone();
                 let cur_client = reqwest::Client::new();
-                let embedding_api_key = dataset_config.RERANKER_API_KEY.clone();
+                let query = query.clone();
+                let reranker_api_key = dataset_config.RERANKER_API_KEY.clone();
                 let url = embedding_server_call.clone();
+                let server_origin = server_origin.clone();
 
                 let vectors_resp = async move {
                     let request_docs = docs_chunk
@@ -921,50 +976,92 @@ pub async fn cross_encoder(
                         })
                         .collect::<Result<Vec<String>, ServiceError>>()?;
 
-                    let parameters = CrossEncoderData {
-                        query: query.clone(),
-                        texts: request_docs,
-                        truncate: true,
-                    };
+                    if server_origin != default_server_origin {
+                        let reranker_model_name = dataset_config.RERANKER_MODEL_NAME.clone();
+                        let parameters = CohereRerankCall {
+                            model: reranker_model_name.clone(),
+                            query: query.clone(),
+                            documents: request_docs.clone(),
+                        };
 
-                    let embeddings_resp = cur_client
-                        .post(&url)
-                        .header(
-                            "Authorization",
-                            &format!(
-                                "Bearer {}",
-                                get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
-                            ),
-                        )
-                        .header("api-key", &embedding_api_key.to_string())
-                        .header("Content-Type", "application/json")
-                        .json(&parameters)
-                        .send()
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest(
-                                "Failed to send message to embedding server".to_string(),
-                            )
-                        })?
-                        .text()
-                        .await
-                        .map_err(|_| {
-                            ServiceError::BadRequest(
-                                "Failed to get text from embeddings".to_string(),
-                            )
-                        })?;
+                        let embeddings_resp = cur_client
+                            .post(&url)
+                            .header("Authorization", &format!("Bearer {}", reranker_api_key))
+                            .header("api-key", reranker_api_key.to_string())
+                            .header("Content-Type", "application/json")
+                            .json(&parameters)
+                            .send()
+                            .await
+                            .map_err(|_| {
+                                ServiceError::BadRequest(
+                                    "Failed to send message to embedding server".to_string(),
+                                )
+                            })?
+                            .text()
+                            .await
+                            .map_err(|_| {
+                                ServiceError::BadRequest(
+                                    "Failed to get text from embeddings".to_string(),
+                                )
+                            })?;
 
-                    let embeddings: Vec<ScorePair> = serde_json::from_str(&embeddings_resp)
-                        .map_err(|e| {
-                            log::error!("Failed to format response from embeddings server {:?}", e);
-                            ServiceError::InternalServerError(
-                                "Failed to format response from embeddings server".to_owned(),
-                            )
-                        })?;
+                        let rankings: CohereRerankResponse = serde_json::from_str(&embeddings_resp)
+                            .map_err(|e| {
+                                log::error!(
+                                    "Failed to format response from embeddings server {:?}",
+                                    e
+                                );
+                                ServiceError::InternalServerError(
+                                    "Failed to format response from embeddings server".to_owned(),
+                                )
+                            })?;
 
-                    embeddings.into_iter().for_each(|pair| {
-                        docs_chunk.index_mut(pair.index).score = pair.score as f64;
-                    });
+                        rankings.results.into_iter().for_each(|pair| {
+                            docs_chunk.index_mut(pair.index).score = pair.relevance_score as f64;
+                        });
+                    } else {
+                        let parameters = CrossEncoderData {
+                            query: query.clone(),
+                            texts: request_docs.clone(),
+                            truncate: true,
+                        };
+
+                        let embeddings_resp = cur_client
+                            .post(&url)
+                            .header("Authorization", &format!("Bearer {}", reranker_api_key))
+                            .header("api-key", reranker_api_key.to_string())
+                            .header("Content-Type", "application/json")
+                            .json(&parameters)
+                            .send()
+                            .await
+                            .map_err(|_| {
+                                ServiceError::BadRequest(
+                                    "Failed to send message to embedding server".to_string(),
+                                )
+                            })?
+                            .text()
+                            .await
+                            .map_err(|_| {
+                                ServiceError::BadRequest(
+                                    "Failed to get text from embeddings".to_string(),
+                                )
+                            })?;
+
+                        let embeddings: Vec<ScorePair> = serde_json::from_str(&embeddings_resp)
+                            .map_err(|e| {
+                                log::error!(
+                                    "Failed to format response from embeddings server {:?}",
+                                    e
+                                );
+                                ServiceError::InternalServerError(
+                                    "Failed to format response from embeddings server".to_owned(),
+                                )
+                            })?;
+
+                        embeddings.into_iter().for_each(|pair| {
+                            docs_chunk.index_mut(pair.index).score = pair.score as f64;
+                        });
+                    }
 
                     Ok(())
                 };

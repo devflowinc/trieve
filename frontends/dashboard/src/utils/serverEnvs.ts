@@ -8,6 +8,7 @@ export const defaultServerEnvsConfiguration: DatasetConfig = {
   LLM_API_KEY: "",
   EMBEDDING_BASE_URL: "https://embedding.trieve.ai",
   EMBEDDING_MODEL_NAME: "jina-base-en",
+  RERANKER_MODEL_NAME: "bge-reranker-large",
   MESSAGE_TO_QUERY_PROMPT: "",
   RAG_PROMPT: "",
   EMBEDDING_SIZE: 768,
