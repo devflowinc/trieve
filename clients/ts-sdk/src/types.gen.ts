@@ -429,6 +429,27 @@ export type ChunkReqPayload = {
     weight?: (number) | null;
 };
 
+/**
+ * The key in the ChunkReqPayload which you can map a column or field from the CSV or JSONL file to.
+ */
+export type ChunkReqPayloadKeys = 'link' | 'tag_set' | 'num_value' | 'tracking_id' | 'time_stamp' | 'lat' | 'lon' | 'image_urls' | 'weight' | 'boost_phrase';
+
+/**
+ * Express a mapping between a column or field in a CSV or JSONL field and a key in the ChunkReqPayload created for each row or object.
+ */
+export type ChunkReqPayloadMapping = {
+    chunk_req_payload_key: ChunkReqPayloadKeys;
+    /**
+     * The column or field in the CSV or JSONL file that you want to map to a key in the ChunkReqPayload
+     */
+    csv_jsonl_field: string;
+};
+
+/**
+ * Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set and image_urls can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used.
+ */
+export type ChunkReqPayloadMappings = Array<ChunkReqPayloadMapping>;
+
 export type ChunkReturnTypes = ChunkMetadata | ChunkMetadataStringTagSet;
 
 export type ChunkWithPosition = {
@@ -743,6 +764,58 @@ export type CreateOrganizationReqPayload = {
      * The arbitrary name which will be used to identify the organization. This name must be unique.
      */
     name: string;
+};
+
+export type CreatePresignedUrlForCsvJsonResponseBody = {
+    file_metadata: File;
+    /**
+     * Signed URL to upload the file to.
+     */
+    presigned_put_url: string;
+};
+
+export type CreatePresignedUrlForCsvJsonlReqPayload = {
+    /**
+     * Description is an optional convience field so you do not have to remember what the file contains or is about. It will be included on the group resulting from the file which will hold its chunk.
+     */
+    description?: (string) | null;
+    /**
+     * Name of the file being uploaded, including the extension. Will be used to determine CSV or JSONL for processing.
+     */
+    file_name: string;
+    /**
+     * Amount to multiplicatevly increase the frequency of the tokens in the boost phrase for each row's chunk by. Applies to fulltext (SPLADE) and keyword (BM25) search.
+     */
+    fulltext_boost_factor?: (number) | null;
+    /**
+     * Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
+     */
+    group_tracking_id?: (string) | null;
+    /**
+     * Link to the file. This can also be any string. This can be used to filter when searching for the file's resulting chunks. The link value will not affect embedding creation.
+     */
+    link?: (string) | null;
+    mappings?: ((ChunkReqPayloadMappings) | null);
+    /**
+     * Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. Will be passed down to the file's chunks.
+     */
+    metadata?: unknown;
+    /**
+     * Arbitrary float (positive or negative) specifying the multiplicate factor to apply before summing the phrase vector with the chunk_html embedding vector. Applies to semantic (embedding model) search.
+     */
+    semantic_boost_factor?: (number) | null;
+    /**
+     * Tag set is a comma separated list of tags which will be passed down to the chunks made from the file. Each tag will be joined with what's creatd per row of the CSV or JSONL file.
+     */
+    tag_set?: Array<(string)> | null;
+    /**
+     * Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.
+     */
+    time_stamp?: (string) | null;
+    /**
+     * Upsert by tracking_id. If true, chunks will be upserted by tracking_id. If false, chunks with the same tracking_id as another already existing chunk will be ignored. Defaults to true.
+     */
+    upsert_by_tracking_id?: (boolean) | null;
 };
 
 export type CreateSetupCheckoutSessionResPayload = {
@@ -3171,13 +3244,12 @@ export type UploadFileReqPayload = {
      */
     time_stamp?: (string) | null;
     /**
-     * Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o.
-     * Default is false.
+     * Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o. Default is false.
      */
     use_pdf2md_ocr?: (boolean) | null;
 };
 
-export type UploadFileResult = {
+export type UploadFileResponseBody = {
     file_metadata: File;
 };
 
@@ -4134,7 +4206,20 @@ export type UploadFileHandlerData = {
     trDataset: string;
 };
 
-export type UploadFileHandlerResponse = (UploadFileResult);
+export type UploadFileHandlerResponse = (UploadFileResponseBody);
+
+export type CreatePresignedUrlForCsvJsonlData = {
+    /**
+     * JSON request payload to upload a CSV or JSONL file
+     */
+    requestBody: CreatePresignedUrlForCsvJsonlReqPayload;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type CreatePresignedUrlForCsvJsonlResponse = (CreatePresignedUrlForCsvJsonResponseBody);
 
 export type GetFileHandlerData = {
     /**
@@ -5594,7 +5679,22 @@ export type $OpenApiTs = {
                 /**
                  * Confirmation that the file is uploading
                  */
-                200: UploadFileResult;
+                200: UploadFileResponseBody;
+                /**
+                 * Service error relating to uploading the file
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/file/csv_or_jsonl': {
+        post: {
+            req: CreatePresignedUrlForCsvJsonlData;
+            res: {
+                /**
+                 * File object information and signed put URL
+                 */
+                200: CreatePresignedUrlForCsvJsonResponseBody;
                 /**
                  * Service error relating to uploading the file
                  */
@@ -5607,7 +5707,7 @@ export type $OpenApiTs = {
             req: GetFileHandlerData;
             res: {
                 /**
-                 * The signed s3 url corresponding to the file_id requested
+                 * The file's information and s3_url where the original file can be downloaded
                  */
                 200: FileDTO;
                 /**

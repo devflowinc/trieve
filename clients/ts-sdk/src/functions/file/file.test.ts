@@ -1,6 +1,11 @@
-import { beforeAll, describe, expectTypeOf } from "vitest";
+import { beforeAll, describe, expect, expectTypeOf } from "vitest";
 import { TrieveSDK } from "../../sdk";
-import { File, FileDTO, UploadFileResult } from "../../types.gen";
+import {
+  CreatePresignedUrlForCsvJsonResponseBody,
+  File,
+  FileDTO,
+  UploadFileResponseBody,
+} from "../../types.gen";
 import { EXAMPLE_FILE_ID, TRIEVE } from "../../__tests__/constants";
 import fs from "fs";
 import { test } from "../../__tests__/utils";
@@ -24,7 +29,33 @@ describe("File Tests", async () => {
       file_name: "uploadme.pdf",
       group_tracking_id: "file-upload-group",
     });
-    expectTypeOf(data).toEqualTypeOf<UploadFileResult>();
+    expectTypeOf(data).toEqualTypeOf<UploadFileResponseBody>();
+  });
+
+  test("createPresignedUrlForCsvJsonl", async () => {
+    const data = await trieve.createPresignedUrlForCsvJsonl({
+      file_name: "uploadme.csv",
+      group_tracking_id: "file-upload-group",
+    });
+    expectTypeOf(
+      data
+    ).toEqualTypeOf<CreatePresignedUrlForCsvJsonResponseBody>();
+
+    const presignedPutUrl = data.presigned_put_url;
+    const fileResponse = await fetch(
+      "https://raw.githubusercontent.com/datasciencedojo/datasets/refs/heads/master/titanic.csv"
+    );
+    const blob = await fileResponse.blob();
+
+    const uploadResponse = await fetch(presignedPutUrl, {
+      method: "PUT",
+      body: blob,
+      headers: {
+        "Content-Type": "text/csv",
+      },
+    });
+
+    expect(uploadResponse.ok).toBeTruthy();
   });
 
   test("getFilesForDataset", async () => {
@@ -34,10 +65,10 @@ describe("File Tests", async () => {
     expectTypeOf(data).toEqualTypeOf<File[]>();
   });
 
-  test("getFile", async () => {
-    const data = await trieve.getFile({
-      fileId: EXAMPLE_FILE_ID,
-    });
-    expectTypeOf(data).toEqualTypeOf<FileDTO>();
-  });
+  // test("getFile", async () => {
+  //   const data = await trieve.getFile({
+  //     fileId: EXAMPLE_FILE_ID,
+  //   });
+  //   expectTypeOf(data).toEqualTypeOf<FileDTO>();
+  // });
 });

@@ -5,6 +5,7 @@
  */
 
 import {
+  CreatePresignedUrlForCsvJsonlReqPayload,
   DeleteFileHandlerData,
   GetDatasetFilesHandlerData,
   GetFileHandlerData,
@@ -18,17 +19,17 @@ import { TrieveSDK } from "../../sdk";
  * Example:
  * ```js
  *const data = await trieve.uploadFile({
-  base64_file: "base64_encoded_file",
-  create_chunks: true,
-  description: "This is an example file",
-  file_mime_type: "application/pdf",
-  file_name: "example.pdf",
-  link: "https://example.com",
-  metadata: {
-    key1: "value1",
-    key2: "value2",
-  },
-});
+    base64_file: "base64_encoded_file",
+    create_chunks: true,
+    description: "This is an example file",
+    file_mime_type: "application/pdf",
+    file_name: "example.pdf",
+    link: "https://example.com",
+    metadata: {
+      key1: "value1",
+      key2: "value2",
+    },
+  });
  * ```
  */
 export async function uploadFile(
@@ -48,14 +49,31 @@ export async function uploadFile(
   );
 }
 
+export async function createPresignedUrlForCsvJsonl(
+  /** @hidden */
+  this: TrieveSDK,
+  data: CreatePresignedUrlForCsvJsonlReqPayload,
+  signal?: AbortSignal
+) {
+  return await this.trieve.fetch(
+    "/api/file/csv_or_jsonl",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
+}
+
 /**
  * Get all files which belong to a given dataset specified by the dataset_id parameter. 10 files are returned per page.
  * 
  * Example:
  * ```js
- *const data = await trieve.getFilesForDataset({
-  page:1,
-});
+  *const data = await trieve.getFilesForDataset({
+    page:1,
+  });
  * ```
  */
 export async function getFilesForDataset(
@@ -81,8 +99,8 @@ export async function getFilesForDataset(
  * Example:
  * ```js
  *const data = await trieve.getFile({
-  fileId: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
-});
+    fileId: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
+  });
  * ```
  */
 export async function getFile(
@@ -108,8 +126,8 @@ export async function getFile(
  * Example:
  * ```js
  *const data = await trieve.deleteFile({
-  fileId: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
-});
+    fileId: "3c90c3cc-0d44-4b50-8888-8dd25736052a",
+  });
  * ```
  */
 export async function deleteFile(

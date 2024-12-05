@@ -4269,7 +4269,7 @@
           "File"
         ],
         "summary": "Upload File",
-        "description": "Upload a file to S3 attached to the server. The file will be converted to HTML with tika and chunked algorithmically, images will be OCR'ed with tesseract. The resulting chunks will be indexed and searchable. Optionally, you can only upload the file and manually create chunks associated to the file after. See docs.trieve.ai and/or contact us for more details and tips. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.",
+        "description": "Upload a file to S3 bucket attached to your dataset. You can select between a naive chunking strategy where the text is extracted with Apache Tika and split into segments with a target number of segments per chunk OR you can use a vision LLM to convert the file to markdown and create chunks per page. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.",
         "operationId": "upload_file_handler",
         "parameters": [
           {
@@ -4300,7 +4300,69 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UploadFileResult"
+                  "$ref": "#/components/schemas/UploadFileResponseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to uploading the file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/file/csv_or_jsonl": {
+      "post": {
+        "tags": [
+          "File"
+        ],
+        "summary": "Create Presigned CSV/JSONL S3 PUT URL",
+        "description": "This route is useful for uploading very large CSV or JSONL files. Once you have completed the upload, chunks will be automatically created from the file for each line in the CSV or JSONL file. The chunks will be indexed and searchable. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.",
+        "operationId": "create_presigned_url_for_csv_jsonl",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to upload a CSV or JSONL file",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePresignedUrlForCsvJsonlReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "File object information and signed put URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePresignedUrlForCsvJsonResponseBody"
                 }
               }
             }
@@ -4330,8 +4392,8 @@
         "tags": [
           "File"
         ],
-        "summary": "Get File",
-        "description": "Download a file based on its id.",
+        "summary": "Get File Signed URL",
+        "description": "Get a signed s3 url corresponding to the file_id requested such that you can download the file.",
         "operationId": "get_file_handler",
         "parameters": [
           {
@@ -4357,7 +4419,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The signed s3 url corresponding to the file_id requested",
+            "description": "The file's information and s3_url where the original file can be downloaded",
             "content": {
               "application/json": {
                 "schema": {
@@ -7911,6 +7973,46 @@
           "tracking_id": "tracking_id"
         }
       },
+      "ChunkReqPayloadKeys": {
+        "type": "string",
+        "description": "The key in the ChunkReqPayload which you can map a column or field from the CSV or JSONL file to.",
+        "enum": [
+          "link",
+          "tag_set",
+          "num_value",
+          "tracking_id",
+          "time_stamp",
+          "lat",
+          "lon",
+          "image_urls",
+          "weight",
+          "boost_phrase"
+        ]
+      },
+      "ChunkReqPayloadMapping": {
+        "type": "object",
+        "description": "Express a mapping between a column or field in a CSV or JSONL field and a key in the ChunkReqPayload created for each row or object.",
+        "required": [
+          "csv_jsonl_field",
+          "chunk_req_payload_key"
+        ],
+        "properties": {
+          "chunk_req_payload_key": {
+            "$ref": "#/components/schemas/ChunkReqPayloadKeys"
+          },
+          "csv_jsonl_field": {
+            "type": "string",
+            "description": "The column or field in the CSV or JSONL file that you want to map to a key in the ChunkReqPayload"
+          }
+        }
+      },
+      "ChunkReqPayloadMappings": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ChunkReqPayloadMapping"
+        },
+        "description": "Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set and image_urls can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used."
+      },
       "ChunkReturnTypes": {
         "oneOf": [
           {
@@ -8827,6 +8929,105 @@
             "type": "string",
             "description": "The arbitrary name which will be used to identify the organization. This name must be unique."
           }
+        }
+      },
+      "CreatePresignedUrlForCsvJsonResponseBody": {
+        "type": "object",
+        "required": [
+          "file_metadata",
+          "presigned_put_url"
+        ],
+        "properties": {
+          "file_metadata": {
+            "$ref": "#/components/schemas/File"
+          },
+          "presigned_put_url": {
+            "type": "string",
+            "description": "Signed URL to upload the file to."
+          }
+        }
+      },
+      "CreatePresignedUrlForCsvJsonlReqPayload": {
+        "type": "object",
+        "required": [
+          "file_name"
+        ],
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Description is an optional convience field so you do not have to remember what the file contains or is about. It will be included on the group resulting from the file which will hold its chunk.",
+            "nullable": true
+          },
+          "file_name": {
+            "type": "string",
+            "description": "Name of the file being uploaded, including the extension. Will be used to determine CSV or JSONL for processing."
+          },
+          "fulltext_boost_factor": {
+            "type": "number",
+            "format": "double",
+            "description": "Amount to multiplicatevly increase the frequency of the tokens in the boost phrase for each row's chunk by. Applies to fulltext (SPLADE) and keyword (BM25) search.",
+            "nullable": true
+          },
+          "group_tracking_id": {
+            "type": "string",
+            "description": "Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`",
+            "nullable": true
+          },
+          "link": {
+            "type": "string",
+            "description": "Link to the file. This can also be any string. This can be used to filter when searching for the file's resulting chunks. The link value will not affect embedding creation.",
+            "nullable": true
+          },
+          "mappings": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChunkReqPayloadMappings"
+              }
+            ],
+            "nullable": true
+          },
+          "metadata": {
+            "description": "Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. Will be passed down to the file's chunks.",
+            "nullable": true
+          },
+          "semantic_boost_factor": {
+            "type": "number",
+            "format": "double",
+            "description": "Arbitrary float (positive or negative) specifying the multiplicate factor to apply before summing the phrase vector with the chunk_html embedding vector. Applies to semantic (embedding model) search.",
+            "nullable": true
+          },
+          "tag_set": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tag set is a comma separated list of tags which will be passed down to the chunks made from the file. Each tag will be joined with what's creatd per row of the CSV or JSONL file.",
+            "nullable": true
+          },
+          "time_stamp": {
+            "type": "string",
+            "description": "Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.",
+            "nullable": true
+          },
+          "upsert_by_tracking_id": {
+            "type": "boolean",
+            "description": "Upsert by tracking_id. If true, chunks will be upserted by tracking_id. If false, chunks with the same tracking_id as another already existing chunk will be ignored. Defaults to true.",
+            "nullable": true
+          }
+        },
+        "example": {
+          "description": "This is an example file",
+          "file_name": "example.pdf",
+          "link": "https://example.com",
+          "metadata": {
+            "key1": "value1",
+            "key2": "value2"
+          },
+          "tag_set": [
+            "tag1",
+            "tag2"
+          ],
+          "time_stamp": "2021-01-01 00:00:00.000Z"
         }
       },
       "CreateSetupCheckoutSessionResPayload": {
@@ -16081,15 +16282,14 @@
           },
           "use_pdf2md_ocr": {
             "type": "boolean",
-            "description": "Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o.\nDefault is false.",
+            "description": "Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o. Default is false.",
             "nullable": true
           }
         },
         "example": {
-          "base64_file": "base64_encoded_file",
+          "base64_file": "<base64_encoded_file>",
           "create_chunks": true,
           "description": "This is an example file",
-          "file_mime_type": "application/pdf",
           "file_name": "example.pdf",
           "link": "https://example.com",
           "metadata": {
@@ -16110,7 +16310,7 @@
           "use_pdf2md_ocr": false
         }
       },
-      "UploadFileResult": {
+      "UploadFileResponseBody": {
         "type": "object",
         "required": [
           "file_metadata"

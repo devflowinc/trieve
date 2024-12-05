@@ -9,7 +9,9 @@ use crate::handlers::chunk_handler::{
     ScoringOptions, SearchChunksReqPayload, SemanticBoost,
 };
 use crate::handlers::chunk_handler::{CrawlInterval, ScrollChunksReqPayload};
-use crate::handlers::file_handler::UploadFileReqPayload;
+use crate::handlers::file_handler::{
+    CreatePresignedUrlForCsvJsonlReqPayload, UploadFileReqPayload,
+};
 use crate::handlers::group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload};
 use crate::handlers::message_handler::{
     CreateMessageReqPayload, EditMessageReqPayload, RegenerateMessageReqPayload,
@@ -1819,6 +1821,44 @@ pub struct UserDTOWithChunks {
     pub total_chunks_created: i64,
     pub chunks: Vec<ChunkMetadata>,
 }
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+/// The key in the ChunkReqPayload which you can map a column or field from the CSV or JSONL file to.
+pub enum ChunkReqPayloadKeys {
+    #[serde(rename = "link")]
+    Link,
+    #[serde(rename = "tag_set")]
+    TagSet,
+    #[serde(rename = "num_value")]
+    NumValue,
+    #[serde(rename = "tracking_id")]
+    TrackingId,
+    #[serde(rename = "time_stamp")]
+    TimeStamp,
+    #[serde(rename = "lat")]
+    Lat,
+    #[serde(rename = "lon")]
+    Lon,
+    #[serde(rename = "image_urls")]
+    ImageUrls,
+    #[serde(rename = "weight")]
+    Weight,
+    #[serde(rename = "boost_phrase")]
+    BoostPhrase,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+/// Express a mapping between a column or field in a CSV or JSONL field and a key in the ChunkReqPayload created for each row or object.
+pub struct ChunkReqPayloadMapping {
+    /// The column or field in the CSV or JSONL file that you want to map to a key in the ChunkReqPayload
+    pub csv_jsonl_field: String,
+    /// The key in the ChunkReqPayload that you want to map the column or field to.
+    pub chunk_req_payload_key: ChunkReqPayloadKeys,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+/// Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set and image_urls can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used.
+pub struct ChunkReqPayloadMappings(Vec<ChunkReqPayloadMapping>);
 
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
@@ -4156,6 +4196,14 @@ pub struct FileWorkerMessage {
     pub file_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub upload_file_data: UploadFileReqPayload,
+    pub attempt_number: u8,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct CsvJsonlWorkerMessage {
+    pub file_id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub create_presigned_put_url_data: CreatePresignedUrlForCsvJsonlReqPayload,
     pub attempt_number: u8,
 }
 
