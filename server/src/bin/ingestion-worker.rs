@@ -818,18 +818,16 @@ pub async fn bulk_upload_chunks(
         return Err(err);
     }
 
-    if qdrant_only {
-        log::info!(
-            "Updating dataset chunk count by {}",
-            inserted_chunk_metadata_ids.len()
-        );
-        update_dataset_chunk_count(
-            payload.dataset_id,
-            inserted_chunk_metadata_ids.len() as i32,
-            web_pool.clone(),
-        )
-        .await?;
-    }
+    log::info!(
+        "Updating dataset chunk count by {}",
+        inserted_chunk_metadata_ids.len()
+    );
+    update_dataset_chunk_count(
+        payload.dataset_id,
+        inserted_chunk_metadata_ids.len() as i32,
+        web_pool.clone(),
+    )
+    .await?;
 
     Ok(inserted_chunk_metadata_ids)
 }

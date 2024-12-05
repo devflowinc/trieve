@@ -5,7 +5,7 @@ use crate::data::models::{
 };
 use crate::handlers::chunk_handler::ChunkFilter;
 use crate::handlers::dataset_handler::{GetDatasetsPagination, TagsWithCount};
-use crate::operators::chunk_operator::bulk_delete_chunks_query;
+use crate::operators::chunk_operator::{bulk_delete_chunks_query, update_dataset_chunk_count};
 use crate::operators::clickhouse_operator::ClickHouseEvent;
 use crate::operators::qdrant_operator::{
     delete_points_from_qdrant, get_qdrant_collection_from_dataset_config,
@@ -529,6 +529,7 @@ pub async fn clear_dataset_query(
             ))
             .await;
 
+        update_dataset_chunk_count(id, -(chunk_ids.len() as i32), pool.clone()).await?;
         log::info!("Deleted {} chunks from {}", chunk_ids.len(), id);
 
         last_offset_id = *chunk_ids.last().unwrap();
