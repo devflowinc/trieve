@@ -164,10 +164,10 @@ const PublicPageControls = () => {
             <div class="grow">
               <div class="flex items-center gap-1">
                 <label class="block" for="">
-                  Brand Logo Link
+                  In-Module Brand Icon Link
                 </label>
                 <Tooltip
-                  tooltipText="URL for your brand's logo that will be displayed in the navbar of the public page."
+                  tooltipText="Choose a small icon to be used in the chat module"
                   body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
                 />
               </div>
