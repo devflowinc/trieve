@@ -85,3 +85,4 @@ data:
   SUBTRACE_TOKEN: {{ .Values.config.trieve.subtraceToken | quote }}
   FIRECRAWL_URL: {{ .Values.config.trieve.firecrawlUrl | quote }}
   DITTOFEED_API_KEY: {{ .Values.config.trieve.dittofeedApiKey | quote }} 
+  CREATE_QDRANT_COLLECTIONS: {{ .Values.config.qdrant.initCollections | quote }} 
