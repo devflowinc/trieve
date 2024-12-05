@@ -299,6 +299,19 @@ export const availableEmbeddingModels = [
   },
 ];
 
+export const availableRerankerModels = [
+  {
+    id: "bge-reranker-large",
+    name: "bge-reranker-large (hosted by Trieve)",
+    url: null,
+  },
+  {
+    id: "rerank-v3.5",
+    name: "Cohere rerank-v3.5 (with Cohere API key)",
+    url: "https://api.cohere.com/v2",
+  },
+];
+
 export const availableDistanceMetrics = [
   {
     id: "cosine",

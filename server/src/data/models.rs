@@ -2295,6 +2295,7 @@ pub struct DatasetConfiguration {
     pub LLM_API_KEY: String,
     #[serde(skip_serializing)]
     pub RERANKER_API_KEY: String,
+    pub RERANKER_MODEL_NAME: String,
     pub EMBEDDING_BASE_URL: String,
     pub EMBEDDING_MODEL_NAME: String,
     pub RERANKER_BASE_URL: String,
@@ -2374,6 +2375,8 @@ pub struct DatasetConfigurationDTO {
     #[serde(skip_serializing)]
     /// The API key for the Reranker API
     pub RERANKER_API_KEY: Option<String>,
+    /// The model name for the Reranker API
+    pub RERANKER_MODEL_NAME: Option<String>,
     /// The base URL for the embedding API
     pub EMBEDDING_BASE_URL: Option<String>,
     /// The name of the embedding model to use
@@ -2438,6 +2441,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             LLM_BASE_URL: dto.LLM_BASE_URL.unwrap_or("https://api.openai.com/v1".to_string()),
             LLM_API_KEY: dto.LLM_API_KEY.unwrap_or("".to_string()),
             RERANKER_API_KEY: dto.RERANKER_API_KEY.unwrap_or("".to_string()),
+            RERANKER_MODEL_NAME: dto.RERANKER_MODEL_NAME.unwrap_or("bge-reranker-large".to_string()),
             EMBEDDING_BASE_URL: dto.EMBEDDING_BASE_URL.unwrap_or("https://api.openai.com/v1".to_string()),
             EMBEDDING_MODEL_NAME: dto.EMBEDDING_MODEL_NAME.unwrap_or("text-embedding-3-small".to_string()),
             RERANKER_BASE_URL: dto.RERANKER_BASE_URL.unwrap_or("".to_string()),
@@ -2481,6 +2485,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
             LLM_BASE_URL: Some(config.LLM_BASE_URL),
             LLM_API_KEY: Some(config.LLM_API_KEY),
             RERANKER_API_KEY: Some(config.RERANKER_API_KEY),
+            RERANKER_MODEL_NAME: Some(config.RERANKER_MODEL_NAME),
             EMBEDDING_BASE_URL: Some(config.EMBEDDING_BASE_URL),
             EMBEDDING_MODEL_NAME: Some(config.EMBEDDING_MODEL_NAME),
             RERANKER_BASE_URL: Some(config.RERANKER_BASE_URL),
@@ -2528,6 +2533,7 @@ impl Default for DatasetConfiguration {
             LLM_BASE_URL: "https://api.openai.com/v1".to_string(),
             LLM_API_KEY: "".to_string(),
             RERANKER_API_KEY: "".to_string(),
+            RERANKER_MODEL_NAME: "bge-reranker-large".to_string(),
             EMBEDDING_BASE_URL: "https://api.openai.com/v1".to_string(),
             EMBEDDING_MODEL_NAME: "text-embedding-3-small".to_string(),
             RERANKER_BASE_URL: "".to_string(),
@@ -2609,6 +2615,18 @@ impl DatasetConfiguration {
                 .map(|s| {
                     if s.is_empty() {
                         "".to_string()
+                    } else {
+                        s.to_string()
+                    }
+                })
+                .unwrap_or("".to_string()),
+            RERANKER_MODEL_NAME: configuration
+                .get("RERANKER_MODEL_NAME")
+                .unwrap_or(&json!("bge-reranker-large".to_string()))
+                .as_str()
+                .map(|s| {
+                    if s.is_empty() {
+                        "bge-reranker-large".to_string()
                     } else {
                         s.to_string()
                     }
@@ -2696,7 +2714,7 @@ impl DatasetConfiguration {
                 })
                 .unwrap_or("text-embedding-3-small".to_string()),
             RERANKER_BASE_URL: configuration
-                .get("RERANKER_SERVER_ORIGIN")
+                .get("RERANKER_BASE_URL")
                 .unwrap_or(&json!(get_env!("RERANKER_SERVER_ORIGIN", "RERANKER_SERVER_ORIGIN must be set").to_string()))
                 .as_str()
                 .map(|s| {
@@ -2839,6 +2857,8 @@ impl DatasetConfiguration {
             "LLM_BASE_URL": self.LLM_BASE_URL,
             "LLM_API_KEY": self.LLM_API_KEY,
             "RERANKER_API_KEY": self.RERANKER_API_KEY,
+            "RERANKER_BASE_URL": self.RERANKER_BASE_URL,
+            "RERANKER_MODEL_NAME": self.RERANKER_MODEL_NAME,
             "EMBEDDING_BASE_URL": self.EMBEDDING_BASE_URL,
             "EMBEDDING_MODEL_NAME": self.EMBEDDING_MODEL_NAME,
             "MESSAGE_TO_QUERY_PROMPT": self.MESSAGE_TO_QUERY_PROMPT,
@@ -2913,6 +2933,10 @@ impl DatasetConfigurationDTO {
                 .RERANKER_API_KEY
                 .clone()
                 .unwrap_or(curr_dataset_config.RERANKER_API_KEY),
+            RERANKER_MODEL_NAME: self
+                .RERANKER_MODEL_NAME
+                .clone()
+                .unwrap_or(curr_dataset_config.RERANKER_MODEL_NAME),
             EMBEDDING_BASE_URL: self
                 .EMBEDDING_BASE_URL
                 .clone()

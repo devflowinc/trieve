@@ -9219,6 +9219,11 @@
             "description": "The base URL for the reranker API",
             "nullable": true
           },
+          "RERANKER_MODEL_NAME": {
+            "type": "string",
+            "description": "The model name for the Reranker API",
+            "nullable": true
+          },
           "SEMANTIC_ENABLED": {
             "type": "boolean",
             "description": "Whether to use semantic search",
