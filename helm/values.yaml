@@ -77,6 +77,7 @@ config:
     qdrantUrl: http://trieve-qdrant.default.svc.cluster.local:6334
     apiKey: ""
     quantizeVectors: false  # If set to true will binary quantize
+    initCollections: true
     replicationFactor: 2
     shardCount: 12
     vectorSizes:
