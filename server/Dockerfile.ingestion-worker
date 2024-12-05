@@ -33,11 +33,11 @@ RUN apt-get update -y; \
     ;
 
 RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b143/subtrace-linux-amd64 \
-    && chmod +x ./subtrace
+    && chmod +x ./subtrace-linux-amd64
 
 COPY ./migrations/ /app/migrations
 COPY --from=builder /app/target/release/ingestion-worker /app/ingestion-worker
 
 
 EXPOSE 8090
-ENTRYPOINT ["./subtrace", "run", "--", "/app/ingestion-worker"]
+ENTRYPOINT ["./subtrace-linux-amd64", "run", "--", "/app/ingestion-worker"]
