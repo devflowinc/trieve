@@ -40,4 +40,4 @@ COPY --from=builder /app/target/release/ingestion-worker /app/ingestion-worker
 
 
 EXPOSE 8090
-ENTRYPOINT ["./subtrace-linux-amd64", "run", "-tls=false", "--", "/app/ingestion-worker"]
+ENTRYPOINT ["/app/ingestion-worker"]

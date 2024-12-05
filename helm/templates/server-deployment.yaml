@@ -33,6 +33,17 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: server
+        {{- if .Values.config.trieve.useSubtrace }}
+        securityContext:
+          capabilities:
+            add: ["SYS_PTRACE"]
+        command: 
+          - "./subtrace-linux-amd64"
+          - "run"
+          - "-tls=false"
+          - "--"
+          - "/app/trieve-server"
+        {{- end }}
         image: {{ printf "%s:%s" "trieve/server" .Values.containers.server.tag }}
         resources:
           {{- toYaml .Values.containers.server.resources | nindent 12 }}
@@ -44,9 +55,6 @@ spec:
           httpGet:
             path: "/api/health"
             port: 8090
-        securityContext:
-          capabilities:
-            add: ["SYS_PTRACE"]
         ports:
           - containerPort: 8090
         envFrom:

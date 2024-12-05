@@ -112,6 +112,7 @@ config:
     subtraceToken: ""
     firecrawlUrl: ""
     dittofeedApiKey: ""
+    useSubtrace: false
   oidc:
     clientSecret: "YllmLDTy67MbsUBrUAWvQ7z9aMq0QcKx"
     clientId: "trieve"
