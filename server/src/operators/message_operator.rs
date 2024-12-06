@@ -966,9 +966,14 @@ pub async fn stream_response(
         let _ = create_messages_query(vec![new_message], &pool).await;
     });
 
+    let chat_completion_timeout = std::env::var("CHAT_COMPLETION_TIMEOUT_SECS")
+        .unwrap_or("10".to_string())
+        .parse::<u64>()
+        .unwrap_or(10);
+
     let chunk_stream = stream::iter(vec![Ok(Bytes::from(chunk_metadatas_stringified1))]);
     let completion_stream = stream
-        .take_until(tokio::time::sleep(std::time::Duration::from_secs(10)))
+        .take_until(tokio::time::sleep(std::time::Duration::from_secs(chat_completion_timeout)))
         .map(move |response| -> Result<Bytes, actix_web::Error> {
         if let Ok(response) = response {
             let chat_content = response
