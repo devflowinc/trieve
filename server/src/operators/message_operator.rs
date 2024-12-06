@@ -967,7 +967,9 @@ pub async fn stream_response(
     });
 
     let chunk_stream = stream::iter(vec![Ok(Bytes::from(chunk_metadatas_stringified1))]);
-    let completion_stream = stream.map(move |response| -> Result<Bytes, actix_web::Error> {
+    let completion_stream = stream
+        .take_until(tokio::time::sleep(std::time::Duration::from_secs(10)))
+        .map(move |response| -> Result<Bytes, actix_web::Error> {
         if let Ok(response) = response {
             let chat_content = response
                 .choices
