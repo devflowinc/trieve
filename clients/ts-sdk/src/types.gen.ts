@@ -432,13 +432,13 @@ export type ChunkReqPayload = {
 /**
  * The key in the ChunkReqPayload which you can map a column or field from the CSV or JSONL file to.
  */
-export type ChunkReqPayloadKeys = 'link' | 'tag_set' | 'num_value' | 'tracking_id' | 'time_stamp' | 'lat' | 'lon' | 'image_urls' | 'weight' | 'boost_phrase';
+export type ChunkReqPayloadFields = 'link' | 'tag_set' | 'num_value' | 'tracking_id' | 'time_stamp' | 'lat' | 'lon' | 'image_urls' | 'weight' | 'boost_phrase';
 
 /**
  * Express a mapping between a column or field in a CSV or JSONL field and a key in the ChunkReqPayload created for each row or object.
  */
 export type ChunkReqPayloadMapping = {
-    chunk_req_payload_key: ChunkReqPayloadKeys;
+    chunk_req_payload_field: ChunkReqPayloadFields;
     /**
      * The column or field in the CSV or JSONL file that you want to map to a key in the ChunkReqPayload
      */
@@ -1210,7 +1210,7 @@ export type EventReturn = {
     page_count: number;
 };
 
-export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started';
+export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started' | 'csv_jsonl_processing_failed' | 'csv_jsonl_processing_checkpoint' | 'csv_jsonl_processing_completed';
 
 export type EventTypes = {
     /**

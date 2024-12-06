@@ -38,6 +38,10 @@ name = "file-worker"
 path = "src/bin/file-worker.rs"
 
 [[bin]]
+name = "csv-jsonl-worker"
+path = "src/bin/csv-jsonl-worker.rs"
+
+[[bin]]
 name = "grupdate-worker"
 path = "src/bin/grupdate-worker.rs"
 

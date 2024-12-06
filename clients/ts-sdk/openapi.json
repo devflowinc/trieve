@@ -7973,7 +7973,7 @@
           "tracking_id": "tracking_id"
         }
       },
-      "ChunkReqPayloadKeys": {
+      "ChunkReqPayloadFields": {
         "type": "string",
         "description": "The key in the ChunkReqPayload which you can map a column or field from the CSV or JSONL file to.",
         "enum": [
@@ -7994,11 +7994,11 @@
         "description": "Express a mapping between a column or field in a CSV or JSONL field and a key in the ChunkReqPayload created for each row or object.",
         "required": [
           "csv_jsonl_field",
-          "chunk_req_payload_key"
+          "chunk_req_payload_field"
         ],
         "properties": {
-          "chunk_req_payload_key": {
-            "$ref": "#/components/schemas/ChunkReqPayloadKeys"
+          "chunk_req_payload_field": {
+            "$ref": "#/components/schemas/ChunkReqPayloadFields"
           },
           "csv_jsonl_field": {
             "type": "string",
@@ -9938,7 +9938,10 @@
           "group_chunks_action_failed",
           "crawl_completed",
           "crawl_failed",
-          "crawl_started"
+          "crawl_started",
+          "csv_jsonl_processing_failed",
+          "csv_jsonl_processing_checkpoint",
+          "csv_jsonl_processing_completed"
         ]
       },
       "EventTypes": {
