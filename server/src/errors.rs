@@ -68,9 +68,11 @@ impl ResponseError for ServiceError {
             ServiceError::Forbidden => HttpResponse::Forbidden().json(ErrorResponseBody {
                 message: "Forbidden".to_string(),
             }),
-            ServiceError::RequestTimeout(ref message) => HttpResponse::RequestTimeout().json(ErrorResponseBody {
-                message: message.to_string(),
-            }),
+            ServiceError::RequestTimeout(ref message) => {
+                HttpResponse::RequestTimeout().json(ErrorResponseBody {
+                    message: message.to_string(),
+                })
+            }
             ServiceError::NotFound(ref message) => {
                 HttpResponse::NotFound().json(ErrorResponseBody {
                     message: format!("Not Found: {}", message),

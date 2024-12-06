@@ -94,6 +94,7 @@ config:
     batch_size: 10000
   trieve:
     batch_limit: 120
+    chatCompletionTimeoutSecs: 10
     bm25Active: true
     unlimited: true
     cookieSecure: false
