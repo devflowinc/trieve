@@ -41,7 +41,7 @@ pub enum ServiceError {
     #[display(fmt = "Payload Too Large")]
     PayloadTooLarge(String),
 
-    RequestTimeout,
+    RequestTimeout(String),
 }
 
 // impl ResponseError trait allows to convert our errors into http responses with appropriate data
@@ -68,8 +68,8 @@ impl ResponseError for ServiceError {
             ServiceError::Forbidden => HttpResponse::Forbidden().json(ErrorResponseBody {
                 message: "Forbidden".to_string(),
             }),
-            ServiceError::RequestTimeout => HttpResponse::RequestTimeout().json(ErrorResponseBody {
-                message:  "Trieve is currently under extended load and we are working to autoscale. If you continue facing this issue, please send an email to humans@trieve.ai with 'request timeout' in the subject line and we will get back to you as soon as possible.".to_string(),
+            ServiceError::RequestTimeout(ref message) => HttpResponse::RequestTimeout().json(ErrorResponseBody {
+                message: message.to_string(),
             }),
             ServiceError::NotFound(ref message) => {
                 HttpResponse::NotFound().json(ErrorResponseBody {

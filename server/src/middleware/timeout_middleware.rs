@@ -48,7 +48,9 @@ pub async fn timeout_15secs(
                 );
             }
 
-            Err(ServiceError::RequestTimeout.into())
+            Err(ServiceError::RequestTimeout(
+                "Trieve is currently under extended load and we are working to autoscale. If you continue facing this issue, please send an email to humans@trieve.ai with 'request timeout' in the subject line and we will get back to you as soon as possible.".to_string()
+            ).into())
         }
     }
 }
