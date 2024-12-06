@@ -1,90 +1,211 @@
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
-use rust_bert::{
-    pipelines::{
-        common::{ModelResource, ModelType, ONNXModelResources},
-        ner::NERModel,
-        token_classification::{LabelAggregationOption, TokenClassificationConfig},
-    },
-    resources::RemoteResource,
-};
-use rust_stemmers::{Algorithm, Stemmer};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
+use tokio::sync::OnceCell;
 
-lazy_static! {
-    static ref NUMBER_REGEX: Regex = Regex::new(r"-?\d*\.?\d+").unwrap();
-    static ref WORD_BOUNDARY_REGEX: Regex = Regex::new(r"\b\w+\b").unwrap();
-    static ref ENGLISH_WORDS: HashSet<String> = {
-        std::fs::read_to_string("/home/denssumesh/Documents/trieve/trieve/server/src/words.txt")
-            .expect("Failed to read words file")
-            .lines()
-            .map(|s| s.to_lowercase())
-            .collect()
-    };
+#[cfg(feature = "ner")]
+use {
+    rust_bert::{
+        pipelines::{
+            common::{ModelResource, ModelType, ONNXModelResources},
+            ner::{Entity, NERModel},
+            token_classification::{LabelAggregationOption, TokenClassificationConfig},
+        },
+        resources::RemoteResource,
+        RustBertError,
+    },
+    std::sync::mpsc,
+    tokio::{sync::oneshot, task::JoinHandle},
+};
+
+const WORDS_URL: &str =
+    "https://raw.githubusercontent.com/dwyl/english-words/refs/heads/master/words.txt";
+const CACHE_FILE: &str = "~/.cache/hallucination-detection/english_words_cache.txt";
+
+static NUMBER_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"-?\d*\.?\d+").unwrap());
+static WORD_BOUNDARY_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\b\w+\b").unwrap());
+static ENGLISH_WORDS: OnceCell<Arc<HashSet<String>>> = OnceCell::const_new();
+
+pub async fn get_english_words() -> Arc<HashSet<String>> {
+    ENGLISH_WORDS.get_or_init(load_english_words).await.clone()
 }
 
+async fn load_english_words() -> Arc<HashSet<String>> {
+    match load_from_cache().await {
+        Ok(words) => Arc::new(words),
+        Err(_) => {
+            let words = download_words().await.unwrap_or_default();
+            let _ = save_to_cache(&words).await;
+            Arc::new(words)
+        }
+    }
+}
+
+async fn load_from_cache() -> Result<HashSet<String>, std::io::Error> {
+    let content = tokio::fs::read_to_string(CACHE_FILE).await?;
+    Ok(content.lines().map(|s| s.to_lowercase()).collect())
+}
+
+async fn save_to_cache(words: &HashSet<String>) -> Result<(), std::io::Error> {
+    let content = words
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    tokio::fs::write(CACHE_FILE, content).await
+}
+
+async fn download_words() -> Result<HashSet<String>, reqwest::Error> {
+    let response = reqwest::get(WORDS_URL).await?.text().await?;
+    Ok(response.lines().map(|s| s.to_lowercase()).collect())
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HallucinationScore {
-    proper_noun_score: f64,
-    unknown_word_score: f64,
-    number_mismatch_score: f64,
-    total_score: f64,
-    detected_hallucinations: Vec<String>,
+    pub proper_noun_score: f64,
+    pub unknown_word_score: f64,
+    pub number_mismatch_score: f64,
+    pub total_score: f64,
+    pub detected_hallucinations: Vec<String>,
 }
 
-pub struct HallucinationDetector {
-    ner_model: NERModel,
-    stemmer: Stemmer,
+#[derive(Debug, Clone)]
+pub struct ScoreWeights {
+    pub proper_noun_weight: f64,
+    pub unknown_word_weight: f64,
+    pub number_mismatch_weight: f64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+pub struct HallucinationOptions {
+    pub weights: ScoreWeights,
+    pub use_ner: bool,
+}
+
+impl Default for HallucinationOptions {
+    fn default() -> Self {
+        Self {
+            weights: ScoreWeights {
+                proper_noun_weight: 0.4,
+                unknown_word_weight: 0.1,
+                number_mismatch_weight: 0.5,
+            },
+            use_ner: cfg!(feature = "ner"),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct TextAnalysis {
     proper_nouns: HashSet<String>,
-    unknown_words: Vec<String>,
+    unknown_words: HashSet<String>,
     numbers: Vec<f64>,
 }
 
+#[cfg(feature = "ner")]
+type Message = (Vec<String>, oneshot::Sender<Vec<Vec<Entity>>>);
+
+#[cfg(feature = "ner")]
+#[derive(Debug, Clone)]
+pub struct EntityRecognizer {
+    sender: mpsc::SyncSender<Message>,
+}
+
+#[cfg(feature = "ner")]
+impl EntityRecognizer {
+    pub fn spawn(
+        config: TokenClassificationConfig,
+    ) -> (JoinHandle<Result<(), RustBertError>>, EntityRecognizer) {
+        let (sender, receiver) = mpsc::sync_channel(100);
+        let handle = tokio::task::spawn_blocking(move || Self::runner(receiver, config));
+        (handle, EntityRecognizer { sender })
+    }
+
+    fn runner(
+        receiver: mpsc::Receiver<Message>,
+        config: TokenClassificationConfig,
+    ) -> Result<(), RustBertError> {
+        let model = NERModel::new(config)?;
+        while let Ok((texts, sender)) = receiver.recv() {
+            let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
+            let sentiments = model.predict(&texts);
+            sender.send(sentiments).expect("sending results");
+        }
+        Ok(())
+    }
+
+    pub async fn predict(&self, texts: Vec<String>) -> Result<Vec<Vec<Entity>>, Box<dyn Error>> {
+        let (sender, receiver) = oneshot::channel();
+        self.sender.send((texts, sender))?;
+        Ok(receiver.await?)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct HallucinationDetector {
+    #[cfg(feature = "ner")]
+    ner_model: Option<EntityRecognizer>,
+    options: HallucinationOptions,
+}
+
 impl HallucinationDetector {
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(options: HallucinationOptions) -> Result<Self, Box<dyn std::error::Error>> {
+        #[cfg(feature = "onnx")]
+        #[cfg(feature = "ner")]
+        let config = TokenClassificationConfig::new(
+            ModelType::Bert,
+            ModelResource::ONNX(ONNXModelResources {
+                encoder_resource: Some(Box::new(RemoteResource::new(
+                    "https://huggingface.co/optimum/bert-base-NER/resolve/main/model.onnx",
+                    "onnx-bert-base-NER",
+                ))),
+                ..Default::default()
+            }),
+            RemoteResource::new(
+                "https://huggingface.co/optimum/bert-base-NER/resolve/main/config.json",
+                "onnx-bert-base-NER",
+            ),
+            RemoteResource::new(
+                "https://huggingface.co/optimum/bert-base-NER/resolve/main/vocab.txt",
+                "onnx-bert-base-NER",
+            ),
+            None,
+            false,
+            None,
+            None,
+            LabelAggregationOption::First,
+        );
+
+        #[cfg(not(feature = "onnx"))]
+        #[cfg(feature = "ner")]
+        let config = TokenClassificationConfig::default();
+
+        #[cfg(feature = "ner")]
+        let ner_model = if options.use_ner {
+            Some(EntityRecognizer::spawn(config).1)
+        } else {
+            None
+        };
+
         Ok(Self {
-            ner_model: NERModel::new(TokenClassificationConfig::new(
-                ModelType::Bert,
-                ModelResource::ONNX(ONNXModelResources {
-                    encoder_resource: Some(Box::new(RemoteResource::new(
-                        "https://huggingface.co/optimum/bert-base-NER/resolve/main/model.onnx",
-                        "onnx-bert-base-NER",
-                    ))),
-                    ..Default::default()
-                }),
-                RemoteResource::new(
-                    "https://huggingface.co/optimum/bert-base-NER/resolve/main/config.json",
-                    "onnx-bert-base-NER",
-                ),
-                RemoteResource::new(
-                    "https://huggingface.co/optimum/bert-base-NER/resolve/main/vocab.txt",
-                    "onnx-bert-base-NER",
-                ),
-                None,
-                false,
-                None,
-                None,
-                LabelAggregationOption::First,
-            ))?,
-            stemmer: Stemmer::create(Algorithm::English),
+            #[cfg(feature = "ner")]
+            ner_model,
+            options,
         })
     }
 
-    pub fn detect_hallucinations(
+    pub async fn detect_hallucinations(
         &self,
-        llm_output: String,
+        llm_output: &String,
         references: &[String],
     ) -> HallucinationScore {
         let mut all_texts = vec![llm_output.to_string()];
         all_texts.extend(references.iter().cloned());
 
-        // Analyze everything in one batch
-        let all_analyses = self.analyze_text(&all_texts);
+        let all_analyses = self.analyze_text(&all_texts).await;
 
         let (output_analysis, ref_analyses) = all_analyses.split_first().unwrap();
 
@@ -98,22 +219,36 @@ impl HallucinationDetector {
             .flat_map(|analysis| analysis.numbers.iter().cloned())
             .collect();
 
-        // Calculate differences and scores
+        let all_ref_unknown_words: HashSet<_> = ref_analyses
+            .iter()
+            .flat_map(|analysis| analysis.unknown_words.iter().cloned())
+            .collect();
+
         let proper_noun_diff: Vec<_> = output_analysis
             .proper_nouns
             .difference(&all_ref_proper_nouns)
             .cloned()
             .collect();
 
+        let unknown_word_diff: Vec<_> = output_analysis
+            .unknown_words
+            .difference(&all_ref_unknown_words)
+            .cloned()
+            .collect();
+
         let number_diff = self.compare_numbers(&output_analysis.numbers, &all_ref_numbers);
 
-        let proper_noun_score = (!proper_noun_diff.is_empty()) as u8 as f64;
-        let unknown_word_score = (output_analysis.unknown_words.len() as f64 / 100.0).min(1.0);
-        let number_mismatch_score = (!number_diff.is_empty()) as u8 as f64;
+        let proper_noun_score =
+            proper_noun_diff.len() as f64 / output_analysis.proper_nouns.len().max(1) as f64;
+        let unknown_word_score =
+            unknown_word_diff.len() as f64 / output_analysis.unknown_words.len().max(1) as f64;
+        let number_mismatch_score =
+            number_diff.len() as f64 / output_analysis.numbers.len().max(1) as f64;
 
-        let total_score =
-            (proper_noun_score * 0.4 + unknown_word_score * 0.1 + number_mismatch_score * 0.5)
-                .clamp(0.0, 1.0);
+        let total_score = (proper_noun_score * self.options.weights.proper_noun_weight
+            + unknown_word_score * self.options.weights.unknown_word_weight
+            + number_mismatch_score * self.options.weights.number_mismatch_weight)
+            .clamp(0.0, 1.0);
 
         HallucinationScore {
             proper_noun_score,
@@ -122,55 +257,71 @@ impl HallucinationDetector {
             total_score,
             detected_hallucinations: [
                 proper_noun_diff,
-                output_analysis.unknown_words.clone(),
+                unknown_word_diff,
                 number_diff.iter().map(|n| n.to_string()).collect(),
             ]
             .concat(),
         }
     }
 
-    fn analyze_text(&self, texts: &[String]) -> Vec<TextAnalysis> {
-        // Process all texts in one NER batch
-        let all_entities = self.ner_model.predict(texts);
+    #[allow(unused_variables)]
+    async fn analyze_text(&self, texts: &[String]) -> Vec<TextAnalysis> {
+        #[cfg(feature = "ner")]
+        let entities = if let Some(ner_model) = &self.ner_model {
+            ner_model.predict(texts.to_vec()).await.unwrap()
+        } else {
+            vec![Vec::new(); texts.len()]
+        };
 
-        // Process each text in parallel with the corresponding NER results
+        #[cfg(not(feature = "ner"))]
+        let entities: Vec<Vec<String>> = vec![Vec::new(); texts.len()];
+
+        let english_words = get_english_words().await;
+
         texts
             .iter()
-            .zip(all_entities.iter())
+            .zip(entities.iter())
             .map(|(text, entities)| {
-                let mut unknown_words = Vec::new();
-                let mut numbers = Vec::new();
-
-                // Convert entities to proper nouns for this specific text
-                let proper_nouns: HashSet<String> = entities
-                    .iter()
-                    .map(|entity| entity.word.to_lowercase())
+                let mut unknown_words = HashSet::new();
+                let numbers: Vec<f64> = NUMBER_REGEX
+                    .find_iter(text)
+                    .filter_map(|m| m.as_str().parse::<f64>().ok())
                     .collect();
+
+                let proper_nouns: HashSet<String> = if self.options.use_ner {
+                    #[cfg(feature = "ner")]
+                    {
+                        entities
+                            .iter()
+                            .filter(|entity| {
+                                !["O", "B-MIS", "I-MIS"].contains(&entity.label.as_str())
+                            })
+                            .map(|entity| entity.word.to_lowercase())
+                            .collect()
+                    }
+                    #[cfg(not(feature = "ner"))]
+                    {
+                        HashSet::new()
+                    }
+                } else {
+                    HashSet::new()
+                };
 
                 let mut word_map = HashMap::new();
 
-                // Process words in this text
                 for cap in WORD_BOUNDARY_REGEX.find_iter(text) {
                     let word = cap.as_str();
                     let word_lower = word.to_lowercase();
 
-                    if let Ok(num) = word.parse::<f64>() {
-                        numbers.push(num);
-                        continue;
-                    }
-
-                    // Process each word only once
                     word_map.entry(word_lower.clone()).or_insert_with(|| {
                         if !proper_nouns.contains(&word_lower)
-                            && !ENGLISH_WORDS.contains(&word_lower)
-                            && !ENGLISH_WORDS.contains(&self.stemmer.stem(&word_lower).to_string())
+                            && !english_words.contains(&word_lower)
                         {
-                            unknown_words.push(word.to_string());
+                            unknown_words.insert(word.to_string());
                         }
                         true
                     });
                 }
-
                 TextAnalysis {
                     proper_nouns,
                     unknown_words,
@@ -213,19 +364,24 @@ mod tests {
     fn get_detector() -> &'static HallucinationDetector {
         unsafe {
             INIT.call_once(|| {
-                DETECTOR = Some(HallucinationDetector::new().expect("Failed to create detector"));
+                DETECTOR = Some(
+                    HallucinationDetector::new(Default::default())
+                        .expect("Failed to create detector"),
+                );
             });
             DETECTOR.as_ref().unwrap()
         }
     }
 
-    #[test]
-    fn test_zero_hallucination() {
+    #[tokio::test]
+    async fn test_zero_hallucination() {
         let detector = get_detector();
         let llm_output = String::from("Elon Musk is the CEO of Tesla.");
         let references = vec![String::from("Elon Musk is the CEO of Tesla.")];
 
-        let score = detector.detect_hallucinations(llm_output, &references);
+        let score = detector
+            .detect_hallucinations(&llm_output, &references)
+            .await;
         println!("Zero Hallucination Score: {:?}", score);
 
         assert_eq!(score.proper_noun_score, 0.0);
@@ -234,8 +390,8 @@ mod tests {
         assert!(score.detected_hallucinations.is_empty());
     }
 
-    #[test]
-    fn test_multiple_references() {
+    #[tokio::test]
+    async fn test_multiple_references() {
         let detector = get_detector();
         let llm_output =
             String::from("Apple and Microsoft are tech companies worth 3 trillion dollars.");
@@ -244,30 +400,37 @@ mod tests {
             String::from("Microsoft is a leading tech company."),
         ];
 
-        let score = detector.detect_hallucinations(llm_output, &references);
+        let score = detector
+            .detect_hallucinations(&llm_output, &references)
+            .await;
         println!("Multiple References Score: {:?}", score);
         assert_eq!(score.proper_noun_score, 0.0); // Both companies are in references
         assert_eq!(score.number_mismatch_score, 0.0); // Number matches reference
     }
 
-    #[test]
-    fn test_edge_cases() {
+    #[tokio::test]
+    async fn test_edge_cases() {
         let detector = get_detector();
 
         // Empty input
-        let score_empty = detector.detect_hallucinations(String::from(""), &[String::from("")]);
+        let score_empty = detector
+            .detect_hallucinations(&String::from(""), &[String::from("")])
+            .await;
         assert_eq!(score_empty.total_score, 0.0);
 
         // Only numbers
         let score_numbers = detector
-            .detect_hallucinations(String::from("123 456.789"), &[String::from("123 456.789")]);
+            .detect_hallucinations(&String::from("123 456.789"), &[String::from("123 456.789")])
+            .await;
         assert_eq!(score_numbers.number_mismatch_score, 0.0);
 
         // Only proper nouns
-        let score_nouns = detector.detect_hallucinations(
-            String::from("John Smith"),
-            &[String::from("Different Person")],
-        );
+        let score_nouns = detector
+            .detect_hallucinations(
+                &String::from("John Smith"),
+                &[String::from("Different Person")],
+            )
+            .await;
         assert!(score_nouns.proper_noun_score > 0.0);
     }
 
@@ -332,17 +495,20 @@ mod tests {
         ExpectedScores { proper_noun: true, number: true, total_min: 0.6 },
         "Mixed hallucination"
     )]
-    fn test_hallucination_detection(
+    #[tokio::test]
+    async fn test_hallucination_detection(
         #[case] llm_output: &str,
         #[case] references: Vec<&str>,
         #[case] expected: ExpectedScores,
         #[case] test_name: &str,
     ) {
         let detector = get_detector();
-        let score = detector.detect_hallucinations(
-            String::from(llm_output),
-            &references.into_iter().map(String::from).collect::<Vec<_>>(),
-        );
+        let score = detector
+            .detect_hallucinations(
+                &String::from(llm_output),
+                &references.into_iter().map(String::from).collect::<Vec<_>>(),
+            )
+            .await;
 
         println!("Test '{}' Score: {:?}", test_name, score);
 

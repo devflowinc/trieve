@@ -1,20 +1,39 @@
 [package]
 name = "hallucination-detection"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/devflowinc/trieve"
 authors = ["Devflow Inc. <humans@trieve.ai>"]
-description = "Hallucination Detection for RAG using BERT NER, noun, and number analysis"
+description = "Extremely fast Hallucination Detection for RAG using BERT NER, noun, and number analysis"
 
 [profile.test]
 inherits = "release"
 
+[features]
+default = []
+ner = ["rust-bert"]
+onnx = ["ort"]
+
 [dependencies]
-lazy_static = "1.5.0"
-ort = { version = "1.16.3", features = ["download-binaries", "load-dynamic"] }
+# Core dependencies
+reqwest = "0.12.9"
 regex = "1.11.1"
-rstest = "0.23.0"
-rust-bert = { version = "0.23.0", features = ["onnx"] }
-rust-stemmers = "1.2.0"
 serde = "1.0.215"
+tokio = { version = "1.42.0", features = ["full"] }
+once_cell = "1.18"
+
+# Optional dependencies for NER feature
+rust-bert = { version = "0.23.0", features = ["onnx"], optional = true }
+ort = { version = "1.16.3", features = [
+    "download-binaries",
+    "load-dynamic",
+], optional = true }
+
+[dev-dependencies]
+csv = "1.3.1"
+dotenvy = "0.15.7"
+openai_dive = "0.7.0"
+serde_json = "1.0.133"
+rstest = "0.23.0"
+futures = "0.3.31"
