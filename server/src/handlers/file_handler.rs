@@ -330,6 +330,7 @@ pub async fn create_presigned_url_for_csv_jsonl(
         file_id,
         dataset_id: dataset_org_plan_sub.dataset.id,
         create_presigned_put_url_data: create_presigned_put_url_data.clone(),
+        created_at: chrono::Utc::now().naive_utc(),
         attempt_number: 0,
     };
 

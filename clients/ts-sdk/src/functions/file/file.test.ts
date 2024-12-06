@@ -32,10 +32,64 @@ describe("File Tests", async () => {
     expectTypeOf(data).toEqualTypeOf<UploadFileResponseBody>();
   });
 
-  test("createPresignedUrlForCsvJsonl", async () => {
+  test("createPresignedUrlForJsonl", async () => {
+    const data = await trieve.createPresignedUrlForCsvJsonl({
+      file_name: "flipkart.jsonl",
+      group_tracking_id: "flipkart-file-upload-group",
+      mappings: [
+        {
+          csv_jsonl_field: "product_url",
+          chunk_req_payload_field: "link",
+        },
+        {
+          csv_jsonl_field: "retail_price",
+          chunk_req_payload_field: "num_value",
+        },
+        {
+          csv_jsonl_field: "image",
+          chunk_req_payload_field: "image_urls",
+        },
+        {
+          csv_jsonl_field: "uniq_id",
+          chunk_req_payload_field: "tracking_id",
+        },
+      ],
+    });
+    expectTypeOf(
+      data
+    ).toEqualTypeOf<CreatePresignedUrlForCsvJsonResponseBody>();
+
+    const presignedPutUrl = data.presigned_put_url;
+    const fileResponse = await fetch(
+      "https://trieve.b-cdn.net/csvjsonltesting/flipkart_com-ecommerce_sample.jsonl"
+    );
+    const blob = await fileResponse.blob();
+
+    const uploadResponse = await fetch(presignedPutUrl, {
+      method: "PUT",
+      body: blob,
+      headers: {
+        "Content-Type": "text/jsonl",
+      },
+    });
+
+    expect(uploadResponse.ok).toBeTruthy();
+  });
+
+  test("createPresignedUrlForCsv", async () => {
     const data = await trieve.createPresignedUrlForCsvJsonl({
       file_name: "uploadme.csv",
       group_tracking_id: "file-upload-group",
+      mappings: [
+        {
+          csv_jsonl_field: "PassengerId",
+          chunk_req_payload_field: "tracking_id",
+        },
+        {
+          csv_jsonl_field: "Name",
+          chunk_req_payload_field: "tag_set",
+        },
+      ],
     });
     expectTypeOf(
       data
@@ -65,10 +119,10 @@ describe("File Tests", async () => {
     expectTypeOf(data).toEqualTypeOf<File[]>();
   });
 
-  // test("getFile", async () => {
-  //   const data = await trieve.getFile({
-  //     fileId: EXAMPLE_FILE_ID,
-  //   });
-  //   expectTypeOf(data).toEqualTypeOf<FileDTO>();
-  // });
+  test("getFile", async () => {
+    const data = await trieve.getFile({
+      fileId: EXAMPLE_FILE_ID,
+    });
+    expectTypeOf(data).toEqualTypeOf<FileDTO>();
+  });
 });

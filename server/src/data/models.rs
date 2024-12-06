@@ -1824,7 +1824,7 @@ pub struct UserDTOWithChunks {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 /// The key in the ChunkReqPayload which you can map a column or field from the CSV or JSONL file to.
-pub enum ChunkReqPayloadKeys {
+pub enum ChunkReqPayloadFields {
     #[serde(rename = "link")]
     Link,
     #[serde(rename = "tag_set")]
@@ -1853,12 +1853,12 @@ pub struct ChunkReqPayloadMapping {
     /// The column or field in the CSV or JSONL file that you want to map to a key in the ChunkReqPayload
     pub csv_jsonl_field: String,
     /// The key in the ChunkReqPayload that you want to map the column or field to.
-    pub chunk_req_payload_key: ChunkReqPayloadKeys,
+    pub chunk_req_payload_field: ChunkReqPayloadFields,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 /// Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set and image_urls can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used.
-pub struct ChunkReqPayloadMappings(Vec<ChunkReqPayloadMapping>);
+pub struct ChunkReqPayloadMappings(pub Vec<ChunkReqPayloadMapping>);
 
 #[derive(
     Debug, Default, Serialize, Deserialize, Selectable, Queryable, Insertable, Clone, ToSchema,
@@ -2063,6 +2063,18 @@ pub enum EventType {
         crawl_options: CrawlOptions,
         error: String,
     },
+    #[display(fmt = "csv_jsonl_processing_failed")]
+    CsvJsonlProcessingFailed { file_id: uuid::Uuid, error: String },
+    #[display(fmt = "csv_jsonl_processing_checkpoint")]
+    CsvJsonlProcessingCheckpoint {
+        file_id: uuid::Uuid,
+        chunks_created: usize,
+    },
+    #[display(fmt = "csv_jsonl_processing_completed")]
+    CsvJsonlProcessingCompleted {
+        file_id: uuid::Uuid,
+        chunks_created: usize,
+    },
 }
 
 impl EventType {
@@ -2081,6 +2093,9 @@ impl EventType {
             EventTypeRequest::CrawlCompleted,
             EventTypeRequest::CrawlStarted,
             EventTypeRequest::CrawlFailed,
+            EventTypeRequest::CsvJsonlProcessingFailed,
+            EventTypeRequest::CsvJsonlProcessingCheckpoint,
+            EventTypeRequest::CsvJsonlProcessingCompleted,
         ]
     }
 }
@@ -4204,6 +4219,7 @@ pub struct CsvJsonlWorkerMessage {
     pub file_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub create_presigned_put_url_data: CreatePresignedUrlForCsvJsonlReqPayload,
+    pub created_at: chrono::NaiveDateTime,
     pub attempt_number: u8,
 }
 
@@ -6533,6 +6549,12 @@ pub enum EventTypeRequest {
     CrawlFailed,
     #[display(fmt = "crawl_started")]
     CrawlStarted,
+    #[display(fmt = "csv_jsonl_processing_failed")]
+    CsvJsonlProcessingFailed,
+    #[display(fmt = "csv_jsonl_processing_checkpoint")]
+    CsvJsonlProcessingCheckpoint,
+    #[display(fmt = "csv_jsonl_processing_completed")]
+    CsvJsonlProcessingCompleted,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

@@ -394,7 +394,7 @@ impl Modify for SecurityAddon {
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
             handlers::page_handler::PublicPageSearchOptions,
             handlers::page_handler::OpenGraphMetadata,
-            data::models::ChunkReqPayloadKeys,
+            data::models::ChunkReqPayloadFields,
             data::models::ChunkReqPayloadMapping,
             data::models::ChunkReqPayloadMappings,
             data::models::DatasetConfigurationDTO,
