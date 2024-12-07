@@ -36,6 +36,9 @@ containers:
   clone_qdrant:
     tag: latest
     resources: {}
+  csv_jsonl_worker:
+    tag: latest
+    resources: {}
   search:
     tag: latest
     resources: {}
