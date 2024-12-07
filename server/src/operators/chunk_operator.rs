@@ -625,9 +625,7 @@ pub async fn bulk_delete_chunks_query(
 
             match deleted_point_ids {
                 Ok(point_ids) => {
-                    delete_points_from_qdrant(point_ids.clone(), qdrant_collection.clone()).await?;
-                    update_dataset_chunk_count(dataset_id, -(point_ids.len() as i32), pool.clone())
-                        .await?;
+                    delete_points_from_qdrant(point_ids, qdrant_collection.clone()).await?;
                 }
                 Err(e) => {
                     log::error!("Failed to delete chunks: {:?}", e);
