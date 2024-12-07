@@ -157,7 +157,7 @@ jobs:
 
 
   csv_jsonl_worker:
-    name: Push File Worker image
+    name: Push CSV JSONL worker Image
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -187,7 +187,7 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            trieve/csv_jsonl_worker:
+            trieve/csv-jsonl-worker
           tags: |
             type=raw,latest
             type=sha
