@@ -1,0 +1,61 @@
+name: Publish Trieve Fern Adapter
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'clients/trieve-fern-adapter/package.json'
+      - 'clients/trieve-fern-adapter/src/**'
+jobs:
+  version-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Git User
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'yarn'
+      
+      
+      - name: Install dependencies
+        working-directory: ./clients/trieve-fern-adapter
+        run: yarn install --frozen-lockfile
+      
+      - name: Bump version
+        working-directory: ./clients/trieve-fern-adapter
+        run: |
+          git pull origin main
+          yarn version --patch --no-git-tag-version
+          git add package.json
+          git commit -m "chore: bump trieve-fern-adapter version to $(node -p "require('./package.json').version")"
+      
+      - name: Push changes
+        working-directory: ./clients/trieve-fern-adapter
+        run: |
+          git push origin main
+      
+      - name: Publish
+        working-directory: ./clients/trieve-fern-adapter
+        run: yarn publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
