@@ -8,12 +8,13 @@ A high-performance Rust library for detecting hallucinations in Large Language M
 ## Features
 
 - Fast and accurate hallucination detection for RAG (Retrieval-Augmented Generation) systems
-- BERT-based Named Entity Recognition for proper noun analysis
 - Numerical comparison and validation
 - Unknown word detection using comprehensive English word dictionary
 - Configurable scoring weights and detection options
 - Async/await support with Tokio runtime
 - Optional ONNX support for improved performance
+- Optional BERT-based Named Entity Recognition for proper noun analysis
+
 
 ## Installation
 
@@ -21,14 +22,14 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hallucination-detection = "0.1.1"
+hallucination-detection = "^0.1.3"
 ```
 
 If you want to use NER and ONNX features:
 
 ```toml
 [dependencies]
-hallucination-detection = { version = "0.1.1", features = ["ner", "onnx"] }
+hallucination-detection = { version = "^0.1.3", features = ["ner", "onnx"] }
 ```
 
 ## Quick Start
@@ -102,8 +103,8 @@ pub struct HallucinationScore {
 
 ## Features Flags
 
-- `ner`: Enables BERT Named Entity Recognition (default: enabled)
-- `onnx`: Uses ONNX runtime for improved performance (default: enabled)
+- `ner`: Enables BERT Named Entity Recognition (default: disabled)
+- `onnx`: Uses ONNX runtime for improved performance (default: disabled)
 
 ## License
 
