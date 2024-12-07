@@ -55,7 +55,7 @@ body {
     }
 
     &.chat-modal-mobile {
-      @apply flex flex-col top-0 sm:top-[calc(40vh-225px)] pt-4 max-h-[40vh] w-full sm:w-[90vw] rounded-none sm:rounded-lg;
+      @apply flex flex-col top-0 sm:top-[calc(40vh-225px)] pt-4 max-h-[100vh] w-full sm:w-[90vw] rounded-none sm:rounded-lg;
 
       .chat-outer-wrapper {
         @apply justify-between w-full h-full mt-10 sm:mt-12;
