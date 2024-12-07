@@ -18,7 +18,11 @@ COPY . .
 RUN cargo build --release --features "runtime-env" --bin "csv-jsonl-worker"
 
 FROM debian:bookworm-slim as runtime
-RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates 
+RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates curl
+
+RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b143/subtrace-linux-amd64 \
+    && chmod +x ./subtrace-linux-amd64
+
 WORKDIR /app
 COPY ./migrations/ /app/migrations
 COPY --from=builder /app/target/release/csv-jsonl-worker /app/csv-jsonl-worker
