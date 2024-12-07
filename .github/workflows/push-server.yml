@@ -202,51 +202,51 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-    file_worker:
-      name: Push File Worker image
-      runs-on: ${{ matrix.runner }}
-      strategy:
-        matrix:
-          runner: [blacksmith-8vcpu-ubuntu-2204]
-          platform: [linux/amd64]
-          exclude:
-            - runner: blacksmith-8vcpu-ubuntu-2204
-              platform: linux/arm64
-            - runner: blacksmith-8vcpu-ubuntu-2204-arm
-              platform: linux/amd64
-      steps:
-        - name: Checkout the repo
-          uses: actions/checkout@v4
+  file_worker:
+    name: Push File Worker image
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-8vcpu-ubuntu-2204]
+        platform: [linux/amd64]
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
 
-        - name: Setup buildx
-          uses: docker/setup-buildx-action@v3
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
 
-        - name: Login to Docker Hub
-          uses: docker/login-action@v3
-          with:
-            username: ${{ secrets.DOCKER_USERNAME }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-        - name: Docker meta
-          id: meta
-          uses: docker/metadata-action@v5
-          with:
-            # list of Docker images to use as base name for tags
-            images: |
-              trieve/file_worker
-            tags: |
-              type=raw,latest
-              type=sha
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/file_worker
+          tags: |
+            type=raw,latest
+            type=sha
 
-        - name: Build and push Docker image
-          uses: useblacksmith/build-push-action@v1.0.0-beta
-          with:
-            platforms: ${{ matrix.platform }}
-            context: server/
-            file: ./server/Dockerfile.file-worker
-            push: true
-            tags: ${{ steps.meta.outputs.tags }}
-            labels: ${{ steps.meta.outputs.labels }}
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.file-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   group_worker:
     name: Push Group worker
