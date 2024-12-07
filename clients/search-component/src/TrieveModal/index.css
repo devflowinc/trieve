@@ -212,7 +212,8 @@ body {
           justify-content: flex-start;
 
           .clear-button {
-            @apply px-4 py-1.5 rounded-md text-white bg-magenta-500 hover:bg-magenta-400 text-xs;
+            @apply px-4 py-1.5 rounded-md text-white text-xs;
+            background-color: var(--tv-prop-brand-color);
           }
         }
       }
@@ -252,7 +253,7 @@ body {
     }
 
     .commands.ecommerce {
-      @apply hidden;
+      visibility: hidden;
     }
 
     .trieve-powered {
