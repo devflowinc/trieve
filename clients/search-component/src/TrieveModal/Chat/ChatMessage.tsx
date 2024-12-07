@@ -3,6 +3,8 @@ const Markdown = lazy(() => import("react-markdown"));
 
 import {
   AIIcon,
+  CopyConfirmIcon,
+  CopyIcon,
   LoadingIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
@@ -91,6 +93,7 @@ export const Message = ({
 }) => {
   const { rateChatCompletion } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
+  const [copied, setCopied] = React.useState<boolean>(false);
   const { props } = useModalState();
 
   const ecommerceItems = message.additional
@@ -115,7 +118,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title,
+        index && item.title,
     )
     .map((item, index) => (
       <a
@@ -176,37 +179,49 @@ export const Message = ({
           <div>
             {message.additional
               ? props.type !== "ecommerce" && (
-                  <div className="additional-links">
-                    {message.additional
-                      .filter(
-                        (chunk) =>
-                          (chunk.metadata.heading ||
-                            chunk.metadata.title ||
-                            chunk.metadata.page_title) &&
-                          chunk.link,
-                      )
-                      .map((chunk) => [
-                        chunk.metadata.heading ||
+                <div className="additional-links">
+                  {message.additional
+                    .filter(
+                      (chunk) =>
+                        (chunk.metadata.heading ||
                           chunk.metadata.title ||
-                          chunk.metadata.page_title,
+                          chunk.metadata.page_title) &&
                         chunk.link,
-                      ])
-                      .filter(
-                        (link, index, array) =>
-                          array.findIndex((item) => item[0] === link[0]) ===
-                            index && link[0],
-                      )
-                      .map((link, index) => (
-                        <a key={index} href={link[1] as string} target="_blank">
-                          {link[0]}
-                        </a>
-                      ))}
-                  </div>
-                )
+                    )
+                    .map((chunk) => [
+                      chunk.metadata.heading ||
+                      chunk.metadata.title ||
+                      chunk.metadata.page_title,
+                      chunk.link,
+                    ])
+                    .filter(
+                      (link, index, array) =>
+                        array.findIndex((item) => item[0] === link[0]) ===
+                        index && link[0],
+                    )
+                    .map((link, index) => (
+                      <a key={index} href={link[1] as string} target="_blank">
+                        {link[0]}
+                      </a>
+                    ))}
+                </div>
+              )
               : null}
             <div className="feedback-wrapper">
               <span className="spacer"></span>
               <div className="feedback-icons">
+                {copied ? <CopyConfirmIcon /> : 
+                  <button
+                    onClick={() => {
+                      void navigator.clipboard.writeText(message.text).then(() => {
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      });
+                    }}
+                  >
+                    <CopyIcon />
+                  </button>
+                }
                 <button
                   className={positive != null && positive ? "icon-darken" : ""}
                   onClick={() => {
