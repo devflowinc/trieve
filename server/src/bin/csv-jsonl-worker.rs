@@ -196,7 +196,7 @@ async fn file_worker(
                 log::error!(
                     "File {} has not yet been uploaded to the signed put url: {:?}",
                     csv_jsonl_worker_message.file_id.to_string(),
-                    err
+                    err.to_string(),
                 );
 
                 let _ = redis::cmd("LREM")

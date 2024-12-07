@@ -18,7 +18,7 @@ COPY . .
 RUN cargo build --release --features "runtime-env" --bin "crawl-worker"
 
 FROM debian:bookworm-slim as runtime
-RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates 
+RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates curl
 WORKDIR /app
 COPY ./migrations/ /app/migrations
 COPY --from=builder /app/target/release/crawl-worker /app/crawl-worker
