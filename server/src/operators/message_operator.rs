@@ -20,6 +20,7 @@ use crossbeam_channel::unbounded;
 use diesel_async::RunQueryDsl;
 use futures::StreamExt;
 use futures_util::stream;
+use hallucination_detection::{HallucinationDetector, HallucinationScore};
 use openai_dive::v1::resources::chat::{DeltaChatMessage, ImageUrl, ImageUrlType};
 use openai_dive::v1::{
     api::Client,
@@ -28,6 +29,7 @@ use openai_dive::v1::{
         shared::StopToken,
     },
 };
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
 use ureq::json;
@@ -551,6 +553,51 @@ pub async fn get_rag_chunks_query(
     }
 }
 
+pub fn clean_markdown(markdown_text: &str) -> String {
+    let mut text = markdown_text.to_string();
+
+    let patterns = [
+        // Code blocks (both ``` and indented)
+        (r"```[\s\S]*?```", ""),
+        (r"(?m)^( {4,}|\t+)[^\n]+", ""),
+        // Headers
+        (r"(?m)^#{1,6}\s+", ""),
+        // Emphasis (bold, italic)
+        (r"\*\*(.+?)\*\*", "$1"), // Bold
+        (r"__(.+?)__", "$1"),     // Bold
+        (r"\*(.+?)\*", "$1"),     // Italic
+        (r"_(.+?)_", "$1"),       // Italic
+        // Inline code
+        (r"`([^`]+)`", "$1"),
+        // Blockquotes
+        (r"(?m)^\s*>\s+", ""),
+        // Horizontal rules
+        (r"\n[\*\-_]{3,}\n", "\n"),
+        // Lists
+        (r"(?m)^\s*[\*\-+]\s+", ""), // Unordered lists
+        (r"(?m)^\s*\d+\.\s+", ""),   // Ordered lists
+        // Links and images
+        (r"\[([^\]]+)\]\([^\)]+\)", "$1"), // [text](url)
+        (r"\[([^\]]+)\]\[[^\]]*\]", "$1"), // [text][reference]
+        (r"!\[([^\]]*)\]\([^\)]+\)", ""),  // Images
+        // Reference-style links
+        (r"(?m)^\s*\[[^\]]+\]:\s+[^\s]+\s*$", ""),
+        // Clean up whitespace
+        (r"\n\s*\n", "\n\n"),
+    ];
+
+    // Apply all patterns
+    for (pattern, replacement) in patterns.iter() {
+        if let Ok(regex) = Regex::new(pattern) {
+            text = regex.replace_all(&text, *replacement).to_string();
+        }
+    }
+    log::info!("Cleaned markdown: {}", text);
+
+    // Final cleanup
+    text.trim().to_string()
+}
+
 #[allow(clippy::too_many_arguments)]
 
 pub async fn stream_response(
@@ -560,11 +607,10 @@ pub async fn stream_response(
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
     redis_pool: web::Data<RedisPool>,
-    _dataset_config: DatasetConfiguration,
+    dataset_config: DatasetConfiguration,
     create_message_req_payload: CreateMessageReqPayload,
+    hallucination_detector: web::Data<HallucinationDetector>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
-
     let user_message_query = match create_message_req_payload.concat_user_messages_query {
         Some(true) => messages
             .iter()
@@ -872,6 +918,18 @@ pub async fn stream_response(
             query_id,
         );
 
+        let docs = chunk_metadatas
+            .iter()
+            .map(|x| x.chunk_html.clone().unwrap_or_default())
+            .collect::<Vec<String>>();
+
+        let score = hallucination_detector
+            .detect_hallucinations(&clean_markdown(&completion_content), &docs)
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Error detecting hallucinations: {}", err))
+            })?;
+
         let clickhouse_rag_event = RagQueryEventClickhouse {
             id: query_id,
             created_at: time::OffsetDateTime::now_utc(),
@@ -881,12 +939,14 @@ pub async fn stream_response(
             json_results: chunk_data,
             user_message: user_message_query.clone(),
             query_rating: String::new(),
-            rag_type: "chosen_chunks".to_string(),
+            rag_type: "all_chunks".to_string(),
             llm_response: completion_content.clone(),
             user_id: create_message_req_payload
                 .user_id
                 .clone()
                 .unwrap_or_default(),
+            hallucination_score: score.total_score,
+            detected_hallucinations: score.detected_hallucinations,
         };
 
         let response_string = if create_message_req_payload
@@ -942,6 +1002,25 @@ pub async fn stream_response(
             query_id_arb,
         );
 
+        let docs = chunk_metadatas
+            .iter()
+            .map(|x| x.chunk_html.clone().unwrap_or_default())
+            .collect::<Vec<String>>();
+
+        let score = hallucination_detector
+            .detect_hallucinations(&clean_markdown(&completion), &docs)
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Error detecting hallucinations: {}", err))
+            })
+            .unwrap_or(HallucinationScore {
+                total_score: 0.0,
+                proper_noun_score: 0.0,
+                number_mismatch_score: 0.0,
+                unknown_word_score: 0.0,
+                detected_hallucinations: vec![],
+            });
+
         let clickhouse_rag_event = RagQueryEventClickhouse {
             id: query_id_arb,
             created_at: time::OffsetDateTime::now_utc(),
@@ -957,6 +1036,8 @@ pub async fn stream_response(
                 .user_id
                 .clone()
                 .unwrap_or_default(),
+            hallucination_score: score.total_score,
+            detected_hallucinations: score.detected_hallucinations,
         };
 
         event_queue
