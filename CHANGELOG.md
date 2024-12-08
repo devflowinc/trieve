@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.14.0](https://github.com/devflowinc/trieve/compare/v0.13.0...v0.14.0) (2024-12-08)
+
+
+### Features
+
+* add csv-jsonl-worker to helm chart ([cd65155](https://github.com/devflowinc/trieve/commit/cd65155466f6a5dae8666b0356bba3bade29db99))
+* better detection w/ benchmarks ([1c363b3](https://github.com/devflowinc/trieve/commit/1c363b3a2ac06c9ee6e707f11901471e515e23c4))
+* completed testing of csv and jsonl ingests with the new worker ([ce05422](https://github.com/devflowinc/trieve/commit/ce05422284a875b127f34031d196a62e229f9463))
+* disable analytics flag ([325d2ce](https://github.com/devflowinc/trieve/commit/325d2ce6a96e6ec559ac88fb3d31ac0b31be77c8))
+* hallucination detection crate w/ NER, noun and number analysis ([4dd2525](https://github.com/devflowinc/trieve/commit/4dd2525dcaeff6fe477c153634effbb9eaca07d6))
+* make the clear messages button be formatted to brand color ([7980eb2](https://github.com/devflowinc/trieve/commit/7980eb2c8acfdb7577a04935899434c1452737d0))
+* option to copy chat message in search component ([9b76f6b](https://github.com/devflowinc/trieve/commit/9b76f6bd821d153c4423019ef03fa3b9880191eb))
+* upload CSV processing done up to the worker stage ([c979f0c](https://github.com/devflowinc/trieve/commit/c979f0c47f4daa53abd2388cb596c410ea9bb30e))
+
+
+### Cleanup
+
+* updated readme ([14d4a59](https://github.com/devflowinc/trieve/commit/14d4a59631d8fbef252c03a10524d690453bacbf))
+
+
+### Bug Fixes
+
+* add back postgresql count trigger ([686181b](https://github.com/devflowinc/trieve/commit/686181b15d12c321fd1c6e8ef97712d65463f619))
+* fix vertical scroll in search component ([49bf9ca](https://github.com/devflowinc/trieve/commit/49bf9ca99e986bcf05e20d4d52ab97bd08c658b5))
+
 ## [0.13.0](https://github.com/devflowinc/trieve/compare/v0.12.1...v0.13.0) (2024-12-06)
 
 
