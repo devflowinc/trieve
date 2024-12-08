@@ -2379,6 +2379,7 @@ pub struct DatasetConfiguration {
     pub SYSTEM_PROMPT: String,
     pub MAX_LIMIT: u64,
     pub PUBLIC_DATASET: PublicDatasetOptions,
+    pub DISABLE_ANALYTICS: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -2488,6 +2489,8 @@ pub struct DatasetConfigurationDTO {
     pub MAX_LIMIT: Option<u64>,
     /// Config for making the dataset public
     pub PUBLIC_DATASET: Option<PublicDatasetOptions>,
+    /// Whether to disable analytics
+    pub DISABLE_ANALYTICS: Option<bool>,
 }
 
 impl From<DatasetConfigurationDTO> for DatasetConfiguration {
@@ -2530,6 +2533,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
                 extra_params: dto.PUBLIC_DATASET.map(|public_dataset| public_dataset.extra_params)
                 .unwrap_or_default()
             },
+            DISABLE_ANALYTICS: dto.DISABLE_ANALYTICS.unwrap_or(false),
         }
     }
 }
@@ -2578,6 +2582,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
                     }
                 }),
             }),
+            DISABLE_ANALYTICS: Some(config.DISABLE_ANALYTICS),
         }
     }
 }
@@ -2621,6 +2626,7 @@ impl Default for DatasetConfiguration {
                 api_key: Some("".to_string()),
                 extra_params: None,
             },
+            DISABLE_ANALYTICS: false,
         }
     }
 }
@@ -2901,7 +2907,12 @@ impl DatasetConfiguration {
                 enabled: configuration_json.pointer("/PUBLIC_DATASET/enabled").unwrap_or(&json!(false)).as_bool().unwrap_or(false),
                 api_key: Some(configuration_json.pointer("/PUBLIC_DATASET/api_key").unwrap_or(&json!("")).as_str().unwrap_or("").to_string()),
                 extra_params
-            }
+            },
+            DISABLE_ANALYTICS: configuration
+                .get("DISABLE_ANALYTICS")
+                .unwrap_or(&json!(false))
+                .as_bool()
+                .unwrap_or(false),
         }
     }
 
@@ -2943,7 +2954,8 @@ impl DatasetConfiguration {
                 "enabled": self.PUBLIC_DATASET.enabled,
                 "api_key": self.PUBLIC_DATASET.api_key,
                 "extra_params": extra_params_json
-            }
+            },
+            "DISABLE_ANALYTICS": self.DISABLE_ANALYTICS,
         })
     }
 }
@@ -3154,6 +3166,9 @@ impl DatasetConfigurationDTO {
                         .or(page_parameters_curr.open_graph_metadata),
                 }),
             },
+            DISABLE_ANALYTICS: self
+                .DISABLE_ANALYTICS
+                .unwrap_or(curr_dataset_config.DISABLE_ANALYTICS),
         }
     }
 }

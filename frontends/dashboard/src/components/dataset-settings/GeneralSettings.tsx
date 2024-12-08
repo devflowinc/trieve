@@ -283,6 +283,29 @@ export const GeneralServerSettings = (props: {
             <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
               <input
                 type="checkbox"
+                name="disableAnalytics"
+                id="disableAnalytics"
+                checked={!!props.serverConfig().DISABLE_ANALYTICS}
+                onInput={(e) =>
+                  props.setServerConfig((prev) => {
+                    return {
+                      ...prev,
+                      DISABLE_ANALYTICS: e.currentTarget.checked,
+                    };
+                  })
+                }
+              />
+              <label
+                for="disableAnalytics"
+                class="block text-sm font-medium leading-6"
+              >
+                Disable Analytics
+              </label>
+            </div>
+
+            <div class="col-span-4 flex items-center space-x-2 sm:col-span-2">
+              <input
+                type="checkbox"
                 name="lockDataset"
                 id="lockDataset"
                 checked={!!props.serverConfig().LOCKED}

@@ -1353,7 +1353,7 @@ pub async fn get_recommended_groups(
         limit,
         data.group_size.unwrap_or(10),
         dataset_org_plan_sub.dataset.id,
-        dataset_config,
+        dataset_config.clone(),
         pool.clone(),
     )
     .await
@@ -1385,39 +1385,40 @@ pub async fn get_recommended_groups(
     timer.add("fetched metadata from ids");
 
     let recommendation_id = uuid::Uuid::new_v4();
+    if !dataset_config.DISABLE_ANALYTICS {
+        let clickhouse_event = RecommendationEventClickhouse {
+            id: recommendation_id,
+            recommendation_type: String::from("group"),
+            positive_ids: positive_group_ids
+                .unwrap_or_default()
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect(),
+            negative_ids: negative_group_ids
+                .unwrap_or_default()
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect(),
+            positive_tracking_ids: positive_tracking_ids.unwrap_or_default(),
+            negative_tracking_ids: negative_tracking_ids.unwrap_or_default(),
+            request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
+            top_score: recommended_chunk_metadatas
+                .first()
+                .map(|x| x.metadata.first().map(|x| x.score).unwrap_or(0.0))
+                .unwrap_or(0.0) as f32,
+            results: recommended_chunk_metadatas
+                .iter()
+                .map(|x| serde_json::to_string(x).unwrap_or_default())
+                .collect(),
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            created_at: time::OffsetDateTime::now_utc(),
+            user_id: data.user_id.clone().unwrap_or_default(),
+        };
 
-    let clickhouse_event = RecommendationEventClickhouse {
-        id: recommendation_id,
-        recommendation_type: String::from("group"),
-        positive_ids: positive_group_ids
-            .unwrap_or_default()
-            .into_iter()
-            .map(|x| x.to_string())
-            .collect(),
-        negative_ids: negative_group_ids
-            .unwrap_or_default()
-            .into_iter()
-            .map(|x| x.to_string())
-            .collect(),
-        positive_tracking_ids: positive_tracking_ids.unwrap_or_default(),
-        negative_tracking_ids: negative_tracking_ids.unwrap_or_default(),
-        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
-        top_score: recommended_chunk_metadatas
-            .first()
-            .map(|x| x.metadata.first().map(|x| x.score).unwrap_or(0.0))
-            .unwrap_or(0.0) as f32,
-        results: recommended_chunk_metadatas
-            .iter()
-            .map(|x| serde_json::to_string(x).unwrap_or_default())
-            .collect(),
-        dataset_id: dataset_org_plan_sub.dataset.id,
-        created_at: time::OffsetDateTime::now_utc(),
-        user_id: data.user_id.clone().unwrap_or_default(),
-    };
-
-    event_queue
-        .send(ClickHouseEvent::RecommendationEvent(clickhouse_event))
-        .await;
+        event_queue
+            .send(ClickHouseEvent::RecommendationEvent(clickhouse_event))
+            .await;
+    }
 
     timer.add("sent to clickhouse");
 
@@ -1654,38 +1655,38 @@ pub async fn search_within_group(
         QueryTypes::Single(query) => query.clone(),
         QueryTypes::Multi(query) => serde_json::to_string(&query).unwrap_or_default(),
     };
+    if !dataset_config.DISABLE_ANALYTICS {
+        let clickhouse_event = SearchQueryEventClickhouse {
+            id: search_id,
+            search_type: String::from("search_within_groups"),
+            query: query.clone(),
+            request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
+            latency: get_latency_from_header(timer.header_value()),
+            top_score: result_chunks
+                .bookmarks
+                .first()
+                .map(|x| x.score as f32)
+                .unwrap_or(0.0),
+            results: result_chunks
+                .bookmarks
+                .clone()
+                .into_iter()
+                .map(|x| {
+                    let mut json = serde_json::to_value(&x).unwrap_or_default();
+                    escape_quotes(&mut json);
+                    json.to_string()
+                })
+                .collect(),
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            created_at: time::OffsetDateTime::now_utc(),
+            query_rating: String::from(""),
+            user_id: data.user_id.clone().unwrap_or_default(),
+        };
 
-    let clickhouse_event = SearchQueryEventClickhouse {
-        id: search_id,
-        search_type: String::from("search_within_groups"),
-        query: query.clone(),
-        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
-        latency: get_latency_from_header(timer.header_value()),
-        top_score: result_chunks
-            .bookmarks
-            .first()
-            .map(|x| x.score as f32)
-            .unwrap_or(0.0),
-        results: result_chunks
-            .bookmarks
-            .clone()
-            .into_iter()
-            .map(|x| {
-                let mut json = serde_json::to_value(&x).unwrap_or_default();
-                escape_quotes(&mut json);
-                json.to_string()
-            })
-            .collect(),
-        dataset_id: dataset_org_plan_sub.dataset.id,
-        created_at: time::OffsetDateTime::now_utc(),
-        query_rating: String::from(""),
-        user_id: data.user_id.clone().unwrap_or_default(),
-    };
-
-    event_queue
-        .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
-        .await;
-
+        event_queue
+            .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
+            .await;
+    }
     timer.add("send_to_clickhouse");
 
     if api_version == APIVersion::V1 {
@@ -1819,38 +1820,38 @@ pub async fn search_over_groups(
         QueryTypes::Single(query) => query.clone(),
         QueryTypes::Multi(query) => serde_json::to_string(&query).unwrap_or_default(),
     };
+    if !dataset_config.DISABLE_ANALYTICS {
+        let clickhouse_event = SearchQueryEventClickhouse {
+            id: search_id,
+            search_type: String::from("search_over_groups"),
+            query: query.clone(),
+            request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
+            latency: get_latency_from_header(timer.header_value()),
+            top_score: result_chunks
+                .group_chunks
+                .first()
+                .map(|x| x.metadata.first().map(|y| y.score as f32).unwrap_or(0.0))
+                .unwrap_or(0.0),
+            results: result_chunks
+                .group_chunks
+                .clone()
+                .into_iter()
+                .map(|x| {
+                    let mut json = serde_json::to_value(&x).unwrap_or_default();
+                    escape_quotes(&mut json);
+                    json.to_string()
+                })
+                .collect(),
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            created_at: time::OffsetDateTime::now_utc(),
+            query_rating: String::from(""),
+            user_id: data.user_id.clone().unwrap_or_default(),
+        };
 
-    let clickhouse_event = SearchQueryEventClickhouse {
-        id: search_id,
-        search_type: String::from("search_over_groups"),
-        query: query.clone(),
-        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
-        latency: get_latency_from_header(timer.header_value()),
-        top_score: result_chunks
-            .group_chunks
-            .first()
-            .map(|x| x.metadata.first().map(|y| y.score as f32).unwrap_or(0.0))
-            .unwrap_or(0.0),
-        results: result_chunks
-            .group_chunks
-            .clone()
-            .into_iter()
-            .map(|x| {
-                let mut json = serde_json::to_value(&x).unwrap_or_default();
-                escape_quotes(&mut json);
-                json.to_string()
-            })
-            .collect(),
-        dataset_id: dataset_org_plan_sub.dataset.id,
-        created_at: time::OffsetDateTime::now_utc(),
-        query_rating: String::from(""),
-        user_id: data.user_id.clone().unwrap_or_default(),
-    };
-
-    event_queue
-        .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
-        .await;
-
+        event_queue
+            .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
+            .await;
+    }
     timer.add("send_to_clickhouse");
 
     if api_version == APIVersion::V1 {

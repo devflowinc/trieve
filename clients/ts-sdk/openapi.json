@@ -9306,6 +9306,11 @@
             "description": "The BM25 K parameter",
             "nullable": true
           },
+          "DISABLE_ANALYTICS": {
+            "type": "boolean",
+            "description": "Whether to disable analytics",
+            "nullable": true
+          },
           "DISTANCE_METRIC": {
             "allOf": [
               {
