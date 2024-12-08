@@ -15,7 +15,7 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json --bin "trieve-server"
 # Build application
 COPY . .
-RUN cargo build --release --features "runtime-env" --bin "trieve-server"
+RUN cargo build --release --features "runtime-env","hallucination-detection"  --bin "trieve-server"
 
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
@@ -29,10 +29,18 @@ RUN apt-get update -y; \
     ca-certificates \
     curl \
     redis-tools \
+    unzip \
     ;
 
 RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b143/subtrace-linux-amd64 \
     && chmod +x ./subtrace-linux-amd64
+
+RUN curl -L -o libtorch-cxx11-abi-shared-with-deps-2.4.0+cpu.zip https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.4.0%2Bcpu.zip \
+    && unzip libtorch-cxx11-abi-shared-with-deps-2.4.0+cpu.zip \
+    && rm libtorch-cxx11-abi-shared-with-deps-2.4.0+cpu.zip && mv libtorch /usr/lib/
+
+ENV LIBTORCH=/usr/lib/libtorch
+ENV LD_LIBRARY_PATH=${LIBTORCH}/lib:
 
 COPY ./migrations/ /app/migrations
 COPY ./ch_migrations /app/ch_migrations

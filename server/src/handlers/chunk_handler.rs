@@ -1,4 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser};
+#[cfg(not(feature = "hallucination-detection"))]
+use crate::data::models::DummyHallucinationScore;
 use crate::data::models::{
     escape_quotes, ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataTypes,
     ChunkMetadataWithScore, ConditionType, ContextOptions, CountSearchMethod,
@@ -44,6 +46,11 @@ use serde_json::json;
 use simple_server_timing_header::Timer;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
+#[cfg(feature = "hallucination-detection")]
+use {
+    crate::operators::message_operator::clean_markdown,
+    hallucination_detection::{HallucinationDetector, HallucinationScore},
+};
 
 /// Boost the presence of certain tokens for fulltext (SPLADE) and keyword (BM25) search. I.e. boosting title phrases to priortize title matches or making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -2444,6 +2451,9 @@ pub async fn generate_off_chunks(
     data: web::Json<GenerateOffChunksReqPayload>,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    #[cfg(feature = "hallucination-detection")] hallucination_detector: web::Data<
+        HallucinationDetector,
+    >,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -2681,6 +2691,29 @@ pub async fn generate_off_chunks(
             }
         };
         if !dataset_config.DISABLE_ANALYTICS {
+            #[cfg(feature = "hallucination-detection")]
+            let score = {
+                let docs = chunks
+                    .iter()
+                    .map(|x| x.chunk_html.clone().unwrap_or_default())
+                    .collect::<Vec<String>>();
+                hallucination_detector
+                    .detect_hallucinations(&clean_markdown(&completion_content), &docs)
+                    .await
+                    .map_err(|err| {
+                        ServiceError::BadRequest(format!(
+                            "Failed to detect hallucinations: {}",
+                            err
+                        ))
+                    })?
+            };
+
+            #[cfg(not(feature = "hallucination-detection"))]
+            let score = DummyHallucinationScore {
+                total_score: 0.0,
+                detected_hallucinations: vec![],
+            };
+
             let clickhouse_rag_event = RagQueryEventClickhouse {
                 id: query_id,
                 created_at: time::OffsetDateTime::now_utc(),
@@ -2701,12 +2734,15 @@ pub async fn generate_off_chunks(
                 rag_type: "chosen_chunks".to_string(),
                 llm_response: completion_content.clone(),
                 user_id: data.user_id.clone().unwrap_or_default(),
+                hallucination_score: score.total_score,
+                detected_hallucinations: score.detected_hallucinations,
             };
 
             event_queue
                 .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event))
                 .await;
         }
+
         return Ok(HttpResponse::Ok()
             .insert_header(("TR-QueryID", query_id.to_string()))
             .json(completion_content));
@@ -2723,6 +2759,31 @@ pub async fn generate_off_chunks(
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
         if !dataset_config.DISABLE_ANALYTICS {
+            #[cfg(feature = "hallucination-detection")]
+            let score = {
+                let docs = chunks
+                    .iter()
+                    .map(|x| x.chunk_html.clone().unwrap_or_default())
+                    .collect::<Vec<String>>();
+
+                hallucination_detector
+                    .detect_hallucinations(&clean_markdown(&completion), &docs)
+                    .await
+                    .unwrap_or(HallucinationScore {
+                        total_score: 0.0,
+                        proper_noun_score: 0.0,
+                        number_mismatch_score: 0.0,
+                        unknown_word_score: 0.0,
+                        detected_hallucinations: vec![],
+                    })
+            };
+
+            #[cfg(not(feature = "hallucination-detection"))]
+            let score = DummyHallucinationScore {
+                total_score: 0.0,
+                detected_hallucinations: vec![],
+            };
+
             let clickhouse_rag_event = RagQueryEventClickhouse {
                 id: uuid::Uuid::new_v4(),
                 created_at: time::OffsetDateTime::now_utc(),
@@ -2743,6 +2804,8 @@ pub async fn generate_off_chunks(
                 query_rating: String::new(),
                 llm_response: completion,
                 user_id: data.user_id.clone().unwrap_or_default(),
+                hallucination_score: score.total_score,
+                detected_hallucinations: score.detected_hallucinations,
             };
 
             event_queue
