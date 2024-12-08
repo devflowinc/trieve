@@ -935,6 +935,10 @@ export type DatasetConfigurationDTO = {
      * The BM25 K parameter
      */
     BM25_K?: (number) | null;
+    /**
+     * Whether to disable analytics
+     */
+    DISABLE_ANALYTICS?: (boolean) | null;
     DISTANCE_METRIC?: ((DistanceMetric) | null);
     /**
      * The base URL for the embedding API

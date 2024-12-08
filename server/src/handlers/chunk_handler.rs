@@ -1278,37 +1278,38 @@ pub async fn search_chunks(
         QueryTypes::Single(query) => query.clone(),
         QueryTypes::Multi(query) => serde_json::to_string(&query).unwrap_or_default(),
     };
+    if !dataset_config.DISABLE_ANALYTICS {
+        let clickhouse_event = SearchQueryEventClickhouse {
+            id: search_id,
+            search_type: String::from("search"),
+            query,
+            request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
+            latency: get_latency_from_header(timer.header_value()),
+            top_score: result_chunks
+                .score_chunks
+                .first()
+                .map(|x| x.score as f32)
+                .unwrap_or(0.0),
+            results: result_chunks
+                .score_chunks
+                .clone()
+                .into_iter()
+                .map(|x| {
+                    let mut json = serde_json::to_value(&x).unwrap_or_default();
+                    escape_quotes(&mut json);
+                    json.to_string()
+                })
+                .collect(),
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            created_at: time::OffsetDateTime::now_utc(),
+            query_rating: String::from(""),
+            user_id: data.user_id.clone().unwrap_or_default(),
+        };
 
-    let clickhouse_event = SearchQueryEventClickhouse {
-        id: search_id,
-        search_type: String::from("search"),
-        query,
-        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
-        latency: get_latency_from_header(timer.header_value()),
-        top_score: result_chunks
-            .score_chunks
-            .first()
-            .map(|x| x.score as f32)
-            .unwrap_or(0.0),
-        results: result_chunks
-            .score_chunks
-            .clone()
-            .into_iter()
-            .map(|x| {
-                let mut json = serde_json::to_value(&x).unwrap_or_default();
-                escape_quotes(&mut json);
-                json.to_string()
-            })
-            .collect(),
-        dataset_id: dataset_org_plan_sub.dataset.id,
-        created_at: time::OffsetDateTime::now_utc(),
-        query_rating: String::from(""),
-        user_id: data.user_id.clone().unwrap_or_default(),
-    };
-
-    event_queue
-        .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
-        .await;
+        event_queue
+            .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
+            .await;
+    }
 
     timer.add("send_to_clickhouse");
 
@@ -1483,37 +1484,38 @@ pub async fn autocomplete(
     timer.add("autocomplete_chunks");
 
     let search_id = uuid::Uuid::new_v4();
+    if !dataset_config.DISABLE_ANALYTICS {
+        let clickhouse_event = SearchQueryEventClickhouse {
+            id: search_id,
+            search_type: String::from("autocomplete"),
+            query: data.query.clone(),
+            request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
+            latency: get_latency_from_header(timer.header_value()),
+            top_score: result_chunks
+                .score_chunks
+                .first()
+                .map(|x| x.score as f32)
+                .unwrap_or(0.0),
+            results: result_chunks
+                .score_chunks
+                .clone()
+                .into_iter()
+                .map(|x| {
+                    let mut json = serde_json::to_value(&x).unwrap_or_default();
+                    escape_quotes(&mut json);
+                    json.to_string()
+                })
+                .collect(),
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            created_at: time::OffsetDateTime::now_utc(),
+            query_rating: String::from(""),
+            user_id: data.user_id.clone().unwrap_or_default(),
+        };
 
-    let clickhouse_event = SearchQueryEventClickhouse {
-        id: search_id,
-        search_type: String::from("autocomplete"),
-        query: data.query.clone(),
-        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
-        latency: get_latency_from_header(timer.header_value()),
-        top_score: result_chunks
-            .score_chunks
-            .first()
-            .map(|x| x.score as f32)
-            .unwrap_or(0.0),
-        results: result_chunks
-            .score_chunks
-            .clone()
-            .into_iter()
-            .map(|x| {
-                let mut json = serde_json::to_value(&x).unwrap_or_default();
-                escape_quotes(&mut json);
-                json.to_string()
-            })
-            .collect(),
-        dataset_id: dataset_org_plan_sub.dataset.id,
-        created_at: time::OffsetDateTime::now_utc(),
-        query_rating: String::from(""),
-        user_id: data.user_id.clone().unwrap_or_default(),
-    };
-
-    event_queue
-        .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
-        .await;
+        event_queue
+            .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
+            .await;
+    }
 
     timer.add("send_to_clickhouse");
 
@@ -2234,7 +2236,7 @@ pub async fn get_recommended_chunks(
         data.filters.clone(),
         limit,
         dataset_org_plan_sub.dataset.id,
-        dataset_config,
+        dataset_config.clone(),
         pool.clone(),
     )
     .await
@@ -2304,40 +2306,40 @@ pub async fn get_recommended_chunks(
     timer.add("fetched metadata from point_ids");
 
     let recommendation_id = uuid::Uuid::new_v4();
+    if !dataset_config.DISABLE_ANALYTICS {
+        let clickhouse_event = RecommendationEventClickhouse {
+            id: recommendation_id,
+            recommendation_type: String::from("chunk"),
+            positive_ids: positive_chunk_ids
+                .unwrap_or_default()
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect(),
+            negative_ids: negative_chunk_ids
+                .unwrap_or_default()
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect(),
+            positive_tracking_ids: positive_tracking_ids.unwrap_or_default(),
+            negative_tracking_ids: negative_tracking_ids.unwrap_or_default(),
+            request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
+            top_score: recommended_chunk_metadatas_with_score
+                .first()
+                .map(|x| x.score)
+                .unwrap_or(0.0),
+            results: recommended_chunk_metadatas_with_score
+                .iter()
+                .map(|x| serde_json::to_string(x).unwrap_or_default())
+                .collect(),
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            created_at: time::OffsetDateTime::now_utc(),
+            user_id: data.user_id.clone().unwrap_or_default(),
+        };
 
-    let clickhouse_event = RecommendationEventClickhouse {
-        id: recommendation_id,
-        recommendation_type: String::from("chunk"),
-        positive_ids: positive_chunk_ids
-            .unwrap_or_default()
-            .into_iter()
-            .map(|x| x.to_string())
-            .collect(),
-        negative_ids: negative_chunk_ids
-            .unwrap_or_default()
-            .into_iter()
-            .map(|x| x.to_string())
-            .collect(),
-        positive_tracking_ids: positive_tracking_ids.unwrap_or_default(),
-        negative_tracking_ids: negative_tracking_ids.unwrap_or_default(),
-        request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
-        top_score: recommended_chunk_metadatas_with_score
-            .first()
-            .map(|x| x.score)
-            .unwrap_or(0.0),
-        results: recommended_chunk_metadatas_with_score
-            .iter()
-            .map(|x| serde_json::to_string(x).unwrap_or_default())
-            .collect(),
-        dataset_id: dataset_org_plan_sub.dataset.id,
-        created_at: time::OffsetDateTime::now_utc(),
-        user_id: data.user_id.clone().unwrap_or_default(),
-    };
-
-    event_queue
-        .send(ClickHouseEvent::RecommendationEvent(clickhouse_event))
-        .await;
-
+        event_queue
+            .send(ClickHouseEvent::RecommendationEvent(clickhouse_event))
+            .await;
+    }
     timer.add("send_to_clickhouse");
 
     if data.slim_chunks.unwrap_or(false) {
@@ -2678,33 +2680,33 @@ pub async fn generate_off_chunks(
                 .into())
             }
         };
+        if !dataset_config.DISABLE_ANALYTICS {
+            let clickhouse_rag_event = RagQueryEventClickhouse {
+                id: query_id,
+                created_at: time::OffsetDateTime::now_utc(),
+                dataset_id: dataset_org_plan_sub.dataset.id,
+                search_id: uuid::Uuid::nil(),
+                results: vec![],
+                json_results: chunks
+                    .clone()
+                    .into_iter()
+                    .map(|x| {
+                        let mut json = serde_json::to_value(&x).unwrap_or_default();
+                        escape_quotes(&mut json);
+                        json.to_string()
+                    })
+                    .collect(),
+                user_message: prompt,
+                query_rating: String::new(),
+                rag_type: "chosen_chunks".to_string(),
+                llm_response: completion_content.clone(),
+                user_id: data.user_id.clone().unwrap_or_default(),
+            };
 
-        let clickhouse_rag_event = RagQueryEventClickhouse {
-            id: query_id,
-            created_at: time::OffsetDateTime::now_utc(),
-            dataset_id: dataset_org_plan_sub.dataset.id,
-            search_id: uuid::Uuid::nil(),
-            results: vec![],
-            json_results: chunks
-                .clone()
-                .into_iter()
-                .map(|x| {
-                    let mut json = serde_json::to_value(&x).unwrap_or_default();
-                    escape_quotes(&mut json);
-                    json.to_string()
-                })
-                .collect(),
-            user_message: prompt,
-            query_rating: String::new(),
-            rag_type: "chosen_chunks".to_string(),
-            llm_response: completion_content.clone(),
-            user_id: data.user_id.clone().unwrap_or_default(),
-        };
-
-        event_queue
-            .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event))
-            .await;
-
+            event_queue
+                .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event))
+                .await;
+        }
         return Ok(HttpResponse::Ok()
             .insert_header(("TR-QueryID", query_id.to_string()))
             .json(completion_content));
@@ -2720,32 +2722,33 @@ pub async fn generate_off_chunks(
     Arbiter::new().spawn(async move {
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
+        if !dataset_config.DISABLE_ANALYTICS {
+            let clickhouse_rag_event = RagQueryEventClickhouse {
+                id: uuid::Uuid::new_v4(),
+                created_at: time::OffsetDateTime::now_utc(),
+                dataset_id: dataset_org_plan_sub.dataset.id,
+                search_id: uuid::Uuid::nil(),
+                results: vec![],
+                json_results: chunks
+                    .clone()
+                    .into_iter()
+                    .map(|x| {
+                        let mut json = serde_json::to_value(&x).unwrap_or_default();
+                        escape_quotes(&mut json);
+                        json.to_string()
+                    })
+                    .collect(),
+                user_message: prompt,
+                rag_type: "chosen_chunks".to_string(),
+                query_rating: String::new(),
+                llm_response: completion,
+                user_id: data.user_id.clone().unwrap_or_default(),
+            };
 
-        let clickhouse_rag_event = RagQueryEventClickhouse {
-            id: uuid::Uuid::new_v4(),
-            created_at: time::OffsetDateTime::now_utc(),
-            dataset_id: dataset_org_plan_sub.dataset.id,
-            search_id: uuid::Uuid::nil(),
-            results: vec![],
-            json_results: chunks
-                .clone()
-                .into_iter()
-                .map(|x| {
-                    let mut json = serde_json::to_value(&x).unwrap_or_default();
-                    escape_quotes(&mut json);
-                    json.to_string()
-                })
-                .collect(),
-            user_message: prompt,
-            rag_type: "chosen_chunks".to_string(),
-            query_rating: String::new(),
-            llm_response: completion,
-            user_id: data.user_id.clone().unwrap_or_default(),
-        };
-
-        event_queue
-            .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event))
-            .await;
+            event_queue
+                .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event))
+                .await;
+        }
     });
 
     let completion_stream = stream.map(move |response| -> Result<Bytes, actix_web::Error> {

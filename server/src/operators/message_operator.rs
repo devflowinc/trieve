@@ -419,13 +419,13 @@ pub async fn get_rag_chunks_query(
                 .clone()
                 .unwrap_or_default(),
         };
-
-        event_queue
-            .send(ClickHouseEvent::SearchQueryEvent(
-                clickhouse_search_event.clone(),
-            ))
-            .await;
-
+        if !dataset_config.DISABLE_ANALYTICS {
+            event_queue
+                .send(ClickHouseEvent::SearchQueryEvent(
+                    clickhouse_search_event.clone(),
+                ))
+                .await;
+        }
         Ok((
             clickhouse_search_event.id,
             result_groups
@@ -528,13 +528,13 @@ pub async fn get_rag_chunks_query(
                 .clone()
                 .unwrap_or_default(),
         };
-
-        event_queue
-            .send(ClickHouseEvent::SearchQueryEvent(
-                clickhouse_search_event.clone(),
-            ))
-            .await;
-
+        if !dataset_config.DISABLE_ANALYTICS {
+            event_queue
+                .send(ClickHouseEvent::SearchQueryEvent(
+                    clickhouse_search_event.clone(),
+                ))
+                .await;
+        }
         Ok((
             clickhouse_search_event.id,
             result_chunks
@@ -897,11 +897,11 @@ pub async fn stream_response(
         } else {
             format!("{}{}", chunk_metadatas_stringified, completion_content)
         };
-
-        event_queue
-            .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event.clone()))
-            .await;
-
+        if !dataset_config.DISABLE_ANALYTICS {
+            event_queue
+                .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event.clone()))
+                .await;
+        }
         create_messages_query(vec![new_message], &pool).await?;
 
         return Ok(HttpResponse::Ok()
@@ -941,28 +941,28 @@ pub async fn stream_response(
             dataset.id,
             query_id_arb,
         );
+        if !dataset_config.DISABLE_ANALYTICS {
+            let clickhouse_rag_event = RagQueryEventClickhouse {
+                id: query_id_arb,
+                created_at: time::OffsetDateTime::now_utc(),
+                dataset_id: dataset.id,
+                search_id,
+                results: vec![],
+                json_results: chunk_data,
+                user_message: user_message_query.clone(),
+                query_rating: String::new(),
+                rag_type: "all_chunks".to_string(),
+                llm_response: completion.clone(),
+                user_id: create_message_req_payload
+                    .user_id
+                    .clone()
+                    .unwrap_or_default(),
+            };
 
-        let clickhouse_rag_event = RagQueryEventClickhouse {
-            id: query_id_arb,
-            created_at: time::OffsetDateTime::now_utc(),
-            dataset_id: dataset.id,
-            search_id,
-            results: vec![],
-            json_results: chunk_data,
-            user_message: user_message_query.clone(),
-            query_rating: String::new(),
-            rag_type: "all_chunks".to_string(),
-            llm_response: completion.clone(),
-            user_id: create_message_req_payload
-                .user_id
-                .clone()
-                .unwrap_or_default(),
-        };
-
-        event_queue
-            .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event.clone()))
-            .await;
-
+            event_queue
+                .send(ClickHouseEvent::RagQueryEvent(clickhouse_rag_event.clone()))
+                .await;
+        }
         let _ = create_messages_query(vec![new_message], &pool).await;
     });
 
