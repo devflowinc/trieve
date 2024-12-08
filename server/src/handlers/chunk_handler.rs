@@ -16,6 +16,7 @@ use crate::operators::clickhouse_operator::{get_latency_from_header, ClickHouseE
 use crate::operators::dataset_operator::{
     get_dataset_usage_query, ChunkDeleteMessage, DeleteMessage,
 };
+use crate::operators::message_operator::clean_markdown;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
     point_ids_exists_in_qdrant, recommend_qdrant_query, scroll_dataset_points,
@@ -31,6 +32,7 @@ use actix_web::{web, HttpResponse};
 use chrono::NaiveDateTime;
 use crossbeam_channel::unbounded;
 use dateparser::DateTimeUtc;
+use hallucination_detection::{HallucinationDetector, HallucinationScore};
 use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
@@ -2442,6 +2444,7 @@ pub async fn generate_off_chunks(
     data: web::Json<GenerateOffChunksReqPayload>,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
+    hallucination_detector: web::Data<HallucinationDetector>,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
@@ -2679,6 +2682,18 @@ pub async fn generate_off_chunks(
             }
         };
 
+        let docs = chunks
+            .iter()
+            .map(|x| x.chunk_html.clone().unwrap_or_default())
+            .collect::<Vec<String>>();
+
+        let score = hallucination_detector
+            .detect_hallucinations(&clean_markdown(&completion_content), &docs)
+            .await
+            .map_err(|err| {
+                ServiceError::BadRequest(format!("Failed to detect hallucinations: {}", err))
+            })?;
+
         let clickhouse_rag_event = RagQueryEventClickhouse {
             id: query_id,
             created_at: time::OffsetDateTime::now_utc(),
@@ -2699,6 +2714,8 @@ pub async fn generate_off_chunks(
             rag_type: "chosen_chunks".to_string(),
             llm_response: completion_content.clone(),
             user_id: data.user_id.clone().unwrap_or_default(),
+            hallucination_score: score.total_score,
+            detected_hallucinations: score.detected_hallucinations,
         };
 
         event_queue
@@ -2721,6 +2738,22 @@ pub async fn generate_off_chunks(
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
 
+        let docs = chunks
+            .iter()
+            .map(|x| x.chunk_html.clone().unwrap_or_default())
+            .collect::<Vec<String>>();
+
+        let score = hallucination_detector
+            .detect_hallucinations(&clean_markdown(&completion), &docs)
+            .await
+            .unwrap_or(HallucinationScore {
+                total_score: 0.0,
+                proper_noun_score: 0.0,
+                number_mismatch_score: 0.0,
+                unknown_word_score: 0.0,
+                detected_hallucinations: vec![],
+            });
+
         let clickhouse_rag_event = RagQueryEventClickhouse {
             id: uuid::Uuid::new_v4(),
             created_at: time::OffsetDateTime::now_utc(),
@@ -2741,6 +2774,8 @@ pub async fn generate_off_chunks(
             query_rating: String::new(),
             llm_response: completion,
             user_id: data.user_id.clone().unwrap_or_default(),
+            hallucination_score: score.total_score,
+            detected_hallucinations: score.detected_hallucinations,
         };
 
         event_queue

@@ -25,6 +25,7 @@ use crate::{
     },
 };
 use actix_web::{web, HttpResponse};
+use hallucination_detection::HallucinationDetector;
 use itertools::Itertools;
 use openai_dive::v1::{
     api::Client,
@@ -148,6 +149,7 @@ pub async fn create_message(
     event_queue: web::Data<EventQueue>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
+    hallucination_detector: web::Data<HallucinationDetector>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let message_count_pool = pool.clone();
     let message_count_org_id = dataset_org_plan_sub.organization.organization.id;
@@ -246,6 +248,7 @@ pub async fn create_message(
         redis_pool,
         dataset_config,
         create_message_data,
+        hallucination_detector,
     )
     .await
 }
@@ -478,6 +481,7 @@ pub async fn edit_message(
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
     redis_pool: web::Data<RedisPool>,
+    hallucination_detector: web::Data<HallucinationDetector>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id: uuid::Uuid = data.topic_id;
     let message_sort_order = data.message_sort_order;
@@ -511,6 +515,7 @@ pub async fn edit_message(
         event_queue,
         third_pool,
         redis_pool,
+        hallucination_detector,
     )
     .await
 }
@@ -551,6 +556,7 @@ pub async fn regenerate_message_patch(
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
     redis_pool: web::Data<RedisPool>,
+    hallucination_detector: web::Data<HallucinationDetector>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let topic_id = data.topic_id;
     let dataset_config =
@@ -581,6 +587,7 @@ pub async fn regenerate_message_patch(
             redis_pool.clone(),
             dataset_config,
             data.into_inner().into(),
+            hallucination_detector,
         )
         .await;
     }
@@ -654,6 +661,7 @@ pub async fn regenerate_message_patch(
         redis_pool.clone(),
         dataset_config,
         data.into_inner().into(),
+        hallucination_detector,
     )
     .await
 }
@@ -696,6 +704,7 @@ pub async fn regenerate_message(
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
     redis_pool: web::Data<RedisPool>,
+    hallucination_detector: web::Data<HallucinationDetector>,
 ) -> Result<HttpResponse, actix_web::Error> {
     regenerate_message_patch(
         data,
@@ -704,6 +713,7 @@ pub async fn regenerate_message(
         pool,
         event_queue,
         redis_pool,
+        hallucination_detector,
     )
     .await
 }

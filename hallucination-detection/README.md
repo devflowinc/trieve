@@ -25,11 +25,32 @@ Add this to your `Cargo.toml`:
 hallucination-detection = "^0.1.3"
 ```
 
-If you want to use NER and ONNX features:
+If you want to use NER:
+
+1. Download `libtorch` from <https://pytorch.org/get-started/locally/>. This package requires `v2.4`: if this version is no longer available on the "get started" page, the file should be accessible by modifying the target link, for example `https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.4.0%2Bcpu.zip` for a Linux version with CPU.
+2. Extract the library to a location of your choice
+3. Set the following environment variables
+##### Linux:
+```bash
+export LIBTORCH=/path/to/libtorch
+export LD_LIBRARY_PATH=${LIBTORCH}/lib:$LD_LIBRARY_PATH
+```
+##### Windows
+```powershell
+$Env:LIBTORCH = "X:\path\to\libtorch"
+$Env:Path += ";X:\path\to\libtorch\lib"
+```
 
 ```toml
 [dependencies]
+hallucination-detection = { version = "^0.1.3", features = ["ner"] }
+```
+
+If you want to use ONNX for the NER models, you need to either [install the ort runtime](https://docs.rs/ort/1.16.3/ort/#how-to-get-binaries) or include it in your dependencies:
+
+```toml
 hallucination-detection = { version = "^0.1.3", features = ["ner", "onnx"] }
+ort = { version = "...", features = [ "download-binaries" ] }
 ```
 
 ## Quick Start
