@@ -105,6 +105,14 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
                 value={props.search_data?.top_score.toPrecision(4) ?? "N/A"}
               />
             </Show>
+            <Show when={props.rag_data && props.rag_data.hallucination_score}>
+              <DataSquare
+                label="Top Score"
+                value={
+                  props.rag_data.hallucination_score?.toPrecision(4) ?? "N/A"
+                }
+              />
+            </Show>
             <Show
               when={
                 props.rag_data.query_rating &&
@@ -123,6 +131,18 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
           <Card title="LLM Response">
             <ul>
               <li>{props.rag_data.llm_response}</li>
+            </ul>
+          </Card>
+        </Show>
+        <Show
+          when={
+            props.rag_data.detected_hallucinations &&
+            props.rag_data.detected_hallucinations.length > 0
+          }
+        >
+          <Card title="Detected Hallucinations">
+            <ul>
+              <li>{props.rag_data.detected_hallucinations?.join(",")}</li>
             </ul>
           </Card>
         </Show>

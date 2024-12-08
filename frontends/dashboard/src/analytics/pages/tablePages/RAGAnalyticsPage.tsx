@@ -112,6 +112,15 @@ export const RAGAnalyticsPage = () => {
       },
     },
     {
+      accessorKey: "hallucination_score",
+      header: "Hallucination Score",
+      cell(props) {
+        const val =
+          props.getValue() as unknown as RagQueryEvent["hallucination_score"];
+        return <Show when={val && val > 0}>{(val) => <div>{val()}</div>}</Show>;
+      },
+    },
+    {
       accessorKey: "query_rating",
       header: "Query Rating",
       cell(props) {
