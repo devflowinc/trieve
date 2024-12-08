@@ -131,7 +131,7 @@ async fn run_hallucination_test() -> Result<(), Box<dyn Error>> {
         let start = std::time::Instant::now();
         let hallucination_score = detector
             .detect_hallucinations(&record.response, &[source_info.clone()])
-            .await;
+            .await.unwrap();
         let elapsed = start.elapsed();
         println!("Hallucination detection took: {:?}", elapsed);
 
