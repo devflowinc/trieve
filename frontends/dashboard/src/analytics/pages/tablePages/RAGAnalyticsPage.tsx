@@ -112,6 +112,10 @@ export const RAGAnalyticsPage = () => {
       },
     },
     {
+      accessorKey: "hallucination_score",
+      header: "Hallucination Score",
+    },
+    {
       accessorKey: "query_rating",
       header: "Query Rating",
       cell(props) {

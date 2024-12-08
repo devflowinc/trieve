@@ -77,6 +77,12 @@ path = "src/bin/crawl-worker.rs"
 name = "crawl-cron-job"
 path = "src/bin/crawl-cron-job.rs"
 
+[features]
+default = []
+runtime-env = []
+hallucination-detection = ["dep:hallucination-detection"]
+ner = ["hallucination-detection?/ner"]
+
 [dependencies]
 actix-identity = { version = "0.7.1" }
 actix-session = { version = "0.9.0", features = [
@@ -177,12 +183,12 @@ oas3 = "0.10.0"
 sanitize_html = "0.8.1"
 minijinja-embed = "2.2.0"
 minijinja = { version = "2.2.0", features = ["loader", "json"] }
-
+hallucination-detection = { version = "0.1.5", default-features = false, optional = true }
 
 [build-dependencies]
 dotenvy = "0.15.7"
 minijinja-embed = "2.2.0"
-
-[features]
-default = []
-runtime-env = []
+flate2 = "1.0.26"
+tar = "0.4.38"
+ureq = "2.6.2"
+zip = "2.2.1"

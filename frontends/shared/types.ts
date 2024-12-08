@@ -634,6 +634,8 @@ export interface RagQueryEvent {
     note?: string;
     rating: number;
   };
+  hallucination_score?: number;
+  detected_hallucinations?: string[];
 }
 
 export interface EventData {

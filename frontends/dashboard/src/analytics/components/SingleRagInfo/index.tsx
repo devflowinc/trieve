@@ -78,7 +78,7 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
               "M/d/yy h:mm a",
             )}
           </span>
-          <dl class="m-auto mt-5 grid grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow md:grid-cols-4 md:divide-x md:divide-y-0">
+          <dl class="m-auto mt-5 grid grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow md:grid-cols-5 md:divide-x md:divide-y-0">
             <DataSquare label="RAG Type" value={props.rag_data.rag_type} />
             <DataSquare
               label="Dataset"
@@ -105,6 +105,14 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
                 value={props.search_data?.top_score.toPrecision(4) ?? "N/A"}
               />
             </Show>
+            <Show when={props.rag_data && props.rag_data.hallucination_score}>
+              <DataSquare
+                label="Hallucination Score"
+                value={
+                  props.rag_data.hallucination_score?.toPrecision(4) ?? "N/A"
+                }
+              />
+            </Show>
             <Show
               when={
                 props.rag_data.query_rating &&
@@ -123,6 +131,18 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
           <Card title="LLM Response">
             <ul>
               <li>{props.rag_data.llm_response}</li>
+            </ul>
+          </Card>
+        </Show>
+        <Show
+          when={
+            props.rag_data.detected_hallucinations &&
+            props.rag_data.detected_hallucinations.length > 0
+          }
+        >
+          <Card title="Detected Hallucinations">
+            <ul>
+              <li>{props.rag_data.detected_hallucinations?.join(",")}</li>
             </ul>
           </Card>
         </Show>
