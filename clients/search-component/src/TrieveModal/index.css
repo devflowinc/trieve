@@ -219,7 +219,7 @@ body {
       }
 
       .bottom-row {
-        @apply flex justify-between items-center px-4;
+        @apply flex justify-between items-center px-4 2xl:px-0 max-w-6xl mx-auto;
 
         button {
           @apply px-2 text-sm py-1 rounded-md;

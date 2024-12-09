@@ -136,6 +136,15 @@ pub struct OpenGraphMetadata {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct PublicPageTag {
+    tag: String,
+    label: Option<String>,
+    selected: Option<bool>,
+    icon_class_name: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dataset_id: Option<uuid::Uuid>,
@@ -147,6 +156,8 @@ pub struct PublicPageParameters {
     pub api_key: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub analytics: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<PublicPageTag>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_queries: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]

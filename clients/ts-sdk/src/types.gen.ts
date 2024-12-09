@@ -1985,6 +1985,7 @@ export type PublicPageParameters = {
     searchOptions?: ((PublicPageSearchOptions) | null);
     suggestedQueries?: (boolean) | null;
     tabMessages?: Array<PublicPageTabMessage> | null;
+    tags?: Array<PublicPageTag> | null;
     theme?: ((PublicPageTheme) | null);
     type?: (string) | null;
     useGroupSearch?: (boolean) | null;
@@ -2042,6 +2043,13 @@ export type PublicPageTabMessage = {
     showComponentCode: boolean;
     tabInnerHtml: string;
     title: string;
+};
+
+export type PublicPageTag = {
+    iconClassName?: (string) | null;
+    label?: (string) | null;
+    selected?: (boolean) | null;
+    tag: string;
 };
 
 export type PublicPageTheme = 'light' | 'dark';
