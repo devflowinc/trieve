@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { TrieveSDK, ChunkReqPayload } from 'trieve-ts-sdk';
 import { marked } from 'marked';
 import { dereferenceSync } from '@trojs/openapi-dereference';
-import pluralize from 'pluralize'
+import pluralize from 'pluralize';
 
 const splitHtmlIntoHeadAndBodies = (html: Element): [string, string][] => {
   const headingRegex = /h\d/gi;
@@ -200,8 +200,10 @@ const extractChunksFromOpenapiSpec = async (
         const operationId = pathData[method].operationId;
         const summary = pathData[method].summary;
         const description = pathData[method].description;
-        const [namespace, ...parts] = summary?.toLowerCase().split(' ') ?? []
-        const endpoint = namespace ? join(pluralize(parts.join('-')), namespace) : path
+        const [namespace, ...parts] = summary?.toLowerCase().split(' ') ?? [];
+        const endpoint = namespace
+          ? join(pluralize(parts.join('-')), namespace)
+          : path;
         const pageLink = `${siteUrl}/${apiRefParent}/${endpoint}`;
         const metadata = {
           operation_id: operationId,
@@ -361,12 +363,20 @@ try {
 for (let i = 0; i < chunkReqPayloads.length; i += 120) {
   const chunkBatch = chunkReqPayloads.slice(i, i + 120);
   console.log(`Creating chunk batch ${i + 1} - ${i + 120}`);
+  let retries = 0;
   while (true) {
     try {
       await trieve.createChunk(chunkBatch);
+      console.log('Batch created');
       break;
     } catch (err) {
-      console.error('Error creating chunk batch, retrying...', err);
+      console.error('Error creating chunk batch...', err);
+      retries++;
+      if (retries > 3) {
+        console.error('Max retries exceeded, skipping batch');
+        break;
+      }
+      console.log('Retrying...');
     }
   }
 }
