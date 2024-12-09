@@ -32,7 +32,7 @@ body {
       @apply pl-2 flex gap-2 w-full overflow-x-auto;
     }
 
-  ::-webkit-scrollbar {
+    ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
@@ -206,10 +206,11 @@ body {
         }
 
         .chat-controls-row {
-          display: flex;
-          flex-direction: row;
-          width: 100%;
-          justify-content: flex-start;
+          @apply flex w-full px-3;
+
+          .controls-spacer {
+            @apply flex-1;
+          }
 
           .clear-button {
             @apply px-4 py-1.5 rounded-md text-white text-xs;
@@ -277,6 +278,10 @@ body {
 
         .feedback-icons {
           @apply flex space-x-2;
+
+          .copy-confirm {
+            @apply fill-green-500;
+          }
 
           .icon-darken {
             opacity: 100%;
@@ -451,7 +456,7 @@ body {
     }
 
     .chat-outer-wrapper {
-      @apply flex flex-col mt-12 px-5;
+      @apply flex flex-col mt-12 px-2;
 
       .ai-message {
         .message-wrapper {
@@ -575,7 +580,6 @@ body {
 
     .close-modal-button.ecommerce {
       @apply w-full flex justify-end text-xs items-center absolute top-1 right-1.5 p-2 gap-0.5 cursor-pointer;
-
     }
     .input-wrapper {
       @apply sticky top-0 z-10 flex flex-col gap-2 rounded-t-lg;
@@ -631,19 +635,16 @@ body {
     }
 
     .chat-footer-wrapper {
-
       .chat-group-disclaimer {
         @apply flex items-center justify-between
         bg-zinc-200/60 dark:bg-zinc-700 px-3 py-1 text-sm opacity-70
-        border border-zinc-300 dark:border-zinc-500 border-b-transparent
-        ;
+        border border-zinc-300 dark:border-zinc-500 border-b-transparent;
       }
 
       input {
         @apply rounded-none mb-0;
       }
     }
-
 
     ul {
       &:not(.chat-ul) {
@@ -669,11 +670,9 @@ body {
         @apply flex justify-between items-center;
 
         .chat-product-button {
-          @apply fill-zinc-400 hover:fill-zinc-800 hover:bg-zinc-200 py-1 rounded
-
+          @apply fill-zinc-400 hover:fill-zinc-800 hover:bg-zinc-200 py-1 rounded;
         }
       }
-
 
       .chunk-path {
         color: var(--tv-zinc-600);
@@ -876,11 +875,9 @@ body {
         }
       }
 
-
       .chat-modal-wrapper {
         background-color: var(--tv-zinc-900);
         color: var(--tv-zinc-100);
-
 
         .loading-system {
           @apply w-12;

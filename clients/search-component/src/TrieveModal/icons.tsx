@@ -337,7 +337,7 @@ export const CopyIcon = () => {
 
 export const CopyConfirmIcon = (props: SVGAttributes<SVGElement>) => (
   <svg
-    className="w-4 h-4"
+    className="w-4 h-4 copy-confirm"
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
     {...props}

@@ -171,7 +171,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all",
+    props.tags?.find((t) => t.selected)?.tag || "all"
   );
 
   const [currentGroup, setCurrentGroup] = useState<ChunkGroup | null>(null);
@@ -250,8 +250,8 @@ const ModalProvider = ({
               trieve: trieve,
               abortController,
               ...(tag.tag !== "all" && { tag: tag.tag }),
-            }),
-          ),
+            })
+          )
         );
         setTagCounts(numberOfRecords);
       } catch (e) {
@@ -283,9 +283,11 @@ const ModalProvider = ({
       if (
         open &&
         e.ctrlKey &&
-        e.key === "Tab" &&
+        e.key === "m" &&
         props.allowSwitchingModes !== false
       ) {
+        e.preventDefault();
+        e.stopPropagation();
         setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
       }
     };
