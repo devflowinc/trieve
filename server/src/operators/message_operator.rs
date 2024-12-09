@@ -303,11 +303,19 @@ pub async fn get_rag_chunks_query(
             ..Default::default()
         };
 
-        let search_query_from_message_to_query_prompt = client
-            .chat()
-            .create(gen_inference_parameters)
-            .await
-            .expect("No LLM Completion for chunk search");
+        let search_query_from_message_to_query_prompt =
+            match client.chat().create(gen_inference_parameters).await {
+                Ok(query) => query,
+                Err(err) => {
+                    log::error!(
+                        "Error getting LLM completion for message to query prompt {:?}",
+                        err
+                    );
+                    return Err(actix_web::error::ErrorInternalServerError(
+                        "Error getting LLM completion for message to query prompt",
+                    ));
+                }
+            };
 
         query = match &search_query_from_message_to_query_prompt
             .choices

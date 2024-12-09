@@ -1003,17 +1003,26 @@ pub async fn get_suggested_queries(
     .collect();
 
     while queries.len() < 3 {
-        query = client
-            .chat()
-            .create(parameters.clone())
-            .await
-            .expect("No LLM Completion for topic");
-        queries = match &query
-            .choices
-            .first()
-            .expect("No response for LLM completion")
-            .message
-        {
+        query = match client.chat().create(parameters.clone()).await {
+            Ok(query) => query,
+            Err(err) => {
+                log::error!(
+                    "Error generating suggested queries when queries are less than 3: {}",
+                    err
+                );
+                return Err(ServiceError::BadRequest(err.to_string()));
+            }
+        };
+        let first_query = match query.choices.first() {
+            Some(first_query) => first_query,
+            None => {
+                log::error!("Error generating suggested queries when queries are less than 3: No first query in choices");
+                return Err(ServiceError::BadRequest(
+                    "No first query in choices on call to LLM".to_string(),
+                ));
+            }
+        };
+        queries = match &first_query.message {
             ChatMessage::User {
                 content: ChatMessageContent::Text(content),
                 ..
