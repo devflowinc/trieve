@@ -39,7 +39,7 @@
     "commander": "^12.1.0",
     "happy-dom": "^15.11.6",
     "marked": "^15.0.2",
-    "trieve-ts-sdk": "^0.0.35",
+    "trieve-ts-sdk": "^0.0.39",
     "yaml": "^2.6.1"
   }
 }
