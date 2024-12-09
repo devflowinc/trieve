@@ -120,8 +120,23 @@ export const ChatMode = () => {
           </form>
         </div>
         <div className={`trieve-footer chat ${props.type} flex flex-col`}>
-          <div className="tags-row">
-            <Tags />
+          {props.tags?.length ? (
+            <div className="tags-row">
+              <Tags />
+            </div>
+          ) : null}
+          <div className="chat-controls-row">
+            {messages.length ? (
+              <button
+                onClick={() =>
+                  isDoneReading ? clearConversation() : stopGeneratingMessage()
+                }
+                className="clear-button"
+              >
+                {isDoneReading ? "Clear messages" : "Stop Generating"}
+              </button>
+            ) : null}
+            <div className="controls-spacer"></div>
             <a
               className="trieve-powered text-right"
               href="https://trieve.ai"
@@ -135,18 +150,6 @@ export const ChatMode = () => {
               />
               Powered by Trieve
             </a>
-          </div>
-          <div className="chat-controls-row">
-            {messages.length ? (
-              <button
-                onClick={() =>
-                  isDoneReading ? clearConversation() : stopGeneratingMessage()
-                }
-                className="clear-button"
-              >
-                {isDoneReading ? "Clear messages" : "Stop Generating"}
-              </button>
-            ) : null}
           </div>
         </div>
       </div>
