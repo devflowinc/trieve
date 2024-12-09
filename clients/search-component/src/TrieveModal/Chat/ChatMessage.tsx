@@ -1,15 +1,7 @@
 import React, { lazy } from "react";
 const Markdown = lazy(() => import("react-markdown"));
 
-import {
-  AIIcon,
-  CopyConfirmIcon,
-  CopyIcon,
-  LoadingIcon,
-  ThumbsDownIcon,
-  ThumbsUpIcon,
-  UserIcon,
-} from "../icons";
+import { LoadingIcon } from "../icons";
 import { Chunk } from "../../utils/types";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
@@ -35,7 +27,7 @@ export const ChatMessage = ({
       {message.type == "user" ? (
         <>
           <span className="ai-avatar user">
-            <UserIcon />
+            <i className="fa-regular fa-user"></i>
             <p
               className="tag"
               // style mostly transparent brand color
@@ -62,7 +54,7 @@ export const ChatMessage = ({
                 alt={props.brandName || "Brand logo"}
               />
             ) : (
-              <AIIcon />
+              <i className="fa-solid fa-wand-magic-sparkles"></i>
             )}
             <p
               className="tag"
@@ -104,7 +96,7 @@ export const Message = ({
           chunk.metadata.page_title) &&
         chunk.link &&
         chunk.image_urls?.length &&
-        chunk.num_value,
+        chunk.num_value
     )
     .map((chunk) => ({
       title:
@@ -118,7 +110,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-        index && item.title,
+          index && item.title
     )
     .map((item, index) => (
       <a
@@ -179,66 +171,78 @@ export const Message = ({
           <div>
             {message.additional
               ? props.type !== "ecommerce" && (
-                <div className="additional-links">
-                  {message.additional
-                    .filter(
-                      (chunk) =>
-                        (chunk.metadata.heading ||
+                  <div className="additional-links">
+                    {message.additional
+                      .filter(
+                        (chunk) =>
+                          (chunk.metadata.heading ||
+                            chunk.metadata.title ||
+                            chunk.metadata.page_title) &&
+                          chunk.link
+                      )
+                      .map((chunk) => [
+                        chunk.metadata.heading ||
                           chunk.metadata.title ||
-                          chunk.metadata.page_title) &&
+                          chunk.metadata.page_title,
                         chunk.link,
-                    )
-                    .map((chunk) => [
-                      chunk.metadata.heading ||
-                      chunk.metadata.title ||
-                      chunk.metadata.page_title,
-                      chunk.link,
-                    ])
-                    .filter(
-                      (link, index, array) =>
-                        array.findIndex((item) => item[0] === link[0]) ===
-                        index && link[0],
-                    )
-                    .map((link, index) => (
-                      <a key={index} href={link[1] as string} target="_blank">
-                        {link[0]}
-                      </a>
-                    ))}
-                </div>
-              )
+                      ])
+                      .filter(
+                        (link, index, array) =>
+                          array.findIndex((item) => item[0] === link[0]) ===
+                            index && link[0]
+                      )
+                      .map((link, index) => (
+                        <a key={index} href={link[1] as string} target="_blank">
+                          {link[0]}
+                        </a>
+                      ))}
+                  </div>
+                )
               : null}
             <div className="feedback-wrapper">
               <span className="spacer"></span>
               <div className="feedback-icons">
-                {copied ? <CopyConfirmIcon /> : 
+                {copied ? (
+                  <span>
+                    <i className="fa-regular fa-circle-check"></i>
+                  </span>
+                ) : (
                   <button
                     onClick={() => {
-                      void navigator.clipboard.writeText(message.text).then(() => {
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 500);
-                      });
+                      void navigator.clipboard
+                        .writeText(message.text)
+                        .then(() => {
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 500);
+                        });
                     }}
                   >
-                    <CopyIcon />
+                    <i className="fa-regular fa-copy"></i>
                   </button>
-                }
+                )}
                 <button
                   className={positive != null && positive ? "icon-darken" : ""}
                   onClick={() => {
                     rateChatCompletion(true, message.queryId);
-                    setPositive(true);
+                    setPositive((prev) => {
+                      if (prev === true) return null;
+                      return true;
+                    });
                   }}
                 >
-                  <ThumbsUpIcon />
+                  <i className="fa-regular fa-thumbs-up"></i>
                 </button>
                 <button
                   className={positive != null && !positive ? "icon-darken" : ""}
                   onClick={() => {
                     rateChatCompletion(false, message.queryId);
-                    setPositive(false);
+                    setPositive((prev) => {
+                      if (prev === false) return null;
+                      return false;
+                    });
                   }}
                 >
-                  <ThumbsDownIcon />
+                  <i className="fa-regular fa-thumbs-down"></i>
                 </button>
               </div>
             </div>

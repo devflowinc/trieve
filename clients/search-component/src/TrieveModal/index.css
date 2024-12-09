@@ -182,7 +182,7 @@ body {
     }
 
     .chat-footer-wrapper {
-      @apply sticky bottom-0 flex flex-col p-3 pb-1;
+      @apply sticky bottom-0 flex flex-col py-3 pb-1;
       background-color: var(--tv-zinc-50);
     }
 
@@ -196,21 +196,20 @@ body {
       }
 
       &.chat {
-        @apply pb-2 flex justify-between pr-0.5 gap-y-3;
+        @apply pb-2 flex justify-between gap-y-3 px-4;
 
         .tags-row {
           display: flex;
           flex-direction: row;
-          justify-content: space-between;
           width: 100%;
+
+          .tags-spacer {
+            @apply flex-1;
+          }
         }
 
         .chat-controls-row {
-          @apply flex w-full px-3;
-
-          .controls-spacer {
-            @apply flex-1;
-          }
+          @apply flex w-full;
 
           .clear-button {
             @apply px-4 py-1.5 rounded-md text-white text-xs;
@@ -220,7 +219,7 @@ body {
       }
 
       .bottom-row {
-        @apply flex justify-between items-center;
+        @apply flex justify-between items-center px-4;
 
         button {
           @apply px-2 text-sm py-1 rounded-md;
@@ -278,10 +277,6 @@ body {
 
         .feedback-icons {
           @apply flex space-x-2;
-
-          .copy-confirm {
-            @apply fill-green-500;
-          }
 
           .icon-darken {
             opacity: 100%;
@@ -355,6 +350,11 @@ body {
           @apply pb-1;
         }
 
+        a:not(.carousel-item):not(.carousel-item *) {
+          text-decoration: underline;
+          color: var(--tv-prop-brand-color);
+        }
+
         .loading {
           @apply h-10 w-10;
         }
@@ -366,6 +366,7 @@ body {
         ul {
           @apply list-disc pl-4 my-4;
         }
+
         ol {
           @apply list-decimal pl-4 my-4;
         }
@@ -456,7 +457,7 @@ body {
     }
 
     .chat-outer-wrapper {
-      @apply flex flex-col mt-12 px-2;
+      @apply flex flex-col mt-12;
 
       .ai-message {
         .message-wrapper {
@@ -606,7 +607,7 @@ body {
         }
 
         .back-icon {
-          @apply top-3 left-1 absolute z-20;
+          @apply top-3 left-3 absolute z-20;
         }
       }
     }

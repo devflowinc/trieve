@@ -12,6 +12,7 @@ export const Tags = () => {
         {[ALL_TAG, ...props.tags].map((tag, idx) => (
           <li className={currentTag === tag.tag ? "active" : ""} key={tag.tag}>
             <button onClick={() => setCurrentTag(tag.tag)}>
+              {tag.iconClassName && <i className={tag.iconClassName}></i>}
               {tag.icon && typeof tag.icon === "function" && tag.icon()}
               {tag.label || tag.tag}{" "}
               {tagCounts[idx] ? `(${tagCounts[idx].count})` : ""}

@@ -1,5 +1,4 @@
 import React, { Suspense } from "react";
-import { BackIcon, CloseIcon } from "../icons";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { AIInitialMessage } from "./AIInitalMessage";
 import { useChatState } from "../../utils/hooks/chat-context";
@@ -87,7 +86,7 @@ export const ChatMode = () => {
                 cancelGroupChat();
               }}
             >
-              <CloseIcon />
+              <i className="fa-solid fa-xmark"></i>
             </button>
           </div>
         )}
@@ -101,7 +100,7 @@ export const ChatMode = () => {
             }}
             className="back-icon"
           >
-            <BackIcon />
+            <i className="fa-solid fa-chevron-left"></i>
           </button>
           <form
             onSubmit={(e) => {
@@ -120,13 +119,8 @@ export const ChatMode = () => {
           </form>
         </div>
         <div className={`trieve-footer chat ${props.type} flex flex-col`}>
-          {props.tags?.length ? (
-            <div className="tags-row">
-              <Tags />
-            </div>
-          ) : null}
-          <div className="chat-controls-row">
-            {messages.length ? (
+          {messages.length ? (
+            <div className="chat-controls-row">
               <button
                 onClick={() =>
                   isDoneReading ? clearConversation() : stopGeneratingMessage()
@@ -135,8 +129,11 @@ export const ChatMode = () => {
               >
                 {isDoneReading ? "Clear messages" : "Stop Generating"}
               </button>
-            ) : null}
-            <div className="controls-spacer"></div>
+            </div>
+          ) : null}
+          <div className="tags-row">
+            {props.tags?.length ? <Tags /> : null}
+            <div className="tags-spacer"></div>
             <a
               className="trieve-powered text-right"
               href="https://trieve.ai"

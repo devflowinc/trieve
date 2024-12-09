@@ -18,20 +18,29 @@ const Modal = () => {
   const { mode, open, setOpen, setMode, props } = useModalState();
 
   useEffect(() => {
+    const script = document.createElement("script");
+    script.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/js/all.min.js";
+    script.setAttribute("data-auto-replace-svg", "");
+
+    document.head.appendChild(script);
+  });
+
+  useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB",
+      props.brandColor ?? "#CB53EB"
     );
 
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)",
+        "var(--tv-zinc-700)"
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)",
+        "var(--tv-zinc-300)"
       );
     }
   }, [props.brandColor]);

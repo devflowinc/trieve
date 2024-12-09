@@ -73,29 +73,30 @@ declare module "solid-js" {
 
 #### Props
 
-| Name                 | Type                                                                                           | Default                                    |
-| -------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| datasetId            | string                                                                                         | ''                                         |
-| apiKey               | string                                                                                         | ''                                         |
-| baseUrl              | string                                                                                         | "https://api.trieve.ai"                    |
-| type                 | "docs" | "ecommerce"                                                                           | "docs"                                     |
-| useGroupSearch       | boolean                                                                                        | false                                      | 
-| chat                 | boolean                                                                                        | true                                       |
-| analytics            | boolean                                                                                        | true                                       |
-| placeholder          | string                                                                                         | "Search..."                                |
-| onResultClick        | () => void                                                                                     | () => {}                                   |
-| theme                | "light" or "dark"                                                                              | "light"                                    |
-| searchOptions        | [AutocompleteReqPayload](https://ts-sdk.trieve.ai/types/types_gen.AutocompleteReqPayload.html) | `{ search_type: "fulltext" }`              |
-| openKeyCombination   | { key?: string; label?: string; ctrl?: boolean }[]                                             | [{ ctrl: true }, { key: "k", label: "K" }] |
-| ButtonEl             | JSX.ElementType                                                                                | null                                       |
-| suggestedQueries     | boolean                                                                                        | true                                       |
-| defaultSearchQueries | string[]                                                                                       | []                                         |
-| defaultAiQuestions   | string[]                                                                                       | []                                         |
-| brandLogoImgSrcUrl   | string                                                                                         | null                                       |
-| brandName            | string                                                                                         | null                                       |
-| brand Color          | string                                                                                         | #CB53EB                                    |
-| problemLink          | string (example: "mailto:help@trieve.ai?subject=")                                             | null                                       |
-| responsive           | boolean                                                                                        | false                                      |
+| Name                 | Type                                                                                           | Default                                                               |
+| -------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------                            |
+| datasetId            | string                                                                                         | ''                                                                    |
+| apiKey               | string                                                                                         | ''                                                                    |
+| baseUrl              | string                                                                                         | "https://api.trieve.ai"                                               |
+| type                 | "docs" | "ecommerce"                                                                           | "docs"                                                                |
+| useGroupSearch       | boolean                                                                                        | false                                                                 | 
+| chat                 | boolean                                                                                        | true                                                                  |
+| analytics            | boolean                                                                                        | true                                                                  |
+| placeholder          | string                                                                                         | "Search..."                                                           |
+| onResultClick        | () => void                                                                                     | () => {}                                                              |
+| theme                | "light" or "dark"                                                                              | "light"                                                               |
+| searchOptions        | [AutocompleteReqPayload](https://ts-sdk.trieve.ai/types/types_gen.AutocompleteReqPayload.html) | `{ search_type: "fulltext" }`                                         |
+| openKeyCombination   | { key?: string; label?: string; ctrl?: boolean }[]                                             | [{ ctrl: true }, { key: "k", label: "K" }]                            |
+| tags                 | { tag: string; label?: string; selected? boolean; iconClassName?: string }[]                   | [{tag: "docs", label: "dev docs", iconClassName: "fa-solid fa-info"}] |
+| ButtonEl             | JSX.ElementType                                                                                | null                                                                  |
+| suggestedQueries     | boolean                                                                                        | true                                                                  |
+| defaultSearchQueries | string[]                                                                                       | []                                                                    |
+| defaultAiQuestions   | string[]                                                                                       | []                                                                    |
+| brandLogoImgSrcUrl   | string                                                                                         | null                                                                  |
+| brandName            | string                                                                                         | null                                                                  |
+| brand Color          | string                                                                                         | #CB53EB                                                               |
+| problemLink          | string (example: "mailto:help@trieve.ai?subject=")                                             | null                                                                  |
+| responsive           | boolean                                                                                        | false                                                                 |
 
 ### Search Results
 
@@ -131,17 +132,6 @@ renderToDiv(root, {
    // ... other props
 })
 ```
-
-#### Props
-
-| Name          | Type                                                                                           | Default                     |
-| ------------- | ---------------------------------------------------------------------------------------------- | --------------------------- |
-| datasetId     | string                                                                                         | ''                          |
-| apiKey        | string                                                                                         | ''                          |
-| placeholder   | string                                                                                         | "Search..."                 |
-| onResultClick | () => void                                                                                     | () => {}                    |
-| theme         | "light" or "dark"                                                                              | "light"                     |
-| searchOptions | [SearchChunksReqPayload](https://ts-sdk.trieve.ai/types/types_gen.SearchChunksReqPayload.html) | `{ search_type: "hybrid" }` |
 
 ## License
 

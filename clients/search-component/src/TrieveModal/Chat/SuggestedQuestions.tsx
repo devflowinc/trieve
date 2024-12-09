@@ -1,6 +1,5 @@
 import React from "react";
 import { useSuggestedQuestions } from "../../utils/hooks/useSuggestedQuestions";
-import { ReloadIcon } from "../icons";
 import { useChatState } from "../../utils/hooks/chat-context";
 export const SuggestedQuestions = () => {
   const { askQuestion, setCurrentQuestion } = useChatState();
@@ -20,7 +19,7 @@ export const SuggestedQuestions = () => {
             className="suggested-question refetch"
             title="Refresh suggested questions"
           >
-            <ReloadIcon width="14" height="14" />
+            <i className="fa-solid fa-arrow-rotate-right"></i>
           </button>{" "}
           Example questions
         </p>
