@@ -6,7 +6,9 @@ RUN cargo install cargo-chef
 WORKDIR /app
 
 FROM chef AS planner
+RUN mkdir /hallucination-detection
 COPY . .
+COPY ../hallucination-detection/ /hallucination-detection
 RUN cargo chef prepare  --recipe-path recipe.json
 
 FROM chef AS builder

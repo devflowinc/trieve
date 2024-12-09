@@ -66,6 +66,7 @@ export type ModalProps = {
   currencyPosition?: currencyPosition;
   responsive?: boolean;
   open?: boolean;
+  openLinksInNewTab?: boolean;
   onOpenChange?: (open: boolean) => void;
   debounceMs?: number;
 };
@@ -93,6 +94,7 @@ const defaultProps = {
   useGroupSearch: false,
   allowSwitchingModes: true,
   defaultCurrency: "$",
+  openLinksInNewTab: false,
   currencyPosition: "before" as currencyPosition,
   responsive: false,
   debounceMs: 0,
