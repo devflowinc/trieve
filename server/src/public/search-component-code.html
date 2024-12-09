@@ -19,6 +19,9 @@ const App = () => {
       {% if params.analytics -%}
       analytics={{ params.analytics }}
       {% endif -%}
+      {% if params.tags -%}
+      tags={{ params.tags }}
+      {% endif -%}
       {% if params.responsive -%}
       responsive={{ params.responsive }}
       {% endif -%}

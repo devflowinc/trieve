@@ -367,7 +367,7 @@ const PublicPageControls = () => {
               onChange={(e) => {
                 setExtraParams("defaultSearchQueries", e);
               }}
-              addLabel="Add Example"
+              addLabel="Add Example Search"
               addClass="text-sm"
               inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -390,11 +390,47 @@ const PublicPageControls = () => {
               onChange={(e) => {
                 setExtraParams("defaultAiQuestions", e);
               }}
-              addLabel="Add Example"
+              addLabel="Add Example Question"
               addClass="text-sm"
               inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
           </div>
+          <div class="grow">
+            <div class="flex items-center gap-1">
+              <label class="block" for="">
+                Tags
+              </label>
+              <Tooltip
+                tooltipText="Default tag filters for the search component. Each field has a `tag, label, iconClassName` separated by commas. Only tag is required."
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
+            <MultiStringInput
+              placeholder={`documentation,docs,fa-solid fa-info`}
+              value={
+                extraParams.tags?.map((tag) => {
+                  return `${tag.tag},${tag.label},${tag.iconClassName}`;
+                }) ?? []
+              }
+              onChange={(e) => {
+                setExtraParams(
+                  "tags",
+                  e.map((tag) => {
+                    const [tagStr, label, iconClassName] = tag.split(",");
+                    return {
+                      tag: tagStr,
+                      label,
+                      iconClassName,
+                    };
+                  }),
+                );
+              }}
+              addLabel="Add Tag"
+              addClass="text-sm"
+              inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div />
           <div class="grow">
             <div class="flex items-center gap-1">
               <label class="block">Placeholder Text</label>

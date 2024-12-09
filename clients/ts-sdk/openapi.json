@@ -12103,6 +12103,13 @@
             },
             "nullable": true
           },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicPageTag"
+            },
+            "nullable": true
+          },
           "theme": {
             "allOf": [
               {
@@ -12271,6 +12278,29 @@
             "type": "string"
           },
           "title": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicPageTag": {
+        "type": "object",
+        "required": [
+          "tag"
+        ],
+        "properties": {
+          "iconClassName": {
+            "type": "string",
+            "nullable": true
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "selected": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "tag": {
             "type": "string"
           }
         }

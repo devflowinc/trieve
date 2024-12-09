@@ -267,10 +267,6 @@ impl Modify for SecurityAddon {
     ),
     components(
         schemas(
-            handlers::page_handler::PublicPageTheme,
-            handlers::page_handler::PublicPageParameters,
-            handlers::page_handler::PublicPageTabMessage,
-            handlers::page_handler::HeroPattern,
             handlers::auth_handler::AuthQuery,
             handlers::topic_handler::CreateTopicReqPayload,
             handlers::topic_handler::CloneTopicReqPayload,
@@ -394,6 +390,11 @@ impl Modify for SecurityAddon {
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
             handlers::page_handler::PublicPageSearchOptions,
             handlers::page_handler::OpenGraphMetadata,
+            handlers::page_handler::PublicPageTag,
+            handlers::page_handler::PublicPageTheme,
+            handlers::page_handler::PublicPageParameters,
+            handlers::page_handler::PublicPageTabMessage,
+            handlers::page_handler::HeroPattern,
             data::models::ChunkReqPayloadFields,
             data::models::ChunkReqPayloadMapping,
             data::models::ChunkReqPayloadMappings,
