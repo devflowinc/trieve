@@ -41,7 +41,7 @@
     "happy-dom": "^15.11.6",
     "marked": "^15.0.2",
     "pluralize": "^8.0.0",
-    "trieve-ts-sdk": "^0.0.35",
+    "trieve-ts-sdk": "^0.0.40",
     "yaml": "^2.6.1"
   }
 }
