@@ -28,7 +28,17 @@ pub async fn timeout_15secs(
     let base_server_url =
         std::env::var("BASE_SERVER_URL").unwrap_or_else(|_| "https://api.trieve.ai".to_string());
 
-    match tokio::time::timeout(std::time::Duration::from_secs(15), next.call(service_req)).await {
+    let mut timeout_secs = 15;
+    if method == "POST" && path == "/api/file" {
+        timeout_secs = 300;
+    }
+
+    match tokio::time::timeout(
+        std::time::Duration::from_secs(timeout_secs),
+        next.call(service_req),
+    )
+    .await
+    {
         Ok(res) => res,
         Err(_err) => {
             let email_body = format!(
