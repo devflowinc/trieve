@@ -192,6 +192,8 @@ pub struct PublicPageParameters {
     pub tab_messages: Option<Vec<PublicPageTabMessage>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub open_graph_metadata: Option<OpenGraphMetadata>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub open_links_in_new_tab: Option<bool>,
 }
 
 #[utoipa::path(

@@ -1978,6 +1978,7 @@ export type PublicPageParameters = {
     heroPattern?: ((HeroPattern) | null);
     navLogoImgSrcUrl?: (string) | null;
     openGraphMetadata?: ((OpenGraphMetadata) | null);
+    openLinksInNewTab?: (boolean) | null;
     placeholder?: (string) | null;
     problemLink?: (string) | null;
     responsive?: (boolean) | null;

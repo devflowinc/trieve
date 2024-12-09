@@ -12068,6 +12068,10 @@
             ],
             "nullable": true
           },
+          "openLinksInNewTab": {
+            "type": "boolean",
+            "nullable": true
+          },
           "placeholder": {
             "type": "string",
             "nullable": true

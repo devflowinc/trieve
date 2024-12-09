@@ -3164,6 +3164,9 @@ impl DatasetConfigurationDTO {
                     open_graph_metadata: page_parameters_self
                         .open_graph_metadata
                         .or(page_parameters_curr.open_graph_metadata),
+                    open_links_in_new_tab: page_parameters_self
+                        .open_links_in_new_tab
+                        .or(page_parameters_curr.open_links_in_new_tab),
                 }),
             },
             DISABLE_ANALYTICS: self
