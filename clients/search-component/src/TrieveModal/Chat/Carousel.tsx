@@ -83,7 +83,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
   const numPages = Math.ceil(numItems / itemsPerPage);
 
   const placeholderItems = Array(itemsPerPage - (numItems % itemsPerPage)).fill(
-    null,
+    null
   );
 
   const allProductsCarousel =
@@ -113,6 +113,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
       <ul style={styles.scroll} ref={scrollRef}>
         {allProductsCarousel.map((child, index) => (
           <li
+            className="carousel-item"
             style={{
               ...styles.item,
               width: `calc(100% / ${itemsPerPage})`,

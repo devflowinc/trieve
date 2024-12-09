@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { TrieveModalSearch } from "../../../src/index";
 import "../../../dist/index.css";
 import { useState } from "react";
-import { IconMoon, IconNext, IconPrevious, IconSun } from "../Icons";
 
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -21,6 +21,9 @@ export default function ECommerce() {
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
+  const defaultTags: any[] = JSON.parse(
+    import.meta.env.VITE_DEFAULT_TAGS ?? "[]"
+  );
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -38,7 +41,15 @@ export default function ECommerce() {
               <button
                 onClick={() => setTheme(theme === "light" ? "dark" : "light")}
               >
-                {theme === "light" ? <IconMoon /> : <IconSun />}
+                {theme === "light" ? (
+                  <span>
+                    <i className="fa-regular fa-sun"></i>
+                  </span>
+                ) : (
+                  <span>
+                    <i className="fa-regular fa-moon"></i>
+                  </span>
+                )}
               </button>
             </li>
           </ul>
@@ -69,6 +80,7 @@ export default function ECommerce() {
                 search_type: "fulltext",
               }}
               defaultSearchQueries={defaultSearchQueries}
+              tags={defaultTags}
             />
           </>
         ) : (
@@ -87,13 +99,13 @@ export default function ECommerce() {
           {component > 0 ? (
             <li className="left-6 absolute">
               <button onClick={() => setComponent(0)}>
-                <IconPrevious />
+                <i className="fa-solid fa-chevron-left"></i>
               </button>
             </li>
           ) : (
             <li className="right-6 absolute">
               <button onClick={() => setComponent(1)}>
-                <IconNext />
+                <i className="fa-solid fa-chevron-right"></i>
               </button>
             </li>
           )}

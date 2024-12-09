@@ -3,7 +3,6 @@ import React, { useMemo, useRef, useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
 import { ChunkGroup } from "trieve-ts-sdk";
-import { ChatIcon } from "../icons";
 import { guessTitleAndDesc, uniquifyVariants } from "../../utils/estimation";
 import { useChatState } from "../../utils/hooks/chat-context";
 
@@ -32,11 +31,11 @@ export const ProductItem = ({
 
   const { title, descriptionHtml } = useMemo(
     () => guessTitleAndDesc(item),
-    [item],
+    [item]
   );
 
   const [shownImage, setShownImage] = useState<string>(
-    item.chunk?.image_urls?.[0] || "",
+    item.chunk?.image_urls?.[0] || ""
   );
 
   const formatPrice = (price: number | null | undefined) => {
@@ -81,7 +80,7 @@ export const ProductItem = ({
     }
   }
   const formatedPriceRange = `${formatPrice(priceMin)} - ${formatPrice(
-    priceMax,
+    priceMax
   )}`;
 
   if (!title.trim() || title == "undefined") {
@@ -90,7 +89,7 @@ export const ProductItem = ({
 
   const onResultClick = async (
     chunk: Chunk & { position: number },
-    requestID: string,
+    requestID: string
   ) => {
     if (props.onResultClick) {
       props.onResultClick(chunk);
@@ -118,7 +117,7 @@ export const ProductItem = ({
               ...item.chunk,
               position: index,
             },
-            requestID,
+            requestID
           )
         }
         href={item.chunk.link ?? ""}
@@ -157,7 +156,7 @@ export const ProductItem = ({
                       chatWithGroup(group, betterGroupName);
                     }}
                   >
-                    <ChatIcon />
+                    <i className="fa-regular fa-comment"></i>
                   </button>
                 )}
               </div>
@@ -175,7 +174,7 @@ export const ProductItem = ({
                       item.chunk.metadata.variants as unknown as {
                         featured_image: { src: string };
                         title: string;
-                      }[],
+                      }[]
                     )?.map((variant) => (
                       <button
                         key={variant.title}

@@ -1,7 +1,6 @@
 import { TrieveModalSearch } from "../../../src/index";
 import "../../../dist/index.css";
 import { useState } from "react";
-import { IconMoon, IconNext, IconPrevious, IconSun } from "../Icons";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute("/")({
@@ -36,7 +35,15 @@ export default function Home() {
               <button
                 onClick={() => setTheme(theme === "light" ? "dark" : "light")}
               >
-                {theme === "light" ? <IconMoon /> : <IconSun />}
+                {theme === "light" ? (
+                  <span>
+                    <i className="fa-regular fa-sun"></i>
+                  </span>
+                ) : (
+                  <span>
+                    <i className="fa-regular fa-moon"></i>
+                  </span>
+                )}
               </button>
             </li>
           </ul>
@@ -145,13 +152,13 @@ export default function Home() {
           {component > 0 ? (
             <li className="left-6 absolute">
               <button onClick={() => setComponent(0)}>
-                <IconPrevious />
+              <i className="fa-solid fa-chevron-left"></i>
               </button>
             </li>
           ) : (
             <li className="right-6 absolute">
               <button onClick={() => setComponent(1)}>
-                <IconNext />
+                <i className="fa-solid fa-chevron-right"></i>
               </button>
             </li>
           )}

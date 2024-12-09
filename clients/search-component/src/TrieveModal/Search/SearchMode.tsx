@@ -1,6 +1,5 @@
 import React, { Suspense } from "react";
 import { DocsItem } from "./DocsItem";
-import { AIIcon, ArrowIcon, ReloadIcon } from "../icons";
 import { useSuggestedQueries } from "../../utils/hooks/useSuggestedQueries";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { Tags } from "../Tags";
@@ -166,7 +165,7 @@ export const SearchMode = () => {
                 className="suggested-query"
                 title="Refresh suggested queries"
               >
-                <ReloadIcon width="14" height="14" />
+                <i className="fa-solid fa-arrow-rotate-right"></i>
               </button>
               <p>Suggested Queries: </p>
               {!suggestedQueries.length && (
@@ -174,17 +173,21 @@ export const SearchMode = () => {
                   Loading random query suggestions...
                 </p>
               )}
-              {suggestedQueries.map((q) => (
-                <button
-                  onClick={() => setQuery(q)}
-                  key={q}
-                  className={`suggested-query${
-                    isLoadingSuggestedQueries ? " loading" : ""
-                  }`}
-                >
-                  {q}
-                </button>
-              ))}
+              {suggestedQueries.map((q) => {
+                q = q.replace(/^-|\*$/g, "");
+                q = q.trim();
+                return (
+                  <button
+                    onClick={() => setQuery(q)}
+                    key={q}
+                    className={`suggested-query${
+                      isLoadingSuggestedQueries ? " loading" : ""
+                    }`}
+                  >
+                    {q}
+                  </button>
+                );
+              })}
             </>
           </div>
         )}
@@ -199,7 +202,7 @@ export const SearchMode = () => {
               onClick={() => switchToChatAndAskQuestion(query)}
             >
               <div>
-                <AIIcon />
+                <i className="fa-solid fa-wand-magic-sparkles"></i>
                 <div>
                   <h4>
                     {props.type == "docs"
@@ -210,7 +213,7 @@ export const SearchMode = () => {
                   <p className="description">Use AI to discover items</p>
                 </div>
               </div>
-              <ArrowIcon />
+              <i className="fa-solid fa-chevron-right"></i>
             </button>
           </li>
         ) : null}

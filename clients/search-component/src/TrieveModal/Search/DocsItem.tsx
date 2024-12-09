@@ -1,6 +1,5 @@
 import { Chunk, ChunkWithHighlights } from "../../utils/types";
 import React, { useRef, useState } from "react";
-import { ArrowIcon } from "../icons";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
 
@@ -195,7 +194,9 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
               }}
             />
           )}
-          <ArrowIcon className={!isHovered ? "text-transparent" : ""} />
+          <span className={!isHovered ? "text-transparent" : ""}>
+            <i className="fa-solid fa-chevron-right"></i>
+          </span>
         </div>
       </Component>
     </li>

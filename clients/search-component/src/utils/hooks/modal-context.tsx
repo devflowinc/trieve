@@ -18,7 +18,12 @@ import {
   searchWithTrieve,
 } from "../trieve";
 
-export const ALL_TAG = { tag: "all", label: "All", icon: null };
+export const ALL_TAG = {
+  tag: "all",
+  label: "All",
+  icon: null,
+  iconClassName: "",
+};
 
 type simpleSearchReqPayload = Omit<
   SearchChunksReqPayload,
@@ -56,6 +61,7 @@ export type ModalProps = {
     tag: string;
     label?: string;
     selected?: boolean;
+    iconClassName?: string;
     icon?: () => JSX.Element;
   }[];
   defaultSearchMode?: SearchModes;

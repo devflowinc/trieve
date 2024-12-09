@@ -19,7 +19,7 @@
       "import": "./dist/vanilla/index.js"
     }
   },
-  "version": "0.2.10",
+  "version": "0.2.11",
   "license": "MIT",
   "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/search-component",
   "scripts": {
