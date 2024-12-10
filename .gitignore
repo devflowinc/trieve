@@ -31,6 +31,7 @@ tantivy_index
 rustc-ice*
 tr-cli/sample-data
 tr-cli/dist
+clients/trieve-fern-adapter/dist
 sample-data
 dashboard/.vite/*
 kubectl
