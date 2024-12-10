@@ -687,10 +687,10 @@ const PublicPageControls = () => {
               <div class="flex gap-2">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">
-                    Default Open in new tab
+                    Default open in new tab
                   </label>
                   <Tooltip
-                    tooltipText="Enable users to switch between search modes"
+                    tooltipText="Enable this to open product pages in a new tab."
                     body={
                       <FaRegularCircleQuestion class="h-3 w-3 text-black" />
                     }
@@ -709,7 +709,6 @@ const PublicPageControls = () => {
                 />
               </div>
             </div>
-
           </div>
         </details>
 
