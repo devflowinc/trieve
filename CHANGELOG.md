@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.14.0](https://github.com/devflowinc/trieve/compare/v0.13.0...v0.14.0) (2024-12-10)
+
+
+### Features
+
+* add csv-jsonl-worker to helm chart ([cd65155](https://github.com/devflowinc/trieve/commit/cd65155466f6a5dae8666b0356bba3bade29db99))
+* add openLinksInNewTab as a new parameter for the search component and public page ([2c4613d](https://github.com/devflowinc/trieve/commit/2c4613dd266553717dce0e602177fa54aebfae75))
+* adds cd for fern adapter ([20be69e](https://github.com/devflowinc/trieve/commit/20be69e82a78828206764cb84adc537ef73f395e))
+* better detection w/ benchmarks ([1c363b3](https://github.com/devflowinc/trieve/commit/1c363b3a2ac06c9ee6e707f11901471e515e23c4))
+* completed fern adapter loading in all mdx files + opeanpi spec ([918c7f9](https://github.com/devflowinc/trieve/commit/918c7f9cb23a46aae820f8e4285d34564f9bb1ea))
+* completed testing of csv and jsonl ingests with the new worker ([ce05422](https://github.com/devflowinc/trieve/commit/ce05422284a875b127f34031d196a62e229f9463))
+* disable analytics flag ([325d2ce](https://github.com/devflowinc/trieve/commit/325d2ce6a96e6ec559ac88fb3d31ac0b31be77c8))
+* hallucination detection crate w/ NER, noun and number analysis ([4dd2525](https://github.com/devflowinc/trieve/commit/4dd2525dcaeff6fe477c153634effbb9eaca07d6))
+* make the clear messages button be formatted to brand color ([7980eb2](https://github.com/devflowinc/trieve/commit/7980eb2c8acfdb7577a04935899434c1452737d0))
+* move all icons to fontawesome instead of icons file ([13e4000](https://github.com/devflowinc/trieve/commit/13e4000af185eea673eccf551b55bb45a9222017))
+* option to copy chat message in search component ([9b76f6b](https://github.com/devflowinc/trieve/commit/9b76f6bd821d153c4423019ef03fa3b9880191eb))
+* scaffold new fern-adapter package to be run as cron ([e53e8d7](https://github.com/devflowinc/trieve/commit/e53e8d7fbf580659fff660b8909b66cea030f8b4))
+* scaffold new fern-adapter package to be run as cron ([23b277c](https://github.com/devflowinc/trieve/commit/23b277c989494a935caf9114754e145b35537a21))
+* tags are defineable via public page ([8660b52](https://github.com/devflowinc/trieve/commit/8660b523031f388a9884ab306153f93541fa9bd3))
+* upload CSV processing done up to the worker stage ([c979f0c](https://github.com/devflowinc/trieve/commit/c979f0c47f4daa53abd2388cb596c410ea9bb30e))
+
+
+### Cleanup
+
+* add tracking_ids's to fern adapter chunk creation ([2636810](https://github.com/devflowinc/trieve/commit/26368103fb78056f8645583c15b56170feb4e6fd))
+* always require org_id when fetching a dataset by tracking_id ([6137e19](https://github.com/devflowinc/trieve/commit/6137e19397f9ef6046c673363fdfdfa1ca5c1faa))
+* only make one server call per batch for groups in ingest-worker ([582e73b](https://github.com/devflowinc/trieve/commit/582e73b7742d311fa28cc9f1c3477b4bccd19ce7))
+* remove expects for LLM completion calls ([5281e45](https://github.com/devflowinc/trieve/commit/5281e45e75f014817d9673aa410fc635dd25bf2f))
+* search-component copy now green + powered by trieve at bottom with empty tag row when no tags + ctrl+m to swap modes ([be27319](https://github.com/devflowinc/trieve/commit/be27319a326384e1e8e96f3932758d1b14ee5483))
+* timeout for uploading a file should be 5 minutes or more unlike other routes ([d1ceed7](https://github.com/devflowinc/trieve/commit/d1ceed7e00691618ad98ba52804cadffe32954b3))
+* updated readme ([14d4a59](https://github.com/devflowinc/trieve/commit/14d4a59631d8fbef252c03a10524d690453bacbf))
+
+
+### Bug Fixes
+
+* add back postgresql count trigger ([686181b](https://github.com/devflowinc/trieve/commit/686181b15d12c321fd1c6e8ef97712d65463f619))
+* fix vertical scroll in search component ([49bf9ca](https://github.com/devflowinc/trieve/commit/49bf9ca99e986bcf05e20d4d52ab97bd08c658b5))
+* public page tooltip text ([07191b4](https://github.com/devflowinc/trieve/commit/07191b48e1df114237f7c57b0d2104aa55c13729))
+
+
+### Docs
+
+* add docs for how to use CLI ([856dbb2](https://github.com/devflowinc/trieve/commit/856dbb2473566e21633194a309767e617b785412))
+
 ## [0.13.0](https://github.com/devflowinc/trieve/compare/v0.12.1...v0.13.0) (2024-12-06)
 
 
