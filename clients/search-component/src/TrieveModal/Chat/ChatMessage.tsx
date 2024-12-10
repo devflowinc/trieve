@@ -156,18 +156,22 @@ export const Message = ({
               <Carousel>{ecommerceItems}</Carousel>
             </div>
           )}
-          <Markdown
-            components={{
-              code: (props) => {
-                const { children } = props || {};
-                if (!children) return null;
-                return children?.toString();
-              },
-            }}
-            key={idx}
-          >
-            {message.text}
-          </Markdown>
+          {message.text.length > 0 ? (
+            <Markdown
+              components={{
+                code: (props) => {
+                  const { children } = props || {};
+                  if (!children) return null;
+                  return children?.toString();
+                },
+              }}
+              key={idx}
+            >
+              {message.text.length > 0 ? message.text : "Loading..."}
+            </Markdown>
+          ) : (
+            <LoadingIcon className="loading" />
+          )}
           <div>
             {message.additional
               ? props.type !== "ecommerce" && (
@@ -192,7 +196,12 @@ export const Message = ({
                             index && link[0]
                       )
                       .map((link, index) => (
-                        <a key={index} href={link[1] as string} target="_blank">
+                        <a
+                          className="source-anchor"
+                          key={index}
+                          href={link[1] as string}
+                          target="_blank"
+                        >
                           {link[0]}
                         </a>
                       ))}

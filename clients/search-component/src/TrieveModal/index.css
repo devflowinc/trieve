@@ -23,7 +23,7 @@ body {
   }
 
   #trieve-search-modal {
-    @apply animate-contentShow fixed top-[calc(40%-30vh)] sm:top-[calc(40vh-225px)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[550px] -translate-x-[50%] rounded-lg shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
+    @apply animate-contentShow scroll-smooth fixed top-[calc(40%-30vh)] sm:top-[calc(25vh-225px)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[800px] -translate-x-[50%] rounded-lg shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
 
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
@@ -55,7 +55,7 @@ body {
     }
 
     &.chat-modal-mobile {
-      @apply flex flex-col top-0 sm:top-[calc(40vh-225px)] pt-4 max-h-[100vh] w-full sm:w-[90vw] rounded-none sm:rounded-lg;
+      @apply flex flex-col top-0 sm:top-[calc(25vh-225px)] pt-4 max-h-[100vh] w-full sm:w-[90vw] rounded-none sm:rounded-lg;
 
       .chat-outer-wrapper {
         @apply justify-between w-full h-full mt-10 sm:mt-12;
@@ -66,7 +66,7 @@ body {
     }
 
     .trieve-elements-docs {
-      @apply pr-2;
+      @apply pr-2 scroll-smooth;
 
       .item-group-container {
         @apply border-b border-gray-300 mb-5;
@@ -122,7 +122,7 @@ body {
     }
 
     .mode-switch-wrapper {
-      @apply flex items-center justify-end mt-2 absolute top-0.5 right-2 z-30 font-medium;
+      @apply flex items-center justify-end mt-2 absolute top-2.5 right-4 z-30 font-medium;
 
       &.search.has-query {
         @apply hidden;
@@ -182,12 +182,12 @@ body {
     }
 
     .chat-footer-wrapper {
-      @apply sticky bottom-0 flex flex-col py-3 pb-1;
+      @apply sticky bottom-0 flex flex-col py-3 pb-0;
       background-color: var(--tv-zinc-50);
     }
 
     .trieve-footer {
-      @apply sticky pl-0.5 pr-3 items-center bottom-0;
+      @apply sticky px-3 items-center bottom-0 flex flex-col;
       background-color: var(--tv-zinc-50);
       border-color: var(--tv-zinc-200);
 
@@ -196,7 +196,7 @@ body {
       }
 
       &.chat {
-        @apply pb-2 flex justify-between gap-y-3 px-4;
+        @apply pb-0 flex justify-between gap-y-1 px-2;
 
         .tags-row {
           display: flex;
@@ -209,17 +209,21 @@ body {
         }
 
         .chat-controls-row {
-          @apply flex w-full;
+          @apply flex w-full justify-end mt-0.5;
 
           .clear-button {
-            @apply px-4 py-1.5 rounded-md text-white text-xs;
+            @apply px-2 py-1 rounded-md text-white text-sm;
             background-color: var(--tv-prop-brand-color);
           }
         }
       }
 
       .bottom-row {
-        @apply flex justify-between items-center px-4 2xl:px-0 max-w-6xl mx-auto;
+        @apply flex items-center px-4 2xl:px-0 w-full mx-auto max-w-6xl;
+
+        .spacer {
+          @apply flex-1;
+        }
 
         button {
           @apply px-2 text-sm py-1 rounded-md;
@@ -295,13 +299,12 @@ body {
       .additional-links {
         @apply flex flex-wrap gap-2 mt-4;
 
-        a {
-          @apply rounded px-2 text-xs py-1;
-          color: var(--tv-zinc-700);
-          background-color: var(--tv-zinc-300);
+        a.source-anchor {
+          @apply rounded px-2 text-xs py-1 bg-zinc-200/50;
+          color: var(--tv-zinc-950);
 
           &:hover {
-            color: var(--tv-zinc-950);
+            background-color: var(--tv-zinc-200);
           }
         }
       }
@@ -344,13 +347,13 @@ body {
       }
 
       .system {
-        @apply mt-2 sm:mt-8 mb-5 items-center overflow-ellipsis max-w-[100vw] sm:max-w-[330px];
+        @apply mt-2 sm:mt-8 mb-5 items-center overflow-ellipsis max-w-[100vw];
 
         p {
           @apply pb-1;
         }
 
-        a:not(.carousel-item):not(.carousel-item *) {
+        a:not(.carousel-item):not(.carousel-item *):not(.additional-links *) {
           text-decoration: underline;
           color: var(--tv-prop-brand-color);
         }
@@ -403,7 +406,7 @@ body {
     }
 
     .suggested-queries-wrapper {
-      @apply flex gap-2 items-center flex-wrap px-5 mb-2;
+      @apply flex gap-2 items-center flex-wrap mb-2;
 
       > p {
         @apply text-xs;
@@ -457,7 +460,7 @@ body {
     }
 
     .chat-outer-wrapper {
-      @apply flex flex-col mt-12;
+      @apply flex flex-col mt-12 px-2 scroll-smooth;
 
       .ai-message {
         .message-wrapper {
@@ -582,12 +585,17 @@ body {
     .close-modal-button.ecommerce {
       @apply w-full flex justify-end text-xs items-center absolute top-1 right-1.5 p-2 gap-0.5 cursor-pointer;
     }
+
     .input-wrapper {
-      @apply sticky top-0 z-10 flex flex-col gap-2 rounded-t-lg;
+      @apply sticky top-0 z-10 flex flex-col gap-2 rounded-lg;
       background-color: var(--bg-color);
 
+      &.docs {
+        @apply m-2;
+      }
+
       .input-flex {
-        @apply flex items-center rounded-t-lg;
+        @apply flex items-center rounded-lg;
       }
 
       .search-icon {
@@ -596,7 +604,7 @@ body {
       }
 
       &.chat {
-        @apply mb-2 flex-row sticky bottom-9;
+        @apply mb-2 flex-row sticky bottom-9 px-2;
 
         &::after {
           @apply -top-[7px];
@@ -607,7 +615,7 @@ body {
         }
 
         .back-icon {
-          @apply top-3 left-3 absolute z-20;
+          @apply top-[0.825rem] left-5 absolute z-20;
         }
       }
     }
@@ -617,7 +625,7 @@ body {
     }
 
     input {
-      @apply block w-full rounded-t-lg border-[1px] py-1.5 shadow-sm ring-0 outline-none sm:text-sm sm:leading-6 pl-8 pr-2 h-12 z-10 relative;
+      @apply block w-full rounded-lg border-[1px] py-1.5 shadow-sm ring-0 outline-none sm:text-sm sm:leading-6 pl-8 pr-2 h-12 z-10 relative;
       color: var(--tv-zinc-900);
       background-color: var(--tv-zinc-50);
       border: 1px solid var(--tv-zinc-300);
@@ -782,6 +790,7 @@ body {
       .ai-message .message-wrapper {
         border-color: var(--tv-zinc-600);
       }
+
       .variants {
         @apply text-zinc-300;
 
@@ -789,6 +798,7 @@ body {
           @apply border-zinc-700;
         }
       }
+
       .bottom-row {
         button {
           color: var(--tv-zinc-300);

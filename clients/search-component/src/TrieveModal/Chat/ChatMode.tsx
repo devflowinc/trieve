@@ -114,11 +114,13 @@ export const ChatMode = () => {
               ref={chatInput}
               value={currentQuestion}
               onChange={(e) => setCurrentQuestion(e.target.value)}
-              placeholder="Ask me anything about"
+              placeholder={`Ask me anything about${
+                props.brandName ? ` ${props.brandName}` : ""
+              }`}
             />
           </form>
         </div>
-        <div className={`trieve-footer chat ${props.type} flex flex-col`}>
+        <div className={`trieve-footer chat ${props.type}`}>
           {messages.length ? (
             <div className="chat-controls-row">
               <button
@@ -127,7 +129,7 @@ export const ChatMode = () => {
                 }
                 className="clear-button"
               >
-                {isDoneReading ? "Clear messages" : "Stop Generating"}
+                {isDoneReading ? "Clear" : "Stop"}
               </button>
             </div>
           ) : null}
