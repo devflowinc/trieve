@@ -7,19 +7,30 @@ use std::{
 };
 use tokio::sync::OnceCell;
 
+#[cfg(not(feature = "ner"))]
+#[cfg(feature = "onnx")]
+compile_error!("NER feature must be enabled to use ONNX model");
+
 #[cfg(feature = "ner")]
 use {
     rust_bert::{
-        pipelines::{
-            common::{ModelResource, ModelType, ONNXModelResources},
-            ner::{Entity, NERModel},
-            token_classification::{LabelAggregationOption, TokenClassificationConfig},
-        },
-        resources::RemoteResource,
+        pipelines::ner::{Entity, NERModel},
+        pipelines::token_classification::TokenClassificationConfig,
         RustBertError,
     },
+    std::error::Error,
     std::sync::mpsc,
     tokio::{sync::oneshot, task::JoinHandle},
+};
+
+#[cfg(feature = "onnx")]
+use rust_bert::{
+    pipelines::{
+        common::ONNXModelResources,
+        common::{ModelResource, ModelType},
+        token_classification::LabelAggregationOption,
+    },
+    resources::RemoteResource,
 };
 
 const WORDS_URL: &str =
@@ -70,6 +81,18 @@ pub struct HallucinationScore {
     pub number_mismatch_score: f64,
     pub total_score: f64,
     pub detected_hallucinations: Vec<String>,
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct DetectorError {
+    message: String,
+}
+
+impl std::fmt::Display for DetectorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Detector Error: {}", self.message)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -201,13 +224,20 @@ impl HallucinationDetector {
         &self,
         llm_output: &String,
         references: &[String],
-    ) -> HallucinationScore {
+    ) -> Result<HallucinationScore, DetectorError> {
         let mut all_texts = vec![llm_output.to_string()];
         all_texts.extend(references.iter().cloned());
 
-        let all_analyses = self.analyze_text(&all_texts).await;
+        let all_analyses = self.analyze_text(&all_texts).await?;
 
-        let (output_analysis, ref_analyses) = all_analyses.split_first().unwrap();
+        let (output_analysis, ref_analyses) = match all_analyses.split_first() {
+            Some((output_analysis, ref_analyses)) => (output_analysis, ref_analyses),
+            None => {
+                return Err(DetectorError {
+                    message: "Failed to analyze text".to_string(),
+                });
+            }
+        };
 
         let all_ref_proper_nouns: HashSet<_> = ref_analyses
             .iter()
@@ -250,7 +280,7 @@ impl HallucinationDetector {
             + number_mismatch_score * self.options.weights.number_mismatch_weight)
             .clamp(0.0, 1.0);
 
-        HallucinationScore {
+        Ok(HallucinationScore {
             proper_noun_score,
             unknown_word_score,
             number_mismatch_score,
@@ -261,14 +291,19 @@ impl HallucinationDetector {
                 number_diff.iter().map(|n| n.to_string()).collect(),
             ]
             .concat(),
-        }
+        })
     }
 
     #[allow(unused_variables)]
-    async fn analyze_text(&self, texts: &[String]) -> Vec<TextAnalysis> {
+    async fn analyze_text(&self, texts: &[String]) -> Result<Vec<TextAnalysis>, DetectorError> {
         #[cfg(feature = "ner")]
         let entities = if let Some(ner_model) = &self.ner_model {
-            ner_model.predict(texts.to_vec()).await.unwrap()
+            ner_model
+                .predict(texts.to_vec())
+                .await
+                .map_err(|e| DetectorError {
+                    message: format!("Failed to predict entities: {:?}", e),
+                })?
         } else {
             vec![Vec::new(); texts.len()]
         };
@@ -322,11 +357,11 @@ impl HallucinationDetector {
                         true
                     });
                 }
-                TextAnalysis {
+                Ok(TextAnalysis {
                     proper_nouns,
                     unknown_words,
                     numbers,
-                }
+                })
             })
             .collect()
     }
@@ -381,7 +416,8 @@ mod tests {
 
         let score = detector
             .detect_hallucinations(&llm_output, &references)
-            .await;
+            .await
+            .unwrap();
         println!("Zero Hallucination Score: {:?}", score);
 
         assert_eq!(score.proper_noun_score, 0.0);
@@ -402,7 +438,8 @@ mod tests {
 
         let score = detector
             .detect_hallucinations(&llm_output, &references)
-            .await;
+            .await
+            .unwrap();
         println!("Multiple References Score: {:?}", score);
         assert_eq!(score.proper_noun_score, 0.0); // Both companies are in references
         assert_eq!(score.number_mismatch_score, 0.0); // Number matches reference
@@ -415,13 +452,15 @@ mod tests {
         // Empty input
         let score_empty = detector
             .detect_hallucinations(&String::from(""), &[String::from("")])
-            .await;
+            .await
+            .unwrap();
         assert_eq!(score_empty.total_score, 0.0);
 
         // Only numbers
         let score_numbers = detector
             .detect_hallucinations(&String::from("123 456.789"), &[String::from("123 456.789")])
-            .await;
+            .await
+            .unwrap();
         assert_eq!(score_numbers.number_mismatch_score, 0.0);
 
         // Only proper nouns
@@ -430,7 +469,8 @@ mod tests {
                 &String::from("John Smith"),
                 &[String::from("Different Person")],
             )
-            .await;
+            .await
+            .unwrap();
         assert!(score_nouns.proper_noun_score > 0.0);
     }
 
@@ -508,7 +548,8 @@ mod tests {
                 &String::from(llm_output),
                 &references.into_iter().map(String::from).collect::<Vec<_>>(),
             )
-            .await;
+            .await
+            .unwrap();
 
         println!("Test '{}' Score: {:?}", test_name, score);
 
