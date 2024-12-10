@@ -142,10 +142,14 @@ const extractChunksFromPath = async (
       metadata['description'] = subtitle;
     }
 
+    const tracking_id =
+      `${slug ?? path.replace('.mdx', '')}-${heading}`.replace(' ', '-');
+
     const chunk: ChunkReqPayload = {
       chunk_html,
       link,
       tag_set,
+      tracking_id,
       metadata,
       group_tracking_ids: [path],
       convert_html_to_text: true,
@@ -226,6 +230,7 @@ const extractChunksFromOpenapiSpec = async (
           link: pageLink,
           tag_set: ['openapi-route', operationId, method],
           metadata,
+          tracking_id: operationId,
           group_tracking_ids: [path],
           fulltext_boost: {
             phrase: heading,
