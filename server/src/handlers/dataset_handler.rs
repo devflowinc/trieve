@@ -3,7 +3,7 @@ use crate::{
     data::models::{
         CrawlOptions, Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
         DatasetConfigurationDTO, DatasetDTO, OrganizationWithSubAndPlan, Pool, RedisPool,
-        StripePlan, UnifiedId,
+        StripePlan,
     },
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
@@ -14,8 +14,9 @@ use crate::{
         },
         dataset_operator::{
             clear_dataset_by_dataset_id_query, create_dataset_query, create_datasets_query,
-            get_dataset_by_id_query, get_dataset_usage_query, get_datasets_by_organization_id,
-            get_tags_in_dataset_query, soft_delete_dataset_by_id_query, update_dataset_query,
+            get_dataset_by_id_query, get_dataset_by_tracking_id_query, get_dataset_usage_query,
+            get_datasets_by_organization_id, get_tags_in_dataset_query,
+            soft_delete_dataset_by_id_query, update_dataset_query,
         },
         dittofeed_operator::{
             send_ditto_event, DittoDatasetCreated, DittoTrackProperties, DittoTrackRequest,
@@ -276,11 +277,17 @@ pub async fn update_dataset(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
+    org_with_plan_and_sub: OrganizationWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let curr_dataset = if let Some(dataset_id) = data.dataset_id {
-        get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id), pool.clone()).await?
+        get_dataset_by_id_query(dataset_id, pool.clone()).await?
     } else if let Some(tracking_id) = &data.tracking_id {
-        get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id.clone()), pool.clone()).await?
+        get_dataset_by_tracking_id_query(
+            tracking_id.clone(),
+            org_with_plan_and_sub.organization.id,
+            pool.clone(),
+        )
+        .await?
     } else {
         return Err(ServiceError::BadRequest(
             "You must provide a dataset_id or tracking_id to update a dataset".to_string(),
@@ -363,8 +370,7 @@ pub async fn get_dataset_crawl_options(
     dataset_id: web::Path<uuid::Uuid>,
     user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let d = get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id.into_inner()), pool.clone())
-        .await?;
+    let d = get_dataset_by_id_query(dataset_id.into_inner(), pool.clone()).await?;
     let crawl_req = get_crawl_request_by_dataset_id_query(d.id, pool).await?;
 
     if !verify_admin(&user, &d.organization_id) {
@@ -491,9 +497,11 @@ pub async fn delete_dataset_by_tracking_id(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     user: OwnerOnly,
+    org_with_plan_and_sub: OrganizationWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let dataset = get_dataset_by_id_query(
-        UnifiedId::TrackingId(tracking_id.into_inner()),
+    let dataset = get_dataset_by_tracking_id_query(
+        tracking_id.into_inner(),
+        org_with_plan_and_sub.organization.id,
         pool.clone(),
     )
     .await?;
@@ -535,8 +543,7 @@ pub async fn get_dataset(
     dataset_id: web::Path<uuid::Uuid>,
     user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let mut dataset =
-        get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id.into_inner()), pool).await?;
+    let mut dataset = get_dataset_by_id_query(dataset_id.into_inner(), pool).await?;
 
     if !verify_admin(&user, &dataset.organization_id) {
         return Err(ServiceError::Forbidden);
@@ -596,7 +603,7 @@ pub async fn get_usage_by_dataset_id(
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
         ("tracking_id" = String, Path, description = "The tracking id of the dataset you want to retrieve."),
     ),
     security(
@@ -607,11 +614,15 @@ pub async fn get_dataset_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
     user: AdminOnly,
+    org_with_plan_and_sub: OrganizationWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let mut dataset =
-        get_dataset_by_id_query(UnifiedId::TrackingId(tracking_id.into_inner()), pool)
-            .await
-            .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let mut dataset = get_dataset_by_tracking_id_query(
+        tracking_id.into_inner(),
+        org_with_plan_and_sub.organization.id,
+        pool,
+    )
+    .await
+    .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     if !verify_admin(&user, &dataset.organization_id) {
         return Err(ServiceError::Forbidden);

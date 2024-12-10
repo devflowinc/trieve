@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use trieve_server::data::models::{
     self, ChunkBoost, ChunkData, ChunkGroup, ChunkMetadata, DatasetConfiguration, QdrantPayload,
-    UnifiedId, WorkerEvent,
+    WorkerEvent,
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
@@ -222,12 +222,10 @@ async fn ingestion_worker(
         let dataset_result: Result<models::Dataset, ServiceError> = match ingestion_message.clone()
         {
             IngestionMessage::Update(payload) => {
-                get_dataset_by_id_query(UnifiedId::TrieveUuid(payload.dataset_id), web_pool.clone())
-                    .await
+                get_dataset_by_id_query(payload.dataset_id, web_pool.clone()).await
             }
             IngestionMessage::BulkUpload(payload) => {
-                get_dataset_by_id_query(UnifiedId::TrieveUuid(payload.dataset_id), web_pool.clone())
-                    .await
+                get_dataset_by_id_query(payload.dataset_id, web_pool.clone()).await
             }
         };
         let dataset = match dataset_result {

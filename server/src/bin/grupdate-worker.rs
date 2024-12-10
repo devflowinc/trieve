@@ -175,11 +175,8 @@ async fn grupdate_worker(
             }
         };
 
-        let dataset_result = get_dataset_by_id_query(
-            models::UnifiedId::TrieveUuid(group_update_msg.dataset_id),
-            web_pool.clone(),
-        )
-        .await;
+        let dataset_result =
+            get_dataset_by_id_query(group_update_msg.dataset_id, web_pool.clone()).await;
         let dataset = match dataset_result {
             Ok(dataset) => dataset,
             Err(err) => {
