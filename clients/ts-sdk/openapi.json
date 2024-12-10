@@ -3938,9 +3938,9 @@
         "operationId": "get_dataset_by_tracking_id",
         "parameters": [
           {
-            "name": "TR-Dataset",
+            "name": "TR-Organization",
             "in": "header",
-            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "description": "The organization id to use for the request",
             "required": true,
             "schema": {
               "type": "string",

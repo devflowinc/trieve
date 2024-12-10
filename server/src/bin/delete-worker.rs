@@ -6,7 +6,7 @@ use std::sync::{
     Arc,
 };
 use trieve_server::{
-    data::models::{self, DatasetConfiguration, UnifiedId},
+    data::models::{self, DatasetConfiguration},
     errors::ServiceError,
     establish_connection, get_env,
     operators::{
@@ -14,7 +14,7 @@ use trieve_server::{
         clickhouse_operator::{ClickHouseEvent, EventQueue},
         dataset_operator::{
             clear_dataset_query, delete_dataset_by_id_query, get_dataset_by_id_query,
-            get_deleted_dataset_by_unifiedid_query, ChunkDeleteMessage, DatasetDeleteMessage,
+            get_deleted_dataset_by_id_query, ChunkDeleteMessage, DatasetDeleteMessage,
             DeleteMessage,
         },
         organization_operator::{
@@ -254,12 +254,10 @@ pub async fn delete_or_clear_dataset(
     delete_worker_message: DatasetDeleteMessage,
     event_queue: actix_web::web::Data<EventQueue>,
 ) -> Result<(), ServiceError> {
-    let dataset = get_deleted_dataset_by_unifiedid_query(
-        models::UnifiedId::TrieveUuid(delete_worker_message.dataset_id),
-        web_pool.clone(),
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(format!("Failed to get dataset: {:?}", err)))?;
+    let dataset =
+        get_deleted_dataset_by_id_query(delete_worker_message.dataset_id, web_pool.clone())
+            .await
+            .map_err(|err| ServiceError::BadRequest(format!("Failed to get dataset: {:?}", err)))?;
 
     let mut redis_connection = redis_pool.get().await.map_err(|err| {
         ServiceError::BadRequest(format!("Failed to get redis connection: {:?}", err))
@@ -381,12 +379,9 @@ pub async fn bulk_delete_chunks(
         "Bulk deleting chunks for dataset: {:?}",
         chunk_delete_message.dataset_id
     );
-    let dataset = get_dataset_by_id_query(
-        UnifiedId::TrieveUuid(chunk_delete_message.dataset_id),
-        web_pool.clone(),
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(format!("Failed to get dataset: {:?}", err)))?;
+    let dataset = get_dataset_by_id_query(chunk_delete_message.dataset_id, web_pool.clone())
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Failed to get dataset: {:?}", err)))?;
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
 
     bulk_delete_chunks_query(

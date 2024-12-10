@@ -1,7 +1,7 @@
 use actix_web::web;
 
 use crate::{
-    data::models::{DatasetConfiguration, Pool, RedisPool, UnifiedId},
+    data::models::{DatasetConfiguration, Pool, RedisPool},
     errors::ServiceError,
     handlers::chunk_handler::ChunkReqPayload,
     operators::{chunk_operator::create_chunk_metadata, dataset_operator::get_dataset_by_id_query},
@@ -19,8 +19,7 @@ pub async fn delete_content<T: Into<ChunkReqPayload>>(
         "Must provide a tracking_id to delete a chunk".to_string(),
     ))?;
 
-    let full_dataset =
-        get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id), pool.clone()).await?;
+    let full_dataset = get_dataset_by_id_query(dataset_id, pool.clone()).await?;
 
     let dataset_config = DatasetConfiguration::from_json(full_dataset.server_configuration.clone());
 

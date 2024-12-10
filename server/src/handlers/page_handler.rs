@@ -4,7 +4,7 @@ use super::{
 };
 use crate::data::models::Templates;
 use crate::{
-    data::models::{DatasetConfiguration, Pool, SearchMethod, SortOptions, TypoOptions, UnifiedId},
+    data::models::{DatasetConfiguration, Pool, SearchMethod, SortOptions, TypoOptions},
     errors::ServiceError,
     get_env,
     operators::dataset_operator::get_dataset_by_id_query,
@@ -229,7 +229,7 @@ pub async fn public_page(
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_id = dataset_id.into_inner();
 
-    let dataset = get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset_id), pool).await?;
+    let dataset = get_dataset_by_id_query(dataset_id, pool).await?;
 
     let config = DatasetConfiguration::from_json(dataset.server_configuration);
 

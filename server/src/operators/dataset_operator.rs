@@ -106,7 +106,7 @@ pub async fn create_datasets_query(
 }
 
 pub async fn get_dataset_by_id_query(
-    id: UnifiedId,
+    id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -115,28 +115,20 @@ pub async fn get_dataset_by_id_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let dataset = match id {
-        UnifiedId::TrieveUuid(id) => datasets_columns::datasets
-            .filter(datasets_columns::id.eq(id))
-            .filter(datasets_columns::deleted.eq(0))
-            .select(Dataset::as_select())
-            .first(&mut conn)
-            .await
-            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
-        UnifiedId::TrackingId(id) => datasets_columns::datasets
-            .filter(datasets_columns::tracking_id.eq(id))
-            .filter(datasets_columns::deleted.eq(0))
-            .select(Dataset::as_select())
-            .first(&mut conn)
-            .await
-            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
-    };
+    let dataset = datasets_columns::datasets
+        .filter(datasets_columns::id.eq(id))
+        .filter(datasets_columns::deleted.eq(0))
+        .select(Dataset::as_select())
+        .first(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
 
     Ok(dataset)
 }
 
-pub async fn get_deleted_dataset_by_unifiedid_query(
-    id: UnifiedId,
+pub async fn get_dataset_by_tracking_id_query(
+    tracking_id: String,
+    org_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Dataset, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
@@ -145,20 +137,56 @@ pub async fn get_deleted_dataset_by_unifiedid_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let dataset = match id {
-        UnifiedId::TrieveUuid(id) => datasets_columns::datasets
-            .filter(datasets_columns::id.eq(id))
-            .select(Dataset::as_select())
-            .first(&mut conn)
-            .await
-            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
-        UnifiedId::TrackingId(id) => datasets_columns::datasets
-            .filter(datasets_columns::tracking_id.eq(id))
-            .select(Dataset::as_select())
-            .first(&mut conn)
-            .await
-            .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
-    };
+    let dataset = datasets_columns::datasets
+        .filter(datasets_columns::tracking_id.eq(tracking_id))
+        .filter(datasets_columns::organization_id.eq(org_id))
+        .filter(datasets_columns::deleted.eq(0))
+        .select(Dataset::as_select())
+        .first(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
+
+    Ok(dataset)
+}
+
+pub async fn get_deleted_dataset_by_id_query(
+    id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Dataset, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let dataset = datasets_columns::datasets
+        .filter(datasets_columns::id.eq(id))
+        .select(Dataset::as_select())
+        .first(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
+
+    Ok(dataset)
+}
+
+pub async fn get_deleted_dataset_by_tracking_id_query(
+    tracking_id: String,
+    org_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Dataset, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let dataset = datasets_columns::datasets
+        .filter(datasets_columns::tracking_id.eq(tracking_id))
+        .filter(datasets_columns::organization_id.eq(org_id))
+        .select(Dataset::as_select())
+        .first(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
 
     Ok(dataset)
 }

@@ -787,22 +787,24 @@ pub async fn get_assumed_user_by_organization_api_key(
         .await
         .map_err(|_| ServiceError::Unauthorized)?;
 
-    let organization = get_org_from_id_query(api_key.organization_id, pool.clone()).await?;
+    let org_sub_plan = get_org_from_id_query(api_key.organization_id, pool.clone()).await?;
+
+    let fake_user_id = uuid::Uuid::new_v4();
 
     let user = SlimUser {
-        id: api_key.organization_id,
+        id: fake_user_id,
         email: "".to_string(),
         name: Some("".to_string()),
         created_at: chrono::Utc::now().naive_utc(),
         user_orgs: vec![UserOrganization {
             id: uuid::Uuid::new_v4(),
-            user_id: api_key.organization_id,
-            organization_id: api_key.organization_id,
+            user_id: fake_user_id,
+            organization_id: org_sub_plan.organization.id,
             role: api_key.role,
             created_at: chrono::Utc::now().naive_utc(),
             updated_at: chrono::Utc::now().naive_utc(),
         }],
-        orgs: vec![organization.organization],
+        orgs: vec![org_sub_plan.organization],
     };
 
     Ok((user, api_key.into()))

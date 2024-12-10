@@ -4149,9 +4149,9 @@ export type GetDatasetByTrackingIdData = {
      */
     trackingId: string;
     /**
-     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     * The organization id to use for the request
      */
-    trDataset: string;
+    trOrganization: string;
 };
 
 export type GetDatasetByTrackingIdResponse = (Dataset);

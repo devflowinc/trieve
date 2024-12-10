@@ -219,11 +219,17 @@ export async function getDatasetByTrackingId(
   trackingId: string,
   signal?: AbortSignal
 ): Promise<Dataset> {
+  if (!this.organizationId) {
+    throw new Error(
+      "Organization ID is required to get a dataset by tracking ID"
+    );
+  }
+
   return this.trieve.fetch(
     "/api/dataset/tracking_id/{tracking_id}",
     "get",
     {
-      datasetId: trackingId,
+      organizationId: this.organizationId,
       trackingId,
     },
     signal

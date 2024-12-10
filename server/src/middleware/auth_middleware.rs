@@ -422,8 +422,8 @@ where
 pub fn get_role_for_org(user: &SlimUser, org_id: &uuid::Uuid) -> Option<UserRole> {
     user.user_orgs
         .iter()
-        .find(|org_conn| org_conn.organization_id == *org_id)
-        .map(|org_conn| UserRole::from(org_conn.role))
+        .find(|user_org| user_org.organization_id == *org_id)
+        .map(|user_org| UserRole::from(user_org.role))
 }
 
 pub fn verify_owner(user: &OwnerOnly, org_id: &uuid::Uuid) -> bool {

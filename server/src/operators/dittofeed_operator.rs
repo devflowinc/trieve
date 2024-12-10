@@ -3,8 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     data::models::{
-        Dataset, DatasetDTO, DateRange, HeadQueries, Organization, Pool, SearchQueryEvent,
-        SlimUser, UnifiedId,
+        Dataset, DatasetDTO, DateRange, HeadQueries, Organization, Pool, SearchQueryEvent, SlimUser,
     },
     errors::ServiceError,
     handlers::{
@@ -130,9 +129,7 @@ pub async fn get_user_ditto_identity(
 
         let mut top_search_datasets = vec![];
         for dataset in top_search_datasets_clickhouse.iter() {
-            let dataset =
-                get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset.dataset_id), pool.clone())
-                    .await?;
+            let dataset = get_dataset_by_id_query(dataset.dataset_id, pool.clone()).await?;
             top_search_datasets.push(dataset);
         }
 
@@ -158,9 +155,7 @@ pub async fn get_user_ditto_identity(
 
         let mut top_rag_datasets = vec![];
         for dataset in top_rag_datasets_clickhouse.iter() {
-            let dataset =
-                get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset.dataset_id), pool.clone())
-                    .await?;
+            let dataset = get_dataset_by_id_query(dataset.dataset_id, pool.clone()).await?;
             top_rag_datasets.push(dataset);
         }
 
@@ -186,9 +181,7 @@ pub async fn get_user_ditto_identity(
 
         let mut top_recommendation_datasets = vec![];
         for dataset in top_recommendation_datasets_clickhouse.iter() {
-            let dataset =
-                get_dataset_by_id_query(UnifiedId::TrieveUuid(dataset.dataset_id), pool.clone())
-                    .await?;
+            let dataset = get_dataset_by_id_query(dataset.dataset_id, pool.clone()).await?;
             top_recommendation_datasets.push(dataset);
         }
 
