@@ -17,6 +17,8 @@ export default function Home() {
   const brandFontFamily = import.meta.env.VITE_BRAND_FONT_FAMILY;
   const problemLink = import.meta.env.VITE_PROBLEM_LINK;
   const useGroupSearch = import.meta.env.VITE_USE_GROUP_SEARCH == "true";
+  const usePagefind = import.meta.env.VITE_USE_PAGEFIND == "true";
+  const pagefindUrl = import.meta.env.VITE_PAGEFIND_URL;
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
@@ -127,6 +129,10 @@ export default function Home() {
                 },
               ]}
               useGroupSearch={useGroupSearch}
+              pagefindOptions={{
+                usePagefind: usePagefind,
+                cdnBaseUrl: pagefindUrl,
+              }}
               defaultAiQuestions={[
                 "What is Trieve?",
                 "How to perform autocomplete search?",

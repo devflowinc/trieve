@@ -19,6 +19,8 @@ export default function ECommerce() {
   const useGroupSearch = import.meta.env.VITE_USE_GROUP_SEARCH == "true";
   const showFloatingButton = import.meta.env.VITE_SHOW_FLOATING_BTN == "true";
   const floatingButtonPosition = import.meta.env.VITE_FLOATING_BTN_POSITION;
+  const usePagefind = import.meta.env.VITE_USE_PAGEFIND == "true";
+  const pagefindUrl = import.meta.env.VITE_PAGEFIND_URL;
 
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
@@ -33,9 +35,8 @@ export default function ECommerce() {
   return (
     <>
       <div
-        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${
-          theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
-        }`}
+        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
+          }`}
       >
         <div className="absolute top-6 right-6">
           <ul>
@@ -81,10 +82,21 @@ export default function ECommerce() {
                 use_autocomplete: false,
                 search_type: "fulltext",
               }}
+              buttonTriggers={[
+                {
+                  selector: ".random-trigger-location",
+                  mode: "chat",
+                },
+              ]}
+              pagefindOptions={{
+                usePagefind: usePagefind,
+                cdnBaseUrl: pagefindUrl,
+              }}
               defaultSearchQueries={defaultSearchQueries}
               tags={defaultTags}
               floatingButtonPosition={floatingButtonPosition}
               showFloatingButton={showFloatingButton}
+              debounceMs={500}
             />
           </>
         ) : (

@@ -200,7 +200,9 @@ impl EventQueue {
 
     pub async fn send(&self, event: ClickHouseEvent) {
         if let Some(sender) = &self.sender {
-            sender.send(event).await.unwrap();
+            let _ = sender.send(event).await.map_err(|e| {
+                log::error!("Error sending event to clickhouse: {:?}", e);
+            });
         }
     }
 }

@@ -24,7 +24,6 @@ export const setClickTriggers = (
     let element: Element | null = document.querySelector(trigger.selector);
     if (trigger.removeListeners ?? true) {
       element = removeAllClickListeners(trigger.selector);
-      console.log("Removed click listeners from", trigger.selector);
     }
 
     if (element) {

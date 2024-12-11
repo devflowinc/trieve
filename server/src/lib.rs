@@ -247,6 +247,7 @@ impl Modify for SecurityAddon {
         handlers::dataset_handler::get_dataset_crawl_options,
         handlers::dataset_handler::get_usage_by_dataset_id,
         handlers::dataset_handler::get_datasets_from_organization,
+        handlers::dataset_handler::create_pagefind_index_for_dataset,
         handlers::dataset_handler::clear_dataset,
         handlers::stripe_handler::direct_to_payment_link,
         handlers::stripe_handler::cancel_subscription,
@@ -841,6 +842,10 @@ pub fn main() -> std::io::Result<()> {
                                             web::post().to(handlers::dataset_handler::create_dataset),
                                         )
                                         .route(web::put().to(handlers::dataset_handler::update_dataset))
+                                )
+                                .service(
+                                    web::resource("/pagefind")
+                                        .route(web::post().to(handlers::dataset_handler::create_pagefind_index_for_dataset))
                                 )
                                 .service(
                                     web::resource("/batch_create_datasets").route(
