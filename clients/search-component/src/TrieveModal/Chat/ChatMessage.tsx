@@ -87,7 +87,7 @@ export const Message = ({
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
   const { props } = useModalState();
-
+  
   const ecommerceItems = message.additional
     ?.filter(
       (chunk) =>

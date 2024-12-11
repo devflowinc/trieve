@@ -29,7 +29,7 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
     const [isPublic, setisPublic] = createSignal<boolean>(false);
     const [hasLoaded, setHasLoaded] = createSignal(false);
 
-    const { datasetId } = useContext(DatasetContext);
+    const { dataset, datasetId } = useContext(DatasetContext);
     const { selectedOrg } = useContext(UserContext);
 
     const trieve = useTrieve();
@@ -208,7 +208,9 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
 
     const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
     const publicUrl = createMemo(() => {
-      return `${apiHost.slice(0, -4)}/public_page/${datasetId()}`;
+      return `${apiHost.slice(0, -4)}/demos/${
+        dataset()?.dataset.tracking_id ?? datasetId()
+      }`;
     });
 
     return {

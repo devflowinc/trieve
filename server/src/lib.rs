@@ -780,6 +780,10 @@ pub fn main() -> std::io::Result<()> {
                     web::resource("/public_page/{dataset_id}")
                         .route(web::get().to(handlers::page_handler::public_page))
                 )
+                .service(
+                    web::resource("/demos/{dataset_id}")
+                        .route(web::get().to(handlers::page_handler::public_page))
+                )
                 .service(actix_files::Files::new("/static", "./static").prefer_utf8(true))
                 // everything under '/api/' route
                 .service(

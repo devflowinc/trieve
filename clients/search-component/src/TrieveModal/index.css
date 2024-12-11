@@ -253,7 +253,7 @@ body {
     }
 
     .trieve-footer.ecommerce {
-      @apply py-0.5 -mx-4;
+      @apply py-0.5;
     }
 
     .commands.ecommerce {
@@ -572,6 +572,10 @@ body {
           }
 
           &.loading {
+            @apply animate-pulse;
+          }
+
+          &.empty-state-loading {
             @apply animate-pulse;
           }
         }

@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="/static/output.css" />
     <link
       rel="stylesheet"
-      href="https://unpkg.com/trieve-search-component@0.2.12/dist/index.css"
+      href="https://unpkg.com/trieve-search-component@0.2.15/dist/index.css"
     />
     <link
       rel="apple-touch-icon"
@@ -29,19 +29,22 @@
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    {% if params.openGraphMetadata %}
-      {% if params.openGraphMetadata.title %}
-      <meta property="og:title" content="{{params.openGraphMetadata.title}}" />
-      {% endif %}
-      <meta property="og:url" content="{{params.baseUrl}}/public_page/{{params.datasetId}}" />
-      <meta property="og:type" content="website" />
-      {% if params.openGraphMetadata.image %}
-      <meta property="og:image" content="{{params.openGraphMetadata.image}}" />
-      {% endif %}
-      {% if params.openGraphMetadata.description %}
-      <meta property="og:description" content="{{params.openGraphMetadata.description}}" />
-      {% endif %}
+    {% if params.openGraphMetadata %} {% if params.openGraphMetadata.title %}
+    <meta property="og:title" content="{{params.openGraphMetadata.title}}" />
     {% endif %}
+    <meta
+      property="og:url"
+      content="{{params.baseUrl}}/public_page/{{params.datasetId}}"
+    />
+    <meta property="og:type" content="website" />
+    {% if params.openGraphMetadata.image %}
+    <meta property="og:image" content="{{params.openGraphMetadata.image}}" />
+    {% endif %} {% if params.openGraphMetadata.description %}
+    <meta
+      property="og:description"
+      content="{{params.openGraphMetadata.description}}"
+    />
+    {% endif %} {% endif %}
 
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js"></script>
@@ -53,7 +56,7 @@
     </script>
 
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Maven+Pro:wght@400..900&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Maven+Pro:wght@400..900&family=Noto+Color+Emoji&display=swap');
 
       :root {
         --brand-color: #a33eb5;
@@ -69,7 +72,15 @@
       }
 
       nav {
+        font-family: "Maven Pro", sans-serif;
         border-color: var(--brand-color);
+
+        a:hover {
+          color: var(--brand-color);
+          svg {
+            fill: var(--brand-color);
+          }
+        }
       }
 
       .nav-icon {
@@ -88,23 +99,29 @@
         border-radius: 0.25rem;
         color: white;
         fill: white;
+
+        &:hover {
+          background-color:  color-mix(in srgb, var(--brand-color), black 20%);
+          color: white;
+          fill: white;
+
+          svg {
+            fill: white;
+          }
+        }
       }
 
-      .action-link:hover {
-        background-color: #802f8f;
-      }
-
-      a {
+      .tab-content a {
         color: var(--brand-color);
         font-weight: 500;
         display: inline-flex;
         align-items: start;
         gap: 4px;
         text-decoration-line: none;
-      }
 
-      a:hover {
-        text-decoration-line: underline;
+        :hover {
+          text-decoration-line: underline;
+        }
       }
 
       body {
@@ -140,6 +157,19 @@
         left: 0.5rem;
         text-decoration: none;
       }
+
+      .made-with-love {
+        font-family: "Maven Pro", sans-serif;
+        position: fixed;
+        bottom: 0.5rem;
+        right: 0.5rem;
+      }
+
+      .heart {
+        font-family: Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,Android Emoji,EmojiSymbols,EmojiOne Mozilla,Twemoji Mozilla,Segoe UI Symbol,Noto Color Emoji Compat,emoji;
+        content: '\2764';
+      }
+
 
       .basic {
         padding: 1rem;
@@ -178,10 +208,31 @@
         background-color: var(--brand-color);
         color: white;
       }
+
+      .signature {
+        font-family: "Architects Daughter", cursive;
+
+        .creator {
+          &:hover {
+            color: #0a66c2;
+          }
+        }
+
+        .trieve-company-name {
+          &:hover {
+            color: #a33eb5;
+          }
+        }
+      }
+
+      body #open-trieve-modal:not(.responsive) {
+        width: 100%;
+        max-width: 42rem;
+      }
     </style>
 
     <script type="module">
-      import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.12/dist/vanilla/index.js';
+      import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.15/dist/vanilla/index.js';
       window.addEventListener('load', () => {
         const root = document.getElementById('root');
         renderToDiv(root, {
@@ -207,6 +258,9 @@
       >Back To Dashboard</a
     >
     {% endif %}
+    <p class="text-xs made-with-love">
+      Made with <span class="heart">&hearts;</span> in San Francisco
+    </p>
   </body>
 
   <canvas id="canvas"></canvas>
@@ -215,20 +269,43 @@
   <script type="module">
     import { annotate } from "https://unpkg.com/rough-notation?module";
 
-    // Get the target element and its position
-    let targetElement = document.getElementById("open-trieve-modal");
-    while (!targetElement) {
-      targetElement = document.getElementById("open-trieve-modal");
+    let openTrieveModalElement = document.getElementById("open-trieve-modal");
+    while (!openTrieveModalElement) {
+      openTrieveModalElement = document.getElementById("open-trieve-modal");
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
-    const circleAnimation = annotate(targetElement, {
+    let tabContainer = document.getElementById("tab-container");
+    while (!tabContainer) {
+      tabContainer = document.getElementById("tab-container");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    openTrieveModalElement.style.width = tabContainer.offsetWidth / 2 + "px";
+    console.log(
+      "set openTrieveModalElement width to",
+      tabContainer.width + "px"
+    );
+
+    let brandNameElement = document.querySelector(".brand-name");
+    while (!brandNameElement) {
+      brandNameElement = document.querySelector(".brand-name");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    const circleAnimation = annotate(openTrieveModalElement, {
       type: "circle",
       color: window.paramsData.brandColor || "black",
-      padding: 22,
+      padding: 30,
     });
-    const rect = targetElement.getBoundingClientRect();
 
-    // Get the bottom right corner coordinates
+    const brandUnderlineAnimation = annotate(brandNameElement, {
+      type: "underline",
+      animate: false,
+      color: window.paramsData.brandColor || "black",
+      padding: 3,
+    });
+
+    const rect = openTrieveModalElement.getBoundingClientRect();
+
     let endX = rect.right + 128;
     if (endX > window.innerWidth) {
       endX = window.innerWidth - 100;
@@ -236,11 +313,9 @@
 
     const endY = rect.bottom + 45;
 
-    // Calculate start point (will be above and to the left of the end point)
-    const startX = rect.right + 35; // 200px to the left
-    const startY = rect.bottom - 15; // 100px up
+    const startX = rect.right + 40;
+    const startY = rect.bottom - 15;
 
-    // Create canvas and set its position
     const canvas = document.getElementById("canvas");
     canvas.style.position = "absolute";
     canvas.style.left = "0";
@@ -249,10 +324,8 @@
     canvas.height = window.innerHeight;
     canvas.style.zIndex = "-1";
 
-    // Initialize Rough.js
     const rc = rough.canvas(canvas);
 
-    // Create the curved arrow
     rc.path(
       `M ${startX} ${startY}
          Q ${startX + 85} ${endY - 85} ${endX} ${endY}`,
@@ -264,7 +337,6 @@
       }
     );
 
-    // Add arrowhead
     const arrowSize = 10;
     rc.line(startX, startY, startX + arrowSize, startY + arrowSize, {
       stroke: window.paramsData.brandColor || "black",
@@ -281,13 +353,12 @@
     ]);
 
     const ctx = canvas.getContext("2d");
-    // Use Architects Daughter font with a fallback of cursive
-    // Swap font display if the font loads after the text is drawn
-    ctx.font = "16px Architects Daughter, cursive";
+    ctx.font = "500 32px Architects Daughter, cursive";
     ctx.fontDisplay = "swap";
     ctx.fillStyle = window.paramsData.brandColor || "black";
-    ctx.fillText("Try Me!", endX - 6, endY + 17);
+    ctx.fillText("Try Me!", endX - 30, endY + 30);
 
     circleAnimation.show();
+    brandUnderlineAnimation.show();
   </script>
 </html>

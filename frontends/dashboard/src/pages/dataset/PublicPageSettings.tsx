@@ -164,6 +164,95 @@ const PublicPageControls = () => {
             <div class="grow">
               <div class="flex items-center gap-1">
                 <label class="block" for="">
+                  Header Brand Name
+                </label>
+                <Tooltip
+                  tooltipText="Brand name which will be displayed in the navbar on the page"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <div class="flex grow items-center gap-2">
+                <input
+                  placeholder="Devflow, Inc."
+                  value={extraParams.forBrandName || ""}
+                  onInput={(e) => {
+                    setExtraParams("forBrandName", e.currentTarget.value);
+                  }}
+                  class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+            <div class="grow">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Creator Name
+                </label>
+                <Tooltip
+                  tooltipText="Your name which will be displayed in the navbar on the page"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <div class="flex grow items-center gap-2">
+                <input
+                  placeholder="Nick K, CEO"
+                  value={extraParams.creatorName || ""}
+                  onInput={(e) => {
+                    setExtraParams("creatorName", e.currentTarget.value);
+                  }}
+                  class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+            <div class="grow">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Creator LinkedIn URL
+                </label>
+                <Tooltip
+                  tooltipText="Your LinkedIn URL which will be displayed in the navbar on the page"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <div class="flex grow items-center gap-2">
+                <input
+                  placeholder="https://www.linkedin.com/in/nicholas-khami-5a0a7a135/"
+                  value={extraParams.creatorLinkedInUrl || ""}
+                  onInput={(e) => {
+                    setExtraParams("creatorLinkedInUrl", e.currentTarget.value);
+                  }}
+                  class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-start gap-8">
+          <div class="flex grow flex-col gap-2">
+            <div class="grow">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Header Brand Name
+                </label>
+                <Tooltip
+                  tooltipText="Brand name which will be displayed in the navbar on the page"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <div class="flex grow items-center gap-2">
+                <input
+                  placeholder="https://cdn.trieve.ai/favicon.ico"
+                  value={extraParams.brandLogoImgSrcUrl || ""}
+                  onInput={(e) => {
+                    setExtraParams("brandLogoImgSrcUrl", e.currentTarget.value);
+                  }}
+                  class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+            <div class="grow">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
                   In-Module Brand Icon Link
                 </label>
                 <Tooltip
@@ -900,7 +989,7 @@ export const SearchOptions = () => {
     setSearchOptionsError,
   } = usePublicPage();
   return (
-    <div class="p-2">
+    <div class="mt-1">
       <div class="flex items-baseline justify-between">
         <div>Search Options</div>
         <a

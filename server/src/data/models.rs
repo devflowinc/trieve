@@ -3111,6 +3111,9 @@ impl DatasetConfigurationDTO {
                     search_options: page_parameters_self
                         .search_options
                         .or(page_parameters_curr.search_options),
+                    for_brand_name: page_parameters_self
+                        .for_brand_name
+                        .or(page_parameters_curr.for_brand_name),
                     brand_name: page_parameters_self
                         .brand_name
                         .or(page_parameters_curr.brand_name),
@@ -3168,6 +3171,12 @@ impl DatasetConfigurationDTO {
                     open_links_in_new_tab: page_parameters_self
                         .open_links_in_new_tab
                         .or(page_parameters_curr.open_links_in_new_tab),
+                    creator_name: page_parameters_self
+                        .creator_name
+                        .or(page_parameters_curr.creator_name),
+                    creator_linked_in_url: page_parameters_self
+                        .creator_linked_in_url
+                        .or(page_parameters_curr.creator_linked_in_url),
                 }),
             },
             DISABLE_ANALYTICS: self

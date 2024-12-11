@@ -5705,11 +5705,10 @@
           {
             "name": "dataset_id",
             "in": "path",
-            "description": "The id of the organization you want to fetch.",
+            "description": "The id or tracking_id of the dataset you want to get the demo page for.",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           }
         ],
@@ -12012,6 +12011,14 @@
             "type": "boolean",
             "nullable": true
           },
+          "creatorLinkedInUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "creatorName": {
+            "type": "string",
+            "nullable": true
+          },
           "currencyPosition": {
             "type": "string",
             "nullable": true
@@ -12046,6 +12053,10 @@
             "items": {
               "type": "string"
             },
+            "nullable": true
+          },
+          "forBrandName": {
+            "type": "string",
             "nullable": true
           },
           "heroPattern": {
