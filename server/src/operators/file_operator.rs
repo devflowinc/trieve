@@ -126,14 +126,12 @@ pub fn preprocess_file_to_chunks(
 pub async fn create_file_chunks(
     created_file_id: uuid::Uuid,
     upload_file_data: UploadFileReqPayload,
-    chunk_htmls: Vec<String>,
+    mut chunks: Vec<ChunkReqPayload>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
     mut redis_conn: MultiplexedConnection,
 ) -> Result<(), ServiceError> {
-    let mut chunks: Vec<ChunkReqPayload> = [].to_vec();
-
     let name = upload_file_data.file_name.clone();
 
     let chunk_group = ChunkGroup::from_details(
@@ -167,39 +165,16 @@ pub async fn create_file_chunks(
 
     let group_id = chunk_group.id;
 
+    chunks.iter_mut().for_each(|chunk| {
+        chunk.group_ids = Some(vec![group_id]);
+    });
+
     create_group_from_file_query(group_id, created_file_id, pool.clone())
         .await
         .map_err(|e| {
             log::error!("Could not create group from file {:?}", e);
             e
         })?;
-
-    for (i, chunk_html) in chunk_htmls.iter().enumerate() {
-        let create_chunk_data = ChunkReqPayload {
-            chunk_html: Some(chunk_html.clone()),
-            semantic_content: None,
-            link: upload_file_data.link.clone(),
-            tag_set: upload_file_data.tag_set.clone(),
-            metadata: upload_file_data.metadata.clone(),
-            group_ids: Some(vec![group_id]),
-            group_tracking_ids: None,
-            location: None,
-            tracking_id: upload_file_data
-                .group_tracking_id
-                .clone()
-                .map(|tracking_id| format!("{}|{}", tracking_id, i)),
-            upsert_by_tracking_id: None,
-            time_stamp: upload_file_data.time_stamp.clone(),
-            weight: None,
-            split_avg: None,
-            convert_html_to_text: None,
-            image_urls: None,
-            num_value: None,
-            fulltext_boost: None,
-            semantic_boost: None,
-        };
-        chunks.push(create_chunk_data);
-    }
 
     let chunk_count = get_row_count_for_organization_id_query(
         dataset_org_plan_sub.organization.organization.id,

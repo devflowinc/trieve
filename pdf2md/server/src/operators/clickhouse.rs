@@ -170,7 +170,7 @@ pub async fn get_task(
 pub async fn get_task_pages(
     task: FileTaskClickhouse,
     limit: Option<u32>,
-    offset_id: Option<uuid::Uuid>,
+    offset_id: Option<u32>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<Vec<ChunkClickhouse>, ServiceError> {
     if FileTaskStatus::from(task.status.clone()) == FileTaskStatus::Completed || task.pages > 0 {
@@ -178,10 +178,10 @@ pub async fn get_task_pages(
 
         let pages: Vec<ChunkClickhouse> = clickhouse_client
             .query(
-                "SELECT ?fields FROM file_chunks WHERE task_id = ? AND id > ? ORDER BY page LIMIT ?",
+                "SELECT ?fields FROM file_chunks WHERE task_id = ? AND page > ? ORDER BY page LIMIT ?",
             )
             .bind(task.id.clone())
-            .bind(offset_id.unwrap_or(uuid::Uuid::nil()))
+            .bind(offset_id.unwrap_or(0))
             .bind(limit)
             .fetch_all()
             .await

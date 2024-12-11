@@ -17,7 +17,11 @@ interface RequestBody {
   group_tracking_id?: string;
   metadata: any;
   time_stamp?: string;
-  use_pdf2md_ocr?: boolean;
+  pdf2md_options?: {
+    use_pdf2md_ocr: boolean;
+    system_prompt?: string;
+    split_headings?: boolean;
+  };
 }
 
 export const UploadFile = () => {
@@ -145,7 +149,7 @@ export const UploadFile = () => {
         split_delimiters: splitDelimiters(),
         target_splits_per_chunk: targetSplitsPerChunk(),
         rebalance_chunks: rebalanceChunks(),
-        use_pdf2md_ocr: useGptChunking(),
+        pdf2md_options: { use_pdf2md_ocr: useGptChunking() },
         group_tracking_id:
           groupTrackingId() === "" ? undefined : groupTrackingId(),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
