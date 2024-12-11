@@ -5026,6 +5026,8 @@ pub struct RagQueryEvent {
     pub dataset_id: uuid::Uuid,
     pub llm_response: String,
     pub query_rating: Option<SearchQueryRating>,
+    pub hallucination_score: f64,
+    pub detected_hallucinations: Vec<String>,
     pub created_at: String,
     pub user_id: String,
 }
@@ -5082,6 +5084,8 @@ impl RagQueryEventClickhouse {
             query_rating,
             dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
             llm_response: self.llm_response,
+            hallucination_score: self.hallucination_score,
+            detected_hallucinations: self.detected_hallucinations,
             created_at: self.created_at.to_string(),
             user_id: self.user_id,
         }
@@ -5105,6 +5109,8 @@ pub struct RagQueryEventClickhouse {
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
     pub user_id: String,
+    pub hallucination_score: f64,
+    pub detected_hallucinations: Vec<String>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -5883,6 +5889,8 @@ impl EventTypes {
                 query_rating,
                 llm_response,
                 user_id,
+                hallucination_score,
+                detected_hallucinations,
             } => EventDataTypes::RagQueryEventClickhouse(RagQueryEventClickhouse {
                 id: uuid::Uuid::new_v4(),
                 rag_type: rag_type
@@ -5901,6 +5909,8 @@ impl EventTypes {
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
                 user_id: user_id.unwrap_or_default(),
+                hallucination_score: hallucination_score.unwrap_or(0.0),
+                detected_hallucinations: detected_hallucinations.unwrap_or_default(),
             }),
             EventTypes::Recommendation {
                 recommendation_type,
@@ -6763,6 +6773,10 @@ pub enum EventTypes {
         llm_response: Option<String>,
         /// The user id of the user who made the RAG event
         user_id: Option<String>,
+        /// The hallucination score of the RAG event
+        hallucination_score: Option<f64>,
+        /// The detected hallucinations of the RAG event
+        detected_hallucinations: Option<Vec<String>>,
     },
     #[display(fmt = "recommendation")]
     #[schema(title = "Recommendation")]
@@ -7773,4 +7787,10 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
             }),
         }
     }
+}
+
+#[cfg(not(feature = "hallucination-detection"))]
+pub struct DummyHallucinationScore {
+    pub total_score: f64,
+    pub detected_hallucinations: Vec<String>,
 }

@@ -28,6 +28,8 @@ use diesel_async::pooled_connection::ManagerConfig;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
+#[cfg(feature = "hallucination-detection")]
+use hallucination_detection::HallucinationDetector;
 use minijinja::Environment;
 use once_cell::sync::Lazy;
 use openssl::ssl::SslVerifyMode;
@@ -692,6 +694,18 @@ pub fn main() -> std::io::Result<()> {
             std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create metrics {:?}", e))
         })?;
 
+        #[cfg(feature = "hallucination-detection")]
+        let detector = {
+            let detector = HallucinationDetector::new(Default::default()).map_err(|e| {
+                std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create hallucination detector {:?}", e))
+            })?;
+            web::Data::new(detector)
+        };
+
+        #[cfg(not(feature = "hallucination-detection"))]
+        let detector = web::Data::new(());
+
+
         HttpServer::new(move || {
             let mut env = Environment::new();
             minijinja_embed::load_templates!(&mut env);
@@ -714,6 +728,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(event_queue.clone()))
                 .app_data(web::Data::new(clickhouse_client.clone()))
                 .app_data(web::Data::new(metrics.clone()))
+                .app_data(detector.clone())
                 .wrap(from_fn(middleware::timeout_middleware::timeout_15secs))
                 .wrap(from_fn(middleware::metrics_middleware::error_logging_middleware))
                 .wrap(middleware::api_version::ApiVersionCheckFactory)
