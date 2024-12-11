@@ -2,8 +2,8 @@ use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
         CrawlOptions, Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        DatasetConfigurationDTO, DatasetDTO, OrganizationWithSubAndPlan, Pool, RedisPool,
-        StripePlan,
+        DatasetConfigurationDTO, DatasetDTO, OrganizationWithSubAndPlan,
+        PagefindIndexWorkerMessage, Pool, RedisPool, StripePlan,
     },
     errors::ServiceError,
     middleware::auth_middleware::{verify_admin, verify_owner},
@@ -472,6 +472,59 @@ pub async fn clear_dataset(
     let config = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     clear_dataset_by_dataset_id_query(data.into_inner(), config, redis_pool).await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+/// Create Pagefind Index for Dataset
+///
+/// Uses pagefind to index the dataset and store the result into a CDN for retrieval. The auth'ed
+/// user must be an admin of the organization to create a pagefind index for a dataset.
+#[utoipa::path(
+    put,
+    path = "/dataset/pagefind",
+    context_path = "/api",
+    tag = "Dataset",
+    responses(
+        (status = 204, description = "Dataset indexed successfully"),
+        (status = 400, description = "Service error relating to creating the index", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn create_pagefind_index_for_dataset(
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: AdminOnly,
+    redis_pool: web::Data<RedisPool>,
+) -> Result<HttpResponse, ServiceError> {
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+
+    let worker_message = PagefindIndexWorkerMessage {
+        dataset_id,
+        created_at: chrono::Utc::now().naive_utc(),
+        attempt_number: 0,
+    };
+
+    let serialized_message = serde_json::to_string(&worker_message).map_err(|_| {
+        ServiceError::InternalServerError("Failed to serialize message".to_string())
+    })?;
+
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    redis::cmd("lpush")
+        .arg("pagefind-index-ingestion")
+        .arg(&serialized_message)
+        .query_async::<_, ()>(&mut *redis_conn)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::NoContent().finish())
 }

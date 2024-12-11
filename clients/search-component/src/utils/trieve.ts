@@ -1,12 +1,13 @@
 import {
   ChunkMetadata,
   ChunkMetadataStringTagSet,
+  CountChunkQueryResponseBody,
   SearchResponseBody,
   TrieveSDK,
 } from "trieve-ts-sdk";
-import { Chunk, GroupSearchResults, Props, SearchResults } from "./types";
+import { Chunk, ChunkWithHighlights, GroupChunk, GroupSearchResults, Props, SearchResults } from "./types";
 import { defaultHighlightOptions, highlightText } from "./highlight";
-import { ModalTypes } from "./hooks/modal-context";
+import { ModalTypes, PagefindApi } from "./hooks/modal-context";
 
 export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
@@ -36,7 +37,7 @@ export const searchWithTrieve = async ({
   const scoreThreshold =
     searchOptions.score_threshold ??
     ((searchOptions.search_type ?? "fulltext") === "fulltext" ||
-    searchOptions.search_type == "bm25"
+      searchOptions.search_type == "bm25"
       ? 2
       : 0.3);
 
@@ -129,7 +130,7 @@ export const groupSearchWithTrieve = async ({
   const scoreThreshold =
     searchOptions.score_threshold ??
     ((searchOptions.search_type ?? "fulltext") === "fulltext" ||
-    searchOptions.search_type == "bm25"
+      searchOptions.search_type == "bm25"
       ? 2
       : 0.3);
 
@@ -191,7 +192,7 @@ export const countChunks = async ({
   const scoreThreshold =
     searchOptions?.score_threshold ??
     ((searchOptions?.search_type ?? "fulltext") === "fulltext" ||
-    searchOptions?.search_type == "bm25"
+      searchOptions?.search_type == "bm25"
       ? 2
       : 0.3);
 
@@ -304,4 +305,171 @@ export const getAllChunksForGroup = async (
     page += 1;
   }
   return chunks;
+};
+
+export const searchWithPagefind = async (
+  pagefind: PagefindApi,
+  query: string,
+  datasetId: string,
+  tag?: string,
+) => {
+  const response = await pagefind.search(query,
+    tag && {
+      filters: {
+        tag_set: tag
+      }
+    }
+  );
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const results = await Promise.all(response.results.map(async (result: any) => {
+    return await result.data();
+  }));
+
+  // Set pagesize to 20
+  const pagefindResultsMappedToTrieve = results.slice(0, 20).map((result, i) => {
+    return {
+      chunk: {
+        chunk_html: result.content,
+        link: result.url,
+        metadata: result.meta,
+        created_at: "",
+        dataset_id: datasetId,
+        id: i.toString(),
+        image_urls: result.meta.image_urls.split(", "),
+        location: null,
+        num_value: null,
+        tag_set: result.meta.tag_set,
+        time_stamp: null,
+        tracking_id: null,
+        updated_at: "",
+        weight: 0
+
+      },
+      highlights: []
+    }
+  })
+
+  return pagefindResultsMappedToTrieve;
+};
+
+export const groupSearchWithPagefind = async (
+  pagefind: PagefindApi,
+  query: string,
+  datasetId: string,
+  tag?: string,
+): Promise<GroupSearchResults> => {
+  const response = await pagefind.search(query,
+    tag && {
+      filters: {
+        tag_set: tag
+      }
+    }
+  );
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const results = await Promise.all(response.results.map(async (result: any) => {
+    return await result.data();
+  }));
+
+  const groupMap = new Map<string, ChunkWithHighlights[]>();
+
+  let i = 0;
+  for (const result of results) {
+    const chunkWithHighlights = {
+      chunk: {
+        chunk_html: result.content,
+        link: result.url,
+        metadata: result.meta,
+        created_at: "",
+        dataset_id: datasetId,
+        id: i.toString(),
+        image_urls: result.meta.image_urls.split(", "),
+        location: null,
+        num_value: null,
+        tag_set: result.meta.tag_set,
+        time_stamp: null,
+        tracking_id: null,
+        updated_at: "",
+        weight: 0
+
+      },
+      highlights: []
+    } as unknown as ChunkWithHighlights;
+
+    const group = result.meta.group_ids;
+    if (groupMap.has(group)) {
+      groupMap.get(group)?.push(chunkWithHighlights);
+    } else {
+      groupMap.set(group, [chunkWithHighlights]);
+    }
+    i++;
+
+    if (groupMap.size >= 10 || i >= 20) {
+      break;
+    }
+  }
+
+  const groups: GroupChunk[] = [];
+  groupMap.entries().forEach(([group_id, chunks]) => {
+    groups.push({
+      chunks: chunks,
+      group: {
+        created_at: "",
+        dataset_id: datasetId,
+        description: "",
+        id: group_id,
+        metadata: null,
+        name: "",
+        tag_set: "",
+        tracking_id: null,
+        updated_at: ""
+      },
+      requestID: "",
+    } as unknown as GroupChunk
+    );
+  });
+
+  return {
+    groups: groups,
+    requestID: "",
+  } as unknown as GroupSearchResults;
+};
+
+export const countChunksWithPagefind = async (
+  pagefind: PagefindApi,
+  query: string,
+  tags: {
+    tag: string;
+    label?: string;
+    selected?: boolean;
+    iconClassName?: string;
+    icon?: () => JSX.Element;
+  }[]
+): Promise<CountChunkQueryResponseBody[]> => {
+  let queryParam: string | null = query;
+  if (query.trim() === "") {
+    queryParam = null;
+  }
+
+  const response = await pagefind.search(queryParam);
+
+  const tag_set = response.filters.tag_set;
+
+  const counts: CountChunkQueryResponseBody[] = tags.map((tag) => {
+    if (tag.tag in tag_set) {
+      return {
+        count: tag_set[tag.tag] as number,
+      };
+    }
+    return {
+      count: 0
+    }
+  })
+
+  counts.unshift({
+    count: response.unfilteredResultCount as number,
+  });
+
+  return counts;
 };

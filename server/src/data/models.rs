@@ -1013,6 +1013,7 @@ pub struct QdrantChunkMetadata {
     pub image_urls: Option<Vec<String>>,
     pub tag_set: Option<Vec<String>>,
     pub num_value: Option<f64>,
+    pub group_ids: Option<Vec<uuid::Uuid>>,
 }
 
 impl From<SearchResult> for QdrantChunkMetadata {
@@ -1169,6 +1170,24 @@ impl From<SearchResult> for QdrantChunkMetadata {
             }) => Some(*num_value),
             _ => None,
         };
+        let group_ids: Option<Vec<uuid::Uuid>> = match search_result.payload.get("group_ids") {
+            Some(qdrant::Value {
+                kind: Some(Kind::ListValue(group_ids)),
+                ..
+            }) => Some(
+                group_ids
+                    .iter()
+                    .filter_map(|id| match id {
+                        qdrant::Value {
+                            kind: Some(Kind::StringValue(id)),
+                            ..
+                        } => uuid::Uuid::parse_str(id).ok(),
+                        _ => None,
+                    })
+                    .collect(),
+            ),
+            _ => None,
+        };
 
         QdrantChunkMetadata {
             link,
@@ -1183,6 +1202,7 @@ impl From<SearchResult> for QdrantChunkMetadata {
             image_urls: images_urls,
             tag_set,
             num_value,
+            group_ids,
         }
     }
 }
@@ -2080,6 +2100,10 @@ pub enum EventType {
         video_id: String,
         chunks_created: usize,
     },
+    #[display(fmt = "pagefind_indexing_started")]
+    PagefindIndexingStarted,
+    #[display(fmt = "pagefind_indexing_finished")]
+    PagefindIndexingFinished { total_files: usize },
 }
 
 impl EventType {
@@ -2102,6 +2126,8 @@ impl EventType {
             EventTypeRequest::CsvJsonlProcessingCheckpoint,
             EventTypeRequest::CsvJsonlProcessingCompleted,
             EventTypeRequest::VideoUploaded,
+            EventTypeRequest::PagefindIndexingStarted,
+            EventTypeRequest::PagefindIndexingFinished,
         ]
     }
 }
@@ -4274,6 +4300,13 @@ pub struct CsvJsonlWorkerMessage {
     pub file_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub create_presigned_put_url_data: CreatePresignedUrlForCsvJsonlReqPayload,
+    pub created_at: chrono::NaiveDateTime,
+    pub attempt_number: u8,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct PagefindIndexWorkerMessage {
+    pub dataset_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
     pub attempt_number: u8,
 }
@@ -6630,6 +6663,10 @@ pub enum EventTypeRequest {
     CsvJsonlProcessingCompleted,
     #[display(fmt = "video_uploaded")]
     VideoUploaded,
+    #[display(fmt = "pagefind_indexing_started")]
+    PagefindIndexingStarted,
+    #[display(fmt = "pagefind_indexing_finished")]
+    PagefindIndexingFinished,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

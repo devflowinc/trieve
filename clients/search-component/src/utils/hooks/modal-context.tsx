@@ -14,7 +14,10 @@ import {
 } from "trieve-ts-sdk";
 import {
   countChunks,
+  countChunksWithPagefind,
+  groupSearchWithPagefind,
   groupSearchWithTrieve,
+  searchWithPagefind,
   searchWithTrieve,
 } from "../trieve";
 
@@ -33,10 +36,18 @@ type customAutoCompleteAddOn = {
   use_autocomplete?: boolean;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type PagefindApi = any;
+
 export type currencyPosition = "before" | "after";
 export type ModalTypes = "ecommerce" | "docs";
 export type SearchModes = "chat" | "search";
 export type searchOptions = simpleSearchReqPayload & customAutoCompleteAddOn;
+
+export interface PagefindOptions {
+  usePagefind: boolean;
+  cdnBaseUrl?: string;
+}
 
 export type ModalProps = {
   datasetId: string;
@@ -66,6 +77,7 @@ export type ModalProps = {
     icon?: () => JSX.Element;
   }[];
   defaultSearchMode?: SearchModes;
+  pagefindOptions?: PagefindOptions;
   type?: ModalTypes;
   useGroupSearch?: boolean;
   allowSwitchingModes?: boolean;
@@ -147,6 +159,7 @@ const ModalContext = createContext<{
   currentGroup: ChunkGroup | null;
   setCurrentGroup: React.Dispatch<React.SetStateAction<ChunkGroup | null>>;
   tagCounts: CountChunkQueryResponseBody[];
+  pagefind?: PagefindApi;
 }>({
   props: defaultProps,
   trieveSDK: (() => {}) as unknown as TrieveSDK,
@@ -170,6 +183,7 @@ const ModalContext = createContext<{
   setCurrentGroup: () => {},
   tagCounts: [],
   setContextProps: () => {},
+  pagefind: null,
 });
 
 const ModalProvider = ({
@@ -197,6 +211,7 @@ const ModalProvider = ({
   const [currentTag, setCurrentTag] = useState(
     props.tags?.find((t) => t.selected)?.tag || "all"
   );
+  const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
 
   const [currentGroup, setCurrentGroup] = useState<ChunkGroup | null>(null);
 
@@ -214,7 +229,7 @@ const ModalProvider = ({
 
     try {
       setLoadingResults(true);
-      if (props.useGroupSearch) {
+      if (props.useGroupSearch && !props.pagefindOptions?.usePagefind) {
         const results = await groupSearchWithTrieve({
           query: query,
           searchOptions: props.searchOptions,
@@ -236,6 +251,33 @@ const ModalProvider = ({
 
         setResults(Array.from(groupMap.values()));
         setRequestID(results.requestID);
+      } else if (props.useGroupSearch && props.pagefindOptions?.usePagefind) {
+
+        const results = await groupSearchWithPagefind(
+          pagefind,
+          query,
+          props.datasetId,
+          currentTag !== "all" ? currentTag : undefined
+        );
+        const groupMap = new Map<string, GroupChunk[]>();
+        results.groups.forEach((group) => {
+          const title = group.chunks[0].chunk.metadata?.title;
+          if (groupMap.has(title)) {
+            groupMap.get(title)?.push(group);
+          } else {
+            groupMap.set(title, [group]);
+          }
+        });
+        setResults(Array.from(groupMap.values()));
+
+      } else if (!props.useGroupSearch && props.pagefindOptions?.usePagefind) {
+        const results = await searchWithPagefind(
+          pagefind,
+          query,
+          props.datasetId,
+          currentTag !== "all" ? currentTag : undefined
+        );
+        setResults(results);
       } else {
         const results = await searchWithTrieve({
           query: query,
@@ -266,24 +308,33 @@ const ModalProvider = ({
       return;
     }
     if (props.tags?.length) {
-      try {
-        const numberOfRecords = await Promise.all(
-          [ALL_TAG, ...props.tags].map((tag) =>
-            countChunks({
-              query: query,
-              trieve: trieve,
-              abortController,
-              ...(tag.tag !== "all" && { tag: tag.tag }),
-            })
-          )
+      if (props.pagefindOptions?.usePagefind) {
+        const filterCounts = await countChunksWithPagefind(
+          pagefind,
+          query,
+          props.tags
         );
-        setTagCounts(numberOfRecords);
-      } catch (e) {
-        if (
-          e != "AbortError" &&
-          e != "AbortError: signal is aborted without reason"
-        ) {
-          console.error(e);
+        setTagCounts(filterCounts);
+      } else {
+        try {
+          const numberOfRecords = await Promise.all(
+            [ALL_TAG, ...props.tags].map((tag) =>
+              countChunks({
+                query: query,
+                trieve: trieve,
+                abortController,
+                ...(tag.tag !== "all" && { tag: tag.tag }),
+              })
+            )
+          );
+          setTagCounts(numberOfRecords);
+        } catch (e) {
+          if (
+            e != "AbortError" &&
+            e != "AbortError: signal is aborted without reason"
+          ) {
+            console.error(e);
+          }
         }
       }
     }
@@ -295,6 +346,17 @@ const ModalProvider = ({
       ...onLoadProps,
     }));
   }, [onLoadProps]);
+
+  useEffect(() => {
+    if (props.pagefindOptions?.usePagefind) {
+      const pagefind_base_url = `${props?.pagefindOptions.cdnBaseUrl}/${props.datasetId}`;
+      import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
+        setPagefind(pagefind)
+        pagefind.filters().then(() => {
+        })
+      });
+    }
+  }, []);
 
   useEffect(() => {
     props.onOpenChange?.(open);
