@@ -251,7 +251,7 @@ impl From<TaskResponse> for Vec<Chunk> {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct GetTaskRequest {
-    pub pagination_token: Option<uuid::Uuid>,
+    pub pagination_token: Option<u32>,
     pub limit: Option<u32>,
 }
 
@@ -265,7 +265,7 @@ pub struct GetTaskResponse {
     pub status: String,
     pub created_at: String,
     pub pages: Option<Vec<Chunk>>,
-    pub pagination_token: Option<String>,
+    pub pagination_token: Option<u32>,
 }
 
 impl GetTaskResponse {
@@ -296,7 +296,7 @@ impl GetTaskResponse {
             pages_processed: task.pages_processed,
             status: task.status,
             created_at: task.created_at.to_string(),
-            pagination_token: pages.last().map(|c| c.id.clone()),
+            pagination_token: pages.last().map(|c| c.page),
             pages: Some(pages.into_iter().map(Chunk::from).collect()),
         }
     }

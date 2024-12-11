@@ -505,7 +505,7 @@ async fn process_csv_jsonl_file(
             rebalance_chunks: Some(false),
             split_delimiters: None,
             target_splits_per_chunk: None,
-            use_pdf2md_ocr: None,
+            pdf2md_options: None,
             base64_file: "".to_string(),
         },
         csv_jsonl_worker_message.dataset_id,
