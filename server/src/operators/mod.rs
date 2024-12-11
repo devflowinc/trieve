@@ -12,6 +12,7 @@ pub mod invitation_operator;
 pub mod message_operator;
 pub mod model_operator;
 pub mod organization_operator;
+pub mod pagefind_operator;
 pub mod parse_operator;
 pub mod qdrant_operator;
 pub mod search_operator;
