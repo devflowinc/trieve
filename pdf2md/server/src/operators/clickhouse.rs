@@ -178,7 +178,7 @@ pub async fn get_task_pages(
 
         let pages: Vec<ChunkClickhouse> = clickhouse_client
             .query(
-                "SELECT ?fields FROM file_chunks WHERE task_id = ? AND id > ? ORDER BY page LIMIT ?",
+                "SELECT ?fields FROM file_chunks WHERE task_id = ? AND id > ? ORDER BY id LIMIT ?",
             )
             .bind(task.id.clone())
             .bind(offset_id.unwrap_or(uuid::Uuid::nil()))
