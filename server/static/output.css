@@ -576,6 +576,10 @@ video {
   margin-right: auto;
 }
 
+.mt-0\.5 {
+  margin-top: 0.125rem;
+}
+
 .mt-20 {
   margin-top: 5rem;
 }
@@ -598,6 +602,10 @@ video {
 
 .max-w-screen-2xl {
   max-width: 1536px;
+}
+
+.flex-1 {
+  flex: 1 1 0%;
 }
 
 .flex-col {
@@ -647,6 +655,20 @@ video {
 
 .p-4 {
   padding: 1rem;
+}
+
+.pl-0\.5 {
+  padding-left: 0.125rem;
+}
+
+.text-3xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
 }
 
 .font-medium {

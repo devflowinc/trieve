@@ -12,7 +12,7 @@ export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
 
   return Object.fromEntries(
-    Object.entries(obj).filter(([key]) => !keys.includes(key)),
+    Object.entries(obj).filter(([key]) => !keys.includes(key))
   );
 };
 
@@ -33,6 +33,13 @@ export const searchWithTrieve = async ({
   tag?: string;
   type?: ModalTypes;
 }) => {
+  const scoreThreshold =
+    searchOptions.score_threshold ??
+    ((searchOptions.search_type ?? "fulltext") === "fulltext" ||
+    searchOptions.search_type == "bm25"
+      ? 2
+      : 0.3);
+
   let results;
   if (searchOptions.use_autocomplete === true) {
     results = (await trieve.autocomplete(
@@ -44,12 +51,8 @@ export const searchWithTrieve = async ({
           highlight_window: type === "ecommerce" ? 5 : 10,
         },
         extend_results: true,
-        score_threshold:
-          (searchOptions.search_type ?? "fulltext") === "fulltext" ||
-          searchOptions.search_type == "bm25"
-            ? 2
-            : 0.3,
-        page_size: 20,
+        score_threshold: scoreThreshold,
+        page_size: searchOptions.page_size ?? 15,
         ...(tag && {
           filters: {
             must: [{ field: "tag_set", match_any: [tag] }],
@@ -61,7 +64,7 @@ export const searchWithTrieve = async ({
         search_type: searchOptions.search_type ?? "fulltext",
         ...omit(searchOptions, ["use_autocomplete"]),
       },
-      abortController?.signal,
+      abortController?.signal
     )) as SearchResponseBody;
   } else {
     results = (await trieve.search(
@@ -72,12 +75,8 @@ export const searchWithTrieve = async ({
           highlight_delimiters: ["?", ",", ".", "!", "\n"],
           highlight_window: type === "ecommerce" ? 5 : 10,
         },
-        score_threshold:
-          (searchOptions.search_type ?? "fulltext") === "fulltext" ||
-          searchOptions.search_type == "bm25"
-            ? 2
-            : 0.3,
-        page_size: 20,
+        score_threshold: scoreThreshold,
+        page_size: searchOptions.page_size ?? 15,
         ...(tag && {
           filters: {
             must: [{ field: "tag_set", match_any: [tag] }],
@@ -89,7 +88,7 @@ export const searchWithTrieve = async ({
         search_type: searchOptions.search_type ?? "fulltext",
         ...omit(searchOptions, ["use_autocomplete"]),
       },
-      abortController?.signal,
+      abortController?.signal
     )) as SearchResponseBody;
   }
 
@@ -127,6 +126,13 @@ export const groupSearchWithTrieve = async ({
   tag?: string;
   type?: ModalTypes;
 }) => {
+  const scoreThreshold =
+    searchOptions.score_threshold ??
+    ((searchOptions.search_type ?? "fulltext") === "fulltext" ||
+    searchOptions.search_type == "bm25"
+      ? 2
+      : 0.3);
+
   const results = await trieve.searchOverGroups(
     {
       query,
@@ -135,22 +141,18 @@ export const groupSearchWithTrieve = async ({
         highlight_delimiters: ["?", ",", ".", "!", "\n"],
         highlight_window: type === "ecommerce" ? 5 : 10,
       },
-      score_threshold:
-        (searchOptions.search_type ?? "fulltext") === "fulltext" ||
-        searchOptions.search_type == "bm25"
-          ? 2
-          : 0.3,
-      page_size: 20,
+      score_threshold: scoreThreshold,
+      page_size: searchOptions.page_size ?? 15,
       ...(tag && {
         filters: {
           must: [{ field: "tag_set", match_any: [tag] }],
         },
       }),
-      group_size: 3,
+      group_size: 1,
       search_type: searchOptions.search_type ?? "fulltext",
       ...omit(searchOptions, ["use_autocomplete"]),
     },
-    abortController?.signal,
+    abortController?.signal
   );
 
   const resultsWithHighlight = results.results.map((group) => {
@@ -186,15 +188,18 @@ export const countChunks = async ({
   tag?: string;
   searchOptions?: Props["searchOptions"];
 }) => {
+  const scoreThreshold =
+    searchOptions?.score_threshold ??
+    ((searchOptions?.search_type ?? "fulltext") === "fulltext" ||
+    searchOptions?.search_type == "bm25"
+      ? 2
+      : 0.3);
+
   const results = await trieve.countChunksAboveThreshold(
     {
       query,
-      score_threshold:
-        (searchOptions?.search_type ?? "fulltext") === "fulltext" ||
-        searchOptions?.search_type == "bm25"
-          ? 2
-          : 0.3,
-      limit: 10000,
+      score_threshold: scoreThreshold,
+      limit: 100,
       ...(tag && {
         filters: {
           must: [{ field: "tag_set", match_any: [tag] }],
@@ -203,7 +208,7 @@ export const countChunks = async ({
       search_type: "fulltext",
       ...omit(searchOptions, ["search_type"]),
     },
-    abortController?.signal,
+    abortController?.signal
   );
   return results;
 };
@@ -245,7 +250,7 @@ export const getSuggestedQueries = async ({
       search_type: "semantic",
       context: "You are a user searching through a docs website",
     },
-    abortController?.signal,
+    abortController?.signal
   );
 };
 
@@ -262,7 +267,7 @@ export const getSuggestedQuestions = async ({
       search_type: "semantic",
       context: "You are a user searching through a docs website",
     },
-    abortController?.signal,
+    abortController?.signal
   );
 };
 
@@ -274,7 +279,7 @@ export type SimpleChunk = ChunkMetadata | ChunkMetadataStringTagSet;
 
 export const getAllChunksForGroup = async (
   groupId: string,
-  trieve: TrieveSDK,
+  trieve: TrieveSDK
 ): Promise<SimpleChunk[]> => {
   let moreToFind = true;
   let page = 1;
@@ -287,7 +292,7 @@ export const getAllChunksForGroup = async (
         datasetId: trieve.datasetId,
         groupId,
         page,
-      },
+      }
     );
     if (results.chunks.length === 0) {
       moreToFind = false;

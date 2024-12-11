@@ -67,7 +67,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController(),
+    new AbortController()
   );
   const isDoneReading = useRef<boolean>(true);
   const createTopic = async ({ question }: { question: string }) => {
@@ -90,7 +90,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([]);
   };
 
-  const { currentTag, currentGroup } = useModalState();
+  const { currentTag, currentGroup, props } = useModalState();
 
   useEffect(() => {
     if (currentTag) {
@@ -100,7 +100,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     setIsLoading(true);
     isDoneReading.current = false;
@@ -192,7 +192,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ],
           stream_response: true,
         },
-        chatMessageAbortController.current.signal,
+        chatMessageAbortController.current.signal
       );
       handleReader(reader, queryId);
     } else {
@@ -204,15 +204,17 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             llm_options: {
               completion_first: false,
             },
-            page_size: 5,
+            page_size: props.searchOptions?.page_size ?? 5,
+            score_threshold: props.searchOptions?.score_threshold || null,
+            use_group_search: props.useGroupSearch,
             filters:
               currentTag !== "all"
                 ? {
-                    must: [{ field: "tag_set", match_any: [currentTag] }], // Apply tag filter
+                    must: [{ field: "tag_set", match_any: [currentTag] }],
                   }
                 : null,
           },
-          chatMessageAbortController.current.signal,
+          chatMessageAbortController.current.signal
         );
       handleReader(reader, queryId);
     }
@@ -244,7 +246,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         [
           ...messages.slice(0, -1),
           messages[messages.length - 1]?.slice(0, -1),
-        ].filter((a) => a.length),
+        ].filter((a) => a.length)
       );
     }
   };
@@ -292,7 +294,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({

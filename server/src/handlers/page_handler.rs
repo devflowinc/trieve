@@ -2,7 +2,9 @@ use super::{
     auth_handler::LoggedUser,
     chunk_handler::{ChunkFilter, ScoringOptions},
 };
-use crate::data::models::Templates;
+use crate::{
+    data::models::Templates, operators::dataset_operator::get_dataset_by_tracking_id_unsafe_query,
+};
 use crate::{
     data::models::{DatasetConfiguration, Pool, SearchMethod, SortOptions, TypoOptions},
     errors::ServiceError,
@@ -168,7 +170,8 @@ pub struct PublicPageParameters {
     pub theme: Option<PublicPageTheme>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_options: Option<PublicPageSearchOptions>,
-    //pub openKeyCombination: { key?: string; label?: string; ctrl?: boolean }[],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub for_brand_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub brand_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -205,6 +208,10 @@ pub struct PublicPageParameters {
     pub open_graph_metadata: Option<OpenGraphMetadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub open_links_in_new_tab: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub creator_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub creator_linked_in_url: Option<String>,
 }
 
 #[utoipa::path(
@@ -218,18 +225,20 @@ pub struct PublicPageParameters {
         (status = 404, description = "Dataset not found", body = ErrorResponseBody)
     ),
     params(
-        ("dataset_id" = uuid::Uuid, Path, description = "The id of the organization you want to fetch."),
+        ("dataset_id" = String, Path, description = "The id or tracking_id of the dataset you want to get the demo page for."),
     ),
 )]
 pub async fn public_page(
-    dataset_id: web::Path<uuid::Uuid>,
+    dataset_id: web::Path<String>,
     pool: web::Data<Pool>,
     templates: Templates<'_>,
     req: HttpRequest,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_id = dataset_id.into_inner();
-
-    let dataset = get_dataset_by_id_query(dataset_id, pool).await?;
+    let dataset: crate::data::models::Dataset = match uuid::Uuid::parse_str(&dataset_id) {
+        Ok(uuid) => get_dataset_by_id_query(uuid, pool).await?,
+        Err(_) => get_dataset_by_tracking_id_unsafe_query(dataset_id, pool).await?,
+    };
 
     let config = DatasetConfiguration::from_json(dataset.server_configuration);
 
@@ -276,7 +285,7 @@ pub async fn public_page(
                 body_style,
                 tabs,
                 params => PublicPageParameters {
-                    dataset_id: Some(dataset_id),
+                    dataset_id: Some(dataset.id),
                     base_url: Some(base_server_url.to_string()),
                     api_key: Some(config.PUBLIC_DATASET.api_key.unwrap_or_default()),
                     ..config.PUBLIC_DATASET.extra_params.unwrap_or_default()

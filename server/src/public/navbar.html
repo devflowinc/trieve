@@ -8,12 +8,38 @@
         src="{{params.navLogoImgSrcUrl|safe if (params.navLogoImgSrcUrl is defined and params.navLogoImgSrcUrl) else 'https://cdn.trieve.ai/trieve-logo.png'|safe}}"
       />
     </a>
+    <div>
+      <p class="font-medium text-3xl">
+        Demo For
+        <span class="brand-name">
+          {{params.forBrandName|safe if (params.forBrandName is defined and
+          params.forBrandName) else 'Prospect'|safe}}
+        </span>
+      </p>
+      <p class="signature mt-0.5 pl-0.5">
+        - From
+        <a
+          class="creator"
+          target="_blank"
+          href="{{params.creatorLinkedInUrl|safe if (params.creatorLinkedInUrl is defined and params.creatorLinkedInUrl) else 'https://www.linkedin.com/company/trieveai'|safe}}"
+        >
+          {{params.creatorName|safe if (params.creatorName is defined and
+          params.creatorName) else 'Nick K, CEO'|safe}}
+        </a>
+        @
+        <a class="trieve-company-name" target="_blank" href="https://trieve.ai">
+          Trieve
+        </a>
+      </p>
+    </div>
+    <div class="flex-1"></div>
     <div
       id="nav-links"
       class="font-medium flex flex-wrap items-center gap-4 justify-center sm:justify-right"
     >
       <a
         class="flex items-center gap-1 text-black"
+        target="_blank"
         href="mailto:humans@trieve.ai"
       >
         <svg
@@ -28,6 +54,7 @@
         <span> humans@trieve.ai </span>
       </a>
       <a
+        target="_blank"
         href="https://join.slack.com/t/trievecommunityslack/shared_invite/zt-2v7zyxytf-zWLVgqI8avB5x5Br7INQgw"
       >
         <svg
@@ -40,7 +67,7 @@
           />
         </svg>
       </a>
-      <a href="https://www.linkedin.com/company/trieveai">
+      <a target="_blank" href="https://www.linkedin.com/company/trieveai">
         <svg
           class="nav-icon"
           xmlns="http://www.w3.org/2000/svg"
@@ -51,7 +78,7 @@
           />
         </svg>
       </a>
-      <a href="tel:+16282224090">
+      <a target="_blank" href="tel:+16282224090">
         <svg
           class="nav-icon"
           xmlns="http://www.w3.org/2000/svg"
@@ -64,6 +91,7 @@
       </a>
       <a
         class="action-link flex items-center gap-1"
+        target="_blank"
         href="https://cal.com/nick.k"
       >
         <svg

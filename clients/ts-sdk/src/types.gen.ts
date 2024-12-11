@@ -1968,6 +1968,8 @@ export type PublicPageParameters = {
     brandLogoImgSrcUrl?: (string) | null;
     brandName?: (string) | null;
     chat?: (boolean) | null;
+    creatorLinkedInUrl?: (string) | null;
+    creatorName?: (string) | null;
     currencyPosition?: (string) | null;
     datasetId?: (string) | null;
     debounceMs?: (number) | null;
@@ -1975,6 +1977,7 @@ export type PublicPageParameters = {
     defaultCurrency?: (string) | null;
     defaultSearchMode?: (string) | null;
     defaultSearchQueries?: Array<(string)> | null;
+    forBrandName?: (string) | null;
     heroPattern?: ((HeroPattern) | null);
     navLogoImgSrcUrl?: (string) | null;
     openGraphMetadata?: ((OpenGraphMetadata) | null);
@@ -4507,7 +4510,7 @@ export type DeleteOrganizationResponse = (void);
 
 export type PublicPageData = {
     /**
-     * The id of the organization you want to fetch.
+     * The id or tracking_id of the dataset you want to get the demo page for.
      */
     datasetId: string;
 };

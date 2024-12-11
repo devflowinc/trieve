@@ -149,6 +149,27 @@ pub async fn get_dataset_by_tracking_id_query(
     Ok(dataset)
 }
 
+pub async fn get_dataset_by_tracking_id_unsafe_query(
+    tracking_id: String,
+    pool: web::Data<Pool>,
+) -> Result<Dataset, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let dataset = datasets_columns::datasets
+        .filter(datasets_columns::tracking_id.eq(tracking_id))
+        .filter(datasets_columns::deleted.eq(0))
+        .select(Dataset::as_select())
+        .first(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
+
+    Ok(dataset)
+}
+
 pub async fn get_deleted_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
