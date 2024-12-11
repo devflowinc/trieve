@@ -22,6 +22,7 @@ use crate::{
             send_ditto_event, DittoDatasetCreated, DittoTrackProperties, DittoTrackRequest,
         },
         organization_operator::{get_org_dataset_count, get_org_from_id_query},
+        pagefind_operator::build_index_for_dataset_id,
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
@@ -467,6 +468,36 @@ pub async fn clear_dataset(
     let config = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     clear_dataset_by_dataset_id_query(data.into_inner(), config, redis_pool).await?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+/// Create Pagefind Index for Dataset
+///
+/// Removes all chunks, files, and groups from the dataset while retaining the analytics and dataset itself. The auth'ed user must be an owner of the organization to clear a dataset.
+#[utoipa::path(
+    put,
+    path = "/dataset/pagefind",
+    context_path = "/api",
+    tag = "Dataset",
+    responses(
+        (status = 204, description = "Dataset indexed successfully"),
+        (status = 400, description = "Service error relating to creating the index", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn create_pagefind_index_for_dataset(
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: AdminOnly,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, ServiceError> {
+    build_index_for_dataset_id(dataset_org_plan_sub.dataset, pool.clone()).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

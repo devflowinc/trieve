@@ -177,6 +177,8 @@ oas3 = "0.10.0"
 sanitize_html = "0.8.1"
 minijinja-embed = "2.2.0"
 minijinja = { version = "2.2.0", features = ["loader", "json"] }
+hashbrown = { version = "0.13.2", features = ["serde"] }
+pagefind = { path = "../../pagefind/pagefind/" }
 
 
 [build-dependencies]
