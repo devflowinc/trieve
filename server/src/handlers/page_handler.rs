@@ -171,6 +171,8 @@ pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_options: Option<PublicPageSearchOptions>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub heading_prefix: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub for_brand_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub brand_name: Option<String>,

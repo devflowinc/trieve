@@ -1,4 +1,4 @@
-<nav class="w-screen bg-white border-b">
+<nav class="bg-white border-b">
   <div
     class="max-w-screen-2xl mx-auto w-full p-2 flex items-center justify-center flex-col gap-2 sm:justify-between sm:!flex-row"
   >
@@ -8,9 +8,10 @@
         src="{{params.navLogoImgSrcUrl|safe if (params.navLogoImgSrcUrl is defined and params.navLogoImgSrcUrl) else 'https://cdn.trieve.ai/trieve-logo.png'|safe}}"
       />
     </a>
-    <div>
+    <div class="text-center">
       <p class="font-medium text-3xl">
-        Demo For
+        {{params.headingPrefix|safe if (params.headingPrefix is defined and
+        params.headingPrefix) else 'Demo For'|safe}}
         <span class="brand-name">
           {{params.forBrandName|safe if (params.forBrandName is defined and
           params.forBrandName) else 'Prospect'|safe}}

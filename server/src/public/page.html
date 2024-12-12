@@ -137,7 +137,6 @@
         flex-direction: column;
         padding-top: 48px;
         gap: 40px;
-        width: 100vw;
       }
 
       .corner-logo {
@@ -160,9 +159,9 @@
 
       .made-with-love {
         font-family: "Maven Pro", sans-serif;
-        position: fixed;
-        bottom: 0.5rem;
-        right: 0.5rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        margin-left: auto;
       }
 
       .heart {
@@ -258,7 +257,7 @@
       >Back To Dashboard</a
     >
     {% endif %}
-    <p class="text-xs made-with-love">
+    <p class="text-xs made-with-love text-end">
       Made with <span class="heart">&hearts;</span> in San Francisco
     </p>
   </body>
@@ -279,11 +278,9 @@
       tabContainer = document.getElementById("tab-container");
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
-    openTrieveModalElement.style.width = tabContainer.offsetWidth / 2 + "px";
-    console.log(
-      "set openTrieveModalElement width to",
-      tabContainer.width + "px"
-    );
+    if (window.innerWidth > 768) {
+      openTrieveModalElement.style.width = tabContainer.offsetWidth / 2 + "px";
+    }
 
     let brandNameElement = document.querySelector(".brand-name");
     while (!brandNameElement) {
@@ -320,8 +317,10 @@
     canvas.style.position = "absolute";
     canvas.style.left = "0";
     canvas.style.top = "0";
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width =
+      document.documentElement.clientWidth || document.body.clientWidth;
+    canvas.height =
+      document.documentElement.clientHeight || document.body.clientHeight;
     canvas.style.zIndex = "-1";
 
     const rc = rough.canvas(canvas);

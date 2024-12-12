@@ -161,25 +161,52 @@ const PublicPageControls = () => {
 
         <div class="mt-4 flex items-start gap-8">
           <div class="flex grow flex-col gap-2">
-            <div class="grow">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Header Brand Name
-                </label>
-                <Tooltip
-                  tooltipText="Brand name which will be displayed in the navbar on the page"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
+            <div class="flex grow items-center gap-2">
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Heading Prefix
+                  </label>
+                  <Tooltip
+                    tooltipText="Brand name which will be displayed in the navbar on the page"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <div class="flex grow items-center gap-2">
+                  <input
+                    placeholder="Demo For"
+                    value={extraParams.headingPrefix || ""}
+                    onInput={(e) => {
+                      setExtraParams("headingPrefix", e.currentTarget.value);
+                    }}
+                    class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  />
+                </div>
               </div>
-              <div class="flex grow items-center gap-2">
-                <input
-                  placeholder="Devflow, Inc."
-                  value={extraParams.forBrandName || ""}
-                  onInput={(e) => {
-                    setExtraParams("forBrandName", e.currentTarget.value);
-                  }}
-                  class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Header Brand Name
+                  </label>
+                  <Tooltip
+                    tooltipText="Brand name which will be displayed in the navbar on the page"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <div class="flex grow items-center gap-2">
+                  <input
+                    placeholder="Devflow, Inc."
+                    value={extraParams.forBrandName || ""}
+                    onInput={(e) => {
+                      setExtraParams("forBrandName", e.currentTarget.value);
+                    }}
+                    class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  />
+                </div>
               </div>
             </div>
             <div class="grow">
