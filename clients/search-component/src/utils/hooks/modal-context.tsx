@@ -75,6 +75,10 @@ export type ModalProps = {
   openLinksInNewTab?: boolean;
   onOpenChange?: (open: boolean) => void;
   debounceMs?: number;
+  buttonTriggers?: {
+    selector: string;
+    mode: SearchModes;
+  }[];
 };
 
 const defaultProps = {

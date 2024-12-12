@@ -119,6 +119,12 @@ export default function Home() {
                   ),
                 },
               ]}
+              buttonTriggers={[
+                {
+                  selector: ".random-trigger-location",
+                  mode: "chat",
+                }
+              ]}
               useGroupSearch={useGroupSearch}
               defaultAiQuestions={[
                 "What is Trieve?",
