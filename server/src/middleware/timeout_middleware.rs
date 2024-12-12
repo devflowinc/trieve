@@ -46,7 +46,7 @@ pub async fn timeout_15secs(
                 path, method, queries, headers
             );
             log::info!("Request timeout: {}", path);
-            let emails_enabled = std::env::var("ENABLE_408_EMIALS").unwrap_or("false".to_string());
+            let emails_enabled = std::env::var("ENABLE_408_EMAILS").unwrap_or("false".to_string());
             if emails_enabled == "true" {
                 let _ = send_email(
                     email_body,
