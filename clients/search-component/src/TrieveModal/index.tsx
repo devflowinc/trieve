@@ -12,9 +12,11 @@ import { ModeSwitch } from "./ModeSwitch";
 import { OpenModalButton } from "./OpenModalButton";
 import { ChatProvider } from "../utils/hooks/chat-context";
 import r2wc from "@r2wc/react-to-web-component";
+import { setClickTriggers } from "../utils/hooks/setClickTriggers";
 
 const Modal = () => {
   useKeyboardNavigation();
+  setClickTriggers();
   const { mode, open, setOpen, setMode, props } = useModalState();
 
   useEffect(() => {
