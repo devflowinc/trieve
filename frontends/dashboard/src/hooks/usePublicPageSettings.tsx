@@ -170,6 +170,7 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
                 api_key: response.api_key,
                 extra_params: {
                   ...extraParams,
+                  analytics: true,
                 },
               },
             },

@@ -592,10 +592,6 @@ video {
   width: 100%;
 }
 
-.w-screen {
-  width: 100vw;
-}
-
 .max-w-2xl {
   max-width: 42rem;
 }
@@ -659,6 +655,14 @@ video {
 
 .pl-0\.5 {
   padding-left: 0.125rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-end {
+  text-align: end;
 }
 
 .text-3xl {

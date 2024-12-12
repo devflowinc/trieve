@@ -3111,6 +3111,9 @@ impl DatasetConfigurationDTO {
                     search_options: page_parameters_self
                         .search_options
                         .or(page_parameters_curr.search_options),
+                    heading_prefix: page_parameters_self
+                        .heading_prefix
+                        .or(page_parameters_curr.heading_prefix),
                     for_brand_name: page_parameters_self
                         .for_brand_name
                         .or(page_parameters_curr.for_brand_name),

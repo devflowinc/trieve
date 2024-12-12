@@ -1978,6 +1978,7 @@ export type PublicPageParameters = {
     defaultSearchMode?: (string) | null;
     defaultSearchQueries?: Array<(string)> | null;
     forBrandName?: (string) | null;
+    headingPrefix?: (string) | null;
     heroPattern?: ((HeroPattern) | null);
     navLogoImgSrcUrl?: (string) | null;
     openGraphMetadata?: ((OpenGraphMetadata) | null);

@@ -12059,6 +12059,10 @@
             "type": "string",
             "nullable": true
           },
+          "headingPrefix": {
+            "type": "string",
+            "nullable": true
+          },
           "heroPattern": {
             "allOf": [
               {
