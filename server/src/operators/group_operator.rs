@@ -1078,6 +1078,7 @@ pub async fn get_chunk_point_ids_in_chunk_group_query(
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .select(chunk_metadata_columns::qdrant_point_id)
         .offset(((page - 1) * limit).try_into().unwrap_or(0))
+        .order(chunk_metadata_columns::id)
         .limit(limit.try_into().unwrap_or(10))
         .load::<uuid::Uuid>(&mut conn)
         .await
