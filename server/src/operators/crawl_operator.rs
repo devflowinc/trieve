@@ -2,7 +2,10 @@ use crate::data::models::CrawlOptions;
 use crate::data::models::CrawlStatus;
 use crate::data::models::FirecrawlCrawlRequest;
 use crate::data::models::RedisPool;
+use crate::handlers::chunk_handler::ChunkReqPayload;
 use crate::handlers::chunk_handler::CrawlInterval;
+use crate::handlers::chunk_handler::FullTextBoost;
+use crate::handlers::chunk_handler::SemanticBoost;
 use crate::{
     data::models::{CrawlRequest, CrawlRequestPG, Pool, ScrapeOptions},
     errors::ServiceError,
@@ -16,7 +19,10 @@ use reqwest::Url;
 use scraper::Html;
 use scraper::Selector;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
+use super::chunk_operator::create_chunk_metadata;
+use super::organization_operator::hash_function;
 use super::parse_operator::convert_html_to_text;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -39,7 +45,7 @@ pub enum Status {
     Cancelled,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct Document {
     pub markdown: Option<String>,
     pub extract: Option<String>,
@@ -51,7 +57,7 @@ pub struct Document {
     pub metadata: Metadata,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct Metadata {
     pub title: Option<String>,
     pub description: Option<String>,
@@ -114,7 +120,7 @@ pub struct Metadata {
     pub site_map: Option<Sitemap>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct Sitemap {
     pub changefreq: String,
 }
@@ -135,13 +141,27 @@ pub fn validate_crawl_options(crawl_options: &CrawlOptions) -> Result<CrawlOptio
     Ok(crawl_options.clone())
 }
 
-pub async fn crawl(
+pub async fn create_crawl_query(
     crawl_options: CrawlOptions,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     dataset_id: uuid::Uuid,
 ) -> Result<uuid::Uuid, ServiceError> {
     validate_crawl_options(&crawl_options)?;
+
+    let webhook_url = format!(
+        "{}/api/file/html_page",
+        std::env::var("FOO_BAR").unwrap_or(
+            "https://5b0f-2600-1700-460-1070-f5b9-429e-fb2-70d5.ngrok-free.app".to_string()
+        )
+    );
+    let webhook_metadata = serde_json::json!({
+        "dataset_id": dataset_id,
+        "webhook_secret": hash_function(std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or("firecrawl".to_string()).as_str())
+    });
+    let mut crawl_options = crawl_options.clone();
+    crawl_options.webhook_url = Some(webhook_url);
+    crawl_options.webhook_metadata = Some(webhook_metadata);
 
     let scrape_id = if let Some(ScrapeOptions::Shopify(_)) = crawl_options.scrape_options {
         uuid::Uuid::nil()
@@ -178,6 +198,7 @@ pub async fn get_crawl_request_by_dataset_id_query(
             crawl_requests_table::dataset_id,
             crawl_requests_table::created_at,
         ))
+        .order_by(crawl_requests_table::created_at.desc())
         .first(&mut conn)
         .await
         .optional()
@@ -406,7 +427,7 @@ pub async fn update_crawl_settings_for_dataset(
         )
     })?;
 
-    crawl(
+    create_crawl_query(
         merged_options.clone(),
         pool.clone(),
         redis_pool.clone(),
@@ -675,4 +696,156 @@ fn extract_all_headings(html: &str) -> String {
         .map(|element| element.text().collect::<String>())
         .collect::<Vec<String>>()
         .join("\n")
+}
+
+pub async fn process_crawl_doc(
+    dataset_id: uuid::Uuid,
+    crawl_doc: Document,
+    redis_pool: web::Data<RedisPool>,
+) -> Result<(), ServiceError> {
+    if crawl_doc.metadata.status_code != Some(200) {
+        log::error!("Error getting metadata for page: {:?}", crawl_doc.metadata);
+        return Err(ServiceError::BadRequest(
+            "Error getting metadata for page".to_string(),
+        ));
+    }
+
+    let page_link = crawl_doc
+        .metadata
+        .source_url
+        .clone()
+        .unwrap_or_default()
+        .trim_end_matches("/")
+        .to_string();
+    if page_link.is_empty() {
+        log::error!(
+            "Error page source_url is not present for page_metadata: {:?}",
+            crawl_doc.metadata
+        );
+        return Ok(());
+    }
+
+    let page_title = crawl_doc.metadata.og_title.clone().unwrap_or_default();
+    let page_description = crawl_doc
+        .metadata
+        .og_description
+        .clone()
+        .unwrap_or(crawl_doc.metadata.description.unwrap_or_default().clone());
+    let page_html = crawl_doc.html.clone().unwrap_or_default();
+    let page_tags = get_tags(page_link.clone());
+
+    let chunked_html = chunk_html(&page_html.clone(), None, None);
+    let mut chunks = vec![];
+
+    for chunk in chunked_html {
+        let heading = chunk.0.clone();
+        let chunk_html = chunk.1.clone();
+
+        if chunk_html.is_empty() {
+            log::error!("Skipping empty chunk for page: {}", page_link);
+            return Ok(());
+        }
+
+        let mut metadata = serde_json::json!({
+            "url": page_link.clone(),
+            "hierarchy": chunk.0.clone(),
+        });
+
+        let mut semantic_boost_phrase = heading.clone();
+        let mut fulltext_boost_phrase = heading.clone();
+        metadata["heading"] = serde_json::json!(heading.clone());
+
+        if !page_title.is_empty() {
+            semantic_boost_phrase.push_str(format!("\n\n{}", page_title).as_str());
+            fulltext_boost_phrase.push_str(format!("\n\n{}", page_title).as_str());
+
+            metadata["title"] = serde_json::json!(page_title.clone());
+            metadata["hierarchy"]
+                .as_array_mut()
+                .unwrap_or(&mut vec![])
+                .insert(0, serde_json::json!(page_title.clone()));
+        }
+        if !page_description.is_empty() {
+            semantic_boost_phrase.push_str(format!("\n\n{}", page_description).as_str());
+
+            metadata["description"] = serde_json::json!(page_description.clone());
+        }
+
+        let tracking_hash_val = if heading.is_empty() {
+            chunk_html.clone()
+        } else {
+            heading.clone()
+        };
+
+        let chunk = ChunkReqPayload {
+            chunk_html: Some(chunk_html.clone()),
+            link: Some(page_link.clone()),
+            tag_set: Some(page_tags.clone()),
+            metadata: Some(serde_json::json!(metadata)),
+            tracking_id: Some(hash_function(&format!(
+                "{}{}",
+                page_link
+                    .trim_end_matches("/")
+                    .split("/")
+                    .collect::<Vec<&str>>()
+                    .split_at(3)
+                    .1
+                    .join("/"),
+                tracking_hash_val
+            ))),
+            upsert_by_tracking_id: Some(true),
+            group_tracking_ids: Some(vec![if !page_title.is_empty() {
+                page_title.clone()
+            } else {
+                page_link.clone()
+            }]),
+            fulltext_boost: if !fulltext_boost_phrase.is_empty() {
+                Some(FullTextBoost {
+                    phrase: fulltext_boost_phrase,
+                    boost_factor: 1.3,
+                })
+            } else {
+                None
+            },
+            semantic_boost: if !semantic_boost_phrase.is_empty() {
+                Some(SemanticBoost {
+                    phrase: semantic_boost_phrase,
+                    distance_factor: 0.3,
+                })
+            } else {
+                None
+            },
+            convert_html_to_text: Some(true),
+            ..Default::default()
+        };
+        chunks.push(chunk);
+    }
+
+    log::info!("Uploading {} chunks for page: {}", chunks.len(), page_link);
+    let chunks_to_upload = chunks.chunks(120);
+    for batch in chunks_to_upload {
+        let (chunk_ingestion_message, chunk_metadatas) =
+            create_chunk_metadata(batch.to_vec(), dataset_id).await?;
+
+        let mut redis_conn = redis_pool
+            .get()
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        if !chunk_metadatas.is_empty() {
+            let serialized_message: String = serde_json::to_string(&chunk_ingestion_message)
+                .map_err(|_| {
+                    ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+                })?;
+
+            redis::cmd("lpush")
+                .arg("ingestion")
+                .arg(&serialized_message)
+                .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        }
+    }
+
+    Ok(())
 }

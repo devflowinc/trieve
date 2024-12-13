@@ -7,7 +7,7 @@
       "name": "Debug executable 'trieve-server'",
       "cargo": {
         "args": [
-          "+default",
+          "+nightly",
           "build",
           "--manifest-path=./server/Cargo.toml",
           "--bin=trieve-server",
@@ -30,6 +30,20 @@
           "build",
           "--manifest-path=./server/Cargo.toml",
           "--bin=ingestion-worker"
+        ]
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}/server"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'crawl-worker'",
+      "cargo": {
+        "args": [
+          "build",
+          "--manifest-path=./server/Cargo.toml",
+          "--bin=crawl-worker"
         ]
       },
       "args": [],

@@ -296,17 +296,17 @@ async fn get_chunks_with_firecrawl(
     let page_count = data.len();
 
     for page in data {
-        let page = match page {
+        let crawl_doc = match page {
             Some(page) => page,
             None => continue,
         };
 
-        if page.metadata.status_code != Some(200) {
-            log::error!("Error getting metadata for page: {:?}", page.metadata);
+        if crawl_doc.metadata.status_code != Some(200) {
+            log::error!("Error getting metadata for page: {:?}", crawl_doc.metadata);
             continue;
         }
 
-        let page_link = page
+        let page_link = crawl_doc
             .metadata
             .source_url
             .clone()
@@ -316,14 +316,18 @@ async fn get_chunks_with_firecrawl(
         if page_link.is_empty() {
             println!(
                 "Error page source_url is not present for page_metadata: {:?}",
-                page.metadata
+                crawl_doc.metadata
             );
             continue;
         }
 
-        let page_title = page.metadata.og_title.clone().unwrap_or_default();
-        let page_description = page.metadata.og_description.clone().unwrap_or_default();
-        let page_html = page.html.clone().unwrap_or_default();
+        let page_title = crawl_doc.metadata.og_title.clone().unwrap_or_default();
+        let page_description = crawl_doc
+            .metadata
+            .og_description
+            .clone()
+            .unwrap_or(crawl_doc.metadata.description.unwrap_or_default().clone());
+        let page_html = crawl_doc.html.clone().unwrap_or_default();
         let page_tags = get_tags(page_link.clone());
 
         if let Some(spec) = &spec {
@@ -588,20 +592,20 @@ async fn get_chunks_with_firecrawl(
 
 #[allow(clippy::print_stdout)]
 async fn crawl(
-    scrape_request: CrawlRequest,
+    crawl_request: CrawlRequest,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<ScrapeReport, ServiceError> {
-    log::info!("Starting crawl for scrape_id: {}", scrape_request.id);
+    log::info!("Starting crawl for scrape_id: {}", crawl_request.id);
     let (page_count, chunks_created) = if let Some(ScrapeOptions::Shopify(_)) =
-        scrape_request.crawl_options.scrape_options.clone()
+        crawl_request.crawl_options.scrape_options.clone()
     {
         let mut cur_page = 1;
         let mut chunk_count = 0;
 
         loop {
             let mut chunks: Vec<ChunkReqPayload> = Vec::new();
-            let cleaned_url = scrape_request.url.trim_end_matches("/");
+            let cleaned_url = crawl_request.url.trim_end_matches("/");
             let url = format!("{}/products.json?page={}", cleaned_url, cur_page);
 
             let response: ShopifyResponse = ureq::get(&url)
@@ -622,7 +626,7 @@ async fn crawl(
                         &product,
                         &product.variants[0],
                         cleaned_url,
-                        &scrape_request,
+                        &crawl_request,
                     )?);
                 } else {
                     for variant in &product.variants {
@@ -630,7 +634,7 @@ async fn crawl(
                             &product,
                             variant,
                             cleaned_url,
-                            &scrape_request,
+                            &crawl_request,
                         )?);
                     }
                 }
@@ -640,7 +644,7 @@ async fn crawl(
 
             for chunk in chunks_to_upload {
                 let (chunk_ingestion_message, chunk_metadatas) =
-                    create_chunk_metadata(chunk.to_vec(), scrape_request.dataset_id).await?;
+                    create_chunk_metadata(chunk.to_vec(), crawl_request.dataset_id).await?;
 
                 let mut redis_conn = redis_pool
                     .get()
@@ -671,12 +675,12 @@ async fn crawl(
         (cur_page, chunk_count)
     } else {
         let (chunks, page_count) =
-            get_chunks_with_firecrawl(scrape_request.clone(), pool.clone()).await?;
+            get_chunks_with_firecrawl(crawl_request.clone(), pool.clone()).await?;
         let chunks_to_upload = chunks.chunks(120);
 
-        for chunk in chunks_to_upload {
+        for batch in chunks_to_upload {
             let (chunk_ingestion_message, chunk_metadatas) =
-                create_chunk_metadata(chunk.to_vec(), scrape_request.dataset_id).await?;
+                create_chunk_metadata(batch.to_vec(), crawl_request.dataset_id).await?;
 
             let mut redis_conn = redis_pool
                 .get()
@@ -703,21 +707,21 @@ async fn crawl(
     };
 
     update_crawl_status(
-        scrape_request.scrape_id,
+        crawl_request.scrape_id,
         CrawlStatus::Completed,
         pool.clone(),
     )
     .await?;
 
     update_next_crawl_at(
-        scrape_request.scrape_id,
-        scrape_request.next_crawl_at + scrape_request.interval,
+        crawl_request.scrape_id,
+        crawl_request.next_crawl_at + crawl_request.interval,
         pool.clone(),
     )
     .await?;
 
     Ok(ScrapeReport {
-        request_id: scrape_request.id,
+        request_id: crawl_request.id,
         pages_scraped: page_count,
         chunks_created,
     })
