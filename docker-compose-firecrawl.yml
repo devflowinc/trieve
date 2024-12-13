@@ -2,7 +2,7 @@ name: firecrawl
 services:
   # Firecrawl services
   playwright-service:
-    image: trieve/puppeteer-service-ts:v0.0.7
+    image: trieve/puppeteer-service-ts:v0.0.8
     environment:
       - PORT=3000
       - PROXY_SERVER=${PROXY_SERVER}
@@ -15,7 +15,7 @@ services:
       - backend
 
   firecrawl-api:
-    image: trieve/firecrawl:v0.0.47
+    image: trieve/firecrawl:v0.0.48
     networks:
       - backend
     environment:
@@ -27,7 +27,6 @@ services:
       - BULL_AUTH_KEY=${BULL_AUTH_KEY}
       - TEST_API_KEY=${TEST_API_KEY}
       - HOST=${HOST:-0.0.0.0}
-      - SELF_HOSTED_WEBHOOK_URL=${SELF_HOSTED_WEBHOOK_URL}
       - LOGGING_LEVEL=${LOGGING_LEVEL}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -38,7 +37,7 @@ services:
     command: ["pnpm", "run", "start:production"]
 
   firecrawl-worker:
-    image: trieve/firecrawl:v0.0.46
+    image: trieve/firecrawl:v0.0.48
     networks:
       - backend
     environment:
@@ -51,7 +50,6 @@ services:
       - TEST_API_KEY=${TEST_API_KEY}
       - SCRAPING_BEE_API_KEY=${SCRAPING_BEE_API_KEY}
       - HOST=${HOST:-0.0.0.0}
-      - SELF_HOSTED_WEBHOOK_URL=${SELF_HOSTED_WEBHOOK_URL}
       - LOGGING_LEVEL=${LOGGING_LEVEL}
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -225,6 +225,7 @@ impl Modify for SecurityAddon {
         handlers::file_handler::get_file_handler,
         handlers::file_handler::delete_file_handler,
         handlers::file_handler::create_presigned_url_for_csv_jsonl,
+        handlers::file_handler::upload_html_page,
         handlers::event_handler::get_events,
         handlers::organization_handler::create_organization,
         handlers::organization_handler::get_organization,
@@ -353,6 +354,7 @@ impl Modify for SecurityAddon {
             handlers::file_handler::UploadFileResponseBody,
             handlers::file_handler::CreatePresignedUrlForCsvJsonlReqPayload,
             handlers::file_handler::CreatePresignedUrlForCsvJsonResponseBody,
+            handlers::file_handler::UploadHtmlPageReqPayload,
             handlers::invitation_handler::InvitationData,
             handlers::event_handler::GetEventsData,
             handlers::organization_handler::CreateOrganizationReqPayload,
@@ -387,6 +389,9 @@ impl Modify for SecurityAddon {
             operators::analytics_operator::CTRRecommendationsWithoutClicksResponse,
             operators::analytics_operator::PopularFiltersResponse,
             operators::chunk_operator::HighlightStrategy,
+            operators::crawl_operator::Document,
+            operators::crawl_operator::Metadata,
+            operators::crawl_operator::Sitemap,
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
             handlers::page_handler::PublicPageSearchOptions,
             handlers::page_handler::OpenGraphMetadata,
@@ -1095,6 +1100,11 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("").route(
                                         web::post().to(handlers::file_handler::upload_file_handler),
+                                    ),
+                                )
+                                .service(
+                                    web::resource("/html_page").route(
+                                        web::post().to(handlers::file_handler::upload_html_page),
                                     ),
                                 )
                                 .service(

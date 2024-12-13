@@ -4387,6 +4387,42 @@
         ]
       }
     },
+    "/api/file/html_page": {
+      "post": {
+        "tags": [
+          "File"
+        ],
+        "summary": "Upload HTML Page",
+        "description": "Chunk HTML by headings and queue for indexing into the specified dataset.",
+        "operationId": "upload_html_page",
+        "requestBody": {
+          "description": "JSON request payload to upload a file",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadHtmlPageReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Confirmation that html is being processed"
+          },
+          "400": {
+            "description": "Service error relating to processing the file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/file/{file_id}": {
       "get": {
         "tags": [
@@ -8460,6 +8496,15 @@
             "type": "string",
             "description": "The URL to crawl",
             "nullable": true
+          },
+          "webhook_metadata": {
+            "description": "Metadata to send back with the webhook call for each successful page scrape",
+            "nullable": true
+          },
+          "webhook_url": {
+            "type": "string",
+            "description": "Host to call back on the webhook for each successful page scrape",
+            "nullable": true
           }
         },
         "example": {
@@ -9641,6 +9686,44 @@
           "manhattan",
           "dot"
         ]
+      },
+      "Document": {
+        "type": "object",
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "extract": {
+            "type": "string",
+            "nullable": true
+          },
+          "html": {
+            "type": "string",
+            "nullable": true
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "markdown": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          },
+          "rawHtml": {
+            "type": "string",
+            "nullable": true
+          },
+          "screenshot": {
+            "type": "string",
+            "nullable": true
+          }
+        }
       },
       "EditMessageReqPayload": {
         "type": "object",
@@ -11678,6 +11761,152 @@
           "sort_order": 1,
           "topic_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "updated_at": "2021-01-01 00:00:00.000"
+        }
+      },
+      "Metadata": {
+        "type": "object",
+        "properties": {
+          "articleSection": {
+            "type": "string",
+            "nullable": true
+          },
+          "articleTag": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcDateCreated": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcSubject": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcTermsAudience": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcTermsCreated": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcTermsKeywords": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcTermsSubject": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcTermsType": {
+            "type": "string",
+            "nullable": true
+          },
+          "dcType": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "keywords": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "modifiedTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "ogAudio": {
+            "type": "string",
+            "nullable": true
+          },
+          "ogDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "ogDeterminer": {
+            "type": "string",
+            "nullable": true
+          },
+          "ogImage": {
+            "type": "string",
+            "nullable": true
+          },
+          "ogLocale": {
+            "type": "string",
+            "nullable": true
+          },
+          "ogLocaleAlternate": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "ogSiteName": {
+            "type": "string",
+            "nullable": true
+          },
+          "ogTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "ogUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "ogVideo": {
+            "type": "string",
+            "nullable": true
+          },
+          "publishedTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "robots": {
+            "type": "string",
+            "nullable": true
+          },
+          "site_map": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Sitemap"
+              }
+            ],
+            "nullable": true
+          },
+          "sourceURL": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusCode": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          }
         }
       },
       "MmrOptions": {
@@ -15025,6 +15254,17 @@
           "pos_in_queue": 1
         }
       },
+      "Sitemap": {
+        "type": "object",
+        "required": [
+          "changefreq"
+        ],
+        "properties": {
+          "changefreq": {
+            "type": "string"
+          }
+        }
+      },
       "SlimChunkMetadata": {
         "type": "object",
         "required": [
@@ -16375,6 +16615,24 @@
         "properties": {
           "file_metadata": {
             "$ref": "#/components/schemas/File"
+          }
+        }
+      },
+      "UploadHtmlPageReqPayload": {
+        "type": "object",
+        "required": [
+          "data",
+          "metadata",
+          "scrapeId"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Document"
+          },
+          "metadata": {},
+          "scrapeId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },

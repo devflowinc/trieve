@@ -624,6 +624,14 @@ export type CrawlOptions = {
      * The URL to crawl
      */
     site_url?: (string) | null;
+    /**
+     * Metadata to send back with the webhook call for each successful page scrape
+     */
+    webhook_metadata?: unknown;
+    /**
+     * Host to call back on the webhook for each successful page scrape
+     */
+    webhook_url?: (string) | null;
 };
 
 /**
@@ -1083,6 +1091,16 @@ export type DeprecatedSearchOverGroupsResponseBody = {
 };
 
 export type DistanceMetric = 'euclidean' | 'cosine' | 'manhattan' | 'dot';
+
+export type Document = {
+    extract?: (string) | null;
+    html?: (string) | null;
+    links?: Array<(string)> | null;
+    markdown?: (string) | null;
+    metadata: Metadata;
+    rawHtml?: (string) | null;
+    screenshot?: (string) | null;
+};
 
 export type EditMessageReqPayload = {
     /**
@@ -1877,6 +1895,42 @@ export type Message = {
     sort_order: number;
     topic_id: string;
     updated_at: string;
+};
+
+export type Metadata = {
+    articleSection?: (string) | null;
+    articleTag?: (string) | null;
+    dcDate?: (string) | null;
+    dcDateCreated?: (string) | null;
+    dcDescription?: (string) | null;
+    dcSubject?: (string) | null;
+    dcTermsAudience?: (string) | null;
+    dcTermsCreated?: (string) | null;
+    dcTermsKeywords?: (string) | null;
+    dcTermsSubject?: (string) | null;
+    dcTermsType?: (string) | null;
+    dcType?: (string) | null;
+    description?: (string) | null;
+    error?: (string) | null;
+    keywords?: (string) | null;
+    language?: (string) | null;
+    modifiedTime?: (string) | null;
+    ogAudio?: (string) | null;
+    ogDescription?: (string) | null;
+    ogDeterminer?: (string) | null;
+    ogImage?: (string) | null;
+    ogLocale?: (string) | null;
+    ogLocaleAlternate?: Array<(string)> | null;
+    ogSiteName?: (string) | null;
+    ogTitle?: (string) | null;
+    ogUrl?: (string) | null;
+    ogVideo?: (string) | null;
+    publishedTime?: (string) | null;
+    robots?: (string) | null;
+    site_map?: ((Sitemap) | null);
+    sourceURL?: (string) | null;
+    statusCode?: (number) | null;
+    title?: (string) | null;
 };
 
 /**
@@ -2778,6 +2832,10 @@ export type SingleQueuedChunkResponse = {
     pos_in_queue: number;
 };
 
+export type Sitemap = {
+    changefreq: string;
+};
+
 export type SlimChunkMetadata = {
     created_at: string;
     dataset_id: string;
@@ -3268,6 +3326,12 @@ export type UploadFileReqPayload = {
 
 export type UploadFileResponseBody = {
     file_metadata: File;
+};
+
+export type UploadHtmlPageReqPayload = {
+    data: Document;
+    metadata: unknown;
+    scrapeId: string;
 };
 
 export type UsageGraphPoint = {
@@ -4237,6 +4301,15 @@ export type CreatePresignedUrlForCsvJsonlData = {
 };
 
 export type CreatePresignedUrlForCsvJsonlResponse = (CreatePresignedUrlForCsvJsonResponseBody);
+
+export type UploadHtmlPageData = {
+    /**
+     * JSON request payload to upload a file
+     */
+    requestBody: UploadHtmlPageReqPayload;
+};
+
+export type UploadHtmlPageResponse = (void);
 
 export type GetFileHandlerData = {
     /**
@@ -5714,6 +5787,21 @@ export type $OpenApiTs = {
                 200: CreatePresignedUrlForCsvJsonResponseBody;
                 /**
                  * Service error relating to uploading the file
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/file/html_page': {
+        post: {
+            req: UploadHtmlPageData;
+            res: {
+                /**
+                 * Confirmation that html is being processed
+                 */
+                204: void;
+                /**
+                 * Service error relating to processing the file
                  */
                 400: ErrorResponseBody;
             };

@@ -7688,6 +7688,10 @@ pub struct CrawlOptions {
     pub body_remove_strings: Option<Vec<String>>,
     /// Options for including an openapi spec in the crawl
     pub scrape_options: Option<ScrapeOptions>,
+    /// Host to call back on the webhook for each successful page scrape
+    pub webhook_url: Option<String>,
+    /// Metadata to send back with the webhook call for each successful page scrape
+    pub webhook_metadata: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -7733,6 +7737,8 @@ impl CrawlOptions {
                 .body_remove_strings
                 .clone()
                 .or(other.body_remove_strings.clone()),
+            webhook_url: None,
+            webhook_metadata: None,
         }
     }
 }
@@ -7753,6 +7759,10 @@ pub struct FirecrawlCrawlRequest {
     pub allow_external_links: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scrape_options: Option<FirecrawlScraperOptions>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub webhook_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub webhook_metadata: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Default)]
@@ -7780,9 +7790,11 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
             scrape_options: Some(FirecrawlScraperOptions {
                 include_tags: crawl_options.include_tags,
                 exclude_tags: crawl_options.exclude_tags,
-                formats: Some(vec!["html".to_string(), "rawHtml".to_string()]),
+                formats: Some(vec!["rawHtml".to_string()]),
                 wait_for: Some(1000),
             }),
+            webhook_url: crawl_options.webhook_url,
+            webhook_metadata: crawl_options.webhook_metadata,
         }
     }
 }

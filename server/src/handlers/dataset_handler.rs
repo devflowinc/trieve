@@ -9,8 +9,8 @@ use crate::{
     middleware::auth_middleware::{verify_admin, verify_owner},
     operators::{
         crawl_operator::{
-            crawl, get_crawl_request_by_dataset_id_query, update_crawl_settings_for_dataset,
-            validate_crawl_options,
+            create_crawl_query, get_crawl_request_by_dataset_id_query,
+            update_crawl_settings_for_dataset, validate_crawl_options,
         },
         dataset_operator::{
             clear_dataset_by_dataset_id_query, create_dataset_query, create_datasets_query,
@@ -175,7 +175,7 @@ pub async fn create_dataset(
     let d = create_dataset_query(dataset.clone(), pool.clone()).await?;
 
     if let Some(crawl_options) = data.crawl_options.clone() {
-        crawl(
+        create_crawl_query(
             crawl_options.clone(),
             pool.clone(),
             redis_pool.clone(),

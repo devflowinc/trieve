@@ -10,10 +10,11 @@ use crate::{
     errors::ServiceError,
     middleware::auth_middleware::verify_member,
     operators::{
+        crawl_operator::{process_crawl_doc, Document},
         file_operator::{
             delete_file_query, get_aws_bucket, get_dataset_file_query, get_file_query,
         },
-        organization_operator::get_file_size_sum_org,
+        organization_operator::{get_file_size_sum_org, hash_function},
     },
 };
 use actix_web::{web, HttpResponse};
@@ -203,6 +204,90 @@ pub async fn upload_file_handler(
     };
 
     Ok(HttpResponse::Ok().json(result))
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadHtmlPageReqPayload {
+    pub data: Document,
+    pub metadata: serde_json::Value,
+    pub scrape_id: uuid::Uuid,
+}
+
+/// Upload HTML Page
+///
+/// Chunk HTML by headings and queue for indexing into the specified dataset.
+#[utoipa::path(
+    post,
+    path = "/file/html_page",
+    context_path = "/api",
+    tag = "File",
+    request_body(content = UploadHtmlPageReqPayload, description = "JSON request payload to upload a file", content_type = "application/json"),
+    responses(
+        (status = 204, description = "Confirmation that html is being processed"),
+        (status = 400, description = "Service error relating to processing the file", body = ErrorResponseBody),
+    ),
+)]
+pub async fn upload_html_page(
+    data: web::Json<UploadHtmlPageReqPayload>,
+    redis_pool: web::Data<RedisPool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let req_payload = data.into_inner();
+
+    let dataset_id = req_payload
+        .metadata
+        .as_object()
+        .ok_or_else(|| {
+            ServiceError::BadRequest("metadata field must be a JSON object".to_string())
+        })?
+        .get("dataset_id")
+        .ok_or_else(|| {
+            ServiceError::BadRequest("metadata field is required to specify dataset_id".to_string())
+        })?
+        .as_str()
+        .ok_or_else(|| {
+            ServiceError::BadRequest("metadata field must have a valid dataset_id".to_string())
+        })?
+        .parse::<uuid::Uuid>()
+        .map_err(|_| {
+            log::error!("metadata field must have a valid dataset_id");
+            ServiceError::BadRequest("metadata field must have a valid dataset_id".to_string())
+        })?;
+
+    let webhook_secret = req_payload
+        .metadata
+        .as_object()
+        .ok_or_else(|| {
+            ServiceError::BadRequest("metadata field must be a JSON object".to_string())
+        })?
+        .get("webhook_secret")
+        .ok_or_else(|| {
+            ServiceError::BadRequest("metadata field is required to specify dataset_id".to_string())
+        })?
+        .as_str()
+        .ok_or_else(|| {
+            ServiceError::BadRequest("metadata field must have a valid dataset_id".to_string())
+        })?
+        .parse::<String>()
+        .map_err(|_| {
+            log::error!("metadata field must have a valid dataset_id");
+            ServiceError::BadRequest("metadata field must have a valid dataset_id".to_string())
+        })?;
+
+    let cur_secret = hash_function(
+        std::env::var("STRIPE_WEBHOOK_SECRET")
+            .unwrap_or("firecrawl".to_string())
+            .as_str(),
+    );
+
+    if webhook_secret != cur_secret {
+        log::error!("Webhook secret does not match.");
+        return Err(ServiceError::BadRequest("Webhook secret does not match.".to_string()).into());
+    }
+
+    process_crawl_doc(dataset_id, req_payload.data, redis_pool).await?;
+
+    Ok(HttpResponse::NoContent().finish())
 }
 
 /// Get File Signed URL
