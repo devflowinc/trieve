@@ -1,18 +1,23 @@
 <template id="tab-template">
   {% include "search-component-code.html" %}
 </template>
-<div id="tab-container" class="max-w-2xl mt-20 w-full p-4 mx-auto">
-  <div id="tab-header">
-    <div id="tab-buttons">
-      {% for tab in tabs %}
-      <button class="tab-button" data-tab-id="{{ tab.title }}">
-        {{ tab.title }}
-      </button>
-      {% endfor %}
+<div class="max-w-full">
+  <div
+    id="tab-container"
+    class="mx-auto px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8"
+  >
+    <div id="tab-header">
+      <div id="tab-buttons">
+        {% for tab in tabs %}
+        <button class="tab-button" data-tab-id="{{ tab.title }}">
+          {{ tab.title }}
+        </button>
+        {% endfor %}
+      </div>
     </div>
-  </div>
-  <div id="tab-content">
-    <div class="tab-content flex flex-col gap-4"></div>
+    <div id="tab-content">
+      <div class="tab-content flex flex-col gap-4"></div>
+    </div>
   </div>
 </div>
 

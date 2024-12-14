@@ -71,7 +71,6 @@ pub fn get_qdrant_collection_from_dataset_config(dataset_config: &DatasetConfigu
 }
 
 /// Create Qdrant collection and indexes needed
-
 pub async fn create_new_qdrant_collection_query(
     qdrant_url: Option<&str>,
     qdrant_api_key: Option<&str>,

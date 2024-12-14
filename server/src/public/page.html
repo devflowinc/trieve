@@ -248,6 +248,14 @@
         width: 100%;
         max-width: 42rem;
       }
+
+      .text-brand-color {
+        color: var(--brand-color);
+      }
+
+      .bg-brand-color {
+        background-color: var(--brand-color);
+      }
     </style>
 
     <script type="module">
@@ -264,8 +272,9 @@
     <main>
       <div class="basic">
         <div id="root" class="min-h-[36px]"></div>
-        {% if tabs|length > 0 %} {% include "tabs.html" %} {% else %} {% include
-        "search-component-code.html" %} {% endif %}
+        {% if params.type == "ecommerce" %} {% include "product.html" %} {%
+        endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% else %}
+        {% include "search-component-code.html" %} {% endif %}
       </div>
     </main>
     {% if logged_in %}
@@ -319,11 +328,12 @@
     const rect = openTrieveModalElement.getBoundingClientRect();
 
     let endX = rect.right + 128;
-    if (endX > window.innerWidth) {
-      endX = window.innerWidth - 100;
-    }
+    let endY = rect.bottom + 45;
 
-    const endY = rect.bottom + 45;
+    if (endX > window.innerWidth) {
+      endX = window.innerWidth - 125;
+      endY += 15;
+    }
 
     const startX = rect.right + 40;
     const startY = rect.bottom - 15;
