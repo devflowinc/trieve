@@ -844,7 +844,8 @@ pub async fn search_over_groups_qdrant_query(
 
     let count_limit = if !get_total_pages { 0_u64 } else { 100000_u64 };
 
-    let count_future = count_qdrant_query(count_limit, queries.clone(), dataset_config.clone());
+    let count_future =
+        count_qdrant_group_query(count_limit, queries.clone(), dataset_config.clone());
 
     let search_point_req_payloads: Vec<QueryPointGroups> = queries
         .into_iter()
