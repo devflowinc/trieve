@@ -20,9 +20,17 @@ use regex::Regex;
 use s3::creds::time::OffsetDateTime;
 
 const CHUNK_SYSTEM_PROMPT: &str = "    
-    Convert the following PDF page to markdown.
-    Return only the markdown with no explanation text.
-    Do not exclude any content from the page.";
+Convert this PDF page to markdown formatting, following these requirements:
+
+1. Break the content into logical sections with clear markdown headings (# for main sections, ## for subsections, etc.)
+2. Create section headers that accurately reflect the content and hierarchy of each part
+3. Include all body content from the page
+4. Exclude any PDF headers and footers
+5. Return only the formatted markdown without any explanatory text
+6. Match the original document's content organization but with explicit markdown structure
+
+Please provide the markdown version using this structured approach.
+";
 
 fn get_data_url_from_image(img: DynamicImage) -> Result<String, ServiceError> {
     let mut encoded = Vec::new();
@@ -108,7 +116,7 @@ async fn get_markdown_from_image(
     if let Some(prev_md_doc) = prev_md_doc {
         let prev_md_doc_message = ChatMessage::System {
             content: ChatMessageContent::Text(format!(
-                "Markdown must maintain consistent formatting with the following page: \n\n {}",
+                "Markdown must maintain consistent formatting with the following page, DO NOT INCLUDE CONTENT FROM THIS PAGE IN YOUR RESPONSE: \n\n {}",
                 prev_md_doc
             )),
             name: None,

@@ -357,6 +357,7 @@ impl Modify for SecurityAddon {
             handlers::file_handler::CreatePresignedUrlForCsvJsonlReqPayload,
             handlers::file_handler::CreatePresignedUrlForCsvJsonResponseBody,
             handlers::file_handler::UploadHtmlPageReqPayload,
+            handlers::file_handler::Pdf2MdOptions,
             handlers::invitation_handler::InvitationData,
             handlers::event_handler::GetEventsData,
             handlers::organization_handler::CreateOrganizationReqPayload,
