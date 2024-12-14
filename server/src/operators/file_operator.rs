@@ -122,59 +122,146 @@ pub fn preprocess_file_to_chunks(
     Ok(chunk_htmls)
 }
 
+pub fn split_markdown_by_headings(markdown_text: &str) -> Vec<String> {
+    let lines: Vec<&str> = markdown_text
+        .trim()
+        .lines()
+        .filter(|x| !x.trim().is_empty())
+        .collect();
+    let mut chunks = Vec::new();
+    let mut current_content = Vec::new();
+    let mut pending_heading: Option<String> = None;
+
+    fn is_heading(line: &str) -> bool {
+        line.trim().starts_with('#')
+    }
+
+    fn save_chunk(chunks: &mut Vec<String>, content: &[String]) {
+        if !content.is_empty() {
+            chunks.push(content.join("\n").trim().to_string());
+        }
+    }
+
+    for (i, line) in lines.iter().enumerate() {
+        if is_heading(line) {
+            if !current_content.is_empty() {
+                save_chunk(&mut chunks, &current_content);
+                current_content.clear();
+            }
+
+            if i + 1 < lines.len() && !is_heading(lines[i + 1]) {
+                if let Some(heading) = pending_heading.take() {
+                    current_content.push(heading);
+                }
+                current_content.push(line.to_string());
+            } else {
+                pending_heading = Some(line.to_string());
+            }
+        } else if !line.trim().is_empty() || !current_content.is_empty() {
+            current_content.push(line.to_string());
+        }
+    }
+
+    if !current_content.is_empty() {
+        save_chunk(&mut chunks, &current_content);
+    }
+
+    if let Some(heading) = pending_heading {
+        chunks.push(heading);
+    }
+
+    if chunks.is_empty() && !lines.is_empty() {
+        chunks.push(lines.join("\n").trim().to_string());
+    }
+
+    chunks
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn create_file_chunks(
     created_file_id: uuid::Uuid,
     upload_file_data: UploadFileReqPayload,
     mut chunks: Vec<ChunkReqPayload>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    group_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
     mut redis_conn: MultiplexedConnection,
 ) -> Result<(), ServiceError> {
     let name = upload_file_data.file_name.clone();
 
-    let chunk_group = ChunkGroup::from_details(
-        Some(name.clone()),
-        upload_file_data.description.clone(),
-        dataset_org_plan_sub.dataset.id,
-        upload_file_data.group_tracking_id.clone(),
-        None,
-        upload_file_data
-            .tag_set
-            .clone()
-            .map(|tag_set| tag_set.into_iter().map(Some).collect()),
-    );
+    if upload_file_data
+        .pdf2md_options
+        .is_some_and(|x| x.split_headings.unwrap_or(false))
+    {
+        let mut new_chunks = Vec::new();
 
-    let chunk_group_option = create_groups_query(vec![chunk_group], true, pool.clone())
-        .await
-        .map_err(|e| {
-            log::error!("Could not create group {:?}", e);
-            ServiceError::BadRequest("Could not create group".to_string())
-        })?
-        .pop();
+        for chunk in chunks {
+            let chunk_group = ChunkGroup::from_details(
+                Some(format!(
+                    "{}-page-{}",
+                    name,
+                    chunk.metadata.as_ref().unwrap_or(&serde_json::json!({
+                        "page_num": 0
+                    }))["page_num"]
+                        .as_i64()
+                        .unwrap_or(0)
+                )),
+                upload_file_data.description.clone(),
+                dataset_org_plan_sub.dataset.id,
+                upload_file_data.group_tracking_id.clone(),
+                chunk.metadata.clone(),
+                upload_file_data
+                    .tag_set
+                    .clone()
+                    .map(|tag_set| tag_set.into_iter().map(Some).collect()),
+            );
 
-    let chunk_group = match chunk_group_option {
-        Some(group) => group,
-        None => {
-            return Err(ServiceError::BadRequest(
-                "Could not create group from file".to_string(),
-            ));
+            let chunk_group_option = create_groups_query(vec![chunk_group], true, pool.clone())
+                .await
+                .map_err(|e| {
+                    log::error!("Could not create group {:?}", e);
+                    ServiceError::BadRequest("Could not create group".to_string())
+                })?
+                .pop();
+
+            let chunk_group = match chunk_group_option {
+                Some(group) => group,
+                None => {
+                    return Err(ServiceError::BadRequest(
+                        "Could not create group from file".to_string(),
+                    ));
+                }
+            };
+
+            let group_id = chunk_group.id;
+
+            create_group_from_file_query(group_id, created_file_id, pool.clone())
+                .await
+                .map_err(|e| {
+                    log::error!("Could not create group from file {:?}", e);
+                    e
+                })?;
+
+            let split_chunks =
+                split_markdown_by_headings(chunk.chunk_html.as_ref().unwrap_or(&String::new()));
+
+            for (i, split_chunk) in split_chunks.into_iter().enumerate() {
+                new_chunks.push(ChunkReqPayload {
+                    chunk_html: Some(split_chunk),
+                    tracking_id: chunk.tracking_id.clone().map(|x| format!("{}-{}", x, i)),
+                    group_ids: Some(vec![group_id]),
+                    ..chunk.clone()
+                });
+            }
         }
-    };
 
-    let group_id = chunk_group.id;
-
-    chunks.iter_mut().for_each(|chunk| {
-        chunk.group_ids = Some(vec![group_id]);
-    });
-
-    create_group_from_file_query(group_id, created_file_id, pool.clone())
-        .await
-        .map_err(|e| {
-            log::error!("Could not create group from file {:?}", e);
-            e
-        })?;
+        chunks = new_chunks;
+    } else {
+        chunks.iter_mut().for_each(|chunk| {
+            chunk.group_ids = group_id.map(|id| vec![id]);
+        });
+    }
 
     let chunk_count = get_row_count_for_organization_id_query(
         dataset_org_plan_sub.organization.organization.id,

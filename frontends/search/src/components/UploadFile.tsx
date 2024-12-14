@@ -44,7 +44,10 @@ export const UploadFile = () => {
   const [targetSplitsPerChunk, setTargetSplitsPerChunk] = createSignal(20);
   const [rebalanceChunks, setRebalanceChunks] = createSignal(false);
   const [useGptChunking, setUseGptChunking] = createSignal(false);
+  const [useHeadingBasedChunking, setUseHeadingBasedChunking] =
+    createSignal(false);
   const [groupTrackingId, setGroupTrackingId] = createSignal("");
+  const [systemPrompt, setSystemPrompt] = createSignal("");
 
   const [showFileInput, setShowFileInput] = createSignal(true);
   const [showFolderInput, setShowFolderInput] = createSignal(false);
@@ -149,7 +152,11 @@ export const UploadFile = () => {
         split_delimiters: splitDelimiters(),
         target_splits_per_chunk: targetSplitsPerChunk(),
         rebalance_chunks: rebalanceChunks(),
-        pdf2md_options: { use_pdf2md_ocr: useGptChunking() },
+        pdf2md_options: {
+          use_pdf2md_ocr: useGptChunking(),
+          split_headings: useHeadingBasedChunking(),
+          system_prompt: systemPrompt(),
+        },
         group_tracking_id:
           groupTrackingId() === "" ? undefined : groupTrackingId(),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -343,6 +350,36 @@ export const UploadFile = () => {
               onInput={(e) => setUseGptChunking(e.currentTarget.checked)}
               class="h-4 w-4 rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
+            <div class="flex flex-row items-center space-x-2">
+              <div>Heading Based Chunking</div>
+              <Tooltip
+                body={<BsInfoCircle />}
+                tooltipText="If set to true, Trieve will use the headings in the document to chunk the text."
+              />
+            </div>
+            <input
+              type="checkbox"
+              checked={useHeadingBasedChunking()}
+              onInput={(e) =>
+                setUseHeadingBasedChunking(e.currentTarget.checked)
+              }
+              class="h-4 w-4 rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            />
+            <div class="flex flex-col space-y-2">
+              <div class="flex flex-row items-center space-x-2">
+                <div>System Prompt</div>
+                <Tooltip
+                  body={<BsInfoCircle />}
+                  tooltipText="System prompt to use when chunking. This is an optional field which allows you to specify the system prompt to use when chunking the text. If not specified, the default system prompt is used. However, you may want to use a different system prompt."
+                />
+              </div>
+              <textarea
+                placeholder="optional system prompt to use when chunking"
+                value={systemPrompt()}
+                onInput={(e) => setSystemPrompt(e.target.value)}
+                class="w-full rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+              />
+            </div>
           </div>
         </Show>
         <div class="m-1 mb-1 flex flex-row gap-2">

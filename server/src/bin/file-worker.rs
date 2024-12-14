@@ -7,7 +7,7 @@ use std::sync::{
     Arc,
 };
 use trieve_server::{
-    data::models::{self, FileWorkerMessage},
+    data::models::{self, ChunkGroup, FileWorkerMessage},
     errors::ServiceError,
     establish_connection, get_env,
     handlers::chunk_handler::ChunkReqPayload,
@@ -17,8 +17,22 @@ use trieve_server::{
         file_operator::{
             create_file_chunks, create_file_query, get_aws_bucket, preprocess_file_to_chunks,
         },
+        group_operator::{create_group_from_file_query, create_groups_query},
     },
 };
+
+const HEADING_CHUNKING_SYSTEM_PROMPT: &str = "
+Analyze this PDF page and restructure it into clear markdown sections based on the content topics. For each distinct topic or theme discussed:
+
+1. Create a meaningful section heading using markdown (# for main topics, ## for subtopics)
+2. Group related content under each heading
+3. Break up dense paragraphs into more readable chunks where appropriate
+4. Maintain the key information but organize it by subject matter
+5. Skip headers, footers, and page numbers
+6. Focus on semantic organization rather than matching the original layout
+
+Please provide just the reorganized markdown without any explanatory text
+";
 
 fn main() {
     dotenvy::dotenv().ok();
@@ -299,6 +313,70 @@ async fn upload_file(
     )
     .await?;
 
+    let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
+
+    let created_file = create_file_query(
+        file_id,
+        file_size_mb,
+        file_worker_message.upload_file_data.clone(),
+        file_worker_message.dataset_id,
+        web_pool.clone(),
+    )
+    .await?;
+
+    let group_id = if !file_worker_message
+        .upload_file_data
+        .pdf2md_options
+        .as_ref()
+        .is_some_and(|options| options.split_headings.unwrap_or(false))
+    {
+        let chunk_group = ChunkGroup::from_details(
+            Some(file_worker_message.upload_file_data.file_name.clone()),
+            file_worker_message.upload_file_data.description.clone(),
+            dataset_org_plan_sub.dataset.id,
+            file_worker_message
+                .upload_file_data
+                .group_tracking_id
+                .clone(),
+            None,
+            file_worker_message
+                .upload_file_data
+                .tag_set
+                .clone()
+                .map(|tag_set| tag_set.into_iter().map(Some).collect()),
+        );
+
+        let chunk_group_option = create_groups_query(vec![chunk_group], true, web_pool.clone())
+            .await
+            .map_err(|e| {
+                log::error!("Could not create group {:?}", e);
+                ServiceError::BadRequest("Could not create group".to_string())
+            })?
+            .pop();
+
+        let chunk_group = match chunk_group_option {
+            Some(group) => group,
+            None => {
+                return Err(ServiceError::BadRequest(
+                    "Could not create group from file".to_string(),
+                ));
+            }
+        };
+
+        let group_id = chunk_group.id;
+
+        create_group_from_file_query(group_id, created_file.id, web_pool.clone())
+            .await
+            .map_err(|e| {
+                log::error!("Could not create group from file {:?}", e);
+                e
+            })?;
+
+        Some(group_id)
+    } else {
+        None
+    };
+
     if file_name.ends_with(".pdf")
         && file_worker_message
             .upload_file_data
@@ -330,6 +408,19 @@ async fn upload_file(
             json_value["system_prompt"] = serde_json::json!(system_prompt);
         }
 
+        if file_worker_message
+            .upload_file_data
+            .pdf2md_options
+            .as_ref()
+            .is_some_and(|options| options.split_headings.unwrap_or(false))
+        {
+            json_value["system_prompt"] = serde_json::json!(format!(
+                "{}\n\n{}",
+                json_value["system_prompt"].as_str().unwrap_or(""),
+                HEADING_CHUNKING_SYSTEM_PROMPT
+            ));
+        }
+
         log::info!("Sending file to pdf2md");
         let pdf2md_response = pdf2md_client
             .post(format!("{}/api/task", pdf2md_url))
@@ -355,16 +446,6 @@ async fn upload_file(
                 )));
             }
         };
-
-        let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
-        let created_file = create_file_query(
-            file_id,
-            file_size_mb,
-            file_worker_message.upload_file_data.clone(),
-            file_worker_message.dataset_id,
-            web_pool.clone(),
-        )
-        .await?;
 
         log::info!("Waiting on Task {}", task_id);
         let mut processed_pages = std::collections::HashSet::new();
@@ -481,6 +562,7 @@ async fn upload_file(
                         file_worker_message.upload_file_data.clone(),
                         new_chunks.clone(),
                         dataset_org_plan_sub.clone(),
+                        group_id,
                         web_pool.clone(),
                         event_queue.clone(),
                         redis_conn.clone(),
@@ -545,17 +627,6 @@ async fn upload_file(
         ));
     }
 
-    let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
-
-    let created_file = create_file_query(
-        file_id,
-        file_size_mb,
-        file_worker_message.upload_file_data.clone(),
-        file_worker_message.dataset_id,
-        web_pool.clone(),
-    )
-    .await?;
-
     if file_worker_message
         .upload_file_data
         .create_chunks
@@ -611,6 +682,7 @@ async fn upload_file(
         file_worker_message.upload_file_data,
         chunks,
         dataset_org_plan_sub,
+        group_id,
         web_pool.clone(),
         event_queue.clone(),
         redis_conn,
