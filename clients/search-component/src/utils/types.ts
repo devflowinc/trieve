@@ -30,7 +30,7 @@ export type GroupSearchResults = {
   requestID: string;
 };
 
-export function isChunksWithHighlights(
+export function isChunkWithHighlights(
   result: ChunkWithHighlights | GroupChunk[],
 ): result is ChunkWithHighlights {
   return !Array.isArray(result);

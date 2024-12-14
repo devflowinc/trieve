@@ -15,7 +15,6 @@ export const ProductGroupItem = ({ index, group, requestID }: Props) => {
     [],
   );
 
-  // Shopify 
   const betterGroupName = useMemo(
     () => {
       const productNames: string[] = [];
@@ -26,7 +25,6 @@ export const ProductGroupItem = ({ index, group, requestID }: Props) => {
         })
       )
 
-      // Calculate the overlap of the strings
       const commonName = findCommonName(productNames);
       return commonName || undefined;
     },

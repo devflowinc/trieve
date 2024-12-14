@@ -26,7 +26,7 @@ const Modal = () => {
     script.setAttribute("data-auto-replace-svg", "");
 
     document.head.appendChild(script);
-  });
+  }, []);
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -45,7 +45,14 @@ const Modal = () => {
         "var(--tv-zinc-300)"
       );
     }
-  }, [props.brandColor]);
+
+    document.documentElement.style.setProperty(
+      "--tv-prop-brand-font-family",
+      props.brandFontFamily ??
+        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
+    );
+  }, [props.brandColor, props.brandFontFamily]);
 
   return (
     <>

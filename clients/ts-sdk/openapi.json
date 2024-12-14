@@ -10344,11 +10344,25 @@
               "event_type"
             ],
             "properties": {
+              "detected_hallucinations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The detected hallucinations of the RAG event",
+                "nullable": true
+              },
               "event_type": {
                 "type": "string",
                 "enum": [
                   "rag"
                 ]
+              },
+              "hallucination_score": {
+                "type": "number",
+                "format": "double",
+                "description": "The hallucination score of the RAG event",
+                "nullable": true
               },
               "llm_response": {
                 "type": "string",
@@ -12228,6 +12242,10 @@
             "type": "string",
             "nullable": true
           },
+          "brandFontFamily": {
+            "type": "string",
+            "nullable": true
+          },
           "brandLogoImgSrcUrl": {
             "type": "string",
             "nullable": true
@@ -12875,6 +12893,8 @@
           "results",
           "dataset_id",
           "llm_response",
+          "hallucination_score",
+          "detected_hallucinations",
           "created_at",
           "user_id"
         ],
@@ -12885,6 +12905,16 @@
           "dataset_id": {
             "type": "string",
             "format": "uuid"
+          },
+          "detected_hallucinations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hallucination_score": {
+            "type": "number",
+            "format": "double"
           },
           "id": {
             "type": "string",

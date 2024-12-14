@@ -59,11 +59,12 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
     descriptionHtml = descriptionHtml.replace(curHeadingText || "", "");
   }
   descriptionHtml = descriptionHtml.replace(/([.,!?;:])/g, "$1 ");
-  let title = `${cleanFirstHeading ||
+  let title = `${
+    cleanFirstHeading ||
     item.chunk.metadata?.title ||
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name
-    }`.replace("#", "");
+  }`.replace("#", "");
 
   if (!title.trim() || title == "undefined") {
     return null;
@@ -100,8 +101,8 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
         .map((word) => word.replace(/-/g, " "))
         .concat(
           item.chunk.metadata?.title ||
-          item.chunk.metadata.summary ||
-          urlElements.slice(-1)[0]
+            item.chunk.metadata.summary ||
+            urlElements.slice(-1)[0]
         )
         .map((word) =>
           word
@@ -161,11 +162,12 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
         }}
         {...(item.chunk.link
           ? {
-            href: `${item.chunk.link.endsWith("/")
-                ? item.chunk.link.slice(0, -1)
-                : item.chunk.link
-              }${linkSuffix}`,
-          }
+              href: `${
+                item.chunk.link.endsWith("/")
+                  ? item.chunk.link.slice(0, -1)
+                  : item.chunk.link
+              }${linkSuffix ?? ""}`,
+            }
           : {})}
       >
         <div>

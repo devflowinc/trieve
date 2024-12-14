@@ -1,4 +1,4 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect, useMemo } from "react";
 import { DocsItem } from "./DocsItem";
 import { useSuggestedQueries } from "../../utils/hooks/useSuggestedQueries";
 import { useModalState } from "../../utils/hooks/modal-context";
@@ -7,7 +7,7 @@ import { useChatState } from "../../utils/hooks/chat-context";
 import {
   ChunkWithHighlights,
   GroupChunk,
-  isChunksWithHighlights,
+  isChunkWithHighlights,
 } from "../../utils/types";
 import { ProductItem } from "./ProductItem";
 import { ProductGroupItem } from "./ProductGroupItem";
@@ -35,9 +35,9 @@ export const SearchMode = () => {
     result: ChunkWithHighlights | GroupChunk[],
     index: number
   ) => {
-    const chunkOrGroup = isChunksWithHighlights(result);
+    const isChunk = isChunkWithHighlights(result);
     const ecommerce = props.type == "ecommerce";
-    if (chunkOrGroup && ecommerce) {
+    if (isChunk && ecommerce) {
       return (
         <ProductItem
           item={result}
@@ -46,7 +46,7 @@ export const SearchMode = () => {
           key={result.chunk.id}
         />
       );
-    } else if (!chunkOrGroup && ecommerce) {
+    } else if (!isChunk && ecommerce) {
       return (
         <ProductGroupItem
           key={result[0].group.id}
@@ -55,7 +55,7 @@ export const SearchMode = () => {
           requestID={requestID}
         />
       );
-    } else if (chunkOrGroup) {
+    } else if (isChunk) {
       return (
         <DocsItem
           key={result.chunk.id}
@@ -82,11 +82,24 @@ export const SearchMode = () => {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (mode == "search" && open) {
       inputRef.current?.focus();
     }
   }, [mode, open]);
+
+  const resultsLength = useMemo(() => results.length, [results]);
+
+  const resultsDisplay = useMemo(() => {
+    if (results.length) {
+      const comps = results.map((result, index) =>
+        getItemComponent(result, index)
+      );
+      return comps;
+    } else {
+      return null;
+    }
+  }, [results]);
 
   return (
     <Suspense fallback={<div className="hidden"> </div>}>
@@ -194,7 +207,7 @@ export const SearchMode = () => {
       </div>
 
       <ul className={`trieve-elements-${props.type}`}>
-        {results.length && props.chat ? (
+        {resultsLength && props.chat ? (
           <li className="start-chat-li" key="chat">
             <button
               id="trieve-search-item-0"
@@ -217,10 +230,8 @@ export const SearchMode = () => {
             </button>
           </li>
         ) : null}
-        {results.length
-          ? results.map((result, index) => getItemComponent(result, index))
-          : null}
-        {query && !results.length && !loadingResults ? (
+        {resultsDisplay}
+        {query && !resultsLength && !loadingResults ? (
           <div className="no-results">
             <p className="no-results-text">No results found</p>
             {props.problemLink && (
@@ -236,7 +247,7 @@ export const SearchMode = () => {
               </p>
             )}
           </div>
-        ) : query && !results.length && loadingResults ? (
+        ) : query && !resultsLength && loadingResults ? (
           <p className={`no-results-loading ${props.type}`}>Searching...</p>
         ) : null}
       </ul>

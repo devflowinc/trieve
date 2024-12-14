@@ -1369,7 +1369,15 @@ export type EventTypes = {
      */
     user_id?: (string) | null;
 } | {
+    /**
+     * The detected hallucinations of the RAG event
+     */
+    detected_hallucinations?: Array<(string)> | null;
     event_type: 'rag';
+    /**
+     * The hallucination score of the RAG event
+     */
+    hallucination_score?: (number) | null;
     /**
      * The response from the LLM
      */
@@ -2019,6 +2027,7 @@ export type PublicPageParameters = {
     apiKey?: (string) | null;
     baseUrl?: (string) | null;
     brandColor?: (string) | null;
+    brandFontFamily?: (string) | null;
     brandLogoImgSrcUrl?: (string) | null;
     brandName?: (string) | null;
     chat?: (boolean) | null;
@@ -2181,6 +2190,8 @@ export type RAGUsageResponse = {
 export type RagQueryEvent = {
     created_at: string;
     dataset_id: string;
+    detected_hallucinations: Array<(string)>;
+    hallucination_score: number;
     id: string;
     llm_response: string;
     query_rating?: ((SearchQueryRating) | null);

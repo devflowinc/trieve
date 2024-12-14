@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="/static/output.css" />
     <link
       rel="stylesheet"
-      href="https://unpkg.com/trieve-search-component@0.2.15/dist/index.css"
+      href="https://unpkg.com/trieve-search-component@0.2.22/dist/index.css"
     />
     <link
       rel="apple-touch-icon"
@@ -46,6 +46,10 @@
     />
     {% endif %} {% endif %}
 
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/js/all.min.js"
+      data-auto-replace-svg
+    ></script>
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js"></script>
 
@@ -53,6 +57,22 @@
       hljs.highlightAll();
 
       window.paramsData = {{params | tojson}};
+
+      const brandFontFamily = window.paramsData.brandFontFamily;
+      if (brandFontFamily) {
+        const link = document.createElement("link");
+        link.href = `https://fonts.googleapis.com/css2?family=${brandFontFamily.replace(
+          / /g,
+          "+"
+        )}&display=swap`;
+        link.rel = "stylesheet";
+        document.head.appendChild(link);
+
+        await document.fonts.load("16px " + brandFontFamily);
+
+        const body = document.querySelector("body");
+        body.style.fontFamily = `"${brandFontFamily}", sans-serif`;
+      }
     </script>
 
     <style>
@@ -72,7 +92,6 @@
       }
 
       nav {
-        font-family: "Maven Pro", sans-serif;
         border-color: var(--brand-color);
 
         a:hover {
@@ -126,10 +145,12 @@
 
       body {
         min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        font-family: "Maven Pro", sans-serif;
       }
 
       main {
-        font-family: "Maven Pro", sans-serif;
         line-height: 1.6;
         position: relative;
         display: flex;
@@ -158,7 +179,6 @@
       }
 
       .made-with-love {
-        font-family: "Maven Pro", sans-serif;
         margin-right: 0.5rem;
         margin-bottom: 0.5rem;
         margin-left: auto;
@@ -231,13 +251,11 @@
     </style>
 
     <script type="module">
-      import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.15/dist/vanilla/index.js';
-      window.addEventListener('load', () => {
-        const root = document.getElementById('root');
-        renderToDiv(root, {
-          ... {{params | tojson}}
-        })
-      });
+      import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.22/dist/vanilla/index.js';
+      const root = document.getElementById('root');
+      renderToDiv(root, {
+        ... {{params | tojson}}
+      })
     </script>
   </head>
 
@@ -245,7 +263,7 @@
     {% include "navbar.html" %}
     <main>
       <div class="basic">
-        <div id="root"></div>
+        <div id="root" class="min-h-[36px]"></div>
         {% if tabs|length > 0 %} {% include "tabs.html" %} {% else %} {% include
         "search-component-code.html" %} {% endif %}
       </div>
@@ -257,9 +275,6 @@
       >Back To Dashboard</a
     >
     {% endif %}
-    <p class="text-xs made-with-love text-end">
-      Made with <span class="heart">&hearts;</span> in San Francisco
-    </p>
   </body>
 
   <canvas id="canvas"></canvas>
@@ -296,7 +311,7 @@
 
     const brandUnderlineAnimation = annotate(brandNameElement, {
       type: "underline",
-      animate: false,
+      animationDuration: 50,
       color: window.paramsData.brandColor || "black",
       padding: 3,
     });

@@ -45,11 +45,9 @@ export const useKeyboardNavigation = () => {
 
           const focusedElement = document.activeElement as HTMLElement;
           const id = focusedElement.id;
-          console.log("focusedElement", focusedElement);
 
           if (id && id.startsWith("trieve-search-item-")) {
             const index = parseInt(id.split("-")[3]);
-            console.log("index", index);
             document.getElementById(`trieve-search-item-${index + 1}`)?.focus();
           }
 

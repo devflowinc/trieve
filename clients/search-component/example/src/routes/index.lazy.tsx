@@ -14,6 +14,7 @@ export default function Home() {
   const brandName = import.meta.env.VITE_BRAND_NAME;
   const brandLogoSrcUrl = import.meta.env.VITE_BRAND_LOGO_SRC_URL;
   const brandColor = import.meta.env.VITE_ACCENT_COLOR;
+  const brandFontFamily = import.meta.env.VITE_BRAND_FONT_FAMILY;
   const problemLink = import.meta.env.VITE_PROBLEM_LINK;
   const useGroupSearch = import.meta.env.VITE_USE_GROUP_SEARCH == "true";
   const defaultSearchQueries: string[] = (
@@ -123,7 +124,7 @@ export default function Home() {
                 {
                   selector: ".random-trigger-location",
                   mode: "chat",
-                }
+                },
               ]}
               useGroupSearch={useGroupSearch}
               defaultAiQuestions={[
@@ -134,6 +135,7 @@ export default function Home() {
               brandLogoImgSrcUrl={brandLogoSrcUrl}
               brandName={brandName}
               brandColor={brandColor}
+              brandFontFamily={brandFontFamily}
               allowSwitchingModes={true}
               responsive={false}
               searchOptions={{
@@ -158,7 +160,7 @@ export default function Home() {
           {component > 0 ? (
             <li className="left-6 absolute">
               <button onClick={() => setComponent(0)}>
-              <i className="fa-solid fa-chevron-left"></i>
+                <i className="fa-solid fa-chevron-left"></i>
               </button>
             </li>
           ) : (

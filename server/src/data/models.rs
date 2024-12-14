@@ -3180,6 +3180,9 @@ impl DatasetConfigurationDTO {
                     creator_linked_in_url: page_parameters_self
                         .creator_linked_in_url
                         .or(page_parameters_curr.creator_linked_in_url),
+                    brand_font_family: page_parameters_self
+                        .brand_font_family
+                        .or(page_parameters_curr.brand_font_family),
                 }),
             },
             DISABLE_ANALYTICS: self
