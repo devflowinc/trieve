@@ -522,7 +522,6 @@ pub async fn get_rag_chunks_query(
                 .get(0)
                 .map(|x| x.score as f32)
                 .unwrap_or(0.0),
-
             latency: get_latency_from_header(search_timer.header_value()),
             results: result_chunks
                 .score_chunks

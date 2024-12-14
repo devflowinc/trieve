@@ -112,8 +112,14 @@ export const RAGAnalyticsPage = () => {
       },
     },
     {
+      accessorKey: "top_score",
+      header: "Top Score",
+      sortable: true,
+    },
+    {
       accessorKey: "hallucination_score",
       header: "Hallucination Score",
+      sortable: true,
     },
     {
       accessorKey: "query_rating",
@@ -153,37 +159,35 @@ export const RAGAnalyticsPage = () => {
     <div>
       <div class="mt-4 pb-1 text-lg">All RAG Queries</div>
       <div class="rounded-md bg-white">
-        <Show when={ragTableQuery.data}>
-          <Card>
-            <RAGFilterBar noPadding filters={filters} setFilters={setFilters} />
-            <div class="mt-4 overflow-x-auto">
-              <TanStackTable
-                pages={pages}
-                perPage={10}
-                table={table as unknown as Table<SearchQueryEvent>}
-                onRowClick={(row: SearchQueryEvent) =>
-                  navigate(
-                    `/dataset/${datasetContext.datasetId()}/analytics/rag/${
-                      row.id
-                    }`,
-                  )
-                }
-                exportFn={(page: number) =>
-                  getRAGQueries({
-                    datasetId: datasetContext.datasetId(),
-                    filter: filters,
-                    page: page,
-                    sort_by: sortBy(),
-                    sort_order: sortOrder(),
-                  })
-                }
-              />
-              <Show when={ragTableQuery.data?.length === 0}>
-                <div class="py-8 text-center">No Data.</div>
-              </Show>
-            </div>
-          </Card>
-        </Show>
+        <Card>
+          <RAGFilterBar noPadding filters={filters} setFilters={setFilters} />
+          <div class="mt-4 overflow-x-auto">
+            <TanStackTable
+              pages={pages}
+              perPage={10}
+              table={table as unknown as Table<SearchQueryEvent>}
+              onRowClick={(row: SearchQueryEvent) =>
+                navigate(
+                  `/dataset/${datasetContext.datasetId()}/analytics/rag/${
+                    row.id
+                  }`,
+                )
+              }
+              exportFn={(page: number) =>
+                getRAGQueries({
+                  datasetId: datasetContext.datasetId(),
+                  filter: filters,
+                  page: page,
+                  sort_by: sortBy(),
+                  sort_order: sortOrder(),
+                })
+              }
+            />
+            <Show when={ragTableQuery.data?.length === 0}>
+              <div class="py-8 text-center">No Data.</div>
+            </Show>
+          </div>
+        </Card>
       </div>
       <div class="my-4 border-b border-b-neutral-200 pt-2" />
       <RagAnalyticsGraphs />
