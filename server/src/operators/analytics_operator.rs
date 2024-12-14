@@ -751,9 +751,11 @@ pub async fn get_rag_queries_query(
 ) -> Result<RagQueryResponse, ServiceError> {
     let mut query_string = String::from(
         "SELECT 
-            ?fields
+            ?fields,
+            top_score,
         FROM 
             rag_queries
+        JOIN search_queries ON rag_queries.search_id = search_queries.id
         WHERE dataset_id = ?",
     );
 
@@ -775,7 +777,7 @@ pub async fn get_rag_queries_query(
         .query(query_string.as_str())
         .bind(dataset_id)
         .bind((page.unwrap_or(1) - 1) * 10)
-        .fetch_all::<RagQueryEventClickhouse>()
+        .fetch_all::<(RagQueryEventClickhouse, f32)>()
         .await
         .map_err(|e| {
             log::error!("Error fetching query: {:?}", e);
@@ -785,7 +787,7 @@ pub async fn get_rag_queries_query(
     let queries: Vec<RagQueryEvent> = join_all(
         clickhouse_query
             .into_iter()
-            .map(|q| q.from_clickhouse(pool.clone())),
+            .map(|(q, score)| q.from_clickhouse(pool.clone(), score)),
     )
     .await;
 
@@ -888,18 +890,24 @@ pub async fn get_rag_query(
     pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RagQueryEvent, ServiceError> {
-    let clickhouse_query = clickhouse_client
-        .query("SELECT ?fields FROM rag_queries WHERE id = ? AND dataset_id = ?")
+    let (clickhouse_query, top_score) = clickhouse_client
+        .query(
+            "SELECT ?fields, top_score FROM rag_queries  
+            JOIN search_queries ON rag_queries.search_id = search_queries.id
+            WHERE id = ? AND dataset_id = ?",
+        )
         .bind(request_id)
         .bind(dataset_id)
-        .fetch_one::<RagQueryEventClickhouse>()
+        .fetch_one::<(RagQueryEventClickhouse, f32)>()
         .await
         .map_err(|e| {
             log::error!("Error fetching query: {:?}", e);
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let query: RagQueryEvent = clickhouse_query.from_clickhouse(pool.clone()).await;
+    let query: RagQueryEvent = clickhouse_query
+        .from_clickhouse(pool.clone(), top_score)
+        .await;
 
     Ok(query)
 }

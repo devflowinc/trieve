@@ -7,7 +7,11 @@ import { usePagination } from "../usePagination";
 import { RAGAnalyticsFilter } from "shared/types";
 import { DatasetContext } from "../../../contexts/DatasetContext";
 
-export type RAGSortByCols = "created_at" | "latency";
+export type RAGSortByCols =
+  | "created_at"
+  | "latency"
+  | "hallucination_score"
+  | "top_score";
 
 export const useDataExplorerRag = () => {
   const queryClient = useQueryClient();

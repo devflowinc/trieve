@@ -5037,6 +5037,7 @@ pub struct RagQueryEvent {
     pub results: Vec<serde_json::Value>,
     pub dataset_id: uuid::Uuid,
     pub llm_response: String,
+    pub top_score: f32,
     pub query_rating: Option<SearchQueryRating>,
     pub hallucination_score: f64,
     pub detected_hallucinations: Vec<String>,
@@ -5055,7 +5056,7 @@ impl From<String> for ClickhouseRagTypes {
 }
 
 impl RagQueryEventClickhouse {
-    pub async fn from_clickhouse(self, pool: web::Data<Pool>) -> RagQueryEvent {
+    pub async fn from_clickhouse(self, pool: web::Data<Pool>, top_score: f32) -> RagQueryEvent {
         let chunk_ids = self
             .results
             .iter()
@@ -5093,6 +5094,7 @@ impl RagQueryEventClickhouse {
             user_message: self.user_message,
             search_id: uuid::Uuid::from_bytes(*self.search_id.as_bytes()),
             results,
+            top_score,
             query_rating,
             dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
             llm_response: self.llm_response,
@@ -6277,6 +6279,10 @@ pub enum SearchSortBy {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum RAGSortBy {
+    #[display(fmt = "hallucination_score")]
+    HallucinationScore,
+    #[display(fmt = "top_score")]
+    TopScore,
     #[display(fmt = "created_at")]
     CreatedAt,
     #[display(fmt = "latency")]

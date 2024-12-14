@@ -616,7 +616,11 @@ export interface RecommendationsAnalyticsFilter {
   recommendation_type?: "chunk" | "group";
 }
 
-export type RAGSortBy = "created_at" | "latency";
+export type RAGSortBy =
+  | "created_at"
+  | "latency"
+  | "hallucination_score"
+  | "top_score";
 export type SearchSortBy = "created_at" | "latency" | "top_score";
 
 export type SortOrder = "desc" | "asc";
