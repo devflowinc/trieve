@@ -56,6 +56,7 @@ export type ModalProps = {
   brandName?: string;
   problemLink?: string;
   brandColor?: string;
+  brandFontFamily?: string;
   openKeyCombination?: { key?: string; label?: string; ctrl?: boolean }[];
   tags?: {
     tag: string;
@@ -271,8 +272,6 @@ const ModalProvider = ({
           e != "AbortError" &&
           e != "AbortError: signal is aborted without reason"
         ) {
-          console.log(e);
-          console.log(typeof e);
           console.error(e);
         }
       }
@@ -312,7 +311,6 @@ const ModalProvider = ({
   useEffect(() => {
     const abortController = new AbortController();
 
-    setLoadingResults(true);
     const timeout = setTimeout(() => {
       search(abortController);
     }, props.debounceMs);

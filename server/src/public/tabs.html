@@ -1,5 +1,3 @@
-<!-- <script src="https://cdn.jsdelivr.net/gh/jitbit/HtmlSanitizer@master/HtmlSanitizer.js"></script> -->
-
 <template id="tab-template">
   {% include "search-component-code.html" %}
 </template>
@@ -19,23 +17,6 @@
 </div>
 
 <script type="module">
-  import sanitizeHtml from 'https://cdn.jsdelivr.net/npm/sanitize-html@1.27.5/+esm'
-
-  function sanitize(html) {
-    return sanitizeHtml(html, {
-      allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'img' ]),
-      allowedAttributes: {...sanitizeHtml.defaults.allowedAttributes, '*': [
-            'src',
-            'alt',
-            'width',
-            'height',
-            'style',
-            'class',
-            'id',
-      ]}
-    })
-  }
-
   window.tabData = {{ tabs | tojson }};
 
   function setOpenTab(tabIndex) {
@@ -48,7 +29,7 @@
       }
     });
     const tabContent = document.querySelector('.tab-content');
-    tabContent.innerHTML = sanitize(window.tabData[tabIndex].tabInnerHtml);
+    tabContent.innerHTML = window.tabData[tabIndex].tabInnerHtml;
     let tab = window.tabData[tabIndex];
     if (tab.showComponentCode) {
       let template = document.getElementById('tab-template');
@@ -69,10 +50,8 @@
     });
   });
 
-  window.onload = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tabIndex = Number(urlParams.get('tab')) || 0;
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabIndex = Number(urlParams.get('tab')) || 0;
 
-    setOpenTab(tabIndex);
-  }
+  setOpenTab(tabIndex);
 </script>

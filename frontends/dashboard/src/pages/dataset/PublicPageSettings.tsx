@@ -208,6 +208,29 @@ const PublicPageControls = () => {
                   />
                 </div>
               </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Google Font
+                  </label>
+                  <Tooltip
+                    tooltipText="Google font to use for the page. Must be a sans-serif font"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <div class="flex grow items-center gap-2">
+                  <input
+                    placeholder='"Maven Pro", sans-serif'
+                    value={extraParams.brandFontFamily || ""}
+                    onInput={(e) => {
+                      setExtraParams("brandFontFamily", e.currentTarget.value);
+                    }}
+                    class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  />
+                </div>
+              </div>
             </div>
             <div class="grow">
               <div class="flex items-center gap-1">
@@ -256,27 +279,6 @@ const PublicPageControls = () => {
 
         <div class="mt-4 flex items-start gap-8">
           <div class="flex grow flex-col gap-2">
-            <div class="grow">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Header Brand Name
-                </label>
-                <Tooltip
-                  tooltipText="Brand name which will be displayed in the navbar on the page"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <div class="flex grow items-center gap-2">
-                <input
-                  placeholder="https://cdn.trieve.ai/favicon.ico"
-                  value={extraParams.brandLogoImgSrcUrl || ""}
-                  onInput={(e) => {
-                    setExtraParams("brandLogoImgSrcUrl", e.currentTarget.value);
-                  }}
-                  class="block w-full grow rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
             <div class="grow">
               <div class="flex items-center gap-1">
                 <label class="block" for="">
@@ -590,16 +592,41 @@ const PublicPageControls = () => {
                 Foreground Color
               </label>
               <input
-                type="color"
-                onChange={(e) => {
+                placeholder="#FFFFFF"
+                value={extraParams.heroPattern?.foregroundColor || "#FFFFFF"}
+                onInput={(e) => {
                   setExtraParams(
                     "heroPattern",
                     "foregroundColor",
                     e.currentTarget.value,
                   );
                 }}
-                value={extraParams.heroPattern?.foregroundColor || "#ffffff"}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
+            </div>
+            <div class="">
+              <Show
+                when={
+                  extraParams.heroPattern?.heroPatternName !== "Blank" &&
+                  extraParams.heroPattern?.heroPatternName !== "Solid"
+                }
+              >
+                <label class="block" for="">
+                  Background Color
+                </label>
+                <input
+                  placeholder="#FFFFFF"
+                  value={extraParams.heroPattern?.foregroundColor || "#FFFFFF"}
+                  onChange={(e) => {
+                    setExtraParams(
+                      "heroPattern",
+                      "backgroundColor",
+                      e.currentTarget.value,
+                    );
+                  }}
+                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </Show>
             </div>
             <div class="">
               <label class="block" for="">
@@ -620,29 +647,6 @@ const PublicPageControls = () => {
                   (extraParams.heroPattern?.foregroundOpacity || 0.5) * 100
                 }
               />
-            </div>
-            <div class="">
-              <Show
-                when={
-                  extraParams.heroPattern?.heroPatternName !== "Blank" &&
-                  extraParams.heroPattern?.heroPatternName !== "Solid"
-                }
-              >
-                <label class="block" for="">
-                  Background Color
-                </label>
-                <input
-                  type="color"
-                  onChange={(e) => {
-                    setExtraParams(
-                      "heroPattern",
-                      "backgroundColor",
-                      e.currentTarget.value,
-                    );
-                  }}
-                  value={extraParams.heroPattern?.backgroundColor || "#ffffff"}
-                />
-              </Show>
             </div>
           </div>
         </Show>

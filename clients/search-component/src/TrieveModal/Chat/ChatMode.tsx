@@ -80,7 +80,7 @@ export const ChatMode = () => {
       <div className="chat-footer-wrapper">
         {currentGroup && (
           <div className="chat-group-disclaimer">
-            <div>Chatting with {currentGroup.name}</div>
+            <div>Chatting with {currentGroup.name.replace(/<[^>]*>/g, "")}</div>
             <button
               onClick={() => {
                 cancelGroupChat();

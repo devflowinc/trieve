@@ -23,12 +23,13 @@ body {
   }
 
   #trieve-search-modal {
-    @apply animate-contentShow scroll-smooth fixed top-[calc(40%-30vh)] sm:top-[calc(25vh-225px)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[800px] -translate-x-[50%] rounded-lg shadow-2xl focus:outline-none font-sans z-[999] overflow-hidden text-base;
+    @apply animate-contentShow scroll-smooth fixed top-[calc(40%-30vh)] sm:top-[calc(25vh-225px)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[800px] -translate-x-[50%] rounded-lg shadow-2xl focus:outline-none z-[999] overflow-hidden text-base;
 
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
+    font-family: var(--tv-prop-brand-font-family);
 
-    .group-chat-carousel {
+    f .group-chat-carousel {
       @apply pl-2 flex gap-2 w-full overflow-x-auto;
     }
 
@@ -152,7 +153,7 @@ body {
     .mode-switch-wrapper.ecommerce.search {
       @apply top-[2.625rem];
 
-      right: calc(max(calc(50vw - 36rem), 1.25rem) + 0.5rem);
+      right: calc(max(calc(50vw - 36rem), 1.25rem) + 0.25rem);
     }
 
     .mode-switch-wrapper.ecommerce.chat {
@@ -219,7 +220,7 @@ body {
       }
 
       .bottom-row {
-        @apply flex items-center px-4 2xl:px-0 w-full mx-auto max-w-6xl;
+        @apply flex items-center 2xl:px-0 w-full mx-auto max-w-6xl;
 
         .spacer {
           @apply flex-1;
@@ -253,7 +254,7 @@ body {
     }
 
     .trieve-footer.ecommerce {
-      @apply py-0.5;
+      @apply -mx-4;
     }
 
     .commands.ecommerce {
@@ -384,7 +385,9 @@ body {
     h2,
     h3,
     h4 {
-      @apply font-semibold pb-1 sm:pb-2  m-0 font-sans leading-normal pt-0 text-base;
+      @apply font-semibold pb-1 sm:pb-2  m-0 leading-normal pt-0 text-base;
+
+      font-family: var(--tv-prop-brand-font-family);
     }
 
     a {
@@ -399,7 +402,9 @@ body {
       @apply absolute  right-2 flex py-1.5 pr-1.5;
 
       kbd {
-        @apply inline-flex items-center rounded border  px-1 font-sans text-xs;
+        @apply inline-flex items-center rounded border  px-1 text-xs;
+
+        font-family: var(--tv-prop-brand-font-family);
         color: var(--tv-zinc-400);
         border-color: var(--tv-zinc-200);
       }
@@ -649,9 +654,7 @@ body {
 
     .chat-footer-wrapper {
       .chat-group-disclaimer {
-        @apply flex items-center justify-between
-        bg-zinc-200/60 dark:bg-zinc-700 px-3 py-1 text-sm opacity-70
-        border border-zinc-300 dark:border-zinc-500 border-b-transparent;
+        @apply flex items-center justify-between bg-zinc-200/60 dark:bg-zinc-700 px-3 py-1 text-sm opacity-70 mx-2 border border-zinc-300 dark:border-zinc-500 border-b-transparent;
       }
 
       input {
@@ -735,6 +738,10 @@ body {
       mark {
         @apply bg-inherit;
         color: var(--tv-prop-brand-color);
+
+        b {
+          @apply font-semibold;
+        }
       }
 
       &.group {
@@ -1070,7 +1077,9 @@ body {
     }
 
     .open {
-      @apply inline-flex items-center rounded border px-1 font-sans text-xs py-0.5 gap-1;
+      @apply inline-flex items-center rounded border px-1 text-xs py-0.5 gap-1;
+
+      font-family: var(--tv-prop-brand-font-family);
       color: var(--tv-zinc-400);
       border-color: var(--tv-zinc-200);
 

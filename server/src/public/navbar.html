@@ -1,6 +1,6 @@
 <nav class="bg-white border-b">
   <div
-    class="max-w-screen-2xl mx-auto w-full p-2 flex items-center justify-center flex-col gap-2 sm:justify-between sm:!flex-row"
+    class="max-w-screen-2xl mx-auto w-full p-2 flex items-center justify-center flex-col gap-4 sm:justify-between sm:!flex-row"
   >
     <a class="flex items-center" href="https://trieve.ai">
       <img
@@ -9,7 +9,7 @@
       />
     </a>
     <div class="text-center">
-      <p class="font-medium text-3xl">
+      <p class="font-medium text-2xl">
         {{params.headingPrefix|safe if (params.headingPrefix is defined and
         params.headingPrefix) else 'Demo For'|safe}}
         <span class="brand-name">
@@ -17,7 +17,7 @@
           params.forBrandName) else 'Prospect'|safe}}
         </span>
       </p>
-      <p class="signature mt-0.5 pl-0.5">
+      <p class="signature mt-0.5 pl-0.5 text-right text-sm">
         - From
         <a
           class="creator"
@@ -36,74 +36,34 @@
     <div class="flex-1"></div>
     <div
       id="nav-links"
-      class="font-medium flex flex-wrap items-center gap-4 justify-center sm:justify-right"
+      class="flex flex-wrap items-center gap-4 justify-center sm:justify-right"
     >
       <a
         class="flex items-center gap-1 text-black"
         target="_blank"
         href="mailto:humans@trieve.ai"
       >
-        <svg
-          class="nav-icon"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 512 512"
-        >
-          <path
-            d="M64 112c-8.8 0-16 7.2-16 16l0 22.1L220.5 291.7c20.7 17 50.4 17 71.1 0L464 150.1l0-22.1c0-8.8-7.2-16-16-16L64 112zM48 212.2L48 384c0 8.8 7.2 16 16 16l384 0c8.8 0 16-7.2 16-16l0-171.8L322 328.8c-38.4 31.5-93.7 31.5-132 0L48 212.2zM0 128C0 92.7 28.7 64 64 64l384 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64L64 448c-35.3 0-64-28.7-64-64L0 128z"
-          />
-        </svg>
+        <i class="fa-regular fa-envelope"></i>
         <span> humans@trieve.ai </span>
       </a>
       <a
         target="_blank"
         href="https://join.slack.com/t/trievecommunityslack/shared_invite/zt-2v7zyxytf-zWLVgqI8avB5x5Br7INQgw"
       >
-        <svg
-          class="nav-icon"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 448 512"
-        >
-          <path
-            d="M94.1 315.1c0 25.9-21.2 47.1-47.1 47.1S0 341 0 315.1c0-25.9 21.2-47.1 47.1-47.1h47.1v47.1zm23.7 0c0-25.9 21.2-47.1 47.1-47.1s47.1 21.2 47.1 47.1v117.8c0 25.9-21.2 47.1-47.1 47.1s-47.1-21.2-47.1-47.1V315.1zm47.1-189c-25.9 0-47.1-21.2-47.1-47.1S139 32 164.9 32s47.1 21.2 47.1 47.1v47.1H164.9zm0 23.7c25.9 0 47.1 21.2 47.1 47.1s-21.2 47.1-47.1 47.1H47.1C21.2 244 0 222.8 0 196.9s21.2-47.1 47.1-47.1H164.9zm189 47.1c0-25.9 21.2-47.1 47.1-47.1 25.9 0 47.1 21.2 47.1 47.1s-21.2 47.1-47.1 47.1h-47.1V196.9zm-23.7 0c0 25.9-21.2 47.1-47.1 47.1-25.9 0-47.1-21.2-47.1-47.1V79.1c0-25.9 21.2-47.1 47.1-47.1 25.9 0 47.1 21.2 47.1 47.1V196.9zM283.1 385.9c25.9 0 47.1 21.2 47.1 47.1 0 25.9-21.2 47.1-47.1 47.1-25.9 0-47.1-21.2-47.1-47.1v-47.1h47.1zm0-23.7c-25.9 0-47.1-21.2-47.1-47.1 0-25.9 21.2-47.1 47.1-47.1h117.8c25.9 0 47.1 21.2 47.1 47.1 0 25.9-21.2 47.1-47.1 47.1H283.1z"
-          />
-        </svg>
+        <i class="fa-brands fa-slack"></i>
       </a>
       <a target="_blank" href="https://www.linkedin.com/company/trieveai">
-        <svg
-          class="nav-icon"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 448 512"
-        >
-          <path
-            d="M100.3 448H7.4V148.9h92.9zM53.8 108.1C24.1 108.1 0 83.5 0 53.8a53.8 53.8 0 0 1 107.6 0c0 29.7-24.1 54.3-53.8 54.3zM447.9 448h-92.7V302.4c0-34.7-.7-79.2-48.3-79.2-48.3 0-55.7 37.7-55.7 76.7V448h-92.8V148.9h89.1v40.8h1.3c12.4-23.5 42.7-48.3 87.9-48.3 94 0 111.3 61.9 111.3 142.3V448z"
-          />
-        </svg>
+        <i class="fa-brands fa-linkedin-in"></i>
       </a>
       <a target="_blank" href="tel:+16282224090">
-        <svg
-          class="nav-icon"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 512 512"
-        >
-          <path
-            d="M164.9 24.6c-7.7-18.6-28-28.5-47.4-23.2l-88 24C12.1 30.2 0 46 0 64C0 311.4 200.6 512 448 512c18 0 33.8-12.1 38.6-29.5l24-88c5.3-19.4-4.6-39.7-23.2-47.4l-96-40c-16.3-6.8-35.2-2.1-46.3 11.6L304.7 368C234.3 334.7 177.3 277.7 144 207.3L193.3 167c13.7-11.2 18.4-30 11.6-46.3l-40-96z"
-          />
-        </svg>
+        <i class="fa-solid fa-phone"></i>
       </a>
       <a
         class="action-link flex items-center gap-1"
         target="_blank"
         href="https://cal.com/nick.k"
       >
-        <svg
-          class="nav-icon nav-icon-action"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 448 512"
-        >
-          <path
-            d="M152 24c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L64 64C28.7 64 0 92.7 0 128l0 16 0 48L0 448c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-256 0-48 0-16c0-35.3-28.7-64-64-64l-40 0 0-40c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L152 64l0-40zM48 192l352 0 0 256c0 8.8-7.2 16-16 16L64 464c-8.8 0-16-7.2-16-16l0-256z"
-          />
-        </svg>
+        <i class="fa-regular fa-calendar"></i>
         <span> Give Feedback </span>
       </a>
     </div>

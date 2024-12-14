@@ -94,7 +94,8 @@ declare module "solid-js" {
 | defaultAiQuestions   | string[]                                                                                       | []                                                                    |
 | brandLogoImgSrcUrl   | string                                                                                         | null                                                                  |
 | brandName            | string                                                                                         | null                                                                  |
-| brand Color          | string                                                                                         | #CB53EB                                                               |
+| brandColor           | string                                                                                         | #CB53EB                                                               |
+| brandFontFamily      | string                                                                                         | Maven Pro                                                             |
 | problemLink          | string (example: "mailto:help@trieve.ai?subject=")                                             | null                                                                  |
 | responsive           | boolean                                                                                        | false                                                                 |
 

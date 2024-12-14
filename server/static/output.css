@@ -588,6 +588,10 @@ video {
   display: flex;
 }
 
+.min-h-\[36px\] {
+  min-height: 36px;
+}
+
 .w-full {
   width: 100%;
 }
@@ -624,10 +628,6 @@ video {
   gap: 0.25rem;
 }
 
-.gap-2 {
-  gap: 0.5rem;
-}
-
 .gap-4 {
   gap: 1rem;
 }
@@ -661,18 +661,18 @@ video {
   text-align: center;
 }
 
-.text-end {
-  text-align: end;
+.text-right {
+  text-align: right;
 }
 
-.text-3xl {
-  font-size: 1.875rem;
-  line-height: 2.25rem;
+.text-2xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
 }
 
-.text-xs {
-  font-size: 0.75rem;
-  line-height: 1rem;
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 
 .font-medium {
