@@ -24,7 +24,7 @@ docker compose --profile dev up -d
 Strongly recommend using tmux or another multiplex system to handle the different proceses.
 
 ```bash
-cargo watch -x run #HTTP server
+cargo watch -x run
 cargo run --bin supervisor-worker
 cargo run --bin chunk-worker
 ```
@@ -35,7 +35,7 @@ Make your changes then use the following to run:
 
 ```bash
 cd cli
-cargo run -- help #or other command instead of help
+cargo run -- help
 ```
 
 ## Run tailwindcss server for demo UI

@@ -616,7 +616,7 @@ const PublicPageControls = () => {
                 </label>
                 <input
                   placeholder="#FFFFFF"
-                  value={extraParams.heroPattern?.foregroundColor || "#FFFFFF"}
+                  value={extraParams.heroPattern?.backgroundColor || "#FFFFFF"}
                   onChange={(e) => {
                     setExtraParams(
                       "heroPattern",
