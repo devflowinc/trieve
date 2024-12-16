@@ -39,17 +39,11 @@ export const TrackingIdUpdater = () => {
     },
   }));
 
-  const [input, setInput] = createSignal(
-    "", // Replaced by context as soon as the memo syncs
-  );
-  const [hasEdited, setHasEdited] = createSignal(false);
+  const [input, setInput] = createSignal("");
 
   createEffect(() => {
-    // If the tracking id is the same as the current tracking id, then don't show the input
-    const orgTrackingId = datasetContext.dataset()?.dataset.tracking_id;
-    if (input() === "" && orgTrackingId && !hasEdited()) {
-      setInput(orgTrackingId);
-    }
+    const datasetTracking = datasetContext.dataset()?.dataset.tracking_id;
+    setInput(datasetTracking || "");
   });
 
   const handleSave = () => {
@@ -68,10 +62,8 @@ export const TrackingIdUpdater = () => {
         placeholder="Enter Tracking ID..."
         class="rounded-md border px-2 py-1 text-sm"
         value={input() || ""}
-        onFocus={() => setHasEdited(true)}
         onInput={(e) => {
           setInput(e.currentTarget.value);
-          setHasEdited(true);
         }}
       />
       <Show
