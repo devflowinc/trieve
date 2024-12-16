@@ -209,6 +209,13 @@
         padding: 0rem;
       }
 
+      #tab-buttons {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 0.25rem;
+      }
+
       .tab-button {
         background-color: #ffffff;
         border-radius: 0.25rem 0.25rem 0rem 0rem;
@@ -280,10 +287,12 @@
     <main>
       <div class="basic">
         <div id="root" class="min-h-[36px]"></div>
-        {% if params.singleProductOptions and params.singleProductOptions.productName %} {% include
-        "product.html" %} {% endif %} {% if tabs|length > 0 %} {% include
-        "tabs.html" %} {% else %} {% include "search-component-code.html" %} {%
-        endif %}
+        {% if params.singleProductOptions and
+        params.singleProductOptions.productName %} {% include "product.html" %}
+        {% else %}
+        <div class="mt-24 sm:mt-6"></div>
+        {% endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% else
+        %} {% include "search-component-code.html" %} {% endif %}
       </div>
     </main>
     {% if logged_in %}

@@ -29,6 +29,7 @@
     tabButtons.forEach((tabButton, index) => {
       if (index === tabIndex) {
         tabButton.classList.add('active');
+        tabButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
         tabButton.classList.remove('active');
       }
