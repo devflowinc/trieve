@@ -529,11 +529,7 @@ pub async fn update_qdrant_point_query(
                 .to_owned()
                 .iter_list()
                 .unwrap()
-                .map(|id| {
-                    id.to_string()
-                        .parse::<uuid::Uuid>()
-                        .expect("group_id must be a valid uuid")
-                })
+                .filter_map(|id| id.to_string().parse::<uuid::Uuid>().ok())
                 .collect::<Vec<uuid::Uuid>>()
         } else {
             vec![]
