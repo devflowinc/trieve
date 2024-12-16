@@ -17,11 +17,14 @@ export default function ECommerce() {
   const brandColor = import.meta.env.VITE_ACCENT_COLOR;
   const problemLink = import.meta.env.VITE_PROBLEM_LINK;
   const useGroupSearch = import.meta.env.VITE_USE_GROUP_SEARCH == "true";
+  const showFloatingButton = import.meta.env.VITE_SHOW_FLOATING_BTN == "true";
+  const floatingButtonPosition = import.meta.env.VITE_FLOATING_BTN_POSITION;
+
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
   const defaultTags: any[] = JSON.parse(
-    import.meta.env.VITE_DEFAULT_TAGS ?? "[]"
+    import.meta.env.VITE_DEFAULT_TAGS ?? "[]",
   );
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -80,6 +83,8 @@ export default function ECommerce() {
               }}
               defaultSearchQueries={defaultSearchQueries}
               tags={defaultTags}
+              floatingButtonPosition={floatingButtonPosition}
+              showFloatingButton={showFloatingButton}
             />
           </>
         ) : (

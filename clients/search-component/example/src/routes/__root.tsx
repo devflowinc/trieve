@@ -5,7 +5,7 @@ export const Route = createRootRoute({
   component: () => (
     <>
       <div className="random-trigger-location" style={{ background: "red" }}>
-        Hi, I'm a random root div that is outside the Hiearchy
+        Hi, I'm a random root div that is outside the hierarchy
       </div>
       <Outlet />
       <TanStackRouterDevtools />

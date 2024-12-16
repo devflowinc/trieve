@@ -1137,4 +1137,10 @@ body {
       }
     }
   }
+
+  .floating-action-button {
+    @apply fixed flex flex-row w-24 h-10 gap-3 justify-center items-center text-sm cursor-pointer text-white rounded-xl;
+    background-color: var(--tv-prop-brand-color);
+    font-family: var(--tv-prop-brand-font-family);
+  }
 }
