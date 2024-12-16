@@ -2002,6 +2002,21 @@ export type OrganizationWithSubAndPlan = {
     subscription?: ((StripeSubscription) | null);
 };
 
+export type Pdf2MdOptions = {
+    /**
+     * Split headings is an optional field which allows you to specify whether or not to split headings into separate chunks. Default is false.
+     */
+    split_headings?: (boolean) | null;
+    /**
+     * Prompt to use for the gpt-4o model. Default is None.
+     */
+    system_prompt?: (string) | null;
+    /**
+     * Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o. Default is false.
+     */
+    use_pdf2md_ocr: boolean;
+};
+
 export type PopularFilters = {
     clause: string;
     common_values: {
@@ -2050,6 +2065,7 @@ export type PublicPageParameters = {
     problemLink?: (string) | null;
     responsive?: (boolean) | null;
     searchOptions?: ((PublicPageSearchOptions) | null);
+    singleProductOptions?: ((SingleProductOptions) | null);
     suggestedQueries?: (boolean) | null;
     tabMessages?: Array<PublicPageTabMessage> | null;
     tags?: Array<PublicPageTag> | null;
@@ -2177,7 +2193,7 @@ export type RAGAnalyticsFilter = {
 
 export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent;
 
-export type RAGSortBy = 'created_at' | 'latency';
+export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at' | 'latency';
 
 export type RAGUsageGraphResponse = {
     usage_points: Array<UsageGraphPoint>;
@@ -2198,6 +2214,7 @@ export type RagQueryEvent = {
     rag_type: ClickhouseRagTypes;
     results: Array<unknown>;
     search_id: string;
+    top_score: number;
     user_id: string;
     user_message: string;
 };
@@ -2835,6 +2852,14 @@ export type SemanticBoost = {
     phrase: string;
 };
 
+export type SingleProductOptions = {
+    productDescriptionHtml?: (string) | null;
+    productName?: (string) | null;
+    productPrimaryImageUrl?: (string) | null;
+    productTrackingId?: (string) | null;
+    recSearchQuery?: (string) | null;
+};
+
 export type SingleQueuedChunkResponse = {
     chunk_metadata: ChunkMetadata;
     /**
@@ -3309,6 +3334,7 @@ export type UploadFileReqPayload = {
      * Metadata is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata. Will be passed down to the file's chunks.
      */
     metadata?: unknown;
+    pdf2md_options?: ((Pdf2MdOptions) | null);
     /**
      * Rebalance chunks is an optional field which allows you to specify whether or not to rebalance the chunks created from the file. If not specified, the default true is used. If true, Trieve will evenly distribute remainder splits across chunks such that 66 splits with a `target_splits_per_chunk` of 20 will result in 3 chunks with 22 splits each.
      */
@@ -3329,10 +3355,6 @@ export type UploadFileReqPayload = {
      * Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.
      */
     time_stamp?: (string) | null;
-    /**
-     * Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o. Default is false.
-     */
-    use_pdf2md_ocr?: (boolean) | null;
 };
 
 export type UploadFileResponseBody = {

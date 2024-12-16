@@ -834,6 +834,8 @@ const PublicPageControls = () => {
 
         <OgOptions />
 
+        <SingleProductOptions />
+
         <TabOptions />
 
         <div class="space-x-1.5 pt-8">
@@ -857,6 +859,105 @@ const PublicPageControls = () => {
         </div>
       </Show>
     </>
+  );
+};
+
+export const SingleProductOptions = () => {
+  const { extraParams, setExtraParams } = usePublicPage();
+  const [defaultDetailOpen] = createSignal(
+    !!extraParams.singleProductOptions?.productTrackingId ||
+      !!extraParams.singleProductOptions?.productName ||
+      !!extraParams.singleProductOptions?.productDescriptionHtml ||
+      !!extraParams.singleProductOptions?.productPrimaryImageUrl,
+  );
+
+  return (
+    <details class="pt-2" open={defaultDetailOpen()}>
+      <summary class="cursor-pointer text-sm font-medium">
+        Single Product View
+      </summary>
+      <div class="flex gap-4 pt-2">
+        <div class="grow">
+          <label class="block">Product Tracking ID</label>
+          <input
+            placeholder="Tracking ID of the product to display"
+            value={extraParams.singleProductOptions?.productTrackingId || ""}
+            onInput={(e) => {
+              setExtraParams("singleProductOptions", {
+                ...extraParams.singleProductOptions,
+                productTrackingId: e.currentTarget.value,
+              });
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+        <div class="grow">
+          <label class="block">Product Image URL</label>
+          <input
+            placeholder="URL of the product image to display"
+            value={
+              extraParams.singleProductOptions?.productPrimaryImageUrl || ""
+            }
+            onInput={(e) => {
+              setExtraParams("singleProductOptions", {
+                ...extraParams.singleProductOptions,
+                productPrimaryImageUrl: e.currentTarget.value,
+              });
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+        <div class="grow">
+          <label class="block">Product Name</label>
+          <input
+            placeholder="Name of the product to display"
+            value={extraParams.singleProductOptions?.productName || ""}
+            onInput={(e) => {
+              setExtraParams("singleProductOptions", {
+                ...extraParams.singleProductOptions,
+                productName: e.currentTarget.value,
+              });
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+      </div>
+      <div class="flex gap-4 pb-2 pt-2">
+        <div class="grow">
+          <label class="block">Recommendation Search Query</label>
+          <input
+            placeholder="Search query to use for recommendations"
+            value={extraParams.singleProductOptions?.recSearchQuery || ""}
+            onInput={(e) => {
+              setExtraParams("singleProductOptions", {
+                ...extraParams.singleProductOptions,
+                recSearchQuery: e.currentTarget.value,
+              });
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+      </div>
+      <div class="flex gap-4 pb-2 pt-2">
+        <div class="grow">
+          <label class="block">Product Description HTML</label>
+          <textarea
+            cols={2}
+            placeholder="Description of the page"
+            value={
+              extraParams.singleProductOptions?.productDescriptionHtml || ""
+            }
+            onInput={(e) => {
+              setExtraParams("singleProductOptions", {
+                ...extraParams.singleProductOptions,
+                productDescriptionHtml: e.currentTarget.value,
+              });
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+      </div>
+    </details>
   );
 };
 

@@ -200,7 +200,7 @@
 
       #tab-content {
         border: 1px solid var(--brand-color);
-        border-radius: 0.25rem;
+        border-radius: 0rem 0.25rem 0.25rem 0.25rem;
         padding: 0.9rem;
         background-color: white;
       }
@@ -251,10 +251,18 @@
 
       .text-brand-color {
         color: var(--brand-color);
+
+        &:hover {
+          background-color: #F3F4F6;
+        }
       }
 
       .bg-brand-color {
         background-color: var(--brand-color);
+
+        &:hover {
+          background-color:  color-mix(in srgb, var(--brand-color), black 20%);
+        }
       }
     </style>
 

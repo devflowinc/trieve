@@ -398,6 +398,7 @@ impl Modify for SecurityAddon {
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
             handlers::page_handler::PublicPageSearchOptions,
             handlers::page_handler::OpenGraphMetadata,
+            handlers::page_handler::SingleProductOptions,
             handlers::page_handler::PublicPageTag,
             handlers::page_handler::PublicPageTheme,
             handlers::page_handler::PublicPageParameters,

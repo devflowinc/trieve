@@ -138,6 +138,16 @@ pub struct OpenGraphMetadata {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct SingleProductOptions {
+    product_tracking_id: Option<String>,
+    product_name: Option<String>,
+    product_description_html: Option<String>,
+    product_primary_image_url: Option<String>,
+    rec_search_query: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PublicPageTag {
     tag: String,
     label: Option<String>,
@@ -208,6 +218,8 @@ pub struct PublicPageParameters {
     pub tab_messages: Option<Vec<PublicPageTabMessage>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub open_graph_metadata: Option<OpenGraphMetadata>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub single_product_options: Option<SingleProductOptions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub open_links_in_new_tab: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
