@@ -280,9 +280,10 @@
     <main>
       <div class="basic">
         <div id="root" class="min-h-[36px]"></div>
-        {% if params.singleProductOptions.productName %} {% include "product.html" %} {%
-        endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% else %}
-        {% include "search-component-code.html" %} {% endif %}
+        {% if params.singleProductOptions and params.singleProductOptions.productName %} {% include
+        "product.html" %} {% endif %} {% if tabs|length > 0 %} {% include
+        "tabs.html" %} {% else %} {% include "search-component-code.html" %} {%
+        endif %}
       </div>
     </main>
     {% if logged_in %}

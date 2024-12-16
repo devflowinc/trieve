@@ -309,7 +309,10 @@ pub async fn public_page(
                     ..config.PUBLIC_DATASET.extra_params.unwrap_or_default()
                 }
             })
-            .unwrap();
+            .map_err(|e| {
+                log::error!("Error rendering template: {:?}", e);
+                ServiceError::InternalServerError("Error rendering template".to_string())
+            })?;
 
         Ok(HttpResponse::Ok().body(response_body))
     } else {
