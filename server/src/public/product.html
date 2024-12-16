@@ -1,11 +1,11 @@
-<div>
+<div class="max-w-full">
   <div
     class="mx-auto px-4 pt-16 sm:px-6 sm:pt-24 lg:max-w-7xl lg:px-8 mt-24 sm:mt-6"
   >
     <section class="lg:flex gap-2 lg:gap-x-8 lg:gap-y-10 xl:gap-x-16">
       <div class="lg:w-1/2">
         <img
-          src="https://tailwindui.com/plus/img/ecommerce-images/product-page-05-product-01.jpg"
+          src="{{ params.singleProductOptions.productPrimaryImageUrl }}"
           alt="Sample of 30 icons with friendly and fun details in outline, filled, and brand color styles."
           class="aspect-4/3 w-full rounded-lg bg-gray-100 object-cover"
         />
@@ -13,19 +13,17 @@
 
       <div class="mx-auto lg:w-1/2">
         <h1 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-          Application UI Icon Pack
+          {{ params.singleProductOptions.productName }}
         </h1>
 
-        <p class="mt-2 text-gray-500">
-          The Application UI Icon Pack comes with over 200 icons in 3 styles:
-          outline, filled, and branded. This playful icon pack is tailored for
-          complex application user interfaces with a friendly and legible look.
-        </p>
+        <div class="mt-2 text-gray-500">
+          {{ params.singleProductOptions.productDescriptionHtml|safe }}
+        </div>
 
         <div class="mt-4">
           <button
             type="button"
-            class="bg-brand-color flex w-full items-center justify-center rounded-md border border-transparent px-8 py-3 text-base font-medium text-white focus:ring-0 focus:outline-hidden"
+            class="bg-brand-color cursor-not-allowed flex w-full items-center justify-center rounded-md border border-transparent px-8 py-3 text-base font-medium text-white focus:ring-0 focus:outline-hidden"
           >
             Add to cart
           </button>
@@ -73,53 +71,140 @@
       class="border-t border-gray-200 px-4 mt-4 sm:px-0"
     >
       <h2 id="related-heading" class="text-xl font-bold text-gray-900 mt-8">
-        Customers also bought
+        Related products
       </h2>
 
       <div
-        class="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8"
+        class="recs mt-6 flex flex-nowrap overflow-x-auto sm:gap-x-6 xl:gap-x-8 py-2"
       >
-        <div>
-          <div class="relative">
-            <div class="relative h-72 w-full overflow-hidden rounded-lg">
-              <img
-                src="https://tailwindui.com/plus/img/ecommerce-images/product-page-03-related-product-01.jpg"
-                alt="Front of zip tote bag with white canvas, black canvas straps and handle, and black zipper pulls."
-                class="size-full object-cover"
-              />
-            </div>
-            <div class="relative mt-4">
-              <h3 class="text-sm font-medium text-gray-900">Zip Tote Basket</h3>
-              <p class="mt-1 text-sm text-gray-500">White and black</p>
-            </div>
+        {% for i in range(5) %}
+        <div class="w-64 flex-shrink-0">
+          <div class="h-72 w-full overflow-hidden rounded-lg">
+            <div class="h-full w-full bg-gray-200 animate-pulse"></div>
+          </div>
+          <div class="mt-4">
+            <div class="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
+            <div class="mt-1 h-4 w-1/2 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div
+            class="absolute inset-x-0 top-0 flex h-72 items-end justify-end overflow-hidden rounded-lg p-4"
+          >
             <div
-              class="absolute inset-x-0 top-0 flex h-72 items-end justify-end overflow-hidden rounded-lg p-4"
-            >
-              <div
-                aria-hidden="true"
-                class="absolute inset-x-0 bottom-0 h-36 bg-linear-to-t from-black opacity-50"
-              ></div>
-              <p class="relative text-lg font-semibold text-white">$140</p>
-            </div>
+              class="h-6 w-16 bg-gray-200 line-clamp-1 rounded animate-pulse"
+            ></div>
           </div>
           <div class="mt-6">
-            <a
-              href="#"
-              class="relative flex items-center justify-center rounded-md border border-transparent bg-gray-100 px-8 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200"
-              >Add to bag<span class="sr-only">, Zip Tote Basket</span></a
-            >
+            <div
+              class="w-full cursor-not-allowed h-10 bg-gray-200 rounded-md animate-pulse"
+            ></div>
           </div>
         </div>
+
+        {% endfor %}
       </div>
     </section>
   </div>
 </div>
-<script>
-  // TODO: Use specific URL for the image
+<script type="module">
+  const recommendations = await fetch(
+    `${window.paramsData.baseUrl}/api/chunk_group/group_oriented_search`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + window.paramsData.apiKey,
+        "TR-Dataset": window.paramsData.datasetId,
+      },
+      body: JSON.stringify({
+        query: window.paramsData.singleProductOptions.recSearchQuery,
+        use_quote_negated_terms: true,
+        search_type: "semantic",
+        group_size: 1,
+        page_size: 8,
+      }),
+    }
+  );
+  const recommendationsData = await recommendations.json();
+  const recommendedResults = recommendationsData.results
+    .map((result) => {
+      return result.chunks;
+    })
+    .flat();
+  const recDivs = [];
 
-  // TODO: Use specific description for the product
+  for (const result of recommendedResults) {
+    const chunk = result.chunk;
+    const imageUrl = chunk.image_urls?.length
+      ? chunk.image_urls[0]
+      : chunk.metadata.images?.length
+        ? chunk.metadata.images[0].src
+        : null;
+    if (!imageUrl) {
+      continue;
+    }
 
-  // TODO: Actually fetch recommendations
+    const chunkHtmlElement = document.createElement("div");
+    chunkHtmlElement.innerHTML = chunk.chunk_html;
+    const firstHeading = chunkHtmlElement.querySelector(
+      "h1, h2, h3, h4, h5, h6"
+    );
+    if (firstHeading) {
+      firstHeading.remove();
+    }
+    const title = firstHeading?.textContent || chunk.metadata.title;
+    if (!title) {
+      continue;
+    }
+
+    const sentences = chunkHtmlElement.textContent.split(/[.,!?]+/);
+    const description = chunkHtmlElement.textContent;
+
+    const priceNum =
+      chunk.num_value || chunk.metadata.variants?.length
+        ? chunk.metadata.variants[0].price
+          ? parseFloat(chunk.metadata.variants[0].price)
+          : null
+        : null;
+    const price = priceNum ? `$${priceNum.toFixed(2)}` : null;
+
+    const chunkElement = document.createElement("div");
+    chunkElement.classList.add(...["rec", "w-64", "flex-shrink-0"]);
+    chunkElement.innerHTML = `
+      <div class="h-72 w-full overflow-hidden rounded-lg">
+        <img
+          src="${imageUrl}"
+          alt="${title}"
+          class="rec-image size-full object-cover"
+        />
+      </div>
+      <div class="mt-4">
+        <h3 class="rec-title text-sm font-medium text-gray-900">${title}</h3>
+        <p class="rec-description line-clamp-1 mt-1 text-sm text-gray-500">${description}</p>
+      </div>
+      <div
+        class="absolute inset-x-0 top-0 flex h-72 items-end justify-end overflow-hidden rounded-lg p-4"
+      >
+        <p class="rec-price text-lg font-semibold text-white">
+          $${price}
+        </p>
+      </div>
+      <div class="mt-6">
+        <button
+          class="bg-brand-color cursor-not-allowed w-full flex items-center justify-center rounded-md border border-transparent px-8 py-2 text-sm font-medium text-white"
+        >
+          Add to cart
+        </button>
+      </div>
+    `;
+
+    recDivs.push(chunkElement);
+  }
+
+  const recs = document.querySelector(".recs");
+  recs.innerHTML = "";
+  recDivs.forEach((recDiv) => {
+    recs.appendChild(recDiv);
+  });
 
   // TODO: Refresh button for recommendations
 
