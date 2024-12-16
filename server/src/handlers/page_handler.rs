@@ -140,10 +140,12 @@ pub struct OpenGraphMetadata {
 #[serde(rename_all = "camelCase")]
 pub struct SingleProductOptions {
     product_tracking_id: Option<String>,
+    group_tracking_id: Option<String>,
     product_name: Option<String>,
     product_description_html: Option<String>,
     product_primary_image_url: Option<String>,
     rec_search_query: Option<String>,
+    product_questions: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]

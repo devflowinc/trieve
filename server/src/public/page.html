@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="/static/output.css" />
     <link
       rel="stylesheet"
-      href="https://unpkg.com/trieve-search-component@0.2.22/dist/index.css"
+      href="https://unpkg.com/trieve-search-component@0.2.25/dist/index.css"
     />
     <link
       rel="apple-touch-icon"
@@ -267,7 +267,7 @@
     </style>
 
     <script type="module">
-      import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.22/dist/vanilla/index.js';
+      import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.25/dist/vanilla/index.js';
       const root = document.getElementById('root');
       renderToDiv(root, {
         ... {{params | tojson}}
@@ -280,7 +280,7 @@
     <main>
       <div class="basic">
         <div id="root" class="min-h-[36px]"></div>
-        {% if params.type == "ecommerce" %} {% include "product.html" %} {%
+        {% if params.singleProductOptions.productName %} {% include "product.html" %} {%
         endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% else %}
         {% include "search-component-code.html" %} {% endif %}
       </div>
@@ -320,10 +320,22 @@
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
-    const circleAnimation = annotate(openTrieveModalElement, {
+    let recElement = document.querySelector(".recs-section");
+    let recBracketAnimation = null;
+    if (window.innerWidth > 1024 && recElement) {
+      recElement.style.width = tabContainer.offsetWidth + "px";
+      recBracketAnimation = annotate(recElement, {
+        type: "bracket",
+        color: window.paramsData.brandColor || "black",
+        padding: 8,
+        brackets: ["left"],
+      });
+    }
+
+    const circleSearchAnimation = annotate(openTrieveModalElement, {
       type: "circle",
       color: window.paramsData.brandColor || "black",
-      padding: 30,
+      padding: 35,
     });
 
     const brandUnderlineAnimation = annotate(brandNameElement, {
@@ -332,19 +344,6 @@
       color: window.paramsData.brandColor || "black",
       padding: 3,
     });
-
-    const rect = openTrieveModalElement.getBoundingClientRect();
-
-    let endX = rect.right + 128;
-    let endY = rect.bottom + 45;
-
-    if (endX > window.innerWidth) {
-      endX = window.innerWidth - 125;
-      endY += 15;
-    }
-
-    const startX = rect.right + 40;
-    const startY = rect.bottom - 15;
 
     const canvas = document.getElementById("canvas");
     canvas.style.position = "absolute";
@@ -355,12 +354,21 @@
     canvas.height =
       document.documentElement.clientHeight || document.body.clientHeight;
     canvas.style.zIndex = "-1";
-
     const rc = rough.canvas(canvas);
 
+    const openTrieveRect = openTrieveModalElement.getBoundingClientRect();
+    let endOpenX = openTrieveRect.right + 133;
+    let endOpenY = openTrieveRect.bottom + 45;
+    if (endOpenX > window.innerWidth) {
+      endOpenX = window.innerWidth - 125;
+      endOpenY += 15;
+    }
+    const startOpenX = openTrieveRect.right + 55;
+    const startOpenY = openTrieveRect.bottom - 15;
+
     rc.path(
-      `M ${startX} ${startY}
-         Q ${startX + 85} ${endY - 85} ${endX} ${endY}`,
+      `M ${startOpenX} ${startOpenY}
+         Q ${startOpenX + 85} ${endOpenY - 85} ${endOpenX} ${endOpenY}`,
       {
         stroke: window.paramsData.brandColor || "black",
         strokeWidth: 2,
@@ -370,14 +378,69 @@
     );
 
     const arrowSize = 10;
-    rc.line(startX, startY, startX + arrowSize, startY + arrowSize, {
-      stroke: window.paramsData.brandColor || "black",
-      strokeWidth: 2,
-    });
-    rc.line(startX, startY, startX + arrowSize, startY - arrowSize, {
-      stroke: window.paramsData.brandColor || "black",
-      strokeWidth: 2,
-    });
+    rc.line(
+      startOpenX - 5,
+      startOpenY,
+      startOpenX + arrowSize,
+      startOpenY + arrowSize,
+      {
+        stroke: window.paramsData.brandColor || "black",
+        strokeWidth: 2,
+      }
+    );
+    rc.line(
+      startOpenX - 5,
+      startOpenY,
+      startOpenX + arrowSize,
+      startOpenY - arrowSize,
+      {
+        stroke: window.paramsData.brandColor || "black",
+        strokeWidth: 2,
+      }
+    );
+
+    let endRecX = 0;
+    let endRecY = 0;
+    if (recBracketAnimation) {
+      const relHeadingElement = document.getElementById("related-heading");
+      const recHeadingRect = relHeadingElement.getBoundingClientRect();
+      endRecX = recHeadingRect.right + 164;
+      endRecY = recHeadingRect.top - 5;
+      const startRecX = recHeadingRect.right + 15;
+      const startRecY = recHeadingRect.top + 15;
+
+      rc.path(
+        `M ${startRecX} ${startRecY}
+           Q ${startRecX + 80} ${startRecY + 20} ${endRecX} ${endRecY}`,
+        {
+          stroke: window.paramsData.brandColor || "black",
+          strokeWidth: 2,
+          roughness: 3,
+          bowing: 3,
+        }
+      );
+
+      rc.line(
+        startRecX - 5,
+        startRecY,
+        startRecX + arrowSize,
+        startRecY + arrowSize * 1.5,
+        {
+          stroke: window.paramsData.brandColor || "black",
+          strokeWidth: 2,
+        }
+      );
+      rc.line(
+        startRecX - 5,
+        startRecY,
+        startRecX + arrowSize,
+        startRecY - arrowSize,
+        {
+          stroke: window.paramsData.brandColor || "black",
+          strokeWidth: 2,
+        }
+      );
+    }
 
     await Promise.all([
       document.fonts.load("16px Architects Daughter"),
@@ -388,9 +451,15 @@
     ctx.font = "500 32px Architects Daughter, cursive";
     ctx.fontDisplay = "swap";
     ctx.fillStyle = window.paramsData.brandColor || "black";
-    ctx.fillText("Try Me!", endX - 30, endY + 30);
+    ctx.fillText("Try Me!", endOpenX - 40, endOpenY + 30);
 
-    circleAnimation.show();
+    if (recBracketAnimation) {
+      ctx.font = "500 20px Architects Daughter, cursive";
+      ctx.fillText("Personalized + auto optimized", endRecX + 10, endRecY - 5);
+      recBracketAnimation.show();
+    }
+
+    circleSearchAnimation.show();
     brandUnderlineAnimation.show();
   </script>
 </html>

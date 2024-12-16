@@ -1,4 +1,4 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect, useRef } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { AIInitialMessage } from "./AIInitalMessage";
 import { useChatState } from "../../utils/hooks/chat-context";
@@ -27,9 +27,9 @@ export const ChatMode = () => {
     stopGeneratingMessage,
   } = useChatState();
 
-  const chatInput = React.useRef<HTMLInputElement>(null);
+  const chatInput = useRef<HTMLInputElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (mode == "chat" && open) {
       chatInput.current?.focus();
     }

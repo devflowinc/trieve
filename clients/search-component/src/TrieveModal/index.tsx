@@ -10,14 +10,16 @@ import {
 import { useKeyboardNavigation } from "../utils/hooks/useKeyboardNavigation";
 import { ModeSwitch } from "./ModeSwitch";
 import { OpenModalButton } from "./OpenModalButton";
-import { ChatProvider } from "../utils/hooks/chat-context";
+import { ChatProvider, useChatState } from "../utils/hooks/chat-context";
 import r2wc from "@r2wc/react-to-web-component";
 import { setClickTriggers } from "../utils/hooks/setClickTriggers";
+import { ChunkGroup } from "trieve-ts-sdk";
 
 const Modal = () => {
   useKeyboardNavigation();
   setClickTriggers();
   const { mode, open, setOpen, setMode, props } = useModalState();
+  const { askQuestion, chatWithGroup } = useChatState();
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -26,6 +28,31 @@ const Modal = () => {
     script.setAttribute("data-auto-replace-svg", "");
 
     document.head.appendChild(script);
+
+    const eventListener: EventListener = (e: Event) => {
+      const customEvent = e as CustomEvent<{
+        message: string;
+        group: ChunkGroup;
+        betterGroupName?: string;
+      }>;
+      if (customEvent.detail?.message && customEvent.detail.group) {
+        setOpen(true);
+        if (customEvent.detail.betterGroupName) {
+          customEvent.detail.group.name = customEvent.detail.betterGroupName;
+        }
+        chatWithGroup(
+          customEvent.detail.group,
+          customEvent.detail.betterGroupName
+        );
+        askQuestion(customEvent.detail.message, customEvent.detail.group);
+      }
+    };
+    window.removeEventListener("trieve-start-chat-with-group", eventListener);
+    window.addEventListener("trieve-start-chat-with-group", eventListener);
+
+    return () => {
+      window.removeEventListener("trieve-start-chat-with-group", eventListener);
+    };
   }, []);
 
   useEffect(() => {

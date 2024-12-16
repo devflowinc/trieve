@@ -10,7 +10,10 @@ export const Tags = () => {
     (props.tags?.length ? (
       <ul className="tags">
         {[ALL_TAG, ...props.tags].map((tag, idx) => (
-          <li className={currentTag === tag.tag ? "active" : ""} key={tag.tag}>
+          <li
+            className={currentTag === tag.tag ? "active" : ""}
+            key={tag.tag ?? idx}
+          >
             <button onClick={() => setCurrentTag(tag.tag)}>
               {tag.iconClassName && <i className={tag.iconClassName}></i>}
               {tag.icon && typeof tag.icon === "function" && tag.icon()}

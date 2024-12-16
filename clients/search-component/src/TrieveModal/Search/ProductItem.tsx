@@ -148,7 +148,10 @@ export const ProductItem = ({
                 </h6>
                 {group && (
                   <button
-                    title={`Chat with ${betterGroupName || group.name}`}
+                    title={`Chat with ${(betterGroupName || group.name).replace(
+                      /<[^>]*>/g,
+                      ""
+                    )}`}
                     className="chat-product-button"
                     onClick={(e) => {
                       e.preventDefault();
