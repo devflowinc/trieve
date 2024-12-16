@@ -80,6 +80,8 @@ export type ModalProps = {
     selector: string;
     mode: SearchModes;
   }[];
+  showFloatingButton?: boolean;
+  floatingButtonPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
 };
 
 const defaultProps = {
@@ -109,6 +111,12 @@ const defaultProps = {
   currencyPosition: "before" as currencyPosition,
   responsive: false,
   debounceMs: 0,
+  show: true,
+  position: "bottom-right" as
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right",
 };
 
 const ModalContext = createContext<{

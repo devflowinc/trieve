@@ -14,6 +14,7 @@ import { ChatProvider, useChatState } from "../utils/hooks/chat-context";
 import r2wc from "@r2wc/react-to-web-component";
 import { setClickTriggers } from "../utils/hooks/setClickTriggers";
 import { ChunkGroup } from "trieve-ts-sdk";
+import { FloatingActionButton } from "./FloatingActionButton";
 
 const Modal = () => {
   useKeyboardNavigation();
@@ -121,6 +122,7 @@ const Modal = () => {
           </div>
         </>
       )}
+      <FloatingActionButton />
     </>
   );
 };
