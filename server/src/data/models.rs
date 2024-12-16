@@ -5068,7 +5068,7 @@ impl From<String> for ClickhouseRagTypes {
 }
 
 impl RagQueryEventClickhouse {
-    pub async fn from_clickhouse(self, pool: web::Data<Pool>, top_score: f32) -> RagQueryEvent {
+    pub async fn from_clickhouse(self, pool: web::Data<Pool>) -> RagQueryEvent {
         let chunk_ids = self
             .results
             .iter()
@@ -5106,7 +5106,7 @@ impl RagQueryEventClickhouse {
             user_message: self.user_message,
             search_id: uuid::Uuid::from_bytes(*self.search_id.as_bytes()),
             results,
-            top_score,
+            top_score: 0.0,
             query_rating,
             dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
             llm_response: self.llm_response,
@@ -6518,7 +6518,7 @@ pub enum RAGAnalyticsResponse {
     #[schema(title = "RAGUsageGraph")]
     RAGUsageGraph(RAGUsageGraphResponse),
     #[schema(title = "RAGQueryDetails")]
-    RAGQueryDetails(RagQueryEvent),
+    RAGQueryDetails(Box<RagQueryEvent>),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
