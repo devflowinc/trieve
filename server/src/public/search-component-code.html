@@ -79,6 +79,12 @@
       {% if params.currencyPosition -%}
       currencyPosition: "{{ params.currencyPosition }}",
       {% endif -%}
+      {% if params.showFloatingButton -%}
+      showFloatingButton: "{{ params.showFloatingButton }}",
+      {% endif -%}
+      {% if params.floatingButtongPosition -%}
+      floatingButtongPosition: "{{ params.floatingButtongPosition }}",
+      {% endif -%}
       {% if params.debounceMs -%}
       debounceMs: {{ params.debounceMs }},
       {% endif -%}

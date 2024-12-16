@@ -3147,6 +3147,12 @@ impl DatasetConfigurationDTO {
                     currency_position: page_parameters_self
                         .currency_position
                         .or(page_parameters_curr.currency_position),
+                    floating_button_position: page_parameters_self
+                        .floating_button_position
+                        .or(page_parameters_curr.floating_button_position),
+                    show_floating_button: page_parameters_self
+                        .show_floating_button
+                        .or(page_parameters_curr.show_floating_button),
                     debounce_ms: page_parameters_self
                         .debounce_ms
                         .or(page_parameters_curr.debounce_ms),

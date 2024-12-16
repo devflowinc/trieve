@@ -12324,6 +12324,10 @@
             },
             "nullable": true
           },
+          "floatingButtonPosition": {
+            "type": "string",
+            "nullable": true
+          },
           "forBrandName": {
             "type": "string",
             "nullable": true
@@ -12374,6 +12378,10 @@
                 "$ref": "#/components/schemas/PublicPageSearchOptions"
               }
             ],
+            "nullable": true
+          },
+          "showFloatingButton": {
+            "type": "boolean",
             "nullable": true
           },
           "singleProductOptions": {
