@@ -759,6 +759,56 @@ const PublicPageControls = () => {
               <div class="flex gap-2">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">
+                    Show Floating Chat Button
+                  </label>
+                  <Tooltip
+                    tooltipText="Show a floating chat button on the page"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  type="checkbox"
+                  checked={extraParams.showFloatingButton || false}
+                  onChange={(e) => {
+                    setExtraParams(
+                      "showFloatingButton",
+                      e.currentTarget.checked,
+                    );
+                  }}
+                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Floating Chat Button Position
+                  </label>
+                  <Tooltip
+                    tooltipText="Either top-right, bottom-right, top-left, or bottom-left"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  value={extraParams.floatingButtonPosition || "bottom-right"}
+                  onChange={(e) => {
+                    setExtraParams(
+                      "floatingButtonPosition",
+                      e.currentTarget.value,
+                    );
+                  }}
+                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
                     Allow Switching Modes
                   </label>
                   <Tooltip

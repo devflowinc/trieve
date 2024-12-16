@@ -213,6 +213,10 @@ pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub currency_position: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub floating_button_position: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_floating_button: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub debounce_ms: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hero_pattern: Option<HeroPattern>,

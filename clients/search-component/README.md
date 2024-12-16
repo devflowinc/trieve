@@ -73,8 +73,8 @@ declare module "solid-js" {
 
 #### Props
 
-| Name                 | Type                                                                                           | Default                                                                 |
-| ---------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------                            |
+| Name                 | Type                                                                                             | Default                                                               |
+| ---------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | datasetId              | string                                                                                         | ''                                                                    |
 | apiKey                 | string                                                                                         | ''                                                                    |
 | baseUrl                | string                                                                                         | "https://api.trieve.ai"                                               |
@@ -98,8 +98,8 @@ declare module "solid-js" {
 | brandFontFamily        | string                                                                                         | Maven Pro                                                             |
 | problemLink            | string (example: "mailto:help@trieve.ai?subject=")                                             | null                                                                  |
 | responsive             | boolean                                                                                        | false                                                                 |
-| floatingButtonPosition | "top-left", "top-right", "bottom-left", or "bottom-right"                                      | "bottom-right"
-| showFloatingButton     | boolean                                                                                        | true
+| floatingButtonPosition | "top-left", "top-right", "bottom-left", or "bottom-right"                                      | "bottom-right"                                                        |
+| showFloatingButton     | boolean                                                                                        | false                                                                 |        
 
 ### Search Results
 
