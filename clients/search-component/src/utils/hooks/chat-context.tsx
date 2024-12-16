@@ -32,7 +32,7 @@ function removeBrackets(str: string) {
 }
 
 const ChatContext = createContext<{
-  askQuestion: (question?: string) => Promise<void>;
+  askQuestion: (question?: string, group?: ChunkGroup) => Promise<void>;
   isLoading: boolean;
   messages: Messages;
   currentQuestion: string;
@@ -167,18 +167,22 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const createQuestion = async ({
     id,
     question,
+    group,
   }: {
     id?: string;
     question?: string;
+    group?: ChunkGroup;
   }) => {
     setIsLoading(true);
 
+    const curGroup = group || currentGroup;
+
     // Use group search
-    if (currentGroup) {
+    if (curGroup) {
       // Should already be preloaded when group selected to chat with
       const groupChunks = await cached(() => {
-        return getAllChunksForGroup(currentGroup.id, trieveSDK);
-      }, `chunk-ids-${currentGroup.id}`);
+        return getAllChunksForGroup(curGroup.id, trieveSDK);
+      }, `chunk-ids-${curGroup.id}`);
 
       const { reader, queryId } = await trieveSDK.ragOnChunkReaderWithQueryId(
         {
@@ -220,7 +224,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const chatWithGroup = async (group: ChunkGroup, betterGroupName?: string) => {
+  const chatWithGroup = (group: ChunkGroup, betterGroupName?: string) => {
     if (betterGroupName) {
       group.name = betterGroupName;
     }
@@ -256,7 +260,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     clearConversation();
   };
 
-  const askQuestion = async (question?: string) => {
+  const askQuestion = async (question?: string, group?: ChunkGroup) => {
     isDoneReading.current = false;
     setMessages((m) => [
       ...m,
@@ -270,10 +274,15 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       ],
     ]);
 
-    if (!currentTopic) {
+    if (!currentGroup && group) {
+      chatWithGroup(group);
+      setCurrentGroup(group);
+    }
+
+    if (!currentTopic && !currentGroup && !group) {
       await createTopic({ question: question || currentQuestion });
     } else {
-      await createQuestion({ question: question || currentQuestion });
+      await createQuestion({ question: question || currentQuestion, group });
     }
 
     setCurrentQuestion("");

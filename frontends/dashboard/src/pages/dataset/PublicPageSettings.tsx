@@ -866,6 +866,7 @@ export const SingleProductOptions = () => {
   const { extraParams, setExtraParams } = usePublicPage();
   const [defaultDetailOpen] = createSignal(
     !!extraParams.singleProductOptions?.productTrackingId ||
+      !!extraParams.singleProductOptions?.groupTrackingId ||
       !!extraParams.singleProductOptions?.productName ||
       !!extraParams.singleProductOptions?.productDescriptionHtml ||
       !!extraParams.singleProductOptions?.productPrimaryImageUrl,
@@ -919,6 +920,46 @@ export const SingleProductOptions = () => {
               });
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+      </div>
+      <div class="flex gap-4 pb-2 pt-2">
+        <div class="grow">
+          <label class="block">Group Tracking ID</label>
+          <input
+            placeholder="Tracking ID of the product to display"
+            value={extraParams.singleProductOptions?.groupTrackingId || ""}
+            onInput={(e) => {
+              setExtraParams("singleProductOptions", {
+                ...extraParams.singleProductOptions,
+                groupTrackingId: e.currentTarget.value,
+              });
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+        <div class="grow">
+          <div class="flex items-center gap-1">
+            <label class="block" for="">
+              Product Questions
+            </label>
+            <Tooltip
+              tooltipText="Example AI questions which may be asked about the product"
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+            />
+          </div>
+          <MultiStringInput
+            placeholder="What does it do?..."
+            value={extraParams.singleProductOptions?.productQuestions || []}
+            onChange={(e) => {
+              setExtraParams("singleProductOptions", {
+                ...extraParams.singleProductOptions,
+                productQuestions: e,
+              });
+            }}
+            addLabel="Add Product Question"
+            addClass="text-sm"
+            inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
         </div>
       </div>

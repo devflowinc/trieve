@@ -2,7 +2,6 @@
 import { TrieveModalSearch } from "../../../src/index";
 import "../../../dist/index.css";
 import { useState } from "react";
-
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/ecommerce")({

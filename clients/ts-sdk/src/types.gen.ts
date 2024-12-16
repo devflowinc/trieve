@@ -2853,9 +2853,11 @@ export type SemanticBoost = {
 };
 
 export type SingleProductOptions = {
+    groupTrackingId?: (string) | null;
     productDescriptionHtml?: (string) | null;
     productName?: (string) | null;
     productPrimaryImageUrl?: (string) | null;
+    productQuestions?: Array<(string)> | null;
     productTrackingId?: (string) | null;
     recSearchQuery?: (string) | null;
 };

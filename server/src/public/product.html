@@ -6,12 +6,12 @@
       <div class="lg:w-1/2">
         <img
           src="{{ params.singleProductOptions.productPrimaryImageUrl }}"
-          alt="Sample of 30 icons with friendly and fun details in outline, filled, and brand color styles."
-          class="aspect-4/3 w-full rounded-lg bg-gray-100 object-cover"
+          alt="View of product."
+          class="aspect-4/3 w-full rounded-lg bg-gray-100 object-cover max-h-80 sm:max-h-[30rem]"
         />
       </div>
 
-      <div class="mx-auto lg:w-1/2">
+      <div class="mx-auto mt-4 lg:mt-0 lg:w-1/2">
         <h1 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
           {{ params.singleProductOptions.productName }}
         </h1>
@@ -36,25 +36,15 @@
             ></span>
             Ask AI
           </h3>
-          <div class="flex flex-wrap gap-1 mt-2">
+          <div class="starter-questions flex flex-wrap gap-1 mt-2">
+            {% for question in params.singleProductOptions.productQuestions %}
             <button
               type="button"
               class="bg-gray-50 px-3 py-1.5 text-sm rounded-lg text-brand-color"
             >
-              Are these good in deep snow?
+              {{ question }}
             </button>
-            <button
-              type="button"
-              class="bg-gray-50 px-3 py-1.5 text-sm rounded-lg text-brand-color"
-            >
-              What kind of bindings do these require?
-            </button>
-            <button
-              type="button"
-              class="bg-gray-50 px-3 py-1.5 text-sm rounded-lg text-brand-color"
-            >
-              Are these the right length for my height and skill level?
-            </button>
+            {% endfor %}
             <button
               type="button"
               class="bg-brand-color px-3 py-1.5 text-sm rounded-lg text-white"
@@ -70,37 +60,39 @@
       aria-labelledby="related-heading"
       class="border-t border-gray-200 px-4 mt-4 sm:px-0"
     >
-      <h2 id="related-heading" class="text-xl font-bold text-gray-900 mt-8">
-        Related products
-      </h2>
+      <div class="recs-section">
+        <h2
+          id="related-heading"
+          class="text-xl font-bold text-gray-900 mt-8 w-fit"
+        >
+          Related products
+        </h2>
+        <h4 class="text-sm text-gray-500 mt-2 w-fit">
+          Tailored to user history. AI automatically optimizes conversions.
+        </h4>
 
-      <div
-        class="recs mt-6 flex flex-nowrap overflow-x-auto sm:gap-x-6 xl:gap-x-8 py-2"
-      >
-        {% for i in range(5) %}
-        <div class="w-64 flex-shrink-0">
-          <div class="h-72 w-full overflow-hidden rounded-lg">
-            <div class="h-full w-full bg-gray-200 animate-pulse"></div>
+        <div
+          class="recs mt-6 flex flex-nowrap overflow-x-auto gap-x-4 sm:gap-x-6 xl:gap-x-8 py-2 mx-4 sm:mx-6 lg:mx-8"
+        >
+          {% for i in range(5) %}
+          <div class="w-64 flex-shrink-0">
+            <div class="h-72 w-full overflow-hidden rounded-lg">
+              <div class="h-full w-full bg-gray-200 animate-pulse"></div>
+            </div>
+            <div class="mt-4">
+              <div class="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
+              <div
+                class="mt-1 h-4 w-1/2 bg-gray-200 rounded animate-pulse"
+              ></div>
+            </div>
+            <div class="mt-6">
+              <div
+                class="w-full cursor-not-allowed h-10 bg-gray-200 rounded-md animate-pulse"
+              ></div>
+            </div>
           </div>
-          <div class="mt-4">
-            <div class="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
-            <div class="mt-1 h-4 w-1/2 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-          <div
-            class="absolute inset-x-0 top-0 flex h-72 items-end justify-end overflow-hidden rounded-lg p-4"
-          >
-            <div
-              class="h-6 w-16 bg-gray-200 line-clamp-1 rounded animate-pulse"
-            ></div>
-          </div>
-          <div class="mt-6">
-            <div
-              class="w-full cursor-not-allowed h-10 bg-gray-200 rounded-md animate-pulse"
-            ></div>
-          </div>
+          {% endfor %}
         </div>
-
-        {% endfor %}
       </div>
     </section>
   </div>
@@ -178,15 +170,9 @@
         />
       </div>
       <div class="mt-4">
-        <h3 class="rec-title text-sm font-medium text-gray-900">${title}</h3>
+        <h3 class="rec-title line-clamp-1 text-sm font-medium text-gray-900">${title}</h3>
+        <h6 class="rec-price mt-1 text-sm text-gray-700">${price}</h6>
         <p class="rec-description line-clamp-1 mt-1 text-sm text-gray-500">${description}</p>
-      </div>
-      <div
-        class="absolute inset-x-0 top-0 flex h-72 items-end justify-end overflow-hidden rounded-lg p-4"
-      >
-        <p class="rec-price text-lg font-semibold text-white">
-          $${price}
-        </p>
       </div>
       <div class="mt-6">
         <button
@@ -205,8 +191,40 @@
   recDivs.forEach((recDiv) => {
     recs.appendChild(recDiv);
   });
+</script>
+<script type="module">
+  const getGroupByTrackingIdResp = await fetch(
+    `${window.paramsData.baseUrl}/api/chunk_group/tracking_id/${window.paramsData.singleProductOptions.groupTrackingId}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + window.paramsData.apiKey,
+        "TR-Dataset": window.paramsData.datasetId,
+      },
+    }
+  );
+  const group = await getGroupByTrackingIdResp.json();
 
-  // TODO: Refresh button for recommendations
+  const starterQuestions = document.querySelectorAll(
+    ".starter-questions button"
+  );
+  starterQuestions.forEach((button) => {
+    button.addEventListener("click", async () => {
+      const message = button.textContent;
+      const betterGroupName =
+        window.paramsData.singleProductOptions.productName;
 
-  // TODO: Refresh button for AI questions
+
+      window.dispatchEvent(
+        new CustomEvent("trieve-start-chat-with-group", {
+          detail: {
+            group,
+            betterGroupName,
+            message,
+          },
+        })
+      );
+    });
+  });
 </script>

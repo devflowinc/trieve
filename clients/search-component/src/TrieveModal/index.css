@@ -253,10 +253,6 @@ body {
       }
     }
 
-    .trieve-footer.ecommerce {
-      @apply -mx-4;
-    }
-
     .commands.ecommerce {
       visibility: hidden;
     }
