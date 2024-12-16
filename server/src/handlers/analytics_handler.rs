@@ -388,7 +388,7 @@ pub async fn get_rag_analytics(
                 clickhouse_client.get_ref(),
             )
             .await?;
-            RAGAnalyticsResponse::RAGQueryDetails(rag_query)
+            RAGAnalyticsResponse::RAGQueryDetails(Box::new(rag_query))
         }
     };
 
