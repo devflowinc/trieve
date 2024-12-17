@@ -33,7 +33,7 @@ export const defaultCrawlOptions: CrawlOptions = {
 };
 
 export type FlatCrawlOptions = Omit<CrawlOptions, "scrape_options"> & {
-  type?: "openapi" | "shopify";
+  type?: "openapi" | "shopify" | "youtube";
   openapi_schema_url?: string;
   openapi_tag?: string;
   group_variants?: boolean | null;
@@ -83,6 +83,21 @@ export const unflattenCrawlOptions = (
         tag_regexes: options.tag_regexes ?? [],
       },
     };
+  } else if (options && options.type == "youtube") {
+    return {
+      allow_external_links: options.allow_external_links,
+      boost_titles: options.boost_titles,
+      exclude_paths: options.exclude_paths,
+      exclude_tags: options.exclude_tags,
+      include_paths: options.include_paths,
+      include_tags: options.include_tags,
+      interval: options.interval,
+      limit: options.limit,
+      site_url: options.site_url,
+      scrape_options: {
+        type: "youtube",
+      },
+    };
   }
   return {
     allow_external_links: options.allow_external_links,
@@ -114,6 +129,11 @@ export const flattenCrawlOptions = (
       type: "shopify",
       group_variants: options.scrape_options.group_variants,
       tag_regexes: options.scrape_options.tag_regexes,
+    };
+  } else if (options.scrape_options?.type == "youtube") {
+    return {
+      ...options,
+      type: "youtube",
     };
   } else {
     return {
@@ -177,6 +197,7 @@ export const CrawlingSettings = () => {
   }));
 
   const onSave = (options: CrawlOptions) => {
+    console.log("options", options);
     updateDatasetMutation.mutate(options);
   };
 
@@ -249,6 +270,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
 
   const isShopify = createMemo(() => options.type === "shopify");
   const isOpenAPI = createMemo(() => options.type === "openapi");
+  const isYoutube = createMemo(() => options.type === "youtube");
 
   const submit = (curOptions: FlatCrawlOptions) => {
     const validateResult = validateFlatCrawlOptions(curOptions);
@@ -308,7 +330,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
         </div>
       </div>
 
-      <div class="flex items-center gap-3 py-2 pt-4">
+      <div class="flex items-center gap-2 py-2 pt-4">
         <div class="flex items-center gap-2">
           <label class="block">Boost Titles</label>
           <Tooltip
@@ -385,6 +407,38 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
               });
             }}
             checked={isShopify()}
+            class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            type="checkbox"
+          />
+        </div>
+        <div class="flex items-center gap-2 pl-4">
+          <label class="block">Youtube Channel?</label>
+          <Tooltip
+            tooltipText="Check this if the url is to a youtube channel"
+            body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+          />
+          <input
+            onChange={(e) =>
+              setOptions((prev) => {
+                if (!e.currentTarget.checked) {
+                  if (prev.type === "youtube") {
+                    return {
+                      ...prev,
+                      type: undefined,
+                    };
+                  }
+                  return {
+                    ...prev,
+                  };
+                } else {
+                  return {
+                    ...prev,
+                    type: "youtube",
+                  };
+                }
+              })
+            }
+            checked={isYoutube()}
             class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
             type="checkbox"
           />

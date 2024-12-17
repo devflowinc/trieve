@@ -22,6 +22,7 @@ use actix_web::{
     web::{self, PayloadConfig},
     App, HttpServer,
 };
+use broccoli_queue::queue::BroccoliQueue;
 use chm::tools::migrations::{run_pending_migrations, SetupArgs};
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::ManagerConfig;
@@ -541,6 +542,7 @@ impl Modify for SecurityAddon {
             data::models::DistanceMetric,
             data::models::PublicDatasetOptions,
             data::models::Invitation,
+            data::models::CrawlYoutubeOptions,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
         )
@@ -714,6 +716,11 @@ pub fn main() -> std::io::Result<()> {
         let detector = web::Data::new(());
 
 
+        let broccoli_queue = BroccoliQueue::builder(redis_url).pool_connections(redis_connections.try_into().unwrap()).build().await.map_err(|e| {
+            std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create broccoli queue {:?}", e))
+        })?;
+
+
         HttpServer::new(move || {
             let mut env = Environment::new();
             minijinja_embed::load_templates!(&mut env);
@@ -737,6 +744,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(clickhouse_client.clone()))
                 .app_data(web::Data::new(metrics.clone()))
                 .app_data(detector.clone())
+                .app_data(web::Data::new(broccoli_queue.clone()))
                 .wrap(from_fn(middleware::timeout_middleware::timeout_15secs))
                 .wrap(from_fn(middleware::metrics_middleware::error_logging_middleware))
                 .wrap(middleware::api_version::ApiVersionCheckFactory)
