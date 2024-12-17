@@ -7,35 +7,6 @@ import React, {
 } from "react";
 
 const styles = {
-  root: {
-    width: "100%",
-    overflow: "hidden",
-  },
-  scroll: {
-    display: "flex",
-    overflowX: "hidden",
-    scrollSnapType: "x mandatory",
-    scrollBehavior: "smooth",
-    width: "100%",
-    listStyle: "none",
-    padding: 0,
-    margin: 0,
-  },
-  item: {
-    flex: "0 0 auto",
-    padding: "1rem",
-    scrollSnapAlign: "start",
-    boxSizing: "border-box",
-  },
-  itemSnapPoint: {
-    scrollSnapAlign: "start",
-  },
-  controls: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: "5px",
-  },
   nextPrevButton: {
     fontSize: "16px",
     cursor: "pointer",
@@ -109,15 +80,13 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
   const goToPage = (pageIndex: number) => setCurrentPage(pageIndex);
 
   return (
-    <div style={styles.root}>
-      <ul style={styles.scroll} ref={scrollRef}>
+    <div className="carousel-root">
+      <ul className="carousel-scroll" ref={scrollRef}>
         {allProductsCarousel.map((child, index) => (
           <li
-            className="carousel-item"
+            className={child ? "carousel-item carousel-item-visibile" : "carousel-item carousel-item-hidden"}
             style={{
-              ...styles.item,
               width: `calc(100% / ${itemsPerPage})`,
-              visibility: child ? "visible" : "hidden",
             }}
             key={index}
           >
@@ -126,7 +95,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
         ))}
       </ul>
       {numPages > 1 && (
-        <div style={styles.controls}>
+        <div className="carousel-controls">
           <button
             style={{
               ...styles.nextPrevButton,
