@@ -2102,6 +2102,7 @@ export type PublicPageParameters = {
     useGroupSearch?: (boolean) | null;
     usePagefind?: (boolean) | null;
     zIndex?: (number) | null;
+    videoLink?: (string) | null;
 };
 
 export type PublicPageSearchOptions = {

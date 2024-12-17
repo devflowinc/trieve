@@ -663,6 +663,23 @@ const PublicPageControls = () => {
               options={Object.keys(HeroPatterns)}
             />
           </div>
+          <div class="grow">
+            <div class="flex items-center gap-1">
+              <label class="block">Video Link</label>
+              <Tooltip
+                tooltipText="Text shown in the search box before user input"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
+            <input
+              placeholder="Insert video link..."
+              value={extraParams.videoLink || ""}
+              onInput={(e) => {
+                setExtraParams("videoLink", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
         </div>
         <Show when={extraParams["heroPattern"]?.heroPatternName !== "Blank"}>
           <div class="flex flex-row items-center justify-start gap-4 pt-4">
