@@ -34,6 +34,12 @@ export const ApiRoutes = {
     "POST /api/topic",
     "POST /api/message",
     "PUT /api/message",
+    "POST /api/chunk/recommend",
+    "POST /api/chunk_group/recommend",
+    "GET /api/chunk/tracking_id/{tracking_id}",
+    "GET /api/chunk/{chunk_id}",
+    "GET /api/chunk_group/tracking_id/{tracking_id}",
+    "GET /api/chunk_group/{group_id}",
   ],
   "api/analytics/*": [
     "POST /api/analytics/rag",
