@@ -3257,6 +3257,9 @@ impl DatasetConfigurationDTO {
                     use_pagefind: page_parameters_self
                         .use_pagefind
                         .or(page_parameters_curr.use_pagefind),
+                    video_link: page_parameters_self
+                        .video_link
+                        .or(page_parameters_curr.video_link),
                 }),
             },
             DISABLE_ANALYTICS: self
