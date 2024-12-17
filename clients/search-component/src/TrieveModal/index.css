@@ -499,7 +499,7 @@ body {
         }
 
         .brand-name {
-          @apply text-white px-1.5 py-1 rounded-md font-[500] whitespace-nowrap;
+          @apply text-white px-1.5 py-1 rounded-md font-[500] whitespace-nowrap leading-8;
         }
       }
     }
@@ -529,7 +529,11 @@ body {
     /* SUGGESTED QUESTIONS */
 
     .system-information-wrapper {
-      @apply mb-8;
+      @apply mb-10;
+
+      &.with-group {
+        @apply mb-24;
+      }
 
       p {
         @apply mb-6 sm:mb-4;
