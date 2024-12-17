@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="/static/output.css" />
     <link
       rel="stylesheet"
-      href="https://unpkg.com/trieve-search-component@0.2.28/dist/index.css"
+      href="https://unpkg.com/trieve-search-component@0.2.29/dist/index.css"
     />
     <link
       rel="apple-touch-icon"
@@ -54,8 +54,6 @@
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js"></script>
 
     <script type="module">
-      hljs.highlightAll();
-
       window.paramsData = {{params | tojson}};
 
       const brandFontFamily = window.paramsData.brandFontFamily;
@@ -81,6 +79,7 @@
       :root {
         --brand-color: #a33eb5;
         --brand-color: {{params.brandColor}};
+        --hero-bg-color: {{params.heroPattern.backgroundColor}};
       }
 
       *,
@@ -89,6 +88,10 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
+      }
+
+      #product-display {
+        background-color: var(--hero-bg-color);
       }
 
       nav {
@@ -148,6 +151,11 @@
         display: flex;
         flex-direction: column;
         font-family: "Maven Pro", sans-serif;
+      }
+
+      h1,h2,h3,h4,h5,h6,p,pre,button,nav,.paragraph-text {
+        position: relative;
+        z-index: 15;
       }
 
       main {
@@ -274,7 +282,7 @@
     </style>
 
     <script type="module">
-      import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.28/dist/vanilla/index.js';
+      import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.29/dist/vanilla/index.js';
       const root = document.getElementById('root');
       renderToDiv(root, {
         ... {{params | tojson}}
@@ -345,7 +353,7 @@
     const circleSearchAnimation = annotate(openTrieveModalElement, {
       type: "circle",
       color: window.paramsData.brandColor || "black",
-      padding: 35,
+      padding: 40,
     });
 
     const brandUnderlineAnimation = annotate(brandNameElement, {
@@ -363,17 +371,17 @@
       document.documentElement.clientWidth || document.body.clientWidth;
     canvas.height =
       document.documentElement.clientHeight || document.body.clientHeight;
-    canvas.style.zIndex = "-1";
+    canvas.style.zIndex = "1";
     const rc = rough.canvas(canvas);
 
     const openTrieveRect = openTrieveModalElement.getBoundingClientRect();
-    let endOpenX = openTrieveRect.right + 133;
+    let endOpenX = openTrieveRect.right + 138;
     let endOpenY = openTrieveRect.bottom + 45;
     if (endOpenX > window.innerWidth) {
       endOpenX = window.innerWidth - 125;
       endOpenY += 15;
     }
-    const startOpenX = openTrieveRect.right + 55;
+    const startOpenX = openTrieveRect.right + 60;
     const startOpenY = openTrieveRect.bottom - 15;
 
     rc.path(

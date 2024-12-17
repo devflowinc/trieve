@@ -23,6 +23,34 @@ const Modal = () => {
   const { askQuestion, chatWithGroup } = useChatState();
 
   useEffect(() => {
+    const onViewportResize = () => {
+      const viewportHeight = window.visualViewport?.height;
+      const trieveSearchModal = document.getElementById("trieve-search-modal");
+      if (trieveSearchModal) {
+        trieveSearchModal.style.maxHeight = `${viewportHeight}px`;
+      }
+
+      const chatOuterWrapper = document.querySelector(
+        ".chat-outer-wrapper"
+      );
+      if (chatOuterWrapper) {
+        (chatOuterWrapper as HTMLElement).style.maxHeight =
+          `calc(${viewportHeight}px - 100px)`;
+      }
+      if (chatOuterWrapper) {
+        chatOuterWrapper.scrollTop =
+          chatOuterWrapper.scrollHeight;
+      }
+    };
+
+    window.addEventListener("resize", onViewportResize);
+
+    return () => {
+      window.removeEventListener("resize", onViewportResize);
+    };
+  }, [open]);
+
+  useEffect(() => {
     const script = document.createElement("script");
     script.src =
       "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/js/all.min.js";
