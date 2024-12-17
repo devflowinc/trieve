@@ -638,6 +638,7 @@ export interface RagQueryEvent {
     note?: string;
     rating: number;
   };
+  top_score: number;
   hallucination_score?: number;
   detected_hallucinations?: string[];
 }

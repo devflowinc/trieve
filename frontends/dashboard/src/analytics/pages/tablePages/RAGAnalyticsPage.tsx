@@ -115,6 +115,10 @@ export const RAGAnalyticsPage = () => {
       accessorKey: "top_score",
       header: "Top Score",
       sortable: true,
+      cell(props) {
+        const val = props.getValue() as unknown as RagQueryEvent["top_score"];
+        return <Show when={val}>{(score) => <div>{score()}</div>}</Show>;
+      },
     },
     {
       accessorKey: "hallucination_score",
