@@ -85,6 +85,9 @@ const MainLayout = (props: LayoutProps) => {
     null,
   );
 
+  const [highlightResults, setHighlightResults] = createSignal<boolean | null>(
+    null,
+  );
   const [streamCompletionsFirst, setStreamCompletionsFirst] = createSignal<
     boolean | null
   >(null);
@@ -244,6 +247,9 @@ const MainLayout = (props: LayoutProps) => {
           use_group_search: useGroupSearch(),
           search_type: searchType(),
           context_options: contextOptions(),
+          highlight_options: {
+            highlight_results: highlightResults(),
+          },
         }),
         signal: completionAbortController().signal,
       });
@@ -452,6 +458,20 @@ const MainLayout = (props: LayoutProps) => {
                 tabIndex={0}
               >
                 <div class="flex flex-col gap-2">
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="stream_completion_first">
+                      Highlight Results
+                    </label>
+                    <input
+                      type="checkbox"
+                      id="stream_completion_first"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={highlightResults() ?? false}
+                      onChange={(e) => {
+                        setHighlightResults(e.target.checked);
+                      }}
+                    />
+                  </div>
                   <div class="flex w-full items-center gap-x-2">
                     <label for="stream_completion_first">
                       Stream Completions First
