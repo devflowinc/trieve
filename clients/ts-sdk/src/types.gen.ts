@@ -130,6 +130,11 @@ export type BulkDeleteChunkPayload = {
     filter: ChunkFilter;
 };
 
+export type ButtonTrigger = {
+    mode: string;
+    selector: string;
+};
+
 export type CTRAnalytics = {
     filter?: ((SearchAnalyticsFilter) | null);
     type: 'search_ctr_metrics';
@@ -2045,6 +2050,7 @@ export type PublicPageParameters = {
     brandFontFamily?: (string) | null;
     brandLogoImgSrcUrl?: (string) | null;
     brandName?: (string) | null;
+    buttonTriggers?: Array<ButtonTrigger> | null;
     chat?: (boolean) | null;
     creatorLinkedInUrl?: (string) | null;
     creatorName?: (string) | null;

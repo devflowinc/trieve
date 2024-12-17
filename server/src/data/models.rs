@@ -3153,6 +3153,9 @@ impl DatasetConfigurationDTO {
                     show_floating_button: page_parameters_self
                         .show_floating_button
                         .or(page_parameters_curr.show_floating_button),
+                    button_triggers: page_parameters_self
+                        .button_triggers
+                        .or(page_parameters_curr.button_triggers),
                     debounce_ms: page_parameters_self
                         .debounce_ms
                         .or(page_parameters_curr.debounce_ms),

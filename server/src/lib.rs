@@ -396,6 +396,7 @@ impl Modify for SecurityAddon {
             operators::crawl_operator::Metadata,
             operators::crawl_operator::Sitemap,
             handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
+            handlers::page_handler::ButtonTrigger,
             handlers::page_handler::PublicPageSearchOptions,
             handlers::page_handler::OpenGraphMetadata,
             handlers::page_handler::SingleProductOptions,

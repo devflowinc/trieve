@@ -548,7 +548,40 @@ const PublicPageControls = () => {
               inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
           </div>
-          <div />
+          <div class="grow">
+            <div class="flex items-center gap-1">
+              <label class="block" for="">
+                Button Triggers
+              </label>
+              <Tooltip
+                tooltipText="UI elements that can trigger the search component to open. Each field has a selector and mode (search/chat) separated by commas."
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
+            <MultiStringInput
+              placeholder={`#search-icon,search`}
+              value={
+                extraParams.buttonTriggers?.map((trigger) => {
+                  return `${trigger.selector},${trigger.mode}`;
+                }) ?? []
+              }
+              onChange={(e) => {
+                setExtraParams(
+                  "buttonTriggers",
+                  e.map((trigger) => {
+                    const [selector, mode] = trigger.split(",");
+                    return {
+                      selector,
+                      mode,
+                    };
+                  }),
+                );
+              }}
+              addLabel="Add Trigger"
+              addClass="text-sm"
+              inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
           <div class="grow">
             <div class="flex items-center gap-1">
               <label class="block">Placeholder Text</label>

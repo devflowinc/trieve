@@ -2,11 +2,11 @@
 <code class="language-javascript">
 &lt;link
   rel="stylesheet"
-  href="https://unpkg.com/trieve-search-component@0.2.15/dist/index.css"
+  href="https://unpkg.com/trieve-search-component@0.2.27/dist/index.css"
 /&gt;
 
 &lt;script type="module"&gt;
-  import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.15/dist/vanilla/index.js';
+  import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.27/dist/vanilla/index.js';
   window.addEventListener('load', () => {
     const root = document.getElementById('root');
     renderToDiv(root, 
@@ -29,7 +29,7 @@
       analytics: {{ params.analytics }},
       {% endif -%}
       {% if params.tags -%}
-      tags: {{ params.tags }},
+      tags: {{ params.tags | tojson }},
       {% endif -%}
       {% if params.responsive -%}
       responsive: {{ params.responsive }},
@@ -85,13 +85,14 @@
       {% if params.floatingButtongPosition -%}
       floatingButtongPosition: "{{ params.floatingButtongPosition }}",
       {% endif -%}
+      {% if params.buttonTriggers -%}
+      buttonTriggers: {{ params.buttonTriggers }},
+      {% endif -%}
       {% if params.debounceMs -%}
       debounceMs: {{ params.debounceMs }},
       {% endif -%}
-
     )
   });
 &lt;/script&gt;
-
 </code>
 </pre>

@@ -138,6 +138,13 @@ pub struct OpenGraphMetadata {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct ButtonTrigger {
+    selector: String,
+    mode: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct SingleProductOptions {
     product_tracking_id: Option<String>,
     group_tracking_id: Option<String>,
@@ -216,6 +223,8 @@ pub struct PublicPageParameters {
     pub floating_button_position: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_floating_button: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub button_triggers: Option<Vec<ButtonTrigger>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub debounce_ms: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]

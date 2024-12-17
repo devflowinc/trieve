@@ -6967,6 +6967,21 @@
           }
         }
       },
+      "ButtonTrigger": {
+        "type": "object",
+        "required": [
+          "selector",
+          "mode"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "selector": {
+            "type": "string"
+          }
+        }
+      },
       "CTRAnalytics": {
         "oneOf": [
           {
@@ -12274,6 +12289,13 @@
           },
           "brandName": {
             "type": "string",
+            "nullable": true
+          },
+          "buttonTriggers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ButtonTrigger"
+            },
             "nullable": true
           },
           "chat": {

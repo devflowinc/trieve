@@ -99,7 +99,8 @@ declare module "solid-js" {
 | problemLink            | string (example: "mailto:help@trieve.ai?subject=")                                             | null                                                                  |
 | responsive             | boolean                                                                                        | false                                                                 |
 | floatingButtonPosition | "top-left", "top-right", "bottom-left", or "bottom-right"                                      | "bottom-right"                                                        |
-| showFloatingButton     | boolean                                                                                        | false                                                                 |        
+| showFloatingButton     | boolean                                                                                        | false                                                                 |
+| buttonTriggers         | { selector: "query-selector", mode: "chat" | "search" }[]                                      | []                                                                    |
 
 ### Search Results
 
