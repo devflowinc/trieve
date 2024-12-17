@@ -121,10 +121,29 @@ where
                             }
                         }
 
-                        let route = format!("{} {}", req.method(), req.match_info().as_str());
+                        let curly_matcher =
+                            regex::Regex::new(r"\{[a-zA-Z0-9_-]+\}").expect("Valid regex");
 
+                        let route = format!("{} {}", req.method(), req.match_info().as_str());
                         if let Some(api_key_scopes) = user_api_key.scopes {
-                            if !api_key_scopes.is_empty() && api_key_scopes.contains(&Some(route)) {
+                            if !api_key_scopes.is_empty()
+                                && (api_key_scopes.contains(&Some(route.clone()))
+                                    || api_key_scopes
+                                        .iter()
+                                        .filter_map(|scope| scope.as_ref())
+                                        .any(|scope| {
+                                            let wildcard_scope = curly_matcher
+                                                .replace_all(scope, "[a-zA-Z0-9_-]+")
+                                                .to_string();
+                                            if let Ok(wildcard_scope_regex) =
+                                                regex::Regex::new(&wildcard_scope)
+                                            {
+                                                wildcard_scope_regex.is_match(&route)
+                                            } else {
+                                                false
+                                            }
+                                        }))
+                            {
                                 if let Some(ref mut user) = user {
                                     user.user_orgs.iter_mut().for_each(|org| {
                                         if org.organization_id
