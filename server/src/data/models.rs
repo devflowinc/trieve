@@ -2075,6 +2075,11 @@ pub enum EventType {
         file_id: uuid::Uuid,
         chunks_created: usize,
     },
+    #[display(fmt = "video_uploaded")]
+    VideoUploaded {
+        video_id: String,
+        chunks_created: usize,
+    },
 }
 
 impl EventType {
@@ -2096,6 +2101,7 @@ impl EventType {
             EventTypeRequest::CsvJsonlProcessingFailed,
             EventTypeRequest::CsvJsonlProcessingCheckpoint,
             EventTypeRequest::CsvJsonlProcessingCompleted,
+            EventTypeRequest::VideoUploaded,
         ]
     }
 }
@@ -6622,6 +6628,8 @@ pub enum EventTypeRequest {
     CsvJsonlProcessingCheckpoint,
     #[display(fmt = "csv_jsonl_processing_completed")]
     CsvJsonlProcessingCompleted,
+    #[display(fmt = "video_uploaded")]
+    VideoUploaded,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -7605,6 +7613,12 @@ impl WordDataset {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Row, Clone, ToSchema)]
+pub struct VideoCrawlMessage {
+    pub channel_url: String,
+    pub dataset_id: uuid::Uuid,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema, AsExpression, Display)]
 #[diesel(sql_type = Text)]
 pub enum CrawlStatus {
@@ -7744,8 +7758,15 @@ pub enum ScrapeOptions {
     /// Shopify Scrape Options
     #[serde(rename = "shopify")]
     Shopify(CrawlShopifyOptions),
+    /// Youtube Scrape Options
+    #[serde(rename = "youtube")]
+    Youtube(CrawlYoutubeOptions),
 }
 
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(title = "CrawlYoutubeOptions")]
+/// Options for Crawling Youtube
+pub struct CrawlYoutubeOptions {}
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 #[schema(title = "CrawlShopifyOptions")]
 /// Options for Crawling Shopify

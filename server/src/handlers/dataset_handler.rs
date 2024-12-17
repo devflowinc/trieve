@@ -25,6 +25,7 @@ use crate::{
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
+use broccoli_queue::queue::BroccoliQueue;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::future::{ready, Ready};
@@ -136,6 +137,7 @@ pub async fn create_dataset(
     data: web::Json<CreateDatasetReqPayload>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
+    broccoli_queue: web::Data<BroccoliQueue>,
     org_with_sub_and_plan: OrganizationWithSubAndPlan,
     user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
@@ -179,6 +181,7 @@ pub async fn create_dataset(
             crawl_options.clone(),
             pool.clone(),
             redis_pool.clone(),
+            broccoli_queue.clone(),
             dataset.id,
         )
         .await?;
@@ -276,6 +279,7 @@ pub async fn update_dataset(
     data: web::Json<UpdateDatasetReqPayload>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
+    broccoli_queue: web::Data<BroccoliQueue>,
     user: OwnerOnly,
     org_with_plan_and_sub: OrganizationWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
@@ -321,6 +325,7 @@ pub async fn update_dataset(
             crawl_options.clone(),
             curr_dataset.id,
             pool.clone(),
+            broccoli_queue.clone(),
             redis_pool.clone(),
         )
         .await?;

@@ -8575,6 +8575,11 @@
           }
         }
       },
+      "CrawlYoutubeOptions": {
+        "type": "object",
+        "title": "CrawlYoutubeOptions",
+        "description": "Options for Crawling Youtube"
+      },
       "CreateApiKeyReqPayload": {
         "type": "object",
         "required": [
@@ -10047,7 +10052,8 @@
           "crawl_started",
           "csv_jsonl_processing_failed",
           "csv_jsonl_processing_checkpoint",
-          "csv_jsonl_processing_completed"
+          "csv_jsonl_processing_completed",
+          "video_uploaded"
         ]
       },
       "EventTypes": {
@@ -14029,6 +14035,27 @@
                     "type": "string",
                     "enum": [
                       "shopify"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CrawlYoutubeOptions"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "youtube"
                     ]
                   }
                 }

@@ -651,6 +651,13 @@ export type CrawlShopifyOptions = {
     tag_regexes?: Array<(string)> | null;
 };
 
+/**
+ * Options for Crawling Youtube
+ */
+export type CrawlYoutubeOptions = {
+    [key: string]: unknown;
+};
+
 export type CreateApiKeyReqPayload = {
     /**
      * The dataset ids which the api key will have access to. If not provided or empty, the api key will have access to all datasets in the dataset.
@@ -1238,7 +1245,7 @@ export type EventReturn = {
     page_count: number;
 };
 
-export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started' | 'csv_jsonl_processing_failed' | 'csv_jsonl_processing_checkpoint' | 'csv_jsonl_processing_completed';
+export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started' | 'csv_jsonl_processing_failed' | 'csv_jsonl_processing_checkpoint' | 'csv_jsonl_processing_completed' | 'video_uploaded';
 
 export type EventTypes = {
     /**
@@ -2505,6 +2512,8 @@ export type ScrapeOptions = (CrawlOpenAPIOptions & {
     type: 'openapi';
 }) | (CrawlShopifyOptions & {
     type: 'shopify';
+}) | (CrawlYoutubeOptions & {
+    type: 'youtube';
 });
 
 export type type5 = 'openapi';
