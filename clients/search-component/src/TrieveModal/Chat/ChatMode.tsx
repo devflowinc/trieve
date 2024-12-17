@@ -60,7 +60,11 @@ export const ChatMode = () => {
           </svg>
           <span>Close</span>
         </div>
-        <div className="system-information-wrapper">
+        <div
+          className={`system-information-wrapper${
+            currentGroup ? " with-group" : ""
+          }`}
+        >
           <div className="ai-message">
             <div className="chat-modal-wrapper">
               <div className="ai-message initial-message">
