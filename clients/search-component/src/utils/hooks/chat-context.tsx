@@ -262,6 +262,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const askQuestion = async (question?: string, group?: ChunkGroup) => {
     isDoneReading.current = false;
+
+    if (!currentGroup && group) {
+      chatWithGroup(group);
+      setCurrentGroup(group);
+    }
+
     setMessages((m) => [
       ...m,
       [
@@ -273,11 +279,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         },
       ],
     ]);
-
-    if (!currentGroup && group) {
-      chatWithGroup(group);
-      setCurrentGroup(group);
-    }
 
     if (!currentTopic && !currentGroup && !group) {
       await createTopic({ question: question || currentQuestion });
