@@ -33,6 +33,10 @@ body {
       @apply pl-2 flex gap-2 w-full overflow-x-auto;
     }
 
+    .suspense-fallback {
+      @apply hidden;
+    }
+
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -308,6 +312,44 @@ body {
 
       .additional-image-links {
         @apply gap-2 mt-4 mb-4 flex flex-row;
+
+        .carousel-root {
+          width: 100%;
+          overflow: hidden;
+        }
+
+        .carousel-scroll {
+          display: flex;
+          overflow-x: hidden;
+          scroll-snap-type: x-mandatory;
+          scroll-behavior: smooth;
+          width: 100%;
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .carousel-item {
+          flex: 0 0 auto;
+          padding: 1rem;
+          scroll-snap-align: start;
+          box-sizing: border-box;
+        }
+
+        .carousel-item-hidden {
+          visibility: hidden;
+        }
+
+        .carousel-item-visibile {
+          visibility: visible;
+        }
+
+        .carousel-controls {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-top: 5px;
+        }
 
         a {
           @apply hover:bg-zinc-200 text-zinc-700 hover:text-zinc-950 rounded px-2 text-xs py-1 line-clamp-2 overflow-ellipsis grid-rows-2 w-fit;

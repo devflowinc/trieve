@@ -102,7 +102,7 @@ export const SearchMode = () => {
   }, [results]);
 
   return (
-    <Suspense fallback={<div className="hidden"> </div>}>
+    <Suspense fallback={<div className="suspense-fallback"> </div>}>
       <div
         className={`close-modal-button search ${props.type}`}
         onClick={() => setOpen(false)}
