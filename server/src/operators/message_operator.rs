@@ -270,7 +270,7 @@ pub async fn get_rag_chunks_query(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     event_queue: web::Data<EventQueue>,
-) -> Result<(uuid::Uuid, Vec<ChunkMetadataStringTagSet>), actix_web::Error> {
+) -> Result<(SearchQueryEventClickhouse, Vec<ChunkMetadataStringTagSet>), actix_web::Error> {
     let mut query =
         if let Some(create_message_query) = create_message_req_payload.search_query.clone() {
             create_message_query
@@ -440,7 +440,7 @@ pub async fn get_rag_chunks_query(
                 .await;
         }
         Ok((
-            clickhouse_search_event.id,
+            clickhouse_search_event,
             result_groups
                 .group_chunks
                 .into_iter()
@@ -548,7 +548,7 @@ pub async fn get_rag_chunks_query(
                 .await;
         }
         Ok((
-            clickhouse_search_event.id,
+            clickhouse_search_event,
             result_chunks
                 .score_chunks
                 .iter()
@@ -679,7 +679,7 @@ pub async fn stream_response(
     let rag_prompt = dataset_config.RAG_PROMPT.clone();
     let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
-    let (search_id, chunk_metadatas) = get_rag_chunks_query(
+    let (search_event, chunk_metadatas) = get_rag_chunks_query(
         create_message_req_payload.clone(),
         dataset_config.clone(),
         dataset.clone(),
@@ -697,7 +697,7 @@ pub async fn stream_response(
             Bytes::from(create_message_req_payload.no_result_message.unwrap()),
         )]);
         return Ok(HttpResponse::Ok()
-            .insert_header(("TR-QueryID", search_id.to_string()))
+            .insert_header(("TR-QueryID", search_event.id.to_string()))
             .streaming(response_stream));
     }
 
@@ -953,7 +953,8 @@ pub async fn stream_response(
             id: query_id,
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
-            search_id,
+            search_id: search_event.id,
+            top_score: search_event.top_score,
             results: vec![],
             json_results: chunk_data,
             user_message: user_message_query.clone(),
@@ -1049,8 +1050,9 @@ pub async fn stream_response(
             let clickhouse_rag_event = RagQueryEventClickhouse {
                 id: query_id_arb,
                 created_at: time::OffsetDateTime::now_utc(),
+                search_id: search_event.id,
+                top_score: search_event.top_score,
                 dataset_id: dataset.id,
-                search_id,
                 results: vec![],
                 json_results: chunk_data,
                 user_message: user_message_query.clone(),

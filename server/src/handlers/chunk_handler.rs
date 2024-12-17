@@ -2727,6 +2727,7 @@ pub async fn generate_off_chunks(
                         json.to_string()
                     })
                     .collect(),
+                top_score: 0.0,
                 user_message: format!("{} {}", rag_prompt, last_prev_message.content.clone()),
                 query_rating: String::new(),
                 rag_type: "chosen_chunks".to_string(),
@@ -2797,6 +2798,7 @@ pub async fn generate_off_chunks(
                         json.to_string()
                     })
                     .collect(),
+                top_score: 0.0,
                 user_message: format!("{} {}", rag_prompt, last_prev_message.content.clone()),
                 rag_type: "chosen_chunks".to_string(),
                 query_rating: String::new(),
