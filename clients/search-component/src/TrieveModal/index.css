@@ -499,7 +499,7 @@ body {
         }
 
         .brand-name {
-          @apply text-white px-1.5 py-1 rounded-md font-[500];
+          @apply text-white px-1.5 py-1 rounded-md font-[500] whitespace-nowrap;
         }
       }
     }
@@ -639,8 +639,7 @@ body {
       }
 
       &:focus {
-        border: 1.5px solid var(--tv-prop-brand-color);
-        transform: translateY(-0.1px) scale(1.0006);
+        border: 1px solid var(--tv-prop-brand-color);
       }
     }
 

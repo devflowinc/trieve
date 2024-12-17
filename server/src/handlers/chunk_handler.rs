@@ -2466,7 +2466,6 @@ pub async fn generate_off_chunks(
     };
 
     let chunk_ids = data.chunk_ids.clone();
-    let prompt = data.prompt.clone();
     let stream_response = data.stream_response;
     let context_options = data.context_options.clone();
 
@@ -2477,8 +2476,8 @@ pub async fn generate_off_chunks(
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
     let base_url = dataset_config.LLM_BASE_URL;
-
-    let default_model = dataset_config.LLM_DEFAULT_MODEL;
+    let rag_prompt = dataset_config.RAG_PROMPT.clone();
+    let chosen_model = dataset_config.LLM_DEFAULT_MODEL;
 
     let base_url = if base_url.is_empty() {
         "https://openrouter.ai/api/v1".into()
@@ -2600,7 +2599,8 @@ pub async fn generate_off_chunks(
 
     let last_prev_message = prev_messages
         .last()
-        .expect("There needs to be at least 1 prior message");
+        .expect("There needs to be at least 1 prior message")
+        .clone();
 
     let mut prev_messages = prev_messages.clone();
 
@@ -2610,19 +2610,17 @@ pub async fn generate_off_chunks(
         .iter()
         .for_each(|message| messages.push(ChatMessage::from(message.clone())));
 
-    let prompt = prompt.unwrap_or("Respond to the question or instruction using the docs and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:\n\n".to_string());
-
     messages.push(ChatMessage::User {
         content: ChatMessageContent::Text(format!(
             "{} {}",
-            prompt,
+            rag_prompt,
             last_prev_message.content.clone()
         )),
         name: None,
     });
 
     let parameters = ChatCompletionParameters {
-        model: default_model,
+        model: chosen_model,
         stream: stream_response,
         messages,
         top_p: None,
@@ -2729,7 +2727,7 @@ pub async fn generate_off_chunks(
                         json.to_string()
                     })
                     .collect(),
-                user_message: prompt,
+                user_message: format!("{} {}", rag_prompt, last_prev_message.content.clone()),
                 query_rating: String::new(),
                 rag_type: "chosen_chunks".to_string(),
                 llm_response: completion_content.clone(),
@@ -2799,7 +2797,7 @@ pub async fn generate_off_chunks(
                         json.to_string()
                     })
                     .collect(),
-                user_message: prompt,
+                user_message: format!("{} {}", rag_prompt, last_prev_message.content.clone()),
                 rag_type: "chosen_chunks".to_string(),
                 query_rating: String::new(),
                 llm_response: completion,

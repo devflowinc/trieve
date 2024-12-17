@@ -178,21 +178,21 @@ export const ProductItem = ({
                         featured_image: { src: string };
                         title: string;
                       }[]
-                    )?.map((variant) => (
-                      <button
-                        key={variant.title}
-                        onClick={(ev) => {
-                          ev.preventDefault();
-                          ev.stopPropagation();
-                          ev.nativeEvent.stopImmediatePropagation();
-                          if (variant.featured_image?.src) {
+                    )
+                      ?.filter((variant) => variant.featured_image?.src)
+                      ?.map((variant) => (
+                        <button
+                          key={variant.title}
+                          onClick={(ev) => {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            ev.nativeEvent.stopImmediatePropagation();
                             setShownImage(variant.featured_image?.src);
-                          }
-                        }}
-                      >
-                        {variant.title}
-                      </button>
-                    ))}
+                          }}
+                        >
+                          {variant.title}
+                        </button>
+                      ))}
                   </div>
                 ) : null}
               </>

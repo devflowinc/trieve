@@ -25,11 +25,15 @@
   window.tabData = {{ tabs | tojson }};
 
   function setOpenTab(tabIndex) {
+    const tabButtonsCarousel = document.querySelector('#tab-buttons');
     const tabButtons = document.querySelectorAll('.tab-button');
     tabButtons.forEach((tabButton, index) => {
       if (index === tabIndex) {
         tabButton.classList.add('active');
-        tabButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        tabButtonsCarousel.scrollTo({
+          left: tabButton.offsetLeft - tabButtonsCarousel.offsetWidth / 2 + tabButton.offsetWidth / 2,
+          behavior: 'smooth',
+        });
       } else {
         tabButton.classList.remove('active');
       }
