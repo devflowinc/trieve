@@ -2,13 +2,16 @@
 <code class="language-javascript">
 &lt;link
   rel="stylesheet"
-  href="https://unpkg.com/trieve-search-component@0.2.29/dist/index.css"
+  href="https://search-component.trieve.ai/dist/index.css"
 /&gt;
 
 &lt;script type="module"&gt;
-  import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.29/dist/vanilla/index.js';
+  import {renderToDiv} from 'https://search-component.trieve.ai/dist/vanilla/index.js';
   window.addEventListener('load', () => {
-    const root = document.getElementById('root');
+    const root = document.createElement('div');
+    root.classList.add('trigger');
+    document.body.appendChild(root);
+
     renderToDiv(root, {
       {% if params.apiKey -%}
       apiKey: "{{ params.apiKey }}",
