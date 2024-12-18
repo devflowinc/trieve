@@ -9,7 +9,7 @@
   import {renderToDiv} from 'https://unpkg.com/trieve-search-component@0.2.29/dist/vanilla/index.js';
   window.addEventListener('load', () => {
     const root = document.getElementById('root');
-    renderToDiv(root, 
+    renderToDiv(root, {
       {% if params.apiKey -%}
       apiKey: "{{ params.apiKey }}",
       {% endif -%}
@@ -94,7 +94,7 @@
       {% if params.debounceMs -%}
       debounceMs: {{ params.debounceMs }},
       {% endif -%}
-    )
+    })
   });
 &lt;/script&gt;
 </code>
