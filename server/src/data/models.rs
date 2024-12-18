@@ -3195,6 +3195,9 @@ impl DatasetConfigurationDTO {
                     brand_font_family: page_parameters_self
                         .brand_font_family
                         .or(page_parameters_curr.brand_font_family),
+                    z_index: page_parameters_self
+                        .z_index
+                        .or(page_parameters_curr.z_index),
                 }),
             },
             DISABLE_ANALYTICS: self

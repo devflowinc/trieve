@@ -6977,6 +6977,10 @@
           "mode": {
             "type": "string"
           },
+          "removeTriggers": {
+            "type": "boolean",
+            "nullable": true
+          },
           "selector": {
             "type": "string"
           }
@@ -12446,6 +12450,11 @@
           },
           "useGroupSearch": {
             "type": "boolean",
+            "nullable": true
+          },
+          "zIndex": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           }
         }

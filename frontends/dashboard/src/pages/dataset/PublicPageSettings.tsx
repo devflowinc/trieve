@@ -559,7 +559,7 @@ const PublicPageControls = () => {
               />
             </div>
             <MultiStringInput
-              placeholder={`#search-icon,search`}
+              placeholder={`#search-icon,search,true`}
               value={
                 extraParams.buttonTriggers?.map((trigger) => {
                   return `${trigger.selector},${trigger.mode}`;
@@ -569,10 +569,18 @@ const PublicPageControls = () => {
                 setExtraParams(
                   "buttonTriggers",
                   e.map((trigger) => {
-                    const [selector, mode] = trigger.split(",");
+                    const [selector, mode, replace] = trigger.split(",");
+                    if (replace) {
+                      return {
+                        selector,
+                        mode,
+                        removeTriggers: replace === "true",
+                      };
+                    }
                     return {
                       selector,
                       mode,
+                      removeTriggers: false,
                     };
                   }),
                 );
@@ -758,6 +766,54 @@ const PublicPageControls = () => {
                   class="bg-white py-1"
                   selected={extraParams.defaultSearchMode || "search"}
                   options={["search", "chat"]}
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Default Search Mode
+                  </label>
+                  <Tooltip
+                    tooltipText="Set the initial search mode"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <Select
+                  display={(option) => option}
+                  onSelected={(option) => {
+                    setExtraParams("defaultSearchMode", option);
+                  }}
+                  class="bg-white py-1"
+                  selected={extraParams.defaultSearchMode || "search"}
+                  options={["search", "chat"]}
+                />
+              </div>
+
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Z Index
+                  </label>
+                  <Tooltip
+                    tooltipText="The z-index of the component modal"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  type="number"
+                  placeholder="1000"
+                  value={extraParams.zIndex || 1000}
+                  onInput={(e) => {
+                    setExtraParams(
+                      "zIndex",
+                      parseInt(e.currentTarget.value),
+                    );
+                  }}
+                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
               </div>
 

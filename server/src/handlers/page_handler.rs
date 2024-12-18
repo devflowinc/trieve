@@ -244,6 +244,8 @@ pub struct PublicPageParameters {
     pub creator_linked_in_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub brand_font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub z_index: Option<i32>,
 }
 
 #[utoipa::path(
