@@ -213,7 +213,8 @@ async fn video_worker(
                     "title": video.snippet.title.clone(),
                     "url": format!("https://www.youtube.com/watch?v={}", video.id.video_id),
                     "hierarchy": video.snippet.title.clone(),
-                    "description": video.snippet.description.clone()
+                    "description": video.snippet.description.clone(),
+                    "yt_preview_src": video.snippet.thumbnails.high.url.clone(),
                 })),
                 group_ids: Some(vec![chunk_group.id]),
                 group_tracking_ids: None,
@@ -224,7 +225,7 @@ async fn video_worker(
                 weight: None,
                 split_avg: None,
                 convert_html_to_text: None,
-                image_urls: None,
+                image_urls: Some(vec![video.snippet.thumbnails.high.url.clone()]),
                 num_value: None,
                 fulltext_boost: None,
                 semantic_boost: None,
