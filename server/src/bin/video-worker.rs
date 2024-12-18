@@ -210,6 +210,8 @@ async fn video_worker(
                 tag_set: None,
                 metadata: Some(json!({
                     "heading": video.snippet.title.clone(),
+                    "title": video.snippet.title.clone(),
+                    "url": format!("https://www.youtube.com/watch?v={}", video.id.video_id),
                     "hierarchy": video.snippet.title.clone(),
                     "description": video.snippet.description.clone()
                 })),
@@ -338,7 +340,6 @@ async fn get_channel_video_ids(
             .json::<PlaylistResponse>()
             .await?;
 
-        print!(".");
         videos.extend(response.items.into_iter());
 
         match response.next_page_token {
@@ -346,7 +347,6 @@ async fn get_channel_video_ids(
             None => break,
         }
     }
-    println!();
 
     Ok(videos)
 }
