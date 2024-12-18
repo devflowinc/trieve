@@ -29,6 +29,7 @@
     "lint": "eslint",
     "build:clean": "rm -rf dist && yarn type:dts && yarn build",
     "build": "run-s build:src build:css type:dts",
+    "build:watch": "run-p watch:js build:src build:css type:dts",
     "build:src": "node ./scripts/build.js",
     "type:dts": "tsc --emitDeclarationOnly --declarationMap",
     "build:css": "npx postcss src/app.css -o dist/index.css && cp src/styles.d.ts dist/",

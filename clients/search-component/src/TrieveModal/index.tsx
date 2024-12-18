@@ -18,9 +18,16 @@ import { FloatingActionButton } from "./FloatingActionButton";
 
 const Modal = () => {
   useKeyboardNavigation();
-  setClickTriggers();
   const { mode, open, setOpen, setMode, props } = useModalState();
   const { askQuestion, chatWithGroup } = useChatState();
+
+  useEffect(() => {
+    setClickTriggers(
+      setOpen,
+      setMode,
+      props
+    );
+  }, []);
 
   useEffect(() => {
     const onViewportResize = () => {
@@ -105,7 +112,7 @@ const Modal = () => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
     );
   }, [props.brandColor, props.brandFontFamily]);
@@ -127,12 +134,13 @@ const Modal = () => {
               setOpen(false);
             }}
             id="trieve-search-modal-overlay"
+            style={{ zIndex: props.zIndex ?? 1000 }}
           ></div>
           <div
             id="trieve-search-modal"
-            className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${
-              props.theme === "dark" ? "dark " : ""
-            } ${props.type}`.trim()}
+            className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${props.theme === "dark" ? "dark " : ""
+              } ${props.type}`.trim()}
+            style={{ zIndex: props.zIndex ? props.zIndex + 1 : 1001 }}
           >
             {props.allowSwitchingModes && <ModeSwitch />}
             <div

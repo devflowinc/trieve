@@ -29,7 +29,7 @@ export const Tags = () => {
           <kbd className="commands-key">
             <EnterKeyIcon />
           </kbd>
-          <span className="label">to select</span>
+          <span>to select</span>
         </li>
         <li key="arrow-key-commands">
           <kbd className="commands-key">
@@ -38,13 +38,13 @@ export const Tags = () => {
           <kbd className="commands-key">
             <ArrowUpIcon />
           </kbd>
-          <span className="label">to navigate</span>
+          <span>to navigate</span>
         </li>
         <li key="esc-key-command">
           <kbd className="commands-key">
             <EscKeyIcon />
           </kbd>
-          <span className="label">to close</span>
+          <span>to close</span>
         </li>
       </ul>
     ))

@@ -1,27 +1,33 @@
 import { startTransition } from "react";
-import { useModalState } from "./modal-context";
+import { ModalProps, SearchModes } from "./modal-context";
 
-export const setClickTriggers = () => {
-  const { setOpen, setMode, props } = useModalState();
-
-  function removeAllClickListeners(selector: string) {
+export const setClickTriggers = (
+  setOpen: (open: boolean) => void,
+  setMode: React.Dispatch<React.SetStateAction<SearchModes>>,
+  props: ModalProps
+) => {
+  const removeAllClickListeners = (selector: string): Element | null => {
     const element: Element | null = document.querySelector(selector);
-    if (!element) return;
+    if (!element) return null;
     // Vue click attributes
     element.removeAttribute("@click.prevent");
     element.removeAttribute("@click");
+    // @ts-expect-error Property 'href' does not exist on type 'Element'. [2339]
+    element.href = "#";
 
     const newElement = element.cloneNode(true);
     element?.parentNode?.replaceChild(newElement, element);
+    return newElement as unknown as Element;
   }
 
-
   props.buttonTriggers?.forEach((trigger) => {
-    const element = document.querySelector(trigger.selector);
+    let element: Element | null = document.querySelector(trigger.selector);
+    if (trigger.removeListeners ?? true) {
+      element = removeAllClickListeners(trigger.selector);
+      console.log("Removed click listeners from", trigger.selector);
+    }
+
     if (element) {
-      if (trigger.removeListeners ?? true) {
-        removeAllClickListeners(trigger.selector);
-      }
       element.addEventListener("click", () => {
         startTransition(() => {
           setMode(trigger.mode);

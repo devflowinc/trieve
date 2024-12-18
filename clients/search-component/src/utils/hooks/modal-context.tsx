@@ -81,6 +81,7 @@ export type ModalProps = {
     mode: SearchModes;
     removeListeners?: boolean;
   }[];
+  zIndex?: number;
   showFloatingButton?: boolean;
   floatingButtonPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
 };
@@ -111,6 +112,7 @@ const defaultProps = {
   openLinksInNewTab: false,
   currencyPosition: "before" as currencyPosition,
   responsive: false,
+  zIndex: 1000,
   debounceMs: 0,
   show: true,
   position: "bottom-right" as
