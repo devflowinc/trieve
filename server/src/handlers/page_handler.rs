@@ -141,6 +141,7 @@ pub struct OpenGraphMetadata {
 pub struct ButtonTrigger {
     selector: String,
     mode: String,
+    remove_triggers: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
