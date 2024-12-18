@@ -132,6 +132,7 @@ export type BulkDeleteChunkPayload = {
 
 export type ButtonTrigger = {
     mode: string;
+    removeTriggers?: (boolean) | null;
     selector: string;
 };
 
@@ -2080,6 +2081,7 @@ export type PublicPageParameters = {
     theme?: ((PublicPageTheme) | null);
     type?: (string) | null;
     useGroupSearch?: (boolean) | null;
+    zIndex?: (number) | null;
 };
 
 export type PublicPageSearchOptions = {
