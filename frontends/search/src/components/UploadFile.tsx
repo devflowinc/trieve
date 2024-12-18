@@ -148,7 +148,7 @@ export const UploadFile = () => {
       {
         link: link() === "" ? undefined : link(),
         tag_set:
-          tagSet().split(",").length > 0 ? undefined : tagSet().split(","),
+          tagSet().split(",").length > 0 ? tagSet().split(",") : undefined,
         split_delimiters: splitDelimiters(),
         target_splits_per_chunk: targetSplitsPerChunk(),
         rebalance_chunks: rebalanceChunks(),
@@ -168,9 +168,9 @@ export const UploadFile = () => {
       let base64File = await toBase64(file);
       base64File = base64File
         .split(",")[1]
-        .replace(/\+/g, "-") // Convert '+' to '-'
-        .replace(/\//g, "_") // Convert '/' to '_'
-        .replace(/=+$/, ""); // Remove ending '='
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
       const requestBody: RequestBody = {
         ...requestBodyTemplate,
         base64_file: base64File,
