@@ -200,9 +200,6 @@
         color: black;
         padding: 0.3rem;
         font-size: 0.8rem;
-        position: fixed;
-        bottom: 0.5rem;
-        left: 0.5rem;
         text-decoration: none;
         z-index: 20;
       }
@@ -306,6 +303,41 @@
           background-color:  color-mix(in srgb, var(--brand-color), black 20%);
         }
       }
+
+      .video-wrapper {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        width: 100%;
+        max-width: 18.5rem;
+        height: 14.5rem;
+        margin: 0;
+        padding: 0;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .video-wrapper iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        object-fit: cover;
+      }
+
+      @media (max-width: 640px) {
+        .video-wrapper {
+          position: relative;
+          bottom: 0;
+          left: 0;
+          margin: 0 auto;
+          max-width: calc(100vw - 4rem);
+          height: 20rem;
+        }
+      }
     </style>
 
     <script type="module">
@@ -328,6 +360,22 @@
         <div class="mt-24 sm:mt-6"></div>
         {% endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% else
         %} {% include "search-component-code.html" %} {% endif %}
+        <div class="video-wrapper">
+          {% if logged_in %}
+          <a
+            class="dev-back-button"
+            href="{{dashboard_url}}/dataset/{{params.datasetId}}/public-page"
+            >Back To Dashboard</a
+          >
+          {% endif %}
+          <iframe
+            src="{{params.videoLink}}"
+            frameborder="0"
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          >
+          </iframe>
+        </div>
       </div>
     </main>
   </body>
