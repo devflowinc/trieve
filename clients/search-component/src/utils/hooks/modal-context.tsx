@@ -79,6 +79,7 @@ export type ModalProps = {
   buttonTriggers?: {
     selector: string;
     mode: SearchModes;
+    removeListeners?: boolean;
   }[];
   showFloatingButton?: boolean;
   floatingButtonPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
