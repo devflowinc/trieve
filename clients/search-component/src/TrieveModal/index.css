@@ -15,7 +15,7 @@
 
 body {
   #trieve-search-modal-overlay {
-    @apply bg-black/60 w-screen fixed inset-0 h-screen animate-overlayShow backdrop-blur-sm z-[998];
+    @apply bg-black/60 w-screen fixed inset-0 h-screen animate-overlayShow backdrop-blur-sm;
   }
 
   .close-icon {

@@ -88,6 +88,9 @@
       {% if params.buttonTriggers -%}
       buttonTriggers: {{ params.buttonTriggers }},
       {% endif -%}
+      {% if params.zIndex -%}
+      zIndex: {{ params.zIndex }},
+      {% endif -%}
       {% if params.debounceMs -%}
       debounceMs: {{ params.debounceMs }},
       {% endif -%}
