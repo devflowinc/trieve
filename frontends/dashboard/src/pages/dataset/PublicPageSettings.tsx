@@ -663,11 +663,78 @@ const PublicPageControls = () => {
               options={Object.keys(HeroPatterns)}
             />
           </div>
+          <Show when={extraParams["heroPattern"]?.heroPatternName !== "Blank"}>
+            <div class="flex flex-row items-center justify-start gap-4 pt-4">
+              <div class="">
+                <label class="block" for="">
+                  Foreground Color
+                </label>
+                <input
+                  placeholder="#FFFFFF"
+                  value={extraParams.heroPattern?.foregroundColor || "#FFFFFF"}
+                  onInput={(e) => {
+                    setExtraParams(
+                      "heroPattern",
+                      "foregroundColor",
+                      e.currentTarget.value,
+                    );
+                  }}
+                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="">
+                <Show
+                  when={
+                    extraParams.heroPattern?.heroPatternName !== "Blank" &&
+                    extraParams.heroPattern?.heroPatternName !== "Solid"
+                  }
+                >
+                  <label class="block" for="">
+                    Background Color
+                  </label>
+                  <input
+                    placeholder="#FFFFFF"
+                    value={
+                      extraParams.heroPattern?.backgroundColor || "#FFFFFF"
+                    }
+                    onChange={(e) => {
+                      setExtraParams(
+                        "heroPattern",
+                        "backgroundColor",
+                        e.currentTarget.value,
+                      );
+                    }}
+                    class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  />
+                </Show>
+              </div>
+              <div class="">
+                <label class="block" for="">
+                  Foreground Opacity
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  onChange={(e) => {
+                    setExtraParams(
+                      "heroPattern",
+                      "foregroundOpacity",
+                      parseInt(e.currentTarget.value) / 100,
+                    );
+                  }}
+                  value={
+                    (extraParams.heroPattern?.foregroundOpacity || 0.5) * 100
+                  }
+                />
+              </div>
+            </div>
+          </Show>
           <div class="grow">
             <div class="flex items-center gap-1">
               <label class="block">Video Link</label>
               <Tooltip
-                tooltipText="Text shown in the search box before user input"
+                tooltipText="Video that will be displayed on the public page."
                 body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
               />
             </div>
@@ -681,69 +748,6 @@ const PublicPageControls = () => {
             />
           </div>
         </div>
-        <Show when={extraParams["heroPattern"]?.heroPatternName !== "Blank"}>
-          <div class="flex flex-row items-center justify-start gap-4 pt-4">
-            <div class="">
-              <label class="block" for="">
-                Foreground Color
-              </label>
-              <input
-                placeholder="#FFFFFF"
-                value={extraParams.heroPattern?.foregroundColor || "#FFFFFF"}
-                onInput={(e) => {
-                  setExtraParams(
-                    "heroPattern",
-                    "foregroundColor",
-                    e.currentTarget.value,
-                  );
-                }}
-                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="">
-              <Show
-                when={
-                  extraParams.heroPattern?.heroPatternName !== "Blank" &&
-                  extraParams.heroPattern?.heroPatternName !== "Solid"
-                }
-              >
-                <label class="block" for="">
-                  Background Color
-                </label>
-                <input
-                  placeholder="#FFFFFF"
-                  value={extraParams.heroPattern?.backgroundColor || "#FFFFFF"}
-                  onChange={(e) => {
-                    setExtraParams(
-                      "heroPattern",
-                      "backgroundColor",
-                      e.currentTarget.value,
-                    );
-                  }}
-                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </Show>
-            </div>
-            <div class="">
-              <label class="block" for="">
-                Foreground Opacity 0-1
-              </label>
-              <input
-                type="number"
-                placeholder="1000"
-                value={extraParams.heroPattern?.foregroundOpacity || 0.5}
-                onInput={(e) => {
-                  setExtraParams(
-                    "heroPattern",
-                    "foregroundOpacity",
-                    parseFloat(e.currentTarget.value),
-                  );
-                }}
-                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-          </div>
-        </Show>
         <details class="pt-4">
           <summary class="cursor-pointer text-sm font-medium">
             Advanced Settings
