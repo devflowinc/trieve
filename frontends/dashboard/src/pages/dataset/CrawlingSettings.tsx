@@ -455,7 +455,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <input
             class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
             type="checkbox"
-            disabled={isShopify()}
+            disabled={isShopify() || isYoutube()}
             checked={options.ignore_sitemap ?? true}
             onChange={(e) => {
               setOptions("ignore_sitemap", e.currentTarget.checked);
@@ -472,7 +472,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <input
             class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
             type="checkbox"
-            disabled={isShopify()}
+            disabled={isShopify() || isYoutube()}
             checked={options.allow_external_links ?? false}
             onChange={(e) => {
               setOptions("allow_external_links", e.currentTarget.checked);
@@ -531,7 +531,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           <input
             class="block max-w-[100px] rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             type="number"
-            disabled={isShopify()}
+            disabled={isShopify() || isYoutube()}
             value={options.limit || "0"}
             onInput={(e) => {
               setOptions("limit", parseInt(e.currentTarget.value));
@@ -585,7 +585,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             />
           </div>
           <MultiStringInput
-            disabled={isShopify()}
+            disabled={isShopify() || isYoutube()}
             placeholder="https://example.com/include/*"
             addClass="bg-magenta-100/40 px-2 rounded text-sm border border-magenta-300/40"
             inputClass="w-full"
@@ -606,7 +606,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             />
           </div>
           <MultiStringInput
-            disabled={isShopify()}
+            disabled={isShopify() || isYoutube()}
             placeholder="https://example.com/exclude/*"
             addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
             addLabel="Add Path"
@@ -626,7 +626,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             />
           </div>
           <MultiStringInput
-            disabled={isShopify()}
+            disabled={isShopify() || isYoutube()}
             placeholder="h1..."
             addClass="bg-magenta-100/40 text-sm px-2 rounded border border-magenta-300/40"
             addLabel="Add Selector"
@@ -646,7 +646,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             />
           </div>
           <MultiStringInput
-            disabled={isShopify()}
+            disabled={isShopify() || isYoutube()}
             placeholder="button..."
             addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
             addLabel="Add Selector"
