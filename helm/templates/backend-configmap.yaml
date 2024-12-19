@@ -87,3 +87,6 @@ data:
   DITTOFEED_API_KEY: {{ .Values.config.trieve.dittofeedApiKey | quote }} 
   CREATE_QDRANT_COLLECTIONS: {{ .Values.config.qdrant.initCollections | quote }} 
   CHAT_COMPLETION_TIMEOUT_SECS: {{ .Values.config.trieve.chatCompletionTimeoutSecs | quote }}
+  {{- if .Values.config.trieve.youtubeApiKey }}
+  YOUTUBE_API_KEY: {{ .Values.config.trieve.youtubeApiKey | quote }}
+  {{- end }}
