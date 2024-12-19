@@ -22,34 +22,46 @@ const Modal = () => {
   const { askQuestion, chatWithGroup } = useChatState();
 
   useEffect(() => {
-    setClickTriggers(
-      setOpen,
-      setMode,
-      props
-    );
+    setClickTriggers(setOpen, setMode, props);
   }, []);
 
   useEffect(() => {
     const onViewportResize = () => {
       const viewportHeight = window.visualViewport?.height;
-      const trieveSearchModal = document.getElementById("trieve-search-modal");
-      if (trieveSearchModal) {
-        trieveSearchModal.style.maxHeight = `${viewportHeight}px`;
+      const chatOuterWrapper = document.querySelector(".chat-outer-wrapper");
+
+      if ((window.visualViewport?.width ?? 1000) <= 768) {
+        const trieveSearchModal = document.getElementById(
+          "trieve-search-modal"
+        );
+        if (trieveSearchModal) {
+          trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${
+            props.type == "ecommerce" ? "0.5rem" : "0rem"
+          })`;
+        }
+
+        if (chatOuterWrapper) {
+          console.log("here1");
+          (chatOuterWrapper as HTMLElement).style.maxHeight =
+            `calc(${viewportHeight}px - ${
+              props.type == "ecommerce" ? "220px" : "175px"
+            })`;
+        }
+      } else {
+        console.log("here");
+        if (chatOuterWrapper) {
+          (chatOuterWrapper as HTMLElement).style.maxHeight = `calc(60vh - ${
+            props.type == "ecommerce" ? "220px" : "200px"
+          })`;
+        }
       }
 
-      const chatOuterWrapper = document.querySelector(
-        ".chat-outer-wrapper"
-      );
       if (chatOuterWrapper) {
-        (chatOuterWrapper as HTMLElement).style.maxHeight =
-          `calc(${viewportHeight}px - 100px)`;
-      }
-      if (chatOuterWrapper) {
-        chatOuterWrapper.scrollTop =
-          chatOuterWrapper.scrollHeight;
+        chatOuterWrapper.scrollTop = chatOuterWrapper.scrollHeight;
       }
     };
 
+    onViewportResize();
     window.addEventListener("resize", onViewportResize);
 
     return () => {
@@ -67,11 +79,11 @@ const Modal = () => {
 
     const eventListener: EventListener = (e: Event) => {
       const customEvent = e as CustomEvent<{
-        message: string;
+        message?: string;
         group: ChunkGroup;
         betterGroupName?: string;
       }>;
-      if (customEvent.detail?.message && customEvent.detail.group) {
+      if (customEvent.detail.group) {
         setOpen(true);
         if (customEvent.detail.betterGroupName) {
           customEvent.detail.group.name = customEvent.detail.betterGroupName;
@@ -80,7 +92,9 @@ const Modal = () => {
           customEvent.detail.group,
           customEvent.detail.betterGroupName
         );
-        askQuestion(customEvent.detail.message, customEvent.detail.group);
+        if (customEvent.detail.message) {
+          askQuestion(customEvent.detail.message, customEvent.detail.group);
+        }
       }
     };
     window.removeEventListener("trieve-start-chat-with-group", eventListener);
@@ -112,7 +126,7 @@ const Modal = () => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
     );
   }, [props.brandColor, props.brandFontFamily]);
@@ -138,8 +152,9 @@ const Modal = () => {
           ></div>
           <div
             id="trieve-search-modal"
-            className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${props.theme === "dark" ? "dark " : ""
-              } ${props.type}`.trim()}
+            className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${
+              props.theme === "dark" ? "dark " : ""
+            } ${props.type}`.trim()}
             style={{ zIndex: props.zIndex ? props.zIndex + 1 : 1001 }}
           >
             {props.allowSwitchingModes && <ModeSwitch />}

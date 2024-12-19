@@ -12376,6 +12376,10 @@
             ],
             "nullable": true
           },
+          "hideDrawnText": {
+            "type": "boolean",
+            "nullable": true
+          },
           "navLogoImgSrcUrl": {
             "type": "string",
             "nullable": true

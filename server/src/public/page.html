@@ -331,107 +331,66 @@
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
     if (window.innerWidth > 768) {
+      console.log(tabContainer.offsetWidth);
       openTrieveModalElement.style.width = tabContainer.offsetWidth / 2 + "px";
     }
-
-    let brandNameElement = document.querySelector(".brand-name");
-    while (!brandNameElement) {
-      brandNameElement = document.querySelector(".brand-name");
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    }
-
-    let recElement = document.querySelector(".recs-section");
-    let recBracketAnimation = null;
-    if (window.innerWidth > 1024 && recElement) {
-      recElement.style.width = tabContainer.offsetWidth + "px";
-      recBracketAnimation = annotate(recElement, {
-        type: "bracket",
-        color: window.paramsData.brandColor || "black",
-        padding: 8,
-        brackets: ["left"],
-      });
-    }
-
-    const circleSearchAnimation = annotate(openTrieveModalElement, {
-      type: "circle",
-      color: window.paramsData.brandColor || "black",
-      padding: 40,
-    });
-
-    const brandUnderlineAnimation = annotate(brandNameElement, {
-      type: "underline",
-      animationDuration: 50,
-      color: window.paramsData.brandColor || "black",
-      padding: 3,
-    });
-
     const canvas = document.getElementById("canvas");
-    canvas.style.position = "absolute";
-    canvas.style.left = "0";
-    canvas.style.top = "0";
-    canvas.width =
-      document.documentElement.clientWidth || document.body.clientWidth;
-    canvas.height =
-      document.documentElement.clientHeight || document.body.clientHeight;
-    canvas.style.zIndex = "1";
-    const rc = rough.canvas(canvas);
 
-    const openTrieveRect = openTrieveModalElement.getBoundingClientRect();
-    let endOpenX = openTrieveRect.right + 138;
-    let endOpenY = openTrieveRect.bottom + 45;
-    if (endOpenX > window.innerWidth) {
-      endOpenX = window.innerWidth - 125;
-      endOpenY += 15;
-    }
-    const startOpenX = openTrieveRect.right + 60;
-    const startOpenY = openTrieveRect.bottom - 15;
-
-    rc.path(
-      `M ${startOpenX} ${startOpenY}
-         Q ${startOpenX + 85} ${endOpenY - 85} ${endOpenX} ${endOpenY}`,
-      {
-        stroke: window.paramsData.brandColor || "black",
-        strokeWidth: 2,
-        roughness: 3,
-        bowing: 3,
+    if (!window.paramsData.hideDrawnText) {
+      let brandNameElement = document.querySelector(".brand-name");
+      while (!brandNameElement) {
+        brandNameElement = document.querySelector(".brand-name");
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
-    );
 
-    const arrowSize = 10;
-    rc.line(
-      startOpenX - 5,
-      startOpenY,
-      startOpenX + arrowSize,
-      startOpenY + arrowSize,
-      {
-        stroke: window.paramsData.brandColor || "black",
-        strokeWidth: 2,
+      let recElement = document.querySelector(".recs-section");
+      let recBracketAnimation = null;
+      if (window.innerWidth > 1024 && recElement) {
+        recElement.style.width = tabContainer.offsetWidth + "px";
+        recBracketAnimation = annotate(recElement, {
+          type: "bracket",
+          color: window.paramsData.brandColor || "black",
+          padding: 8,
+          brackets: ["left"],
+        });
       }
-    );
-    rc.line(
-      startOpenX - 5,
-      startOpenY,
-      startOpenX + arrowSize,
-      startOpenY - arrowSize,
-      {
-        stroke: window.paramsData.brandColor || "black",
-        strokeWidth: 2,
-      }
-    );
 
-    let endRecX = 0;
-    let endRecY = 0;
-    if (recBracketAnimation) {
-      const relHeadingElement = document.getElementById("related-heading");
-      const recHeadingRect = relHeadingElement.getBoundingClientRect();
-      endRecX = recHeadingRect.right + 164;
-      endRecY = recHeadingRect.top - 5;
-      const startRecX = recHeadingRect.right + 15;
-      const startRecY = recHeadingRect.top + 15;
+      const circleSearchAnimation = annotate(openTrieveModalElement, {
+        type: "circle",
+        color: window.paramsData.brandColor || "black",
+        padding: 40,
+      });
+
+      const brandUnderlineAnimation = annotate(brandNameElement, {
+        type: "underline",
+        animationDuration: 50,
+        color: window.paramsData.brandColor || "black",
+        padding: 3,
+      });
+
+      canvas.style.position = "absolute";
+      canvas.style.left = "0";
+      canvas.style.top = "0";
+      canvas.width =
+        document.documentElement.clientWidth || document.body.clientWidth;
+      canvas.height =
+        document.documentElement.clientHeight || document.body.clientHeight;
+      canvas.style.zIndex = "1";
+      const rc = rough.canvas(canvas);
+
+      const openTrieveRect = openTrieveModalElement.getBoundingClientRect();
+      let endOpenX = openTrieveRect.right + 138;
+      let endOpenY = openTrieveRect.bottom + 45;
+      if (endOpenX > window.innerWidth) {
+        endOpenX = window.innerWidth - 125;
+        endOpenY += 15;
+      }
+      const startOpenX = openTrieveRect.right + 60;
+      const startOpenY = openTrieveRect.bottom - 15;
 
       rc.path(
-        `M ${startRecX} ${startRecY}
-           Q ${startRecX + 80} ${startRecY + 20} ${endRecX} ${endRecY}`,
+        `M ${startOpenX} ${startOpenY}
+         Q ${startOpenX + 85} ${endOpenY - 85} ${endOpenX} ${endOpenY}`,
         {
           stroke: window.paramsData.brandColor || "black",
           strokeWidth: 2,
@@ -440,46 +399,96 @@
         }
       );
 
+      const arrowSize = 10;
       rc.line(
-        startRecX - 5,
-        startRecY,
-        startRecX + arrowSize,
-        startRecY + arrowSize * 1.5,
+        startOpenX - 5,
+        startOpenY,
+        startOpenX + arrowSize,
+        startOpenY + arrowSize,
         {
           stroke: window.paramsData.brandColor || "black",
           strokeWidth: 2,
         }
       );
       rc.line(
-        startRecX - 5,
-        startRecY,
-        startRecX + arrowSize,
-        startRecY - arrowSize,
+        startOpenX - 5,
+        startOpenY,
+        startOpenX + arrowSize,
+        startOpenY - arrowSize,
         {
           stroke: window.paramsData.brandColor || "black",
           strokeWidth: 2,
         }
       );
+
+      let endRecX = 0;
+      let endRecY = 0;
+      if (recBracketAnimation) {
+        const relHeadingElement = document.getElementById("related-heading");
+        const recHeadingRect = relHeadingElement.getBoundingClientRect();
+        endRecX = recHeadingRect.right + 164;
+        endRecY = recHeadingRect.top - 5;
+        const startRecX = recHeadingRect.right + 15;
+        const startRecY = recHeadingRect.top + 15;
+
+        rc.path(
+          `M ${startRecX} ${startRecY}
+           Q ${startRecX + 80} ${startRecY + 20} ${endRecX} ${endRecY}`,
+          {
+            stroke: window.paramsData.brandColor || "black",
+            strokeWidth: 2,
+            roughness: 3,
+            bowing: 3,
+          }
+        );
+
+        rc.line(
+          startRecX - 5,
+          startRecY,
+          startRecX + arrowSize,
+          startRecY + arrowSize * 1.5,
+          {
+            stroke: window.paramsData.brandColor || "black",
+            strokeWidth: 2,
+          }
+        );
+        rc.line(
+          startRecX - 5,
+          startRecY,
+          startRecX + arrowSize,
+          startRecY - arrowSize,
+          {
+            stroke: window.paramsData.brandColor || "black",
+            strokeWidth: 2,
+          }
+        );
+      }
+
+      await Promise.all([
+        document.fonts.load("16px Architects Daughter"),
+        document.fonts.load("16px cursive"),
+      ]);
+
+      const ctx = canvas.getContext("2d");
+      ctx.font = "500 32px Architects Daughter, cursive";
+      ctx.fontDisplay = "swap";
+      ctx.fillStyle = window.paramsData.brandColor || "black";
+      ctx.fillText("Try Me!", endOpenX - 40, endOpenY + 30);
+
+      if (recBracketAnimation) {
+        ctx.font = "500 20px Architects Daughter, cursive";
+        ctx.fillText(
+          "Personalized + auto optimized",
+          endRecX + 10,
+          endRecY - 5
+        );
+        recBracketAnimation.show();
+      }
+
+      circleSearchAnimation.show();
+      brandUnderlineAnimation.show();
+    } else {
+      canvas.style.display = "none";
     }
-
-    await Promise.all([
-      document.fonts.load("16px Architects Daughter"),
-      document.fonts.load("16px cursive"),
-    ]);
-
-    const ctx = canvas.getContext("2d");
-    ctx.font = "500 32px Architects Daughter, cursive";
-    ctx.fontDisplay = "swap";
-    ctx.fillStyle = window.paramsData.brandColor || "black";
-    ctx.fillText("Try Me!", endOpenX - 40, endOpenY + 30);
-
-    if (recBracketAnimation) {
-      ctx.font = "500 20px Architects Daughter, cursive";
-      ctx.fillText("Personalized + auto optimized", endRecX + 10, endRecY - 5);
-      recBracketAnimation.show();
-    }
-
-    circleSearchAnimation.show();
-    brandUnderlineAnimation.show();
   </script>
 </html>

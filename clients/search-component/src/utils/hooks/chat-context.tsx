@@ -42,7 +42,7 @@ const ChatContext = createContext<{
   switchToChatAndAskQuestion: (query: string) => Promise<void>;
   cancelGroupChat: () => void;
   chatWithGroup: (group: ChunkGroup, betterGroupName?: string) => void;
-  isDoneReading?: React.MutableRefObject<boolean>;
+  isDoneReading?: boolean;
   rateChatCompletion: (isPositive: boolean, queryId: string | null) => void;
 }>({
   askQuestion: async () => {},
@@ -69,7 +69,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const chatMessageAbortController = useRef<AbortController>(
     new AbortController()
   );
-  const isDoneReading = useRef<boolean>(true);
+  const [isDoneReading, setIsDoneReading] = useState(true);
   const createTopic = async ({ question }: { question: string }) => {
     if (!currentTopic) {
       called.current = true;
@@ -103,7 +103,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     queryId: string | null
   ) => {
     setIsLoading(true);
-    isDoneReading.current = false;
+    setIsDoneReading(false);
     let done = false;
     let textInStream = "";
 
@@ -111,7 +111,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       const { value, done: doneReading } = await reader.read();
       if (doneReading) {
         done = doneReading;
-        isDoneReading.current = doneReading;
+        setIsDoneReading(true);
       } else if (value) {
         const decoder = new TextDecoder();
         const newText = decoder.decode(value);
@@ -242,7 +242,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const stopGeneratingMessage = () => {
     chatMessageAbortController.current.abort();
     chatMessageAbortController.current = new AbortController();
-    isDoneReading.current = true;
+    setIsDoneReading(true);
     setIsLoading(false);
     // is the last message loading? If it is we need to delete it
     if (messages.at(-1)?.[0]?.text === "Loading...") {
@@ -261,7 +261,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   };
 
   const askQuestion = async (question?: string, group?: ChunkGroup) => {
-    isDoneReading.current = false;
+    setIsDoneReading(false);
 
     if (!currentGroup && group) {
       chatWithGroup(group);

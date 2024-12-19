@@ -81,7 +81,11 @@ export const ChatMode = () => {
           </div>
         </div>
       </div>
-      <div className="chat-footer-wrapper">
+      <div
+        className={`chat-footer-wrapper${
+          messages.length ? " with-messages" : ""
+        }`}
+      >
         {currentGroup && (
           <div className="chat-group-disclaimer">
             <div>Chatting with {currentGroup.name.replace(/<[^>]*>/g, "")}</div>

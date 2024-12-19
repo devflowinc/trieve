@@ -34,6 +34,15 @@ export const ProductItem = ({
     [item]
   );
 
+  const filteredVariants = useMemo(() => {
+    return uniquifyVariants(
+      item.chunk.metadata?.variants as unknown as {
+        featured_image: { src: string };
+        title: string;
+      }[]
+    )?.filter((variant) => variant.featured_image?.src);
+  }, [item]);
+
   const [shownImage, setShownImage] = useState<string>(
     item.chunk?.image_urls?.[0] || ""
   );
@@ -170,29 +179,22 @@ export const ProductItem = ({
                 }}
               />
               <>
-                {item.chunk.metadata?.variants?.length > 1 ? (
+                {filteredVariants.length > 1 ? (
                   <div className="variants">
                     <span className="variants-title">Variants:</span>
-                    {uniquifyVariants(
-                      item.chunk.metadata.variants as unknown as {
-                        featured_image: { src: string };
-                        title: string;
-                      }[]
-                    )
-                      ?.filter((variant) => variant.featured_image?.src)
-                      ?.map((variant) => (
-                        <button
-                          key={variant.title}
-                          onClick={(ev) => {
-                            ev.preventDefault();
-                            ev.stopPropagation();
-                            ev.nativeEvent.stopImmediatePropagation();
-                            setShownImage(variant.featured_image?.src);
-                          }}
-                        >
-                          {variant.title}
-                        </button>
-                      ))}
+                    {filteredVariants.map((variant) => (
+                      <button
+                        key={variant.title}
+                        onClick={(ev) => {
+                          ev.preventDefault();
+                          ev.stopPropagation();
+                          ev.nativeEvent.stopImmediatePropagation();
+                          setShownImage(variant.featured_image?.src);
+                        }}
+                      >
+                        {variant.title}
+                      </button>
+                    ))}
                   </div>
                 ) : null}
               </>

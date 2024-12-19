@@ -46,11 +46,17 @@ export const AIInitialMessage = () => {
             }}
             className="brand-name"
           >
-            {(currentGroup?.name || props.brandName || "Trieve").replace(
-              /<[^>]*>/g,
-              ""
-            )}
+            {(currentGroup?.name || props.brandName || "Trieve")
+              .replace(/<[^>]*>/g, "")
+              .split(" ")
+              .slice(0, 3)
+              .join(" ")}
           </span>
+          {(currentGroup?.name || props.brandName || "Trieve")
+            .replace(/<[^>]*>/g, "")
+            .split(" ")
+            .slice(3)
+            .join(" ")}
         </p>
         <GroupChatImgCarousel />
       </span>
