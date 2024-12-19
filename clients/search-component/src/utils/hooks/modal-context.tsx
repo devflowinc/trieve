@@ -22,6 +22,7 @@ import {
   searchWithTrieve,
   getPagefindIndex,
 } from "../trieve";
+import { FileContextProvider } from "./file-context";
 
 export const ALL_TAG = {
   tag: "all",
@@ -42,7 +43,7 @@ type customAutoCompleteAddOn = {
 export type PagefindApi = any;
 
 export type currencyPosition = "before" | "after";
-export type ModalTypes = "ecommerce" | "docs";
+export type ModalTypes = "ecommerce" | "docs" | "pdf";
 export type SearchModes = "chat" | "search";
 export type searchOptions = simpleSearchReqPayload & customAutoCompleteAddOn;
 
@@ -454,7 +455,7 @@ const ModalProvider = ({
         tagCounts,
       }}
     >
-      {children}
+      <FileContextProvider>{children}</FileContextProvider>
     </ModalContext.Provider>
   );
 };
