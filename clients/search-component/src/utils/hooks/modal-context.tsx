@@ -19,7 +19,7 @@ import {
   groupSearchWithTrieve,
   searchWithPagefind,
   searchWithTrieve,
-  getPagefindIndex
+  getPagefindIndex,
 } from "../trieve";
 
 export const ALL_TAG = {
@@ -101,6 +101,8 @@ export type ModalProps = {
     | "top-right"
     | "bottom-left"
     | "bottom-right";
+  floatingSearchIconPosition?: "left" | "right";
+  showFloatingSearchIcon?: boolean;
 };
 
 const defaultProps = {
@@ -137,6 +139,8 @@ const defaultProps = {
     | "top-right"
     | "bottom-left"
     | "bottom-right",
+  floatingSearchIconPosition: "right" as "left" | "right",
+  showFloatingSearchIcon: true,
 };
 
 const ModalContext = createContext<{
@@ -258,7 +262,6 @@ const ModalProvider = ({
         setResults(Array.from(groupMap.values()));
         setRequestID(results.requestID);
       } else if (props.useGroupSearch && props.usePagefind) {
-
         const results = await groupSearchWithPagefind(
           pagefind,
           query,
@@ -275,7 +278,6 @@ const ModalProvider = ({
           }
         });
         setResults(Array.from(groupMap.values()));
-
       } else if (!props.useGroupSearch && props.usePagefind) {
         const results = await searchWithPagefind(
           pagefind,
@@ -355,14 +357,12 @@ const ModalProvider = ({
 
   useEffect(() => {
     if (props.usePagefind) {
-
       getPagefindIndex(trieve).then((pagefind_base_url) => {
         import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
-          setPagefind(pagefind)
-          pagefind.filters().then(() => {
-          })
+          setPagefind(pagefind);
+          pagefind.filters().then(() => {});
         });
-      })
+      });
     }
   }, []);
 

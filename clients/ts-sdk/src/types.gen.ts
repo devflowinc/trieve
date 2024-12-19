@@ -2078,6 +2078,7 @@ export type PublicPageParameters = {
     defaultSearchMode?: (string) | null;
     defaultSearchQueries?: Array<(string)> | null;
     floatingButtonPosition?: (string) | null;
+    floatingSearchIconPosition?: (string) | null;
     forBrandName?: (string) | null;
     headingPrefix?: (string) | null;
     heroPattern?: ((HeroPattern) | null);
@@ -2090,6 +2091,7 @@ export type PublicPageParameters = {
     responsive?: (boolean) | null;
     searchOptions?: ((PublicPageSearchOptions) | null);
     showFloatingButton?: (boolean) | null;
+    showFloatingSearchIcon?: (boolean) | null;
     singleProductOptions?: ((SingleProductOptions) | null);
     suggestedQueries?: (boolean) | null;
     tabMessages?: Array<PublicPageTabMessage> | null;
