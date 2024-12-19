@@ -83,7 +83,11 @@ export type ModalProps = {
   }[];
   zIndex?: number;
   showFloatingButton?: boolean;
-  floatingButtonPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  floatingButtonPosition?:
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right";
 };
 
 const defaultProps = {
@@ -204,6 +208,7 @@ const ModalProvider = ({
     baseUrl: props.baseUrl,
     apiKey: props.apiKey,
     datasetId: props.datasetId,
+    omitCredentials: true,
   });
 
   const search = async (abortController: AbortController) => {
