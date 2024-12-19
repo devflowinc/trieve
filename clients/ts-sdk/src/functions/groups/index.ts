@@ -49,6 +49,10 @@ export async function createChunkGroup(
   this: TrieveSDK,
   data: Omit<CreateChunkGroupReqPayloadEnum, "datasetId">
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch("/api/chunk_group", "post", {
     data,
     datasetId: this.datasetId,
@@ -71,6 +75,10 @@ export async function searchOverGroups(
   data: SearchOverGroupsReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/group_oriented_search",
     "post",
@@ -98,6 +106,10 @@ export async function searchInGroup(
   data: SearchWithinGroupReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/search",
     "post",
@@ -125,6 +137,10 @@ export async function recommendedGroups(
   data: RecommendGroupsReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/recommend",
     "post",
@@ -152,6 +168,10 @@ export async function updateGroup(
   data: UpdateChunkGroupReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group",
     "put",
@@ -179,6 +199,10 @@ export async function addChunkToGroup(
   data: AddChunkToGroupReqPayload & { group_id: string },
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/chunk/{group_id}",
     "post",
@@ -208,6 +232,10 @@ export async function removeChunkFromGroup(
   data: RemoveChunkFromGroupReqPayload & { group_id: string },
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/chunk/{group_id}",
     "delete",
@@ -236,6 +264,10 @@ export async function getGroupsForChunks(
   data: GetGroupsForChunksReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/chunks",
     "post",
@@ -264,6 +296,10 @@ export async function getChunksGroupByTrackingId(
   data: Omit<GetChunksInGroupByTrackingIdData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/tracking_id/{group_tracking_id}/{page}",
     "get",
@@ -293,6 +329,10 @@ export async function getGroupByTrackingId(
   data: Omit<GetGroupByTrackingIdData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/tracking_id/{tracking_id}",
     "get",
@@ -321,6 +361,10 @@ export async function addChunkToGroupByTrackingId(
   data: AddChunkToGroupReqPayload & { tracking_id: string },
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/tracking_id/{tracking_id}",
     "post",
@@ -349,6 +393,10 @@ export async function deleteGroupByTrackingId(
   data: DeleteGroupByTrackingIdData & { tracking_id: string },
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/tracking_id/{tracking_id}",
     "delete",
@@ -377,6 +425,10 @@ export async function getGroup(
   data: Omit<GetChunkGroupData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/{group_id}",
     "get",
@@ -404,6 +456,10 @@ export async function deleteGroup(
   data: DeleteChunkGroupData,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/{group_id}",
     "delete",
@@ -432,6 +488,10 @@ export async function getChunksInGroup(
   data: Omit<GetChunksInGroupData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk_group/{group_id}/{page}",
     "get",
@@ -459,6 +519,10 @@ export async function getGroupsForDataset(
   data: Omit<Omit<GetGroupsForDatasetData, "datasetId">, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/dataset/groups/{dataset_id}/{page}",
     "get",

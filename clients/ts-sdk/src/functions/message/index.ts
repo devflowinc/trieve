@@ -29,6 +29,10 @@ export async function createMessage(
   data: CreateMessageReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/message",
     "post",
@@ -57,6 +61,10 @@ export async function createMessageReader(
   data: CreateMessageReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   const response = await fetch(this.trieve.baseUrl + "/api/message", {
     method: "post",
     headers: {
@@ -67,7 +75,7 @@ export async function createMessageReader(
     body: JSON.stringify(data),
     signal,
   });
-  
+
   const reader = response.body?.getReader();
 
   if (!reader) {
@@ -94,6 +102,10 @@ export async function createMessageReaderWithQueryId(
   data: CreateMessageReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   const response = await fetch(this.trieve.baseUrl + "/api/message", {
     method: "post",
     headers: {
@@ -104,7 +116,7 @@ export async function createMessageReaderWithQueryId(
     body: JSON.stringify(data),
     signal,
   });
-  
+
   const reader = response.body?.getReader();
 
   if (!reader) {
@@ -115,7 +127,7 @@ export async function createMessageReaderWithQueryId(
 
   return {
     reader,
-    queryId
+    queryId,
   };
 }
 
@@ -137,6 +149,10 @@ export async function editMessage(
   data: EditMessageReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/message",
     "put",
@@ -166,6 +182,10 @@ export async function editMessageReader(
   data: EditMessageReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   const response = await fetch(this.trieve.baseUrl + "/api/message", {
     method: "put",
     headers: {
@@ -176,7 +196,7 @@ export async function editMessageReader(
     body: JSON.stringify(data),
     signal,
   });
-  
+
   const reader = response.body?.getReader();
 
   if (!reader) {
@@ -204,6 +224,10 @@ export async function editMessageReaderWithQueryId(
   data: EditMessageReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   const response = await fetch(this.trieve.baseUrl + "/api/message", {
     method: "put",
     headers: {
@@ -214,7 +238,7 @@ export async function editMessageReaderWithQueryId(
     body: JSON.stringify(data),
     signal,
   });
-  
+
   const reader = response.body?.getReader();
 
   if (!reader) {
@@ -225,7 +249,7 @@ export async function editMessageReaderWithQueryId(
 
   return {
     reader,
-    queryId
+    queryId,
   };
 }
 
@@ -245,6 +269,10 @@ export async function regenerateMessage(
   data: RegenerateMessageReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/message",
     "delete",
@@ -272,6 +300,10 @@ export async function regenerateMessageReader(
   data: RegenerateMessageReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   const response = await fetch(this.trieve.baseUrl + "/api/message", {
     method: "delete",
     headers: {
@@ -282,7 +314,7 @@ export async function regenerateMessageReader(
     body: JSON.stringify(data),
     signal,
   });
-  
+
   const reader = response.body?.getReader();
 
   if (!reader) {
@@ -308,6 +340,10 @@ export async function regenerateMessageReaderWithQueryId(
   data: RegenerateMessageReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   const response = await fetch(this.trieve.baseUrl + "/api/message", {
     method: "delete",
     headers: {
@@ -318,7 +354,7 @@ export async function regenerateMessageReaderWithQueryId(
     body: JSON.stringify(data),
     signal,
   });
-  
+
   const reader = response.body?.getReader();
 
   if (!reader) {
@@ -327,9 +363,9 @@ export async function regenerateMessageReaderWithQueryId(
 
   const queryId = response.headers.get("TR-QueryID");
 
-  return { 
+  return {
     reader,
-    queryId
+    queryId,
   };
 }
 
@@ -349,6 +385,10 @@ export async function getAllMessagesForTopic(
   data: Omit<GetAllTopicMessagesData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/messages/{messages_topic_id}",
     "get",
@@ -376,6 +416,10 @@ export async function getMessageById(
   data: Omit<GetMessageByIdData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/message/{message_id}",
     "get",
@@ -386,4 +430,3 @@ export async function getMessageById(
     signal
   );
 }
-

@@ -290,7 +290,7 @@ export const getAllChunksForGroup = async (
       "/api/chunk_group/{group_id}/{page}",
       "get",
       {
-        datasetId: trieve.datasetId,
+        datasetId: trieve.datasetId as string,
         groupId,
         page,
       }

@@ -23,8 +23,12 @@ export async function getEventsForDataset(
   /** @hidden */
   this: TrieveSDK,
   data: GetEventsData,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/dataset/events",
     "post",
@@ -32,6 +36,6 @@ export async function getEventsForDataset(
       data,
       datasetId: this.datasetId,
     },
-    signal,
+    signal
   );
 }

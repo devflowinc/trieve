@@ -38,6 +38,10 @@ export async function uploadFile(
   data: UploadFileReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/file",
     "post",
@@ -55,6 +59,10 @@ export async function createPresignedUrlForCsvJsonl(
   data: CreatePresignedUrlForCsvJsonlReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/file/csv_or_jsonl",
     "post",
@@ -82,6 +90,10 @@ export async function getFilesForDataset(
   data: Omit<Omit<GetDatasetFilesHandlerData, "datasetId">, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/dataset/files/{dataset_id}/{page}",
     "get",
@@ -109,6 +121,10 @@ export async function getFile(
   data: Omit<GetFileHandlerData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/file/{file_id}",
     "get",
@@ -136,6 +152,10 @@ export async function deleteFile(
   data: Omit<DeleteFileHandlerData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/file/{file_id}",
     "delete",

@@ -45,6 +45,9 @@ export async function search(
   props: SearchChunksReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
   return this.trieve.fetch(
     "/api/chunk/search",
     "post",
@@ -77,6 +80,10 @@ export async function createChunk(
   props: CreateChunkReqPayloadEnum,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk",
     "post",
@@ -107,6 +114,10 @@ export async function autocomplete(
   props: AutocompleteReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk/autocomplete",
     "post",
@@ -137,6 +148,10 @@ export async function getRecommendedChunks(
   props: RecommendChunksRequest,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk/recommend",
     "post",
@@ -173,6 +188,10 @@ export async function ragOnChunk(
   props: GenerateOffChunksReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk/generate",
     "post",
@@ -211,6 +230,10 @@ export async function ragOnChunkReader(
   props: GenerateOffChunksReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   const response = await fetch(this.trieve.baseUrl + "/api/chunk/generate", {
     method: "post",
     headers: {
@@ -258,6 +281,10 @@ export async function ragOnChunkReaderWithQueryId(
   props: GenerateOffChunksReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   const response = await fetch(this.trieve.baseUrl + "/api/chunk/generate", {
     method: "post",
     headers: {
@@ -299,6 +326,10 @@ export async function suggestedQueries(
   props: SuggestedQueriesReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk/suggestions",
     "post",
@@ -328,6 +359,10 @@ export async function countChunksAboveThreshold(
   props: CountChunksReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk/count",
     "post",
@@ -355,6 +390,10 @@ export async function scroll(
   props: ScrollChunksReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunks/scroll",
     "post",
@@ -383,6 +422,10 @@ export async function updateChunk(
   props: UpdateChunkReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk",
     "put",
@@ -411,6 +454,10 @@ export async function updateChunkByTrackingId(
   props: UpdateChunkByTrackingIdData,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk/tracking_id/update",
     "put",
@@ -438,6 +485,10 @@ export async function getChunkByTrackingId(
   props: Omit<GetChunkByTrackingIdData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk/tracking_id/{tracking_id}",
     "get",
@@ -466,6 +517,10 @@ export async function deleteChunkByTrackingId(
   props: Omit<DeleteChunkByTrackingIdData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk/tracking_id/{tracking_id}",
     "delete",
@@ -493,6 +548,10 @@ export async function getChunkById(
   props: Omit<GetChunkByIdData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk/{chunk_id}",
     "get",
@@ -521,6 +580,10 @@ export async function deleteChunkById(
   props: DeleteChunkData,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunk/{chunk_id}",
     "delete",
@@ -548,6 +611,10 @@ export async function getChunksByIds(
   props: GetChunksData,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunks",
     "post",
@@ -575,6 +642,10 @@ export async function getChunksByTrackingIds(
   props: GetTrackingChunksData,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return this.trieve.fetch(
     "/api/chunks/tracking",
     "post",
@@ -588,7 +659,7 @@ export async function getChunksByTrackingIds(
 
 /**
  * Function that splits an html string into chunks.
- * The html string will be split into chunks based on the number of characters in the string and header tags. 
+ * The html string will be split into chunks based on the number of characters in the string and header tags.
  *
  * Example:
  * ```js

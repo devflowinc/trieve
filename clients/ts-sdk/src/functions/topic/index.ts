@@ -8,7 +8,7 @@ import {
   DeleteTopicData2,
   GetAllTopicsForOwnerIdData,
   UpdateTopicReqPayload,
-  CloneTopicReqPayload
+  CloneTopicReqPayload,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
@@ -30,6 +30,10 @@ export async function createTopic(
   data: CreateTopicReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/topic",
     "post",
@@ -59,6 +63,10 @@ export async function cloneTopic(
   data: CloneTopicReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/topic/clone",
     "post",
@@ -87,6 +95,10 @@ export async function updateTopic(
   data: UpdateTopicReqPayload,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/topic",
     "put",
@@ -114,6 +126,10 @@ export async function getAllTopics(
   data: Omit<GetAllTopicsForOwnerIdData, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/topic/owner/{owner_id}",
     "get",
@@ -141,6 +157,10 @@ export async function deleteTopic(
   data: Omit<DeleteTopicData2, "trDataset">,
   signal?: AbortSignal
 ) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
   return await this.trieve.fetch(
     "/api/topic/{topic_id}",
     "delete",

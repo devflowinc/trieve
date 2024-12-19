@@ -3,7 +3,7 @@ import { TrieveFetchClient } from "./fetch-client";
 
 export class TrieveSDK {
   trieve: TrieveFetchClient;
-  datasetId: string;
+  datasetId?: string;
   organizationId?: string;
   constructor({
     apiKey,
@@ -11,18 +11,21 @@ export class TrieveSDK {
     debug = false,
     datasetId,
     organizationId,
+    omitCredentials,
   }: {
     apiKey: string;
     baseUrl?: string;
     debug?: boolean;
-    datasetId: string;
+    datasetId?: string;
     organizationId?: string;
+    omitCredentials?: boolean;
   }) {
     this.trieve = new TrieveFetchClient({
       apiKey,
       baseUrl,
       debug,
       organizationId,
+      omitCredentials,
     });
     this.datasetId = datasetId;
     this.organizationId = organizationId;
