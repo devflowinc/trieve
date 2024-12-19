@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     schema_id String,
     input_id String,
     status String,
-    output_url String,
+    batch_id String,
+    output_id String,
     created_at DateTime,
     updated_at DateTime
 ) ENGINE = MergeTree()
@@ -24,6 +25,7 @@ PARTITION BY
 
 CREATE TABLE IF NOT EXISTS inputs (
     id String,
+    schema_id String,
     created_at DateTime,
     updated_at DateTime
 ) ENGINE = MergeTree()
