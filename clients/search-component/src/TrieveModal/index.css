@@ -29,8 +29,8 @@ body {
     background-color: var(--tv-zinc-50);
     font-family: var(--tv-prop-brand-font-family);
 
-    f .group-chat-carousel {
-      @apply pl-2 flex gap-2 w-full overflow-x-auto;
+    .group-chat-carousel {
+      @apply pl-4 flex gap-2 w-full overflow-x-auto;
     }
 
     .suspense-fallback {
@@ -62,11 +62,12 @@ body {
     &.chat-modal-mobile {
       @apply flex flex-col top-0 sm:top-[calc(40%-30vh)] pt-4 max-h-[100vh] w-full sm:w-[90vw] rounded-none sm:rounded-lg;
 
+      &.docs {
+        @apply h-screen sm:h-auto;
+      }
+
       .chat-outer-wrapper {
         @apply justify-between w-full h-full mt-10 sm:mt-12;
-      }
-      .system-information-wrapper {
-        @apply sm:mb-8;
       }
     }
 
@@ -82,7 +83,7 @@ body {
     }
 
     .trieve-elements-ecommerce {
-      @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mt-0.5 py-2 max-w-6xl mx-auto pr-0.5;
+      @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mt-0.5 py-2 max-w-7xl mx-auto pr-0.5;
 
       > li.start-chat-li {
         @apply col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5;
@@ -157,7 +158,7 @@ body {
     .mode-switch-wrapper.ecommerce.search {
       @apply top-[2.625rem];
 
-      right: calc(max(calc(50vw - 36rem), 1.25rem) + 0.25rem);
+      right: calc(max(calc(50% - 39.85rem), 1.25rem) + 0.25rem);
     }
 
     .mode-switch-wrapper.ecommerce.chat {
@@ -170,10 +171,11 @@ body {
       border-color: var(--tv-zinc-200);
 
       li {
+        @apply border-t-2 rounded-sm;
+
         button {
           @apply flex gap-1 items-center py-1 px-2;
         }
-        @apply border-t-2;
         border-color: transparent;
         &:hover,
         &.active {
@@ -224,7 +226,7 @@ body {
       }
 
       .bottom-row {
-        @apply flex items-center 2xl:px-0 w-full mx-auto max-w-6xl;
+        @apply flex items-center 2xl:px-0 w-full mx-auto max-w-7xl;
 
         .spacer {
           @apply flex-1;
@@ -406,16 +408,24 @@ body {
         }
 
         ul {
-          @apply list-disc pl-4 my-4;
+          @apply list-disc pl-4 my-4 overflow-hidden;
         }
 
         ol {
-          @apply list-decimal pl-4 my-4;
+          @apply list-decimal pl-4 my-4 overflow-hidden;
+        }
+
+        hr {
+          @apply mb-4;
         }
       }
 
       .system.ecommerce {
         @apply max-w-[100vw];
+
+        hr {
+          @apply mb-4;
+        }
       }
     }
 
@@ -503,7 +513,7 @@ body {
     }
 
     .chat-outer-wrapper {
-      @apply flex flex-col mt-12 px-2 scroll-smooth;
+      @apply flex flex-col mt-12 px-4 scroll-smooth;
 
       .ai-message {
         .message-wrapper {
@@ -520,7 +530,7 @@ body {
           @apply sm:w-12 sm:h-12 rounded-full flex items-center space-x-2;
 
           &.user {
-            @apply sm:w-10 h-10 ml-1;
+            @apply sm:w-10 ml-1;
           }
 
           &.assistant {
@@ -541,11 +551,11 @@ body {
         }
 
         .brand-paragraph {
-          @apply leading-8;
+          @apply leading-8 w-full;
         }
 
         .brand-name {
-          @apply text-white px-1.5 py-1 rounded-md font-[500] whitespace-nowrap text-ellipsis;
+          @apply text-white px-1.5 py-1 rounded-md font-[500] w-fit;
         }
       }
     }
@@ -556,7 +566,7 @@ body {
       @apply w-full h-full flex justify-center items-center shrink-0;
 
       img {
-        @apply max-h-48 shrink-0;
+        @apply max-h-48 shrink-0 overflow-hidden rounded-lg;
       }
     }
 
@@ -575,10 +585,8 @@ body {
     /* SUGGESTED QUESTIONS */
 
     .system-information-wrapper {
-      @apply mb-10;
-
       &.with-group {
-        @apply mb-24;
+        @apply mb-8 sm:mb-0;
       }
 
       p {
@@ -612,7 +620,7 @@ body {
       }
 
       .questions {
-        @apply text-sm flex flex-wrap gap-2;
+        @apply text-sm flex flex-wrap gap-2 pb-12;
 
         .suggested-question {
           @apply p-2 text-left rounded-md border transition-all;
@@ -666,7 +674,7 @@ body {
         }
 
         form {
-          @apply w-full;
+          @apply w-full max-w-full m-0;
         }
 
         .back-icon {
@@ -676,7 +684,7 @@ body {
     }
 
     .input-wrapper.ecommerce {
-      @apply max-w-6xl mx-auto;
+      @apply max-w-7xl mx-auto;
     }
 
     input {
@@ -698,12 +706,16 @@ body {
     }
 
     input.search-input.ecommerce {
-      @apply rounded-sm;
+      @apply rounded-lg;
     }
 
     .chat-footer-wrapper {
       .chat-group-disclaimer {
         @apply flex items-center justify-between bg-zinc-200/60 dark:bg-zinc-700 px-3 py-1 text-sm opacity-70 mx-2 border border-zinc-300 dark:border-zinc-500 border-b-transparent;
+      }
+
+      &:not(.with-messages) {
+        @apply mt-12 sm:mt-0;
       }
 
       input {
@@ -713,8 +725,10 @@ body {
 
     ul {
       &:not(.chat-ul) {
-        @apply overflow-y-auto overflow-x-hidden max-h-[calc(60vh-130px)] sm:max-h-[420px];
+        @apply overflow-y-auto overflow-x-hidden max-h-[calc(80vh-130px)] sm:max-h-[calc(60vh-130px)];
         &:not(.trieve-elements-docs) {
+          @apply max-h-[calc(98vh-130px)] sm:max-h-[calc(60vh-130px)];
+
           &:not(.commands) &:not(.trieve-elements-ecommerce) {
             @apply mt-4;
           }
@@ -1057,11 +1071,7 @@ body {
   }
 
   #trieve-search-modal.ecommerce {
-    @apply top-0 max-w-full w-screen pt-10 px-4 rounded-none;
-  }
-
-  #trieve-search-modal.chat-modal-mobile.ecommerce {
-    @apply top-0 max-w-full w-screen pt-0 px-4;
+    @apply top-1 max-w-[90rem] w-[95vw] pt-10 px-4 rounded-lg;
   }
 }
 
@@ -1192,7 +1202,7 @@ body {
   }
 
   .floating-action-button {
-    @apply fixed flex flex-row w-24 h-10 gap-3 justify-center items-center text-sm cursor-pointer text-white rounded-xl;
+    @apply fixed flex flex-row w-24 h-10 gap-3 justify-center items-center text-sm cursor-pointer text-white rounded-xl z-[999] border-0;
     background-color: var(--tv-prop-brand-color);
     font-family: var(--tv-prop-brand-font-family);
   }

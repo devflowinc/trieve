@@ -1,5 +1,8 @@
 <div class="max-w-full">
-  <div id="product-display" class="mx-auto py-4 px-4 mt-40 sm:px-6 sm:mt-30 lg:max-w-7xl lg:px-8">
+  <div
+    id="product-display"
+    class="mx-auto py-4 px-4 mt-40 sm:px-6 sm:mt-30 lg:max-w-7xl lg:px-8"
+  >
     <section class="lg:flex gap-2 lg:gap-x-8 lg:gap-y-10 xl:gap-x-16">
       <div class="lg:w-1/2">
         <img
@@ -211,7 +214,10 @@
   );
   starterQuestions.forEach((button) => {
     button.addEventListener("click", async () => {
-      const message = button.textContent;
+      const message =
+        button.textContent.trim() === "Ask something else"
+          ? null
+          : button.textContent.trim();
       const betterGroupName =
         window.paramsData.singleProductOptions.productName;
 

@@ -368,6 +368,25 @@ const PublicPageControls = () => {
             <div class="flex gap-2">
               <div class="flex items-center gap-1">
                 <label class="block" for="">
+                  Hide Drawn Text
+                </label>
+                <Tooltip
+                  tooltipText="Hide the underline, circles, bracket, and other drawn text"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                checked={extraParams.hideDrawnText || false}
+                type="checkbox"
+                onInput={(e) => {
+                  setExtraParams("hideDrawnText", e.currentTarget.checked);
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+            <div class="flex gap-2">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
                   Analytics
                 </label>
                 <Tooltip
@@ -808,10 +827,7 @@ const PublicPageControls = () => {
                   placeholder="1000"
                   value={extraParams.zIndex || 1000}
                   onInput={(e) => {
-                    setExtraParams(
-                      "zIndex",
-                      parseInt(e.currentTarget.value),
-                    );
+                    setExtraParams("zIndex", parseInt(e.currentTarget.value));
                   }}
                   class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />

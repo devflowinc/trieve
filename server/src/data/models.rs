@@ -3230,6 +3230,9 @@ impl DatasetConfigurationDTO {
                     z_index: page_parameters_self
                         .z_index
                         .or(page_parameters_curr.z_index),
+                    hide_drawn_text: page_parameters_self
+                        .hide_drawn_text
+                        .or(page_parameters_curr.hide_drawn_text),
                 }),
             },
             DISABLE_ANALYTICS: self
