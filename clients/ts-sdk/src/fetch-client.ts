@@ -86,6 +86,7 @@ interface TrieveOpts {
   baseUrl: string;
   debug?: boolean;
   organizationId?: string;
+  omitCredentials?: boolean;
 }
 
 export class TrieveFetchClient {
@@ -93,12 +94,14 @@ export class TrieveFetchClient {
   baseUrl: string;
   debug: boolean = false;
   organizationId?: string;
+  omitCredentials?: boolean;
 
   constructor(opts: TrieveOpts) {
     this.apiKey = opts.apiKey;
     this.baseUrl = opts.baseUrl;
     this.debug = opts.debug || false;
     this.organizationId = opts.organizationId;
+    this.omitCredentials = opts.omitCredentials;
   }
 
   async fetch<
@@ -166,7 +169,7 @@ export class TrieveFetchClient {
     }
 
     const response = await fetch(this.baseUrl + updatedPath, {
-      credentials: "omit",
+      credentials: this.omitCredentials ? "omit" : "include",
       method,
       headers: headers,
       body: requestBody ? JSON.stringify(requestBody) : undefined,

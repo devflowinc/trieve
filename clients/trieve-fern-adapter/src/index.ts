@@ -322,6 +322,7 @@ export const trieve = new TrieveSDK({
   apiKey: trieveApiKey,
   datasetId: trieveDatasetTrackingId,
   organizationId: trieveOrganizationId,
+  omitCredentials: true,
 });
 
 try {

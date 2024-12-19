@@ -74,6 +74,7 @@ export const reactSearchComponentRequest = (dataset: string, apiKey: string) =>
   `export const trieve = new TrieveSDK({
   apiKey: "${apiKey}",
   datasetId: "${dataset}",
+  omitCredentials: true,
 });
 
 function MyComponent() {
