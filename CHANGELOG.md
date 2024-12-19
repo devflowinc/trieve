@@ -1,5 +1,107 @@
 # Changelog
 
+## [0.14.0](https://github.com/devflowinc/trieve/compare/v0.13.0...v0.14.0) (2024-12-19)
+
+
+### Features
+
+* add ability to specify a custom font on public page ([b162e1e](https://github.com/devflowinc/trieve/commit/b162e1e5c824f9bc8e880ac5c36d83d220774f8f))
+* add csv-jsonl-worker to helm chart ([cd65155](https://github.com/devflowinc/trieve/commit/cd65155466f6a5dae8666b0356bba3bade29db99))
+* add floating action button options to dashboard publicpagesettings ([6483310](https://github.com/devflowinc/trieve/commit/6483310a67fa5a092e62f8c4f220df608ac9a1b9))
+* add floating action button to docsearch component ([57d2ff1](https://github.com/devflowinc/trieve/commit/57d2ff18c79a1573fbcf5f84f8af695181a073dc))
+* add hallucination detection to server ([598b134](https://github.com/devflowinc/trieve/commit/598b134aefe368e9a35f5ccfde2aa6eda3a6fbc7))
+* add highlight options checkbox to chat playground ([cca758b](https://github.com/devflowinc/trieve/commit/cca758bb403d3986b9e7713b5af7008504daf304))
+* add openLinksInNewTab as a new parameter for the search component and public page ([2c4613d](https://github.com/devflowinc/trieve/commit/2c4613dd266553717dce0e602177fa54aebfae75))
+* add option to remove event listener ([62335e0](https://github.com/devflowinc/trieve/commit/62335e0c3aa8075d2dab5ede88ca360b477ca00a))
+* add options to removeTriggers and add zIndex to the PublicPageSettings ([36f4cf4](https://github.com/devflowinc/trieve/commit/36f4cf4680d059641a470d2989fcb1e2b37be880))
+* add order_by key for getting all chunks in a group, make the ([c0b3c3b](https://github.com/devflowinc/trieve/commit/c0b3c3b1438dc2940341963f038ea2aff6172266))
+* add route to listen for firecrawl webhooks on page scrape events ([c732c7e](https://github.com/devflowinc/trieve/commit/c732c7e8acfc6e0f677caebdb3ec5683e05a1f37))
+* add score threshold, author, increase width, and other search component improvements ([2cbac8f](https://github.com/devflowinc/trieve/commit/2cbac8fb7c449e7634a2d94cd83523545d1621c5))
+* add support for indexing documents using pagefind, and pushing ([031df9b](https://github.com/devflowinc/trieve/commit/031df9b2eca90af1a18d233738a85d487b10dc99))
+* add thumbnail as image_url ([56f42c1](https://github.com/devflowinc/trieve/commit/56f42c18d21b9c19757ac9e92382036acf90b1f5))
+* add video worker ([88875a8](https://github.com/devflowinc/trieve/commit/88875a8e896282d73caa65a377391cd067253e9e))
+* adds cd for fern adapter ([20be69e](https://github.com/devflowinc/trieve/commit/20be69e82a78828206764cb84adc537ef73f395e))
+* better detection w/ benchmarks ([1c363b3](https://github.com/devflowinc/trieve/commit/1c363b3a2ac06c9ee6e707f11901471e515e23c4))
+* completed fern adapter loading in all mdx files + opeanpi spec ([918c7f9](https://github.com/devflowinc/trieve/commit/918c7f9cb23a46aae820f8e4285d34564f9bb1ea))
+* completed recs working with search over groups ([cf431d6](https://github.com/devflowinc/trieve/commit/cf431d6f275d6cc4f94cb44df2f8737336253b46))
+* completed testing of csv and jsonl ingests with the new worker ([ce05422](https://github.com/devflowinc/trieve/commit/ce05422284a875b127f34031d196a62e229f9463))
+* convert public page to single install script tag ([b36e117](https://github.com/devflowinc/trieve/commit/b36e1171985c750435ab40ed49f780059a675205))
+* default analytics to on for public page ([11ff07b](https://github.com/devflowinc/trieve/commit/11ff07b856735255424310ac11147dd0ee6966e5))
+* disable analytics flag ([325d2ce](https://github.com/devflowinc/trieve/commit/325d2ce6a96e6ec559ac88fb3d31ac0b31be77c8))
+* finished skeleton for single product display ([9054445](https://github.com/devflowinc/trieve/commit/9054445d875fa8f843add5560697b629476a55d6))
+* fully working suggested questions for a single product ([1becbfc](https://github.com/devflowinc/trieve/commit/1becbfcde2cec3a020eced5046b9350284502174))
+* hallucination detection crate w/ NER, noun and number analysis ([4dd2525](https://github.com/devflowinc/trieve/commit/4dd2525dcaeff6fe477c153634effbb9eaca07d6))
+* heading based chunking ([a046826](https://github.com/devflowinc/trieve/commit/a04682605c2409cc845b81e06dcb9543d12dad26))
+* incrementally add pages ([ee2734a](https://github.com/devflowinc/trieve/commit/ee2734a8daffab1da05694bd2d6d490127012c7c))
+* make the clear messages button be formatted to brand color ([7980eb2](https://github.com/devflowinc/trieve/commit/7980eb2c8acfdb7577a04935899434c1452737d0))
+* move all icons to fontawesome instead of icons file ([13e4000](https://github.com/devflowinc/trieve/commit/13e4000af185eea673eccf551b55bb45a9222017))
+* option to copy chat message in search component ([9b76f6b](https://github.com/devflowinc/trieve/commit/9b76f6bd821d153c4423019ef03fa3b9880191eb))
+* release search component version 0.2.30 ([6d1ea18](https://github.com/devflowinc/trieve/commit/6d1ea18a886df216fd98edc4c592d5be3b5165ce))
+* scaffold new fern-adapter package to be run as cron ([e53e8d7](https://github.com/devflowinc/trieve/commit/e53e8d7fbf580659fff660b8909b66cea030f8b4))
+* scaffold new fern-adapter package to be run as cron ([23b277c](https://github.com/devflowinc/trieve/commit/23b277c989494a935caf9114754e145b35537a21))
+* **search component:** add buttonTriggers parameter for adding ([5a8f9a7](https://github.com/devflowinc/trieve/commit/5a8f9a767e60b7e0d87d388b0037837b3c3bf5a6))
+* small css fixes, make zIndex a parameter ([127b2b8](https://github.com/devflowinc/trieve/commit/127b2b8446bf09938d5be1c2f595da66e4f5d250))
+* sort by top_score and hallucination_score for rag ([086a433](https://github.com/devflowinc/trieve/commit/086a433ea4e3003245e09ba1a83993894e332f15))
+* tags are defineable via public page ([8660b52](https://github.com/devflowinc/trieve/commit/8660b523031f388a9884ab306153f93541fa9bd3))
+* update version on public page, modify instructions to ([81a4e7e](https://github.com/devflowinc/trieve/commit/81a4e7ea4a7a0bad7fcd126092af5f96eb87b165))
+* upload CSV processing done up to the worker stage ([c979f0c](https://github.com/devflowinc/trieve/commit/c979f0c47f4daa53abd2388cb596c410ea9bb30e))
+
+
+### Cleanup
+
+* add omitCredentials option + make datasetId optional in ts-sdk ([dc07d33](https://github.com/devflowinc/trieve/commit/dc07d33ee1bb8e672ef4cea84d0d9df082f76cc8))
+* add tracking_ids's to fern adapter chunk creation ([2636810](https://github.com/devflowinc/trieve/commit/26368103fb78056f8645583c15b56170feb4e6fd))
+* always require org_id when fetching a dataset by tracking_id ([6137e19](https://github.com/devflowinc/trieve/commit/6137e19397f9ef6046c673363fdfdfa1ca5c1faa))
+* mobile styling fixes for chat component ([3476584](https://github.com/devflowinc/trieve/commit/34765842d92ebafe29ac6560999526b167523442))
+* mobile view of search component modal ([6660166](https://github.com/devflowinc/trieve/commit/6660166226bdd1143e7f69085a4607384b8fe3a8))
+* only make one server call per batch for groups in ingest-worker ([582e73b](https://github.com/devflowinc/trieve/commit/582e73b7742d311fa28cc9f1c3477b4bccd19ce7))
+* remove back to dashboard button + omit credentials ([0a92ecc](https://github.com/devflowinc/trieve/commit/0a92eccec66b3aae86ff5b641946762a93a7534f))
+* remove expects for LLM completion calls ([5281e45](https://github.com/devflowinc/trieve/commit/5281e45e75f014817d9673aa410fc635dd25bf2f))
+* rev sample component code version to 0.2.29 ([18c7bbd](https://github.com/devflowinc/trieve/commit/18c7bbdb3e5f82bc62ab691638752a221a9dcbb4))
+* scroll and missing user message ([952dc2f](https://github.com/devflowinc/trieve/commit/952dc2f58641499040040cb1eae232eeb1122b71))
+* search-component copy now green + powered by trieve at bottom with empty tag row when no tags + ctrl+m to swap modes ([be27319](https://github.com/devflowinc/trieve/commit/be27319a326384e1e8e96f3932758d1b14ee5483))
+* style fix to demo page z-index param ([ed64962](https://github.com/devflowinc/trieve/commit/ed649623ca645cd78e5b991a55614f052490a6e5))
+* timeout for uploading a file should be 5 minutes or more unlike other routes ([d1ceed7](https://github.com/devflowinc/trieve/commit/d1ceed7e00691618ad98ba52804cadffe32954b3))
+* updated readme ([14d4a59](https://github.com/devflowinc/trieve/commit/14d4a59631d8fbef252c03a10524d690453bacbf))
+
+
+### Bug Fixes
+
+* add back postgresql count trigger ([686181b](https://github.com/devflowinc/trieve/commit/686181b15d12c321fd1c6e8ef97712d65463f619))
+* call group count for search_over_groups ([c589fbe](https://github.com/devflowinc/trieve/commit/c589fbe277cb0aaedb6ad92f8b9027eae346529e))
+* csv jsonl worker with incomplete byte reads ([21e5800](https://github.com/devflowinc/trieve/commit/21e580092965cb245f60304f0613f8f0574ee896))
+* dataset tracking id not resetting ([147ca29](https://github.com/devflowinc/trieve/commit/147ca2991c52ea4cbabb1086d19e7a4a7de359ca))
+* file upload tag_set ternary was reversed ([069b273](https://github.com/devflowinc/trieve/commit/069b273144463ce7fac61c5c19a4f707da4e9de8))
+* fix payload so that it works with public page ([dcb4874](https://github.com/devflowinc/trieve/commit/dcb48748f8c1d63a17a81b9c0c7f8fa0ab53d056))
+* fix rag top score scoring ([1842484](https://github.com/devflowinc/trieve/commit/18424840594e882bcd230bb2923e52bebd19e84d))
+* fix vertical scroll in search component ([49bf9ca](https://github.com/devflowinc/trieve/commit/49bf9ca99e986bcf05e20d4d52ab97bd08c658b5))
+* include additional routes on public page API key ([5a899ca](https://github.com/devflowinc/trieve/commit/5a899ca1fed96c2d0acbc8fbf48d7f80793a8cb9))
+* missing generate scope on routes ([44e2314](https://github.com/devflowinc/trieve/commit/44e2314ddc188c1c039ff4edac2132494260ecc3))
+* mobile tabs for demo page horizontally scroll now ([19f4e8e](https://github.com/devflowinc/trieve/commit/19f4e8e9070f01b93b861d64db117cee3aeaf681))
+* page html template when singleProductOptions is undefined ([c44be5e](https://github.com/devflowinc/trieve/commit/c44be5e5b6b7227b91f8a8b44a2fb9747ef20ea4))
+* patch renderToDiv copy / paste section ([914a635](https://github.com/devflowinc/trieve/commit/914a6358f476ec7d1e432c2b031d162048df8d67))
+* public page tooltip text ([07191b4](https://github.com/devflowinc/trieve/commit/07191b48e1df114237f7c57b0d2104aa55c13729))
+* remove unwrap error parsing uuid ([6d662fe](https://github.com/devflowinc/trieve/commit/6d662fe7d4fc584f695383b3b7a13aea7f35cad3))
+* removed the string "hidden" from all react code to stop tailwind ([d84a9bc](https://github.com/devflowinc/trieve/commit/d84a9bcbee7a977b4ccbe70d91a8c41d3232e475))
+* revert rag top score inclusion ([e3b9d8c](https://github.com/devflowinc/trieve/commit/e3b9d8c1bbe1634f7df5616364f7672aba983372))
+* styling with floating button z-index on public page html ([a82b949](https://github.com/devflowinc/trieve/commit/a82b949803e12130d58456b2d7824882b924baad))
+* trieve-fern-adapter workflow ([cf7c198](https://github.com/devflowinc/trieve/commit/cf7c198ee9a4ace48b2db4596fb89295ce32e768))
+* ts-sdk default behavior with omitCredentials includes them ([a7f7919](https://github.com/devflowinc/trieve/commit/a7f79190039a1d84a93b008aeee90cde297942ec))
+* use my regex license to allow placeholders in route perms ([90fe0a1](https://github.com/devflowinc/trieve/commit/90fe0a193694584230ca559341038b84c785a0e1))
+* youtube crawl options not saving ([bcbb1ff](https://github.com/devflowinc/trieve/commit/bcbb1ff4561eae368e1dc16fc060d5bb5016d37b))
+
+
+### Other
+
+* add YOUTUBE_API_KEY to deployment guides ([74929fb](https://github.com/devflowinc/trieve/commit/74929fb340bcfe678277d2cea4ca193e5f66a074))
+* adds condition to prevent trieve-fern-adapter workflow running when merging the bump pr ([f1cbac6](https://github.com/devflowinc/trieve/commit/f1cbac64855f82eb39cc3c58eccbc26efff47c33))
+* bump trieve-fern-adapter version to 0.0.5 ([59c2991](https://github.com/devflowinc/trieve/commit/59c2991a66d22227330774e060ae137b1b966498))
+
+
+### Docs
+
+* add docs for how to use CLI ([856dbb2](https://github.com/devflowinc/trieve/commit/856dbb2473566e21633194a309767e617b785412))
+
 ## [0.13.0](https://github.com/devflowinc/trieve/compare/v0.12.1...v0.13.0) (2024-12-06)
 
 
