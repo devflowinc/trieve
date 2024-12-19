@@ -1,0 +1,31 @@
+[package]
+name = "batch-etl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+utoipa-redoc = { version = "5.0.0", features = ["actix-web"] }
+utoipa-actix-web = "0.1.2"
+actix-web = "4.9.0"
+bb8-redis = "0.18.0"
+chm = "0.1.17"
+clickhouse = { version = "0.13.1", features = ["time"] }
+dotenvy = "0.15.7"
+lazy_static = "1.5.0"
+openai_dive = "0.7.0"
+redis = { version = "0.27.6", features = ["tokio-rustls-comp", "aio"] }
+serde = "1.0.216"
+serde_json = "1.0.133"
+tokio = "1.42.0"
+utoipa = { version = "5.0.0", features = ["actix_extras", "uuid", "time"] }
+env_logger = "0.11.5"
+log = "0.4.22"
+uuid = { version = "1", features = ["v4"] }
+derive_more = { version = "1.0.0", features = ["display"] }
+time = "0.3.37"
+rust-s3 = "0.35.1"
+reqwest = "0.12.9"
+
+[features]
+default = []
+runtime-env = []
