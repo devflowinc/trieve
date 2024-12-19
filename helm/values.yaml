@@ -39,6 +39,12 @@ containers:
   csv_jsonl_worker:
     tag: latest
     resources: {}
+  pagefind_worker:
+    tag: latest
+    resources: {}
+  video_worker:
+    tag: latest
+    resources: {}
   search:
     tag: latest
     resources: {}
