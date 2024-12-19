@@ -18,6 +18,12 @@ export default function Home() {
   const problemLink = import.meta.env.VITE_PROBLEM_LINK;
   const useGroupSearch = import.meta.env.VITE_USE_GROUP_SEARCH == "true";
   const usePagefind = import.meta.env.VITE_USE_PAGEFIND == "true";
+  const showFloatingButton = import.meta.env.VITE_SHOW_FLOATING_BTN == "true";
+  const floatingButtonPosition = import.meta.env.VITE_FLOATING_BTN_POSITION;
+  const floatingSearchIconPosition = import.meta.env
+    .VITE_FLOATING_SEARCH_ICON_POSITION;
+  const showFloatingSearchIcon =
+    import.meta.env.VITE_SHOW_FLOATING_SEARCH_ICON == "true";
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
@@ -27,8 +33,9 @@ export default function Home() {
   return (
     <>
       <div
-        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
-          }`}
+        className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${
+          theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
+        }`}
       >
         <div className="absolute top-6 right-6">
           <ul>
@@ -143,6 +150,10 @@ export default function Home() {
                 use_autocomplete: false,
                 search_type: "fulltext",
               }}
+              floatingButtonPosition={floatingButtonPosition}
+              showFloatingButton={showFloatingButton}
+              floatingSearchIconPosition={floatingSearchIconPosition}
+              showFloatingSearchIcon={showFloatingSearchIcon}
             />
           </>
         ) : (
