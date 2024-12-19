@@ -19,8 +19,9 @@ import {
   groupSearchWithTrieve,
   searchWithPagefind,
   searchWithTrieve,
-  getPagefindIndex
+  getPagefindIndex,
 } from "../trieve";
+import { FileContextProvider } from "./file-context";
 
 export const ALL_TAG = {
   tag: "all",
@@ -41,7 +42,7 @@ type customAutoCompleteAddOn = {
 export type PagefindApi = any;
 
 export type currencyPosition = "before" | "after";
-export type ModalTypes = "ecommerce" | "docs";
+export type ModalTypes = "ecommerce" | "docs" | "pdf";
 export type SearchModes = "chat" | "search";
 export type searchOptions = simpleSearchReqPayload & customAutoCompleteAddOn;
 
@@ -214,7 +215,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all"
+    props.tags?.find((t) => t.selected)?.tag || "all",
   );
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
 
@@ -257,13 +258,12 @@ const ModalProvider = ({
 
         setResults(Array.from(groupMap.values()));
         setRequestID(results.requestID);
-      } else if (props.useGroupSearch && props.usePagefind) {
-
+      } else if (props.useGroupSearch && props.pagefindOptions?.usePagefind) {
         const results = await groupSearchWithPagefind(
           pagefind,
           query,
           props.datasetId,
-          currentTag !== "all" ? currentTag : undefined
+          currentTag !== "all" ? currentTag : undefined,
         );
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
@@ -275,13 +275,12 @@ const ModalProvider = ({
           }
         });
         setResults(Array.from(groupMap.values()));
-
-      } else if (!props.useGroupSearch && props.usePagefind) {
+      } else if (!props.useGroupSearch && props.pagefindOptions?.usePagefind) {
         const results = await searchWithPagefind(
           pagefind,
           query,
           props.datasetId,
-          currentTag !== "all" ? currentTag : undefined
+          currentTag !== "all" ? currentTag : undefined,
         );
         setResults(results);
       } else {
@@ -318,7 +317,7 @@ const ModalProvider = ({
         const filterCounts = await countChunksWithPagefind(
           pagefind,
           query,
-          props.tags
+          props.tags,
         );
         setTagCounts(filterCounts);
       } else {
@@ -330,8 +329,8 @@ const ModalProvider = ({
                 trieve: trieve,
                 abortController,
                 ...(tag.tag !== "all" && { tag: tag.tag }),
-              })
-            )
+              }),
+            ),
           );
           setTagCounts(numberOfRecords);
         } catch (e) {
@@ -354,15 +353,12 @@ const ModalProvider = ({
   }, [onLoadProps]);
 
   useEffect(() => {
-    if (props.usePagefind) {
-
-      getPagefindIndex(trieve).then((pagefind_base_url) => {
-        import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
-          setPagefind(pagefind)
-          pagefind.filters().then(() => {
-          })
-        });
-      })
+    if (props.pagefindOptions?.usePagefind) {
+      const pagefind_base_url = `${props?.pagefindOptions.cdnBaseUrl}/${props.datasetId}`;
+      import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
+        setPagefind(pagefind);
+        pagefind.filters().then(() => {});
+      });
     }
   }, []);
 
@@ -446,7 +442,7 @@ const ModalProvider = ({
         tagCounts,
       }}
     >
-      {children}
+      <FileContextProvider>{children}</FileContextProvider>
     </ModalContext.Provider>
   );
 };

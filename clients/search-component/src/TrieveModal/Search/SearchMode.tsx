@@ -8,9 +8,11 @@ import {
   ChunkWithHighlights,
   GroupChunk,
   isChunkWithHighlights,
+  isPdfChunk,
 } from "../../utils/types";
 import { ProductItem } from "./ProductItem";
 import { ProductGroupItem } from "./ProductGroupItem";
+import { PdfItem } from "./PdfItem";
 
 export const SearchMode = () => {
   const {
@@ -33,11 +35,26 @@ export const SearchMode = () => {
 
   const getItemComponent = (
     result: ChunkWithHighlights | GroupChunk[],
-    index: number
+    index: number,
   ) => {
     const isChunk = isChunkWithHighlights(result);
-    const ecommerce = props.type == "ecommerce";
-    if (isChunk && ecommerce) {
+    console.log(result);
+
+    // Target non group pdf search
+    if (isChunk && props.type === "pdf") {
+      if (isPdfChunk(result)) {
+        return (
+          <PdfItem
+            item={result}
+            index={index}
+            requestID={requestID}
+            key={result.chunk.id}
+          />
+        );
+      }
+    }
+
+    if (isChunk && props.type === "ecommerce") {
       return (
         <ProductItem
           item={result}
@@ -46,7 +63,7 @@ export const SearchMode = () => {
           key={result.chunk.id}
         />
       );
-    } else if (!isChunk && ecommerce) {
+    } else if (!isChunk && props.type == "ecommerce") {
       return (
         <ProductGroupItem
           key={result[0].group.id}
@@ -93,7 +110,7 @@ export const SearchMode = () => {
   const resultsDisplay = useMemo(() => {
     if (results.length) {
       const comps = results.map((result, index) =>
-        getItemComponent(result, index)
+        getItemComponent(result, index),
       );
       return comps;
     } else {
