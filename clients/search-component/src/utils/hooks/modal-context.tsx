@@ -100,6 +100,8 @@ export type ModalProps = {
     | "top-right"
     | "bottom-left"
     | "bottom-right";
+  floatingSearchIconPosition?: "left" | "right";
+  showFloatingSearchIcon?: boolean;
 };
 
 const defaultProps = {
@@ -136,7 +138,9 @@ const defaultProps = {
     | "top-right"
     | "bottom-left"
     | "bottom-right",
-};
+  floatingSearchIconPosition: "right" as "left" | "right",
+  showFloatingSearchIcon: true,
+}; 
 
 const ModalContext = createContext<{
   props: ModalProps;
@@ -257,7 +261,6 @@ const ModalProvider = ({
         setResults(Array.from(groupMap.values()));
         setRequestID(results.requestID);
       } else if (props.useGroupSearch && props.pagefindOptions?.usePagefind) {
-
         const results = await groupSearchWithPagefind(
           pagefind,
           query,
@@ -274,7 +277,6 @@ const ModalProvider = ({
           }
         });
         setResults(Array.from(groupMap.values()));
-
       } else if (!props.useGroupSearch && props.pagefindOptions?.usePagefind) {
         const results = await searchWithPagefind(
           pagefind,
@@ -355,11 +357,12 @@ const ModalProvider = ({
   useEffect(() => {
     if (props.pagefindOptions?.usePagefind) {
       const pagefind_base_url = `${props?.pagefindOptions.cdnBaseUrl}/${props.datasetId}`;
-      import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
-        setPagefind(pagefind)
-        pagefind.filters().then(() => {
-        })
-      });
+      import(/* @vite-ignore */ `${pagefind_base_url}/pagefind.js`).then(
+        (pagefind) => {
+          setPagefind(pagefind);
+          pagefind.filters().then(() => {});
+        },
+      );
     }
   }, []);
 

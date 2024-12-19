@@ -19,6 +19,10 @@ export default function Home() {
   const useGroupSearch = import.meta.env.VITE_USE_GROUP_SEARCH == "true";
   const usePagefind = import.meta.env.VITE_USE_PAGEFIND == "true";
   const pagefindUrl = import.meta.env.VITE_PAGEFIND_URL;
+  const showFloatingButton = import.meta.env.VITE_SHOW_FLOATING_BTN == "true";
+  const floatingButtonPosition = import.meta.env.VITE_FLOATING_BTN_POSITION;
+  const floatingSearchIconPosition = import.meta.env.VITE_FLOATING_SEARCH_ICON_POSITION;
+  const showFloatingSearchIcon  = import.meta.env.VITE_SHOW_FLOATING_SEARCH_ICON == "true";
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
@@ -148,6 +152,10 @@ export default function Home() {
                 use_autocomplete: false,
                 search_type: "fulltext",
               }}
+              floatingButtonPosition={floatingButtonPosition}
+              showFloatingButton={showFloatingButton}
+              floatingSearchIconPosition={floatingSearchIconPosition}
+              showFloatingSearchIcon={showFloatingSearchIcon}
             />
           </>
         ) : (
