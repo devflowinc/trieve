@@ -186,6 +186,7 @@ minijinja = { version = "2.2.0", features = ["loader", "json"] }
 hallucination-detection = { version = "0.1.5", default-features = false, optional = true }
 broccoli_queue = "0.1.1"
 youtube-transcript = { git = "https://github.com/densumesh/summarizer.git" }
+bytes = "1.9.0"
 
 
 [build-dependencies]
