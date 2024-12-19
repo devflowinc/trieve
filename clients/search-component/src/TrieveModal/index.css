@@ -1265,4 +1265,18 @@ body {
     background-color: var(--tv-prop-brand-color);
     font-family: var(--tv-prop-brand-font-family);
   }
+
+  .floating-search-btn-container {
+    @apply fixed flex flex-row justify-center items-center top-[calc(50%-34px)] bg-zinc-100 w-min z-[999];
+
+    button {
+      @apply flex justify-center items-center rounded-full p-3.5;
+
+      background-color: var(--tv-prop-brand-color);
+
+      .search-icon {
+        @apply text-lg text-white;
+      }
+    }
+  }
 }
