@@ -315,19 +315,27 @@ async fn process_csv_jsonl_file(
 
     let mut columns = vec![];
     let mut line = String::new();
+    let mut bytes: bytes::BytesMut = bytes::BytesMut::new();
     let mut byte_count = 0;
     let mut chunk_req_payloads: Vec<ChunkReqPayload> = vec![];
     while let Some(chunk) = response_data_stream.bytes().next().await {
-        let chunk = chunk.map_err(|err| {
+        let chunk_bytes = chunk.map_err(|err| {
             log::error!("Failed to get chunk from stream: {:?}", err);
             ServiceError::InternalServerError("Failed to get chunk from stream".to_string())
         })?;
-        let chunk = String::from_utf8(chunk.to_vec()).map_err(|err| {
-            log::error!("Failed to convert chunk from stream to string: {:?}", err);
-            ServiceError::InternalServerError(
-                "Failed to convert chunk from stream to string".to_string(),
-            )
-        })?;
+        bytes.extend_from_slice(&chunk_bytes);
+        let chunk = match String::from_utf8(bytes.to_vec()) {
+            Ok(chunk) => {
+                bytes.clear();
+                chunk
+            }
+            Err(_) => {
+                log::info!(
+                    "Failed to convert bytes chunk to utf8, continuing with bytes append..."
+                );
+                continue;
+            }
+        };
 
         byte_count += chunk.len();
 
