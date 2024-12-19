@@ -312,13 +312,6 @@
         %} {% include "search-component-code.html" %} {% endif %}
       </div>
     </main>
-    {% if logged_in %}
-    <a
-      class="dev-back-button"
-      href="{{dashboard_url}}/dataset/{{params.datasetId}}/public-page"
-      >Back To Dashboard</a
-    >
-    {% endif %}
   </body>
 
   <canvas id="canvas"></canvas>

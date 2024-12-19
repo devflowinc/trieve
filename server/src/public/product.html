@@ -112,6 +112,7 @@
         group_size: 1,
         page_size: 8,
       }),
+      credentials: "omit",
     }
   );
   const recommendationsData = await recommendations.json();
@@ -200,6 +201,7 @@
         Authorization: "Bearer " + window.paramsData.apiKey,
         "TR-Dataset": window.paramsData.datasetId,
       },
+      credentials: "omit",
     }
   );
   const group = await getGroupByTrackingIdResp.json();

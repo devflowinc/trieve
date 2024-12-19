@@ -166,7 +166,7 @@ export class TrieveFetchClient {
     }
 
     const response = await fetch(this.baseUrl + updatedPath, {
-      credentials: "include",
+      credentials: "omit",
       method,
       headers: headers,
       body: requestBody ? JSON.stringify(requestBody) : undefined,
