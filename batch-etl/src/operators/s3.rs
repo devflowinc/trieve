@@ -38,7 +38,7 @@ pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
     Ok(*aws_bucket)
 }
 
-pub async fn get_signed_url(bucket: &Bucket, key: &str) -> Result<String, ServiceError> {
+pub async fn get_signed_url(bucket: &Bucket, key: String) -> Result<String, ServiceError> {
     let mut custom_queries: HashMap<String, String> = HashMap::new();
     custom_queries.insert("response-content-disposition".into(), "inline".into());
     custom_queries.insert("response-content-type".into(), "application/pdf".into());
@@ -50,6 +50,40 @@ pub async fn get_signed_url(bucket: &Bucket, key: &str) -> Result<String, Servic
         .map_err(|e| {
             log::error!("Could not get signed url {:?}", e);
             ServiceError::BadRequest("Could not get signed url".to_string())
+        })?;
+
+    Ok(url)
+}
+
+pub async fn upload_to_s3(bucket: &Bucket, key: String, data: &[u8]) -> Result<(), ServiceError> {
+    bucket.put_object(key, data).await.map_err(|e| {
+        log::error!("Failed to upload to S3: {:?}", e);
+        ServiceError::InternalServerError("Failed to upload to S3".to_string())
+    })?;
+
+    Ok(())
+}
+
+pub async fn download_from_s3(bucket: &Bucket, key: String) -> Result<Vec<u8>, ServiceError> {
+    let data = bucket.get_object(key).await.map_err(|e| {
+        log::error!("Failed to download from S3: {:?}", e);
+        ServiceError::InternalServerError("Failed to download from S3".to_string())
+    })?;
+
+    Ok(data.to_vec())
+}
+
+pub async fn get_presigned_put_url(
+    bucket: &Bucket,
+    key: String,
+    expires: u32,
+) -> Result<String, ServiceError> {
+    let url = bucket
+        .presign_put(key, expires, None, None)
+        .await
+        .map_err(|e| {
+            log::error!("Could not get presigned put url: {:?}", e);
+            ServiceError::BadRequest("Could not get presigned put url".to_string())
         })?;
 
     Ok(url)

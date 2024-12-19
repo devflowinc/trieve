@@ -18,14 +18,13 @@ CREATE TABLE IF NOT EXISTS jobs (
     output_id String,
     created_at DateTime,
     updated_at DateTime
-) ENGINE = MergeTree()
+) ENGINE = ReplacingMergeTree(updated_at)
 ORDER BY (schema_id, id)
 PARTITION BY
     (schema_id);
 
 CREATE TABLE IF NOT EXISTS inputs (
     id String,
-    schema_id String,
     created_at DateTime,
     updated_at DateTime
 ) ENGINE = MergeTree()

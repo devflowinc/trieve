@@ -1,4 +1,5 @@
 use clickhouse::Row;
+use openai_dive::v1::resources::batch::BatchStatus;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use utoipa::ToSchema;
@@ -29,13 +30,7 @@ pub struct Schema {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateInputRequest {
-    /// schema id for this input
-    pub schema_id: String,
-    /// Model to use for the input
-    pub model: Option<String>,
-    /// Pass your custom prompt to the system. If none is provided, the system will use the default prompt.
-    pub system_prompt: Option<String>,
-    /// Input to be used to pass into the job, if none is provided, an S3 url will be returned that you can upload your input in the OpenAI batch format to. -- https://platform.openai.com/docs/guides/batch/getting-started?lang=node#1-preparing-your-batch-file
+    /// Input to be used to pass into the job, if none is provided, an S3 url will be returned that you can upload your jsonl file to.
     /// The maximum size of the input is 200MB or 50,000 objects
     pub input: Option<InputType>,
 }
@@ -55,8 +50,6 @@ pub enum InputType {
 pub struct Input {
     /// Unique identifier of the input
     pub id: String,
-    /// id of the schema.
-    pub schema_id: String,
     /// Created at timestamp
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
@@ -79,6 +72,12 @@ pub struct CreateJobRequest {
     pub input_id: String,
     /// id of the schema.
     pub schema_id: String,
+    /// Model to use for the input
+    pub model: Option<String>,
+    /// Max tokens to generate
+    pub max_tokens: Option<u32>,
+    /// Pass your custom prompt to the system. If none is provided, the system will use the default prompt.
+    pub system_prompt: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row, Clone)]
@@ -103,18 +102,46 @@ pub struct Job {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum JobStatus {
-    /// Job is created
-    #[serde(rename = "created")]
-    Created,
-    /// Job is processing
-    #[serde(rename = "processing")]
-    Processing,
-    /// Job is completed
-    #[serde(rename = "completed")]
-    Completed,
-    /// Job is failed
-    #[serde(rename = "failed")]
+    /// The job is being validatated
+    Validating,
+    /// The job has failed
     Failed,
+    /// The job is in progress
+    InProgress,
+    /// The job is finalizing
+    Finalizing,
+    /// The job has completed
+    Completed,
+    /// The job has expired
+    Expired,
+    /// The job is being cancelled
+    Cancelling,
+    /// The job has been cancelled
+    Cancelled,
+}
+
+impl From<BatchStatus> for JobStatus {
+    fn from(status: BatchStatus) -> Self {
+        match status {
+            BatchStatus::Validating => JobStatus::Validating,
+            BatchStatus::Failed => JobStatus::Failed,
+            BatchStatus::InProgress => JobStatus::InProgress,
+            BatchStatus::Finalizing => JobStatus::Finalizing,
+            BatchStatus::Completed => JobStatus::Completed,
+            BatchStatus::Expired => JobStatus::Expired,
+            BatchStatus::Cancelling => JobStatus::Cancelling,
+            BatchStatus::Cancelled => JobStatus::Cancelled,
+        }
+    }
+}
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct OpenAIBatchInput {
+    pub custom_id: String,
+    pub method: String,
+    pub url: String,
+    pub body: serde_json::Value,
+    pub max_tokens: Option<u32>,
 }
