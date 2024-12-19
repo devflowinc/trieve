@@ -99,7 +99,7 @@ body {
     }
 
     .no-results {
-      @apply text-sm text-center my-8 flex flex-col gap-2;
+      @apply text-sm text-center my-8 flex flex-col gap-2 col-span-full;
 
       > p.no-results-text {
         @apply font-medium;

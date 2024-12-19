@@ -3928,6 +3928,50 @@
         ]
       }
     },
+    "/api/dataset/pagefind": {
+      "put": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Create Pagefind Index for Dataset",
+        "description": "Uses pagefind to index the dataset and store the result into a CDN for retrieval. The auth'ed\nuser must be an admin of the organization to create a pagefind index for a dataset.",
+        "operationId": "create_pagefind_index_for_dataset",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Dataset indexed successfully"
+          },
+          "400": {
+            "description": "Service error relating to creating the index",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/dataset/tracking_id/{tracking_id}": {
       "get": {
         "tags": [
@@ -10053,7 +10097,9 @@
           "csv_jsonl_processing_failed",
           "csv_jsonl_processing_checkpoint",
           "csv_jsonl_processing_completed",
-          "video_uploaded"
+          "video_uploaded",
+          "pagefind_indexing_started",
+          "pagefind_indexing_finished"
         ]
       },
       "EventTypes": {
@@ -12668,6 +12714,14 @@
           "dataset_id": {
             "type": "string",
             "format": "uuid"
+          },
+          "group_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
           },
           "image_urls": {
             "type": "array",

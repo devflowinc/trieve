@@ -1245,7 +1245,7 @@ export type EventReturn = {
     page_count: number;
 };
 
-export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started' | 'csv_jsonl_processing_failed' | 'csv_jsonl_processing_checkpoint' | 'csv_jsonl_processing_completed' | 'video_uploaded';
+export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started' | 'csv_jsonl_processing_failed' | 'csv_jsonl_processing_checkpoint' | 'csv_jsonl_processing_completed' | 'video_uploaded' | 'pagefind_indexing_started' | 'pagefind_indexing_finished';
 
 export type EventTypes = {
     /**
@@ -2158,6 +2158,7 @@ export type PublicPageTheme = 'light' | 'dark';
 export type QdrantChunkMetadata = {
     chunk_html?: (string) | null;
     dataset_id: string;
+    group_ids?: Array<(string)> | null;
     image_urls?: Array<(string)> | null;
     link?: (string) | null;
     location?: ((GeoInfo) | null);
@@ -4266,6 +4267,15 @@ export type GetDatasetsFromOrganizationData = {
 
 export type GetDatasetsFromOrganizationResponse = (Array<DatasetAndUsage>);
 
+export type CreatePagefindIndexForDatasetData = {
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type CreatePagefindIndexForDatasetResponse = (void);
+
 export type GetDatasetByTrackingIdData = {
     /**
      * The tracking id of the dataset you want to retrieve.
@@ -5723,6 +5733,21 @@ export type $OpenApiTs = {
                  * Could not find organization
                  */
                 404: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/dataset/pagefind': {
+        put: {
+            req: CreatePagefindIndexForDatasetData;
+            res: {
+                /**
+                 * Dataset indexed successfully
+                 */
+                204: void;
+                /**
+                 * Service error relating to creating the index
+                 */
+                400: ErrorResponseBody;
             };
         };
     };

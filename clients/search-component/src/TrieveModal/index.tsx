@@ -41,14 +41,12 @@ const Modal = () => {
         }
 
         if (chatOuterWrapper) {
-          console.log("here1");
           (chatOuterWrapper as HTMLElement).style.maxHeight =
             `calc(${viewportHeight}px - ${
               props.type == "ecommerce" ? "220px" : "175px"
             })`;
         }
       } else {
-        console.log("here");
         if (chatOuterWrapper) {
           (chatOuterWrapper as HTMLElement).style.maxHeight = `calc(60vh - ${
             props.type == "ecommerce" ? "220px" : "200px"
