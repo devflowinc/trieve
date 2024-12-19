@@ -8,21 +8,36 @@ const FileContext = createContext<{
 
 export const FileContextProvider = (props: { children: ReactNode }) => {
   const [files, setFiles] = useState<Record<string, string>>({});
-  const [page] = useState(1);
   const state = useModalState();
 
   useEffect(() => {
     const getFiles = async () => {
-      const files = state.trieveSDK.trieve.fetch(
-        "/api/dataset/files/{dataset_id}/{page}",
-        "get",
-        {
-          page: 1,
-          datasetId: state.props.datasetId,
-        },
-      );
+      const page = 1;
+      let done = false;
+      const fileMapResult: Record<string, string> = {};
+      while (!done) {
+        const files = await state.trieveSDK.trieve.fetch(
+          "/api/dataset/files/{dataset_id}/{page}",
+          "get",
+          {
+            page,
+            datasetId: state.props.datasetId,
+          },
+        );
+
+        if (files.length) {
+          files.reduce((acc, file) => {
+            acc[file.file_name] = file.id;
+            return acc;
+          }, fileMapResult);
+        } else {
+          done = true;
+        }
+      }
+
+      setFiles(fileMapResult);
     };
-    getFiles();
+    void getFiles();
   }, []);
 
   return (
