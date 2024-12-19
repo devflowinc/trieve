@@ -2089,6 +2089,7 @@ export type PublicPageParameters = {
     type?: (string) | null;
     useGroupSearch?: (boolean) | null;
     zIndex?: (number) | null;
+    videoLink?: (string) | null;
 };
 
 export type PublicPageSearchOptions = {

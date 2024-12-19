@@ -3230,6 +3230,9 @@ impl DatasetConfigurationDTO {
                     z_index: page_parameters_self
                         .z_index
                         .or(page_parameters_curr.z_index),
+                    video_link: page_parameters_self
+                        .video_link
+                        .or(page_parameters_curr.video_link),
                 }),
             },
             DISABLE_ANALYTICS: self
