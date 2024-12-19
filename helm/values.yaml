@@ -117,6 +117,7 @@ config:
     firecrawlUrl: ""
     dittofeedApiKey: ""
     useSubtrace: false
+    youtubeApiKey: ""
   oidc:
     clientSecret: "YllmLDTy67MbsUBrUAWvQ7z9aMq0QcKx"
     clientId: "trieve"
