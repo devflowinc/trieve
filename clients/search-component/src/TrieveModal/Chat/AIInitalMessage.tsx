@@ -51,7 +51,7 @@ export const AIInitialMessage = () => {
               .split(" ")
               .slice(0, 3)
               .join(" ")}
-          </span>
+          </span>{" "}
           {(currentGroup?.name || props.brandName || "Trieve")
             .replace(/<[^>]*>/g, "")
             .split(" ")

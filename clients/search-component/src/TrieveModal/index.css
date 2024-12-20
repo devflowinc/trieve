@@ -350,6 +350,14 @@ body {
           padding: 1rem;
           scroll-snap-align: start;
           box-sizing: border-box;
+
+          a {
+            @apply rounded px-2 text-xs py-1 bg-zinc-200/50;
+
+            &:hover {
+              background-color: var(--tv-zinc-200);
+            }
+          }
         }
 
         .carousel-item-hidden {
@@ -751,7 +759,7 @@ body {
     }
 
     .item {
-      @apply select-none cursor-pointer py-2 text-left flex items-start gap-2 w-full text-sm outline-none rounded-lg px-5 overflow-ellipsis;
+      @apply select-none cursor-pointer py-2 text-left flex items-start gap-2 w-full h-full text-sm outline-none rounded-lg px-5 overflow-ellipsis;
 
       background-color: var(--tv-zinc-50);
 
@@ -1004,11 +1012,24 @@ body {
           @apply flex flex-wrap gap-2 mt-4;
 
           a {
-            color: var(--tv-zinc-300);
+            color: var(--tv-zinc-200);
             background-color: var(--tv-zinc-700);
 
             &:hover {
               color: var(--tv-zinc-50);
+              background-color: var(--tv-zinc-800);
+            }
+          }
+        }
+
+        .carousel-item {
+          a {
+            color: var(--tv-zinc-200);
+            background-color: var(--tv-zinc-700);
+
+            &:hover {
+              color: var(--tv-zinc-50);
+              background-color: var(--tv-zinc-800);
             }
           }
         }

@@ -80,6 +80,8 @@
         --brand-color: #a33eb5;
         --brand-color: {{params.brandColor}};
         --hero-bg-color: {{params.heroPattern.backgroundColor}};
+        --hero-fg-color: {{params.heroPattern.foregroundColor}};
+        --theme-text-color: {{'white' if (params.theme == 'dark') else 'black'}};
       }
 
       *,
@@ -96,6 +98,8 @@
 
       nav {
         border-color: var(--brand-color);
+        background-color: var(--hero-bg-color);
+        color: var(--theme-text-color);
 
         a:hover {
           color: var(--brand-color);
@@ -223,11 +227,13 @@
         border: 1px solid var(--brand-color);
         border-radius: 0rem 0.25rem 0.25rem 0.25rem;
         padding: 0.9rem;
-        background-color: white;
+        background-color: var(--hero-bg-color);
+        color: var(--theme-text-color);
       }
 
       pre {
         padding: 0rem;
+        border-radius: 0.25rem;
       }
 
       #tab-buttons {
@@ -238,11 +244,11 @@
       }
 
       .tab-button {
-        background-color: #ffffff;
+        background-color: var(--hero-bg-color);
         border-radius: 0.25rem 0.25rem 0rem 0rem;
         border: 1px solid var(--brand-color);
         border-bottom-color: transparent;
-        color: black;
+        color: var(--theme-text-color);
         padding: 0.4rem;
         padding-top: 0.5rem;
         font-size: 0.9rem;
@@ -281,8 +287,12 @@
         color: var(--brand-color);
 
         &:hover {
-          background-color: #F3F4F6;
+          background-color: transparent;
         }
+      }
+
+      button.text-brand-color:hover {
+        background-color: color-mix(in srgb, white, black 20%);
       }
 
       .bg-brand-color {
