@@ -19,6 +19,7 @@ import {
   groupSearchWithTrieve,
   searchWithPagefind,
   searchWithTrieve,
+  getPagefindIndex
 } from "../trieve";
 
 export const ALL_TAG = {
@@ -77,7 +78,7 @@ export type ModalProps = {
     icon?: () => JSX.Element;
   }[];
   defaultSearchMode?: SearchModes;
-  pagefindOptions?: PagefindOptions;
+  usePagefind?: boolean;
   type?: ModalTypes;
   useGroupSearch?: boolean;
   allowSwitchingModes?: boolean;
@@ -234,7 +235,7 @@ const ModalProvider = ({
 
     try {
       setLoadingResults(true);
-      if (props.useGroupSearch && !props.pagefindOptions?.usePagefind) {
+      if (props.useGroupSearch && !props.usePagefind) {
         const results = await groupSearchWithTrieve({
           query: query,
           searchOptions: props.searchOptions,
@@ -256,7 +257,7 @@ const ModalProvider = ({
 
         setResults(Array.from(groupMap.values()));
         setRequestID(results.requestID);
-      } else if (props.useGroupSearch && props.pagefindOptions?.usePagefind) {
+      } else if (props.useGroupSearch && props.usePagefind) {
 
         const results = await groupSearchWithPagefind(
           pagefind,
@@ -275,7 +276,7 @@ const ModalProvider = ({
         });
         setResults(Array.from(groupMap.values()));
 
-      } else if (!props.useGroupSearch && props.pagefindOptions?.usePagefind) {
+      } else if (!props.useGroupSearch && props.usePagefind) {
         const results = await searchWithPagefind(
           pagefind,
           query,
@@ -313,7 +314,7 @@ const ModalProvider = ({
       return;
     }
     if (props.tags?.length) {
-      if (props.pagefindOptions?.usePagefind) {
+      if (props.usePagefind) {
         const filterCounts = await countChunksWithPagefind(
           pagefind,
           query,
@@ -353,13 +354,15 @@ const ModalProvider = ({
   }, [onLoadProps]);
 
   useEffect(() => {
-    if (props.pagefindOptions?.usePagefind) {
-      const pagefind_base_url = `${props?.pagefindOptions.cdnBaseUrl}/${props.datasetId}`;
-      import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
-        setPagefind(pagefind)
-        pagefind.filters().then(() => {
-        })
-      });
+    if (props.usePagefind) {
+
+      getPagefindIndex(trieve).then((pagefind_base_url) => {
+        import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
+          setPagefind(pagefind)
+          pagefind.filters().then(() => {
+          })
+        });
+      })
     }
   }, []);
 

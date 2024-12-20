@@ -248,6 +248,8 @@ pub struct PublicPageParameters {
     pub z_index: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hide_drawn_text: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub use_pagefind: Option<bool>
 }
 
 #[utoipa::path(

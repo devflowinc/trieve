@@ -16,6 +16,7 @@ import {
   GetAllTagsReqPayload,
   GetAllTagsResponse,
   GetEventsData,
+  GetPagefindIndexResponse,
   UpdateDatasetReqPayload,
 } from "../../types.gen";
 
@@ -283,3 +284,20 @@ export async function deleteDataset(
     signal
   ) as Promise<void>;
 }
+
+export async function getPagefindUrl(
+  /** @hidden */
+  this: TrieveSDK,
+  datasetId: string,
+  signal?: AbortSignal
+): Promise<GetPagefindIndexResponse> {
+  return this.trieve.fetch(
+    "/api/dataset/pagefind",
+    "get",
+    {
+      datasetId,
+    },
+    signal
+  ) as Promise<GetPagefindIndexResponse>;
+}
+

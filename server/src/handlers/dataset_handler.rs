@@ -564,14 +564,18 @@ pub async fn get_pagefind_index_for_dataset(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
 
+    let s3_bucket_name = std::env::var("S3_BUCKET_PAGEFIND")
+        .unwrap_or(get_env!("S3_BUCKET", "S3_BUCKET should be set").to_string());
+
     if !dataset_config.PAGEFIND_ENABLED {
         return Err(ServiceError::BadRequest(format!("Dataset {:?} does not have pagefind enabled, please set PAGEFIND_ENABLED to true in dataset settings", dataset_id)));
     }
 
     Ok(HttpResponse::Ok().json(GetPagefindIndexResponse {
         url: format!(
-            "{:}/{:}",
+            "{:}/{:}/pagefind/{:}",
             get_env!("PAGEFIND_CDN_BASE_URL", "PAGEFIND_CDN_BASE_URL must be set"),
+            s3_bucket_name,
             dataset_id
         ),
     }))

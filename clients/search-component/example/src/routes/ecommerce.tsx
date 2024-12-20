@@ -20,7 +20,6 @@ export default function ECommerce() {
   const showFloatingButton = import.meta.env.VITE_SHOW_FLOATING_BTN == "true";
   const floatingButtonPosition = import.meta.env.VITE_FLOATING_BTN_POSITION;
   const usePagefind = import.meta.env.VITE_USE_PAGEFIND == "true";
-  const pagefindUrl = import.meta.env.VITE_PAGEFIND_URL;
 
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
@@ -88,10 +87,7 @@ export default function ECommerce() {
                   mode: "chat",
                 },
               ]}
-              pagefindOptions={{
-                usePagefind: usePagefind,
-                cdnBaseUrl: pagefindUrl,
-              }}
+              usePagefind={usePagefind}
               defaultSearchQueries={defaultSearchQueries}
               tags={defaultTags}
               floatingButtonPosition={floatingButtonPosition}
