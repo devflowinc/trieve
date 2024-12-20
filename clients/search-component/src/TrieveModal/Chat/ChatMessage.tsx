@@ -87,7 +87,7 @@ export const Message = ({
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
   const { props } = useModalState();
-  
+
   const ecommerceItems = message.additional
     ?.filter(
       (chunk) =>
@@ -184,25 +184,34 @@ export const Message = ({
                             chunk.metadata.page_title) &&
                           chunk.link
                       )
-                      .map((chunk) => [
-                        chunk.metadata.heading ||
-                          chunk.metadata.title ||
-                          chunk.metadata.page_title,
-                        chunk.link,
-                      ])
-                      .filter(
-                        (link, index, array) =>
-                          array.findIndex((item) => item[0] === link[0]) ===
-                            index && link[0]
-                      )
-                      .map((link, index) => (
+                      .map((chunk) => {
+                        return {
+                          title:
+                            chunk.metadata.heading ||
+                            chunk.metadata.title ||
+                            chunk.metadata.page_title,
+                          link: chunk.link,
+                          metadata: chunk.metadata,
+                        };
+                      })
+                      .map((item, index) => (
                         <a
-                          className="source-anchor"
+                          className={`source-anchor${
+                            item.metadata?.yt_preview_src ? " yt-anchor" : ""
+                          }`}
                           key={index}
-                          href={link[1] as string}
+                          href={item.link as string}
                           target="_blank"
                         >
-                          {link[0]}
+                          {item.metadata?.yt_preview_src ? (
+                            <img
+                              className="yt-preview"
+                              src={item.metadata?.yt_preview_src}
+                            />
+                          ) : (
+                            <></>
+                          )}
+                          {item.title}
                         </a>
                       ))}
                   </div>
