@@ -223,7 +223,13 @@ pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub floating_button_position: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub floating_search_icon_position: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub show_floating_button: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_floating_search_icon: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_floating_input: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub button_triggers: Option<Vec<ButtonTrigger>>,
     #[serde(skip_serializing_if = "Option::is_none")]
