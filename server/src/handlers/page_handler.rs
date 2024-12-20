@@ -249,7 +249,7 @@ pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hide_drawn_text: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub use_pagefind: Option<bool>
+    pub use_pagefind: Option<bool>,
 }
 
 #[utoipa::path(
@@ -289,6 +289,9 @@ pub async fn public_page(
     let dashboard_url =
         env::var("ADMIN_DASHBOARD_URL").unwrap_or("https://dashboard.trieve.ai".to_string());
 
+    let search_component_url = std::env::var("SEARCH_COMPONENT_URL")
+        .unwrap_or("https://search-component.trieve.ai/dist".to_string());
+
     if config.PUBLIC_DATASET.enabled {
         let templ = templates.get_template("page.html").unwrap();
 
@@ -319,6 +322,7 @@ pub async fn public_page(
                 logged_in,
                 dashboard_url,
                 background_color,
+                search_component_url,
                 has_hero_pattern => hero_pattern.is_some(),
                 body_style,
                 tabs,

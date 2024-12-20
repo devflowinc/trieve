@@ -8,7 +8,8 @@ use signal_hook::consts::SIGTERM;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use trieve_server::data::models::{
-    self, ChunkBoost, ChunkData, ChunkGroup, ChunkMetadata, DatasetConfiguration, PagefindIndexWorkerMessage, QdrantPayload, WorkerEvent
+    self, ChunkBoost, ChunkData, ChunkGroup, ChunkMetadata, DatasetConfiguration,
+    PagefindIndexWorkerMessage, QdrantPayload, WorkerEvent,
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
@@ -303,9 +304,8 @@ async fn ingestion_worker(
 
                             match response {
                                 Ok(_) => log::info!("Queue'd dataset for pagefind indexing"),
-                                Err(e) => log::error!("Failed to start pagefind indexing {:?}", e)
+                                Err(e) => log::error!("Failed to start pagefind indexing {:?}", e),
                             }
-
                         }
 
                         event_queue

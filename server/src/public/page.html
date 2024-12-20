@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="/static/output.css" />
     <link
       rel="stylesheet"
-      href="https://search-component.trieve.ai/dist/index.css"
+      href="{{ search_component_url | safe }}/dist/index.css"
     />
     <link
       rel="apple-touch-icon"
@@ -305,7 +305,7 @@
     </style>
 
     <script type="module">
-      import {renderToDiv} from 'https://search-component.trieve.ai/dist/vanilla/index.js';
+      import {renderToDiv} from '{{ search_component_url | safe }}/dist/vanilla/index.js';
       const root = document.getElementById('root');
       renderToDiv(root, {
         ... {{params | tojson}}
