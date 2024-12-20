@@ -219,9 +219,9 @@ export const DashboardSidebar = () => {
             <SectionLabel>Dataset Settings</SectionLabel>
             <Link
               isExternal={false}
-              icon={IoOptionsOutline}
-              href={`/dataset/${datasetId()}/options`}
-              label="Dataset Options"
+              icon={AiOutlineCamera}
+              href={`/dataset/${datasetId()}/crawling`}
+              label="Crawling Options"
             />
             <Link
               isExternal={false}
@@ -237,9 +237,9 @@ export const DashboardSidebar = () => {
             />
             <Link
               isExternal={false}
-              icon={AiOutlineCamera}
-              href={`/dataset/${datasetId()}/crawling`}
-              label="Crawling Options"
+              icon={IoOptionsOutline}
+              href={`/dataset/${datasetId()}/options`}
+              label="Dataset Options"
             />
             <Link
               isExternal={false}

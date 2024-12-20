@@ -1018,6 +1018,10 @@ export type DatasetConfigurationDTO = {
      */
     N_RETRIEVALS_TO_INCLUDE?: (number) | null;
     /**
+     * Whether to enable pagefind indexing
+     */
+    PAGEFIND_ENABLED?: (boolean) | null;
+    /**
      * The presence penalty to use
      */
     PRESENCE_PENALTY?: (number) | null;

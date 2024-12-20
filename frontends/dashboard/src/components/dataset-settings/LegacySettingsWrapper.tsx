@@ -89,6 +89,45 @@ export const LegacySettingsWrapper = (props: { page: SettingsPage }) => {
       return;
     }
 
+    if (modifiedFields.PAGEFIND_ENABLED) {
+      void fetch(`${import.meta.env.VITE_API_HOST}/dataset/pagefind`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "TR-Dataset": datasetId,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          dataset_id: datasetContext.dataset()?.dataset.id,
+          server_configuration: modifiedFields,
+        }),
+      }).then((resp) => {
+        if (resp.ok) {
+          createToast({
+            title: "Started Pagefind Index job",
+            type: "info",
+            message: "The index should be created within 5 minutes",
+          });
+          setOriginalConfig(originalServerConfig);
+          return;
+        }
+
+        if (!resp.ok) {
+          let message = "Error Saving Dataset Configuration";
+          if (resp.status === 403) {
+            message =
+              "You must have owner permissions to modify dataset settings";
+          }
+
+          createToast({
+            title: "Error",
+            type: "error",
+            message: message,
+          });
+        }
+      });
+    }
+
     void fetch(`${import.meta.env.VITE_API_HOST}/dataset`, {
       method: "PUT",
       headers: {
