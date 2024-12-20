@@ -129,7 +129,7 @@ pub async fn check_inv_valid(
             ServiceError::InternalServerError("Could not find invitation for user".to_string())
         })?;
 
-    if invitation.email != email {
+    if invitation.email.to_lowercase() != email.to_lowercase() {
         return Err(ServiceError::BadRequest(
             "Email does not match invitation".to_string(),
         ));
