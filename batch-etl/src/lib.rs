@@ -6,6 +6,7 @@ use chm::tools::migrations::{run_pending_migrations, SetupArgs};
 use errors::custom_json_error_handler;
 use routes::{
     input::{create_input, get_input},
+    job::{cancel_job, create_job, get_job, get_job_output},
     schema::{create_schema, get_schema},
 };
 use utoipa::{
@@ -13,6 +14,7 @@ use utoipa::{
     Modify, OpenApi,
 };
 use utoipa_actix_web::AppExt;
+use utoipa_redoc::{Redoc, Servable};
 
 pub mod errors;
 pub mod models;
@@ -67,6 +69,7 @@ pub async fn main() -> std::io::Result<()> {
     tags(
         (name = "Schema", description = "Schema operations. Allow you to interact with Schema."),
         (name = "Job", description = "Job operations. Allow you to interact with Jobs."),
+        (name = "Input", description = "Input operations. Allow you to interact with Inputs."),
     ))]
     struct ApiDoc;
 
@@ -102,7 +105,7 @@ pub async fn main() -> std::io::Result<()> {
         .with_password(args.password.as_ref().unwrap())
         .with_database(args.database.as_ref().unwrap())
         .with_option("async_insert", "1")
-        .with_option("wait_for_async_insert", "0");
+        .with_option("wait_for_async_insert", "1");
 
     let _ = run_pending_migrations(args.clone()).await.map_err(|err| {
         log::error!("Failed to run clickhouse migrations: {:?}", err);
@@ -142,12 +145,17 @@ pub async fn main() -> std::io::Result<()> {
             .service(utoipa_actix_web::scope("/api/input").configure(|config| {
                 config.service(create_input).service(get_input);
             }))
-            // .service(utoipa_actix_web::scope("/api/job").configure(|config| {
-            //     config.service(create_job).service(get_job);
-            // }))
+            .service(utoipa_actix_web::scope("/api/job").configure(|config| {
+                config
+                    .service(create_job)
+                    .service(get_job)
+                    .service(cancel_job)
+                    .service(get_job_output);
+            }))
+            .openapi_service(|api| Redoc::with_url("/redoc", api))
             .into_app()
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("0.0.0.0", 8082))?
     .run()
     .await
 }

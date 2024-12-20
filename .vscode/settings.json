@@ -6,7 +6,8 @@
     "./server/Cargo.toml",
     "./pdf2md/server/Cargo.toml",
     "./pdf2md/cli/Cargo.toml",
-    "./hallucination-detection/Cargo.toml"
+    "./hallucination-detection/Cargo.toml",
+    "./batch-etl/Cargo.toml",
   ],
   "rust-analyzer.showUnlinkedFileNotification": false,
   "rust-analyzer.server.path": "~/.cargo/bin/rust-analyzer",
