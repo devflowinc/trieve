@@ -137,6 +137,41 @@ export const Message = ({
       </a>
     ));
 
+  const youtubeItems = message.additional
+    ?.filter(
+      (chunk) =>
+        (chunk.metadata.heading ||
+          chunk.metadata.title ||
+          chunk.metadata.page_title) &&
+        chunk.link &&
+        chunk.metadata.yt_preview_src
+    )
+    .map((chunk) => {
+      return {
+        title:
+          chunk.metadata.heading ||
+          chunk.metadata.title ||
+          chunk.metadata.page_title,
+        link: chunk.link,
+        metadata: chunk.metadata,
+      };
+    })
+    .map((item, index) => (
+      <a
+        className="source-anchor yt-anchor"
+        key={index}
+        href={item.link as string}
+        target="_blank"
+      >
+        {item.metadata?.yt_preview_src ? (
+          <img className="yt-preview" src={item.metadata?.yt_preview_src} />
+        ) : (
+          <></>
+        )}
+        {item.title}
+      </a>
+    ));
+
   return (
     <div>
       {message.text === "Loading..." ? (
@@ -153,6 +188,11 @@ export const Message = ({
           {message.additional && props.type === "ecommerce" && (
             <div className="additional-image-links">
               <Carousel>{ecommerceItems}</Carousel>
+            </div>
+          )}
+          {youtubeItems && youtubeItems.length > 0 && (
+            <div className="additional-image-links">
+              <Carousel>{youtubeItems}</Carousel>
             </div>
           )}
           {message.text.length > 0 ? (
@@ -181,7 +221,8 @@ export const Message = ({
                           (chunk.metadata.heading ||
                             chunk.metadata.title ||
                             chunk.metadata.page_title) &&
-                          chunk.link
+                          chunk.link &&
+                          !chunk.metadata.yt_preview_src
                       )
                       .map((chunk) => {
                         return {

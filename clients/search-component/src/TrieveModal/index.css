@@ -352,7 +352,11 @@ body {
           box-sizing: border-box;
 
           a {
-            @apply rounded px-2 text-xs py-1 bg-zinc-200/50;
+            @apply rounded px-2 text-xs py-1 bg-zinc-200/50 flex flex-col gap-y-1 h-full;
+
+            &.yt-anchor {
+              @apply text-center;
+            }
 
             &:hover {
               background-color: var(--tv-zinc-200);
@@ -393,6 +397,10 @@ body {
 
         .ecommerce-featured-image-chat {
           @apply mb-1 max-h-48 aspect-auto mx-auto;
+        }
+
+        .yt-preview {
+          @apply h-16 w-28 block mx-auto;
         }
       }
 
@@ -435,6 +443,10 @@ body {
 
         ol {
           @apply list-decimal pl-4 my-4 overflow-hidden;
+        }
+
+        li {
+          @apply my-2;
         }
 
         hr {
