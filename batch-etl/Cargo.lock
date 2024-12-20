@@ -402,6 +402,7 @@ dependencies = [
  "derive_more 1.0.0",
  "dotenvy",
  "env_logger",
+ "jsonl",
  "lazy_static",
  "log",
  "openai_dive",
@@ -1660,6 +1661,17 @@ checksum = "6717b6b5b077764fb5966237269cb3c64edddde4b14ce42647430a78ced9e7b7"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "jsonl"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1abae98f45234fc1980c198798166a80ad6b35eb5b7db4caa7bc72ff919e6b80"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

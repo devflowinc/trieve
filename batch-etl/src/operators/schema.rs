@@ -27,7 +27,7 @@ pub async fn get_schema_query(
     clickhouse_client: &clickhouse::Client,
 ) -> Result<Schema, ServiceError> {
     let schema = clickhouse_client
-        .query("SELECT ? FROM schemas WHERE id = ?")
+        .query("SELECT ?fields FROM schemas WHERE id = ?")
         .bind(schema_id)
         .fetch_one::<Schema>()
         .await

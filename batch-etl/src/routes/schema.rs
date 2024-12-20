@@ -1,4 +1,5 @@
 use actix_web::{get, post, web, HttpResponse};
+use serde_json::to_string;
 use time::OffsetDateTime;
 
 use crate::{
@@ -29,7 +30,7 @@ pub async fn create_schema(
     let schema = Schema {
         id: uuid::Uuid::new_v4().to_string(),
         name: request.name.clone(),
-        schema: request.schema.clone(),
+        schema: to_string(&request.schema.clone()).unwrap(),
         created_at: OffsetDateTime::now_utc(),
         updated_at: OffsetDateTime::now_utc(),
     };

@@ -86,6 +86,22 @@ pub async fn cancel_job(
     Ok(HttpResponse::Ok().json(job))
 }
 
+/// Get Job Output
+///
+/// This endpoint retrieves the output of a job by its id. The output is a S3 signed URL to the data that was processed by the job.
+#[utoipa::path(
+    get,
+    path = "/output/{job_id}",
+    tag = "Job",
+    context_path = "/api",
+    params(
+        ("job_id" = String, Path, description = "The id of the job you want to retrieve the output for."),
+    ),
+    responses(
+        (status = 200, description = "JSON response payload containing the output URL", body = String),
+        (status = 400, description = "Error typically due to deserialization issues", body = ServiceError),
+    ),
+)]
 #[get("/output/{job_id}")]
 pub async fn get_job_output(
     job_id: web::Path<String>,

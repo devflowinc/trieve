@@ -1,5 +1,4 @@
 use clickhouse::Row;
-use openai_dive::v1::resources::batch::BatchStatus;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use utoipa::ToSchema;
@@ -19,7 +18,7 @@ pub struct Schema {
     /// Name of the schema
     pub name: String,
     /// Schema definition in the OpenAI structured outputs format -- https://platform.openai.com/docs/guides/structured-outputs?lang=curl&context=without_parse#how-to-use
-    pub schema: serde_json::Value,
+    pub schema: String,
     /// Created at timestamp
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
@@ -89,11 +88,11 @@ pub struct Job {
     /// id of the schema.
     pub schema_id: String,
     /// Status of the job
-    pub status: JobStatus,
+    pub status: String,
     /// OpenAI batch job id
     pub batch_id: String,
     /// Output of the job
-    pub output_id: Option<String>,
+    pub output_id: String,
     /// Created at timestamp
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
@@ -102,46 +101,10 @@ pub struct Job {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum JobStatus {
-    /// The job is being validatated
-    Validating,
-    /// The job has failed
-    Failed,
-    /// The job is in progress
-    InProgress,
-    /// The job is finalizing
-    Finalizing,
-    /// The job has completed
-    Completed,
-    /// The job has expired
-    Expired,
-    /// The job is being cancelled
-    Cancelling,
-    /// The job has been cancelled
-    Cancelled,
-}
-
-impl From<BatchStatus> for JobStatus {
-    fn from(status: BatchStatus) -> Self {
-        match status {
-            BatchStatus::Validating => JobStatus::Validating,
-            BatchStatus::Failed => JobStatus::Failed,
-            BatchStatus::InProgress => JobStatus::InProgress,
-            BatchStatus::Finalizing => JobStatus::Finalizing,
-            BatchStatus::Completed => JobStatus::Completed,
-            BatchStatus::Expired => JobStatus::Expired,
-            BatchStatus::Cancelling => JobStatus::Cancelling,
-            BatchStatus::Cancelled => JobStatus::Cancelled,
-        }
-    }
-}
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct OpenAIBatchInput {
     pub custom_id: String,
     pub method: String,
     pub url: String,
     pub body: serde_json::Value,
-    pub max_tokens: Option<u32>,
 }

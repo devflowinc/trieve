@@ -1,7 +1,7 @@
 use crate::{
     errors::ServiceError,
     get_env,
-    models::{CreateJobRequest, Job, JobStatus, OpenAIBatchInput, Schema},
+    models::{CreateJobRequest, Job, OpenAIBatchInput, Schema},
 };
 use openai_dive::v1::resources::{batch::Batch, shared::FileUpload};
 use openai_dive::v1::resources::{
@@ -16,7 +16,6 @@ use openai_dive::v1::resources::{
     },
 };
 use openai_dive::v1::{api::Client, resources::shared::FileUploadBytes};
-use serde_json::to_string;
 use time::OffsetDateTime;
 
 use super::{
@@ -50,9 +49,14 @@ fn objects_to_jsonl(
     schema: Schema,
     request: &CreateJobRequest,
 ) -> Result<Vec<u8>, ServiceError> {
+    let json_schema: serde_json::Value = serde_json::from_str(&schema.schema).map_err(|err| {
+        log::error!("Failed to parse JSON schema: {:?}", err);
+        ServiceError::InternalServerError("Failed to parse JSON schema".to_string())
+    })?;
+
     let response_format = ChatCompletionResponseFormat::JsonSchema(
         JsonSchemaBuilder::default()
-            .schema(schema.schema.clone())
+            .schema(json_schema.clone())
             .strict(true)
             .name(schema.name.clone())
             .build()
@@ -62,53 +66,51 @@ fn objects_to_jsonl(
             })?,
     );
 
-    let input_jsonl = objects
-        .iter()
-        .enumerate()
-        .map(|(i, obj)| {
-            let messages = vec![
-                ChatMessage::System {
-                    content: ChatMessageContent::Text(
-                        request
-                            .system_prompt
-                            .clone()
-                            .unwrap_or(ETL_SYSTEM_PROMPT.to_string()),
-                    ),
-                    name: None,
-                },
-                ChatMessage::User {
-                    content: ChatMessageContent::Text(obj.to_string()),
-                    name: None,
-                },
-            ];
+    let mut buf = Vec::new();
 
-            let body = ChatCompletionParameters {
-                model: request
-                    .model
-                    .as_ref()
-                    .unwrap_or(&"gpt-4o-mini".to_string())
-                    .to_string(),
-                messages,
-                response_format: Some(response_format.clone()),
-                ..Default::default()
-            };
+    objects.iter().enumerate().for_each(|(i, obj)| {
+        let buf = &mut buf;
+        let messages = vec![
+            ChatMessage::System {
+                content: ChatMessageContent::Text(
+                    request
+                        .system_prompt
+                        .clone()
+                        .unwrap_or(ETL_SYSTEM_PROMPT.to_string()),
+                ),
+                name: None,
+            },
+            ChatMessage::User {
+                content: ChatMessageContent::Text(obj.to_string()),
+                name: None,
+            },
+        ];
 
-            let body_json: serde_json::Value = serde_json::to_value(&body).unwrap();
+        let body = ChatCompletionParameters {
+            model: request
+                .model
+                .as_ref()
+                .unwrap_or(&"gpt-4o-mini".to_string())
+                .to_string(),
+            messages,
+            response_format: Some(response_format.clone()),
+            max_tokens: request.max_tokens,
+            ..Default::default()
+        };
 
-            let params = OpenAIBatchInput {
-                custom_id: format!("input-{}", i),
-                method: "POST".to_string(),
-                url: "/v1/chat/completions".to_string(),
-                body: body_json,
-                max_tokens: request.max_tokens,
-            };
+        let body_json: serde_json::Value = serde_json::to_value(&body).unwrap();
 
-            to_string(&params).unwrap()
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+        let params = OpenAIBatchInput {
+            custom_id: format!("input-{}", i),
+            method: "POST".to_string(),
+            url: "/v1/chat/completions".to_string(),
+            body: body_json,
+        };
 
-    Ok(input_jsonl.as_bytes().to_owned())
+        jsonl::write(buf, &params).unwrap();
+    });
+
+    Ok(buf)
 }
 
 fn convert_input_to_batch(
@@ -142,14 +144,14 @@ async fn update_job(
 ) -> Result<Job, ServiceError> {
     let mut job = job;
 
-    if <BatchStatus as std::convert::Into<JobStatus>>::into(batch.status.clone()) != job.status {
-        job.status = batch.status.into();
+    if format!("{:?}", batch.status) != job.status {
+        job.status = format!("{:?}", batch.status);
         job.updated_at = OffsetDateTime::now_utc();
     }
 
     if let Some(output_file_id) = batch.output_file_id {
-        if job.output_id.is_none() {
-            job.output_id = Some(output_file_id.clone());
+        if job.output_id.is_empty() {
+            job.output_id = output_file_id.clone();
             job.updated_at = OffsetDateTime::now_utc();
         }
     }
@@ -212,8 +214,8 @@ pub async fn create_job_query(
     let job = Job {
         id: uuid::Uuid::new_v4().to_string(),
         batch_id: result.id,
-        output_id: None,
-        status: BatchStatus::InProgress.into(),
+        output_id: String::new(),
+        status: format!("{:?}", BatchStatus::InProgress),
         created_at: OffsetDateTime::now_utc(),
         updated_at: OffsetDateTime::now_utc(),
         input_id: request.input_id.clone(),
@@ -245,7 +247,7 @@ pub async fn get_job_query(
     let client = get_llm_client();
 
     let job = clickhouse_client
-        .query("SELECT ? FROM jobs WHERE id = ?")
+        .query("SELECT ?fields FROM jobs WHERE id = ?")
         .bind(job_id)
         .fetch_one::<Job>()
         .await
@@ -275,7 +277,7 @@ pub async fn cancel_job_query(
     let client = get_llm_client();
 
     let job = clickhouse_client
-        .query("SELECT ? FROM jobs WHERE id = ?")
+        .query("SELECT ?fields FROM jobs WHERE id = ?")
         .bind(job_id)
         .fetch_one::<Job>()
         .await
@@ -297,9 +299,9 @@ pub async fn cancel_job_query(
         id: job.id,
         input_id: job.input_id,
         schema_id: job.schema_id,
-        status: BatchStatus::Cancelled.into(),
+        status: format!("{:?}", BatchStatus::Cancelled),
         batch_id: job.batch_id,
-        output_id: None,
+        output_id: String::new(),
         created_at: job.created_at,
         updated_at: OffsetDateTime::now_utc(),
     };
@@ -330,7 +332,7 @@ pub async fn get_job_output_query(
     let bucket = get_aws_bucket()?;
 
     let job = clickhouse_client
-        .query("SELECT ? FROM jobs WHERE id = ?")
+        .query("SELECT ?fields FROM jobs WHERE id = ?")
         .bind(job_id)
         .fetch_one::<Job>()
         .await
@@ -350,13 +352,13 @@ pub async fn get_job_output_query(
 
     let updated_job = update_job(job.clone(), batch, clickhouse_client).await?;
 
-    if job.output_id.is_some() {
+    if !job.output_id.is_empty() {
         let url = get_signed_url(&bucket, format!("/outputs/{:?}.jsonl", job.output_id)).await?;
         Ok(url)
-    } else {
+    } else if !updated_job.output_id.is_empty() {
         let file = client
             .files()
-            .retrieve_content(&updated_job.output_id.clone().unwrap())
+            .retrieve_content(&updated_job.output_id.clone())
             .await
             .map_err(|err| {
                 log::error!("Failed to retrieve file: {:?}", err);
@@ -377,5 +379,9 @@ pub async fn get_job_output_query(
         .await?;
 
         Ok(url)
+    } else {
+        Err(ServiceError::BadRequest(
+            "Job has not finished yet".to_string(),
+        ))
     }
 }

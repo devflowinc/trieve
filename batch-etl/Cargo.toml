@@ -25,6 +25,7 @@ derive_more = { version = "1.0.0", features = ["display"] }
 time = "0.3.37"
 rust-s3 = "0.35.1"
 reqwest = "0.12.9"
+jsonl = "4.0.1"
 
 [features]
 default = []
