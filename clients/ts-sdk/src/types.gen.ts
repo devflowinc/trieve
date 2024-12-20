@@ -1692,6 +1692,10 @@ export type GetGroupsForChunksReqPayload = {
     chunk_ids: Array<(string)>;
 };
 
+export type GetPagefindIndexResponse = {
+    url: string;
+};
+
 export type GetTopDatasetsRequestBody = {
     date_range?: ((DateRange) | null);
     type: TopDatasetsRequestTypes;
@@ -2093,6 +2097,7 @@ export type PublicPageParameters = {
     theme?: ((PublicPageTheme) | null);
     type?: (string) | null;
     useGroupSearch?: (boolean) | null;
+    usePagefind?: (boolean) | null;
     zIndex?: (number) | null;
 };
 
@@ -4271,6 +4276,15 @@ export type GetDatasetsFromOrganizationData = {
 
 export type GetDatasetsFromOrganizationResponse = (Array<DatasetAndUsage>);
 
+export type GetPagefindIndexForDatasetData = {
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetPagefindIndexForDatasetResponse = (GetPagefindIndexResponse);
+
 export type CreatePagefindIndexForDatasetData = {
     /**
      * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
@@ -5741,6 +5755,19 @@ export type $OpenApiTs = {
         };
     };
     '/api/dataset/pagefind': {
+        get: {
+            req: GetPagefindIndexForDatasetData;
+            res: {
+                /**
+                 * Dataset indexed successfully
+                 */
+                200: GetPagefindIndexResponse;
+                /**
+                 * Service error relating to creating the index
+                 */
+                400: ErrorResponseBody;
+            };
+        };
         put: {
             req: CreatePagefindIndexForDatasetData;
             res: {

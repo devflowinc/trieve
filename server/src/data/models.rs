@@ -3245,6 +3245,9 @@ impl DatasetConfigurationDTO {
                     hide_drawn_text: page_parameters_self
                         .hide_drawn_text
                         .or(page_parameters_curr.hide_drawn_text),
+                    use_pagefind: page_parameters_self
+                        .use_pagefind
+                        .or(page_parameters_curr.use_pagefind),
                 }),
             },
             DISABLE_ANALYTICS: self

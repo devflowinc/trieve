@@ -482,6 +482,25 @@ const PublicPageControls = () => {
                 class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
+            <div class="flex gap-2">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Use Localsearch
+                </label>
+                <Tooltip
+                  tooltipText="Localsearch uses pagefind to do search on the client side, must enable pagefind in Dataset Settings"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                checked={extraParams.usePagefind || false}
+                type="checkbox"
+                onChange={(e) => {
+                  setExtraParams("usePagefind", e.currentTarget.checked);
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
           </div>
         </div>
         <SearchOptions />

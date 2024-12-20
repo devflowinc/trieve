@@ -848,6 +848,7 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/pagefind")
                                         .route(web::post().to(handlers::dataset_handler::create_pagefind_index_for_dataset))
+                                        .route(web::get().to(handlers::dataset_handler::get_pagefind_index_for_dataset))
                                 )
                                 .service(
                                     web::resource("/batch_create_datasets").route(

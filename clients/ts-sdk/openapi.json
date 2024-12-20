@@ -3929,6 +3929,55 @@
       }
     },
     "/api/dataset/pagefind": {
+      "get": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Get Pagefind Index Url for Dataset",
+        "description": "Returns the root URL for your pagefind index, will error if pagefind is not enabled",
+        "operationId": "get_pagefind_index_for_dataset",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dataset indexed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPagefindIndexResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to creating the index",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      },
       "put": {
         "tags": [
           "Dataset"
@@ -3966,7 +4015,7 @@
         "security": [
           {
             "ApiKey": [
-              "admin"
+              "owner"
             ]
           }
         ]
@@ -11216,6 +11265,17 @@
           }
         }
       },
+      "GetPagefindIndexResponse": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      },
       "GetTopDatasetsRequestBody": {
         "type": "object",
         "required": [
@@ -12510,6 +12570,10 @@
             "nullable": true
           },
           "useGroupSearch": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "usePagefind": {
             "type": "boolean",
             "nullable": true
           },
