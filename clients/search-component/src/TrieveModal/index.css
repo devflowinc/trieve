@@ -1266,17 +1266,38 @@ body {
     font-family: var(--tv-prop-brand-font-family);
   }
 
+  .floating-search-icon {
+    @apply rounded-full p-[0.35rem] flex justify-center items-center;
+
+    background-color: var(--tv-prop-brand-color);
+  }
+
   .floating-search-btn-container {
-    @apply fixed flex flex-row justify-center items-center top-[calc(50%-34px)] bg-zinc-100 w-min z-[999];
+    @apply fixed flex flex-row justify-center items-center top-[calc(50%-34px)] bg-white w-min z-[999] p-2;
+    box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.05);
 
     button {
-      @apply flex justify-center items-center rounded-full p-3.5;
+      @apply flex justify-center items-center rounded-full p-1;
 
       background-color: var(--tv-prop-brand-color);
 
       .search-icon {
         @apply text-lg text-white;
       }
+    }
+  }
+
+  .floating-input-container {
+    @apply fixed bottom-5 flex flex-row items-center justify-start gap-2 w-2/4 p-1 pr-5 h-[55px] rounded-full cursor-pointer transition-colors duration-300 ease-in-out;
+
+    .floating-search-input {
+      @apply p-2 outline-none text-base w-full text-black bg-transparent;
+
+      font-family: var(--tv-prop-brand-font-family);
+    }
+
+    button {
+      @apply flex justify-center items-center gap-4 text-sm;
     }
   }
 }

@@ -2092,6 +2092,7 @@ export type PublicPageParameters = {
     searchOptions?: ((PublicPageSearchOptions) | null);
     showFloatingButton?: (boolean) | null;
     showFloatingSearchIcon?: (boolean) | null;
+    showFloatingInput?: (boolean) | null;
     singleProductOptions?: ((SingleProductOptions) | null);
     suggestedQueries?: (boolean) | null;
     tabMessages?: Array<PublicPageTabMessage> | null;
