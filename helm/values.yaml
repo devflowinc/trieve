@@ -124,6 +124,7 @@ config:
     dittofeedApiKey: ""
     useSubtrace: false
     youtubeApiKey: ""
+    pagefindCdnUrl: ""
   oidc:
     clientSecret: "YllmLDTy67MbsUBrUAWvQ7z9aMq0QcKx"
     clientId: "trieve"
@@ -140,6 +141,12 @@ config:
     apiKey: ""
     baseUrl: https://api.openai.com/v1
   s3:
+    endpoint: ""
+    accessKey: ""
+    secretKey: ""
+    bucket: ""
+    region: ""
+  pagefind_s3:
     endpoint: ""
     accessKey: ""
     secretKey: ""
