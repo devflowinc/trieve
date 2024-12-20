@@ -1,7 +1,7 @@
 import React, { startTransition, useState } from "react";
 import { useModalState } from "../utils/hooks/modal-context";
 
-export const FloatingInputButton = () => {
+export const FloatingSearchInput = () => {
   const { props, setOpen, setMode, query, setQuery } = useModalState();
   const [isFocused, setIsFocused] = React.useState(false);
   const [isHovered, setIsHovered] = useState(false);
