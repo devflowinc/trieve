@@ -2,5 +2,5 @@ apiVersion: v2
 name: trieve-helm
 description: Helm chart expressing Trieve deployment without any dependencies
 type: application
-version: 0.1.18
+version: 0.1.19
 appVersion: "0.12.0"
