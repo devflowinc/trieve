@@ -153,8 +153,6 @@ where
                                         }
                                     });
                                 }
-                            } else {
-                                return Err(ServiceError::Unauthorized.into());
                             }
                         }
                     }
