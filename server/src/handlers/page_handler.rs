@@ -290,7 +290,7 @@ pub async fn public_page(
         env::var("ADMIN_DASHBOARD_URL").unwrap_or("https://dashboard.trieve.ai".to_string());
 
     let search_component_url = std::env::var("SEARCH_COMPONENT_URL")
-        .unwrap_or("https://search-component.trieve.ai/dist".to_string());
+        .unwrap_or("https://search-component.trieve.ai".to_string());
 
     if config.PUBLIC_DATASET.enabled {
         let templ = templates.get_template("page.html").unwrap();
