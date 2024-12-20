@@ -8,7 +8,7 @@ use actix_web::web;
 use murmur3::murmur3_32;
 use openai_dive::v1::resources::embedding::EmbeddingInput;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, io::Cursor, ops::IndexMut};
+use std::{collections::HashMap, io::Cursor, ops::IndexMut, sync::Arc};
 
 use super::parse_operator::convert_html_to_text;
 
@@ -108,21 +108,26 @@ pub async fn get_dense_vector(
     };
 
     web::block(move || {
-        let embeddings_resp_a = ureq::post(&format!(
-            "{}/embeddings?api-version=2023-05-15",
-            embedding_base_url
-        ))
-        .set("Authorization", &format!("Bearer {}", &embedding_api_key))
-        .set("api-key", &embedding_api_key)
-        .set("Content-Type", "application/json")
-        .send_json(serde_json::to_value(parameters).unwrap())
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!(
-                "Could not get embeddings from server: {:?}, {:?}",
-                e,
-                e.to_string()
+        let embeddings_resp_a = ureq::AgentBuilder::new()
+            .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                ServiceError::InternalServerError("Failed to acquire tls connection".to_string())
+            })?))
+            .build()
+            .post(&format!(
+                "{}/embeddings?api-version=2023-05-15",
+                embedding_base_url
             ))
-        })?;
+            .set("Authorization", &format!("Bearer {}", &embedding_api_key))
+            .set("api-key", &embedding_api_key)
+            .set("Content-Type", "application/json")
+            .send_json(serde_json::to_value(parameters).unwrap())
+            .map_err(|e| {
+                ServiceError::InternalServerError(format!(
+                    "Could not get embeddings from server: {:?}, {:?}",
+                    e,
+                    e.to_string()
+                ))
+            })?;
 
         let embeddings_resp = embeddings_resp_a
             .into_json::<DenseEmbedData>()
@@ -207,7 +212,12 @@ pub async fn get_sparse_vector(
     let embed_type_string = embed_type.to_owned();
 
     web::block(move || {
-        let mut sparse_vectors = ureq::post(&embedding_server_call)
+        let mut sparse_vectors = ureq::AgentBuilder::new()
+            .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                ServiceError::InternalServerError("Failed to acquire tls connection".to_string())
+            })?))
+            .build()
+            .post(&embedding_server_call)
             .set("Content-Type", "application/json")
             .set(
                 "Authorization",
@@ -890,7 +900,14 @@ pub async fn cross_encoder(
         if server_origin != default_server_origin {
             // Assume cohere
             let reranker_model_name = dataset_config.RERANKER_MODEL_NAME.clone();
-            let resp = ureq::post(&embedding_server_call)
+            let resp = ureq::AgentBuilder::new()
+                .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                    ServiceError::InternalServerError(
+                        "Failed to acquire tls connection".to_string(),
+                    )
+                })?))
+                .build()
+                .post(&embedding_server_call)
                 .set("Content-Type", "application/json")
                 .set(
                     "Authorization",
@@ -919,7 +936,14 @@ pub async fn cross_encoder(
                 results.index_mut(pair.index).score = pair.relevance_score as f64;
             });
         } else {
-            let resp = ureq::post(&embedding_server_call)
+            let resp = ureq::AgentBuilder::new()
+                .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                    ServiceError::InternalServerError(
+                        "Failed to acquire tls connection".to_string(),
+                    )
+                })?))
+                .build()
+                .post(&embedding_server_call)
                 .set("Content-Type", "application/json")
                 .set(
                     "Authorization",
