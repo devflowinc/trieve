@@ -58,7 +58,6 @@ export const ChatMessage = ({
             )}
             <p
               className="tag"
-              // style mostly transparent brand color
               style={{
                 backgroundColor: props.brandColor
                   ? `${props.brandColor}18`
