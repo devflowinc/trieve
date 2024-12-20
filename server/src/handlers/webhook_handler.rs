@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::str::FromStr;
 
 use crate::data::models::Pool;

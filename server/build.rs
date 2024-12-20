@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::sync::Arc;
 
 #[cfg(feature = "hallucination-detection")]
 #[cfg(feature = "ner")]
@@ -63,7 +64,10 @@ fn download_file<P>(url: String, target_file: &P)
 where
     P: AsRef<Path>,
 {
-    let resp = ureq::get(&url)
+    let resp = ureq::AgentBuilder::new()
+        .tls_connector(Arc::new(native_tls::TlsConnector::new()?))                                                                    
+        .build()
+        .get(&url)
         .timeout(std::time::Duration::from_secs(300))
         .call()
         .unwrap_or_else(|err| panic!("ERROR: Failed to download {}: {:?}", url, err));
