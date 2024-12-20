@@ -45,7 +45,7 @@ export const FloatingSearchInput = () => {
       <input
         type="textarea"
         className="floating-search-input"
-        placeholder="Type here..."
+        placeholder={props.placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => setIsFocused(true)}
