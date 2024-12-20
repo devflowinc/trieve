@@ -3194,9 +3194,18 @@ impl DatasetConfigurationDTO {
                     floating_button_position: page_parameters_self
                         .floating_button_position
                         .or(page_parameters_curr.floating_button_position),
+                    floating_search_icon_position: page_parameters_self
+                        .floating_search_icon_position
+                        .or(page_parameters_curr.floating_search_icon_position),
                     show_floating_button: page_parameters_self
                         .show_floating_button
                         .or(page_parameters_curr.show_floating_button),
+                    show_floating_search_icon: page_parameters_self
+                        .show_floating_search_icon
+                        .or(page_parameters_curr.show_floating_search_icon),
+                    show_floating_input: page_parameters_self
+                        .show_floating_input
+                        .or(page_parameters_curr.show_floating_input),
                     button_triggers: page_parameters_self
                         .button_triggers
                         .or(page_parameters_curr.button_triggers),

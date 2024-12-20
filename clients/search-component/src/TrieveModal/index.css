@@ -1288,7 +1288,7 @@ body {
   }
 
   .floating-input-container {
-    @apply fixed bottom-5 flex flex-row items-center justify-start gap-2 w-2/4 p-1 pr-5 h-[55px] rounded-full cursor-pointer transition-colors duration-300 ease-in-out;
+    @apply z-[999] fixed bottom-5 flex flex-row items-center justify-start gap-2 w-2/4 p-1 pr-5 h-[55px] rounded-full cursor-pointer transition-colors duration-300 ease-in-out;
 
     .floating-search-input {
       @apply p-2 outline-none text-base w-full text-black bg-transparent;
