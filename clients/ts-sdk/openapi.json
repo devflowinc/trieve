@@ -9508,6 +9508,11 @@
             "nullable": true,
             "minimum": 0
           },
+          "PAGEFIND_ENABLED": {
+            "type": "boolean",
+            "description": "Whether to enable pagefind indexing",
+            "nullable": true
+          },
           "PRESENCE_PENALTY": {
             "type": "number",
             "format": "double",

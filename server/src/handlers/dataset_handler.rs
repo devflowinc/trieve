@@ -6,6 +6,7 @@ use crate::{
         PagefindIndexWorkerMessage, Pool, RedisPool, StripePlan,
     },
     errors::ServiceError,
+    get_env,
     middleware::auth_middleware::{verify_admin, verify_owner},
     operators::{
         crawl_operator::{
@@ -494,12 +495,12 @@ pub async fn clear_dataset(
 
     ),
     security(
-        ("ApiKey" = ["admin"]),
+        ("ApiKey" = ["owner"]),
     )
 )]
 pub async fn create_pagefind_index_for_dataset(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    _user: AdminOnly,
+    _user: OwnerOnly,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_id = dataset_org_plan_sub.dataset.id;
@@ -527,6 +528,53 @@ pub async fn create_pagefind_index_for_dataset(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+pub struct GetPagefindIndexResponse {
+    pub url: String,
+}
+
+/// Get Pagefind Index Url for Dataset
+///
+/// Returns the root URL for your pagefind index, will error if pagefind is not enabled
+#[utoipa::path(
+    get,
+    path = "/dataset/pagefind",
+    context_path = "/api",
+    tag = "Dataset",
+    responses(
+        (status = 200, description = "Dataset indexed successfully", body = GetPagefindIndexResponse),
+        (status = 400, description = "Service error relating to creating the index", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn get_pagefind_index_for_dataset(
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: LoggedUser,
+) -> Result<HttpResponse, ServiceError> {
+    let dataset_id = dataset_org_plan_sub.dataset.id;
+
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
+
+    if !dataset_config.PAGEFIND_ENABLED {
+        return Err(ServiceError::BadRequest(format!("Dataset {:?} does not have pagefind enabled, please set PAGEFIND_ENABLED to true in dataset settings", dataset_id)));
+    }
+
+    Ok(HttpResponse::Ok().json(GetPagefindIndexResponse {
+        url: format!(
+            "{:}/{:}",
+            get_env!("PAGEFIND_CDN_BASE_URL", "PAGEFIND_CDN_BASE_URL must be set"),
+            dataset_id
+        ),
+    }))
 }
 
 /// Delete Dataset by Tracking ID

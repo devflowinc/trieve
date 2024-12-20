@@ -8,8 +8,7 @@ use signal_hook::consts::SIGTERM;
 use std::collections::HashMap;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use trieve_server::data::models::{
-    self, ChunkBoost, ChunkData, ChunkGroup, ChunkMetadata, DatasetConfiguration, QdrantPayload,
-    WorkerEvent,
+    self, ChunkBoost, ChunkData, ChunkGroup, ChunkMetadata, DatasetConfiguration, PagefindIndexWorkerMessage, QdrantPayload, WorkerEvent
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
@@ -261,6 +260,53 @@ async fn ingestion_worker(
                 {
                     Ok(chunk_ids) => {
                         log::info!("Uploaded {:} chunks", chunk_ids.len());
+
+                        if dataset_config.PAGEFIND_ENABLED {
+                            let pagefind_worker_message = PagefindIndexWorkerMessage {
+                                dataset_id: payload.dataset_id,
+                                created_at: chrono::Utc::now().naive_utc(),
+                                attempt_number: 0,
+                            };
+
+                            let serialized_message =
+                                serde_json::to_string(&pagefind_worker_message).map_err(|_| {
+                                    ServiceError::InternalServerError(
+                                        "Failed to serialize message".to_string(),
+                                    )
+                                });
+
+                            let maybe_redis = redis_pool
+                                .get()
+                                .await
+                                .map_err(|err| ServiceError::BadRequest(err.to_string()));
+
+                            let response: Result<(), ServiceError> = match (serialized_message.clone(), maybe_redis) {
+                                (Ok(message), Ok(mut redis_conn)) => {
+                                    redis::cmd("lpush")
+                                        .arg("pagefind-index-ingestion")
+                                        .arg(&message)
+                                        .query_async::<_, ()>(&mut *redis_conn)
+                                        .await
+                                        .map_err(|err| ServiceError::BadRequest(err.to_string()))
+                                        .map(|_| ())
+                                },
+                                (Err(serial_error), Ok(_)) => {
+                                    Err(ServiceError::InternalServerError(format!("couldn't get serialized message {:?}", serial_error)))
+                                }
+                                (Ok(_), Err(redis_error)) => {
+                                    Err(ServiceError::InternalServerError(format!("couldn't get redis conn {:?}", redis_error)))
+                                }
+                                (Err(serial_error), Err(redis_error)) => {
+                                    Err(ServiceError::InternalServerError(format!("couldn't get serialize message and couldn't redis conn {:?} {:?}", serial_error, redis_error)))
+                                }
+                            };
+
+                            match response {
+                                Ok(_) => log::info!("Queue'd dataset for pagefind indexing"),
+                                Err(e) => log::error!("Failed to start pagefind indexing {:?}", e)
+                            }
+
+                        }
 
                         event_queue
                             .send(ClickHouseEvent::WorkerEvent(

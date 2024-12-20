@@ -2412,6 +2412,7 @@ pub struct DatasetConfiguration {
     pub MAX_LIMIT: u64,
     pub PUBLIC_DATASET: PublicDatasetOptions,
     pub DISABLE_ANALYTICS: bool,
+    pub PAGEFIND_ENABLED: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -2523,6 +2524,8 @@ pub struct DatasetConfigurationDTO {
     pub PUBLIC_DATASET: Option<PublicDatasetOptions>,
     /// Whether to disable analytics
     pub DISABLE_ANALYTICS: Option<bool>,
+    /// Whether to enable pagefind indexing
+    pub PAGEFIND_ENABLED: Option<bool>,
 }
 
 impl From<DatasetConfigurationDTO> for DatasetConfiguration {
@@ -2566,6 +2569,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
                 .unwrap_or_default()
             },
             DISABLE_ANALYTICS: dto.DISABLE_ANALYTICS.unwrap_or(false),
+            PAGEFIND_ENABLED: dto.PAGEFIND_ENABLED.unwrap_or(false),
         }
     }
 }
@@ -2615,6 +2619,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
                 }),
             }),
             DISABLE_ANALYTICS: Some(config.DISABLE_ANALYTICS),
+            PAGEFIND_ENABLED: Some(config.PAGEFIND_ENABLED),
         }
     }
 }
@@ -2659,6 +2664,7 @@ impl Default for DatasetConfiguration {
                 extra_params: None,
             },
             DISABLE_ANALYTICS: false,
+            PAGEFIND_ENABLED: false,
         }
     }
 }
@@ -2945,6 +2951,11 @@ impl DatasetConfiguration {
                 .unwrap_or(&json!(false))
                 .as_bool()
                 .unwrap_or(false),
+            PAGEFIND_ENABLED: configuration
+                .get("PAGEFIND_ENABLED")
+                .unwrap_or(&json!(false))
+                .as_bool()
+                .unwrap_or(false),
         }
     }
 
@@ -2988,6 +2999,7 @@ impl DatasetConfiguration {
                 "extra_params": extra_params_json
             },
             "DISABLE_ANALYTICS": self.DISABLE_ANALYTICS,
+            "PAGEFIND_ENABLED": self.PAGEFIND_ENABLED,
         })
     }
 }
@@ -3238,6 +3250,9 @@ impl DatasetConfigurationDTO {
             DISABLE_ANALYTICS: self
                 .DISABLE_ANALYTICS
                 .unwrap_or(curr_dataset_config.DISABLE_ANALYTICS),
+            PAGEFIND_ENABLED: self
+                .PAGEFIND_ENABLED
+                .unwrap_or(curr_dataset_config.PAGEFIND_ENABLED),
         }
     }
 }
