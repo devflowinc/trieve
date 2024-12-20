@@ -103,6 +103,7 @@ export type ModalProps = {
     | "bottom-right";
   floatingSearchIconPosition?: "left" | "right";
   showFloatingSearchIcon?: boolean;
+  showFloatingInput?: boolean;
 };
 
 const defaultProps = {
@@ -141,6 +142,7 @@ const defaultProps = {
     | "bottom-right",
   floatingSearchIconPosition: "right" as "left" | "right",
   showFloatingSearchIcon: true,
+  showFloatingInput: true,
 };
 
 const ModalContext = createContext<{

@@ -24,6 +24,7 @@ export default function Home() {
     .VITE_FLOATING_SEARCH_ICON_POSITION;
   const showFloatingSearchIcon =
     import.meta.env.VITE_SHOW_FLOATING_SEARCH_ICON == "true";
+  const showFloatingInput = import.meta.env.VITE_SHOW_FLOATING_INPUT == "true";
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
@@ -151,9 +152,10 @@ export default function Home() {
                 search_type: "fulltext",
               }}
               floatingButtonPosition={floatingButtonPosition}
-              showFloatingButton={showFloatingButton}
               floatingSearchIconPosition={floatingSearchIconPosition}
+              showFloatingButton={showFloatingButton}
               showFloatingSearchIcon={showFloatingSearchIcon}
+              showFloatingInput={showFloatingInput}
             />
           </>
         ) : (

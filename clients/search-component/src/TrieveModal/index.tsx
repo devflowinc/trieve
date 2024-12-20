@@ -16,6 +16,7 @@ import { setClickTriggers } from "../utils/hooks/setClickTriggers";
 import { ChunkGroup } from "trieve-ts-sdk";
 import { FloatingActionButton } from "./FloatingActionButton";
 import { FloatingSearchIcon } from "./FloatingSearchIcon";
+import { FloatingInputButton } from "./FloatingInputButton";
 
 const Modal = () => {
   useKeyboardNavigation();
@@ -174,6 +175,7 @@ const Modal = () => {
       )}
       <FloatingSearchIcon />
       <FloatingActionButton />
+      <FloatingInputButton />
     </>
   );
 };
