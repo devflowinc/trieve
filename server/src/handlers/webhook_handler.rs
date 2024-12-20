@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::data::models::Pool;
 use crate::data::models::RedisPool;

@@ -109,23 +109,25 @@ pub async fn get_dense_vector(
 
     web::block(move || {
         let embeddings_resp_a = ureq::AgentBuilder::new()
-        .tls_connector(Arc::new(native_tls::TlsConnector::new()?))                                                                    
-        .build()
-        .post(&format!(
-            "{}/embeddings?api-version=2023-05-15",
-            embedding_base_url
-        ))
-        .set("Authorization", &format!("Bearer {}", &embedding_api_key))
-        .set("api-key", &embedding_api_key)
-        .set("Content-Type", "application/json")
-        .send_json(serde_json::to_value(parameters).unwrap())
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!(
-                "Could not get embeddings from server: {:?}, {:?}",
-                e,
-                e.to_string()
+            .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                ServiceError::InternalServerError("Failed to acquire tls connection".to_string())
+            })?))
+            .build()
+            .post(&format!(
+                "{}/embeddings?api-version=2023-05-15",
+                embedding_base_url
             ))
-        })?;
+            .set("Authorization", &format!("Bearer {}", &embedding_api_key))
+            .set("api-key", &embedding_api_key)
+            .set("Content-Type", "application/json")
+            .send_json(serde_json::to_value(parameters).unwrap())
+            .map_err(|e| {
+                ServiceError::InternalServerError(format!(
+                    "Could not get embeddings from server: {:?}, {:?}",
+                    e,
+                    e.to_string()
+                ))
+            })?;
 
         let embeddings_resp = embeddings_resp_a
             .into_json::<DenseEmbedData>()
@@ -211,7 +213,9 @@ pub async fn get_sparse_vector(
 
     web::block(move || {
         let mut sparse_vectors = ureq::AgentBuilder::new()
-            .tls_connector(Arc::new(native_tls::TlsConnector::new()?))                                                                    
+            .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                ServiceError::InternalServerError("Failed to acquire tls connection".to_string())
+            })?))
             .build()
             .post(&embedding_server_call)
             .set("Content-Type", "application/json")
@@ -897,7 +901,11 @@ pub async fn cross_encoder(
             // Assume cohere
             let reranker_model_name = dataset_config.RERANKER_MODEL_NAME.clone();
             let resp = ureq::AgentBuilder::new()
-                .tls_connector(Arc::new(native_tls::TlsConnector::new()?))                                                                    
+                .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                    ServiceError::InternalServerError(
+                        "Failed to acquire tls connection".to_string(),
+                    )
+                })?))
                 .build()
                 .post(&embedding_server_call)
                 .set("Content-Type", "application/json")
@@ -929,7 +937,11 @@ pub async fn cross_encoder(
             });
         } else {
             let resp = ureq::AgentBuilder::new()
-                .tls_connector(Arc::new(native_tls::TlsConnector::new()?))                                                                    
+                .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                    ServiceError::InternalServerError(
+                        "Failed to acquire tls connection".to_string(),
+                    )
+                })?))
                 .build()
                 .post(&embedding_server_call)
                 .set("Content-Type", "application/json")

@@ -609,7 +609,11 @@ async fn crawl(
             let url = format!("{}/products.json?page={}", cleaned_url, cur_page);
 
             let response: ShopifyResponse = ureq::AgentBuilder::new()
-                .tls_connector(Arc::new(native_tls::TlsConnector::new()?))                                                                    
+                .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(
+                    ServiceError::InternalServerError(
+                        "Failed to acquire tls connection".to_string(),
+                    ),
+                )?))
                 .build()
                 .get(&url)
                 .call()
