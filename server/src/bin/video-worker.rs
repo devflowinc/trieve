@@ -131,7 +131,7 @@ async fn video_worker(
 
     let redis_conn = redis_pool.get().await.map_err(|e| {
         log::error!("Could not get redis connection {:?}", e);
-        BroccoliError::Job("Could not get redis connection".to_string().into())
+        BroccoliError::Job("Could not get redis connection".to_string())
     })?;
 
     log::info!("Processing video worker for {}", message.channel_url);
@@ -140,7 +140,7 @@ async fn video_worker(
         .await
         .map_err(|e| {
             log::error!("Could not get channel id {:?}", e);
-            BroccoliError::Job("Could not get channel id".to_string().into())
+            BroccoliError::Job("Could not get channel id".to_string())
         })?;
 
     log::info!("Got Channel ID: {}", channel_id);
@@ -152,7 +152,7 @@ async fn video_worker(
     .await
     .map_err(|e| {
         log::error!("Could not get dataset and organization {:?}", e);
-        BroccoliError::Job("Could not get dataset and organization".to_string().into())
+        BroccoliError::Job("Could not get dataset and organization".to_string())
     })?;
 
     let videos = get_channel_video_ids(youtube_api_key, &channel_id)
@@ -176,16 +176,14 @@ async fn video_worker(
             .await
             .map_err(|e| {
                 log::error!("Could not create group {:?}", e);
-                BroccoliError::Job("Could not create group".to_string().into())
+                BroccoliError::Job("Could not create group".to_string())
             })?
             .pop();
 
         let chunk_group = match chunk_group_option {
             Some(group) => group,
             None => {
-                return Err(BroccoliError::Job(
-                    "Could not create group".to_string().into(),
-                ));
+                return Err(BroccoliError::Job("Could not create group".to_string()));
             }
         };
 
@@ -195,7 +193,7 @@ async fn video_worker(
                 video.id.video_id,
                 e
             );
-            BroccoliError::Job("Failed to get transcript".to_string().into())
+            BroccoliError::Job("Failed to get transcript".to_string())
         })?;
 
         for transcript in transcripts {
@@ -406,7 +404,7 @@ async fn send_chunks(
     .await
     .map_err(|e| {
         log::error!("Could not get row count {:?}", e);
-        BroccoliError::Job("Could not get row count".to_string().into())
+        BroccoliError::Job("Could not get row count".to_string())
     })?;
 
     if chunk_count + chunks.len()
@@ -417,7 +415,7 @@ async fn send_chunks(
             .chunk_count as usize
     {
         return Err(BroccoliError::Job(
-            "Chunk count exceeds plan limit".to_string().into(),
+            "Chunk count exceeds plan limit".to_string(),
         ));
     }
 
@@ -434,11 +432,11 @@ async fn send_chunks(
                 .await
                 .map_err(|e| {
                     log::error!("Could not create chunk metadata {:?}", e);
-                    BroccoliError::Job("Could not create chunk metadata".to_string().into())
+                    BroccoliError::Job("Could not create chunk metadata".to_string())
                 })?;
 
         let serialized_message: String = serde_json::to_string(&ingestion_message)
-            .map_err(|_| BroccoliError::Job("Failed to serialize message".to_string().into()))?;
+            .map_err(|_| BroccoliError::Job("Failed to serialize message".to_string()))?;
 
         if serialized_message.is_empty() {
             continue;
@@ -453,7 +451,7 @@ async fn send_chunks(
             .arg(&serialized_message)
             .query_async::<redis::aio::MultiplexedConnection, ()>(&mut redis_conn)
             .await
-            .map_err(|err| BroccoliError::Job(err.to_string().into()))?;
+            .map_err(|err| BroccoliError::Job(err.to_string()))?;
     }
 
     event_queue
