@@ -130,6 +130,12 @@ body {
     .mode-switch-wrapper {
       @apply flex items-center justify-end mt-2 absolute top-2.5 right-4 z-30 font-medium;
 
+      &.docs.chat {
+        @apply top-0;
+
+        right: calc(max(calc(50% - 39.85rem), 4rem) + 0.25rem);
+      }
+
       &.search.has-query {
         @apply hidden;
       }
@@ -305,6 +311,14 @@ body {
         a.source-anchor {
           @apply rounded px-2 text-xs py-1 bg-zinc-200/50;
           color: var(--tv-zinc-950);
+
+          &.yt-anchor {
+            @apply max-w-44 text-center pt-3;
+          }
+
+          .yt-preview {
+            @apply h-16 w-28 block mx-auto;
+          }
 
           &:hover {
             background-color: var(--tv-zinc-200);
@@ -641,11 +655,7 @@ body {
       }
     }
 
-    .close-modal-button:not(.ecommerce) {
-      @apply hidden;
-    }
-
-    .close-modal-button.ecommerce {
+    .close-modal-button {
       @apply w-full flex justify-end text-xs items-center absolute top-1 right-1.5 p-2 gap-0.5 cursor-pointer;
     }
 
@@ -753,6 +763,18 @@ body {
         }
       }
 
+      .docs-item-container {
+        @apply flex gap-x-4 w-full justify-start;
+
+        .docs-chunk-html {
+          @apply w-full;
+        }
+      }
+
+      .yt-preview {
+        @apply h-16 w-28 block;
+      }
+
       .chunk-path {
         color: var(--tv-zinc-600);
         @apply text-xs line-clamp-1 overflow-ellipsis;
@@ -791,7 +813,11 @@ body {
       }
 
       h4 {
-        @apply overflow-hidden whitespace-nowrap text-ellipsis max-w-[calc(90vw-45px)] sm:max-w-[450px];
+        @apply overflow-hidden whitespace-nowrap text-ellipsis max-w-[calc(90vw-45px)] sm:max-w-[590px];
+
+        &.yt-item {
+          @apply max-w-[calc(90vw-45px-7rem)] sm:max-w-[590px];
+        }
       }
 
       svg {

@@ -170,14 +170,24 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
             }
           : {})}
       >
-        <div>
+        <div className="docs-item-container">
+          {item.chunk.metadata?.yt_preview_src ? (
+            <img
+              className="yt-preview"
+              src={item.chunk.metadata?.yt_preview_src}
+            />
+          ) : (
+            <></>
+          )}
           {title ? (
-            <div>
+            <div className="docs-chunk-html">
               {props.type === "docs" ? (
                 <h6 className="chunk-path">{getChunkPath()}</h6>
               ) : null}
               <h4
-                className={`chunk-title ${props.type}`}
+                className={`chunk-title ${props.type}${
+                  item.chunk.metadata?.yt_preview_src ? " yt-item" : ""
+                }`}
                 dangerouslySetInnerHTML={{
                   __html: title,
                 }}
