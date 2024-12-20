@@ -608,7 +608,14 @@ async fn crawl(
             let cleaned_url = crawl_request.url.trim_end_matches("/");
             let url = format!("{}/products.json?page={}", cleaned_url, cur_page);
 
-            let response: ShopifyResponse = ureq::get(&url)
+            let response: ShopifyResponse = ureq::AgentBuilder::new()
+                .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                    ServiceError::InternalServerError(
+                        "Failed to acquire tls connection".to_string(),
+                    ),
+                })?))
+                .build()
+                .get(&url)
                 .call()
                 .map_err(|e| ServiceError::InternalServerError(format!("Failed to fetch: {}", e)))?
                 .into_json()
