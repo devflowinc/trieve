@@ -5,7 +5,6 @@ import { FileDTO } from "trieve-ts-sdk";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { cached } from "../../utils/cache";
 import { PdfSpotlight } from "react-pdf-spotlight";
-import { file } from "bun";
 
 type Props = {
   item: PdfChunk;
@@ -69,7 +68,7 @@ export const PdfItem = (props: Props) => {
   }, []);
 
   return (
-    <div>
+    <div className="flex gap-2 bg-red-500">
       {presigned && (
         <div className="max-w-[400px]">
           <PdfSpotlight
@@ -77,11 +76,12 @@ export const PdfItem = (props: Props) => {
               horizontal: 100,
             }}
             page={props.item.chunk.metadata.page}
-            searchFor={toHighlight}
+            searchFor={toHighlight.toLowerCase()}
             url={presigned}
           ></PdfSpotlight>
         </div>
       )}
+      <div>{toHighlight.toLowerCase()}</div>
     </div>
   );
 };
