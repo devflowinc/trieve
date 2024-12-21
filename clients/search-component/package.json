@@ -66,9 +66,9 @@
   },
   "dependencies": {
     "@r2wc/react-to-web-component": "^2.0.3",
-    "@thumbmarkjs/thumbmarkjs": "^0.14.8",
+    "@thumbmarkjs/thumbmarkjs": "^0.16.1",
     "react-markdown": "^9.0.1",
-    "react-pdf-spotlight": "^0.0.6",
+    "react-pdf-spotlight": "0.0.11",
     "react-snap-carousel": "^0.5.0",
     "trieve-ts-sdk": "*"
   },

@@ -14,6 +14,12 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
+      - name: Use Node LTS ✨
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          registry-url: https://registry.npmjs.org
+          cache: yarn
       - name: Install dependencies
         run: yarn --frozen-lockfile
       - name: Running tests
@@ -22,6 +28,12 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
+      - name: Use Node LTS ✨
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          registry-url: https://registry.npmjs.org
+          cache: yarn
       - name: Install dependencies
         run: yarn --frozen-lockfile
       - name: Running lint

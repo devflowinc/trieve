@@ -38,7 +38,6 @@ export const SearchMode = () => {
     index: number,
   ) => {
     const isChunk = isChunkWithHighlights(result);
-    console.log(result);
 
     // Target non group pdf search
     if (isChunk && props.type === "pdf") {
@@ -247,7 +246,13 @@ export const SearchMode = () => {
             </button>
           </li>
         ) : null}
-        {resultsDisplay}
+
+        {props.type === "pdf" ? (
+          <div className="pdf-results">{resultsDisplay}</div>
+        ) : (
+          resultsDisplay
+        )}
+
         {query && !resultsLength && !loadingResults ? (
           <div className="no-results">
             <p className="no-results-text">No results found</p>
