@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, expectTypeOf } from "vitest";
 import { TrieveSDK } from "../../sdk";
 import {
   CreatePresignedUrlForCsvJsonResponseBody,
-  File,
+  FileData,
   FileDTO,
   UploadFileResponseBody,
 } from "../../types.gen";
@@ -56,12 +56,12 @@ describe("File Tests", async () => {
       ],
     });
     expectTypeOf(
-      data
+      data,
     ).toEqualTypeOf<CreatePresignedUrlForCsvJsonResponseBody>();
 
     const presignedPutUrl = data.presigned_put_url;
     const fileResponse = await fetch(
-      "https://trieve.b-cdn.net/csvjsonltesting/flipkart_com-ecommerce_sample.jsonl"
+      "https://trieve.b-cdn.net/csvjsonltesting/flipkart_com-ecommerce_sample.jsonl",
     );
     const blob = await fileResponse.blob();
 
@@ -92,12 +92,12 @@ describe("File Tests", async () => {
       ],
     });
     expectTypeOf(
-      data
+      data,
     ).toEqualTypeOf<CreatePresignedUrlForCsvJsonResponseBody>();
 
     const presignedPutUrl = data.presigned_put_url;
     const fileResponse = await fetch(
-      "https://raw.githubusercontent.com/datasciencedojo/datasets/refs/heads/master/titanic.csv"
+      "https://raw.githubusercontent.com/datasciencedojo/datasets/refs/heads/master/titanic.csv",
     );
     const blob = await fileResponse.blob();
 
@@ -116,7 +116,7 @@ describe("File Tests", async () => {
     const data = await trieve.getFilesForDataset({
       page: 1,
     });
-    expectTypeOf(data).toEqualTypeOf<File[]>();
+    expectTypeOf(data).toEqualTypeOf<FileData>();
   });
 
   test("getFile", async () => {

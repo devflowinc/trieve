@@ -36,10 +36,18 @@ export function isChunkWithHighlights(
   return !Array.isArray(result);
 }
 
-export function isGroupChunk(
-  result: ChunkWithHighlights | GroupChunk,
-): result is GroupChunk {
-  return (result as GroupChunk).group !== undefined;
+export type PdfChunk = {
+  chunk: Chunk & {
+    metadata: {
+      file_name: string;
+      page: number;
+    };
+  };
+  highlights: string[];
+};
+
+export function isPdfChunk(result: ChunkWithHighlights): result is PdfChunk {
+  return (result as PdfChunk).chunk.metadata.file_name !== undefined;
 }
 
 export type Props = {
