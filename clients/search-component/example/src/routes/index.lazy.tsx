@@ -28,6 +28,8 @@ export default function Home() {
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
+  const defaultSearchMode =
+    import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "search";
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -65,7 +67,7 @@ export default function Home() {
 
             <TrieveModalSearch
               debounceMs={50}
-              defaultSearchMode="search"
+              defaultSearchMode={defaultSearchMode}
               apiKey={apiKey}
               baseUrl={baseUrl}
               datasetId={datasetId}

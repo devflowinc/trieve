@@ -7,7 +7,7 @@ export const FloatingSearchInput = () => {
   const handleOpenSearch = () => {
     startTransition(() => {
       setOpen(true);
-      setMode("search");
+      setMode(props.defaultSearchMode || "search");
     });
   };
 

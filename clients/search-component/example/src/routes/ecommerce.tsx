@@ -25,13 +25,14 @@ export default function ECommerce() {
     import.meta.env.VITE_SHOW_FLOATING_SEARCH_ICON == "true";
   const showFloatingInput = import.meta.env.VITE_SHOW_FLOATING_INPUT == "true";
   const usePagefind = import.meta.env.VITE_USE_PAGEFIND == "true";
-
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
   const defaultTags: any[] = JSON.parse(
     import.meta.env.VITE_DEFAULT_TAGS ?? "[]"
   );
+  const defaultSearchMode =
+    import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "search";
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -70,7 +71,7 @@ export default function ECommerce() {
 
             <TrieveModalSearch
               type="ecommerce"
-              defaultSearchMode="search"
+              defaultSearchMode={defaultSearchMode}
               apiKey={apiKey}
               baseUrl={baseUrl}
               datasetId={datasetId}

@@ -38,7 +38,7 @@ export const FloatingSearchIcon = () => {
         onClick={() => {
           startTransition(() => {
             setOpen(true);
-            setMode("search");
+            setMode(props.defaultSearchMode || "search");
           });
         }}
       >

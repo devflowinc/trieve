@@ -35,8 +35,7 @@ export const AIInitialMessage = () => {
       <span className="content">
         <p>Hi!</p>
         <p>
-          I'm an AI assistant with access to documentation, help articles, and
-          other content.
+          I'm an AI assistant here to help. What can I assist you with today?
         </p>
         <p className="brand-paragraph">
           Ask me anything about{" "}
