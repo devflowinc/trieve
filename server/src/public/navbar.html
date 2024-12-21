@@ -8,7 +8,7 @@
         src="{{params.navLogoImgSrcUrl|safe if (params.navLogoImgSrcUrl is defined and params.navLogoImgSrcUrl) else 'https://cdn.trieve.ai/trieve-logo.png'|safe}}"
       />
     </a>
-    <div class="text-center">
+    <div class="text-center max-w-[calc(100%-4rem)]">
       <p class="font-medium text-2xl">
         {{params.headingPrefix|safe if (params.headingPrefix is defined and
         params.headingPrefix) else 'Demo For'|safe}}

@@ -673,6 +673,10 @@ video {
   width: 100%;
 }
 
+.max-w-\[calc\(100\%-4rem\)\] {
+  max-width: calc(100% - 4rem);
+}
+
 .max-w-full {
   max-width: 100%;
 }

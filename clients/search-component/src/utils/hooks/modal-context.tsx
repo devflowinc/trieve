@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -220,7 +221,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all",
+    props.tags?.find((t) => t.selected)?.tag || "all"
   );
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
 
@@ -268,7 +269,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          currentTag !== "all" ? currentTag : undefined,
+          currentTag !== "all" ? currentTag : undefined
         );
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
@@ -285,7 +286,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          currentTag !== "all" ? currentTag : undefined,
+          currentTag !== "all" ? currentTag : undefined
         );
         setResults(results);
       } else {
@@ -322,7 +323,7 @@ const ModalProvider = ({
         const filterCounts = await countChunksWithPagefind(
           pagefind,
           query,
-          props.tags,
+          props.tags
         );
         setTagCounts(filterCounts);
       } else {
@@ -334,8 +335,8 @@ const ModalProvider = ({
                 trieve: trieve,
                 abortController,
                 ...(tag.tag !== "all" && { tag: tag.tag }),
-              }),
-            ),
+              })
+            )
           );
           setTagCounts(numberOfRecords);
         } catch (e) {
@@ -361,6 +362,7 @@ const ModalProvider = ({
     if (props.usePagefind) {
       getPagefindIndex(trieve).then((pagefind_base_url) => {
         import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
+          // @vite-ignore
           setPagefind(pagefind);
           pagefind.filters().then(() => {});
         });
@@ -372,8 +374,8 @@ const ModalProvider = ({
     props.onOpenChange?.(open);
   }, [open]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
       if (
         open &&
         e.ctrlKey &&
@@ -384,7 +386,11 @@ const ModalProvider = ({
         e.stopPropagation();
         setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
       }
-    };
+    },
+    [open, props.allowSwitchingModes]
+  );
+
+  useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);

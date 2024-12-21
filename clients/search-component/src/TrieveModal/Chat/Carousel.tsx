@@ -4,6 +4,7 @@ import React, {
   useRef,
   CSSProperties,
   Children,
+  useCallback,
 } from "react";
 
 const styles = {
@@ -33,16 +34,15 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
 
   const scrollRef = useRef<HTMLUListElement>(null);
 
+  const calcItemsPerPage = useCallback(() => {
+    const containerWidth = scrollRef.current?.offsetWidth ?? window.innerWidth;
+
+    const itemsFit = Math.max(1, Math.floor(containerWidth / (12 * 16)));
+
+    setItemsPerPage(itemsFit);
+  }, []);
+
   useEffect(() => {
-    const calcItemsPerPage = () => {
-      const containerWidth =
-        scrollRef.current?.offsetWidth ?? window.innerWidth;
-
-      const itemsFit = Math.max(1, Math.floor(containerWidth / (12 * 16)));
-
-      setItemsPerPage(itemsFit);
-    };
-
     calcItemsPerPage();
 
     window.addEventListener("resize", calcItemsPerPage);
@@ -84,7 +84,11 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
       <ul className="carousel-scroll" ref={scrollRef}>
         {allProductsCarousel.map((child, index) => (
           <li
-            className={child ? "carousel-item carousel-item-visibile" : "carousel-item carousel-item-hidden"}
+            className={
+              child
+                ? "carousel-item carousel-item-visibile"
+                : "carousel-item carousel-item-hidden"
+            }
             style={{
               width: `calc(100% / ${itemsPerPage})`,
             }}

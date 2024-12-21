@@ -1,4 +1,6 @@
-import React, { useEffect, lazy, startTransition } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, lazy, startTransition, useCallback } from "react";
+
 const SearchMode = lazy(() => import("./Search/SearchMode"));
 const ChatMode = lazy(() => import("./Chat/ChatMode"));
 
@@ -24,43 +26,48 @@ const Modal = () => {
   const { askQuestion, chatWithGroup } = useChatState();
 
   useEffect(() => {
+    if (!(Object as any).hasOwn) {
+      (Object as any).hasOwn = (obj: any, prop: any) =>
+        Object.prototype.hasOwnProperty.call(obj, prop);
+    }
+  });
+
+  useEffect(() => {
     setClickTriggers(setOpen, setMode, props);
   }, []);
 
-  useEffect(() => {
-    const onViewportResize = () => {
-      const viewportHeight = window.visualViewport?.height;
-      const chatOuterWrapper = document.querySelector(".chat-outer-wrapper");
+  const onViewportResize = useCallback(() => {
+    const viewportHeight = window.visualViewport?.height;
+    const chatOuterWrapper = document.querySelector(".chat-outer-wrapper");
 
-      if ((window.visualViewport?.width ?? 1000) <= 768) {
-        const trieveSearchModal = document.getElementById(
-          "trieve-search-modal"
-        );
-        if (trieveSearchModal) {
-          trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${
-            props.type == "ecommerce" ? "0.5rem" : "0rem"
-          })`;
-        }
-
-        if (chatOuterWrapper) {
-          (chatOuterWrapper as HTMLElement).style.maxHeight =
-            `calc(${viewportHeight}px - ${
-              props.type == "ecommerce" ? "220px" : "175px"
-            })`;
-        }
-      } else {
-        if (chatOuterWrapper) {
-          (chatOuterWrapper as HTMLElement).style.maxHeight = `calc(60vh - ${
-            props.type == "ecommerce" ? "220px" : "200px"
-          })`;
-        }
+    if ((window.visualViewport?.width ?? 1000) <= 768) {
+      const trieveSearchModal = document.getElementById("trieve-search-modal");
+      if (trieveSearchModal) {
+        trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${
+          props.type == "ecommerce" ? "0.5rem" : "0rem"
+        })`;
       }
 
       if (chatOuterWrapper) {
-        chatOuterWrapper.scrollTop = chatOuterWrapper.scrollHeight;
+        (chatOuterWrapper as HTMLElement).style.maxHeight =
+          `calc(${viewportHeight}px - ${
+            props.type == "ecommerce" ? "220px" : "175px"
+          })`;
       }
-    };
+    } else {
+      if (chatOuterWrapper) {
+        (chatOuterWrapper as HTMLElement).style.maxHeight = `calc(60vh - ${
+          props.type == "ecommerce" ? "220px" : "200px"
+        })`;
+      }
+    }
 
+    if (chatOuterWrapper) {
+      chatOuterWrapper.scrollTop = chatOuterWrapper.scrollHeight;
+    }
+  }, [open]);
+
+  useEffect(() => {
     onViewportResize();
     window.addEventListener("resize", onViewportResize);
 
@@ -69,15 +76,8 @@ const Modal = () => {
     };
   }, [open]);
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src =
-      "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/js/all.min.js";
-    script.setAttribute("data-auto-replace-svg", "");
-
-    document.head.appendChild(script);
-
-    const eventListener: EventListener = (e: Event) => {
+  const eventListener: EventListener = useCallback((e: Event) => {
+    try {
       const customEvent = e as CustomEvent<{
         message?: string;
         group: ChunkGroup;
@@ -96,8 +96,24 @@ const Modal = () => {
           askQuestion(customEvent.detail.message, customEvent.detail.group);
         }
       }
-    };
-    window.removeEventListener("trieve-start-chat-with-group", eventListener);
+    } catch (e) {
+      console.log("error on event listener for group chat", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/js/all.min.js";
+    script.setAttribute("data-auto-replace-svg", "");
+
+    document.head.appendChild(script);
+
+    try {
+      window.removeEventListener("trieve-start-chat-with-group", eventListener);
+    } catch (e) {
+      console.log("eror on initial listener remove", e);
+    }
     window.addEventListener("trieve-start-chat-with-group", eventListener);
 
     return () => {
