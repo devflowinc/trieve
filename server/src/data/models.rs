@@ -3260,6 +3260,9 @@ impl DatasetConfigurationDTO {
                     video_link: page_parameters_self
                         .video_link
                         .or(page_parameters_curr.video_link),
+                    video_position: page_parameters_self
+                        .video_position
+                        .or(page_parameters_curr.video_position),
                 }),
             },
             DISABLE_ANALYTICS: self

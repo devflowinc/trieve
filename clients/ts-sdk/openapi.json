@@ -12471,6 +12471,10 @@
             "type": "string",
             "nullable": true
           },
+          "floatingSearchIconPosition": {
+            "type": "string",
+            "nullable": true
+          },
           "forBrandName": {
             "type": "string",
             "nullable": true
@@ -12531,6 +12535,14 @@
             "type": "boolean",
             "nullable": true
           },
+          "showFloatingInput": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "showFloatingSearchIcon": {
+            "type": "boolean",
+            "nullable": true
+          },
           "singleProductOptions": {
             "allOf": [
               {
@@ -12575,6 +12587,14 @@
           },
           "usePagefind": {
             "type": "boolean",
+            "nullable": true
+          },
+          "videoLink": {
+            "type": "string",
+            "nullable": true
+          },
+          "videoPosition": {
+            "type": "string",
             "nullable": true
           },
           "zIndex": {

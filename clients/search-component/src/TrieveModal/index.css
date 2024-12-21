@@ -1288,7 +1288,9 @@ body {
   }
 
   .floating-input-container {
-    @apply z-[999] fixed bottom-5 flex flex-row items-center justify-start gap-2 w-2/4 p-1 pr-5 h-[55px] rounded-full cursor-pointer transition-colors duration-300 ease-in-out bg-white border-2;
+    @apply z-[999] fixed bottom-5 flex flex-row items-center justify-start gap-2 w-1/2 p-1 pr-5 h-[55px] rounded-full cursor-pointer transition-colors duration-300 ease-in-out bg-white border-2;
+
+    left: 25%;
 
     &:hover {
       border-color: var(--tv-prop-brand-color);

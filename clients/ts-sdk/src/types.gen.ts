@@ -2091,8 +2091,8 @@ export type PublicPageParameters = {
     responsive?: (boolean) | null;
     searchOptions?: ((PublicPageSearchOptions) | null);
     showFloatingButton?: (boolean) | null;
-    showFloatingSearchIcon?: (boolean) | null;
     showFloatingInput?: (boolean) | null;
+    showFloatingSearchIcon?: (boolean) | null;
     singleProductOptions?: ((SingleProductOptions) | null);
     suggestedQueries?: (boolean) | null;
     tabMessages?: Array<PublicPageTabMessage> | null;
@@ -2101,8 +2101,9 @@ export type PublicPageParameters = {
     type?: (string) | null;
     useGroupSearch?: (boolean) | null;
     usePagefind?: (boolean) | null;
-    zIndex?: (number) | null;
     videoLink?: (string) | null;
+    videoPosition?: (string) | null;
+    zIndex?: (number) | null;
 };
 
 export type PublicPageSearchOptions = {

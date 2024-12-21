@@ -730,11 +730,12 @@ const PublicPageControls = () => {
               </div>
             </div>
           </Show>
+          <div class="grow" />
           <div class="grow">
             <div class="flex items-center gap-1">
               <label class="block">Video Link</label>
               <Tooltip
-                tooltipText="Video that will be displayed on the public page."
+                tooltipText="Video that will be displayed on the public page. Needs to be the embed link."
                 body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
               />
             </div>
@@ -743,6 +744,23 @@ const PublicPageControls = () => {
               value={extraParams.videoLink || ""}
               onInput={(e) => {
                 setExtraParams("videoLink", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="grow">
+            <div class="flex items-center gap-1">
+              <label class="block">Video Position</label>
+              <Tooltip
+                tooltipText="Position of the video on the page. Either floating or centered."
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
+            <input
+              placeholder="floating | product"
+              value={extraParams.videoPosition || ""}
+              onInput={(e) => {
+                setExtraParams("videoPosition", e.currentTarget.value);
               }}
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
