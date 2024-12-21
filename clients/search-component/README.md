@@ -143,7 +143,19 @@ MIT
 
 ## Development Guide
 
+
+### Deploying to view search playground UI
+
 The `example/` folder shows the example application for what rendering this would look like
+
+Run the example, search-component, css, javascript and watcher for demos page
+
+```sh
+$clients/search-component yarn all
+```
+
+
+or to run each individually
 
 Start the listener to update the search-component's css and javascript
 
@@ -158,4 +170,17 @@ Run the example application
 $clients/search-component cd example/
 $clients/search-component yarn
 $clients/search-component yarn dev
+```
+
+### Viewing it on demos page
+
+```sh
+cd clients/search-component/
+yarn all
+```
+
+Set environment variable in `server/.env`
+
+```sh
+SEARCH_COMPONENT_URL="http://localhost:8000"
 ```
