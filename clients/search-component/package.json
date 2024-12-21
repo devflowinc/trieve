@@ -24,16 +24,19 @@
   "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/search-component",
   "scripts": {
     "dev": "run-p watch:css watch:js",
-    "watch:css": "npx postcss src/app.css -o dist/index.css --watch",
-    "watch:js": "node ./scripts/watch.js",
-    "lint": "eslint",
-    "build:clean": "rm -rf dist && yarn type:dts && yarn build",
+    "all" : "run-p build:example watch:css watch:js serve",
+    "build:example": "cd example/ && yarn dev",
     "build": "run-s build:src build:css type:dts",
     "build:watch": "run-p watch:js build:src build:css type:dts",
     "build:src": "node ./scripts/build.js",
+    "watch:css": "npx postcss src/app.css -o dist/index.css --watch",
+    "watch:js": "node ./scripts/watch.js",
     "type:dts": "tsc --emitDeclarationOnly --declarationMap",
     "build:css": "npx postcss src/app.css -o dist/index.css && cp src/styles.d.ts dist/",
-    "prepublish": "yarn build:clean"
+    "build:clean": "rm -rf dist && yarn type:dts && yarn build",
+    "prepublish": "yarn build:clean",
+    "lint": "eslint",
+    "serve": "./serve-component"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
