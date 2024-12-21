@@ -304,6 +304,13 @@
         }
       }
 
+      .product-video-wrapper {
+        position: relative;
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+        z-index: 15;
+      }
+
       .video-wrapper {
         position: fixed;
         bottom: 20px;
@@ -313,7 +320,7 @@
         height: 14.5rem;
         margin: 0;
         padding: 0;
-
+        z-index: 20;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -359,15 +366,9 @@
         {% else %}
         <div class="mt-24 sm:mt-6"></div>
         {% endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% else
-        %} {% include "search-component-code.html" %} {% endif %}
+        %} {% include "search-component-code.html" %} {% endif %} {% if
+        params.videoLink and params.videoPosition == "floating" %}
         <div class="video-wrapper">
-          {% if logged_in %}
-          <a
-            class="dev-back-button"
-            href="{{dashboard_url}}/dataset/{{params.datasetId}}/public-page"
-            >Back To Dashboard</a
-          >
-          {% endif %}
           <iframe
             src="{{params.videoLink}}"
             frameborder="0"
@@ -376,6 +377,7 @@
           >
           </iframe>
         </div>
+        {% endif %}
       </div>
     </main>
   </body>
@@ -420,48 +422,6 @@
           brackets: ["left"],
         });
       }
-    const openTrieveRect = openTrieveModalElement.getBoundingClientRect();
-    let endOpenX = openTrieveRect.right + 138;
-    let endOpenY = openTrieveRect.bottom + 45;
-    if (endOpenX > window.innerWidth) {
-      endOpenX = window.innerWidth - 125;
-      endOpenY += 15;
-    }
-    const startOpenX = openTrieveRect.right + 60;
-    const startOpenY = openTrieveRect.bottom - 15;
-
-    rc.path(
-      `M ${startOpenX} ${startOpenY}
-         Q ${startOpenX + 85} ${endOpenY - 85} ${endOpenX} ${endOpenY}`,
-      {
-        stroke: window.paramsData.brandColor || "black",
-        strokeWidth: 2,
-        roughness: 3,
-        bowing: 3,
-      },
-    );
-
-    const arrowSize = 10;
-    rc.line(
-      startOpenX - 5,
-      startOpenY,
-      startOpenX + arrowSize,
-      startOpenY + arrowSize,
-      {
-        stroke: window.paramsData.brandColor || "black",
-        strokeWidth: 2,
-      },
-    );
-    rc.line(
-      startOpenX - 5,
-      startOpenY,
-      startOpenX + arrowSize,
-      startOpenY - arrowSize,
-      {
-        stroke: window.paramsData.brandColor || "black",
-        strokeWidth: 2,
-      },
-    );
 
       const circleSearchAnimation = annotate(openTrieveModalElement, {
         type: "circle",
@@ -504,7 +464,7 @@
           strokeWidth: 2,
           roughness: 3,
           bowing: 3,
-        },
+        }
       );
 
       const arrowSize = 10;
@@ -516,7 +476,7 @@
         {
           stroke: window.paramsData.brandColor || "black",
           strokeWidth: 2,
-        },
+        }
       );
       rc.line(
         startOpenX - 5,
@@ -526,7 +486,7 @@
         {
           stroke: window.paramsData.brandColor || "black",
           strokeWidth: 2,
-        },
+        }
       );
 
       let endRecX = 0;

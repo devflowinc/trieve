@@ -19,9 +19,21 @@
           {{ params.singleProductOptions.productName }}
         </h1>
 
+        {% if params.videoLink and params.videoPosition == "product" %}
+        <div class="product-video-wrapper">
+          <iframe
+            src="{{params.videoLink}}"
+            frameborder="0"
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          >
+          </iframe>
+        </div>
+        {% else %}
         <div class="mt-2 text-gray-500 paragraph-text">
           {{ params.singleProductOptions.productDescriptionHtml|safe }}
         </div>
+        {% endif %}
 
         <div class="mt-4">
           <button

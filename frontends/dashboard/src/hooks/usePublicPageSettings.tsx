@@ -209,7 +209,7 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
 
     const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
     const publicUrl = createMemo(() => {
-      return `${apiHost.slice(0, -4)}/demos/${
+      return `${apiHost.replace("/api.", "/demos.").slice(0, -4)}/demos/${
         dataset()?.dataset.tracking_id ?? datasetId()
       }`;
     });

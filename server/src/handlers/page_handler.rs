@@ -258,6 +258,8 @@ pub struct PublicPageParameters {
     pub use_pagefind: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub video_link: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub video_position: Option<String>,
 }
 
 #[utoipa::path(
