@@ -590,7 +590,6 @@ pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     deleted_at: chrono::NaiveDateTime,
     pool: web::Data<Pool>,
-    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
     event_queue: web::Data<EventQueue>,
     dataset_config: DatasetConfiguration,
 ) -> Result<Dataset, ServiceError> {
@@ -628,70 +627,6 @@ pub async fn delete_dataset_by_id_query(
                 log::error!("Could not delete dataset: {}", err);
                 ServiceError::BadRequest("Could not delete dataset".to_string())
             })?;
-
-    if std::env::var("USE_ANALYTICS").unwrap_or("false".to_string()) != "true" {
-        return Ok(dataset);
-    }
-
-    clickhouse_client
-        .query("DELETE FROM dataset_events WHERE dataset_id = ?")
-        .bind(id)
-        .execute()
-        .await
-        .map_err(|err| {
-            log::error!("Could not delete dataset events: {}", err);
-            ServiceError::BadRequest("Could not delete dataset events".to_string())
-        })?;
-
-    clickhouse_client
-        .query(
-            "
-        ALTER TABLE dataset_events
-        DELETE WHERE dataset_id = ?;
-        ",
-        )
-        .bind(id)
-        .execute()
-        .await
-        .unwrap();
-
-    clickhouse_client
-        .query(
-            "
-        ALTER TABLE search_queries
-        DELETE WHERE dataset_id = ?;
-        ",
-        )
-        .bind(id)
-        .execute()
-        .await
-        .unwrap();
-
-    clickhouse_client
-        .query(
-            "
-        ALTER TABLE search_cluster_memberships
-        DELETE WHERE cluster_id IN (
-            SELECT id FROM cluster_topics WHERE dataset_id = ?
-        );
-        ",
-        )
-        .bind(id)
-        .execute()
-        .await
-        .unwrap();
-
-    clickhouse_client
-        .query(
-            "
-        ALTER TABLE cluster_topics
-        DELETE WHERE dataset_id = ?;
-        ",
-        )
-        .bind(id)
-        .execute()
-        .await
-        .unwrap();
 
     Ok(dataset)
 }
