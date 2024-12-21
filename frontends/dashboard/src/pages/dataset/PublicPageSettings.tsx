@@ -709,22 +709,20 @@ const PublicPageControls = () => {
             </div>
             <div class="">
               <label class="block" for="">
-                Foreground Opacity
+                Foreground Opacity 0-1
               </label>
               <input
-                type="range"
-                min="0"
-                max="100"
-                onChange={(e) => {
+                type="number"
+                placeholder="1000"
+                value={extraParams.heroPattern?.foregroundOpacity || 0.5}
+                onInput={(e) => {
                   setExtraParams(
                     "heroPattern",
                     "foregroundOpacity",
-                    parseInt(e.currentTarget.value) / 100,
+                    parseFloat(e.currentTarget.value),
                   );
                 }}
-                value={
-                  (extraParams.heroPattern?.foregroundOpacity || 0.5) * 100
-                }
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
           </div>
