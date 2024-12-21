@@ -19,12 +19,12 @@
       "import": "./dist/vanilla/index.js"
     }
   },
-  "version": "0.2.43",
+  "version": "0.2.44",
   "license": "MIT",
   "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/search-component",
   "scripts": {
     "dev": "run-p watch:css watch:js",
-    "all" : "run-p build:example watch:css watch:js serve",
+    "all": "run-p build:example watch:css watch:js serve",
     "build:example": "cd example/ && yarn dev",
     "build": "run-s build:src build:css type:dts",
     "build:watch": "run-p watch:js build:src build:css type:dts",

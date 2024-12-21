@@ -34,7 +34,7 @@ const Modal = () => {
 
       if ((window.visualViewport?.width ?? 1000) <= 768) {
         const trieveSearchModal = document.getElementById(
-          "trieve-search-modal",
+          "trieve-search-modal"
         );
         if (trieveSearchModal) {
           trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${
@@ -90,7 +90,7 @@ const Modal = () => {
         }
         chatWithGroup(
           customEvent.detail.group,
-          customEvent.detail.betterGroupName,
+          customEvent.detail.betterGroupName
         );
         if (customEvent.detail.message) {
           askQuestion(customEvent.detail.message, customEvent.detail.group);
@@ -108,18 +108,18 @@ const Modal = () => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB",
+      props.brandColor ?? "#CB53EB"
     );
 
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)",
+        "var(--tv-zinc-700)"
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)",
+        "var(--tv-zinc-300)"
       );
     }
 
@@ -127,7 +127,7 @@ const Modal = () => {
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
         `Maven Pro, ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
     );
   }, [props.brandColor, props.brandFontFamily]);
 
@@ -173,9 +173,9 @@ const Modal = () => {
           </div>
         </>
       )}
-      <FloatingSearchIcon />
-      <FloatingActionButton />
-      <FloatingSearchInput />
+      {props.showFloatingSearchIcon && <FloatingSearchIcon />}
+      {props.showFloatingButton && <FloatingActionButton />}
+      {props.showFloatingInput && <FloatingSearchInput />}
     </>
   );
 };

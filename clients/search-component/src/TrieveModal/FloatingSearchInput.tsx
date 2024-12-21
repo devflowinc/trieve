@@ -1,35 +1,18 @@
-import React, { startTransition, useState } from "react";
+import React, { startTransition } from "react";
 import { useModalState } from "../utils/hooks/modal-context";
 
 export const FloatingSearchInput = () => {
   const { props, setOpen, setMode, query, setQuery } = useModalState();
-  const [isFocused, setIsFocused] = React.useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   const handleOpenSearch = () => {
-    if (query) {
-      startTransition(() => {
-        setOpen(true);
-        setMode("search");
-      });
-    }
+    startTransition(() => {
+      setOpen(true);
+      setMode("search");
+    });
   };
 
   return (
-    <div
-      className="floating-input-container"
-      style={{
-        display: props.showFloatingInput ? "flex" : "none",
-
-        border: `3px solid ${
-          isFocused || isHovered ? "var(--tv-zinc-300)" : "var(--tv-zinc-200)"
-        }`,
-
-        backgroundColor: isFocused || isHovered ? `var(--tv-zinc-50)` : "",
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <button className="floating-input-container" onClick={handleOpenSearch}>
       <div className="floating-search-icon">
         <svg
           width="26"
@@ -48,8 +31,6 @@ export const FloatingSearchInput = () => {
         placeholder={props.placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             handleOpenSearch();
@@ -65,6 +46,6 @@ export const FloatingSearchInput = () => {
       >
         <i className="fa-regular fa-paper-plane"></i>
       </button>
-    </div>
+    </button>
   );
 };

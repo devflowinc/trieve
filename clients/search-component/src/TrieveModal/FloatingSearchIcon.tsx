@@ -29,7 +29,6 @@ export const FloatingSearchIcon = () => {
     <div
       className="floating-search-btn-container"
       style={{
-        display: props.showFloatingSearchIcon ? "" : "none",
         ...setButtonPosition(props.floatingSearchIconPosition || "right"),
       }}
       onMouseEnter={() => setIsHovered(true)}
