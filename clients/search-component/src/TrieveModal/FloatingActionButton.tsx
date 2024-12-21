@@ -30,7 +30,6 @@ export const FloatingActionButton = () => {
       className="floating-action-button"
       style={{
         ...setButtonPosition(props.floatingButtonPosition || "bottom-right"),
-        display: props.showFloatingButton ? "" : "none",
       }}
     >
       <i

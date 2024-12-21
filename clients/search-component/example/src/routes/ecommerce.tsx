@@ -19,13 +19,18 @@ export default function ECommerce() {
   const useGroupSearch = import.meta.env.VITE_USE_GROUP_SEARCH == "true";
   const showFloatingButton = import.meta.env.VITE_SHOW_FLOATING_BTN == "true";
   const floatingButtonPosition = import.meta.env.VITE_FLOATING_BTN_POSITION;
+  const floatingSearchIconPosition = import.meta.env
+    .VITE_FLOATING_SEARCH_ICON_POSITION;
+  const showFloatingSearchIcon =
+    import.meta.env.VITE_SHOW_FLOATING_SEARCH_ICON == "true";
+  const showFloatingInput = import.meta.env.VITE_SHOW_FLOATING_INPUT == "true";
   const usePagefind = import.meta.env.VITE_USE_PAGEFIND == "true";
 
   const defaultSearchQueries: string[] = (
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
   const defaultTags: any[] = JSON.parse(
-    import.meta.env.VITE_DEFAULT_TAGS ?? "[]",
+    import.meta.env.VITE_DEFAULT_TAGS ?? "[]"
   );
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -94,6 +99,9 @@ export default function ECommerce() {
               floatingButtonPosition={floatingButtonPosition}
               showFloatingButton={showFloatingButton}
               debounceMs={500}
+              floatingSearchIconPosition={floatingSearchIconPosition}
+              showFloatingSearchIcon={showFloatingSearchIcon}
+              showFloatingInput={showFloatingInput}
             />
           </>
         ) : (

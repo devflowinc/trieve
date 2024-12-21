@@ -134,15 +134,15 @@ const defaultProps = {
   responsive: false,
   zIndex: 1000,
   debounceMs: 0,
-  show: true,
-  position: "bottom-right" as
+  showFloatingButton: false,
+  floatingButtonPosition: "bottom-right" as
     | "top-left"
     | "top-right"
     | "bottom-left"
     | "bottom-right",
   floatingSearchIconPosition: "right" as "left" | "right",
-  showFloatingSearchIcon: true,
-  showFloatingInput: true,
+  showFloatingSearchIcon: false,
+  showFloatingInput: false,
 };
 
 const ModalContext = createContext<{
