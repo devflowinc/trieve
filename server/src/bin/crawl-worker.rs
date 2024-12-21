@@ -612,7 +612,7 @@ async fn crawl(
                 .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
                     ServiceError::InternalServerError(
                         "Failed to acquire tls connection".to_string(),
-                    ),
+                    )
                 })?))
                 .build()
                 .get(&url)
