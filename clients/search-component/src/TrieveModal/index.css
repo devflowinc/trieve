@@ -270,7 +270,7 @@ body {
     }
 
     .trieve-powered {
-      @apply flex items-center justify-end gap-2 select-none cursor-pointer text-sm;
+      @apply flex items-center justify-end select-none cursor-pointer text-sm text-center;
       background-color: var(--bg-color);
 
       img {

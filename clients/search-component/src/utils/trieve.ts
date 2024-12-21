@@ -411,7 +411,7 @@ export const groupSearchWithPagefind = async (
 	}
 
 	const groups: GroupChunk[] = [];
-	groupMap.entries().forEach(([group_id, chunks]) => {
+	Array.from(groupMap.entries()).forEach(([group_id, chunks]) => {
 		groups.push({
 			chunks: chunks,
 			group: {

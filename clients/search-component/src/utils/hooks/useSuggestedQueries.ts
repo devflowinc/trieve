@@ -40,7 +40,7 @@ export const useSuggestedQueries = () => {
     setSuggestedQueries(defaultQueries);
 
     return () => {
-      abortController.abort();
+      abortController.abort("Component unmounted");
     };
   }, []);
 

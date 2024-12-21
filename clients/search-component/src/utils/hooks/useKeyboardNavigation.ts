@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useRef } from "react";
+import { startTransition, useCallback, useEffect, useRef } from "react";
 import { useModalState } from "./modal-context";
 
 export const useKeyboardNavigation = () => {
@@ -15,8 +15,8 @@ export const useKeyboardNavigation = () => {
     return Date.now() - lastButtonInteraction.current >= 10;
   };
 
-  const checkForInteractions = useMemo(() => {
-    return (e: KeyboardEvent) => {
+  const checkForInteractions = useCallback(
+    (e: KeyboardEvent) => {
       if (!isWithinTimeWindow()) {
         return;
       }
@@ -72,8 +72,9 @@ export const useKeyboardNavigation = () => {
           }
         }
       }
-    };
-  }, [open]);
+    },
+    [open]
+  );
 
   useEffect(() => {
     document.addEventListener("keydown", checkForInteractions);

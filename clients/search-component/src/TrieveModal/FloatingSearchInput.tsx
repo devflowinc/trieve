@@ -12,7 +12,7 @@ export const FloatingSearchInput = () => {
   };
 
   return (
-    <button className="floating-input-container" onClick={handleOpenSearch}>
+    <div className="floating-input-container" onClick={handleOpenSearch}>
       <div className="floating-search-icon">
         <svg
           width="26"
@@ -46,6 +46,6 @@ export const FloatingSearchInput = () => {
       >
         <i className="fa-regular fa-paper-plane"></i>
       </button>
-    </button>
+    </div>
   );
 };
