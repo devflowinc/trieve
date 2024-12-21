@@ -38,7 +38,6 @@ export const SearchMode = () => {
     index: number,
   ) => {
     const isChunk = isChunkWithHighlights(result);
-    console.log(result);
 
     // Target non group pdf search
     if (isChunk && props.type === "pdf") {

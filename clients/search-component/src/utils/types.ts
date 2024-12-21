@@ -47,7 +47,6 @@ export type PdfChunk = {
 };
 
 export function isPdfChunk(result: ChunkWithHighlights): result is PdfChunk {
-  console.log("testing", result);
   return (result as PdfChunk).chunk.metadata.file_name !== undefined;
 }
 
