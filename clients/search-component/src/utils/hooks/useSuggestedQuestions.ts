@@ -48,7 +48,7 @@ export const useSuggestedQuestions = () => {
 
     return () => {
       clearTimeout(timeoutId);
-      abortController.abort();
+      abortController.abort("fetch aborted");
     };
   }, []);
 
