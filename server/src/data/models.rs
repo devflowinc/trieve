@@ -1942,7 +1942,7 @@ impl File {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct FileAndGroupId {
     pub file: File,
     pub group_id: Option<uuid::Uuid>,

@@ -4,10 +4,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
-on: 
+on:
   pull_request:
     paths:
-    - 'server/**'
+      - "server/**"
 
 jobs:
   cargo-fmt:
@@ -51,6 +51,12 @@ jobs:
     runs-on: blacksmith-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
+      - name: Use Node LTS ✨
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          registry-url: https://registry.npmjs.org
+          cache: yarn
       - name: Caching Rust Dep
         uses: useblacksmith/cache@v5
         with:
@@ -74,4 +80,3 @@ jobs:
         run: yarn && yarn build:clean
       - name: Typecheck all frontends
         run: yarn && yarn typecheck
-

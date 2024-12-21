@@ -12,10 +12,11 @@ export const FileContextProvider = (props: { children: ReactNode }) => {
 
   useEffect(() => {
     const getFiles = async () => {
-      const page = 1;
+      let page = 1;
       let done = false;
       const fileMapResult: Record<string, string> = {};
-      while (!done) {
+      let totalPages = Number.MAX_SAFE_INTEGER;
+      while (!done && page <= totalPages) {
         const files = await state.trieveSDK.trieve.fetch(
           "/api/dataset/files/{dataset_id}/{page}",
           "get",
@@ -25,14 +26,18 @@ export const FileContextProvider = (props: { children: ReactNode }) => {
           },
         );
 
-        if (files.length) {
-          files.reduce((acc, file) => {
-            acc[file.file_name] = file.id;
+        totalPages = files.total_pages;
+
+        if (files.file_and_group_ids.length) {
+          files.file_and_group_ids.reduce((acc, file) => {
+            acc[file.file.file_name] = file.file.id;
             return acc;
           }, fileMapResult);
         } else {
           done = true;
         }
+
+        page += 1;
       }
 
       setFiles(fileMapResult);
@@ -45,4 +50,8 @@ export const FileContextProvider = (props: { children: ReactNode }) => {
       {props.children}
     </FileContext.Provider>
   );
+};
+
+export const useFileContext = () => {
+  return React.useContext(FileContext);
 };

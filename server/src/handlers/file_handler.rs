@@ -301,6 +301,11 @@ pub async fn upload_html_page(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[derive(Debug, Deserialize, Serialize, ToSchema, Default)]
+pub struct FileSignedUrlOptions {
+    content_type: Option<String>,
+}
+
 /// Get File Signed URL
 ///
 /// Get a signed s3 url corresponding to the file_id requested such that you can download the file.
@@ -317,6 +322,7 @@ pub async fn upload_html_page(
     params(
         ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("file_id" = uuid::Uuid, description = "The id of the file to fetch"),
+        ("content_type" = Option<String>, Query, description = "Optional field to override the presigned url's Content-Type header"),
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -327,8 +333,15 @@ pub async fn get_file_handler(
     pool: web::Data<Pool>,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    options: web::Query<FileSignedUrlOptions>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let file = get_file_query(file_id.into_inner(), dataset_org_plan_sub.dataset.id, pool).await?;
+    let file = get_file_query(
+        file_id.into_inner(),
+        dataset_org_plan_sub.dataset.id,
+        options.into_inner().content_type,
+        pool,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().json(file))
 }
@@ -466,7 +479,7 @@ pub struct DatasetFileQuery {
     pub dataset_id: uuid::Uuid,
     pub page: u64,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct FileData {
     pub file_and_group_ids: Vec<FileAndGroupId>,
     pub total_pages: i64,
@@ -481,7 +494,7 @@ pub struct FileData {
     context_path = "/api",
     tag = "File",
     responses(
-        (status = 200, description = "JSON body representing the files in the current dataset", body = Vec<File>),
+        (status = 200, description = "JSON body representing the files in the current dataset", body = FileData),
         (status = 400, description = "Service error relating to getting the files in the current datase", body = ErrorResponseBody),
     ),
     params(

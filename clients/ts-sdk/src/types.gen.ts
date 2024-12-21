@@ -1498,6 +1498,11 @@ export type File = {
     updated_at: string;
 };
 
+export type FileAndGroupId = {
+    file: File;
+    group_id?: (string) | null;
+};
+
 export type FileDTO = {
     created_at: string;
     file_name: string;
@@ -1507,6 +1512,11 @@ export type FileDTO = {
     s3_url: string;
     size: number;
     updated_at: string;
+};
+
+export type FileData = {
+    file_and_group_ids: Array<FileAndGroupId>;
+    total_pages: number;
 };
 
 /**
@@ -4228,7 +4238,7 @@ export type GetDatasetFilesHandlerData = {
     trDataset: string;
 };
 
-export type GetDatasetFilesHandlerResponse = (Array<File>);
+export type GetDatasetFilesHandlerResponse = (FileData);
 
 export type GetAllTagsData = {
     /**
@@ -4400,6 +4410,10 @@ export type UploadHtmlPageData = {
 export type UploadHtmlPageResponse = (void);
 
 export type GetFileHandlerData = {
+    /**
+     * Optional field to override the presigned url's Content-Type header
+     */
+    contentType?: (string) | null;
     /**
      * The id of the file to fetch
      */
@@ -5702,7 +5716,7 @@ export type $OpenApiTs = {
                 /**
                  * JSON body representing the files in the current dataset
                  */
-                200: Array<File>;
+                200: FileData;
                 /**
                  * Service error relating to getting the files in the current datase
                  */

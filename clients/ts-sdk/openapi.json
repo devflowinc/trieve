@@ -3671,10 +3671,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/File"
-                  }
+                  "$ref": "#/components/schemas/FileData"
                 }
               }
             }
@@ -4543,6 +4540,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "content_type",
+            "in": "query",
+            "description": "Optional field to override the presigned url's Content-Type header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "nullable": true
             }
           }
         ],
@@ -10783,6 +10790,22 @@
           "updated_at": "2021-01-01 00:00:00.000"
         }
       },
+      "FileAndGroupId": {
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/File"
+          },
+          "group_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
       "FileDTO": {
         "type": "object",
         "required": [
@@ -10835,6 +10858,25 @@
           "s3_url": "https://trieve.ai",
           "size": 1000,
           "updated_at": "2021-01-01 00:00:00.000"
+        }
+      },
+      "FileData": {
+        "type": "object",
+        "required": [
+          "file_and_group_ids",
+          "total_pages"
+        ],
+        "properties": {
+          "file_and_group_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileAndGroupId"
+            }
+          },
+          "total_pages": {
+            "type": "integer",
+            "format": "int64"
+          }
         }
       },
       "FullTextBoost": {

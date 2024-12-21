@@ -40,15 +40,17 @@ export type PdfChunk = {
   chunk: Chunk & {
     metadata: {
       file_name: string;
-      page: number;
+      page_num: number;
     };
   };
   highlights: string[];
 };
 
 export function isPdfChunk(result: ChunkWithHighlights): result is PdfChunk {
-  console.log("testing", result);
-  return (result as PdfChunk).chunk.metadata.file_name !== undefined;
+  return (
+    (result as PdfChunk).chunk.metadata.file_name !== undefined &&
+    (result as PdfChunk).chunk.metadata.page_num !== undefined
+  );
 }
 
 export type Props = {

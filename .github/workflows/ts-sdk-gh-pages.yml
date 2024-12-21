@@ -3,11 +3,11 @@ name: Deploy TS-SDK docs to github pages
 on:
   push:
     paths:
-    - 'clients/ts-sdk/**'
+      - "clients/ts-sdk/**"
     branches: ["main"]
   pull_request:
     paths:
-    - 'clients/ts-sdk/**'
+      - "clients/ts-sdk/**"
     branches: ["main"]
 
 jobs:
@@ -23,9 +23,15 @@ jobs:
       id-token: write
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [20.x]
     steps:
       - uses: actions/checkout@v4
+      - name: Use Node LTS ✨
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          registry-url: https://registry.npmjs.org
+          cache: yarn
       - name: Install dependencies
         run: yarn --frozen-lockfile
       - name: Build the app

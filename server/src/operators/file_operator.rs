@@ -415,6 +415,7 @@ pub async fn create_file_chunks(
 pub async fn get_file_query(
     file_uuid: uuid::Uuid,
     dataset_id: uuid::Uuid,
+    content_type: Option<String>,
     pool: web::Data<Pool>,
 ) -> Result<FileDTO, actix_web::Error> {
     use crate::data::schema::files::dsl as files_columns;
@@ -436,10 +437,29 @@ pub async fn get_file_query(
         })?;
 
     let mut custom_queries = HashMap::new();
-    custom_queries.insert(
-        "response-content-disposition".into(),
-        format!("attachment; filename=\"{}\"", file.file_name),
-    );
+
+    match content_type {
+        Some(content_type) => {
+            if content_type == "application/pdf" {
+                custom_queries.insert(
+                    "response-content-disposition".into(),
+                    format!("attachment; filename*=utf-8''{}", file.file_name),
+                );
+            } else {
+                custom_queries.insert(
+                    "response-content-disposition".into(),
+                    format!("attachment; filename=\"{}\"", file.file_name),
+                );
+            }
+            custom_queries.insert("response-content-type".into(), content_type.to_string());
+        }
+        None => {
+            custom_queries.insert(
+                "response-content-disposition".into(),
+                format!("attachment; filename=\"{}\"", file.file_name),
+            );
+        }
+    }
 
     let bucket = get_aws_bucket()?;
     let s3_url = bucket

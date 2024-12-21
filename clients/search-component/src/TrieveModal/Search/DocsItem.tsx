@@ -35,7 +35,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
   const chunkHtmlHeadingsDiv = document.createElement("div");
   chunkHtmlHeadingsDiv.innerHTML = item.chunk.chunk_html || "";
   const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-    "h1, h2, h3, h4, h5, h6",
+    "h1, h2, h3, h4, h5, h6"
   );
 
   const $firstHeading = chunkHtmlHeadings[0] ?? document.createElement("h1");
@@ -83,7 +83,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
     case "DELETE":
       title = title.replace(
         "DELETE",
-        '<span class="delete-method">DELETE</span>',
+        '<span class="delete-method">DELETE</span>'
       );
       break;
     case "PATCH":
@@ -102,13 +102,13 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
         .concat(
           item.chunk.metadata?.title ||
             item.chunk.metadata.summary ||
-            urlElements.slice(-1)[0],
+            urlElements.slice(-1)[0]
         )
         .map((word) =>
           word
             .split(" ")
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-            .join(" "),
+            .join(" ")
         )
         .join(" > ");
     } else {
@@ -118,7 +118,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
 
   const onResultClick = async (
     chunk: Chunk & { position: number },
-    requestID: string,
+    requestID: string
   ) => {
     if (props.onResultClick) {
       props.onResultClick(chunk);
@@ -170,30 +170,47 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
             }
           : {})}
       >
-        <div>
+        <div className="docs-item-container">
+          {item.chunk.metadata?.yt_preview_src ? (
+            <img
+              className="yt-preview"
+              src={item.chunk.metadata?.yt_preview_src}
+            />
+          ) : (
+            <></>
+          )}
           {title ? (
-            <div>
+            <div className="docs-chunk-html">
               {props.type === "docs" ? (
                 <h6 className="chunk-path">{getChunkPath()}</h6>
               ) : null}
               <h4
-                className={`chunk-title ${props.type}`}
+                className={`chunk-title ${props.type}${
+                  item.chunk.metadata?.yt_preview_src ? " yt-item" : ""
+                }`}
                 dangerouslySetInnerHTML={{
                   __html: title,
                 }}
               />
               <p
+                className="description"
                 dangerouslySetInnerHTML={{
                   __html: descriptionHtml,
                 }}
               />
-            )}
-            <span className={!isHovered ? "text-transparent" : ""}>
-              <i className="fa-solid fa-chevron-right"></i>
-            </span>
-          </div>
-        </Component>
-      </li>
-    </>
+            </div>
+          ) : (
+            <p
+              dangerouslySetInnerHTML={{
+                __html: descriptionHtml,
+              }}
+            />
+          )}
+          <span className={!isHovered ? "text-transparent" : ""}>
+            <i className="fa-solid fa-chevron-right"></i>
+          </span>
+        </div>
+      </Component>
+    </li>
   );
 };
