@@ -74,7 +74,7 @@ fn main() {
             signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                 .expect("Failed to register shutdown hook");
 
-            let (clickhouse_client, event_queue) = if std::env::var("USE_ANALYTICS")
+            let event_queue = if std::env::var("USE_ANALYTICS")
                 .unwrap_or("false".to_string())
                 .parse()
                 .unwrap_or(false)
@@ -96,23 +96,15 @@ fn main() {
 
                 let mut event_queue = EventQueue::new(clickhouse_client.clone());
                 event_queue.start_service();
-                (clickhouse_client, event_queue)
+                event_queue
             } else {
                 log::info!("Analytics disabled");
-                (clickhouse::Client::default(), EventQueue::default())
+                EventQueue::default()
             };
 
             let web_event_queue = actix_web::web::Data::new(event_queue);
-            let web_clickhouse_client = actix_web::web::Data::new(clickhouse_client);
 
-            delete_worker(
-                should_terminate,
-                web_redis_pool,
-                web_pool,
-                web_clickhouse_client,
-                web_event_queue,
-            )
-            .await
+            delete_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
         });
 }
 
@@ -120,7 +112,6 @@ async fn delete_worker(
     should_terminate: Arc<AtomicBool>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
-    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
     event_queue: actix_web::web::Data<EventQueue>,
 ) {
     log::info!("Starting delete worker service thread");
@@ -196,7 +187,6 @@ async fn delete_worker(
             DeleteMessage::DatasetDelete(delete_worker_message) => {
                 if let Err(err) = delete_or_clear_dataset(
                     web_pool.clone(),
-                    clickhouse_client.clone(),
                     redis_pool.clone(),
                     delete_worker_message.clone(),
                     event_queue.clone(),
@@ -249,7 +239,6 @@ async fn delete_worker(
 
 pub async fn delete_or_clear_dataset(
     web_pool: actix_web::web::Data<models::Pool>,
-    clickhouse_client: actix_web::web::Data<clickhouse::Client>,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     delete_worker_message: DatasetDeleteMessage,
     event_queue: actix_web::web::Data<EventQueue>,
@@ -317,7 +306,6 @@ pub async fn delete_or_clear_dataset(
         delete_worker_message.dataset_id,
         delete_worker_message.deleted_at,
         web_pool.clone(),
-        clickhouse_client.clone(),
         event_queue.clone(),
         dataset_config.clone(),
     )
