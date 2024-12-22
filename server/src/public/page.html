@@ -345,6 +345,16 @@
           height: 20rem;
         }
       }
+
+      .starter-questions {
+        button:not(.bg-brand-color) {
+          background-color: {{'#18181b' if (params.theme == 'dark') else '#f9fafb'}};
+
+          &:hover {
+            background-color: color-mix(in srgb, {{'#18181b' if (params.theme == 'dark') else '#f9fafb'}}, black 20%);
+          }
+        }
+      }
     </style>
 
     <script type="module">
@@ -433,7 +443,7 @@
         type: "underline",
         animationDuration: 50,
         color: window.paramsData.brandColor || "black",
-        padding: 2,
+        padding: 1.5,
       });
 
       canvas.style.position = "absolute";

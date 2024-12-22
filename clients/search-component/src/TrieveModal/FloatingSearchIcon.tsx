@@ -27,7 +27,7 @@ export const FloatingSearchIcon = () => {
 
   return (
     <div
-      className="floating-search-btn-container"
+      className={`floating-search-btn-container${props.theme == "dark" ? " dark" : ""}`}
       style={{
         ...setButtonPosition(props.floatingSearchIconPosition || "right"),
       }}

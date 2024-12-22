@@ -1267,7 +1267,7 @@ body {
   }
 
   .floating-search-icon {
-    @apply rounded-full p-[0.35rem] flex justify-center items-center;
+    @apply rounded-full p-[0.35rem] ml-0.5 flex justify-center items-center;
 
     background-color: var(--tv-prop-brand-color);
   }
@@ -1275,6 +1275,10 @@ body {
   .floating-search-btn-container {
     @apply fixed flex flex-row justify-center items-center top-[calc(50%-34px)] bg-white w-min z-[999] p-2;
     box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.05);
+
+    &.dark {
+      @apply bg-zinc-900;
+    }
 
     button {
       @apply flex justify-center items-center rounded-full p-1;
@@ -1289,6 +1293,10 @@ body {
 
   .floating-input-container {
     @apply z-[999] fixed bottom-5 flex flex-row items-center justify-start gap-2 w-1/2 p-1 pr-5 h-[55px] rounded-full cursor-pointer transition-colors duration-300 ease-in-out bg-white border-2;
+
+    &.dark {
+      @apply bg-zinc-900 border-zinc-600;
+    }
 
     left: 25%;
 
