@@ -21,7 +21,7 @@ use trieve_server::{
     operators::{
         chunk_operator::create_chunk_metadata,
         clickhouse_operator::{ClickHouseEvent, EventQueue},
-        file_operator::{create_file_query, get_aws_bucket},
+        file_operator::{create_file_query, get_csvjsonl_aws_bucket},
         group_operator::{create_group_from_file_query, create_groups_query},
     },
 };
@@ -186,7 +186,7 @@ async fn file_worker(
         let csv_jsonl_worker_message: CsvJsonlWorkerMessage =
             serde_json::from_str(&serialized_message).expect("Failed to parse file message");
 
-        let bucket = get_aws_bucket().expect("Failed to get aws bucket");
+        let bucket = get_csvjsonl_aws_bucket().expect("Failed to get aws bucket");
         match bucket
             .head_object(csv_jsonl_worker_message.file_id.to_string())
             .await
@@ -238,6 +238,8 @@ async fn file_worker(
                     .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
                     .await;
 
+                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
                 continue;
             }
         };
@@ -257,7 +259,7 @@ async fn process_csv_jsonl_file(
     mut redis_conn: MultiplexedConnection,
 ) -> Result<Option<uuid::Uuid>, ServiceError> {
     // get_object_stream from s3
-    let bucket = get_aws_bucket().map_err(|err| {
+    let bucket = get_csvjsonl_aws_bucket().map_err(|err| {
         log::error!("Failed to get aws bucket: {:?}", err);
         ServiceError::InternalServerError("Failed to get aws bucket".to_string())
     })?;

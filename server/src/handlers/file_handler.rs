@@ -12,7 +12,8 @@ use crate::{
     operators::{
         crawl_operator::{process_crawl_doc, Document},
         file_operator::{
-            delete_file_query, get_aws_bucket, get_dataset_file_query, get_file_query,
+            delete_file_query, get_aws_bucket, get_csvjsonl_aws_bucket, get_dataset_file_query,
+            get_file_query,
         },
         organization_operator::{get_file_size_sum_org, hash_function},
     },
@@ -412,7 +413,7 @@ pub async fn create_presigned_url_for_csv_jsonl(
 
     let file_id = uuid::Uuid::new_v4();
 
-    let bucket = get_aws_bucket()?;
+    let bucket = get_csvjsonl_aws_bucket()?;
     let presigned_put_url = bucket
         .presign_put(file_id.to_string(), 86400, None, None)
         .await
