@@ -58,7 +58,7 @@ pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
 }
 
 pub fn get_pagefind_aws_bucket() -> Result<Bucket, ServiceError> {
-    let aws_region_name = std::env::var("AWS_REGION_PAGEFIND").unwrap_or("".to_string());
+    let aws_region_name: String = std::env::var("AWS_REGION_PAGEFIND").unwrap_or("".to_string());
     let s3_endpoint = std::env::var("S3_ENDPOINT_PAGEFIND")
         .unwrap_or(get_env!("S3_ENDPOINT", "S3_ENDPOINT should be set").to_string());
     let s3_bucket_name = std::env::var("S3_BUCKET_PAGEFIND")
@@ -76,6 +76,50 @@ pub fn get_pagefind_aws_bucket() -> Result<Bucket, ServiceError> {
             .unwrap_or(get_env!("S3_ACCESS_KEY", "S3_ACCESS_KEY should be set").to_string());
         let s3_secret_key = std::env::var("S3_SECRET_KEY_PAGEFIND")
             .unwrap_or(get_env!("S3_SECRET_KEY", "S3_SECRET_KEY should be set").to_string());
+
+        Credentials {
+            access_key: Some(s3_access_key),
+            secret_key: Some(s3_secret_key),
+            security_token: None,
+            session_token: None,
+            expiration: None,
+        }
+    };
+
+    let aws_bucket = Bucket::new(&s3_bucket_name, aws_region, aws_credentials)
+        .map_err(|e| {
+            log::error!("Could not create or get bucket {:?}", e);
+            ServiceError::BadRequest("Could not create or get bucket".to_string())
+        })?
+        .with_path_style();
+
+    Ok(*aws_bucket)
+}
+
+pub fn get_csvjsonl_aws_bucket() -> Result<Bucket, ServiceError> {
+    let aws_region_name: String = std::env::var("AWS_REGION_CSVJSONL").unwrap_or("".to_string());
+    let s3_endpoint = std::env::var("S3_ENDPOINT_CSVJSONL")
+        .unwrap_or(get_env!("S3_ENDPOINT", "S3_ENDPOINT should be set").to_string());
+    let s3_bucket_name = std::env::var("S3_BUCKET_CSVJSONL")
+        .unwrap_or(get_env!("S3_BUCKET", "S3_BUCKET should be set").to_string());
+
+    let aws_region = Region::Custom {
+        region: aws_region_name,
+        endpoint: s3_endpoint,
+    };
+
+    let aws_credentials = if let Ok(creds) = Credentials::from_instance_metadata() {
+        creds
+    } else {
+        let s3_access_key = std::env::var("S3_ACCESS_KEY_CSVJSONL")
+            .unwrap_or(get_env!("S3_ACCESS_KEY", "S3_ACCESS_KEY should be set").to_string());
+        let s3_secret_key = std::env::var("S3_SECRET_KEY_CSVJSONL").unwrap_or(
+            get_env!(
+                "S3_SECRET_KEY_CSVJSONL",
+                "S3_SECRET_KEY_CSVJSONL should be set"
+            )
+            .to_string(),
+        );
 
         Credentials {
             access_key: Some(s3_access_key),
