@@ -677,8 +677,16 @@ pub async fn bulk_insert_chunk_metadata_query(
     let chunk_metadatas_to_insert: Vec<ChunkMetadataTable> = chunks_without_tracking_id
         .iter()
         .map(|data| data.chunk_metadata.clone().into())
-        .chain(chunks_with_tracking_id.into_iter())
+        .chain(chunks_with_tracking_id.clone().into_iter())
         .collect();
+    log::info!(
+        "Inserting tracking_id chunks: {:?}",
+        chunks_with_tracking_id.len()
+    );
+    log::info!(
+        "Inserting non-tracking_id chunks: {:?}",
+        chunks_without_tracking_id.len()
+    );
 
     let inserted_chunks = if upsert_by_tracking_id {
         let temp_inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
@@ -714,6 +722,12 @@ pub async fn bulk_insert_chunk_metadata_query(
             })
         });
 
+        log::info!(
+            "Inserted {:?} out of {:?} chunks with upsert=true",
+            temp_inserted_chunks.len(),
+            insertion_data.len()
+        );
+
         temp_inserted_chunks
     } else {
         let temp_inserted_chunks = diesel::insert_into(chunk_metadata_columns::chunk_metadata)
@@ -732,6 +746,12 @@ pub async fn bulk_insert_chunk_metadata_query(
                 .iter()
                 .any(|inserted_chunk| inserted_chunk.id == chunk_data.chunk_metadata.id)
         });
+
+        log::info!(
+            "Inserted {:?} out of {:?} chunks with upsert=false",
+            temp_inserted_chunks.len(),
+            insertion_data.len()
+        );
 
         temp_inserted_chunks
     };
@@ -850,7 +870,10 @@ pub async fn bulk_insert_chunk_metadata_query(
         .on_conflict_do_nothing()
         .execute(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Failed to insert chunk into groups".to_string()))?;
+        .map_err(|_| {
+            log::error!("Failed to insert chunk into groups");
+            ServiceError::BadRequest("Failed to insert chunk into groups".to_string())
+        })?;
 
     let chunk_tags_to_chunk_id: Vec<(Vec<DatasetTags>, uuid::Uuid)> = insertion_data
         .clone()
