@@ -416,6 +416,7 @@ pub async fn bulk_upload_chunks(
                 .unwrap_or_default()
                 .chunk_count as usize
         {
+            log::info!("Chunk count exceeds plan limit");
             return Err(ServiceError::BadRequest(
                 "Chunk count exceeds plan limit".to_string(),
             ));
@@ -974,6 +975,7 @@ async fn upload_chunk(
     };
 
     if content.is_empty() {
+        log::error!("Could not upload chunk because it must not have empty content");
         return Err(ServiceError::BadRequest(
             "Chunk must not have empty chunk_html".into(),
         ));
@@ -1070,7 +1072,6 @@ async fn upload_chunk(
         None
     };
 
-    //if collision is not nil, insert chunk with collision
     let chunk_metadata_id = {
         let original_id = payload.ingest_specific_chunk_metadata.id;
         let mut inserted_chunk_id = original_id;
