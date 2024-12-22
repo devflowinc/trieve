@@ -37,7 +37,7 @@ export default function Home() {
     <>
       <div
         className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${
-          theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
+          theme === "dark" ? "bg-black text-zinc-50" : ""
         }`}
       >
         <div className="absolute top-6 right-6">

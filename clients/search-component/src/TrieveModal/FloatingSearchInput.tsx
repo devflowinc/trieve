@@ -12,7 +12,12 @@ export const FloatingSearchInput = () => {
   };
 
   return (
-    <div className="floating-input-container" onClick={handleOpenSearch}>
+    <div
+      className={`floating-input-container${
+        props.theme == "dark" ? " dark" : ""
+      }`}
+      onClick={handleOpenSearch}
+    >
       <div className="floating-search-icon">
         <svg
           width="26"
