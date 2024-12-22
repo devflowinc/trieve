@@ -63,7 +63,10 @@ const Modal = () => {
     }
 
     if (chatOuterWrapper) {
-      chatOuterWrapper.scrollTop = chatOuterWrapper.scrollHeight;
+      chatOuterWrapper.scrollTo({
+        top: chatOuterWrapper.scrollHeight,
+        behavior: "smooth",
+      });
     }
   }, [open]);
 

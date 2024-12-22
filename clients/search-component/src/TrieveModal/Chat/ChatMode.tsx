@@ -129,15 +129,19 @@ export const ChatMode = () => {
           </form>
         </div>
         <div className={`trieve-footer chat ${props.type}`}>
-          {messages.length ? (
+          {currentQuestion || messages.length ? (
             <div className="chat-controls-row">
               <button
                 onClick={() =>
-                  isDoneReading ? clearConversation() : stopGeneratingMessage()
+                  currentQuestion
+                    ? askQuestion(currentQuestion)
+                    : isDoneReading
+                      ? clearConversation()
+                      : stopGeneratingMessage()
                 }
                 className="clear-button"
               >
-                {isDoneReading ? "Clear" : "Stop"}
+                {currentQuestion ? "Enter" : isDoneReading ? "Clear" : "Stop"}
               </button>
             </div>
           ) : null}
