@@ -406,7 +406,7 @@ export type ChunkReqPayload = {
     num_value?: (number) | null;
     semantic_boost?: ((SemanticBoost) | null);
     /**
-     * If semantic_content is present, it will be used for creating semantic embeddings instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and always used for fulltext functionality.
+     * If semantic_content is present, it will be used for creating semantic embeddings instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and always used for fulltext functionality. `chunk_html` must still be present for the chunk to be created properly.
      */
     semantic_content?: (string) | null;
     /**
