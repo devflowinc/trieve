@@ -1292,13 +1292,11 @@ body {
   }
 
   .floating-input-container {
-    @apply z-[999] fixed bottom-5 flex flex-row items-center justify-start gap-2 w-1/2 p-1 pr-5 h-[55px] rounded-full cursor-pointer transition-colors duration-300 ease-in-out bg-white border-2;
+    @apply z-[999] fixed bottom-5 flex flex-row items-center justify-start gap-2 w-3/4 left-[12.5%] sm:left-[25%] sm:w-1/2 p-1 pr-5 h-[55px] rounded-full cursor-pointer transition-colors duration-300 ease-in-out bg-white border-2;
 
     &.dark {
       @apply bg-zinc-900 border-zinc-600;
     }
-
-    left: 25%;
 
     &:hover {
       border-color: var(--tv-prop-brand-color);
