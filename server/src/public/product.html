@@ -90,7 +90,7 @@
           class="recs mt-6 flex flex-nowrap overflow-x-auto gap-x-4 sm:gap-x-6 xl:gap-x-8 py-2 mr-4 sm:mr-6 lg:mr-8"
         >
           {% for i in range(5) %}
-          <div class="w-64 flex-shrink-0">
+          <div class="w-64 flex-shrink-0" x-key="{{ i }}">
             <div class="h-72 w-full overflow-hidden rounded-lg">
               <div class="h-full w-full bg-gray-200 animate-pulse"></div>
             </div>
@@ -113,6 +113,224 @@
   </div>
 </div>
 <script type="module">
+  const setProductsToLoadingState = (idsToKeep) => {
+    const recs = document.querySelector(".recs");
+    const recProducts = recs.querySelectorAll(":scope > .rec");
+    recProducts.forEach((recProduct, i) => {
+      if (!idsToKeep.includes(recProduct.getAttribute("x-group-tracking-id"))) {
+        const newDiv = document.createElement("div");
+        newDiv.classList.add("w-64", "flex-shrink-0");
+        newDiv.setAttribute("x-key", i);
+        newDiv.innerHTML = `
+          <div class="h-72 w-full overflow-hidden rounded-lg">
+            <div class="h-full w-full bg-gray-200 animate-pulse"></div>
+          </div>
+          <div class="mt-4">
+            <div class="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
+            <div
+              class="mt-1 h-4 w-1/2 bg-gray-200 rounded animate-pulse"
+            ></div>
+          </div>
+          <div class="mt-6">
+            <div
+              class="w-full cursor-not-allowed h-10 bg-gray-200 rounded-md animate-pulse"
+            ></div>
+          </div>
+        `;
+
+        recs.replaceChild(newDiv, recProduct);
+      }
+    });
+  };
+
+  const getGroupRecommendations = async (
+    positiveGroupTrackingIds,
+    negativeGroupTrackingIds
+  ) => {
+    const recommendations = await fetch(
+      `${window.paramsData.baseUrl}/api/chunk_group/recommend`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + window.paramsData.apiKey,
+          "TR-Dataset": window.paramsData.datasetId,
+        },
+        body: JSON.stringify({
+          group_size: 1,
+          limit:
+            8 -
+            (positiveGroupTrackingIds.length + negativeGroupTrackingIds.length),
+          positive_group_tracking_ids: positiveGroupTrackingIds.length
+            ? positiveGroupTrackingIds
+            : [window.paramsData.singleProductOptions.groupTrackingId],
+          negative_group_tracking_ids: negativeGroupTrackingIds,
+        }),
+        credentials: "omit",
+      }
+    );
+
+    const recommendationsData = await recommendations.json();
+
+    replaceLoadingStateProducts(recommendationsData.results);
+    setRecProductEventListeners();
+  };
+
+  const setRecProductEventListeners = () => {
+    const recProducts = document.querySelectorAll(".rec");
+    recProducts.forEach((recProduct) => {
+      recProduct
+        .querySelector(".similar-button")
+        .addEventListener("click", () => {
+          const isActive = recProduct
+            .querySelector(".similar-button")
+            .classList.contains("active");
+          recProduct
+            .querySelector(".similar-button")
+            .classList.toggle("active");
+
+          const curWindowRecData = window.recData;
+          const curPositiveGroupTrackingIds =
+            curWindowRecData?.positiveGroupTrackingIds ?? [];
+          window.recData = {
+            positiveGroupTrackingIds: [
+              ...(curWindowRecData?.positiveGroupTrackingIds ?? []),
+              recProduct.getAttribute("x-group-tracking-id"),
+            ],
+            negativeGroupTrackingIds:
+              curWindowRecData?.negativeGroupTrackingIds ?? [],
+          };
+
+          setProductsToLoadingState([
+            ...(window.recData.positiveGroupTrackingIds ?? []),
+            ...(window.recData.negativeGroupTrackingIds ?? []),
+          ]);
+          getGroupRecommendations(
+            window.recData.positiveGroupTrackingIds,
+            window.recData.negativeGroupTrackingIds
+          );
+        });
+    });
+
+    recProducts.forEach((recProduct) => {
+      recProduct
+        .querySelector(".different-button")
+        .addEventListener("click", () => {
+          const isActive = recProduct
+            .querySelector(".different-button")
+            .classList.contains("active");
+
+          recProduct
+            .querySelector(".different-button")
+            .classList.toggle("active");
+
+          const curWindowRecData = window.recData;
+          const curNegativeGroupTrackingIds =
+            curWindowRecData?.negativeGroupTrackingIds ?? [];
+          window.recData = {
+            positiveGroupTrackingIds:
+              curWindowRecData?.positiveGroupTrackingIds ?? [],
+            negativeGroupTrackingIds: [
+              ...(curWindowRecData?.negativeGroupTrackingIds ?? []),
+              recProduct.getAttribute("x-group-tracking-id"),
+            ],
+          };
+
+          setProductsToLoadingState([
+            ...(window.recData.positiveGroupTrackingIds ?? []),
+            ...(window.recData.negativeGroupTrackingIds ?? []),
+          ]);
+          getGroupRecommendations(
+            window.recData.positiveGroupTrackingIds,
+            window.recData.negativeGroupTrackingIds
+          );
+        });
+    });
+  };
+
+  const replaceLoadingStateProducts = (results) => {
+    const recDivs = [];
+    for (const result of results) {
+      const groupTrackingId = result.group.tracking_id;
+      const chunk = result.chunks.length ? result.chunks[0]?.chunk : null;
+      if (!chunk) {
+        continue;
+      }
+
+      const imageUrl = chunk.image_urls?.length
+        ? chunk.image_urls[0]
+        : chunk.metadata.images?.length
+          ? chunk.metadata.images[0].src
+          : null;
+      if (!imageUrl) {
+        continue;
+      }
+
+      const chunkHtmlElement = document.createElement("div");
+      chunkHtmlElement.innerHTML = chunk.chunk_html;
+      const firstHeading = chunkHtmlElement.querySelector(
+        "h1, h2, h3, h4, h5, h6"
+      );
+      if (firstHeading) {
+        firstHeading.remove();
+      }
+      const title = firstHeading?.textContent || chunk.metadata.title;
+      if (!title) {
+        continue;
+      }
+
+      const sentences = chunkHtmlElement.textContent.split(/[.,!?]+/);
+      const description = chunkHtmlElement.textContent;
+
+      const priceNum =
+        chunk.num_value || chunk.metadata.variants?.length
+          ? chunk.metadata.variants[0].price
+            ? parseFloat(chunk.metadata.variants[0].price)
+            : null
+          : null;
+      const price = priceNum ? `$${priceNum.toFixed(2)}` : null;
+
+      const chunkElement = document.createElement("div");
+      chunkElement.classList.add(...["rec", "w-64", "flex-shrink-0"]);
+      chunkElement.setAttribute("x-group-tracking-id", groupTrackingId);
+      chunkElement.innerHTML = `
+        <div 
+          class="h-72 w-full overflow-hidden rounded-lg"
+        >
+          <img
+            src="${imageUrl}"
+            alt="${title}"
+            class="rec-image size-full object-cover"
+          />
+        </div>
+        <div class="mt-4">
+          <a href="${chunk.link}" target="_blank" class="text-brand-color line-clamp-1 text-sm font-medium">${title}</a>
+          <h6 class="rec-price mt-1 text-sm text-gray-700">${price}</h6>
+          <p class="rec-description line-clamp-1 mt-1 text-sm text-gray-500">${description}</p>
+        </div>
+        <div class="mt-6 flex gap-2">
+          <button
+            class="similar-button rec-button bg-brand-color w-1/2 flex items-center justify-center rounded-md border border-transparent px-8 py-2 text-sm font-medium text-white"
+          >
+            Similar items
+          </button>
+          <button
+            class="different-button rec-button bg-brand-color w-1/2 flex items-center justify-center rounded-md border border-transparent px-8 py-2 text-sm font-medium text-white"
+          >
+            Browse Alternatives
+          </button>
+        </div>
+      `;
+
+      recDivs.push(chunkElement);
+    }
+
+    const recs = document.querySelector(".recs");
+    recs.querySelectorAll(":scope > div:not(.rec)").forEach((div) => {
+      recs.replaceChild(recDivs.pop(), div);
+    });
+  };
+
   const recommendations = await fetch(
     `${window.paramsData.baseUrl}/api/chunk_group/group_oriented_search`,
     {
@@ -133,80 +351,9 @@
     }
   );
   const recommendationsData = await recommendations.json();
-  const recommendedResults = recommendationsData.results
-    .map((result) => {
-      return result.chunks;
-    })
-    .flat();
-  const recDivs = [];
 
-  for (const result of recommendedResults) {
-    const chunk = result.chunk;
-    const imageUrl = chunk.image_urls?.length
-      ? chunk.image_urls[0]
-      : chunk.metadata.images?.length
-        ? chunk.metadata.images[0].src
-        : null;
-    if (!imageUrl) {
-      continue;
-    }
-
-    const chunkHtmlElement = document.createElement("div");
-    chunkHtmlElement.innerHTML = chunk.chunk_html;
-    const firstHeading = chunkHtmlElement.querySelector(
-      "h1, h2, h3, h4, h5, h6"
-    );
-    if (firstHeading) {
-      firstHeading.remove();
-    }
-    const title = firstHeading?.textContent || chunk.metadata.title;
-    if (!title) {
-      continue;
-    }
-
-    const sentences = chunkHtmlElement.textContent.split(/[.,!?]+/);
-    const description = chunkHtmlElement.textContent;
-
-    const priceNum =
-      chunk.num_value || chunk.metadata.variants?.length
-        ? chunk.metadata.variants[0].price
-          ? parseFloat(chunk.metadata.variants[0].price)
-          : null
-        : null;
-    const price = priceNum ? `$${priceNum.toFixed(2)}` : null;
-
-    const chunkElement = document.createElement("div");
-    chunkElement.classList.add(...["rec", "w-64", "flex-shrink-0"]);
-    chunkElement.innerHTML = `
-      <div class="h-72 w-full overflow-hidden rounded-lg">
-        <img
-          src="${imageUrl}"
-          alt="${title}"
-          class="rec-image size-full object-cover"
-        />
-      </div>
-      <div class="mt-4">
-        <h3 class="text-brand-color line-clamp-1 text-sm font-medium">${title}</h3>
-        <h6 class="rec-price mt-1 text-sm text-gray-700">${price}</h6>
-        <p class="rec-description line-clamp-1 mt-1 text-sm text-gray-500">${description}</p>
-      </div>
-      <div class="mt-6">
-        <button
-          class="bg-brand-color cursor-not-allowed w-full flex items-center justify-center rounded-md border border-transparent px-8 py-2 text-sm font-medium text-white"
-        >
-          Add to cart
-        </button>
-      </div>
-    `;
-
-    recDivs.push(chunkElement);
-  }
-
-  const recs = document.querySelector(".recs");
-  recs.innerHTML = "";
-  recDivs.forEach((recDiv) => {
-    recs.appendChild(recDiv);
-  });
+  replaceLoadingStateProducts(recommendationsData.results);
+  setRecProductEventListeners();
 </script>
 <script type="module">
   const getGroupByTrackingIdResp = await fetch(
