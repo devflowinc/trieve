@@ -283,6 +283,17 @@ const defaultDatePresets: DatePreset[] = [
     },
     granularity: "hour",
   },
+  {
+    id: 7,
+    label: "All Time",
+    range: {
+      gt: undefined,
+      lt: undefined,
+      lte: undefined,
+      gte: undefined,
+    },
+    granularity: "month",
+  }
 ];
 
 interface PresetsProps {
