@@ -32,7 +32,7 @@ export const NavbarLayout = (props: NavbarLayoutProps) => {
           <div class="flex items-center justify-end gap-3">
             <a
               class="flex items-center gap-2 rounded-md border bg-neutral-100 px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-600"
-              href="https://docs.trieve.ai"
+              href="https://docs.trieve.ai/api-reference"
               target="_blank"
             >
               <p>API Docs</p>
