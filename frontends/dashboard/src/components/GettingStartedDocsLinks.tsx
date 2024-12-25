@@ -44,7 +44,7 @@ export const GettingStartedDocsLinks = () => {
         />
         <GettingStartedLink
           icon={AiFillCaretRight}
-          link="https://docs.trieve.ai/getting-started/quickstart"
+          link="https://docs.trieve.ai/getting-started/introduction"
           description="Get started with Trieve quickly"
           title="Getting Started"
         />
