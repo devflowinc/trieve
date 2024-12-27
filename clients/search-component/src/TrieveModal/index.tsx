@@ -22,7 +22,7 @@ import { FloatingSearchInput } from "./FloatingSearchInput";
 
 const Modal = () => {
   useKeyboardNavigation();
-  const { mode, open, setOpen, setMode, props } = useModalState();
+  const { mode, open, setOpen, setMode, setQuery, props } = useModalState();
   const { askQuestion, chatWithGroup } = useChatState();
 
   useEffect(() => {
@@ -79,7 +79,7 @@ const Modal = () => {
     };
   }, [open]);
 
-  const eventListener: EventListener = useCallback((e: Event) => {
+  const chatWithGroupListener: EventListener = useCallback((e: Event) => {
     try {
       const customEvent = e as CustomEvent<{
         message?: string;
@@ -104,6 +104,27 @@ const Modal = () => {
     }
   }, []);
 
+  const openWithTextListener: EventListener = useCallback((e: Event) => {
+    try {
+      const customEvent = e as CustomEvent<{
+        text: string;
+      }>;
+
+      const defaultMode = props.defaultSearchMode || "search";
+      if (defaultMode === "chat") {
+        setOpen(true);
+        setMode("chat");
+        askQuestion(customEvent.detail.text);
+      } else {
+        setOpen(true);
+        setMode("search");
+        setQuery(customEvent.detail.text);
+      }
+    } catch (e) {
+      console.log("error on event listener for group chat", e);
+    }
+  }, []);
+
   useEffect(() => {
     const script = document.createElement("script");
     script.src =
@@ -112,15 +133,19 @@ const Modal = () => {
 
     document.head.appendChild(script);
 
-    try {
-      window.removeEventListener("trieve-start-chat-with-group", eventListener);
-    } catch (e) {
-      console.log("eror on initial listener remove", e);
-    }
-    window.addEventListener("trieve-start-chat-with-group", eventListener);
+    window.addEventListener(
+      "trieve-start-chat-with-group",
+      chatWithGroupListener
+    );
+    window.addEventListener("trieve-open-with-text", openWithTextListener);
 
     return () => {
-      window.removeEventListener("trieve-start-chat-with-group", eventListener);
+      window.removeEventListener(
+        "trieve-start-chat-with-group",
+        chatWithGroupListener
+      );
+
+      window.removeEventListener("trieve-open-with-text", openWithTextListener);
     };
   }, []);
 

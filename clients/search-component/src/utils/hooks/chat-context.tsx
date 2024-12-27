@@ -70,6 +70,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     new AbortController()
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
+  const [scrollTimeout, setScrollTimeout] = useState<NodeJS.Timeout | null>();
+
   const createTopic = async ({ question }: { question: string }) => {
     if (!currentTopic) {
       called.current = true;
@@ -154,12 +156,17 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ],
         ]);
 
-        setTimeout(() => {
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
+        }
+
+        const curScrollTimeout = setTimeout(() => {
           modalRef.current?.scroll({
             top: modalRef.current.scrollHeight + 200,
             behavior: "smooth",
           });
-        });
+        }, 75);
+        setScrollTimeout(curScrollTimeout);
       }
     }
   };
