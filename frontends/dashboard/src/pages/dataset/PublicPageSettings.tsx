@@ -752,17 +752,18 @@ const PublicPageControls = () => {
             <div class="flex items-center gap-1">
               <label class="block">Video Position</label>
               <Tooltip
-                tooltipText="Position of the video on the page. Either floating or centered."
+                tooltipText="Position of the video on the page. Either floating or product."
                 body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
               />
             </div>
-            <input
-              placeholder="floating | product"
-              value={extraParams.videoPosition || ""}
-              onInput={(e) => {
-                setExtraParams("videoPosition", e.currentTarget.value);
+            <Select
+              display={(option) => option}
+              onSelected={(option) => {
+                setExtraParams("videoPosition", option);
               }}
-              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              class="bg-white py-1"
+              selected={extraParams.videoPosition || "static"}
+              options={["static", "floating", "product"]}
             />
           </div>
         </div>
@@ -821,28 +822,6 @@ const PublicPageControls = () => {
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-              <div class="grow">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Default Search Mode
-                  </label>
-                  <Tooltip
-                    tooltipText="Set the initial search mode"
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <Select
-                  display={(option) => option}
-                  onSelected={(option) => {
-                    setExtraParams("defaultSearchMode", option);
-                  }}
-                  class="bg-white py-1"
-                  selected={extraParams.defaultSearchMode || "search"}
-                  options={["search", "chat"]}
-                />
-              </div>
               <div class="grow">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">

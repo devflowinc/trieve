@@ -18,7 +18,7 @@ export const setClickTriggers = (
     const newElement = element.cloneNode(true);
     element?.parentNode?.replaceChild(newElement, element);
     return newElement as unknown as Element;
-  }
+  };
 
   props.buttonTriggers?.forEach((trigger) => {
     let element: Element | null = document.querySelector(trigger.selector);
@@ -31,8 +31,8 @@ export const setClickTriggers = (
         startTransition(() => {
           setMode(trigger.mode);
           setOpen(true);
-        })
+        });
       });
     }
-  })
-}
+  });
+};

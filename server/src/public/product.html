@@ -1,8 +1,9 @@
 <div class="max-w-full">
   <div
     id="product-display"
-    class="mx-auto py-4 px-4 mt-40 sm:px-6 sm:mt-30 lg:max-w-7xl lg:px-8"
+    class="mx-auto py-4 px-4 sm:px-6 lg:max-w-7xl lg:px-8"
   >
+    {% if params.singleProductOptions.productDescriptionHtml %}
     <section class="lg:flex gap-2 lg:gap-x-8 lg:gap-y-10 xl:gap-x-16 py-2">
       <div class="lg:w-1/2">
         <img
@@ -35,15 +36,6 @@
         </div>
         {% endif %}
 
-        <div class="mt-4">
-          <button
-            type="button"
-            class="bg-brand-color cursor-not-allowed flex w-full items-center justify-center rounded-md border border-transparent px-8 py-3 text-base font-medium text-white focus:ring-0 focus:outline-hidden"
-          >
-            Add to cart
-          </button>
-        </div>
-
         <div class="mt-4 border-t border-gray-200">
           <h3 class="text-brand-color text-sm font-medium mt-4">
             <span class="text-brand-color"
@@ -70,7 +62,7 @@
         </div>
       </div>
     </section>
-
+    {% endif %} {% if params.singleProductOptions.recSearchQuery %}
     <section
       aria-labelledby="related-heading"
       class="border-t border-gray-200 mt-4"
@@ -87,7 +79,7 @@
         </h4>
 
         <div
-          class="recs mt-6 flex flex-nowrap overflow-x-auto gap-x-4 sm:gap-x-6 xl:gap-x-8 py-2 mr-4 sm:mr-6 lg:mr-8"
+          class="recs mt-6 flex flex-nowrap overflow-x-auto gap-x-4 sm:gap-x-6 xl:gap-x-8 py-2"
         >
           {% for i in range(5) %}
           <div class="w-64 flex-shrink-0" x-key="{{ i }}">
@@ -110,10 +102,12 @@
         </div>
       </div>
     </section>
+    {% endif %}
   </div>
 </div>
 <script type="module">
   const setProductsToLoadingState = (idsToKeep) => {
+    console.log("keep", idsToKeep);
     const recs = document.querySelector(".recs");
     const recProducts = recs.querySelectorAll(":scope > .rec");
     recProducts.forEach((recProduct, i) => {
@@ -180,70 +174,46 @@
     const recProducts = document.querySelectorAll(".rec");
     recProducts.forEach((recProduct) => {
       recProduct
-        .querySelector(".similar-button")
-        .addEventListener("click", () => {
-          const isActive = recProduct
-            .querySelector(".similar-button")
-            .classList.contains("active");
-          recProduct
-            .querySelector(".similar-button")
-            .classList.toggle("active");
+        .querySelectorAll(".similar-button , .different-button")
+        .forEach((button) => {
+          const newButton = button.cloneNode(true);
+          button.replaceWith(newButton);
 
-          const curWindowRecData = window.recData;
-          const curPositiveGroupTrackingIds =
-            curWindowRecData?.positiveGroupTrackingIds ?? [];
-          window.recData = {
-            positiveGroupTrackingIds: [
-              ...(curWindowRecData?.positiveGroupTrackingIds ?? []),
+          newButton.addEventListener("click", () => {
+            const isActive = newButton.classList.contains("active");
+            newButton.classList.toggle("active");
+
+            let curWindowRecData = window.recData;
+            if (!curWindowRecData) {
+              curWindowRecData = {};
+            }
+            const field = newButton.classList.contains("similar-button")
+              ? "positiveGroupTrackingIds"
+              : "negativeGroupTrackingIds";
+            if (!curWindowRecData[field]) {
+              curWindowRecData[field] = [];
+            }
+            if (isActive) {
+              curWindowRecData[field] = curWindowRecData[field].filter(
+                (id) => id !== recProduct.getAttribute("x-group-tracking-id")
+              );
+            } else {
+              curWindowRecData[field].push(
+                recProduct.getAttribute("x-group-tracking-id")
+              );
+            }
+            window.recData = curWindowRecData;
+
+            setProductsToLoadingState([
+              ...(window.recData.positiveGroupTrackingIds ?? []),
+              ...(window.recData.negativeGroupTrackingIds ?? []),
               recProduct.getAttribute("x-group-tracking-id"),
-            ],
-            negativeGroupTrackingIds:
-              curWindowRecData?.negativeGroupTrackingIds ?? [],
-          };
-
-          setProductsToLoadingState([
-            ...(window.recData.positiveGroupTrackingIds ?? []),
-            ...(window.recData.negativeGroupTrackingIds ?? []),
-          ]);
-          getGroupRecommendations(
-            window.recData.positiveGroupTrackingIds,
-            window.recData.negativeGroupTrackingIds
-          );
-        });
-    });
-
-    recProducts.forEach((recProduct) => {
-      recProduct
-        .querySelector(".different-button")
-        .addEventListener("click", () => {
-          const isActive = recProduct
-            .querySelector(".different-button")
-            .classList.contains("active");
-
-          recProduct
-            .querySelector(".different-button")
-            .classList.toggle("active");
-
-          const curWindowRecData = window.recData;
-          const curNegativeGroupTrackingIds =
-            curWindowRecData?.negativeGroupTrackingIds ?? [];
-          window.recData = {
-            positiveGroupTrackingIds:
-              curWindowRecData?.positiveGroupTrackingIds ?? [],
-            negativeGroupTrackingIds: [
-              ...(curWindowRecData?.negativeGroupTrackingIds ?? []),
-              recProduct.getAttribute("x-group-tracking-id"),
-            ],
-          };
-
-          setProductsToLoadingState([
-            ...(window.recData.positiveGroupTrackingIds ?? []),
-            ...(window.recData.negativeGroupTrackingIds ?? []),
-          ]);
-          getGroupRecommendations(
-            window.recData.positiveGroupTrackingIds,
-            window.recData.negativeGroupTrackingIds
-          );
+            ]);
+            getGroupRecommendations(
+              window.recData.positiveGroupTrackingIds ?? [],
+              window.recData.negativeGroupTrackingIds ?? []
+            );
+          });
         });
     });
   };
@@ -294,7 +264,7 @@
       chunkElement.classList.add(...["rec", "w-64", "flex-shrink-0"]);
       chunkElement.setAttribute("x-group-tracking-id", groupTrackingId);
       chunkElement.innerHTML = `
-        <div 
+        <div
           class="h-72 w-full overflow-hidden rounded-lg"
         >
           <img

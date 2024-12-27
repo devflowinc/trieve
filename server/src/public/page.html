@@ -52,6 +52,7 @@
     ></script>
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
     <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js"></script>
+    <script src="https://player.vimeo.com/api/player.js"></script>
 
     <script type="module">
       window.paramsData = {{params | tojson}};
@@ -101,7 +102,7 @@
         background-color: var(--hero-bg-color);
         color: var(--theme-text-color);
 
-        a:hover {
+        a:hover,button:hover {
           color: var(--brand-color);
           svg {
             fill: var(--brand-color);
@@ -150,6 +151,10 @@
         }
       }
 
+      #root #open-trieve-modal {
+        display: none;
+      }
+
       body {
         min-height: 100vh;
         display: flex;
@@ -157,11 +162,45 @@
         font-family: "Maven Pro", sans-serif;
       }
 
-      .recs-section {
-        width: 100% !important;
+      body #open-trieve-modal.demo-open-button:not(.responsive) {
+        height: 4rem;
+        border-radius: 9999px;
+        width: 100%;
+        max-width: 72rem;
+        margin-left: auto;
+        margin-right: auto;
+        outline: none;
+        background-color: {{'#18181B' if (params.theme == 'dark') else '#FAFAFA'}};
+        border: 1px solid {{'#3f3f46' if (params.theme == 'dark') else '#d4d4d8'}};
+
+        &:hover {
+          outline: none;
+          border: 1px solid var(--brand-color);
+        }
+
+        div>div {
+          font-size: 1rem;
+          @media (min-width: 640px) {
+            font-size: 1.25rem;
+          }
+        }
       }
 
-      h1,h2,h3,h4,h5,h6,p,pre,button,nav,.paragraph-text {
+      .recs-section {
+        width: 100% !important;
+
+        .recs {
+          padding-left: 4px;
+          padding-right: 4px;
+        }
+      }
+
+      .rec-button.active {
+        outline-offset: 2px;
+        outline: 2px solid var(--brand-color);
+      }
+
+      h1,h2,h3,h4,h5,h6,p,pre,button,nav,.paragraph-text,.blurb-html {
         position: relative;
         z-index: 15;
       }
@@ -184,8 +223,8 @@
         display: flex;
         position: relative;
         flex-direction: column;
-        padding-top: 48px;
-        gap: 40px;
+        padding-top: 1rem;
+        gap: 1rem;
       }
 
       .corner-logo {
@@ -311,6 +350,12 @@
         z-index: 15;
       }
 
+      .blurb-html {
+        iframe {
+          border-radius: 0.375rem;
+        }
+      }
+
       .video-wrapper {
         position: fixed;
         bottom: 20px;
@@ -348,36 +393,136 @@
 
       .starter-questions {
         button:not(.bg-brand-color) {
-          background-color: {{'#18181b' if (params.theme == 'dark') else '#f9fafb'}};
+          background-color: {{'#18181B' if (params.theme == 'dark') else '#FAFAFA'}};
 
           &:hover {
-            background-color: color-mix(in srgb, {{'#18181b' if (params.theme == 'dark') else '#f9fafb'}}, black 20%);
+            background-color: color-mix(in srgb, {{'#18181B' if (params.theme == 'dark') else '#FAFAFA'}}, black 20%);
           }
         }
+      }
+
+      .example-questions {
+        button:not(.bg-brand-color) {
+          background-color: {{'#18181B' if (params.theme == 'dark') else '#F3F4F6'}};
+
+          &:hover {
+            background-color: color-mix(in srgb, {{'#18181B' if (params.theme == 'dark') else '#F3F4F6'}}, black 20%);
+          }
+        }
+      }
+
+      .brand-name {
+        font-weight: 500;
       }
     </style>
 
     <script type="module">
-      import {renderToDiv} from '{{ search_component_url | safe }}/dist/vanilla/index.js';
-      const root = document.getElementById('root');
-      renderToDiv(root, {
-        ... {{params | tojson}}
-      })
+        import {renderToDiv} from '{{ search_component_url | safe }}/dist/vanilla/index.js';
+        const root = document.querySelector("#root");
+        const params = {{params | tojson}};
+        params.buttonTriggers = [
+          { selector: "#tr-search-icon", mode: params.defaultSearchMode ?? "search" },
+          { selector: ".demo-open-button", mode: params.defaultSearchMode ?? "search" },
+          ...(params.buttonTriggers ?? [])
+        ];
+        renderToDiv(root, {
+          ...params,
+        })
+
+      const starterQuestions = document.querySelectorAll(
+        ".example-questions button"
+      );
+
+      starterQuestions.forEach((button) => {
+        button.addEventListener("click", async () => {
+          const text =
+            button.textContent.trim() === "Ask something else"
+              ? null
+              : button.textContent.trim();
+
+          window.dispatchEvent(
+            new CustomEvent("trieve-open-with-text", {
+              detail: {
+                text,
+              },
+            })
+          );
+        });
+      });
     </script>
   </head>
 
   <body style="{{body_style}}; {{ background_color }}">
     {% include "navbar.html" %}
     <main>
+      <div id="root"></div>
       <div class="basic">
-        <div id="root" class="min-h-[36px]"></div>
-        {% if params.singleProductOptions and
+        <div class="w-full mb-8 sm:mb-10 lg:mb-12">
+          <div class="mx-auto py-4 px-4 sm:px-6 lg:max-w-7xl lg:px-8 w-full">
+            <button
+              id="open-trieve-modal"
+              type="button"
+              class="demo-open-button"
+            >
+              <div>
+                <i class="fa-solid fa-magnifying-glass w-6 h-6 pl-1"></i>
+                <div>{{ params.placeholder }}</div>
+              </div>
+              {% if params.type != "ecommerce" %}
+              <span class="open">
+                <div>
+                  <span>
+                    <span class="mac">⌘ </span>
+                    <span class="not-mac">Ctrl </span>
+                  </span>
+                </div>
+                <div>
+                  <span> + K</span>
+                </div>
+              </span>
+              {% endif %}
+            </button>
+          </div>
+          {% if params.defaultAiQuestions and params.defaultAiQuestions|length >
+          0 %}
+          <div
+            class="example-questions flex justify-center flex-wrap gap-1 mt-2 mx-auto px-4 sm:px-6 lg:max-w-7xl lg:px-8 w-full"
+          >
+            {% for question in params.defaultAiQuestions %}
+            <button
+              class="text-brand-color text-white rounded-full px-4 py-2 rounded-full"
+            >
+              {{ question }}
+            </button>
+            {% endfor %}
+          </div>
+          {% endif %} {% if params.videoLink and params.videoPosition ==
+          "static" %}
+        </div>
+        <div
+          class="mx-auto py-4 px-8 sm:px-12 lg:max-w-7xl lg:px-20 w-full blurb-html"
+        >
+          <div style="padding: 56.25% 0 0 0; position: relative">
+            <iframe
+              src="{{params.videoLink}}"
+              frameborder="0"
+              allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+              style="
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+              "
+            ></iframe>
+          </div>
+        </div>
+        {% endif %} {% if params.singleProductOptions and
         params.singleProductOptions.productName %} {% include "product.html" %}
         {% else %}
         <div class="mt-24 sm:mt-6"></div>
-        {% endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% else
-        %} {% include "search-component-code.html" %} {% endif %} {% if
-        params.videoLink and params.videoPosition == "floating" %}
+        {% endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% endif
+        %} {% if params.videoLink and params.videoPosition == "floating" %}
         <div class="video-wrapper">
           <iframe
             src="{{params.videoLink}}"
@@ -391,182 +536,4 @@
       </div>
     </main>
   </body>
-
-  <canvas id="canvas"></canvas>
-
-  <script src="https://unpkg.com/roughjs@latest/bundled/rough.js"></script>
-  <script type="module">
-    import { annotate } from "https://unpkg.com/rough-notation?module";
-
-    let openTrieveModalElement = document.getElementById("open-trieve-modal");
-    while (!openTrieveModalElement) {
-      openTrieveModalElement = document.getElementById("open-trieve-modal");
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    }
-    let tabContainer = document.getElementById("tab-container");
-    while (!tabContainer) {
-      tabContainer = document.getElementById("tab-container");
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    }
-    if (window.innerWidth > 768) {
-      console.log(tabContainer.offsetWidth);
-      openTrieveModalElement.style.width = tabContainer.offsetWidth / 2 + "px";
-    }
-    const canvas = document.getElementById("canvas");
-
-    if (!window.paramsData.hideDrawnText) {
-      let brandNameElement = document.querySelector(".brand-name");
-      while (!brandNameElement) {
-        brandNameElement = document.querySelector(".brand-name");
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      }
-
-      let recElement = document.querySelector(".recs-section");
-      let recBracketAnimation = null;
-      if (window.innerWidth > 1024 && recElement) {
-        recElement.style.width = tabContainer.offsetWidth + "px";
-        recBracketAnimation = annotate(recElement, {
-          type: "bracket",
-          color: window.paramsData.brandColor || "black",
-          padding: 8,
-          brackets: ["left"],
-        });
-      }
-
-      const circleSearchAnimation = annotate(openTrieveModalElement, {
-        type: "circle",
-        color: window.paramsData.brandColor || "black",
-        padding: 40,
-      });
-
-      const brandUnderlineAnimation = annotate(brandNameElement, {
-        type: "underline",
-        animationDuration: 50,
-        color: window.paramsData.brandColor || "black",
-        padding: 1.5,
-      });
-
-      canvas.style.position = "absolute";
-      canvas.style.left = "0";
-      canvas.style.top = "0";
-      canvas.width =
-        document.documentElement.clientWidth || document.body.clientWidth;
-      canvas.height =
-        document.documentElement.clientHeight || document.body.clientHeight;
-      canvas.style.zIndex = "1";
-      const rc = rough.canvas(canvas);
-
-      const openTrieveRect = openTrieveModalElement.getBoundingClientRect();
-      let endOpenX = openTrieveRect.right + 138;
-      let endOpenY = openTrieveRect.bottom + 45;
-      if (endOpenX > window.innerWidth) {
-        endOpenX = window.innerWidth - 125;
-        endOpenY += 15;
-      }
-      const startOpenX = openTrieveRect.right + 60;
-      const startOpenY = openTrieveRect.bottom - 15;
-
-      rc.path(
-        `M ${startOpenX} ${startOpenY}
-         Q ${startOpenX + 85} ${endOpenY - 85} ${endOpenX} ${endOpenY}`,
-        {
-          stroke: window.paramsData.brandColor || "black",
-          strokeWidth: 2,
-          roughness: 3,
-          bowing: 3,
-        }
-      );
-
-      const arrowSize = 10;
-      rc.line(
-        startOpenX - 5,
-        startOpenY,
-        startOpenX + arrowSize,
-        startOpenY + arrowSize,
-        {
-          stroke: window.paramsData.brandColor || "black",
-          strokeWidth: 2,
-        }
-      );
-      rc.line(
-        startOpenX - 5,
-        startOpenY,
-        startOpenX + arrowSize,
-        startOpenY - arrowSize,
-        {
-          stroke: window.paramsData.brandColor || "black",
-          strokeWidth: 2,
-        }
-      );
-
-      let endRecX = 0;
-      let endRecY = 0;
-      if (recBracketAnimation) {
-        const relHeadingElement = document.getElementById("related-heading");
-        const recHeadingRect = relHeadingElement.getBoundingClientRect();
-        endRecX = recHeadingRect.right + 164;
-        endRecY = recHeadingRect.top - 5;
-        const startRecX = recHeadingRect.right + 15;
-        const startRecY = recHeadingRect.top + 15;
-
-        rc.path(
-          `M ${startRecX} ${startRecY}
-           Q ${startRecX + 80} ${startRecY + 20} ${endRecX} ${endRecY}`,
-          {
-            stroke: window.paramsData.brandColor || "black",
-            strokeWidth: 2,
-            roughness: 3,
-            bowing: 3,
-          }
-        );
-
-        rc.line(
-          startRecX - 5,
-          startRecY,
-          startRecX + arrowSize,
-          startRecY + arrowSize * 1.5,
-          {
-            stroke: window.paramsData.brandColor || "black",
-            strokeWidth: 2,
-          }
-        );
-        rc.line(
-          startRecX - 5,
-          startRecY,
-          startRecX + arrowSize,
-          startRecY - arrowSize,
-          {
-            stroke: window.paramsData.brandColor || "black",
-            strokeWidth: 2,
-          }
-        );
-      }
-
-      await Promise.all([
-        document.fonts.load("16px Architects Daughter"),
-        document.fonts.load("16px cursive"),
-      ]);
-
-      const ctx = canvas.getContext("2d");
-      ctx.font = "500 32px Architects Daughter, cursive";
-      ctx.fontDisplay = "swap";
-      ctx.fillStyle = window.paramsData.brandColor || "black";
-      ctx.fillText("Try Me!", endOpenX - 40, endOpenY + 30);
-
-      if (recBracketAnimation) {
-        ctx.font = "500 20px Architects Daughter, cursive";
-        ctx.fillText(
-          "Personalized + auto optimized",
-          endRecX + 10,
-          endRecY - 5
-        );
-        recBracketAnimation.show();
-      }
-
-      circleSearchAnimation.show();
-      brandUnderlineAnimation.show();
-    } else {
-      canvas.style.display = "none";
-    }
-  </script>
 </html>
