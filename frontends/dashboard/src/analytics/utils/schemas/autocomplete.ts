@@ -86,7 +86,7 @@ type LibraryOptions = Omit<
   use_autocomplete?: boolean | null;
 };
 
-// Assert that public page search options are valid at type level
+// Assert that demo page search options are valid at type level
 type AssertValidOptions = z.infer<typeof publicPageSearchOptionsSchema>;
 // This will error if the modal prop types get out of sync with the schema
 export const assertValidOptions = (

@@ -19,10 +19,10 @@ export const PublicPageSettingsPage = () => {
       <div class="flex items-end justify-between pb-2">
         <div>
           <h2 id="user-details-name" class="text-xl font-medium leading-6">
-            Public Page
+            Demo Page
           </h2>
           <p class="mt-1 text-sm text-neutral-600">
-            Expose a public page to send your share your search to others
+            Expose a demo page to send your share your search to others
           </p>
         </div>
       </div>
@@ -735,7 +735,7 @@ const PublicPageControls = () => {
             <div class="flex items-center gap-1">
               <label class="block">Video Link</label>
               <Tooltip
-                tooltipText="Video that will be displayed on the public page. Needs to be the embed link."
+                tooltipText="Video that will be displayed on the demo page. Needs to be the embed link."
                 body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
               />
             </div>
@@ -1350,7 +1350,7 @@ export const TabOptions = () => {
         <label class="block pt-4" for="">
           Message HTML
           <div class="text-xs text-neutral-500">
-            This is the HTML that will be displayed on the public page under
+            This is the HTML that will be displayed on the demo page under
             that tab
           </div>
         </label>

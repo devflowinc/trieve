@@ -1307,7 +1307,7 @@ body {
     }
 
     .floating-search-input {
-      @apply p-2 outline-none text-base w-full text-black bg-transparent;
+      @apply p-2 outline-none text-base w-full text-black bg-transparent text-ellipsis;
 
       font-family: var(--tv-prop-brand-font-family);
     }
