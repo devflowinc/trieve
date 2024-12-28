@@ -457,7 +457,7 @@
     <main>
       <div id="root"></div>
       <div class="basic">
-        <div class="w-full mb-8 sm:mb-10 lg:mb-12">
+        <div class="w-full mb-10 sm:mb-12 lg:mb-14">
           <div class="mx-auto py-4 px-4 sm:px-6 lg:max-w-7xl lg:px-8 w-full">
             <button
               id="open-trieve-modal"
@@ -489,16 +489,14 @@
             class="example-questions flex justify-center flex-wrap gap-1 mt-2 mx-auto px-4 sm:px-6 lg:max-w-7xl lg:px-8 w-full"
           >
             {% for question in params.defaultAiQuestions %}
-            <button
-              class="text-brand-color text-white rounded-full px-4 py-2 rounded-full"
-            >
+            <button class="text-brand-color text-white px-4 py-2 rounded-full">
               {{ question }}
             </button>
             {% endfor %}
           </div>
-          {% endif %} {% if params.videoLink and params.videoPosition ==
-          "static" %}
+          {% endif %}
         </div>
+        {% if params.videoLink and params.videoPosition == "static" %}
         <div
           class="mx-auto py-4 px-8 sm:px-12 lg:max-w-7xl lg:px-20 w-full blurb-html"
         >
@@ -519,8 +517,6 @@
         </div>
         {% endif %} {% if params.singleProductOptions and
         params.singleProductOptions.productName %} {% include "product.html" %}
-        {% else %}
-        <div class="mt-24 sm:mt-6"></div>
         {% endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% endif
         %} {% if params.videoLink and params.videoPosition == "floating" %}
         <div class="video-wrapper">
