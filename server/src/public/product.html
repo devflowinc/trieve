@@ -1,7 +1,7 @@
 <div class="max-w-full">
   <div
     id="product-display"
-    class="mx-auto py-4 px-4 sm:px-6 lg:max-w-7xl lg:px-8"
+    class="mx-auto mt-10 sm:mt-12 lg:mt-14 py-4 px-4 sm:px-6 lg:max-w-7xl lg:px-8"
   >
     {% if params.singleProductOptions.productDescriptionHtml %}
     <section class="lg:flex gap-2 lg:gap-x-8 lg:gap-y-10 xl:gap-x-16 py-2">
@@ -72,7 +72,7 @@
           id="related-heading"
           class="text-brand-color text-xl font-bold mt-8 w-fit"
         >
-          Related products
+          Products Related to {{ params.singleProductOptions.productName }}
         </h2>
         <h4 class="text-sm text-gray-500 mt-2 w-fit">
           Tailored to user history. AI automatically optimizes conversions.
@@ -107,7 +107,6 @@
 </div>
 <script type="module">
   const setProductsToLoadingState = (idsToKeep) => {
-    console.log("keep", idsToKeep);
     const recs = document.querySelector(".recs");
     const recProducts = recs.querySelectorAll(":scope > .rec");
     recProducts.forEach((recProduct, i) => {
@@ -182,6 +181,14 @@
           newButton.addEventListener("click", () => {
             const isActive = newButton.classList.contains("active");
             newButton.classList.toggle("active");
+            newButton
+              .closest(".rec")
+              .querySelectorAll(".rec-button")
+              .forEach((otherButton) => {
+                if (otherButton !== newButton) {
+                  otherButton.classList.remove("active");
+                }
+              });
 
             let curWindowRecData = window.recData;
             if (!curWindowRecData) {
@@ -193,6 +200,16 @@
             if (!curWindowRecData[field]) {
               curWindowRecData[field] = [];
             }
+
+            const oppositeField = newButton.classList.contains("similar-button")
+              ? "negativeGroupTrackingIds"
+              : "positiveGroupTrackingIds";
+            curWindowRecData[oppositeField] = curWindowRecData[
+              oppositeField
+            ]?.filter(
+              (id) => id !== recProduct.getAttribute("x-group-tracking-id")
+            );
+
             if (isActive) {
               curWindowRecData[field] = curWindowRecData[field].filter(
                 (id) => id !== recProduct.getAttribute("x-group-tracking-id")
