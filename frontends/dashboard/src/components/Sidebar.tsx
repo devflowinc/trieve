@@ -227,7 +227,7 @@ export const DashboardSidebar = () => {
               isExternal={false}
               icon={FiShare2}
               href={`/dataset/${datasetId()}/public-page`}
-              label="Public Page"
+              label="Demo Page"
             />
             <Link
               isExternal={false}

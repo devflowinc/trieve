@@ -12,12 +12,12 @@
       <p class="font-medium text-2xl">
         {{params.headingPrefix|safe if (params.headingPrefix is defined and
         params.headingPrefix) else 'Demo For'|safe}}
-        <span class="brand-name">
+        <span class="brand-name font-medium">
           {{params.forBrandName|safe if (params.forBrandName is defined and
           params.forBrandName) else 'Prospect'|safe}}
         </span>
       </p>
-      <p class="signature mt-1 pl-0.5 text-right text-sm">
+      <p class="signature mt-1 pl-0.5 text-right text-sm hidden sm:block">
         - From
         <a
           class="creator"
@@ -36,7 +36,7 @@
     <div class="flex-1"></div>
     <div
       id="nav-links"
-      class="flex flex-wrap items-center gap-4 justify-center sm:justify-right -mt-2 sm:mt-0"
+      class="flex flex-wrap items-center gap-3 sm:gap-4 justify-center sm:justify-right -mt-1 sm:mt-0"
     >
       <a
         class="flex items-center gap-1"
