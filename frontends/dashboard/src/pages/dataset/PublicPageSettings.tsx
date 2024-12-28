@@ -1350,8 +1350,8 @@ export const TabOptions = () => {
         <label class="block pt-4" for="">
           Message HTML
           <div class="text-xs text-neutral-500">
-            This is the HTML that will be displayed on the demo page under
-            that tab
+            This is the HTML that will be displayed on the demo page under that
+            tab
           </div>
         </label>
         <HtmlEditor
