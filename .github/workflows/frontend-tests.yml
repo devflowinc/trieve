@@ -28,20 +28,26 @@ jobs:
       - name: Running lint
         run: yarn lint:CI
       - name: Annotate Search Linting Results
-        uses: ataylorme/eslint-annotate-action@1.0.4
+        uses: ataylorme/eslint-annotate-action@3.0.0
         if: always()
         with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           report-json: "./frontends/search/eslint_report.json"
+          fail-on-error: true
+          fail-on-warning: true
       - name: Annotate Chat Linting Results
-        uses: ataylorme/eslint-annotate-action@1.0.4
+        uses: ataylorme/eslint-annotate-action@3.0.0
         if: always()
         with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           report-json: "./frontends/chat/eslint_report.json"
+          fail-on-error: true
+          fail-on-warning: true
       - name: Annotate Dashboard Linting Results
-        uses: ataylorme/eslint-annotate-action@1.0.4
+        uses: ataylorme/eslint-annotate-action@3.0.0
         if: always()
         with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           report-json: "./frontends/dashboard/eslint_report.json"
+          fail-on-error: true
+          fail-on-warning: true

@@ -51,10 +51,15 @@ export const LLMSettings = (props: {
                   value={props.serverConfig().LLM_BASE_URL?.toString()}
                   onInput={(e) =>
                     props.setServerConfig((prev) => {
-                      return {
+                      const updatedConfig = {
                         ...prev,
                         LLM_BASE_URL: e.currentTarget.value,
                       };
+                      if (prev.LLM_BASE_URL !== e.currentTarget.value) {
+                        updatedConfig.LLM_API_KEY = null;
+                      }
+
+                      return updatedConfig;
                     })
                   }
                 >
