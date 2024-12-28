@@ -744,6 +744,9 @@ const PublicPageControls = () => {
               value={extraParams.videoLink || ""}
               onInput={(e) => {
                 setExtraParams("videoLink", e.currentTarget.value);
+                if (!extraParams.videoPosition) {
+                  setExtraParams("videoPosition", "static");
+                }
               }}
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
