@@ -611,6 +611,7 @@ pub async fn get_search_usage_graph_query(
         Granularity::Minute => "1 MINUTE",
         Granularity::Hour => "1 HOUR",
         Granularity::Day => "1 DAY",
+        Granularity::Month => "1 MONTH",
         // Add other granularities as needed
     };
 
@@ -834,6 +835,7 @@ pub async fn get_rag_usage_graph_query(
         Granularity::Minute => "1 MINUTE",
         Granularity::Hour => "1 HOUR",
         Granularity::Day => "1 DAY",
+        Granularity::Month => "1 MONTH",
     };
 
     let mut query_string = format!(

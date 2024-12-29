@@ -6358,6 +6358,8 @@ pub enum Granularity {
     Hour,
     #[display(fmt = "day")]
     Day,
+    #[display(fmt = "month")]
+    Month,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]

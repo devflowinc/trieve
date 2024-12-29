@@ -1715,7 +1715,7 @@ export type GetTrackingChunksData = {
     tracking_ids: Array<(string)>;
 };
 
-export type Granularity = 'minute' | 'second' | 'hour' | 'day';
+export type Granularity = 'minute' | 'second' | 'hour' | 'day' | 'month';
 
 export type GroupData = {
     groups: Array<ChunkGroupAndFileId>;
