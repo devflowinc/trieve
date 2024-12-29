@@ -15,8 +15,9 @@ import {
   format,
   formatDistanceToNowStrict,
   getDate,
-  subHours,
   subMinutes,
+  subHours,
+  subDays,
 } from "date-fns";
 import { differenceInMinutes } from "date-fns/fp";
 
@@ -286,6 +287,17 @@ const defaultDatePresets: DatePreset[] = [
   },
   {
     id: 7,
+    label: "Last 7 Days",
+    range: {
+      gt: undefined,
+      lt: undefined,
+      lte: undefined,
+      gte: subDays(new Date(), 7),
+    },
+    granularity: "day",
+  },
+  {
+    id: 9,
     label: "All Time",
     range: {
       gt: undefined,
