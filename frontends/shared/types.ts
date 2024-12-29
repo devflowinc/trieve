@@ -596,7 +596,7 @@ export interface SearchTypeCount {
 export interface RequiredRAGAnalyticsFilter {
   rag_type?: "chosen_chunks" | "all_chunks"; // Optional because that means "BOTH"
   date_range: DateRangeFilter;
-  granularity: "minute" | "second" | "hour" | "day";
+  granularity: "minute" | "second" | "hour" | "day" | "month";
 }
 
 export interface RAGAnalyticsFilter {
