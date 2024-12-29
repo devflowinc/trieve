@@ -45,9 +45,10 @@ const getGranularitySuggestion = (
 };
 
 const transformOurTypeToTheirs = (value: DateRangeFilter): PickerAloneValue => {
-  const startDate = value.gt || value.gte;
+  let startDate = value.gt || value.gte;
   if (!startDate) {
-    throw new Error("DateRangeFilter must have a gt or gte value");
+    // Start from unix epoch
+    startDate = new Date(0);
   }
   let endDate = value.lt || value.lte;
   if (!endDate) {
@@ -78,7 +79,7 @@ const getLabelFromRange = (value: DateRangeFilter): string => {
   const startDate = value.gte || value.gt;
 
   if (!startDate) {
-    return "Error"; // This should never happen
+    return "All Time"; // This should never happen
   }
 
   // The end range of the date is set to right now, use simple labels
@@ -293,7 +294,7 @@ const defaultDatePresets: DatePreset[] = [
       gte: undefined,
     },
     granularity: "month",
-  }
+  },
 ];
 
 interface PresetsProps {
