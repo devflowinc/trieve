@@ -19,7 +19,7 @@ describe("Message Tests", async () => {
   });
   test("editMessage", async () => {
     const data = await trieve.editMessage({
-      message_sort_order: 1,
+      message_sort_order: 0,
       new_message_content: "test2",
       topic_id: EXAMPLE_TOPIC_ID,
     });
