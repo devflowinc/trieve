@@ -723,6 +723,14 @@ pub fn main() -> std::io::Result<()> {
             std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create broccoli queue {:?}", e))
         })?;
 
+        let num_workers: usize = match std::env::var("NUM_WORKERS") {
+            Ok(str_value) => {
+                str_value.parse().unwrap_or(4)
+            },
+            Err(_) => {
+                std::thread::available_parallelism().map(|non_zero| non_zero.get()).unwrap_or(4)
+            }
+        };
 
         HttpServer::new(move || {
             let mut env = Environment::new();
@@ -1328,6 +1336,7 @@ pub fn main() -> std::io::Result<()> {
                         ),
                 )
         })
+        .workers(num_workers)
         .bind(("0.0.0.0", 8090))?
         .run()
         .await
