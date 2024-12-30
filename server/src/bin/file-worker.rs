@@ -645,10 +645,10 @@ async fn upload_file(
     .await?;
 
     // If chunk splitting turned off, create only a single chunk using html_content
-    if !file_worker_message
+    if file_worker_message
         .upload_file_data
         .split_avg
-        .unwrap_or(true)
+        .unwrap_or(false)
     {
         let chunk = ChunkReqPayload {
             chunk_html: Some(html_content.clone()),
@@ -666,7 +666,7 @@ async fn upload_file(
             upsert_by_tracking_id: None,
             time_stamp: file_worker_message.upload_file_data.time_stamp.clone(),
             weight: None,
-            split_avg: None,
+            split_avg: Some(true),
             convert_html_to_text: None,
             image_urls: None,
             num_value: None,
