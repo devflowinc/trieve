@@ -3397,7 +3397,7 @@ export type UploadFileReqPayload = {
      */
     rebalance_chunks?: (boolean) | null;
     /**
-     * Split average will automatically split your file into multiple chunks. Default is true. Explititly disabling this will cause each file to only produce a single chunk.
+     * Split average will automatically split your file into multiple chunks and average all of the resulting vectors into a single output chunk. Default is false. Explicitly enabling this will cause each file to only produce a single chunk.
      */
     split_avg?: (boolean) | null;
     /**
