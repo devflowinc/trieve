@@ -644,6 +644,50 @@ async fn upload_file(
     )
     .await?;
 
+    // If chunk splitting turned off, create only a single chunk using html_content
+    if !file_worker_message
+        .upload_file_data
+        .split_avg
+        .unwrap_or(true)
+    {
+        let chunk = ChunkReqPayload {
+            chunk_html: Some(html_content.clone()),
+            semantic_content: None,
+            link: file_worker_message.upload_file_data.link.clone(),
+            tag_set: file_worker_message.upload_file_data.tag_set.clone(),
+            metadata: file_worker_message.upload_file_data.metadata.clone(),
+            group_ids: None,
+            group_tracking_ids: None,
+            location: None,
+            tracking_id: file_worker_message
+                .upload_file_data
+                .clone()
+                .group_tracking_id,
+            upsert_by_tracking_id: None,
+            time_stamp: file_worker_message.upload_file_data.time_stamp.clone(),
+            weight: None,
+            split_avg: None,
+            convert_html_to_text: None,
+            image_urls: None,
+            num_value: None,
+            fulltext_boost: None,
+            semantic_boost: None,
+        };
+
+        create_file_chunks(
+            file_worker_message.file_id,
+            file_worker_message.upload_file_data.clone(),
+            vec![chunk],
+            dataset_org_plan_sub.clone(),
+            None,
+            web_pool.clone(),
+            event_queue.clone(),
+            redis_conn.clone(),
+        )
+        .await?;
+        return Ok(Some(file_id));
+    }
+
     let Ok(chunk_htmls) =
         preprocess_file_to_chunks(html_content, file_worker_message.upload_file_data.clone())
     else {
