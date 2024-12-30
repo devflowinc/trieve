@@ -85,6 +85,8 @@ pub struct UploadFileReqPayload {
     pub group_tracking_id: Option<String>,
     /// Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o. Default is false.
     pub pdf2md_options: Option<Pdf2MdOptions>,
+    /// Split average will automatically split your file into multiple chunks. Default is true. Explititly disabling this will cause each file to only produce a single chunk.
+    pub split_avg: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -134,6 +136,13 @@ pub async fn upload_file_handler(
         .get()
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    // Disallow split_avg with pdf2md
+    if data.pdf2md_options.is_some() && !data.split_avg.unwrap_or(true) {
+        return Err(
+            ServiceError::BadRequest("split_avg is not supported with pdf2md".to_string()).into(),
+        );
+    }
 
     let file_size_sum_pool = pool.clone();
     let file_size_sum = get_file_size_sum_org(
