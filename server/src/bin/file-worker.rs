@@ -521,11 +521,13 @@ async fn upload_file(
                             .map(|mut metadata| {
                                 metadata["page_num"] = serde_json::json!(page.page_num);
                                 metadata["file_name"] = serde_json::json!(task_response.file_name);
+                                metadata["file_id"] = serde_json::json!(file_id);
                                 metadata
                             })
                             .or(Some(serde_json::json!({
                                 "page_num": page.page_num,
-                                "file_name": task_response.file_name
+                                "file_name": task_response.file_name,
+                                "file_id": file_id
                             })));
 
                         let create_chunk_data = ChunkReqPayload {

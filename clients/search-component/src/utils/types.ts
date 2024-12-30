@@ -41,6 +41,7 @@ export type PdfChunk = {
     metadata: {
       file_name: string;
       page_num: number;
+      file_id: string;
     };
   };
   highlights: string[];
