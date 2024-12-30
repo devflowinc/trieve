@@ -40,7 +40,7 @@ const Modal = () => {
     const viewportHeight = window.visualViewport?.height;
     const chatOuterWrapper = document.querySelector(".chat-outer-wrapper");
 
-    if ((window.visualViewport?.width ?? 1000) <= 768) {
+    if ((window.visualViewport?.width ?? 1000) <= 640) {
       const trieveSearchModal = document.getElementById("trieve-search-modal");
       if (trieveSearchModal) {
         trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${

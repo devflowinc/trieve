@@ -62,7 +62,7 @@ body {
     &.chat-modal-mobile {
       @apply flex flex-col top-0 sm:top-[calc(40%-30vh)] pt-4 max-h-[100vh] w-full sm:w-[90vw] rounded-none sm:rounded-lg;
 
-      &.docs {
+      &.docs, &.pdf {
         @apply h-screen sm:h-auto;
       }
 
@@ -71,8 +71,8 @@ body {
       }
     }
 
-    .trieve-elements-docs {
-      @apply pr-2 scroll-smooth;
+    .trieve-elements-docs, .trieve-elements-pdf {
+      @apply scroll-smooth;
 
       .item-group-container {
         @apply border-b border-gray-300 mb-5;
@@ -98,12 +98,8 @@ body {
       }
     }
 
-    .trieve-elements-pdf {
-      @apply p-2;
-    }
-
     .pdf-results {
-      @apply grid grid-cols-2 pl-2;
+      @apply grid grid-cols-2;
     }
 
     .no-results {
@@ -138,7 +134,7 @@ body {
     .mode-switch-wrapper {
       @apply flex items-center justify-end mt-2 absolute top-2.5 right-4 z-30 font-medium;
 
-      &.docs.chat {
+      &.docs.chat, &.pdf.chat {
         @apply top-0;
 
         right: calc(max(calc(50% - 39.85rem), 4rem) + 0.25rem);
@@ -278,7 +274,7 @@ body {
     }
 
     .trieve-powered {
-      @apply flex items-center justify-end select-none cursor-pointer text-sm text-center;
+      @apply flex items-center justify-end select-none cursor-pointer text-sm text-center gap-1;
       background-color: var(--bg-color);
 
       img {
@@ -757,14 +753,14 @@ body {
       }
 
       input {
-        @apply rounded-none mb-0;
+        @apply rounded-md mb-0;
       }
     }
 
     ul {
       &:not(.chat-ul) {
         @apply overflow-y-auto overflow-x-hidden max-h-[calc(80vh-130px)] sm:max-h-[calc(60vh-130px)];
-        &:not(.trieve-elements-docs) {
+        &:not(.trieve-elements-docs, .trieve-elements-pdf) {
           @apply max-h-[calc(98vh-130px)] sm:max-h-[calc(60vh-130px)];
 
           &:not(.commands) &:not(.trieve-elements-ecommerce) {
@@ -774,7 +770,7 @@ body {
       }
 
       &:not(.chat-ul):not(.trieve-elements-ecommerce) {
-        @apply pl-0 mx-0;
+        @apply pl-2 pr-0.5 mx-0;
       }
     }
 

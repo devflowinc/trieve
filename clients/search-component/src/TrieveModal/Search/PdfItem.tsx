@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { PdfChunk } from "../../utils/types";
-import { useFileContext } from "../../utils/hooks/file-context";
 import { FileDTO } from "trieve-ts-sdk";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { cached } from "../../utils/cache";
@@ -26,7 +25,7 @@ const getPresignedUrl = async (
   baseUrl: string,
   datasetId: string,
   fileId: string,
-  apiKey: string,
+  apiKey: string
 ) => {
   const params = {
     content_type: "application/pdf",
@@ -51,7 +50,6 @@ const getPresignedUrl = async (
 export const PdfItem = (props: Props) => {
   const [presigned, setPresigned] = useState<string | null>(null);
   const toHighlight = extractMarkedContent(props.item.chunk.highlight || "");
-  const fileCtx = useFileContext();
   const state = useModalState();
   const [hasFoundMatch, setHasFoundMatch] = useState(true);
 
@@ -61,11 +59,11 @@ export const PdfItem = (props: Props) => {
         return getPresignedUrl(
           state.props.baseUrl || "http://localhost:8090",
           state.props.datasetId,
-          fileCtx.files[props.item.chunk.metadata.file_name],
-          state.props.apiKey,
+          props.item.chunk.metadata.file_id,
+          state.props.apiKey
         );
       }, `file-presigned:${props.item.chunk.metadata.file_name}`);
-      console.log(presignedUrlResult);
+
       setPresigned(presignedUrlResult);
     };
 

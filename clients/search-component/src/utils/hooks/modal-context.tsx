@@ -22,7 +22,6 @@ import {
   searchWithTrieve,
   getPagefindIndex,
 } from "../trieve";
-import { FileContextProvider } from "./file-context";
 
 export const ALL_TAG = {
   tag: "all",
@@ -455,7 +454,7 @@ const ModalProvider = ({
         tagCounts,
       }}
     >
-      <FileContextProvider>{children}</FileContextProvider>
+      {children}
     </ModalContext.Provider>
   );
 };
