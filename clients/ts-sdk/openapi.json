@@ -16961,6 +16961,11 @@
             "description": "Rebalance chunks is an optional field which allows you to specify whether or not to rebalance the chunks created from the file. If not specified, the default true is used. If true, Trieve will evenly distribute remainder splits across chunks such that 66 splits with a `target_splits_per_chunk` of 20 will result in 3 chunks with 22 splits each.",
             "nullable": true
           },
+          "split_avg": {
+            "type": "boolean",
+            "description": "Split average will automatically split your file into multiple chunks. Default is true. Explititly disabling this will cause each file to only produce a single chunk.",
+            "nullable": true
+          },
           "split_delimiters": {
             "type": "array",
             "items": {
