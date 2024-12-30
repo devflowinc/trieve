@@ -516,6 +516,7 @@ async fn process_csv_jsonl_file(
             split_delimiters: None,
             target_splits_per_chunk: None,
             pdf2md_options: None,
+            split_avg: None,
             base64_file: "".to_string(),
         },
         csv_jsonl_worker_message.dataset_id,
