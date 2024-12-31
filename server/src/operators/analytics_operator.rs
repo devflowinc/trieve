@@ -840,7 +840,7 @@ pub async fn get_rag_usage_graph_query(
 
     let mut query_string = format!(
         "SELECT 
-            toStartOfInterval(created_at, INTERVAL {}) AS time_stamp,
+	        CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
             count(*) AS requests
         FROM 
             rag_queries
