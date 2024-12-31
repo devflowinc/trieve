@@ -120,7 +120,14 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
       chartInstance.data.datasets[0].barThickness = undefined;
     }
 
-    if (props.params.granularity === "day") {
+    if (props.params.granularity === "month") {
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.unit = "month";
+      // @ts-expect-error library types not updated
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      chartInstance.options.scales["x"].time.round = "month";
+    } else if (props.params.granularity === "day") {
       // @ts-expect-error library types not updated
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = "day";
