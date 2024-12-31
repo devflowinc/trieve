@@ -601,10 +601,14 @@ body {
     /* ECOMMERCE */
 
     .ecommerce-featured-image {
-      @apply w-full h-full flex justify-center items-center shrink-0;
+      @apply w-full max-h-48 h-48 flex justify-center items-center shrink-0 overflow-hidden rounded-lg;
 
       img {
-        @apply max-h-48 shrink-0 overflow-hidden rounded-lg;
+        @apply w-full h-full;
+      }
+
+      .img-placeholder {
+        @apply h-full w-full bg-gray-200 animate-pulse;
       }
     }
 

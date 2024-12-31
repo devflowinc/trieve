@@ -1,5 +1,5 @@
 import { Chunk, ChunkWithHighlights } from "../../utils/types";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
 import { ChunkGroup } from "trieve-ts-sdk";
@@ -14,6 +14,19 @@ type Props = {
   group?: ChunkGroup;
   betterGroupName?: string;
 };
+
+function useImageLoaded(src: string) {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    if (!src) return;
+    const img = new Image();
+    img.src = src;
+    img.onload = function () {
+      setLoaded(true);
+    };
+  }, [src]);
+  return loaded;
+}
 
 export const ProductItem = ({
   item,
@@ -31,7 +44,7 @@ export const ProductItem = ({
 
   const { title, descriptionHtml } = useMemo(
     () => guessTitleAndDesc(item),
-    [item]
+    [item],
   );
 
   const filteredVariants = useMemo(() => {
@@ -39,13 +52,14 @@ export const ProductItem = ({
       item.chunk.metadata?.variants as unknown as {
         featured_image: { src: string };
         title: string;
-      }[]
+      }[],
     )?.filter((variant) => variant.featured_image?.src);
   }, [item]);
 
   const [shownImage, setShownImage] = useState<string>(
-    item.chunk?.image_urls?.[0] || ""
+    item.chunk?.image_urls?.[0] || "",
   );
+  const imageLoaded = useImageLoaded(shownImage);
 
   const formatPrice = (price: number | null | undefined) => {
     return price
@@ -89,7 +103,7 @@ export const ProductItem = ({
     }
   }
   const formatedPriceRange = `${formatPrice(priceMin)} - ${formatPrice(
-    priceMax
+    priceMax,
   )}`;
 
   if (!title.trim() || title == "undefined") {
@@ -98,7 +112,7 @@ export const ProductItem = ({
 
   const onResultClick = async (
     chunk: Chunk & { position: number },
-    requestID: string
+    requestID: string,
   ) => {
     if (props.onResultClick) {
       props.onResultClick(chunk);
@@ -126,7 +140,7 @@ export const ProductItem = ({
               ...item.chunk,
               position: index,
             },
-            requestID
+            requestID,
           )
         }
         href={item.chunk.link ?? ""}
@@ -134,7 +148,11 @@ export const ProductItem = ({
         <div>
           {item.chunk.image_urls?.length && item.chunk.image_urls[0] ? (
             <div className="ecommerce-featured-image">
-              <img src={shownImage} />
+              {!imageLoaded ? (
+                <div className="img-placeholder"></div>
+              ) : (
+                <img src={shownImage} />
+              )}
             </div>
           ) : (
             <div className="ecommerce-featured-image">
@@ -159,7 +177,7 @@ export const ProductItem = ({
                   <button
                     title={`Chat with ${(betterGroupName || group.name).replace(
                       /<[^>]*>/g,
-                      ""
+                      "",
                     )}`}
                     className="chat-product-button"
                     onClick={(e) => {
