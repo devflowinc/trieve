@@ -88,3 +88,26 @@ export const formatSensibleTimestamp = (
 
   return date.toLocaleDateString();
 };
+
+export function convertToISO8601(dateString: string) {
+  // Split the input string into date, time, and timezone parts
+  const [datePart, timePart] = dateString.split(" ");
+
+  // Split the date part into year, month, and day
+  const [year, month, day] = datePart.split("-");
+
+  // Split the time part into hours, minutes, seconds, and milliseconds
+  const [hours, minutes, secondsWithMs] = timePart.split(":");
+  const [seconds, milliseconds] = secondsWithMs.split(".");
+
+  // Construct the ISO 8601 string
+  const isoString = `${year}-${month.padStart(2, "0")}-${day.padStart(
+    2,
+    "0",
+  )}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:${seconds.padStart(
+    2,
+    "0",
+  )}.${milliseconds.padEnd(3, "0")}Z`;
+
+  return isoString;
+}
