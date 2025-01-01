@@ -298,10 +298,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       ...m,
       [{ type: "system", text: "Loading...", additional: null, queryId: null }],
     ]);
-    modalRef.current?.scroll({
-      top: modalRef.current.scrollHeight + 50,
-      behavior: "smooth",
-    });
+
+    setTimeout(() => {
+      modalRef.current?.scroll({
+        top: modalRef.current.scrollHeight + 200,
+        behavior: "smooth",
+      });
+    }, 50);
   };
 
   const switchToChatAndAskQuestion = async (query: string) => {

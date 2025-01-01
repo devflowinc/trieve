@@ -23,7 +23,8 @@ import { FloatingSearchInput } from "./FloatingSearchInput";
 const Modal = () => {
   useKeyboardNavigation();
   const { mode, open, setOpen, setMode, setQuery, props } = useModalState();
-  const { askQuestion, chatWithGroup } = useChatState();
+  const { askQuestion, chatWithGroup, cancelGroupChat, clearConversation } =
+    useChatState();
 
   useEffect(() => {
     if (!(Object as any).hasOwn) {
@@ -91,6 +92,7 @@ const Modal = () => {
         if (customEvent.detail.betterGroupName) {
           customEvent.detail.group.name = customEvent.detail.betterGroupName;
         }
+        clearConversation();
         chatWithGroup(
           customEvent.detail.group,
           customEvent.detail.betterGroupName
@@ -114,6 +116,8 @@ const Modal = () => {
       if (defaultMode === "chat") {
         setOpen(true);
         setMode("chat");
+        cancelGroupChat();
+
         askQuestion(customEvent.detail.text);
       } else {
         setOpen(true);
