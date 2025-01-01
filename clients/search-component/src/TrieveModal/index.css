@@ -62,7 +62,8 @@ body {
     &.chat-modal-mobile {
       @apply flex flex-col top-0 sm:top-[calc(40%-30vh)] pt-4 max-h-[100vh] w-full sm:w-[90vw] rounded-none sm:rounded-lg;
 
-      &.docs, &.pdf {
+      &.docs,
+      &.pdf {
         @apply h-screen sm:h-auto;
       }
 
@@ -71,7 +72,8 @@ body {
       }
     }
 
-    .trieve-elements-docs, .trieve-elements-pdf {
+    .trieve-elements-docs,
+    .trieve-elements-pdf {
       @apply scroll-smooth;
 
       .item-group-container {
@@ -134,7 +136,8 @@ body {
     .mode-switch-wrapper {
       @apply flex items-center justify-end mt-2 absolute top-2.5 right-4 z-30 font-medium;
 
-      &.docs.chat, &.pdf.chat {
+      &.docs.chat,
+      &.pdf.chat {
         @apply top-0;
 
         right: calc(max(calc(50% - 39.85rem), 4rem) + 0.25rem);
@@ -691,7 +694,8 @@ body {
       @apply sticky top-0 z-10 flex flex-col gap-2 rounded-lg;
       background-color: var(--bg-color);
 
-      &.docs, &.pdf {
+      &.docs,
+      &.pdf {
         @apply m-2;
       }
 
@@ -749,7 +753,7 @@ body {
 
     .chat-footer-wrapper {
       .chat-group-disclaimer {
-        @apply flex items-center justify-between bg-zinc-200/60 dark:bg-zinc-700 px-3 py-1 text-sm opacity-70 mx-2 border border-zinc-300 dark:border-zinc-500 border-b-transparent;
+        @apply flex items-center justify-between bg-zinc-200/60 dark:bg-zinc-700 px-3 py-1 text-sm opacity-70 mx-2 mb-2 border border-zinc-300 dark:border-zinc-500 border-b-transparent;
       }
 
       &:not(.with-messages) {
