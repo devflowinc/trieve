@@ -258,12 +258,15 @@ export const getSuggestedQueries = async ({
 export const getSuggestedQuestions = async ({
 	trieve,
 	abortController,
+	query
 }: {
 	trieve: TrieveSDK;
 	abortController?: AbortController;
+	query?: string;
 }) => {
 	return trieve.suggestedQueries(
 		{
+			...(query && { query }),
 			suggestion_type: "question",
 			search_type: "semantic",
 			context: "You are a user searching through a docs website",

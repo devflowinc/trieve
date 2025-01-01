@@ -1,4 +1,4 @@
-import React, { lazy } from "react";
+import React, { lazy, useEffect, useState } from "react";
 const Markdown = lazy(() => import("react-markdown"));
 
 import { LoadingIcon } from "../icons";
@@ -6,6 +6,7 @@ import { Chunk } from "../../utils/types";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { Carousel } from "./Carousel";
+import { FollowupQueries } from "./FollowupQueries";
 
 type Message = {
   queryId: string | null;
@@ -22,6 +23,7 @@ export const ChatMessage = ({
   idx: number;
 }) => {
   const { props } = useModalState();
+
   return (
     <>
       {message.type == "user" ? (
@@ -82,10 +84,18 @@ export const Message = ({
   idx: number;
   message: Message;
 }) => {
-  const { rateChatCompletion } = useChatState();
+  const [currentQuery, setCurrentQuery] = useState<string>("");
+  const { rateChatCompletion, isDoneReading } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
-  const { props } = useModalState();
+  const { props, setQuery } = useModalState();
+
+  useEffect(() => {
+    if (message.text) {
+      setCurrentQuery(message.text);
+      setQuery(message.text);
+    }
+  }, [message.text]);
 
   const ecommerceItems = message.additional
     ?.filter(
@@ -210,6 +220,9 @@ export const Message = ({
             </Markdown>
           ) : (
             <LoadingIcon className="loading" />
+          )}
+          {isDoneReading && currentQuery && (
+            <FollowupQueries query={currentQuery} />
           )}
           <div>
             {message.additional
