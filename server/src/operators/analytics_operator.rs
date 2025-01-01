@@ -617,7 +617,7 @@ pub async fn get_search_usage_graph_query(
 
     let mut query_string = format!(
         "SELECT 
-            toStartOfInterval(created_at, INTERVAL {}) AS time_stamp,
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
             count(*) AS requests
         FROM 
             search_queries
@@ -696,7 +696,7 @@ pub async fn get_latency_graph_query(
         ),
         per_interval_latency AS (
             SELECT 
-                toStartOfInterval(second, INTERVAL '1 {}') AS time_stamp,
+                CAST(toStartOfInterval(second, INTERVAL '1 {}') AS DateTime) AS time_stamp,
                 avg(latency_per_second) AS average_latency
             FROM 
                 per_second_latency
