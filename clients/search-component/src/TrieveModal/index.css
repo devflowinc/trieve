@@ -705,7 +705,7 @@ body {
       }
 
       &.chat {
-        @apply mb-2 flex-row sticky bottom-9 px-2;
+        @apply mb-2 flex-row sticky px-2;
 
         &::after {
           @apply -top-[7px];
@@ -749,7 +749,7 @@ body {
 
     .chat-footer-wrapper {
       .chat-group-disclaimer {
-        @apply flex items-center justify-between bg-zinc-200/60 dark:bg-zinc-700 px-3 py-1 text-sm opacity-70 mx-2 border border-zinc-300 dark:border-zinc-500 border-b-transparent;
+        @apply flex items-center justify-between bg-zinc-200/60 dark:bg-zinc-700 px-3 py-1 text-sm opacity-70 mx-2 border border-zinc-300 dark:border-zinc-500 border-b-transparent rounded-md;
       }
 
       &:not(.with-messages) {
