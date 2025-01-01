@@ -50,14 +50,17 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
       title="RAG Usage"
     >
       <Show when={usageQuery.data}>
-        <AnalyticsChart
-          data={usageQuery.data}
-          granularity={props.params.granularity}
-          date_range={props.params.filter.date_range}
-          yLabel="Requests"
-          yAxis="requests"
-          xAxis="time_stamp"
-        />
+        <>
+          <pre>{JSON.stringify(usageQuery.data)}</pre>
+          <AnalyticsChart
+            data={usageQuery.data}
+            granularity={props.params.granularity}
+            date_range={props.params.filter.date_range}
+            yLabel="Requests"
+            yAxis="requests"
+            xAxis="time_stamp"
+          />
+        </>
       </Show>
     </Card>
   );

@@ -4,6 +4,7 @@ import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Chart } from "chart.js";
 import { enUS } from "date-fns/locale";
 import { fillDate } from "../../utils/graphDatesFiller";
+import { convertToISO8601 } from "../../utils/formatDate";
 
 interface AnalyticsChartProps<T> {
   data: T[] | null | undefined;
@@ -148,9 +149,111 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
 };
 
 const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
-  return (
-    <div>
-      <div>Month Chart</div>
-    </div>
-  );
+  const [canvasElement, setCanvasElement] = createSignal<HTMLCanvasElement>();
+  let chartInstance: Chart | null = null;
+
+  createEffect(() => {
+    const canvas = canvasElement();
+    const data = props.data;
+    if (!canvas || !data) return;
+
+    if (!chartInstance) {
+      chartInstance = new Chart(canvas, {
+        type: "bar",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: props.yLabel,
+              data: [],
+              backgroundColor: "rgba(128, 0, 128, 0.9)",
+              borderWidth: 1,
+              barPercentage: 0.8, // Controls the width of the bars
+              categoryPercentage: 0.9, // Controls the spacing between bars
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+          },
+          aspectRatio: 3,
+          scales: {
+            y: {
+              grid: { color: "rgba(128, 0, 128, 0.1)" },
+              title: {
+                text: props.yLabel,
+                display: true,
+              },
+              beginAtZero: true,
+            },
+            x: {
+              adapters: {
+                date: {
+                  locale: enUS,
+                },
+              },
+              type: "time",
+              time: {
+                unit: "month",
+                displayFormats: {
+                  month: "MMM yyyy", // Format as "Jan 2023"
+                },
+                round: "month",
+                tooltipFormat: "MMM yyyy", // Format as "Jan 2023"
+              },
+              title: {
+                text: props.xLabel || "Month",
+                display: true,
+              },
+              grid: {
+                display: false, // Hide vertical grid lines
+              },
+              ticks: {
+                maxRotation: 45, // Rotate labels for better readability
+                minRotation: 45,
+              },
+            },
+          },
+          animation: {
+            duration: 0,
+          },
+        },
+      });
+    }
+
+    // Handle single data point
+    if (data.length <= 1) {
+      // @ts-expect-error library types not updated
+      chartInstance.options.scales["x"].offset = true;
+      // @ts-expect-error library types not updated
+      chartInstance.data.datasets[0].barPercentage = 0.3;
+    } else {
+      // @ts-expect-error library types not updated
+      chartInstance.options.scales["x"].offset = false;
+      // @ts-expect-error library types not updated
+      chartInstance.data.datasets[0].barPercentage = 0.8;
+    }
+    // @ts-expect-error library types not updated
+    chartInstance.data.datasets[0].barThickness = undefined;
+
+    // Update the chart data
+    chartInstance.data.labels = data.map((point) =>
+      convertToISO8601(point[props.xAxis] as string),
+    );
+    chartInstance.data.datasets[0].data = data.map(
+      (point) => point[props.yAxis] as number,
+    );
+    chartInstance.update();
+  });
+
+  onCleanup(() => {
+    if (chartInstance) {
+      chartInstance.destroy();
+      chartInstance = null;
+    }
+  });
+
+  return <canvas ref={setCanvasElement} class="h-full w-full" />;
 };
