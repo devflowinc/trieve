@@ -20,7 +20,10 @@ pub async fn timeout_15secs(
             if k.to_string().to_lowercase() == "authorization" {
                 None
             } else {
-                format!("{}: {}", k, v.to_str().unwrap()).into()
+                match v.to_str() {
+                    Ok(value) => format!("{}: {}", k, value).into(),
+                    Err(_) => None,
+                }
             }
         })
         .collect::<Vec<String>>();
