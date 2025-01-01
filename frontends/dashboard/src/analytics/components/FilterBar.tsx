@@ -23,6 +23,7 @@ interface FilterBarProps {
 }
 
 export const timeFrameOptions: AnalyticsParams["granularity"][] = [
+  "month",
   "day",
   "hour",
   "minute",
@@ -97,6 +98,10 @@ export const FilterBar = (props: FilterBarProps) => {
             label="Date Range"
             value={props.filters.filter.date_range}
             onChange={(e) => props.setFilters("filter", "date_range", e)}
+            initialSelectedPresetId={7}
+            onGranularitySuggestion={(granularity) =>
+              props.setFilters("granularity", granularity)
+            }
           />
         </div>
       </div>
