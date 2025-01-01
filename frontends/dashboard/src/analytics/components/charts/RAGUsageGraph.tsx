@@ -51,12 +51,12 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
     >
       <Show when={usageQuery.data}>
         <>
-          <pre>{JSON.stringify(usageQuery.data)}</pre>
           <AnalyticsChart
             data={usageQuery.data}
             granularity={props.params.granularity}
             date_range={props.params.filter.date_range}
             yLabel="Requests"
+            wholeUnits
             yAxis="requests"
             xAxis="time_stamp"
           />
