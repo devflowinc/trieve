@@ -2,18 +2,16 @@ import { eachDayOfInterval, isSameDay, subDays } from "date-fns";
 import { parseCustomDateString } from "./formatDate";
 import { DateRangeFilter } from "shared/types";
 
-export const fillDate = ({
-  key,
+export const fillDate = <T>({
+  dataKey,
+  timestampKey,
   data,
   date_range,
   defaultValue = 0,
 }: {
-  key: "requests" | "average_latency";
-  data: {
-    requests?: number;
-    time_stamp: string;
-    average_latency?: number | null;
-  }[];
+  dataKey: keyof T;
+  timestampKey: keyof T;
+  data: T[];
   date_range: DateRangeFilter | undefined;
   defaultValue?: number | null;
 }) => {
@@ -23,11 +21,13 @@ export const fillDate = ({
   }).map((d) => {
     return data.reduce(
       (acc, curr) => {
-        const parsedDate = new Date(parseCustomDateString(curr.time_stamp));
+        const parsedDate = new Date(
+          parseCustomDateString(curr[timestampKey] as string),
+        );
         if (isSameDay(parsedDate, d)) {
           acc = {
             time: parsedDate,
-            value: curr[key] ? curr[key] : 0,
+            value: (curr[dataKey] as number) ? (curr[dataKey] as number) : 0,
           };
         }
 
