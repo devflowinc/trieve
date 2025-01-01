@@ -14,6 +14,7 @@ interface AnalyticsChartProps<T> {
   xAxis: keyof T;
   yLabel: string;
   xLabel?: string;
+  wholeUnits?: boolean;
 }
 
 export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
@@ -66,6 +67,11 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
                 display: true,
               },
               beginAtZero: true,
+              ticks: props.wholeUnits
+                ? {
+                    precision: 0,
+                  }
+                : undefined,
             },
             x: {
               adapters: {
@@ -187,6 +193,12 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
                 display: true,
               },
               beginAtZero: true,
+              // ts-expect-error old
+              ticks: props.wholeUnits
+                ? {
+                    precision: 0,
+                  }
+                : undefined,
             },
             x: {
               adapters: {
@@ -231,7 +243,7 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
       chartInstance.data.datasets[0].barPercentage = 0.3;
     } else {
       // @ts-expect-error library types not updated
-      chartInstance.options.scales["x"].offset = false;
+      chartInstance.options.scales["x"].offset = true;
       // @ts-expect-error library types not updated
       chartInstance.data.datasets[0].barPercentage = 0.8;
     }
