@@ -18,6 +18,7 @@ import {
   subMinutes,
   subHours,
   subDays,
+  subMonths,
 } from "date-fns";
 import { differenceInMinutes } from "date-fns/fp";
 
@@ -293,6 +294,17 @@ const defaultDatePresets: DatePreset[] = [
       lt: undefined,
       lte: undefined,
       gte: subDays(new Date(), 7),
+    },
+    granularity: "day",
+  },
+  {
+    id: 8,
+    label: "Last Month",
+    range: {
+      gt: undefined,
+      lt: undefined,
+      lte: undefined,
+      gte: subMonths(new Date(), 1),
     },
     granularity: "day",
   },
