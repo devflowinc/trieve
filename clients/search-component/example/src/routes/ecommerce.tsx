@@ -99,7 +99,7 @@ export default function ECommerce() {
               tags={defaultTags}
               floatingButtonPosition={floatingButtonPosition}
               showFloatingButton={showFloatingButton}
-              debounceMs={500}
+              debounceMs={10}
               floatingSearchIconPosition={floatingSearchIconPosition}
               showFloatingSearchIcon={showFloatingSearchIcon}
               showFloatingInput={showFloatingInput}

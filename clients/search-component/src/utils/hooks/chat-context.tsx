@@ -70,7 +70,51 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     new AbortController()
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
-  const [scrollTimeout, setScrollTimeout] = useState<NodeJS.Timeout | null>();
+
+  const [text, setText] = useState("");
+  const [json, setJson] = useState(null);
+  const [offset, setOffset] = useState(0);
+  const [queryId, setQueryId] = useState<string | null>(null);
+  const [characterOffsetInterval, setCharacterOffsetInterval] = useState<NodeJS.Timeout | null>()
+
+  useEffect(() => {
+    text.slice(0, offset);
+    if (messages.length > 1) {
+      setMessages((m) => [
+        ...m.slice(0, -1),
+        [
+          {
+            type: "system",
+            text: text.slice(0, offset),
+            additional: json ? json : null,
+            queryId,
+          },
+        ],
+      ]);
+
+      modalRef.current?.scroll({
+        top: modalRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+
+      if (isDoneReading && characterOffsetInterval && offset >= text.length) {
+          clearInterval(characterOffsetInterval);
+          setCharacterOffsetInterval(null);
+      }
+    }
+  }, [offset, text, isDoneReading]);
+
+  useEffect(() => {
+    if (isDoneReading) {
+      setOffset(text.length)
+      setInterval(() => {
+        modalRef.current?.scroll({
+          top: modalRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }, 50);
+    }
+  }, [text, isDoneReading])
 
   const createTopic = async ({ question }: { question: string }) => {
     if (!currentTopic) {
@@ -102,12 +146,20 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null
   ) => {
     setIsLoading(true);
     setIsDoneReading(false);
+    setOffset(0);
     let done = false;
     let textInStream = "";
+
+    setCharacterOffsetInterval(
+      setInterval(() => {
+        setOffset((prev) => {
+          return prev + 1
+        })
+      }, 2)
+    );
 
     while (!done) {
       const { value, done: doneReading } = await reader.read();
@@ -144,29 +196,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           json = null;
         }
 
-        setMessages((m) => [
-          ...m.slice(0, -1),
-          [
-            {
-              type: "system",
-              text: text,
-              additional: json ? json : null,
-              queryId,
-            },
-          ],
-        ]);
-
-        if (scrollTimeout) {
-          clearTimeout(scrollTimeout);
-        }
-
-        const curScrollTimeout = setTimeout(() => {
-          modalRef.current?.scroll({
-            top: modalRef.current.scrollHeight + 200,
-            behavior: "smooth",
-          });
-        }, 75);
-        setScrollTimeout(curScrollTimeout);
+        setText(text);
+        setJson(json ? json : null);
       }
     }
   };
@@ -205,7 +236,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         },
         chatMessageAbortController.current.signal
       );
-      handleReader(reader, queryId);
+      setQueryId(queryId);
+      handleReader(reader);
     } else {
       const { reader, queryId } =
         await trieveSDK.createMessageReaderWithQueryId(
@@ -221,13 +253,14 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             filters:
               currentTag !== "all"
                 ? {
-                    must: [{ field: "tag_set", match_any: [currentTag] }],
-                  }
+                  must: [{ field: "tag_set", match_any: [currentTag] }],
+                }
                 : null,
           },
           chatMessageAbortController.current.signal
         );
-      handleReader(reader, queryId);
+      setQueryId(queryId);
+      handleReader(reader);
     }
   };
 
