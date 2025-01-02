@@ -270,6 +270,7 @@ export const getSuggestedQuestions = async ({
 			suggestion_type: "question",
 			search_type: "semantic",
 			context: "You are a user searching through a docs website",
+			suggestions_to_create: 3
 		},
 		abortController?.signal
 	);

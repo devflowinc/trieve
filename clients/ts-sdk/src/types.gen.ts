@@ -3074,6 +3074,10 @@ export type SuggestedQueriesReqPayload = {
     query?: (string) | null;
     search_type?: ((SearchMethod) | null);
     suggestion_type?: ((SuggestType) | null);
+    /**
+     * The number of suggested queries to create, defaults to 10
+     */
+    suggestions_to_create?: (number) | null;
 };
 
 export type SuggestedQueriesResponse = {

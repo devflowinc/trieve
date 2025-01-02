@@ -16265,6 +16265,12 @@
               }
             ],
             "nullable": true
+          },
+          "suggestions_to_create": {
+            "type": "integer",
+            "description": "The number of suggested queries to create, defaults to 10",
+            "nullable": true,
+            "minimum": 0
           }
         }
       },

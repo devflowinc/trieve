@@ -734,6 +734,8 @@ pub async fn regenerate_message(
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct SuggestedQueriesReqPayload {
+    /// The number of suggested queries to create, defaults to 10
+    pub suggestions_to_create: Option<usize>,
     /// The query to base the generated suggested queries off of using RAG. A hybrid search for 10 chunks from your dataset using this query will be performed and the context of the chunks will be used to generate the suggested queries.
     pub query: Option<String>,
     /// Can be either "semantic", "fulltext", "hybrid, or "bm25". If specified as "hybrid", it will pull in one page of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page of the nearest cosine distant vectors. "fulltext" will pull in one page of full-text results based on SPLADE. "bm25" will get one page of results scored using BM25 with the terms OR'd together.
@@ -933,11 +935,15 @@ pub async fn get_suggested_queries(
         None => "".to_string(),
     };
 
+	let number_of_suggestions_to_create = data.suggestions_to_create.unwrap_or(10);
+
     let content = ChatMessageContent::Text(format!(
-        "Here is some context for the dataset for which the user is querying for {}{}. Generate 10 suggested followup {} style queries based off the domain of this dataset. Your only response should be the 10 followup {} style queries which are separated by new lines and are just text and you do not add any other context or information about the followup {} style queries. This should not be a list, so do not number each {} style queries. These followup {} style queries should be related to the domain of the dataset.",
+        "Here is some context for the dataset for which the user is querying for {}{}. Generate {} suggested followup {} style queries based off the domain of this dataset. Your only response should be the {} followup {} style queries which are separated by new lines and are just text and you do not add any other context or information about the followup {} style queries. This should not be a list, so do not number each {} style queries. These followup {} style queries should be related to the domain of the dataset.",
         rag_content,
         context_sentence,
+        number_of_suggestions_to_create,
         query_style,
+		number_of_suggestions_to_create,
         query_style,
         query_style,
         query_style,
