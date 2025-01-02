@@ -62,6 +62,29 @@ Example:
 The server exposes Trieve datasets as resources with the following URI format:
 - `trieve://datasets/{dataset-id}`
 
+## Usage with Claude Desktop
+
+The Trieve MCP Server supports MCP integration with [Claude Desktop](https://modelcontextprotocol.io/quickstart/user). Place the following in your Claude Desktop's `claude_desktop_config.json`.
+
+```json
+{
+  "mcpServers": {
+    "trieve-mcp-server": {
+      "command": "npx",
+      "args": ["trieve-mcp-server@latest"],
+      "env": {
+        "TRIEVE_API_KEY": "$TRIEVE_API_KEY",
+        "TRIEVE_ORGANIZATION_ID": "$TRIEVE_ORGANIZATION_ID"
+      }
+    }
+  }
+}
+```
+
+Note, instead of environment variables, `--api-key` and `--org-id` can be used as arguments.
+
+Once Claude Desktop starts, attachments will be available that correspond to the [datasets available to the Trieve organization](https://docs.trieve.ai/guides/create-organizations-and-dataset). These can be used to select a dataset. After that, begin chatting with Claude and ask for information about the dataset. Claude will use search as needed in order to filter and break down queries, and may make multiple queries depending on your task.
+
 ## Development
 
 ### Setup
