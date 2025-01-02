@@ -1,5 +1,6 @@
 import React, { startTransition } from "react";
 import { useModalState } from "../utils/hooks/modal-context";
+import { SparklesIcon } from "./icons";
 
 export const FloatingActionButton = () => {
   const { props, setOpen, setMode } = useModalState();
@@ -32,10 +33,7 @@ export const FloatingActionButton = () => {
         ...setButtonPosition(props.floatingButtonPosition || "bottom-right"),
       }}
     >
-      <i
-        className="fa-solid fa-wand-magic-sparkles"
-        style={{ fontSize: "14px" }}
-      ></i>
+      <SparklesIcon width={20} height={20} />
       Ask AI
     </button>
   );

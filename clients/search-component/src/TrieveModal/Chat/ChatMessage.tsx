@@ -1,7 +1,7 @@
 import React, { lazy } from "react";
 const Markdown = lazy(() => import("react-markdown"));
 
-import { LoadingIcon } from "../icons";
+import { LoadingIcon, SparklesIcon } from "../icons";
 import { Chunk } from "../../utils/types";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
@@ -56,7 +56,7 @@ export const ChatMessage = ({
                 alt={props.brandName || "Brand logo"}
               />
             ) : (
-              <i className="fa-solid fa-wand-magic-sparkles"></i>
+              <SparklesIcon strokeWidth={1.75} />
             )}
             <p
               className="tag"
@@ -97,7 +97,7 @@ export const Message = ({
           chunk.metadata.page_title) &&
         chunk.link &&
         chunk.image_urls?.length &&
-        chunk.num_value
+        chunk.num_value,
     )
     .map((chunk) => ({
       title:
@@ -111,7 +111,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title
+          index && item.title,
     )
     .map((item, index) => (
       <a
@@ -146,7 +146,7 @@ export const Message = ({
           chunk.metadata.title ||
           chunk.metadata.page_title) &&
         chunk.link &&
-        chunk.metadata.yt_preview_src
+        chunk.metadata.yt_preview_src,
     )
     .map((chunk) => {
       return {
@@ -225,7 +225,7 @@ export const Message = ({
                             chunk.metadata.title ||
                             chunk.metadata.page_title) &&
                           chunk.link &&
-                          !chunk.metadata.yt_preview_src
+                          !chunk.metadata.yt_preview_src,
                       )
                       .map((chunk) => {
                         return {
