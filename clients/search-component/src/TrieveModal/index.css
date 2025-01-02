@@ -661,6 +661,31 @@ body {
         }
       }
 
+      .followup-questions {
+        @apply text-sm flex flex-wrap gap-2;
+
+        .followup-question {
+          @apply p-2 text-left rounded-md border transition-all;
+          border-color: var(--tv-zinc-200);
+          
+          .followup-icon {
+            @apply mr-2
+          }
+
+          &:hover {
+            background-color: var(--tv-zinc-200);
+          }
+
+          &.loading {
+            @apply animate-pulse;
+          }
+
+          &.empty-state-loading {
+            @apply animate-pulse;
+          }
+        }
+      }
+
       .questions {
         @apply text-sm flex flex-wrap gap-2 pb-12;
 

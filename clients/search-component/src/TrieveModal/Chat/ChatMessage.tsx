@@ -1,4 +1,4 @@
-import React, { lazy, useEffect, useState } from "react";
+import React, { lazy } from "react";
 const Markdown = lazy(() => import("react-markdown"));
 
 import { LoadingIcon } from "../icons";
@@ -84,18 +84,10 @@ export const Message = ({
   idx: number;
   message: Message;
 }) => {
-  const [currentQuery, setCurrentQuery] = useState<string>("");
-  const { rateChatCompletion, isDoneReading } = useChatState();
+  const { rateChatCompletion } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
-  const { props, setQuery } = useModalState();
-
-  useEffect(() => {
-    if (message.text) {
-      setCurrentQuery(message.text);
-      setQuery(message.text);
-    }
-  }, [message.text]);
+  const { props } = useModalState();
 
   const ecommerceItems = message.additional
     ?.filter(
@@ -221,9 +213,7 @@ export const Message = ({
           ) : (
             <LoadingIcon className="loading" />
           )}
-          {isDoneReading && currentQuery && (
-            <FollowupQueries query={currentQuery} />
-          )}
+          <FollowupQueries />
           <div>
             {message.additional
               ? props.type !== "ecommerce" && (
