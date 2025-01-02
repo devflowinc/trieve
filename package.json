@@ -10,7 +10,8 @@
     "frontends/shared",
     "frontends/config",
     "clients/ts-sdk",
-    "clients/search-component"
+    "clients/search-component",
+    "clients/mcp-server"
   ],
   "scripts": {
     "dev": "turbo dev --filter=\"./frontends/**\"",
