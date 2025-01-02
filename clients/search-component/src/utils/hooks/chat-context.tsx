@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { cached } from "../cache";
 import { getAllChunksForGroup } from "../trieve";
 import { ChatMessageProxy, ChunkGroup, RoleProxy } from "trieve-ts-sdk";
+import { useFollowupQuestions } from "./useFollowupQuestions";
 
 type Messages = {
   queryId: string | null;
@@ -76,45 +77,55 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [offset, setOffset] = useState(0);
   const [queryId, setQueryId] = useState<string | null>(null);
   const [characterOffsetInterval, setCharacterOffsetInterval] = useState<NodeJS.Timeout | null>()
+  const { isLoadingSuggestedQueries } = useFollowupQuestions();
+  const streamingChunks = useRef(false);
 
   useEffect(() => {
-    text.slice(0, offset);
     if (messages.length > 1) {
-      setMessages((m) => [
-        ...m.slice(0, -1),
-        [
-          {
-            type: "system",
-            text: text.slice(0, offset),
-            additional: json ? json : null,
-            queryId,
-          },
-        ],
-      ]);
+      const currentThread = messages[messages.length - 1];
+      const currentMessage = currentThread[currentThread.length - 1];
+      if (currentMessage.text != text.slice(0, offset) && streamingChunks.current) {
+        setMessages((m) => [
+          ...m.slice(0, -1),
+          [
+            {
+              type: "system",
+              text: text.slice(0, offset),
+              additional: json ? json : null,
+              queryId,
+            },
+          ],
+        ]);
 
-      modalRef.current?.scroll({
-        top: modalRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+        if (modalRef.current) {
+          modalRef.current?.scroll({
+            top: modalRef.current.scrollHeight,
+            behavior: "smooth",
+          });
+        }
 
-      if (isDoneReading && characterOffsetInterval && offset >= text.length) {
+        if (isDoneReading && characterOffsetInterval && offset >= text.length) {
           clearInterval(characterOffsetInterval);
           setCharacterOffsetInterval(null);
+          streamingChunks.current = false;
+        }
+
       }
     }
-  }, [offset, text, isDoneReading]);
+  }, [offset, text, isDoneReading, messages]);
 
   useEffect(() => {
-    if (isDoneReading) {
+    if (isDoneReading || isLoadingSuggestedQueries) {
       setOffset(text.length)
-      setInterval(() => {
+
+      setTimeout(() => {
         modalRef.current?.scroll({
-          top: modalRef.current.scrollHeight,
+          top: modalRef.current.scrollHeight + 200,
           behavior: "smooth",
         });
-      }, 50);
+      }, 55);
     }
-  }, [text, isDoneReading])
+  }, [text, isDoneReading, isLoadingSuggestedQueries])
 
   const createTopic = async ({ question }: { question: string }) => {
     if (!currentTopic) {
@@ -150,6 +161,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     setIsDoneReading(false);
     setOffset(0);
+    setText("");
+    setJson(null);
+    streamingChunks.current = true;
     let done = false;
     let textInStream = "";
 

@@ -3,7 +3,7 @@ import { useChatState } from "../../utils/hooks/chat-context";
 import { useFollowupQuestions } from "../../utils/hooks/useFollowupQuestions";
 
 export const FollowupQueries = () => {
-  const { isDoneReading, askQuestion, setCurrentQuestion } = useChatState();
+  const { isDoneReading, askQuestion } = useChatState();
 
   const {
     suggestedQuestions,
@@ -19,7 +19,6 @@ export const FollowupQueries = () => {
               {suggestedQuestions.map((q) => (
                 <button
                   onClick={() => {
-                    setCurrentQuestion(q);
                     askQuestion(q);
                   }}
                   key={q}
