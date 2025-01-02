@@ -3,6 +3,7 @@ import { useModalState } from "../../utils/hooks/modal-context";
 import { SuggestedQuestions } from "./SuggestedQuestions";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { GroupChatImgCarousel } from "./GroupChatImgCarousel";
+import { SparklesIcon } from "../icons";
 
 export const AIInitialMessage = () => {
   const { props, currentGroup } = useModalState();
@@ -17,7 +18,7 @@ export const AIInitialMessage = () => {
             alt={props.brandName || "Brand logo"}
           />
         ) : (
-          <i className="fa-solid fa-wand-magic-sparkles"></i>
+          <SparklesIcon />
         )}
         <p
           className="tag"

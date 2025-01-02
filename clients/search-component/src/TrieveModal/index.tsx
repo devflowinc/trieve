@@ -55,12 +55,6 @@ const Modal = () => {
             props.type == "ecommerce" ? "220px" : "175px"
           })`;
       }
-    } else {
-      if (chatOuterWrapper) {
-        (chatOuterWrapper as HTMLElement).style.maxHeight = `calc(60vh - ${
-          props.type == "ecommerce" ? "220px" : "200px"
-        })`;
-      }
     }
 
     if (chatOuterWrapper) {

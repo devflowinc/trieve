@@ -1,6 +1,7 @@
 import React from "react";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { useFollowupQuestions } from "../../utils/hooks/useFollowupQuestions";
+import { SparklesIcon } from "../icons";
 
 export const FollowupQueries = () => {
   const { isDoneReading, askQuestion } = useChatState();
@@ -25,7 +26,7 @@ export const FollowupQueries = () => {
                   className={`followup-question ${isLoadingSuggestedQueries ? "loading" : ""
                     }`}
                 >
-                  <i className="fa-solid fa-wand-magic-sparkles followup-icon"></i>
+                  <SparklesIcon className="followup-icon" />
                   {q}
                 </button>
               ))}
