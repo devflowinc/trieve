@@ -1,0 +1,30 @@
+{
+  "name": "mcp-server-trieve",
+  "version": "0.1.0",
+  "description": "MCP server providing agentic tools for the Trieve API using Model Context Protocol (MCP)",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "mcp-server-trieve": "build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "inspector": "npx @modelcontextprotocol/inspector",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "0.6.0",
+    "trieve-ts-sdk": "^0.0.50",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  }
+}
