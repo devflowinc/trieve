@@ -1017,6 +1017,25 @@ body {
             }
           }
         }
+
+        .followup-questions {
+          .followup-question {
+            border-color: var(--tv-zinc-700);
+
+            &:hover {
+              background-color: var(--tv-zinc-800);
+            }
+          }
+        }
+        .header {
+          .followup-question {
+            border-color: var(--tv-zinc-700);
+
+            &:hover {
+              background-color: var(--tv-zinc-800);
+            }
+          }
+        }
       }
 
       .chat-footer-wrapper {

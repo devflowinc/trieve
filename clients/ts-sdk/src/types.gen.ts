@@ -2093,6 +2093,7 @@ export type PublicPageParameters = {
     headingPrefix?: (string) | null;
     heroPattern?: ((HeroPattern) | null);
     hideDrawnText?: (boolean) | null;
+    isTestMode?: (boolean) | null;
     navLogoImgSrcUrl?: (string) | null;
     openGraphMetadata?: ((OpenGraphMetadata) | null);
     openLinksInNewTab?: (boolean) | null;

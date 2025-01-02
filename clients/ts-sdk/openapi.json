@@ -12538,6 +12538,10 @@
             "type": "boolean",
             "nullable": true
           },
+          "isTestMode": {
+            "type": "boolean",
+            "nullable": true
+          },
           "navLogoImgSrcUrl": {
             "type": "string",
             "nullable": true

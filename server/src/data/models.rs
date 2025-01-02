@@ -3263,6 +3263,9 @@ impl DatasetConfigurationDTO {
                     video_position: page_parameters_self
                         .video_position
                         .or(page_parameters_curr.video_position),
+                    is_test_mode: page_parameters_self
+                        .is_test_mode
+                        .or(page_parameters_curr.is_test_mode),
                 }),
             },
             DISABLE_ANALYTICS: self

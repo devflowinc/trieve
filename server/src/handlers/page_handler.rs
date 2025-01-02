@@ -260,6 +260,8 @@ pub struct PublicPageParameters {
     pub video_link: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub video_position: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_test_mode: Option<bool>,
 }
 
 #[utoipa::path(
@@ -299,8 +301,19 @@ pub async fn public_page(
     let dashboard_url =
         env::var("ADMIN_DASHBOARD_URL").unwrap_or("https://dashboard.trieve.ai".to_string());
 
-    let search_component_url = std::env::var("SEARCH_COMPONENT_URL")
-        .unwrap_or("https://search-component.trieve.ai".to_string());
+    let search_component_url = if config
+        .clone()
+        .PUBLIC_DATASET
+        .extra_params
+        .unwrap_or_default()
+        .is_test_mode
+        .unwrap_or(false)
+    {
+        "https://test-search-component.trieve.ai".to_string()
+    } else {
+        std::env::var("SEARCH_COMPONENT_URL")
+            .unwrap_or("https://search-component.trieve.ai".to_string())
+    };
 
     if config.PUBLIC_DATASET.enabled {
         let templ = templates.get_template("page.html").unwrap();
