@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useModalState } from "../utils/hooks/modal-context";
+import { SparklesIcon } from "./icons";
 
 export const ModeSwitch = () => {
   const { props, mode, setMode, query } = useModalState();
@@ -22,7 +23,7 @@ export const ModeSwitch = () => {
           className={mode === "chat" ? "active" : ""}
           onClick={() => setMode("chat")}
         >
-          <i className="fa-solid fa-wand-magic-sparkles"></i>
+          <SparklesIcon />
           Ask AI
         </button>
       </div>

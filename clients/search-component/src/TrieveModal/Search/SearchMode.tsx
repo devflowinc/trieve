@@ -13,6 +13,7 @@ import {
 import { ProductItem } from "./ProductItem";
 import { ProductGroupItem } from "./ProductGroupItem";
 import { PdfItem } from "./PdfItem";
+import { SparklesIcon } from "../icons";
 
 export const SearchMode = () => {
   const {
@@ -230,8 +231,12 @@ export const SearchMode = () => {
               className="item start-chat"
               onClick={() => switchToChatAndAskQuestion(query)}
             >
-              <div>
-                <i className="fa-solid fa-wand-magic-sparkles"></i>
+              <div
+                style={{
+                  paddingLeft: props.type === "ecommerce" ? "1rem" : "",
+                }}
+              >
+                <SparklesIcon />
                 <div>
                   <h4>
                     {props.type == "docs"
