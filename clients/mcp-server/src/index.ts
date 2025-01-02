@@ -556,10 +556,11 @@ export class TrieveMcpServer {
   }
 }
 
-// Only start the server if this file is run directly
+// Only start the server if this file is run directly or via npx
 if (
   import.meta.url === `file://${process.argv[1]}` ||
-  process.argv[1]?.includes("mcp-server-trieve")
+  process.argv[1]?.includes("mcp-server-trieve") ||
+  process.argv[1]?.includes("trieve-mcp-server")
 ) {
   const server = new TrieveMcpServer();
   server.run().catch((error) => {
