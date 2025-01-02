@@ -1,11 +1,11 @@
 {
-  "name": "mcp-server-trieve",
-  "version": "0.1.0",
+  "name": "trieve-mcp-server",
+  "version": "0.1.1",
   "description": "MCP server providing agentic tools for the Trieve API using Model Context Protocol (MCP)",
-  "private": true,
+  "private": false,
   "type": "module",
   "bin": {
-    "mcp-server-trieve": "build/index.js"
+    "trieve-mcp-server": "build/index.js"
   },
   "files": [
     "build"
@@ -26,5 +26,22 @@
   "devDependencies": {
     "@types/node": "^20.11.24",
     "typescript": "^5.3.3"
-  }
+  },
+  "keywords": [
+    "trieve",
+    "mcp",
+    "ai",
+    "search",
+    "model-context-protocol"
+  ],
+  "author": "Gerred Dillon",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devflowinc/trieve.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devflowinc/trieve/issues"
+  },
+  "homepage": "https://github.com/devflowinc/trieve#readme"
 }

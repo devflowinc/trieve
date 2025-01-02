@@ -1,4 +1,4 @@
-# mcp-server-trieve
+# trieve-mcp-server
 
 A Model Context Protocol (MCP) server that provides agentic tools for interacting with the Trieve API. This server enables AI agents to search and interact with Trieve datasets through a standardized interface.
 
@@ -12,7 +12,7 @@ A Model Context Protocol (MCP) server that provides agentic tools for interactin
 ## Installation
 
 ```bash
-npm install mcp-server-trieve
+npm install trieve-mcp-server
 ```
 
 ## Configuration
