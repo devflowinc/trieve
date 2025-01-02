@@ -28,38 +28,24 @@ export const useSuggestedQueries = () => {
   };
 
   useEffect(() => {
-    const abortController = new AbortController();
-
     const defaultQueries =
       props.defaultSearchQueries?.filter((q) => q !== "") ?? [];
 
-    if (!defaultQueries || !defaultQueries.length) {
-      getQueries(abortController);
-      return;
-    }
-    setSuggestedQueries(defaultQueries);
-
-    return () => {
-      abortController.abort("Component unmounted");
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!props.suggestedQueries || query === "") {
+    if (defaultQueries.length) {
+      setSuggestedQueries(defaultQueries);
       return;
     }
 
     const abortController = new AbortController();
-
     const timeoutId = setTimeout(async () => {
-      getQueries(abortController);
-    }, props.debounceMs);
+      await getQueries(abortController);
+    }, 1);
 
     return () => {
       clearTimeout(timeoutId);
-      abortController.abort("Query changed");
+      abortController.abort("Component unmounted");
     };
-  }, [query]);
+  }, []);
 
   return {
     suggestedQueries,
