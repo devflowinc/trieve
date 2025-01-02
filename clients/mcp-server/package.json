@@ -1,6 +1,6 @@
 {
   "name": "trieve-mcp-server",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server providing agentic tools for the Trieve API using Model Context Protocol (MCP)",
   "private": false,
   "type": "module",
