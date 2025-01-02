@@ -1,45 +1,19 @@
-import React, { useEffect } from "react";
-import { useSuggestedQuestions } from "../../utils/hooks/useSuggestedQuestions";
+import React from "react";
 import { useChatState } from "../../utils/hooks/chat-context";
+import { useFollowupQuestions } from "../../utils/hooks/useFollowupQuestions";
 
-interface FollowupQueryProps {
-  query?: string;
-}
-
-export const FollowupQueries = (followUpProps: FollowupQueryProps) => {
-  const { askQuestion, setCurrentQuestion } = useChatState();
+export const FollowupQueries = () => {
+  const { isDoneReading, askQuestion, setCurrentQuestion } = useChatState();
 
   const {
     suggestedQuestions,
     isLoadingSuggestedQueries,
-    refetchSuggestedQuestion,
-  } = useSuggestedQuestions();
+  } = useFollowupQuestions();
 
-  useEffect(() => {
-    refetchSuggestedQuestion();
-  }, []);
-
-  return (
-    <>
-      <p></p>
+  if (isDoneReading == true) {
+    return (
       <div>
-        <p className="header">
-          <button
-            onClick={refetchSuggestedQuestion}
-            disabled={isLoadingSuggestedQueries}
-            className="suggested-question refetch"
-            title="Refresh suggested questions"
-          >
-            <i className="fa-solid fa-arrow-rotate-right"></i>
-          </button>{" "}
-          Follow-up questions
-        </p>
-        <div className="questions">
-          {!suggestedQuestions.length && (
-            <p className="suggested-question empty-state-loading">
-              Loading example questions...
-            </p>
-          )}
+        <div className="followup-questions">
           {suggestedQuestions.length ? (
             <>
               {suggestedQuestions.map((q) => (
@@ -49,10 +23,10 @@ export const FollowupQueries = (followUpProps: FollowupQueryProps) => {
                     askQuestion(q);
                   }}
                   key={q}
-                  className={`suggested-question ${
-                    isLoadingSuggestedQueries ? "loading" : ""
-                  }`}
+                  className={`followup-question ${isLoadingSuggestedQueries ? "loading" : ""
+                    }`}
                 >
+                  <i className="fa-solid fa-wand-magic-sparkles followup-icon"></i>
                   {q}
                 </button>
               ))}
@@ -60,6 +34,8 @@ export const FollowupQueries = (followUpProps: FollowupQueryProps) => {
           ) : null}
         </div>
       </div>
-    </>
-  );
+    );
+  } else {
+    return null
+  }
 };

@@ -935,7 +935,7 @@ pub async fn get_suggested_queries(
         None => "".to_string(),
     };
 
-	let number_of_suggestions_to_create = data.suggestions_to_create.unwrap_or(10);
+    let number_of_suggestions_to_create = data.suggestions_to_create.unwrap_or(10);
 
     let content = ChatMessageContent::Text(format!(
         "Here is some context for the dataset for which the user is querying for {}{}. Generate {} suggested followup {} style queries based off the domain of this dataset. Your only response should be the {} followup {} style queries which are separated by new lines and are just text and you do not add any other context or information about the followup {} style queries. This should not be a list, so do not number each {} style queries. These followup {} style queries should be related to the domain of the dataset.",
