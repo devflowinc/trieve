@@ -18,6 +18,7 @@ function parseArgs() {
   const args = {
     apiKey: "",
     organizationId: "",
+    datasetId: "",
   };
 
   for (let i = 2; i < process.argv.length; i++) {
@@ -26,6 +27,8 @@ function parseArgs() {
       args.apiKey = process.argv[++i];
     } else if (arg === "--org-id" && i + 1 < process.argv.length) {
       args.organizationId = process.argv[++i];
+    } else if (arg === "--dataset-id" && i + 1 < process.argv.length) {
+      args.datasetId = process.argv[++i];
     }
   }
 
@@ -39,19 +42,22 @@ const args = parseArgs();
 const TRIEVE_API_KEY = args.apiKey || process.env.TRIEVE_API_KEY;
 const TRIEVE_ORGANIZATION_ID =
   args.organizationId || process.env.TRIEVE_ORGANIZATION_ID;
+const TRIEVE_DATASET_ID = args.datasetId || process.env.TRIEVE_DATASET_ID;
 
-if (!TRIEVE_API_KEY || !TRIEVE_ORGANIZATION_ID) {
-  console.error("Error: API key and organization ID are required.");
-  console.error("Provide them either through environment variables:");
-  console.error("  TRIEVE_API_KEY=<key> TRIEVE_ORGANIZATION_ID=<id>");
+if (!TRIEVE_API_KEY) {
+  console.error("Error: API key is required.");
+  console.error("Provide it either through environment variables:");
+  console.error("  TRIEVE_API_KEY=<key>");
   console.error("Or through command line arguments:");
-  console.error("  --api-key <key> --org-id <id>");
+  console.error("  --api-key <key>");
   process.exit(1);
 }
-// Initialize Trieve SDK client
+
+// Initialize Trieve SDK client with appropriate configuration
 const trieveClient = new TrieveSDK({
   apiKey: TRIEVE_API_KEY,
-  organizationId: TRIEVE_ORGANIZATION_ID,
+  ...(TRIEVE_ORGANIZATION_ID && { organizationId: TRIEVE_ORGANIZATION_ID }),
+  ...(TRIEVE_DATASET_ID && { datasetId: TRIEVE_DATASET_ID }),
 });
 
 export class TrieveMcpServer {
@@ -141,15 +147,50 @@ export class TrieveMcpServer {
 
   async handleListResources() {
     try {
-      if (!TRIEVE_ORGANIZATION_ID) {
+      // Case 1: Neither org ID nor dataset ID provided
+      if (!TRIEVE_ORGANIZATION_ID && !TRIEVE_DATASET_ID) {
         throw new McpError(
           ErrorCode.InternalError,
-          "TRIEVE_ORGANIZATION_ID is required"
+          "Either TRIEVE_ORGANIZATION_ID or TRIEVE_DATASET_ID is required"
         );
       }
 
+      // Case 2: Dataset ID provided (with or without org ID)
+      if (TRIEVE_DATASET_ID) {
+        try {
+          const [dataset, usage] = await Promise.all([
+            this.trieveClient.getDatasetById(TRIEVE_DATASET_ID),
+            this.trieveClient.getDatasetUsageById(TRIEVE_DATASET_ID),
+          ]);
+
+          return {
+            resources: [
+              {
+                uri: `trieve://datasets/${dataset.id}`,
+                name: dataset.name,
+                description: `Dataset: ${dataset.name}\nChunks: ${usage.chunk_count}`,
+                mimeType: "application/json",
+                metadata: {
+                  id: dataset.id,
+                  name: dataset.name,
+                  chunk_count: usage.chunk_count,
+                  created_at: dataset.created_at,
+                  updated_at: dataset.updated_at,
+                },
+              },
+            ],
+          };
+        } catch (error) {
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Failed to fetch dataset: ${error}`
+          );
+        }
+      }
+
+      // Case 3: Only org ID provided
       const datasets = await this.trieveClient.getDatasetsFromOrganization(
-        TRIEVE_ORGANIZATION_ID
+        TRIEVE_ORGANIZATION_ID!
       );
 
       return {
