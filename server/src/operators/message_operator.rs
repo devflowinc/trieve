@@ -3,10 +3,11 @@ use crate::data::models::DummyHallucinationScore;
 use crate::data::models::{
     self, escape_quotes, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset,
     DatasetConfiguration, LLMOptions, QueryTypes, RagQueryEventClickhouse, RedisPool, SearchMethod,
+    SearchModalities,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
-use crate::handlers::chunk_handler::{ParsedQuery, ParsedQueryTypes, SearchChunksReqPayload};
+use crate::handlers::chunk_handler::SearchChunksReqPayload;
 use crate::handlers::group_handler::SearchOverGroupsReqPayload;
 use crate::handlers::message_handler::CreateMessageReqPayload;
 use crate::operators::clickhouse_operator::ClickHouseEvent;
@@ -40,6 +41,7 @@ use ureq::json;
 use super::clickhouse_operator::{get_latency_from_header, EventQueue};
 use super::search_operator::{
     hybrid_search_over_groups, search_chunks_query, search_hybrid_chunks, search_over_groups_query,
+    ParsedQuery, ParsedQueryTypes,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -354,7 +356,7 @@ pub async fn get_rag_chunks_query(
     {
         let search_groups_data = SearchOverGroupsReqPayload {
             search_type: search_type.clone(),
-            query: QueryTypes::Single(query.clone()),
+            query: QueryTypes::Single(SearchModalities::Text(query.clone())),
             score_threshold: create_message_req_payload.score_threshold,
             page_size: Some(
                 create_message_req_payload
@@ -465,7 +467,7 @@ pub async fn get_rag_chunks_query(
     } else {
         let search_chunk_data = SearchChunksReqPayload {
             search_type: search_type.clone(),
-            query: QueryTypes::Single(query.clone()),
+            query: QueryTypes::Single(SearchModalities::Text(query.clone())),
             score_threshold: create_message_req_payload.score_threshold,
             sort_options: create_message_req_payload.sort_options,
             page_size: Some(
@@ -1239,4 +1241,114 @@ pub async fn get_topic_string(
     };
 
     Ok(topic)
+}
+
+pub async fn get_text_from_image(
+    image_url: String,
+    dataset: &Dataset,
+) -> Result<String, ServiceError> {
+    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
+    let base_url = dataset_config.LLM_BASE_URL;
+
+    let base_url = if base_url.is_empty() {
+        "https://openrouter.ai/api/v1".into()
+    } else {
+        base_url
+    };
+
+    let llm_api_key = if !dataset_config.LLM_API_KEY.is_empty() {
+        dataset_config.LLM_API_KEY.clone()
+    } else if base_url.contains("openai.com") {
+        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
+    } else {
+        get_env!(
+            "LLM_API_KEY",
+            "LLM_API_KEY for openrouter or self-hosted should be set"
+        )
+        .into()
+    };
+
+    let client = Client {
+        headers: None,
+        api_key: llm_api_key,
+        project: None,
+        http_client: reqwest::Client::new(),
+        base_url,
+        organization: None,
+    };
+
+    let image_url = ImageUrl {
+        r#type: "image_url".to_string(),
+        text: None,
+        image_url: ImageUrlType {
+            url: image_url,
+            detail: None,
+        },
+    };
+
+    let messages = vec![
+        ChatMessage::System {
+            content: ChatMessageContent::Text(
+                "Please describe the image and turn the description into a search query. DO NOT INCLUDE ANY OTHER CONTEXT OR INFORMATION. JUST OUTPUT THE SEARCH QUERY AND NOTHING ELSE"
+                    .to_string(),
+            ),
+            name: None,
+        },
+        ChatMessage::User {
+            content: ChatMessageContent::ImageUrl(vec![image_url]),
+            name: None,
+        },
+    ];
+
+    let parameters = ChatCompletionParameters {
+        model: dataset_config.LLM_DEFAULT_MODEL.clone(),
+        messages,
+        stream: Some(false),
+        temperature: None,
+        top_p: None,
+        n: None,
+        stop: None,
+        presence_penalty: Some(0.8),
+        frequency_penalty: Some(0.8),
+        logit_bias: None,
+        user: None,
+        response_format: None,
+        tools: None,
+        tool_choice: None,
+        logprobs: None,
+        top_logprobs: None,
+        seed: None,
+        ..Default::default()
+    };
+
+    let query = client
+        .chat()
+        .create(parameters)
+        .await
+        .map_err(|err| ServiceError::BadRequest(format!("Error: {:?}", err)))?;
+
+    let text = match &query
+        .choices
+        .get(0)
+        .ok_or(ServiceError::BadRequest(
+            "No response for LLM completion".to_string(),
+        ))?
+        .message
+    {
+        ChatMessage::User {
+            content: ChatMessageContent::Text(text),
+            ..
+        }
+        | ChatMessage::System {
+            content: ChatMessageContent::Text(text),
+            ..
+        }
+        | ChatMessage::Assistant {
+            content: Some(ChatMessageContent::Text(text)),
+            ..
+        } => text.clone(),
+        _ => "".to_string(),
+    };
+
+    Ok(text)
 }
