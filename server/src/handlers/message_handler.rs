@@ -1,6 +1,6 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{ChunkFilter, ParsedQuery, ParsedQueryTypes, SearchChunksReqPayload},
+    chunk_handler::{ChunkFilter, SearchChunksReqPayload},
 };
 use crate::{
     data::models::{
@@ -21,7 +21,10 @@ use crate::{
         organization_operator::get_message_org_count,
         parse_operator::convert_html_to_text,
         qdrant_operator::scroll_dataset_points,
-        search_operator::{assemble_qdrant_filter, search_chunks_query, search_hybrid_chunks},
+        search_operator::{
+            assemble_qdrant_filter, search_chunks_query, search_hybrid_chunks, ParsedQuery,
+            ParsedQueryTypes,
+        },
     },
 };
 use actix_web::{web, HttpResponse};
@@ -813,7 +816,7 @@ pub async fn get_suggested_queries(
         Some(query) => {
             let search_req_payload = SearchChunksReqPayload {
                 search_type: search_type.clone(),
-                query: models::QueryTypes::Single(query.clone()),
+                query: models::QueryTypes::Single(models::SearchModalities::Text(query.clone())),
                 page_size: Some(10),
                 filters,
                 ..Default::default()

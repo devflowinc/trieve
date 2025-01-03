@@ -1,11 +1,12 @@
 use super::chunk_operator::{
     get_chunk_metadatas_from_point_ids_query, get_content_chunk_from_point_ids_query,
     get_highlights, get_highlights_with_exact_match, get_qdrant_ids_from_chunk_ids_query,
-    get_slim_chunks_from_point_ids_query, HighlightStrategy,
+    get_slim_chunks_from_point_ids_query, get_stop_words, HighlightStrategy,
 };
 use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
+use super::message_operator::get_text_from_image;
 use super::model_operator::{
     cross_encoder, get_bm25_embeddings, get_dense_vector, get_sparse_vector,
 };
@@ -19,12 +20,11 @@ use crate::data::models::{
     ChunkMetadataStringTagSet, ChunkMetadataTypes, ConditionType, ContentChunkMetadata, Dataset,
     DatasetConfiguration, HasChunkIDCondition, MmrOptions, QdrantChunkMetadata, QdrantSortBy,
     QueryTypes, ReRankOptions, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
-    SlimChunkMetadata, SortByField, SortBySearchType, SortOptions, UnifiedId,
+    SearchModalities, SlimChunkMetadata, SortByField, SortBySearchType, SortOptions, UnifiedId,
 };
 use crate::handlers::chunk_handler::{
     AutocompleteReqPayload, ChunkFilter, CountChunkQueryResponseBody, CountChunksReqPayload,
-    ParsedQuery, ParsedQueryTypes, ScoringOptions, SearchChunkQueryResponseBody,
-    SearchChunksReqPayload,
+    ScoringOptions, SearchChunkQueryResponseBody, SearchChunksReqPayload,
 };
 use crate::handlers::group_handler::{
     SearchOverGroupsReqPayload, SearchWithinGroupReqPayload, SearchWithinGroupResults,
@@ -43,6 +43,7 @@ use itertools::Itertools;
 use qdrant_client::qdrant::condition::ConditionOneOf::HasId;
 use qdrant_client::qdrant::Filter;
 use qdrant_client::qdrant::{Condition, HasIdCondition, PointId};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
 use std::cmp::Ordering;
@@ -361,19 +362,8 @@ impl RetrievePointQuery {
             if let Some(rerank_by) = self.rerank_by {
                 match rerank_by.rerank_type {
                     ReRankOptions::Fulltext => {
-                        let data = SearchChunksReqPayload {
-                            query: QueryTypes::Single(
-                                rerank_by
-                                    .rerank_query
-                                    .clone()
-                                    .unwrap_or(parsed_query.query.clone()),
-                            ),
-                            search_type: SearchMethod::FullText,
-                            ..Default::default()
-                        };
-
                         let vector = get_qdrant_vector(
-                            data.search_type,
+                            SearchMethod::FullText,
                             ParsedQueryTypes::Single(parsed_query),
                             None,
                             config,
@@ -390,19 +380,8 @@ impl RetrievePointQuery {
                         })
                     }
                     ReRankOptions::Semantic => {
-                        let data = SearchChunksReqPayload {
-                            query: QueryTypes::Single(
-                                rerank_by
-                                    .rerank_query
-                                    .clone()
-                                    .unwrap_or(parsed_query.query.clone()),
-                            ),
-                            search_type: SearchMethod::Semantic,
-                            ..Default::default()
-                        };
-
                         let vector = get_qdrant_vector(
-                            data.search_type,
+                            SearchMethod::Semantic,
                             ParsedQueryTypes::Single(parsed_query),
                             None,
                             config,
@@ -419,19 +398,8 @@ impl RetrievePointQuery {
                         })
                     }
                     ReRankOptions::BM25 => {
-                        let data = SearchChunksReqPayload {
-                            query: QueryTypes::Single(
-                                rerank_by
-                                    .rerank_query
-                                    .clone()
-                                    .unwrap_or(parsed_query.query.clone()),
-                            ),
-                            search_type: SearchMethod::BM25,
-                            ..Default::default()
-                        };
-
                         let vector = get_qdrant_vector(
-                            data.search_type,
+                            SearchMethod::BM25,
                             ParsedQueryTypes::Single(parsed_query),
                             None,
                             config,
@@ -1617,6 +1585,107 @@ pub async fn retrieve_chunks_from_point_ids(
     })
 }
 
+#[derive(Clone, Debug)]
+pub struct ParsedQuery {
+    pub query: String,
+    pub quote_words: Option<Vec<String>>,
+    pub negated_words: Option<Vec<String>>,
+}
+
+#[derive(Clone, Debug)]
+pub enum ParsedQueryTypes {
+    Single(ParsedQuery),
+    Multi(Vec<(ParsedQuery, f32)>),
+}
+
+impl ParsedQueryTypes {
+    pub fn to_parsed_query(&self) -> Result<ParsedQuery, ServiceError> {
+        match self {
+            ParsedQueryTypes::Single(query) => Ok(query.clone()),
+            ParsedQueryTypes::Multi(_) => Err(ServiceError::BadRequest(
+                "Cannot use Multi Query with cross encoder or highlights".to_string(),
+            )),
+        }
+    }
+}
+
+pub async fn parse_query(
+    query: SearchModalities,
+    dataset: &Dataset,
+    use_quote_negated_terms: Option<bool>,
+    remove_stop_words: Option<bool>,
+) -> Result<ParsedQuery, ServiceError> {
+    let stop_words = get_stop_words();
+    let query = match query {
+        SearchModalities::Text(query) => query,
+        SearchModalities::Image { image_url } => get_text_from_image(image_url, dataset).await?,
+    };
+
+    let query = match remove_stop_words {
+        Some(true) => {
+            let mut query_parts_split_by_stop_words: Vec<String> = Vec::new();
+            let mut current_chunk: Vec<String> = Vec::new();
+            for word in query.split(' ') {
+                if !stop_words.contains(&word.to_lowercase()) {
+                    current_chunk.push(word.to_string());
+                } else if !current_chunk.is_empty() {
+                    query_parts_split_by_stop_words.push(current_chunk.join(" "));
+                    current_chunk.clear();
+                }
+            }
+            if !current_chunk.is_empty() {
+                query_parts_split_by_stop_words.push(current_chunk.join(" "));
+            }
+            let new_query = query_parts_split_by_stop_words.join(" ");
+            match new_query.is_empty() {
+                true => query,
+                false => new_query,
+            }
+        }
+        _ => query,
+    };
+
+    match use_quote_negated_terms {
+        Some(true) => {
+            let re = Regex::new(r#""(?:[^"\\]|\\.)*""#).expect("Regex pattern is always valid");
+            let quote_words: Vec<String> = re
+                .captures_iter(&query)
+                .filter_map(|capture| capture.get(0).map(|capture| capture.as_str().to_string()))
+                .filter(|word| !word.is_empty())
+                .collect::<Vec<String>>();
+
+            let quote_words = if quote_words.is_empty() {
+                None
+            } else {
+                Some(quote_words)
+            };
+
+            let negated_words: Vec<String> = query
+                .split_whitespace()
+                .filter(|word| word.starts_with('-'))
+                .map(|word| word.strip_prefix('-').unwrap().to_string())
+                .collect::<Vec<String>>();
+
+            let negated_words = if negated_words.is_empty() {
+                None
+            } else {
+                Some(negated_words)
+            };
+
+            Ok(ParsedQuery {
+                query,
+                quote_words,
+                negated_words,
+            })
+        }
+        _ => Ok(ParsedQuery {
+            query,
+            quote_words: None,
+            negated_words: None,
+        }),
+    }
+}
+
 pub fn rerank_chunks(
     chunks: Vec<ScoreChunkDTO>,
     search_results: Vec<SearchResult>,
@@ -2112,7 +2181,7 @@ pub async fn search_chunks_query(
                     corrected_query.clone_from(&typo_corrected_query.query);
                 }
                 *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
-                data.query = QueryTypes::Single(query.query.clone());
+                data.query = QueryTypes::Single(SearchModalities::Text(query.query.clone()));
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
@@ -2165,7 +2234,7 @@ pub async fn search_chunks_query(
         filter: data.filters.clone(),
         group_size: None,
     }
-    .into_qdrant_query(parsed_query, dataset.id, None, config, pool.clone())
+    .into_qdrant_query(parsed_query.clone(), dataset.id, None, config, pool.clone())
     .await?;
 
     let search_chunk_query_results = retrieve_qdrant_points_query(
@@ -2192,7 +2261,7 @@ pub async fn search_chunks_query(
         match rerank_by.rerank_type {
             ReRankOptions::CrossEncoder => {
                 let mut cross_encoder_results = cross_encoder(
-                    data.query.clone().to_single_query()?,
+                    parsed_query.to_parsed_query()?.query,
                     data.page_size.unwrap_or(10),
                     result_chunks.score_chunks,
                     config,
@@ -2252,7 +2321,7 @@ pub async fn search_hybrid_chunks(
             .query
             .clone()
             .unwrap_or(parsed_query.clone());
-        data.query = QueryTypes::Single(parsed_query.query.clone());
+        data.query = QueryTypes::Single(SearchModalities::Text(parsed_query.query.clone()));
         timer.add("corrected query");
     }
 
@@ -2352,7 +2421,7 @@ pub async fn search_hybrid_chunks(
     let mut reranked_chunks = {
         let mut reranked_chunks = {
             let mut cross_encoder_results = cross_encoder(
-                data.query.clone().to_single_query()?,
+                parsed_query.query.clone(),
                 data.page_size.unwrap_or(10),
                 result_chunks.score_chunks,
                 config,
@@ -2436,7 +2505,7 @@ pub async fn search_groups_query(
                     corrected_query.clone_from(&typo_corrected_query.query);
                 }
                 *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
-                data.query = QueryTypes::Single(query.query.clone());
+                data.query = QueryTypes::Single(SearchModalities::Text(query.query.clone()));
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
@@ -2476,7 +2545,7 @@ pub async fn search_groups_query(
         filter: data.filters.clone(),
         group_size: None,
     }
-    .into_qdrant_query(parsed_query, dataset.id, None, config, pool.clone())
+    .into_qdrant_query(parsed_query.clone(), dataset.id, None, config, pool.clone())
     .await?;
 
     let search_semantic_chunk_query_results = retrieve_qdrant_points_query(
@@ -2501,7 +2570,7 @@ pub async fn search_groups_query(
         match rerank_by.rerank_type {
             ReRankOptions::CrossEncoder => {
                 let mut cross_encoder_results = cross_encoder(
-                    data.query.clone().to_single_query()?,
+                    parsed_query.to_parsed_query()?.query,
                     data.page_size.unwrap_or(10),
                     result_chunks.score_chunks,
                     config,
@@ -2565,7 +2634,7 @@ pub async fn search_hybrid_groups(
             .query
             .clone()
             .unwrap_or(parsed_query.clone());
-        data.query = QueryTypes::Single(parsed_query.query.clone());
+        data.query = QueryTypes::Single(SearchModalities::Text(parsed_query.query.clone()));
         timer.add("corrected query");
     }
 
@@ -2660,7 +2729,7 @@ pub async fn search_hybrid_groups(
                 .collect::<Vec<Vec<ScoreChunkDTO>>>();
 
             let cross_encoder_results = cross_encoder(
-                data.query.clone().to_single_query()?,
+                parsed_query.query.clone(),
                 data.page_size.unwrap_or(10),
                 split_results
                     .get(0)
@@ -2683,7 +2752,7 @@ pub async fn search_hybrid_groups(
                 .collect::<Vec<ScoreChunkDTO>>()
         } else {
             let cross_encoder_results = cross_encoder(
-                data.query.clone().to_single_query()?,
+                parsed_query.query.clone(),
                 data.page_size.unwrap_or(10),
                 result_chunks.score_chunks.clone(),
                 config,
@@ -2742,7 +2811,7 @@ pub async fn search_over_groups_query(
                     corrected_query.clone_from(&typo_corrected_query.query);
                 }
                 *query = typo_corrected_query.query.clone().unwrap_or(query.clone());
-                data.query = QueryTypes::Single(query.query.clone());
+                data.query = QueryTypes::Single(SearchModalities::Text(query.query.clone()));
             }
             ParsedQueryTypes::Multi(ref mut queries) => {
                 for (query, _) in queries {
@@ -2905,19 +2974,19 @@ pub async fn hybrid_search_over_groups(
             .query
             .clone()
             .unwrap_or(parsed_query.clone());
-        data.query = QueryTypes::Single(parsed_query.query.clone());
+        data.query = QueryTypes::Single(SearchModalities::Text(parsed_query.query.clone()));
         timer.add("corrected query");
     }
 
     let dense_embedding_vectors_future = get_dense_vector(
-        data.query.clone().to_single_query()?,
+        parsed_query.query.clone(),
         None,
         "query",
         dataset_config.clone(),
     );
 
     let sparse_embedding_vector_future =
-        get_sparse_vector(data.query.clone().to_single_query()?, None, "query");
+        get_sparse_vector(parsed_query.query.clone(), None, "query");
 
     let (dense_vector, sparse_vector) = futures::try_join!(
         dense_embedding_vectors_future,
@@ -3000,7 +3069,7 @@ pub async fn hybrid_search_over_groups(
             .collect::<Vec<Vec<GroupScoreChunk>>>();
 
         let cross_encoder_results = cross_encoder_for_groups(
-            data.query.clone().to_single_query()?,
+            parsed_query.query.clone(),
             data.page_size.unwrap_or(10),
             split_results
                 .get(0)
@@ -3017,7 +3086,7 @@ pub async fn hybrid_search_over_groups(
             .collect::<Vec<GroupScoreChunk>>()
     } else {
         cross_encoder_for_groups(
-            data.query.clone().to_single_query()?,
+            parsed_query.query.clone(),
             data.page_size.unwrap_or(10),
             combined_result_chunks.group_chunks.clone(),
             config,

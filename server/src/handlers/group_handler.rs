@@ -1,16 +1,15 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{
-        parse_query, ChunkFilter, ParsedQuery, ParsedQueryTypes, SearchChunksReqPayload,
-    },
+    chunk_handler::{ChunkFilter, SearchChunksReqPayload},
 };
 use crate::{
     data::models::{
         escape_quotes, ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadata,
         ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        HighlightOptions, Pool, QueryTypes, RecommendType, RecommendationEventClickhouse,
-        RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
-        SearchQueryEventClickhouse, SortOptions, TypoOptions, UnifiedId,
+        HighlightOptions, MultiQuery, Pool, QueryTypes, RecommendType,
+        RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
+        ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SortOptions, TypoOptions,
+        UnifiedId,
     },
     errors::ServiceError,
     middleware::api_version::APIVersion,
@@ -23,9 +22,9 @@ use crate::{
             remove_bookmark_from_qdrant_query,
         },
         search_operator::{
-            get_metadata_from_groups, hybrid_search_over_groups, search_groups_query,
-            search_hybrid_groups, search_over_groups_query, GroupScoreChunk,
-            SearchOverGroupsQueryResult, SearchOverGroupsResults,
+            get_metadata_from_groups, hybrid_search_over_groups, parse_query, search_groups_query,
+            search_hybrid_groups, search_over_groups_query, GroupScoreChunk, ParsedQuery,
+            ParsedQueryTypes, SearchOverGroupsQueryResult, SearchOverGroupsResults,
         },
     },
 };
@@ -1599,24 +1598,47 @@ pub async fn search_within_group(
     };
 
     let parsed_query = match data.query.clone() {
-        QueryTypes::Single(query) => ParsedQueryTypes::Single(parse_query(
-            query.clone(),
-            data.use_quote_negated_terms,
-            data.remove_stop_words,
-        )),
-        QueryTypes::Multi(query) => ParsedQueryTypes::Multi(
-            query
-                .into_iter()
-                .map(|multi_query| {
+        QueryTypes::Single(query) => ParsedQueryTypes::Single(
+            parse_query(
+                query.clone(),
+                &dataset_org_plan_sub.dataset,
+                data.use_quote_negated_terms,
+                data.remove_stop_words,
+            )
+            .await?,
+        ),
+        QueryTypes::Multi(query) => {
+            let parsed_queries = futures::future::join_all(query.into_iter().map(|multi_query| {
+                let value = dataset_org_plan_sub.dataset.clone();
+                async move {
                     let parsed_query = parse_query(
                         multi_query.query.clone(),
+                        &value,
                         data.use_quote_negated_terms,
                         data.remove_stop_words,
-                    );
-                    (parsed_query, multi_query.weight)
-                })
-                .collect::<Vec<(ParsedQuery, f32)>>(),
-        ),
+                    )
+                    .await?;
+                    Ok((parsed_query, multi_query.weight))
+                        as Result<(ParsedQuery, f32), ServiceError>
+                }
+            }))
+            .await
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?;
+            ParsedQueryTypes::Multi(parsed_queries)
+        }
+    };
+
+    let query = match &parsed_query {
+        ParsedQueryTypes::Single(query) => query.query.clone(),
+        ParsedQueryTypes::Multi(ref query) => serde_json::to_string(
+            &query
+                .clone()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<MultiQuery>>(),
+        )
+        .unwrap_or_default(),
     };
 
     let result_chunks = match data.search_type {
@@ -1650,11 +1672,6 @@ pub async fn search_within_group(
     timer.add("search_chunks");
 
     let search_id = uuid::Uuid::new_v4();
-
-    let query = match &data.query {
-        QueryTypes::Single(query) => query.clone(),
-        QueryTypes::Multi(query) => serde_json::to_string(&query).unwrap_or_default(),
-    };
     if !dataset_config.DISABLE_ANALYTICS {
         let clickhouse_event = SearchQueryEventClickhouse {
             id: search_id,
@@ -1764,24 +1781,48 @@ pub async fn search_over_groups(
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let parsed_query = match data.query.clone() {
-        QueryTypes::Single(query) => ParsedQueryTypes::Single(parse_query(
-            query.clone(),
-            data.use_quote_negated_terms,
-            data.remove_stop_words,
-        )),
-        QueryTypes::Multi(query) => ParsedQueryTypes::Multi(
-            query
-                .into_iter()
-                .map(|multi_query| {
+        QueryTypes::Single(query) => ParsedQueryTypes::Single(
+            parse_query(
+                query.clone(),
+                &dataset_org_plan_sub.dataset,
+                data.use_quote_negated_terms,
+                data.remove_stop_words,
+            )
+            .await?,
+        ),
+        QueryTypes::Multi(query) => {
+            let parsed_queries = futures::future::join_all(query.into_iter().map(|multi_query| {
+                let value = dataset_org_plan_sub.dataset.clone();
+                let data = data.clone();
+                async move {
                     let parsed_query = parse_query(
                         multi_query.query.clone(),
+                        &value,
                         data.use_quote_negated_terms,
                         data.remove_stop_words,
-                    );
-                    (parsed_query, multi_query.weight)
-                })
-                .collect::<Vec<(ParsedQuery, f32)>>(),
-        ),
+                    )
+                    .await?;
+                    Ok((parsed_query, multi_query.weight))
+                        as Result<(ParsedQuery, f32), ServiceError>
+                }
+            }))
+            .await
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?;
+            ParsedQueryTypes::Multi(parsed_queries)
+        }
+    };
+
+    let query = match &parsed_query {
+        ParsedQueryTypes::Single(query) => query.query.clone(),
+        ParsedQueryTypes::Multi(ref query) => serde_json::to_string(
+            &query
+                .clone()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<MultiQuery>>(),
+        )
+        .unwrap_or_default(),
     };
 
     let mut timer = Timer::new();
@@ -1816,10 +1857,6 @@ pub async fn search_over_groups(
 
     let search_id = uuid::Uuid::new_v4();
 
-    let query = match &data.query {
-        QueryTypes::Single(query) => query.clone(),
-        QueryTypes::Multi(query) => serde_json::to_string(&query).unwrap_or_default(),
-    };
     if !dataset_config.DISABLE_ANALYTICS {
         let clickhouse_event = SearchQueryEventClickhouse {
             id: search_id,

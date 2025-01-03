@@ -5,8 +5,8 @@ use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::analytics_handler::CTRDataRequestBody;
 use crate::handlers::chunk_handler::{
-    AutocompleteReqPayload, ChunkFilter, CrawlOpenAPIOptions, FullTextBoost, ParsedQuery,
-    ScoringOptions, SearchChunksReqPayload, SemanticBoost,
+    AutocompleteReqPayload, ChunkFilter, CrawlOpenAPIOptions, FullTextBoost, ScoringOptions,
+    SearchChunksReqPayload, SemanticBoost,
 };
 use crate::handlers::chunk_handler::{CrawlInterval, ScrollChunksReqPayload};
 use crate::handlers::file_handler::{
@@ -16,6 +16,7 @@ use crate::handlers::group_handler::{SearchOverGroupsReqPayload, SearchWithinGro
 use crate::handlers::message_handler::{
     CreateMessageReqPayload, EditMessageReqPayload, RegenerateMessageReqPayload,
 };
+
 use crate::handlers::page_handler::PublicPageParameters;
 use crate::operators::analytics_operator::{
     CTRRecommendationsWithClicksResponse, CTRRecommendationsWithoutClicksResponse,
@@ -30,7 +31,7 @@ use crate::operators::chunk_operator::{
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition, GroupScoreChunk,
-    SearchResult,
+    ParsedQuery, SearchResult,
 };
 use actix_web::web;
 use chrono::{DateTime, NaiveDateTime};
@@ -2188,7 +2189,7 @@ pub struct DatasetEventCount {
         "N_RETRIEVALS_TO_INCLUDE": 8,
         "EMBEDDING_SIZE": 1536,
         "DISTANCE_METRIC": "cosine",
-        "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+        "LLM_DEFAULT_MODEL": "gpt-4o",
         "BM25_ENABLED": true,
         "BM25_B": 0.75,
         "BM25_K": 0.75,
@@ -2356,7 +2357,7 @@ pub enum DistanceMetric {
     "N_RETRIEVALS_TO_INCLUDE": 8,
     "EMBEDDING_SIZE": 1536,
     "DISTANCE_METRIC": "cosine",
-    "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+    "LLM_DEFAULT_MODEL": "gpt-4o",
     "BM25_ENABLED": true,
     "BM25_B": 0.75,
     "BM25_K": 0.75,
@@ -2434,7 +2435,7 @@ pub struct PublicDatasetOptions {
     "N_RETRIEVALS_TO_INCLUDE": 8,
     "EMBEDDING_SIZE": 1536,
     "DISTANCE_METRIC": "cosine",
-    "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+    "LLM_DEFAULT_MODEL": "gpt-4o",
     "BM25_ENABLED": true,
     "BM25_B": 0.75,
     "BM25_K": 0.75,
@@ -2543,7 +2544,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             N_RETRIEVALS_TO_INCLUDE: dto.N_RETRIEVALS_TO_INCLUDE.unwrap_or(8),
             EMBEDDING_SIZE: dto.EMBEDDING_SIZE.unwrap_or(1536),
             DISTANCE_METRIC: dto.DISTANCE_METRIC.unwrap_or(DistanceMetric::Cosine),
-            LLM_DEFAULT_MODEL: dto.LLM_DEFAULT_MODEL.unwrap_or("gpt-3.5-turbo-1106".to_string()),
+            LLM_DEFAULT_MODEL: dto.LLM_DEFAULT_MODEL.unwrap_or("gpt-4o".to_string()),
             BM25_ENABLED: dto.BM25_ENABLED.unwrap_or(true),
             BM25_B: dto.BM25_B.unwrap_or(0.75),
             BM25_K: dto.BM25_K.unwrap_or(0.75),
@@ -2639,7 +2640,7 @@ impl Default for DatasetConfiguration {
             N_RETRIEVALS_TO_INCLUDE: 8,
             EMBEDDING_SIZE: 1536,
             DISTANCE_METRIC: DistanceMetric::Cosine,
-            LLM_DEFAULT_MODEL: "gpt-3.5-turbo-1106".to_string(),
+            LLM_DEFAULT_MODEL: "gpt-4o".to_string(),
             BM25_ENABLED: true,
             BM25_B: 0.75,
             BM25_K: 0.75,
@@ -2825,16 +2826,16 @@ impl DatasetConfiguration {
                 }).expect("RERANKER_SERVER_ORIGIN should exist"),
             LLM_DEFAULT_MODEL: configuration
                 .get("LLM_DEFAULT_MODEL")
-                .unwrap_or(&json!("gpt-3.5-turbo-1106"))
+                .unwrap_or(&json!("gpt-4o"))
                 .as_str()
                 .map(|s| {
                     if s.is_empty() {
-                        "gpt-3.5-turbo-1106".to_string()
+                        "gpt-4o".to_string()
                     } else {
                         s.to_string()
                     }
                 })
-                .unwrap_or("gpt-3.5-turbo-1106".to_string()),
+                .unwrap_or("gpt-4o".to_string()),
             FULLTEXT_ENABLED: configuration
                 .get("FULLTEXT_ENABLED")
                 .unwrap_or(&json!(true))
@@ -7628,7 +7629,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
 /// MultiQuery allows you to construct a dense vector from multiple queries with a weighted sum. This is useful for when you want to emphasize certain features of the query. This only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.
 pub struct MultiQuery {
     /// Query to embed for the final weighted sum vector.
-    pub query: String,
+    pub query: SearchModalities,
     /// Float value which is applies as a multiplier to the query vector when summing.
     pub weight: f32,
 }
@@ -7636,7 +7637,7 @@ pub struct MultiQuery {
 impl From<(ParsedQuery, f32)> for MultiQuery {
     fn from((query, weight): (ParsedQuery, f32)) -> Self {
         Self {
-            query: query.query,
+            query: SearchModalities::Text(query.query),
             weight,
         }
     }
@@ -7644,22 +7645,34 @@ impl From<(ParsedQuery, f32)> for MultiQuery {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
 #[serde(untagged)]
+pub enum SearchModalities {
+    Image { image_url: String },
+    Text(String),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
+#[serde(untagged)]
 /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.
 pub enum QueryTypes {
-    Single(String),
+    Single(SearchModalities),
     Multi(Vec<MultiQuery>),
 }
 
 impl Default for QueryTypes {
     fn default() -> Self {
-        QueryTypes::Single("".to_string())
+        QueryTypes::Single(SearchModalities::Text("".to_string()))
     }
 }
 
 impl QueryTypes {
     pub fn to_single_query(&self) -> Result<String, ServiceError> {
         match self {
-            QueryTypes::Single(query) => Ok(query.clone()),
+            QueryTypes::Single(query) => match query {
+                SearchModalities::Text(text) => Ok(text.clone()),
+                SearchModalities::Image { .. } => Err(ServiceError::BadRequest(
+                    "Cannot use Image Query with cross encoder or highlights".to_string(),
+                )),
+            },
             QueryTypes::Multi(_) => Err(ServiceError::BadRequest(
                 "Cannot use Multi Query with cross encoder or highlights".to_string(),
             )),

@@ -9,7 +9,7 @@ use std::{
 use crate::{
     data::models::{RedisPool, TypoOptions, TypoRange},
     errors::ServiceError,
-    handlers::chunk_handler::ParsedQuery,
+    operators::search_operator::ParsedQuery,
 };
 use actix_web::web;
 use dashmap::DashMap;

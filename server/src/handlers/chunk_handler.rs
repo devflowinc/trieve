@@ -5,10 +5,11 @@ use crate::data::models::{
     escape_quotes, ChatMessageProxy, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataTypes,
     ChunkMetadataWithScore, ConditionType, ContextOptions, CountSearchMethod,
     DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo, HighlightOptions, ImageConfig,
-    IngestSpecificChunkMetadata, Pool, QdrantChunkMetadata, QueryTypes, RagQueryEventClickhouse,
-    RecommendType, RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
-    ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SlimChunkMetadataWithScore,
-    SortByField, SortOptions, TypoOptions, UnifiedId, UpdateSpecificChunkMetadata,
+    IngestSpecificChunkMetadata, MultiQuery, Pool, QdrantChunkMetadata, QueryTypes,
+    RagQueryEventClickhouse, RecommendType, RecommendationEventClickhouse, RecommendationStrategy,
+    RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod, SearchModalities,
+    SearchQueryEventClickhouse, SlimChunkMetadataWithScore, SortByField, SortOptions, TypoOptions,
+    UnifiedId, UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
 use crate::get_env;
@@ -23,8 +24,8 @@ use crate::operators::qdrant_operator::{
     point_ids_exists_in_qdrant, recommend_qdrant_query, scroll_dataset_points,
 };
 use crate::operators::search_operator::{
-    assemble_qdrant_filter, autocomplete_chunks_query, count_chunks_query, search_chunks_query,
-    search_hybrid_chunks,
+    assemble_qdrant_filter, autocomplete_chunks_query, count_chunks_query, parse_query,
+    search_chunks_query, search_hybrid_chunks, ParsedQuery, ParsedQueryTypes,
 };
 use crate::operators::{chunk_operator::*, crawl_operator};
 use actix::Arbiter;
@@ -40,7 +41,6 @@ use openai_dive::v1::resources::chat::{
 };
 use openai_dive::v1::resources::chat::{ImageUrl, ImageUrlType};
 use openai_dive::v1::resources::shared::StopToken;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use simple_server_timing_header::Timer;
@@ -1036,7 +1036,7 @@ impl Default for SearchChunksReqPayload {
     fn default() -> Self {
         SearchChunksReqPayload {
             search_type: SearchMethod::Hybrid,
-            query: QueryTypes::Single("".to_string()),
+            query: QueryTypes::Single(SearchModalities::Text("".to_string())),
             page: Some(1),
             get_total_pages: None,
             page_size: Some(10),
@@ -1096,101 +1096,6 @@ impl SearchChunkQueryResponseBody {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct ParsedQuery {
-    pub query: String,
-    pub quote_words: Option<Vec<String>>,
-    pub negated_words: Option<Vec<String>>,
-}
-
-#[derive(Clone, Debug)]
-pub enum ParsedQueryTypes {
-    Single(ParsedQuery),
-    Multi(Vec<(ParsedQuery, f32)>),
-}
-
-impl ParsedQueryTypes {
-    pub fn to_parsed_query(&self) -> Result<ParsedQuery, ServiceError> {
-        match self {
-            ParsedQueryTypes::Single(query) => Ok(query.clone()),
-            ParsedQueryTypes::Multi(_) => Err(ServiceError::BadRequest(
-                "Cannot use Multi Query with cross encoder or highlights".to_string(),
-            )),
-        }
-    }
-}
-
-pub fn parse_query(
-    query: String,
-    use_quote_negated_terms: Option<bool>,
-    remove_stop_words: Option<bool>,
-) -> ParsedQuery {
-    let stop_words = get_stop_words();
-    let query = match remove_stop_words {
-        Some(true) => {
-            let mut query_parts_split_by_stop_words: Vec<String> = Vec::new();
-            let mut current_chunk: Vec<String> = Vec::new();
-            for word in query.split(' ') {
-                if !stop_words.contains(&word.to_lowercase()) {
-                    current_chunk.push(word.to_string());
-                } else if !current_chunk.is_empty() {
-                    query_parts_split_by_stop_words.push(current_chunk.join(" "));
-                    current_chunk.clear();
-                }
-            }
-            if !current_chunk.is_empty() {
-                query_parts_split_by_stop_words.push(current_chunk.join(" "));
-            }
-            let new_query = query_parts_split_by_stop_words.join(" ");
-            match new_query.is_empty() {
-                true => query,
-                false => new_query,
-            }
-        }
-        _ => query,
-    };
-
-    match use_quote_negated_terms {
-        Some(true) => {
-            let re = Regex::new(r#""(?:[^"\\]|\\.)*""#).expect("Regex pattern is always valid");
-            let quote_words: Vec<String> = re
-                .captures_iter(&query)
-                .filter_map(|capture| capture.get(0).map(|capture| capture.as_str().to_string()))
-                .filter(|word| !word.is_empty())
-                .collect::<Vec<String>>();
-
-            let quote_words = if quote_words.is_empty() {
-                None
-            } else {
-                Some(quote_words)
-            };
-
-            let negated_words: Vec<String> = query
-                .split_whitespace()
-                .filter(|word| word.starts_with('-'))
-                .map(|word| word.strip_prefix('-').unwrap().to_string())
-                .collect::<Vec<String>>();
-
-            let negated_words = if negated_words.is_empty() {
-                None
-            } else {
-                Some(negated_words)
-            };
-
-            ParsedQuery {
-                query,
-                quote_words,
-                negated_words,
-            }
-        }
-        _ => ParsedQuery {
-            query,
-            quote_words: None,
-            negated_words: None,
-        },
-    }
-}
-
 /// Search
 ///
 /// This route provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results' `chunk_html` values will be modified with `<mark><b>` or custom specified tags for sub-sentence highlighting.
@@ -1227,24 +1132,47 @@ pub async fn search_chunks(
     let mut data = data.into_inner();
 
     let parsed_query = match data.query.clone() {
-        QueryTypes::Single(query) => ParsedQueryTypes::Single(parse_query(
-            query.clone(),
-            data.use_quote_negated_terms,
-            data.remove_stop_words,
-        )),
-        QueryTypes::Multi(query) => ParsedQueryTypes::Multi(
-            query
-                .into_iter()
-                .map(|multi_query| {
+        QueryTypes::Single(query) => ParsedQueryTypes::Single(
+            parse_query(
+                query.clone(),
+                &dataset_org_plan_sub.dataset,
+                data.use_quote_negated_terms,
+                data.remove_stop_words,
+            )
+            .await?,
+        ),
+        QueryTypes::Multi(query) => {
+            let parsed_queries = futures::future::join_all(query.into_iter().map(|multi_query| {
+                let value = dataset_org_plan_sub.dataset.clone();
+                async move {
                     let parsed_query = parse_query(
                         multi_query.query.clone(),
+                        &value,
                         data.use_quote_negated_terms,
                         data.remove_stop_words,
-                    );
-                    (parsed_query, multi_query.weight)
-                })
-                .collect::<Vec<(ParsedQuery, f32)>>(),
-        ),
+                    )
+                    .await?;
+                    Ok((parsed_query, multi_query.weight))
+                        as Result<(ParsedQuery, f32), ServiceError>
+                }
+            }))
+            .await
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?;
+            ParsedQueryTypes::Multi(parsed_queries)
+        }
+    };
+
+    let query = match &parsed_query {
+        ParsedQueryTypes::Single(query) => query.query.clone(),
+        ParsedQueryTypes::Multi(ref query) => serde_json::to_string(
+            &query
+                .clone()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<MultiQuery>>(),
+        )
+        .unwrap_or_default(),
     };
 
     data.score_threshold = data.score_threshold.filter(|threshold| *threshold != 0.0);
@@ -1281,10 +1209,6 @@ pub async fn search_chunks(
 
     let search_id = uuid::Uuid::new_v4();
 
-    let query = match &data.query {
-        QueryTypes::Single(query) => query.clone(),
-        QueryTypes::Multi(query) => serde_json::to_string(&query).unwrap_or_default(),
-    };
     if !dataset_config.DISABLE_ANALYTICS {
         let clickhouse_event = SearchQueryEventClickhouse {
             id: search_id,
@@ -1417,7 +1341,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
     fn from(autocomplete_data: AutocompleteReqPayload) -> Self {
         SearchChunksReqPayload {
             search_type: autocomplete_data.search_type,
-            query: QueryTypes::Single(autocomplete_data.query),
+            query: QueryTypes::Single(SearchModalities::Text(autocomplete_data.query)),
             page: Some(1),
             get_total_pages: None,
             page_size: autocomplete_data.page_size,
@@ -1470,10 +1394,12 @@ pub async fn autocomplete(
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let parsed_query = parse_query(
-        data.query.clone(),
+        SearchModalities::Text(data.query.clone()),
+        &dataset_org_plan_sub.dataset,
         data.use_quote_negated_terms,
         data.remove_stop_words,
-    );
+    )
+    .await?;
 
     let mut timer = Timer::new();
 
@@ -1780,27 +1706,6 @@ pub async fn count_chunks(
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
-    let parsed_query = match data.query.clone() {
-        QueryTypes::Single(query) => ParsedQueryTypes::Single(parse_query(
-            query.clone(),
-            data.use_quote_negated_terms,
-            None,
-        )),
-        QueryTypes::Multi(query) => ParsedQueryTypes::Multi(
-            query
-                .into_iter()
-                .map(|multi_query| {
-                    let parsed_query = parse_query(
-                        multi_query.query.clone(),
-                        data.use_quote_negated_terms,
-                        None,
-                    );
-                    (parsed_query, multi_query.weight)
-                })
-                .collect::<Vec<(ParsedQuery, f32)>>(),
-        ),
-    };
-
     let limit = match data.limit {
         Some(limit) => limit,
         None => {
@@ -1813,6 +1718,39 @@ pub async fn count_chunks(
     let search_req_data = CountChunksReqPayload {
         limit: Some(limit),
         ..data.clone()
+    };
+
+    let parsed_query = match data.query.clone() {
+        QueryTypes::Single(query) => ParsedQueryTypes::Single(
+            parse_query(
+                query.clone(),
+                &dataset_org_plan_sub.dataset,
+                data.use_quote_negated_terms,
+                None,
+            )
+            .await?,
+        ),
+        QueryTypes::Multi(query) => {
+            let parsed_queries = futures::future::join_all(query.into_iter().map(|multi_query| {
+                let value = dataset_org_plan_sub.dataset.clone();
+                let data = data.clone();
+                async move {
+                    let parsed_query = parse_query(
+                        multi_query.query.clone(),
+                        &value,
+                        data.use_quote_negated_terms,
+                        None,
+                    )
+                    .await?;
+                    Ok((parsed_query, multi_query.weight))
+                        as Result<(ParsedQuery, f32), ServiceError>
+                }
+            }))
+            .await
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?;
+            ParsedQueryTypes::Multi(parsed_queries)
+        }
     };
 
     if limit > dataset_config.MAX_LIMIT {

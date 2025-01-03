@@ -543,6 +543,7 @@ impl Modify for SecurityAddon {
             data::models::ContentChunkMetadata,
             data::models::ChunkMetadataStringTagSet,
             data::models::ConditionType,
+            data::models::SearchModalities,
             data::models::HasChunkIDCondition,
             data::models::DistanceMetric,
             data::models::PublicDatasetOptions,
