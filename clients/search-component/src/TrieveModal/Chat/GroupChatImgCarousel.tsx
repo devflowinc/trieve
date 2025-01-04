@@ -11,12 +11,19 @@ export const GroupChatImgCarousel = () => {
     string[] | null
   >();
 
+  const [link, setLink] = useState<string>("");
+
   useEffect(() => {
     const setGroupCarousel = async () => {
       if (currentGroup) {
         const groupChunks = await cached(() => {
           return getAllChunksForGroup(currentGroup.id, trieveSDK);
         }, `chunk-ids-${currentGroup.id}`);
+
+        const firstLink = groupChunks.find(chunk => chunk.link)?.link || null;
+        if (firstLink) {
+          setLink(firstLink);
+        }
 
         const images = groupChunks
           .map((chunk) => {
@@ -39,9 +46,9 @@ export const GroupChatImgCarousel = () => {
       {currentGroup && groupCarouselItems ? (
         <div className="group-chat-carousel">
           {groupCarouselItems.map((image) => (
-            <div key={image}>
+            <a href={link} key={image}>
               <img className="max-h-[270px]" src={image} />
-            </div>
+            </a>
           ))}
         </div>
       ) : undefined}
