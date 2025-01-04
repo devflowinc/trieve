@@ -68,7 +68,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController()
+    new AbortController(),
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
@@ -76,7 +76,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [json, setJson] = useState(null);
   const [offset, setOffset] = useState(0);
   const [queryId, setQueryId] = useState<string | null>(null);
-  const [characterOffsetInterval, setCharacterOffsetInterval] = useState<NodeJS.Timeout | null>()
+  const [characterOffsetInterval, setCharacterOffsetInterval] =
+    useState<NodeJS.Timeout | null>();
   const { isLoadingSuggestedQueries } = useFollowupQuestions();
   const streamingChunks = useRef(false);
 
@@ -84,7 +85,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     if (messages.length > 1) {
       const currentThread = messages[messages.length - 1];
       const currentMessage = currentThread[currentThread.length - 1];
-      if (currentMessage.text != text.slice(0, offset) && streamingChunks.current) {
+      if (
+        currentMessage.text != text.slice(0, offset) &&
+        streamingChunks.current
+      ) {
         setMessages((m) => [
           ...m.slice(0, -1),
           [
@@ -109,14 +113,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           setCharacterOffsetInterval(null);
           streamingChunks.current = false;
         }
-
       }
     }
   }, [offset, text, isDoneReading, messages]);
 
   useEffect(() => {
     if (isDoneReading || isLoadingSuggestedQueries) {
-      setOffset(text.length)
+      setOffset(text.length);
 
       setTimeout(() => {
         modalRef.current?.scroll({
@@ -125,7 +128,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         });
       }, 55);
     }
-  }, [text, isDoneReading, isLoadingSuggestedQueries])
+  }, [text, isDoneReading, isLoadingSuggestedQueries]);
 
   const createTopic = async ({ question }: { question: string }) => {
     if (!currentTopic) {
@@ -168,11 +171,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     let textInStream = "";
 
     setCharacterOffsetInterval(
+      // @ts-expect-error timer type tsconfig
       setInterval(() => {
         setOffset((prev) => {
-          return prev + 1
-        })
-      }, 2)
+          return prev + 1;
+        });
+      }, 2),
     );
 
     while (!done) {
@@ -248,7 +252,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ],
           stream_response: true,
         },
-        chatMessageAbortController.current.signal
+        chatMessageAbortController.current.signal,
       );
       setQueryId(queryId);
       handleReader(reader);
@@ -267,11 +271,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             filters:
               currentTag !== "all"
                 ? {
-                  must: [{ field: "tag_set", match_any: [currentTag] }],
-                }
+                    must: [{ field: "tag_set", match_any: [currentTag] }],
+                  }
                 : null,
           },
-          chatMessageAbortController.current.signal
+          chatMessageAbortController.current.signal,
         );
       setQueryId(queryId);
       handleReader(reader);
@@ -304,7 +308,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         [
           ...messages.slice(0, -1),
           messages[messages.length - 1]?.slice(0, -1),
-        ].filter((a) => a.length)
+        ].filter((a) => a.length),
       );
     }
   };
@@ -361,7 +365,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
