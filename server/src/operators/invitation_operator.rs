@@ -78,6 +78,14 @@ pub async fn send_invitation_for_existing_user(
     org_name: String,
     organization_url: String,
 ) -> Result<(), ServiceError> {
+    let split_org_url = organization_url.split('?').collect::<Vec<&str>>();
+
+    let org_redirect_url = format!(
+        "{}org?{}",
+        split_org_url.get(0).unwrap_or(&""),
+        split_org_url.get(1).unwrap_or(&"")
+    );
+
     let sg_email_content = format!(
         "You've been added to a Trieve organization: <b>{}</b>. <br/><br/>
         To access this organization, simply click <a href=\"{}\">here</a> or use the link below:<br/>
@@ -86,9 +94,9 @@ pub async fn send_invitation_for_existing_user(
         The Trieve Team<br/>
         <i>This email is intended for {}. If you encounter any issues or did not expect this invitation, please reach out to us directly at <a href=\"mailto:humans@trieve.ai\">humans@trieve.ai</a>.</i>",
         org_name,
-        organization_url,
-        organization_url,
-        organization_url.split('?').collect::<Vec<&str>>().get(0).unwrap_or(&""),
+        org_redirect_url,
+        org_redirect_url,
+        org_redirect_url,
         email
     );
 
