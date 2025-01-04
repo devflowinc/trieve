@@ -187,60 +187,72 @@ async fn video_worker(
             }
         };
 
+        log::info!("Getting transcripts for video_id {}", video.id.video_id);
         let transcripts = get_transcript(&video.id.video_id).await.map_err(|e| {
-            log::error!(
-                "Failed to get transcript for video {}: {}",
-                video.id.video_id,
-                e
-            );
-            BroccoliError::Job("Failed to get transcript".to_string())
-        })?;
+            BroccoliError::Job(format!(
+                "Failed to get transcript for video_id {}: {}",
+                video.id.video_id, e
+            ))
+        });
 
-        for transcript in transcripts {
-            let create_chunk_data = ChunkReqPayload {
-                chunk_html: Some(transcript.text),
-                semantic_content: None,
-                link: Some(format!(
-                    "https://www.youtube.com/watch?v={}&t={}",
-                    video.id.video_id,
-                    transcript.start.as_secs()
-                )),
-                tag_set: None,
-                metadata: Some(json!({
-                    "heading": video.snippet.title.clone(),
-                    "title": video.snippet.title.clone(),
-                    "url": format!("https://www.youtube.com/watch?v={}", video.id.video_id),
-                    "hierarchy": video.snippet.title.clone(),
-                    "description": video.snippet.description.clone(),
-                    "yt_preview_src": video.snippet.thumbnails.high.url.clone(),
-                })),
-                group_ids: Some(vec![chunk_group.id]),
-                group_tracking_ids: None,
-                location: None,
-                tracking_id: None,
-                upsert_by_tracking_id: None,
-                time_stamp: Some(video.snippet.publish_time.clone()),
-                weight: None,
-                split_avg: None,
-                convert_html_to_text: None,
-                image_urls: Some(vec![video.snippet.thumbnails.high.url.clone()]),
-                num_value: None,
-                fulltext_boost: None,
-                semantic_boost: None,
-            };
+        match transcripts {
+            Ok(transcripts) => {
+                for transcript in transcripts {
+                    let create_chunk_data = ChunkReqPayload {
+                        chunk_html: Some(transcript.text),
+                        semantic_content: None,
+                        link: Some(format!(
+                            "https://www.youtube.com/watch?v={}&t={}",
+                            video.id.video_id,
+                            transcript.start.as_secs()
+                        )),
+                        tag_set: None,
+                        metadata: Some(json!({
+                            "heading": video.snippet.title.clone(),
+                            "title": video.snippet.title.clone(),
+                            "url": format!("https://www.youtube.com/watch?v={}", video.id.video_id),
+                            "hierarchy": video.snippet.title.clone(),
+                            "description": video.snippet.description.clone(),
+                            "yt_preview_src": video.snippet.thumbnails.high.url.clone(),
+                        })),
+                        group_ids: Some(vec![chunk_group.id]),
+                        group_tracking_ids: None,
+                        location: None,
+                        tracking_id: None,
+                        upsert_by_tracking_id: None,
+                        time_stamp: Some(video.snippet.publish_time.clone()),
+                        weight: None,
+                        split_avg: None,
+                        convert_html_to_text: None,
+                        image_urls: Some(vec![video.snippet.thumbnails.high.url.clone()]),
+                        num_value: None,
+                        fulltext_boost: None,
+                        semantic_boost: None,
+                    };
 
-            chunks.push(create_chunk_data);
+                    chunks.push(create_chunk_data);
+                }
+
+                log::info!(
+                    "Sending {} chunks from transcript of video {}",
+                    chunks.len(),
+                    video.id.video_id
+                );
+
+                send_chunks(
+                    dataset_org_plan_sub.clone(),
+                    chunks,
+                    video.id.video_id.clone(),
+                    pool.clone(),
+                    redis_conn.clone(),
+                    event_queue.clone(),
+                )
+                .await?;
+            }
+            Err(e) => {
+                log::error!("Failed to get transcript for video {}", e);
+            }
         }
-
-        send_chunks(
-            dataset_org_plan_sub.clone(),
-            chunks,
-            video.id.video_id.clone(),
-            pool.clone(),
-            redis_conn.clone(),
-            event_queue.clone(),
-        )
-        .await?;
     }
 
     Ok(())
