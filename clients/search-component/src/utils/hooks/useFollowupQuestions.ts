@@ -4,7 +4,7 @@ import { getSuggestedQuestions } from "../trieve";
 import { useModalState } from "./modal-context";
 
 export const useFollowupQuestions = () => {
-  const { query, trieveSDK } = useModalState();
+  const { query, trieveSDK, currentGroup } = useModalState();
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
     SuggestedQueriesResponse["queries"]
@@ -15,6 +15,7 @@ export const useFollowupQuestions = () => {
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
       query,
+      group: currentGroup
     });
     setSuggestedQuestions(queries.queries.splice(0, 3));
     setIsLoading(false);
@@ -32,7 +33,8 @@ export const useFollowupQuestions = () => {
       const queries = await getSuggestedQuestions({
         trieve: trieveSDK,
         abortController,
-        query,
+        group: currentGroup,
+        context: "You are an assistant searching through a docs website"
       });
       setSuggestedQuestions(queries.queries.splice(0, 3));
       setIsLoading(false);

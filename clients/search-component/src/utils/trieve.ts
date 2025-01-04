@@ -1,4 +1,5 @@
 import {
+	ChunkGroup,
 	ChunkMetadata,
 	ChunkMetadataStringTagSet,
 	CountChunkQueryResponseBody,
@@ -258,19 +259,39 @@ export const getSuggestedQueries = async ({
 export const getSuggestedQuestions = async ({
 	trieve,
 	abortController,
-	query
+	context,
+	query,
+	group
 }: {
 	trieve: TrieveSDK;
 	abortController?: AbortController;
+	context?: string;
 	query?: string;
+	group?: ChunkGroup | null;
 }) => {
+	let suggestedQueriesContext = "You are a user searching through a docs website"
+	if (context) {
+		suggestedQueriesContext = context
+	}
 	return trieve.suggestedQueries(
 		{
 			...(query && { query }),
 			suggestion_type: "question",
 			search_type: "semantic",
-			context: "You are a user searching through a docs website",
-			suggestions_to_create: 3
+			context: suggestedQueriesContext,
+			suggestions_to_create: 3,
+			...(group && group?.tracking_id && {
+				filters: {
+					must: [
+						{
+							field: "group_tracking_ids",
+							match_all: [
+								group.tracking_id
+							]
+						}
+					]
+				}
+			})
 		},
 		abortController?.signal
 	);
