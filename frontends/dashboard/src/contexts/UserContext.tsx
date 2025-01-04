@@ -8,7 +8,6 @@ import {
   createMemo,
   createResource,
   createSignal,
-  on,
 } from "solid-js";
 import { createToast } from "../components/ShowToasts";
 import { redirect, useSearchParams } from "@solidjs/router";
@@ -166,11 +165,11 @@ export const UserContextWrapper = (props: UserStoreContextProps) => {
   };
 
   // Set the orgid in the query params
-  createEffect(
-    on(selectedOrgId, (orgId) => {
-      setSearchParams({ ...searchParams, org: orgId });
-    }),
-  );
+  createEffect(() => {
+    if (selectedOrgId()) {
+      setSearchParams({ ...searchParams, org: selectedOrgId() });
+    }
+  });
 
   const setSelectedOrg = (orgId: string) => {
     localStorage.setItem(`${user()?.id}:selectedOrg`, orgId);
