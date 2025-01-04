@@ -81,26 +81,40 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const streamingChunks = useRef(false);
 
   useEffect(() => {
-    if (messages.length > 1) {
-      const currentThread = messages[messages.length - 1];
-      const currentMessage = currentThread[currentThread.length - 1];
-      if (currentMessage.text != text.slice(0, offset) && streamingChunks.current) {
-        setMessages((m) => [
-          ...m.slice(0, -1),
-          [
-            {
-              type: "system",
-              text: text.slice(0, offset),
-              additional: json ? json : null,
-              queryId,
-            },
-          ],
-        ]);
+    if (streamingChunks.current) {
+      setMessages(prevMessages => {
+        if (prevMessages.length <= 1) {
+          if (isDoneReading) {
+            streamingChunks.current = false;
+          }
+          return prevMessages;
+        }
 
+        const currentThread = prevMessages[prevMessages.length - 1];
+        const currentMessage = currentThread[currentThread.length - 1];
+
+        if (currentMessage.text === text.slice(0, offset)) {
+          if (isDoneReading) {
+            streamingChunks.current = false;
+          }
+          return prevMessages;
+        }
+
+        const newMessages = [
+          ...prevMessages.slice(0, -1),
+          [{
+            type: "system",
+            text: text.slice(0, offset),
+            additional: json || null,
+            queryId,
+          }]
+        ];
+
+        // Handle scrolling
         if (modalRef.current) {
-          modalRef.current?.scroll({
+          modalRef.current.scroll({
             top: modalRef.current.scrollHeight,
-            behavior: "smooth",
+            behavior: "smooth"
           });
         }
 
@@ -109,10 +123,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           setCharacterOffsetInterval(null);
           streamingChunks.current = false;
         }
-
-      }
+        return newMessages;
+      });
     }
-  }, [offset, text, isDoneReading, messages]);
+  }, [offset, text, isDoneReading, characterOffsetInterval, json, queryId]);
 
   useEffect(() => {
     if (isDoneReading || isLoadingSuggestedQueries) {
