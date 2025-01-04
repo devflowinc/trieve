@@ -4293,6 +4293,11 @@ jmespath@^0.16.0:
   resolved "https://registry.npmjs.org/jmespath/-/jmespath-0.16.0.tgz"
   integrity sha512-9FzQjJ7MATs1tSpnco1K6ayiYE3figslrXA72G2HQ/n76RzvYlofyi5QM+iX4YRs/pu3yzxlVQSST23+dMDknw==
 
+jotai@^2.11.0:
+  version "2.11.0"
+  resolved "https://registry.yarnpkg.com/jotai/-/jotai-2.11.0.tgz#923f8351e0b2d721036af892c0ae25625049d120"
+  integrity sha512-zKfoBBD1uDw3rljwHkt0fWuja1B76R7CjznuBO+mSX6jpsO1EBeWNRKpeaQho9yPI/pvCv4recGfgOXGxwPZvQ==
+
 "js-tokens@^3.0.0 || ^4.0.0", js-tokens@^4.0.0:
   version "4.0.0"
   resolved "https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz"
@@ -6255,10 +6260,10 @@ react-markdown@^9.0.1:
     unist-util-visit "^5.0.0"
     vfile "^6.0.0"
 
-react-pdf-spotlight@0.0.11:
-  version "0.0.11"
-  resolved "https://registry.yarnpkg.com/react-pdf-spotlight/-/react-pdf-spotlight-0.0.11.tgz#6b714d5aeac77c6918922c830039ec1e4553b751"
-  integrity sha512-Go68WzKQPj8fJe+tSXcGcdmiWUUSAZu10YlJ4n+4j+gcbb6eVaYftWTpU9rsPQiLyTFatrlHNm1ILKU0c+u5xg==
+react-pdf-spotlight@0.0.12:
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/react-pdf-spotlight/-/react-pdf-spotlight-0.0.12.tgz#97d41208ac8d6519b65d26683af7a26da24000a1"
+  integrity sha512-ohOJo7iLo4ZX5TgTyUEGdkXX+axlWZzJyMzm61mIxxI+B5new5NVvN9uVgcOptsPtRPCrUXvrs7kbibyC380CQ==
   dependencies:
     pdfjs-dist "^4.9.155"
 

@@ -19,12 +19,16 @@ import { ChunkGroup } from "trieve-ts-sdk";
 import { FloatingActionButton } from "./FloatingActionButton";
 import { FloatingSearchIcon } from "./FloatingSearchIcon";
 import { FloatingSearchInput } from "./FloatingSearchInput";
+import { PdfViewer, pdfViewState } from "./PdfView/PdfViewer";
+import { useAtom } from "jotai";
 
 const Modal = () => {
   useKeyboardNavigation();
   const { mode, open, setOpen, setMode, setQuery, props } = useModalState();
   const { askQuestion, chatWithGroup, cancelGroupChat, clearConversation } =
     useChatState();
+
+  const [fullscreenPdfState] = useAtom(pdfViewState);
 
   useEffect(() => {
     if (!(Object as any).hasOwn) {
@@ -89,7 +93,7 @@ const Modal = () => {
         clearConversation();
         chatWithGroup(
           customEvent.detail.group,
-          customEvent.detail.betterGroupName
+          customEvent.detail.betterGroupName,
         );
         if (customEvent.detail.message) {
           askQuestion(customEvent.detail.message, customEvent.detail.group);
@@ -133,14 +137,14 @@ const Modal = () => {
 
     window.addEventListener(
       "trieve-start-chat-with-group",
-      chatWithGroupListener
+      chatWithGroupListener,
     );
     window.addEventListener("trieve-open-with-text", openWithTextListener);
 
     return () => {
       window.removeEventListener(
         "trieve-start-chat-with-group",
-        chatWithGroupListener
+        chatWithGroupListener,
       );
 
       window.removeEventListener("trieve-open-with-text", openWithTextListener);
@@ -150,18 +154,18 @@ const Modal = () => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB"
+      props.brandColor ?? "#CB53EB",
     );
 
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)"
+        "var(--tv-zinc-700)",
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)"
+        "var(--tv-zinc-300)",
       );
     }
 
@@ -169,7 +173,7 @@ const Modal = () => {
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
         `Maven Pro, ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);
 
@@ -201,21 +205,34 @@ const Modal = () => {
             } ${
               props.inline ? "trieve-inline-modal" : "trieve-popup-modal"
             } ${props.type}`.trim()}
-            style={{ zIndex: props.zIndex ? props.zIndex + 1 : 1001 }}
+            style={{
+              zIndex: props.zIndex ? props.zIndex + 1 : 1001,
+              maxHeight: fullscreenPdfState ? "none" : "60vh",
+            }}
           >
             {props.allowSwitchingModes && !props.inline ? <ModeSwitch />: null}
             <div
               className="search-container"
-              style={{ display: mode === "search" ? "block" : "none" }}
+              style={{
+                display:
+                  mode === "search" && !fullscreenPdfState ? "block" : "none",
+              }}
             >
               <SearchMode />
             </div>
             <div
-              className={mode === "chat" ? " chat-container" : " "}
-              style={{ display: mode === "chat" ? "block" : "none" }}
+              className={
+                mode === "chat" && !fullscreenPdfState ? " chat-container" : " "
+              }
+              style={{
+                display:
+                  mode === "chat" && !fullscreenPdfState ? "block" : "none",
+                maxHeight: fullscreenPdfState ? "none" : "60vh",
+              }}
             >
               <ChatMode />
             </div>
+            {fullscreenPdfState && <PdfViewer {...fullscreenPdfState} />}
           </div>
         </>
       )}
