@@ -59,15 +59,14 @@ const ChatContext = createContext<{
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { query, trieveSDK, setMode, setCurrentGroup } =
-    useModalState();
+  const { query, trieveSDK, setMode, setCurrentGroup } = useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
   const called = useRef(false);
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController()
+    new AbortController(),
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
@@ -188,7 +187,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ],
           stream_response: true,
         },
-        chatMessageAbortController.current.signal
+        chatMessageAbortController.current.signal,
       );
       handleReader(reader, queryId);
     } else {
@@ -206,11 +205,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             filters:
               currentTag !== "all"
                 ? {
-                  must: [{ field: "tag_set", match_any: [currentTag] }],
-                }
+                    must: [{ field: "tag_set", match_any: [currentTag] }],
+                  }
                 : null,
           },
-          chatMessageAbortController.current.signal
+          chatMessageAbortController.current.signal,
         );
       handleReader(reader, queryId);
     }
@@ -238,12 +237,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
     // is the last message loading? If it is we need to delete it
     if (messages.at(-1)?.text === "Loading...") {
-      setMessages((messages) =>
-        [
-          ...messages.slice(0, -1),
-          messages[messages.length - 1],
-        ]
-      );
+      setMessages((messages) => [
+        ...messages.slice(0, -1),
+        messages[messages.length - 1],
+      ]);
     }
   };
 
@@ -290,7 +287,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
