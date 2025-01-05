@@ -16,6 +16,9 @@
     <a href="https://matrix.to/#/#trieve-general:trieve.ai">
         <img src="https://img.shields.io/badge/matrix-join-purple?style=flat&logo=matrix&logocolor=white" alt="Join Matrix"/>
     </a>
+    <a href="https://smithery.ai/server/trieve-mcp-server">
+        <img src="https://smithery.ai/badge/trieve-mcp-server" alt="smithery badge"/>
+    </a>
 </p>
 
 <h2 align="center">
@@ -51,6 +54,14 @@
 **Are we missing a feature that your use case would need?** - call us at [628-222-4090](mailto:+16282224090), make a [Github issue](https://github.com/devflowinc/trieve/issues), or join the [Matrix community](https://matrix.to/#/#trieve-general:trieve.ai) and tell us! We are a small company who is still very hands-on and eager to build what you need; professional services are available.
 
 ## Local development with Linux
+
+### Installing via Smithery
+
+To install Trieve for Claude Desktop automatically via [Smithery](https://smithery.ai/server/trieve-mcp-server):
+
+```bash
+npx -y @smithery/cli install trieve-mcp-server --client claude
+```
 
 ### Debian/Ubuntu Packages needed packages
 
