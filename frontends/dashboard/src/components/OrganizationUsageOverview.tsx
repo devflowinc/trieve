@@ -1,36 +1,19 @@
 import { useContext } from "solid-js";
 import { ProgressBar } from "./ProgressBar";
 import { formatNumberWithCommas, formatStorage } from "../utils/formatNumbers";
-import { createQuery } from "@tanstack/solid-query";
 import { UserContext } from "../contexts/UserContext";
-import { OrganizationAndSubAndPlan } from "shared/types";
 import { useTrieve } from "../hooks/useTrieve";
+import {
+  createUsageQuery,
+  createSubscriptionQuery,
+} from "../utils/fetchOrgUsage";
 
 export const OrganizationUsageOverview = () => {
   const userContext = useContext(UserContext);
   const trieve = useTrieve();
 
-  const usageQuery = createQuery(() => ({
-    queryKey: ["org-usage", userContext.selectedOrg().id],
-    queryFn: async () => {
-      return trieve.fetch("/api/organization/usage/{organization_id}", "get", {
-        organizationId: userContext.selectedOrg().id,
-      });
-    },
-  }));
-
-  const subscriptionQuery = createQuery(() => ({
-    queryKey: ["org-subscription", userContext.selectedOrg().id],
-    queryFn: async () => {
-      return trieve.fetch<"eject">(
-        "/api/organization/{organization_id}",
-        "get",
-        {
-          organizationId: userContext.selectedOrg().id,
-        },
-      ) as Promise<OrganizationAndSubAndPlan>;
-    },
-  }));
+  const usageQuery = createUsageQuery(userContext, trieve);
+  const subscriptionQuery = createSubscriptionQuery(userContext, trieve);
 
   return (
     <div class="mb-3 grid grid-cols-1 gap-5 lg:grid-cols-4">
