@@ -31,6 +31,10 @@ export default function Home() {
   const defaultSearchMode =
     import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "search";
 
+  const defaultAiQuestions = (
+    import.meta.env.VITE_DEFAULT_AI_QUESTIONS ?? "What is Trieve?,How to perform autocomplete search?,How do I install the TS SDK?"
+  ).split(",");
+
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
   return (
@@ -139,11 +143,7 @@ export default function Home() {
               ]}
               useGroupSearch={useGroupSearch}
               usePagefind={usePagefind}
-              defaultAiQuestions={[
-                "What is Trieve?",
-                "How to perform autocomplete search?",
-                "How do I install the TS SDK?",
-              ]}
+              defaultAiQuestions={defaultAiQuestions}
               brandLogoImgSrcUrl={brandLogoSrcUrl}
               brandName={brandName}
               brandColor={brandColor}

@@ -199,6 +199,7 @@ export const Message = ({
           )}
           {message.text.length > 0 ? (
             <Markdown
+              className="code-markdown"
               components={{
                 code: (props) => {
                   const { children } = props || {};

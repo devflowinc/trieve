@@ -424,6 +424,10 @@ body {
       .system {
         @apply mt-2 sm:mt-8 mb-5 items-center overflow-ellipsis max-w-[100vw];
 
+        .code-markdown {
+          max-width: 45vw;
+        }
+
         p {
           @apply pb-1;
         }
