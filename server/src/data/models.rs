@@ -3148,6 +3148,9 @@ impl DatasetConfigurationDTO {
                     suggested_queries: page_parameters_self
                         .suggested_queries
                         .or(page_parameters_curr.suggested_queries),
+                    followup_questions: page_parameters_self
+                        .followup_questions
+                        .or(page_parameters_curr.followup_questions),
                     responsive: page_parameters_self
                         .responsive
                         .or(page_parameters_curr.responsive),

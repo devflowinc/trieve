@@ -63,6 +63,7 @@ export type ModalProps = {
   analytics?: boolean;
   ButtonEl?: JSX.ElementType;
   suggestedQueries?: boolean;
+  followupQuestions?: boolean;
   defaultSearchQueries?: string[];
   defaultAiQuestions?: string[];
   brandLogoImgSrcUrl?: string;
@@ -124,6 +125,7 @@ const defaultProps = {
   analytics: true,
   chat: true,
   suggestedQueries: true,
+  followupQuestions: true,
   trieve: (() => {}) as unknown as TrieveSDK,
   openKeyCombination: [{ ctrl: true }, { key: "k", label: "K" }],
   type: "docs" as ModalTypes,

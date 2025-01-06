@@ -25,9 +25,8 @@
       {% if params.type -%}
       type: "{{ params.type }}",
       {% endif -%}
-      {% if params.suggestedQueries -%}
       suggestedQueries: {{ params.suggestedQueries }},
-      {% endif -%}
+      followupQuestions: {{ params.followupQuestions }},
       {% if params.analytics -%}
       analytics: {{ params.analytics }},
       {% endif -%}

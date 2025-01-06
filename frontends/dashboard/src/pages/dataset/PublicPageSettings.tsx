@@ -406,6 +406,25 @@ const PublicPageControls = () => {
             <div class="flex gap-2">
               <div class="flex items-center gap-1">
                 <label class="block" for="">
+                  Enable Followup Questions
+                </label>
+                <Tooltip
+                  tooltipText="Show AI powered suggested followup questions after the first message."
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                checked={extraParams.followupQuestions ?? true}
+                type="checkbox"
+                onChange={(e) => {
+                  setExtraParams("followupQuestions", e.currentTarget.checked);
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+            <div class="flex gap-2">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
                   Enable Suggestions
                 </label>
                 <Tooltip
@@ -414,7 +433,7 @@ const PublicPageControls = () => {
                 />
               </div>
               <input
-                checked={extraParams.suggestedQueries || true}
+                checked={extraParams.suggestedQueries ?? true}
                 type="checkbox"
                 onChange={(e) => {
                   setExtraParams("suggestedQueries", e.currentTarget.checked);
@@ -433,7 +452,7 @@ const PublicPageControls = () => {
                 />
               </div>
               <input
-                checked={extraParams.chat || true}
+                checked={extraParams.chat ?? true}
                 type="checkbox"
                 onChange={(e) => {
                   setExtraParams("chat", e.currentTarget.checked);
@@ -1071,10 +1090,10 @@ const PublicPageControls = () => {
               <div class="flex gap-2">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">
-                    Enable Test Mode
+                    Use Beta component
                   </label>
                   <Tooltip
-                    tooltipText="Use the unstable version of the search-component. (Mostly used for testing)"
+                    tooltipText="Use the beta version of the search-component."
                     body={
                       <FaRegularCircleQuestion class="h-3 w-3 text-black" />
                     }
