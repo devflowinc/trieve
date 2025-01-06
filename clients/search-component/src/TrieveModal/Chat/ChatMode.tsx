@@ -37,7 +37,9 @@ export const ChatMode = () => {
 
   return (
     <Suspense>
-      <div className="chat-outer-wrapper" ref={modalRef}>
+      <div className={`chat-outer-wrapper ${props.inline ? "": "chat-outer-popup"}`} ref={modalRef}>
+
+        {!props.inline &&
         <div
           className={`close-modal-button chat ${props.type}`}
           onClick={() => setOpen(false)}
@@ -59,7 +61,7 @@ export const ChatMode = () => {
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
           <span>Close</span>
-        </div>
+        </div>}
         <div
           className={`system-information-wrapper${
             currentGroup ? " with-group" : ""

@@ -96,6 +96,7 @@ export type ModalProps = {
     mode: SearchModes;
     removeListeners?: boolean;
   }[];
+  inline: boolean;
   zIndex?: number;
   showFloatingButton?: boolean;
   floatingButtonPosition?:
@@ -146,6 +147,7 @@ const defaultProps = {
   floatingSearchIconPosition: "right" as "left" | "right",
   showFloatingSearchIcon: false,
   showFloatingInput: false,
+  inline: false,
 };
 
 const ModalContext = createContext<{

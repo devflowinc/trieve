@@ -23,11 +23,15 @@ body {
   }
 
   #trieve-search-modal {
-    @apply animate-contentShow scroll-smooth fixed top-[calc(40%-30vh)] left-[50%] max-h-[60vh] w-[90vw] sm:max-w-[800px] -translate-x-[50%] rounded-lg shadow-2xl focus:outline-none z-[999] overflow-hidden text-base;
+    @apply animate-contentShow scroll-smooth max-h-[60vh] w-[90vw] sm:max-w-[800px] rounded-lg focus:outline-none overflow-hidden text-base;
 
     color: var(--tv-zinc-950);
     background-color: var(--tv-zinc-50);
     font-family: var(--tv-prop-brand-font-family);
+
+    &.trieve-popup-modal {
+      @apply top-[calc(40%-30vh)] left-[50%] shadow-2xl fixed -translate-x-[50%];
+    }
 
     .group-chat-carousel {
       @apply pl-4 flex gap-2 w-full overflow-x-auto;
@@ -67,7 +71,11 @@ body {
       }
 
       .chat-outer-wrapper {
-        @apply justify-between w-full h-full mt-10 sm:mt-12;
+        @apply justify-between w-full h-full;
+
+        &.chat-outer-popup {
+          @apply mt-10 sm:mt-12;
+        }
       }
     }
 
@@ -132,7 +140,7 @@ body {
     }
 
     .mode-switch-wrapper {
-      @apply flex items-center justify-end mt-2 absolute top-2.5 right-4 z-30 font-medium;
+      @apply flex items-center justify-end mt-2 absolute font-medium;
 
       &.docs.chat, &.pdf.chat {
         @apply top-0;
@@ -545,17 +553,26 @@ body {
 
     @media (max-height: 800px) {
       .chat-outer-wrapper {
-        @apply pb-6;
+        &.chat-outer-popup {
+          @apply pb-6;
+        }
       }
+
     }
     @media (max-height: 600px) {
       .chat-outer-wrapper {
-        @apply pb-16;
+        &.chat-outer-popup {
+          @apply pb-16;
+        }
       }
     }
 
     .chat-outer-wrapper {
-      @apply flex flex-col mt-12 px-4 scroll-smooth;
+      @apply flex flex-col px-4 scroll-smooth mt-0;
+
+      &.chat-outer-popup {
+        @apply mt-12;
+      }
 
       .ai-message {
         .message-wrapper {
