@@ -703,24 +703,26 @@ const PublicPageControls = () => {
               </Show>
             </div>
             <div class="">
-              <label class="block" for="">
-                Foreground Opacity
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                onChange={(e) => {
-                  setExtraParams(
-                    "heroPattern",
-                    "foregroundOpacity",
-                    parseInt(e.currentTarget.value) / 100,
-                  );
-                }}
-                value={
-                  (extraParams.heroPattern?.foregroundOpacity || 0.5) * 100
-                }
-              />
+              <Show when={extraParams.heroPattern?.heroPatternName !== "Solid"}>
+                <label class="block" for="">
+                  Foreground Opacity
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  onChange={(e) => {
+                    setExtraParams(
+                      "heroPattern",
+                      "foregroundOpacity",
+                      parseInt(e.currentTarget.value) / 100,
+                    );
+                  }}
+                  value={
+                    (extraParams.heroPattern?.foregroundOpacity || 0.5) * 100
+                  }
+                />
+              </Show>
             </div>
           </div>
           <div class="grow" />
