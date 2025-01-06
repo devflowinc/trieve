@@ -627,6 +627,10 @@ video {
   display: flex;
 }
 
+.table {
+  display: table;
+}
+
 .hidden {
   display: none;
 }
@@ -703,6 +707,10 @@ video {
 
 .flex-shrink-0 {
   flex-shrink: 0;
+}
+
+.border-collapse {
+  border-collapse: collapse;
 }
 
 @keyframes pulse {
@@ -894,6 +902,10 @@ video {
   font-weight: 500;
 }
 
+.capitalize {
+  text-transform: capitalize;
+}
+
 .tracking-tight {
   letter-spacing: -0.025em;
 }
@@ -915,6 +927,11 @@ video {
 
 .underline {
   text-decoration-line: underline;
+}
+
+.antialiased {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .outline {

@@ -1,9 +1,10 @@
 use super::email_operator::send_email;
-use crate::data::models::{Invitation, Pool};
+use crate::data::models::{Invitation, Pool, Templates};
 use crate::errors::ServiceError;
 use actix_web::web;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
+use minijinja::context;
 
 /// Diesel query
 
@@ -52,23 +53,20 @@ pub async fn get_invitation_by_id_query(
 pub async fn send_invitation(
     inv_url: String,
     invitation: Invitation,
+    templates: Templates<'_>,
     org_name: String,
 ) -> Result<(), ServiceError> {
-    let sg_email_content = format!(
-        "Hello,<br/><br/>
-        You have been invited to join the Trieve organization: <strong>{}</strong>.<br/><br/>
-        To get started, simply click <a href=\"{}\">here</a> or use the link below to register and activate your account:<br/>
-        <a href=\"{}\">{}</a><br/><br/>
-        We look forward to having you on board!<br/><br/>
-        Cheers,<br/>
-        The Trieve Team<br/>
-        <i>This email is intended for {}. If you encounter any issues or did not expect this invitation, please reach out to us directly at <a href=\"mailto:humans@trieve.ai\">humans@trieve.ai</a>.</i>",
-        org_name,
-        inv_url,
-        inv_url,
-        inv_url.split('?').collect::<Vec<&str>>().get(0).unwrap_or(&""),
-        invitation.email
-    );
+    let templ = templates.get_template("user_email_invite.html").unwrap();
+    let sg_email_content = templ
+        .render(context! {
+            org_name,
+            org_redirect_url => inv_url,
+            email => invitation.email,
+            new_user => true
+        })
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!("Error rendering template {}", e))
+        })?;
 
     send_email(sg_email_content, invitation.email, None)
 }
@@ -76,6 +74,7 @@ pub async fn send_invitation(
 pub async fn send_invitation_for_existing_user(
     email: String,
     org_name: String,
+    templates: Templates<'_>,
     organization_url: String,
 ) -> Result<(), ServiceError> {
     let split_org_url = organization_url.split('?').collect::<Vec<&str>>();
@@ -86,19 +85,17 @@ pub async fn send_invitation_for_existing_user(
         split_org_url.get(1).unwrap_or(&"")
     );
 
-    let sg_email_content = format!(
-        "You've been added to a Trieve organization: <b>{}</b>. <br/><br/>
-        To access this organization, simply click <a href=\"{}\">here</a> or use the link below:<br/>
-        <a href=\"{}\">{}</a><br/><br/>
-        Cheers,<br/>
-        The Trieve Team<br/>
-        <i>This email is intended for {}. If you encounter any issues or did not expect this invitation, please reach out to us directly at <a href=\"mailto:humans@trieve.ai\">humans@trieve.ai</a>.</i>",
-        org_name,
-        org_redirect_url,
-        org_redirect_url,
-        org_redirect_url,
-        email
-    );
+    let templ = templates.get_template("user_email_invite.html").unwrap();
+    let sg_email_content = templ
+        .render(context! {
+            org_name,
+            org_redirect_url,
+            email,
+            new_user => false,
+        })
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!("Error rendering template {}", e))
+        })?;
 
     send_email(sg_email_content, email, None)
 }
