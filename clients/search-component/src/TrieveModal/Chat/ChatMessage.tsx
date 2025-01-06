@@ -1,10 +1,11 @@
 import React, { lazy } from "react";
 const Markdown = lazy(() => import("react-markdown"));
 
-import { LoadingIcon, SparklesIcon } from "../icons";
-import { Chunk } from "../../utils/types";
-import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
+import { useModalState } from "../../utils/hooks/modal-context";
+import { Chunk, isSimplePdfChunk } from "../../utils/types";
+import { LoadingIcon, SparklesIcon } from "../icons";
+import { ChatPdfItem } from "../PdfView/ChatPdfItem";
 import { Carousel } from "./Carousel";
 import { FollowupQueries } from "./FollowupQueries";
 
@@ -126,6 +127,12 @@ export const Message = ({
       </a>
     ));
 
+  const pdfItems = message.additional
+    ?.filter((chunk) => isSimplePdfChunk(chunk))
+    .map((chunk) => {
+      return <ChatPdfItem chunk={chunk}></ChatPdfItem>;
+    });
+
   const youtubeItems = message.additional
     ?.filter(
       (chunk) =>
@@ -162,7 +169,7 @@ export const Message = ({
     ));
 
   return (
-    <div>
+    <div className="super-message-wrapper">
       {message.text === "Loading..." ? (
         <div
           className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
@@ -183,6 +190,9 @@ export const Message = ({
             <div className="additional-image-links">
               <Carousel>{youtubeItems}</Carousel>
             </div>
+          )}
+          {pdfItems && pdfItems.length > 0 && (
+            <div className="pdf-chat-items">{pdfItems}</div>
           )}
           {message.text.length > 0 ? (
             <Markdown
@@ -297,6 +307,7 @@ export const Message = ({
               </div>
             </div>}
           </div>
+          {props.followupQuestions && <FollowupQueries />}
         </div>
       ) : null}
     </div>

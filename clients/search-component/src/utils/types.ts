@@ -54,6 +54,13 @@ export function isPdfChunk(result: ChunkWithHighlights): result is PdfChunk {
   );
 }
 
+export function isSimplePdfChunk(result: Chunk): result is PdfChunk["chunk"] {
+  return (
+    (result as PdfChunk["chunk"]).metadata.file_name !== undefined &&
+    (result as PdfChunk["chunk"]).metadata.page_num !== undefined
+  );
+}
+
 export type Props = {
   datasetId: string;
   apiKey: string;
