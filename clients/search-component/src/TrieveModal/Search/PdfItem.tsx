@@ -14,7 +14,7 @@ type Props = {
   className?: string;
 };
 
-function extractMarkedContent(text: string): string {
+export function extractMarkedContent(text: string): string {
   const regex = /<mark><b>(.*?)<\/b><\/mark>/i;
   const match = text.match(regex);
   if (!match) return "";
@@ -23,7 +23,7 @@ function extractMarkedContent(text: string): string {
   return match[1].replace(/<[^>]*>/g, "").toLowerCase();
 }
 
-const getPresignedUrl = async (
+export const getPresignedUrl = async (
   baseUrl: string,
   datasetId: string,
   fileId: string,
@@ -55,6 +55,7 @@ export const PdfItem = (props: Props) => {
   const state = useModalState();
   const [hasFoundMatch, setHasFoundMatch] = useState(true);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [fullScreenState, setFullScreenState] = useAtom(pdfViewState);
 
   useEffect(() => {
@@ -85,6 +86,7 @@ export const PdfItem = (props: Props) => {
           setFullScreenState({
             url: presigned,
             page: props.item.chunk.metadata.page_num,
+            file_name: props.item.chunk.metadata.file_name,
             searchFor: toHighlight,
           });
         }
@@ -112,6 +114,9 @@ export const PdfItem = (props: Props) => {
             url={presigned}
           />
           <div className="pdf-result-page">
+            <div className="pdf-result-filename">
+              {props.item.chunk.metadata.file_name}
+            </div>
             Page {props.item.chunk.metadata.page_num}
           </div>
         </div>

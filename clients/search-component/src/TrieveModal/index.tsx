@@ -179,38 +179,42 @@ const Modal = () => {
 
   return (
     <>
-      {!props.inline && <OpenModalButton
-        setOpen={() => {
-          startTransition(() => {
-            setOpen(true);
-            setMode(props.defaultSearchMode || "search");
-          });
-        }}
-      />}
+      {!props.inline && (
+        <OpenModalButton
+          setOpen={() => {
+            startTransition(() => {
+              setOpen(true);
+              setMode(props.defaultSearchMode || "search");
+            });
+          }}
+        />
+      )}
       {(props.inline || open) && (
         <>
-          {!props.inline &&
-          <div
-            onClick={() => {
-              setOpen(false);
-            }}
-            id="trieve-search-modal-overlay"
-            style={{ zIndex: props.zIndex ?? 1000 }}
-          ></div>
-          }
+          {!props.inline && (
+            <div
+              onClick={() => {
+                setOpen(false);
+              }}
+              id="trieve-search-modal-overlay"
+              style={{ zIndex: props.zIndex ?? 1000 }}
+            ></div>
+          )}
           <div
             id="trieve-search-modal"
             className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${
               props.theme === "dark" ? "dark " : ""
-            } ${
-              props.inline ? "trieve-inline-modal" : "trieve-popup-modal"
-            } ${props.type}`.trim()}
+            } ${props.inline ? "trieve-inline-modal" : "trieve-popup-modal"} ${
+              props.type
+            }`.trim()}
             style={{
               zIndex: props.zIndex ? props.zIndex + 1 : 1001,
               maxHeight: fullscreenPdfState ? "none" : "60vh",
             }}
           >
-            {props.allowSwitchingModes && !props.inline ? <ModeSwitch />: null}
+            {props.allowSwitchingModes &&
+              !props.inline &&
+              !fullscreenPdfState && <ModeSwitch />}
             <div
               className="search-container"
               style={{

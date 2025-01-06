@@ -455,7 +455,7 @@ body {
       }
 
       .system {
-        @apply mt-2 sm:mt-8 mb-5 items-center overflow-ellipsis max-w-[100vw];
+        @apply mt-2 sm:mt-8 mb-5 items-center overflow-ellipsis;
 
         .code-markdown {
           max-width: 45vw;
@@ -1241,20 +1241,30 @@ body {
         }
       }
     }
-  }
-
-  #trieve-search-modal.ecommerce {
-    @apply top-1 w-[95vw] rounded-lg;
-    &.trieve-popup-modal {
-      @apply max-w-[90rem] pt-10 px-4 ;
+    #trieve-search-modal.ecommerce {
+      @apply top-1 max-w-[90rem] w-[95vw] pt-10 px-4 rounded-lg;
+      &.trieve-popup-modal {
+        @apply max-w-[90rem] pt-10 px-4 ;
+      }
     }
-  }
 
-  .pdf-item {
-    @apply rounded-md p-2 hover:bg-neutral-100;
-  }
-  .pdf-result-page {
-    @apply text-sm opacity-70;
+    .pdf-item {
+      @apply rounded-md p-2 hover:bg-neutral-100;
+    }
+    .pdf-result-page {
+      @apply text-sm opacity-70 flex gap-2;
+    }
+    .pdf-result-filename {
+      @apply text-sm opacity-80 flex gap-2;
+    }
+
+    .pdf-chat-items {
+      @apply flex gap-2 overflow-x-scroll max-w-full;
+    }
+
+    .super-message-wrapper {
+      @apply overflow-hidden;
+    }
   }
 }
 

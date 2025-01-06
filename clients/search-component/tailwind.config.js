@@ -17,11 +17,11 @@ export default {
           "#trieve-search-component",
           "#trieve-search-modal",
           "#trieve-search-modal-overlay",
-          "#open-trieve-modal"
+          "#open-trieve-modal",
         ],
         {
           rootStyles: true,
-        }
+        },
       ),
     }),
   ],
