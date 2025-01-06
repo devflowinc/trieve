@@ -37,7 +37,7 @@ const OrgUpdateAlert = () => {
         `Your organization has reached its total ${variableName} limit (${percentageUsed}% used).`,
       );
       setAlertState(AlertState.Danger);
-    } else if (currentCount >= Math.floor(subscriptionLimit * 0.8)) {
+    } else if (currentCount >= subscriptionLimit * 0.8) {
       setMessage(
         `Your organization is approaching its total ${variableName} limit (${percentageUsed}% used).`,
       );
@@ -78,8 +78,7 @@ const OrgUpdateAlert = () => {
     ];
 
     const approachingUsage = OrganizationUsageVariables.find(
-      ({ current, limit }) =>
-        current >= limit || current >= Math.floor(limit * 0.8),
+      ({ current, limit }) => current >= limit || current >= limit * 0.8,
     );
 
     if (approachingUsage) {
