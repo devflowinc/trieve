@@ -1,6 +1,6 @@
 use super::auth_handler::AdminOnly;
 use crate::{
-    data::models::{Invitation, OrganizationWithSubAndPlan, Pool, RedisPool},
+    data::models::{Invitation, OrganizationWithSubAndPlan, Pool, RedisPool, Templates},
     errors::ServiceError,
     middleware::auth_middleware::verify_admin,
     operators::{
@@ -64,6 +64,7 @@ pub async fn post_invitation(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     org_with_plan_and_sub: OrganizationWithSubAndPlan,
+    templates: Templates<'_>,
     user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let invitation_data = invitation_data.into_inner();
@@ -119,6 +120,7 @@ pub async fn post_invitation(
         send_invitation_for_existing_user(
             email.clone(),
             org_with_plan_and_sub.organization.name,
+            templates,
             invitation_data.redirect_uri,
         )
         .await?;
@@ -152,6 +154,7 @@ pub async fn post_invitation(
     send_invitation(
         invitation.registration_url,
         invitation.invitation,
+        templates,
         org_with_plan_and_sub.organization.name,
     )
     .await?;
