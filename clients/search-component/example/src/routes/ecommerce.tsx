@@ -33,10 +33,11 @@ export default function ECommerce() {
   );
   const defaultSearchMode =
     import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "search";
-  
   const defaultAIQuestions = (
     import.meta.env.VITE_DEFAULT_AI_QUESTIONS ?? ""
   ).split(",");
+  const inline = 
+    import.meta.env.VITE_INLINE == "true";
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -108,6 +109,7 @@ export default function ECommerce() {
               floatingSearchIconPosition={floatingSearchIconPosition}
               showFloatingSearchIcon={showFloatingSearchIcon}
               showFloatingInput={showFloatingInput}
+              inline={inline}
             />
           </>
         ) : (

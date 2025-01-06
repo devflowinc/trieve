@@ -175,16 +175,17 @@ const Modal = () => {
 
   return (
     <>
-      <OpenModalButton
+      {!props.inline && <OpenModalButton
         setOpen={() => {
           startTransition(() => {
             setOpen(true);
             setMode(props.defaultSearchMode || "search");
           });
         }}
-      />
-      {open && (
+      />}
+      {(props.inline || open) && (
         <>
+          {!props.inline &&
           <div
             onClick={() => {
               setOpen(false);
@@ -192,14 +193,17 @@ const Modal = () => {
             id="trieve-search-modal-overlay"
             style={{ zIndex: props.zIndex ?? 1000 }}
           ></div>
+          }
           <div
             id="trieve-search-modal"
             className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${
               props.theme === "dark" ? "dark " : ""
+            } ${
+              props.inline ? "trieve-inline-modal" : "trieve-popup-modal"
             } ${props.type}`.trim()}
             style={{ zIndex: props.zIndex ? props.zIndex + 1 : 1001 }}
           >
-            {props.allowSwitchingModes && <ModeSwitch />}
+            {props.allowSwitchingModes && !props.inline && <ModeSwitch />}
             <div
               className="search-container"
               style={{ display: mode === "search" ? "block" : "none" }}

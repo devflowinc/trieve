@@ -34,6 +34,8 @@ export default function Home() {
   const defaultAiQuestions = (
     import.meta.env.VITE_DEFAULT_AI_QUESTIONS ?? "What is Trieve?,How to perform autocomplete search?,How do I install the TS SDK?"
   ).split(",");
+  const inline = 
+    import.meta.env.VITE_INLINE == "true";
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -159,6 +161,7 @@ export default function Home() {
               showFloatingButton={showFloatingButton}
               showFloatingSearchIcon={showFloatingSearchIcon}
               showFloatingInput={showFloatingInput}
+              inline={inline}
             />
           </>
         ) : (
