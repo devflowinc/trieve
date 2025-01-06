@@ -90,19 +90,18 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
       }
     });
 
-    // Selecting blank as the hero pattern should reset everything else
     // Selecting another pattern builds the svg field
     createEffect(() => {
       const pattern = extraParams.heroPattern?.heroPatternName;
       const foreground = extraParams.heroPattern?.foregroundColor;
       if (hasLoaded()) {
-        if (pattern == "Blank" || !pattern) {
+        if (!pattern) {
           setExtraParams("heroPattern", {
-            heroPatternName: "Blank",
+            heroPatternName: "Solid",
             heroPatternSvg: "",
             foregroundColor: "#ffffff",
             foregroundOpacity: 0.5,
-            backgroundColor: "#f3f3f3",
+            backgroundColor: "#ffffff",
           });
         } else if (pattern == "Solid") {
           setExtraParams("heroPattern", (prev) => ({
