@@ -214,7 +214,6 @@ export const Message = ({
           ) : (
             <LoadingIcon className="loading" />
           )}
-          <FollowupQueries />
           <div>
             {message.additional
               ? props.type !== "ecommerce" && (
@@ -309,6 +308,8 @@ export const Message = ({
               </div>
             </div>
           </div>
+          {props.followupQuestions && 
+            <FollowupQueries /> }
         </div>
       ) : null}
     </div>

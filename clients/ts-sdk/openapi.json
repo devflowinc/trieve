@@ -9356,7 +9356,7 @@
             "FULLTEXT_ENABLED": true,
             "INDEXED_ONLY": false,
             "LLM_BASE_URL": "https://api.openai.com/v1",
-            "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+            "LLM_DEFAULT_MODEL": "gpt-4o",
             "LOCKED": false,
             "MAX_LIMIT": 10000,
             "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
@@ -9647,7 +9647,7 @@
           "FULLTEXT_ENABLED": true,
           "INDEXED_ONLY": false,
           "LLM_BASE_URL": "https://api.openai.com/v1",
-          "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+          "LLM_DEFAULT_MODEL": "gpt-4o",
           "LOCKED": false,
           "MAX_LIMIT": 10000,
           "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
@@ -12130,8 +12130,7 @@
         ],
         "properties": {
           "query": {
-            "type": "string",
-            "description": "Query to embed for the final weighted sum vector."
+            "$ref": "#/components/schemas/SearchModalities"
           },
           "weight": {
             "type": "number",
@@ -12516,6 +12515,10 @@
           },
           "floatingSearchIconPosition": {
             "type": "string",
+            "nullable": true
+          },
+          "followupQuestions": {
+            "type": "boolean",
             "nullable": true
           },
           "forBrandName": {
@@ -12941,7 +12944,7 @@
       "QueryTypes": {
         "oneOf": [
           {
-            "type": "string"
+            "$ref": "#/components/schemas/SearchModalities"
           },
           {
             "type": "array",
@@ -14954,6 +14957,24 @@
           "semantic",
           "hybrid",
           "bm25"
+        ]
+      },
+      "SearchModalities": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "image_url"
+            ],
+            "properties": {
+              "image_url": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "string"
+          }
         ]
       },
       "SearchOverGroupsReqPayload": {

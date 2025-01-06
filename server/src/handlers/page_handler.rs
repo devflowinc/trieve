@@ -183,6 +183,8 @@ pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_queries: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub followup_questions: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub responsive: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub chat: Option<bool>,
