@@ -109,11 +109,9 @@ export const ChatMode = () => {
                 : <AIInitialMessage />
                 }
               </div>
-              {messages.map((chat, i) => (
+              {messages.map((message, i) => (
                 <div key={i} className="message-wrapper">
-                  {chat.map((message, idx) => (
-                    <ChatMessage key={idx} idx={idx} message={message} />
-                  ))}
+                  <ChatMessage key={`${i}-message`} idx={i} message={message} />
                 </div>
               ))}
             </div>
