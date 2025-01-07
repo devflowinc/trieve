@@ -20,7 +20,16 @@ on:
 jobs:
   build_chat:
     name: Push Chat Image
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-2vcpu-ubuntu-2204]
+        platform: [linux/amd64, linux/arm64]
+        exclude:
+          - runner: blacksmith-2vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-2vcpu-ubuntu-2204-arm
+            platform: linux/amd64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -51,7 +60,7 @@ jobs:
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
-          # platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           file: frontends/chat/Dockerfile
           context: .
           push: true
@@ -60,7 +69,16 @@ jobs:
 
   build_search:
     name: Push Search Image
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-2vcpu-ubuntu-2204]
+        platform: [linux/amd64, linux/arm64]
+        exclude:
+          - runner: blacksmith-2vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-2vcpu-ubuntu-2204-arm
+            platform: linux/amd64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -91,7 +109,7 @@ jobs:
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
-          # platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           file: frontends/search/Dockerfile
           context: .
           push: true
@@ -100,7 +118,16 @@ jobs:
 
   build_dashboard:
     name: Push Dashboard Image
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-2vcpu-ubuntu-2204]
+        platform: [linux/amd64, linux/arm64]
+        exclude:
+          - runner: blacksmith-2vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-2vcpu-ubuntu-2204-arm
+            platform: linux/amd64
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -131,7 +158,7 @@ jobs:
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
         with:
-          # platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           file: frontends/dashboard/Dockerfile
           context: .
           push: true
