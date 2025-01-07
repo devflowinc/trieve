@@ -218,8 +218,9 @@ body {
     }
 
     .inline-chat-header {
-      @apply flex justify-between px-4 py-4 rounded-t-lg;
-      background-color: var(--tv-zinc-400);
+      @apply flex justify-between px-4 py-4 rounded-t-lg border-b-2;
+
+      background-color: var(--tv-zinc-100);
     }
 
     .chat-footer-wrapper {
@@ -230,6 +231,10 @@ body {
     .clear-button {
       @apply px-2 py-1 rounded-md text-white text-sm;
       background-color: var(--tv-prop-brand-color);
+    }
+
+    .inline-submit-icon {
+      @apply top-[0.825rem] right-7 absolute z-20;
     }
 
     .trieve-footer {
@@ -802,6 +807,10 @@ body {
       border: 1px solid var(--tv-zinc-300);
       &::placeholder {
         color: var(--tv-zinc-400);
+      }
+
+      &.inline-input {
+        @apply pl-2;
       }
 
       &:focus {

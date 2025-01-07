@@ -60,7 +60,7 @@ const ChatContext = createContext<{
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { query, trieveSDK, modalRef, setMode, setCurrentGroup } =
+  const { query, trieveSDK, setMode, setCurrentGroup } =
     useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
