@@ -110,9 +110,7 @@ export const ChatMode = () => {
                 }
               </div>
               {messages.map((message, i) => (
-                <div key={i} className="message-wrapper">
-                  <ChatMessage key={`${i}-message`} idx={i} message={message} />
-                </div>
+                <ChatMessage key={`${i}-message`} idx={i} message={message} />
               ))}
             </div>
           </div>

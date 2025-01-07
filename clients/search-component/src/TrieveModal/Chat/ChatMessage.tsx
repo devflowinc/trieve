@@ -25,30 +25,16 @@ export const ChatMessage = ({
   const { props } = useModalState();
 
   return (
-    <>
+    <div key={idx}>
       {message.type == "user" ? (
-        <>
-          <span className="ai-avatar user">
-            <i className="fa-regular fa-user"></i>
-            <p
-              className="tag"
-              // style mostly transparent brand color
-              style={{
-                backgroundColor: props.brandColor
-                  ? `${props.brandColor}18`
-                  : "#CB53EB18",
-                color: props.brandColor ?? "#CB53EB",
-              }}
-            >
-              User
-            </p>
-          </span>
+        <div className="" key={idx}>
           <div className={message.type}>
             <span className="user-text"> {message.text}</span>
           </div>
-        </>
+        </div>
       ) : (
-        <>
+        <div className={props.inline ? "": "message-wrapper"} key={idx}>
+          {!props.inline && 
           <span className="ai-avatar assistant">
             {props.brandLogoImgSrcUrl ? (
               <img
@@ -70,10 +56,11 @@ export const ChatMessage = ({
               AI assistant
             </p>
           </span>
+            }
           <Message key={idx} message={message} idx={idx} />
-        </>
+        </div>
       )}
-    </>
+    </div>
   );
 };
 
