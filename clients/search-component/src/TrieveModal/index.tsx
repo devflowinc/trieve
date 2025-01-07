@@ -203,7 +203,7 @@ const Modal = () => {
             } ${props.type}`.trim()}
             style={{ zIndex: props.zIndex ? props.zIndex + 1 : 1001 }}
           >
-            {props.allowSwitchingModes && !props.inline && <ModeSwitch />}
+            {props.allowSwitchingModes && !props.inline ? <ModeSwitch />: null}
             <div
               className="search-container"
               style={{ display: mode === "search" ? "block" : "none" }}

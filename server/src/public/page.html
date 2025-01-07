@@ -30,21 +30,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     {% if params.openGraphMetadata %} {% if params.openGraphMetadata.title %}
-    <meta property="og:title" content="{{params.openGraphMetadata.title}}" />
+      <meta property="og:title" content="{{params.openGraphMetadata.title}}" />
+      {% endif %}
+      <meta
+        property="og:url"
+        content="{{params.baseUrl}}/public_page/{{params.datasetId}}"
+      />
+      <meta property="og:type" content="website" />
+      {% if params.openGraphMetadata.image %}
+      <meta property="og:image" content="{{params.openGraphMetadata.image}}" />
+      {% endif %}
+
+      {% if params.openGraphMetadata.description %}
+      <meta
+        property="og:description"
+        content="{{params.openGraphMetadata.description}}"
+      />
+      {% endif %}
     {% endif %}
-    <meta
-      property="og:url"
-      content="{{params.baseUrl}}/public_page/{{params.datasetId}}"
-    />
-    <meta property="og:type" content="website" />
-    {% if params.openGraphMetadata.image %}
-    <meta property="og:image" content="{{params.openGraphMetadata.image}}" />
-    {% endif %} {% if params.openGraphMetadata.description %}
-    <meta
-      property="og:description"
-      content="{{params.openGraphMetadata.description}}"
-    />
-    {% endif %} {% endif %}
 
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/js/all.min.js"
@@ -421,14 +424,25 @@
         import {renderToDiv} from '{{ search_component_url | safe }}/dist/vanilla/index.js';
         const root = document.querySelector("#root");
         const params = {{params | tojson}};
+
+        if (params.inline) {
+          const inlineRoot = document.querySelector("#inline-root");
+
+          renderToDiv(inlineRoot, {
+            ...params,
+          })
+        }
+
         params.buttonTriggers = [
           { selector: "#tr-search-icon", mode: params.defaultSearchMode ?? "search" },
           { selector: ".demo-open-button", mode: params.defaultSearchMode ?? "search" },
           ...(params.buttonTriggers ?? [])
         ];
+        params.inline = false;
         renderToDiv(root, {
           ...params,
         })
+
 
       const starterQuestions = document.querySelectorAll(
         ".example-questions button"
@@ -518,10 +532,14 @@
             ></iframe>
           </div>
         </div>
-        {% endif %} {% if params.singleProductOptions and
-        params.singleProductOptions.productName %} {% include "product.html" %}
-        {% endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% endif
-        %} {% if params.videoLink and params.videoPosition == "floating" %}
+        {% endif %}
+        {% if params.singleProductOptions and params.singleProductOptions.productName %}
+          {% include "product.html" %}
+        {% endif %}
+        {% if tabs|length > 0 %}
+          {% include "tabs.html" %}
+        {% endif %}
+        {% if params.videoLink and params.videoPosition == "floating" %}
         <div class="video-wrapper">
           <iframe
             src="{{params.videoLink}}"

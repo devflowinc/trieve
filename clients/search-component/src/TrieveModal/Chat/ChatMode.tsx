@@ -4,6 +4,8 @@ import { AIInitialMessage } from "./AIInitalMessage";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
 import { Tags } from "../Tags";
+import { SparklesIcon } from "../icons";
+import { SuggestedQuestions } from "./SuggestedQuestions";
 
 export const ChatMode = () => {
   const {
@@ -37,8 +39,26 @@ export const ChatMode = () => {
 
   return (
     <Suspense>
+      {(props.inline) && (currentQuestion || messages.length) ? <div className="inline-chat-header">
+        <div>
+          <p>
+            Trieve modal header
+          </p>
+        </div>
+         <button
+          onClick={() =>
+            currentQuestion
+              ? askQuestion(currentQuestion)
+              : isDoneReading
+                ? clearConversation()
+                : stopGeneratingMessage()
+          }
+          className="clear-button"
+        >
+          {currentQuestion ? "Enter" : isDoneReading ? "Clear" : "Stop"}
+        </button> 
+      </div>: null}
       <div className={`chat-outer-wrapper ${props.inline ? "": "chat-outer-popup"}`} ref={modalRef}>
-
         {!props.inline &&
         <div
           className={`close-modal-button chat ${props.type}`}
@@ -70,7 +90,26 @@ export const ChatMode = () => {
           <div className="ai-message">
             <div className="chat-modal-wrapper">
               <div className="ai-message initial-message">
-                <AIInitialMessage />
+                {props.inline ?  
+                  <>
+                    {!messages.length && !currentGroup ? 
+                    <>
+                    <div className="ai-avatar">
+                      {props.brandLogoImgSrcUrl ? (
+                        <img
+                          src={props.brandLogoImgSrcUrl}
+                          alt={props.brandName || "Brand logo"}
+                        />
+                      ) : (
+                        <SparklesIcon />
+                      )}
+                    </div>
+                    </>
+                    : null}
+                    {!messages.length && !currentGroup ? <SuggestedQuestions /> : null}
+                  </>
+                : <AIInitialMessage />
+                }
               </div>
               {messages.map((chat, i) => (
                 <div key={i} className="message-wrapper">
@@ -131,7 +170,7 @@ export const ChatMode = () => {
           </form>
         </div>
         <div className={`trieve-footer chat ${props.type}`}>
-          {currentQuestion || messages.length ? (
+          {(!props.inline) && (currentQuestion || messages.length) ? (
             <div className="chat-controls-row">
               <button
                 onClick={() =>

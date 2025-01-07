@@ -36,6 +36,9 @@
         </div>
         {% endif %}
 
+        {% if params.inline and params.singleProductOptions and params.singleProductOptions.productName %}
+          <div id="inline-root"></div>
+        {% else %}
         <div class="mt-4 border-t border-gray-200">
           <h3 class="text-brand-color text-sm font-medium mt-4">
             <span class="text-brand-color"
@@ -60,9 +63,11 @@
             </button>
           </div>
         </div>
+        {% endif %}
       </div>
     </section>
-    {% endif %} {% if params.singleProductOptions.recSearchQuery %}
+    {% endif %}
+    {% if params.singleProductOptions.recSearchQuery %}
     <section
       aria-labelledby="related-heading"
       class="border-t border-gray-200 mt-4"
