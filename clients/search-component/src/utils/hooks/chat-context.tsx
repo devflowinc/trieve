@@ -110,14 +110,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }]
         ];
 
-        // Handle scrolling
-        if (modalRef.current) {
-          modalRef.current.scroll({
-            top: modalRef.current.scrollHeight,
-            behavior: "smooth"
-          });
-        }
-
         if (isDoneReading && characterOffsetInterval && offset >= text.length) {
           clearInterval(characterOffsetInterval);
           setCharacterOffsetInterval(null);
@@ -131,13 +123,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isDoneReading || isLoadingSuggestedQueries) {
       setOffset(text.length)
-
-      setTimeout(() => {
-        modalRef.current?.scroll({
-          top: modalRef.current.scrollHeight + 200,
-          behavior: "smooth",
-        });
-      }, 55);
     }
   }, [text, isDoneReading, isLoadingSuggestedQueries])
 
@@ -359,13 +344,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       ...m,
       [{ type: "system", text: "Loading...", additional: null, queryId: null }],
     ]);
-
-    setTimeout(() => {
-      modalRef.current?.scroll({
-        top: modalRef.current.scrollHeight + 200,
-        behavior: "smooth",
-      });
-    }, 50);
   };
 
   const switchToChatAndAskQuestion = async (query: string) => {
