@@ -84,7 +84,7 @@ export const Message = ({
   idx: number;
   message: Message;
 }) => {
-  const { rateChatCompletion } = useChatState();
+  const { rateChatCompletion, isDoneReading } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
   const { props } = useModalState();
@@ -187,12 +187,12 @@ export const Message = ({
         <div
           className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
         >
-          {message.additional && props.type === "ecommerce" && (
+          {message.additional && props.type === "ecommerce" && !props.inline &&(
             <div className="additional-image-links">
               <Carousel>{ecommerceItems}</Carousel>
             </div>
           )}
-          {youtubeItems && youtubeItems.length > 0 && (
+          {youtubeItems && youtubeItems.length > 0 && !props.inline && (
             <div className="additional-image-links">
               <Carousel>{youtubeItems}</Carousel>
             </div>
@@ -260,7 +260,9 @@ export const Message = ({
                   </div>
                 )
               : null}
-            <div className="feedback-wrapper">
+              {props.followupQuestions && 
+                <FollowupQueries /> }
+            {isDoneReading && <div className="feedback-wrapper">
               <span className="spacer"></span>
               <div className="feedback-icons">
                 {copied ? (
@@ -306,10 +308,8 @@ export const Message = ({
                   <i className="fa-regular fa-thumbs-down"></i>
                 </button>
               </div>
-            </div>
+            </div>}
           </div>
-          {props.followupQuestions && 
-            <FollowupQueries /> }
         </div>
       ) : null}
     </div>

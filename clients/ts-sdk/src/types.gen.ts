@@ -2091,6 +2091,7 @@ export type PublicPageParameters = {
     headingPrefix?: (string) | null;
     heroPattern?: ((HeroPattern) | null);
     hideDrawnText?: (boolean) | null;
+    inline?: (boolean) | null;
     isTestMode?: (boolean) | null;
     navLogoImgSrcUrl?: (string) | null;
     openGraphMetadata?: ((OpenGraphMetadata) | null);

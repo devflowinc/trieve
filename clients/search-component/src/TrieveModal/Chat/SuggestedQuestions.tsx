@@ -1,6 +1,7 @@
 import React from "react";
 import { useSuggestedQuestions } from "../../utils/hooks/useSuggestedQuestions";
 import { useChatState } from "../../utils/hooks/chat-context";
+import { useModalState } from "../../utils/hooks/modal-context";
 export const SuggestedQuestions = () => {
   const { askQuestion, setCurrentQuestion } = useChatState();
   const {
@@ -8,10 +9,15 @@ export const SuggestedQuestions = () => {
     isLoadingSuggestedQueries,
     refetchSuggestedQuestion,
   } = useSuggestedQuestions();
+
+  const {
+    props
+  } = useModalState()
+
   return (
     <>
-      <p></p>
       <div>
+        {!props.inline &&
         <p className="header">
           <button
             onClick={refetchSuggestedQuestion}
@@ -22,13 +28,13 @@ export const SuggestedQuestions = () => {
             <i className="fa-solid fa-arrow-rotate-right"></i>
           </button>{" "}
           Example questions
-        </p>
-        <div className="questions">
-          {!suggestedQuestions.length && (
+        </p>}
+        <div className={`questions ${props.inline ? "inline-questions" : ""}`}>
+          {!props.inline && !suggestedQuestions.length ? (
             <p className="suggested-question empty-state-loading">
               Loading example questions...
             </p>
-          )}
+          ) : null}
           {suggestedQuestions.length ? (
             <>
               {suggestedQuestions.map((q) => (

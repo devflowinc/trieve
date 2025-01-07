@@ -623,6 +623,10 @@ video {
   -webkit-line-clamp: 1;
 }
 
+.inline {
+  display: inline;
+}
+
 .flex {
   display: flex;
 }

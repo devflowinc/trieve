@@ -3151,6 +3151,9 @@ impl DatasetConfigurationDTO {
                     followup_questions: page_parameters_self
                         .followup_questions
                         .or(page_parameters_curr.followup_questions),
+                    inline: page_parameters_self
+                        .inline
+                        .or(page_parameters_curr.inline),
                     responsive: page_parameters_self
                         .responsive
                         .or(page_parameters_curr.responsive),

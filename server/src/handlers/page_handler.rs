@@ -264,6 +264,8 @@ pub struct PublicPageParameters {
     pub video_position: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_test_mode: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inline: Option<bool>,
 }
 
 #[utoipa::path(

@@ -7,9 +7,9 @@ export const ModeSwitch = () => {
 
   return (
     <div
-      className={`mode-switch-wrapper ${mode} ${query ? "has-query " : ""}${
-        props.type
-      }`.trim()}
+      className={`mode-switch-wrapper ${mode} ${query ? "has-query " : ""}
+            ${props.inline ? "" : "mode-switch-popup"}
+       ${props.type}`.trim()}
     >
       <div>
         <button
