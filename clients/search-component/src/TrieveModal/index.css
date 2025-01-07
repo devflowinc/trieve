@@ -29,6 +29,10 @@ body {
     background-color: var(--tv-zinc-50);
     font-family: var(--tv-prop-brand-font-family);
 
+    &:not(.trieve-popup-modal) {
+      @apply border;
+    }
+
     &.trieve-popup-modal {
       @apply top-[calc(40%-30vh)] left-[50%] shadow-2xl fixed -translate-x-[50%];
     }
@@ -717,6 +721,10 @@ body {
             @apply animate-pulse;
           }
         }
+      }
+
+      .inline-suggestions-wrapper {
+        @apply flex flex-wrap items-center;
       }
 
       .questions {

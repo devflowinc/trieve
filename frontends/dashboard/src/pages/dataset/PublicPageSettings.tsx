@@ -903,7 +903,31 @@ const PublicPageControls = () => {
                   class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
               </div>
-
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Number Of Suggestions to create
+                  </label>
+                  <Tooltip
+                    tooltipText="The number of suggested queries or followup questions to make, defaults to 3"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  type="number"
+                  placeholder="1000"
+                  value={extraParams.numberOfSuggestions ?? 3}
+                  onInput={(e) => {
+                    setExtraParams(
+                      "numberOfSuggestions",
+                      parseInt(e.currentTarget.value),
+                    );
+                  }}
+                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
               <div class="grow">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">
@@ -1029,6 +1053,24 @@ const PublicPageControls = () => {
                   class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
               </div>
+            </div>
+
+            <div class="grow">
+              <div class="flex items-center gap-1">
+                <label class="block">Inline header text</label>
+                <Tooltip
+                  tooltipText="Header text for inline mode"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                placeholder=""
+                value={extraParams.inlineHeader || ""}
+                onInput={(e) => {
+                  setExtraParams("inlineHeader", e.currentTarget.value);
+                }}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
             </div>
 
             <div class="grid grid-cols-2 gap-4">

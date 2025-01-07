@@ -3151,9 +3151,7 @@ impl DatasetConfigurationDTO {
                     followup_questions: page_parameters_self
                         .followup_questions
                         .or(page_parameters_curr.followup_questions),
-                    inline: page_parameters_self
-                        .inline
-                        .or(page_parameters_curr.inline),
+                    inline: page_parameters_self.inline.or(page_parameters_curr.inline),
                     responsive: page_parameters_self
                         .responsive
                         .or(page_parameters_curr.responsive),
@@ -3273,6 +3271,12 @@ impl DatasetConfigurationDTO {
                     is_test_mode: page_parameters_self
                         .is_test_mode
                         .or(page_parameters_curr.is_test_mode),
+                    number_of_suggestions: page_parameters_self
+                        .number_of_suggestions
+                        .or(page_parameters_curr.number_of_suggestions),
+                    inline_header: page_parameters_self
+                        .inline_header
+                        .or(page_parameters_curr.inline_header),
                 }),
             },
             DISABLE_ANALYTICS: self
