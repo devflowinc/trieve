@@ -13,9 +13,9 @@ type Messages = {
   type: string;
   text: string;
   additional: Chunk[] | null;
-}[][];
+}[];
 
-const mapMessageType = (message: Messages[0][0]): ChatMessageProxy => {
+const mapMessageType = (message: Messages[0]): ChatMessageProxy => {
   return {
     content: message.text,
     role: message.type as RoleProxy,
@@ -90,8 +90,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           return prevMessages;
         }
 
-        const currentThread = prevMessages[prevMessages.length - 1];
-        const currentMessage = currentThread[currentThread.length - 1];
+        const currentMessage = prevMessages[prevMessages.length - 1];
 
         if (currentMessage.text === text.slice(0, offset)) {
           if (isDoneReading) {
@@ -102,12 +101,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
         const newMessages = [
           ...prevMessages.slice(0, -1),
-          [{
+          {
             type: "system",
             text: text.slice(0, offset),
             additional: json || null,
             queryId,
-          }]
+          }
         ];
 
         if (isDoneReading && characterOffsetInterval && offset >= text.length) {
@@ -239,7 +238,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         {
           chunk_ids: groupChunks.map((c) => c.id),
           prev_messages: [
-            ...messages.slice(0, -1).map((m) => mapMessageType(m[0])),
+            ...messages.slice(0, -1).map((m) => mapMessageType(m)),
             {
               content: question || currentQuestion,
               role: "user",
@@ -298,12 +297,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setIsDoneReading(true);
     setIsLoading(false);
     // is the last message loading? If it is we need to delete it
-    if (messages.at(-1)?.[0]?.text === "Loading...") {
+    if (messages.at(-1)?.text === "Loading...") {
       setMessages((messages) =>
         [
           ...messages.slice(0, -1),
-          messages[messages.length - 1]?.slice(0, -1),
-        ].filter((a) => a.length)
+          messages[messages.length - 1],
+        ]
       );
     }
   };
@@ -323,14 +322,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
     setMessages((m) => [
       ...m,
-      [
-        {
-          type: "user",
-          text: question || currentQuestion,
-          additional: null,
-          queryId: null,
-        },
-      ],
+      {
+        type: "user",
+        text: question || currentQuestion,
+        additional: null,
+        queryId: null,
+      },
     ]);
 
     if (!currentTopic && !currentGroup && !group) {
@@ -342,7 +339,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setCurrentQuestion("");
     setMessages((m) => [
       ...m,
-      [{ type: "system", text: "Loading...", additional: null, queryId: null }],
+      { type: "system", text: "Loading...", additional: null, queryId: null },
     ]);
   };
 
