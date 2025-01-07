@@ -26,7 +26,7 @@ body {
     @apply animate-contentShow scroll-smooth max-h-[60vh] w-[90vw] sm:max-w-[800px] rounded-lg focus:outline-none overflow-hidden text-base;
 
     color: var(--tv-zinc-950);
-    background-color: var(--tv-zinc-50);
+    background-color: #fff;
     font-family: var(--tv-prop-brand-font-family);
 
     &:not(.trieve-popup-modal) {
@@ -225,7 +225,7 @@ body {
 
     .chat-footer-wrapper {
       @apply sticky bottom-0 flex flex-col py-3 pb-0;
-      background-color: var(--tv-zinc-50);
+      background-color: #fff;
     }
 
     .clear-button {
@@ -239,7 +239,7 @@ body {
 
     .trieve-footer {
       @apply sticky px-3 items-center bottom-[1px] flex flex-col;
-      background-color: var(--tv-zinc-50);
+      background-color: #fff;
       border-color: var(--tv-zinc-200);
 
       &.search {
@@ -438,10 +438,14 @@ body {
       }
 
       .user {
-        @apply flex gap-1 text-center items-center my-5;
+        @apply flex flex-row-reverse gap-1 text-center items-start;
+
 
         .user-text {
-          @apply text-left;
+          @apply text-left px-5 py-2 rounded-xl;
+
+          color: var(--tv-zinc-50);
+          background-color: var(--tv-zinc-800);
         }
       }
 
@@ -597,7 +601,7 @@ body {
 
       .ai-message {
         .message-wrapper {
-          @apply col-span-2 border-t pr-4;
+          @apply col-span-2 pr-4;
           border-color: var(--tv-zinc-200);
         }
 
@@ -704,7 +708,7 @@ body {
       }
 
       .followup-questions {
-        @apply text-sm flex flex-wrap gap-2;
+        @apply text-sm flex flex-wrap gap-2 mt-4;
 
         .followup-question {
           @apply p-2 text-left rounded-md border transition-all flex flex-row justify-start items-center gap-2;
@@ -810,7 +814,11 @@ body {
       }
 
       &.inline-input {
-        @apply pl-2;
+        @apply pl-2; 
+
+        &:focus {
+          background-color: #fff;
+        }
       }
 
       &:focus {
