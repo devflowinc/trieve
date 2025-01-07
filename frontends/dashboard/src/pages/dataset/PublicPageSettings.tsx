@@ -917,7 +917,7 @@ const PublicPageControls = () => {
                 </div>
                 <input
                   type="number"
-                  placeholder="1000"
+                  placeholder="3"
                   value={extraParams.numberOfSuggestions ?? 3}
                   onInput={(e) => {
                     setExtraParams(

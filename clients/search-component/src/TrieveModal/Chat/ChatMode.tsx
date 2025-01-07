@@ -39,7 +39,7 @@ export const ChatMode = () => {
 
   return (
     <Suspense>
-      {(props.inline) && (currentQuestion || messages.length) ? <div className="inline-chat-header">
+      {props.inline && messages.length ? <div className="inline-chat-header">
         <div>
           <p>
             {props.inlineHeader}
@@ -47,15 +47,13 @@ export const ChatMode = () => {
         </div>
          <button
           onClick={() =>
-            currentQuestion
-              ? askQuestion(currentQuestion)
-              : isDoneReading
+              isDoneReading
                 ? clearConversation()
                 : stopGeneratingMessage()
           }
           className="clear-button"
         >
-          {currentQuestion ? "Enter" : isDoneReading ? "Clear" : "Stop"}
+          {isDoneReading ? "Clear" : "Stop"}
         </button> 
       </div>: null}
       <div className={`chat-outer-wrapper ${props.inline ? "": "chat-outer-popup"}`} ref={modalRef}>
@@ -140,6 +138,7 @@ export const ChatMode = () => {
           </div>
         )}
         <div className="input-wrapper chat">
+          {!props.inline ?
           <button
             onClick={() => {
               if (currentGroup) {
@@ -150,7 +149,7 @@ export const ChatMode = () => {
             className="back-icon"
           >
             <i className="fa-solid fa-chevron-left"></i>
-          </button>
+          </button> : null}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -162,12 +161,24 @@ export const ChatMode = () => {
             <input
               ref={chatInput}
               value={currentQuestion}
+              className={`${props.inline ? "inline-input": ""}`}
               onChange={(e) => setCurrentQuestion(e.target.value)}
               placeholder={`Ask me anything about${
                 props.brandName ? ` ${props.brandName}` : ""
               }`}
             />
           </form>
+          {props.inline ?
+          <button
+            onClick={() => {
+              if (currentQuestion) {
+                  askQuestion(currentQuestion)
+              }
+            }}
+            className="inline-submit-icon"
+          >
+            <i className="fa-solid fa-paper-plane"></i>
+          </button> : null}
         </div>
         <div className={`trieve-footer chat ${props.type}`}>
           {(!props.inline) && (currentQuestion || messages.length) ? (
