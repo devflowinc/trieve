@@ -64,6 +64,7 @@ export type ModalProps = {
   ButtonEl?: JSX.ElementType;
   suggestedQueries?: boolean;
   followupQuestions?: boolean;
+  numberOfSuggestions?: number;
   defaultSearchQueries?: string[];
   defaultAiQuestions?: string[];
   brandLogoImgSrcUrl?: string;
@@ -107,6 +108,7 @@ export type ModalProps = {
   floatingSearchIconPosition?: "left" | "right";
   showFloatingSearchIcon?: boolean;
   showFloatingInput?: boolean;
+  inlineHeader?: string;
 };
 
 const defaultProps = {
@@ -127,6 +129,7 @@ const defaultProps = {
   chat: true,
   suggestedQueries: true,
   followupQuestions: true,
+  numberOfSuggestions: 3,
   trieve: (() => {}) as unknown as TrieveSDK,
   openKeyCombination: [{ ctrl: true }, { key: "k", label: "K" }],
   type: "docs" as ModalTypes,
@@ -148,6 +151,7 @@ const defaultProps = {
   showFloatingSearchIcon: false,
   showFloatingInput: false,
   inline: false,
+  inlineHeader: "AI Assistant by Trieve"
 };
 
 const ModalContext = createContext<{

@@ -14,9 +14,10 @@ export const useSuggestedQuestions = () => {
     setIsLoading(true);
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
+      count: props.numberOfSuggestions ?? 3,
       query,
     });
-    setSuggestedQuestions(queries.queries.splice(0, 3));
+    setSuggestedQuestions(queries.queries);
     setIsLoading(false);
   };
 
@@ -36,10 +37,11 @@ export const useSuggestedQuestions = () => {
     const timeoutId = setTimeout(async () => {
       const queries = await getSuggestedQuestions({
         trieve: trieveSDK,
+        count: props.numberOfSuggestions ?? 3,
         abortController,
         query,
       });
-      setSuggestedQuestions(queries.queries.splice(0, 3));
+      setSuggestedQuestions(queries.queries);
       setIsLoading(false);
     });
 

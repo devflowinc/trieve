@@ -42,7 +42,7 @@ export const ChatMode = () => {
       {(props.inline) && (currentQuestion || messages.length) ? <div className="inline-chat-header">
         <div>
           <p>
-            Trieve modal header
+            {props.inlineHeader}
           </p>
         </div>
          <button

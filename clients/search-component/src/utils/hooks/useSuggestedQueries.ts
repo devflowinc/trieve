@@ -20,9 +20,10 @@ export const useSuggestedQueries = () => {
     const queries = await getSuggestedQueries({
       trieve: trieveSDK,
       query,
+      count: props.numberOfSuggestions ?? 3,
       abortController,
     });
-    setSuggestedQueries(queries.queries.splice(0, 3));
+    setSuggestedQueries(queries.queries);
     isFetching.current = false;
     setIsLoading(false);
   };

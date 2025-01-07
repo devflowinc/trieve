@@ -16,7 +16,7 @@ export const SuggestedQuestions = () => {
 
   return (
     <>
-      <div>
+      <div className={props.inline ? "inline-suggestions-wrapper": ""}>
         {!props.inline &&
         <p className="header">
           <button
