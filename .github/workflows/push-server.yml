@@ -49,6 +49,7 @@ jobs:
             trieve/server
           tags: |
             type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
