@@ -79,6 +79,23 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
       }
     });
 
+    // If the dataset has a url in crawl_options, automatically fill out a favicon.ico.
+    createEffect(() => {
+      if (
+        crawlSettingsQuery.data?.site_url &&
+        !extraParams.brandLogoImgSrcUrl
+      ) {
+        const stripTrailingSlash = (str: string) => {
+          return str.endsWith("/") ? str.slice(0, -1) : str;
+        };
+
+        setExtraParams(
+          "brandLogoImgSrcUrl",
+          stripTrailingSlash(crawlSettingsQuery.data.site_url) + "/favicon.ico",
+        );
+      }
+    });
+
     // manually set the array for rolemessages to simplify logic
     // context blocks until it's set
     createEffect(() => {
