@@ -61,928 +61,894 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
 
-  # ingest_worker:
-  #   name: Push Ingest image
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/ingest
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.ingestion-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # delete_worker:
-  #   name: Push Delete worker
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/delete_worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.delete-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  #
-  # csv_jsonl_worker:
-  #   name: Push CSV JSONL worker Image
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/csv-jsonl-worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.csv-jsonl-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # file_worker:
-  #   name: Push File Worker image
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/file_worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.file-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # group_worker:
-  #   name: Push Group worker
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/group_worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.group-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # clone_qdrant:
-  #   name: Push Clone Qdrant script
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/clone_qdrant
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.clone-qdrant
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # sync_qdrant:
-  #   name: Push Sync Qdrant script
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/sync_qdrant
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.sync-qdrant
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # queue_bm25:
-  #   name: Push Queue BM25 Script
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/queue-bm25-migration
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.queue-bm25
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # reindex-worker:
-  #   name: Push Reindex Worker
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/reindex-worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.reindex-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # word-id-cronjob:
-  #   name: Push Word ID cronjob
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/word-id-cronjob
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.word-id-cronjob
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # word-worker:
-  #   name: Push Word Worker
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/word-worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.word-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # bktree-worker:
-  #   name: Push BK-Tree Worker
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/bktree-worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.bktree-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # crawl-worker:
-  #   name: Push Crawl Worker
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/crawl-worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.crawl-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # crawl-cron-job:
-  #   name: Push Crawl Cron Job
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/crawl-cron-job
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.crawl-cron-job
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # dittofeed-sync-worker:
-  #   name: Push Dittofeed Sync Worker
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/dittofeed-sync-worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.dittofeed-sync-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  # video-worker:
-  #   name: Push Video worker
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     # - name: Set up QEMU
-  #     #   uses: docker/setup-qemu-action@v3
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/video-worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.video-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
-  #
-  #
-  # pagefind-worker:
-  #   name: Push Pagefind Index worker
-  #   runs-on: ${{ matrix.runner }}
-  #   strategy:
-  #     matrix:
-  #       runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
-  #       platform: [linux/amd64, linux/arm64]
-  #       include:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/amd64
-  #           tag: latest
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #           tag: latest-arm
-  #           suffix: -arm
-  #       exclude:
-  #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: linux/arm64
-  #         - runner: blacksmith-8vcpu-ubuntu-2204-arm
-  #           platform: linux/amd64
-  #   steps:
-  #     - name: Checkout the repo
-  #       uses: actions/checkout@v4
-  #
-  #     # - name: Set up QEMU
-  #     #   uses: docker/setup-qemu-action@v3
-  #
-  #     - name: Setup buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #
-  #     - name: Docker meta
-  #       id: meta
-  #       uses: docker/metadata-action@v5
-  #       with:
-  #         # list of Docker images to use as base name for tags
-  #         images: |
-  #           trieve/pagefind-worker
-  #         tags: |
-  #           type=raw,tag=${{matrix.tag}}
-  #           type=sha,suffix=${{matrix.suffix}}
-  #
-  #     - name: Build and push Docker image
-  #       uses: useblacksmith/build-push-action@v1.0.0-beta
-  #       with:
-  #         platforms: ${{ matrix.platform }}
-  #         context: server/
-  #         file: ./server/Dockerfile.pagefind-worker
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
+  ingest_worker:
+    name: Push Ingest image
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/ingest
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.ingestion-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  delete_worker:
+    name: Push Delete worker
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/delete_worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.delete-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+
+  csv_jsonl_worker:
+    name: Push CSV JSONL worker Image
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/csv-jsonl-worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.csv-jsonl-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  file_worker:
+    name: Push File Worker image
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/file_worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.file-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  group_worker:
+    name: Push Group worker
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/group_worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.group-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  clone_qdrant:
+    name: Push Clone Qdrant script
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/clone_qdrant
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.clone-qdrant
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  sync_qdrant:
+    name: Push Sync Qdrant script
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/sync_qdrant
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.sync-qdrant
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  queue_bm25:
+    name: Push Queue BM25 Script
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/queue-bm25-migration
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.queue-bm25
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  reindex-worker:
+    name: Push Reindex Worker
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/reindex-worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.reindex-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  word-id-cronjob:
+    name: Push Word ID cronjob
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/word-id-cronjob
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.word-id-cronjob
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  word-worker:
+    name: Push Word Worker
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/word-worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.word-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  bktree-worker:
+    name: Push BK-Tree Worker
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/bktree-worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.bktree-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  crawl-worker:
+    name: Push Crawl Worker
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/crawl-worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.crawl-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  crawl-cron-job:
+    name: Push Crawl Cron Job
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/crawl-cron-job
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.crawl-cron-job
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  dittofeed-sync-worker:
+    name: Push Dittofeed Sync Worker
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/dittofeed-sync-worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.dittofeed-sync-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  video-worker:
+    name: Push Video worker
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v3
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/video-worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.video-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+
+  pagefind-worker:
+    name: Push Pagefind Index worker
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
+        exclude:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v3
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/pagefind-worker
+          tags: |
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
+
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.pagefind-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
