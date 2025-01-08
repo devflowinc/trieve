@@ -377,6 +377,14 @@ async fn upload_file(
         None
     };
 
+    if file_worker_message
+        .upload_file_data
+        .create_chunks
+        .is_some_and(|create_chunks_bool| !create_chunks_bool)
+    {
+        return Ok(None);
+    }
+
     if file_name.ends_with(".pdf")
         && file_worker_message
             .upload_file_data
@@ -627,14 +635,6 @@ async fn upload_file(
         return Err(ServiceError::BadRequest(
             "Could not parse file with tika".to_string(),
         ));
-    }
-
-    if file_worker_message
-        .upload_file_data
-        .create_chunks
-        .is_some_and(|create_chunks_bool| !create_chunks_bool)
-    {
-        return Ok(None);
     }
 
     let dataset_org_plan_sub = get_dataset_and_organization_from_dataset_id_query(
