@@ -13,9 +13,7 @@ use crate::{
 /// This endpoint creates a schema in the Batch ETL system. The schema is used to define the structure of the data that will be ingested into the system.
 #[utoipa::path(
     post,
-    path = "/schema",
     tag = "Schema",
-    context_path = "/api",
     request_body(content = CreateSchemaRequest, description = "JSON request payload to create a new schema", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON response payload containing the created schema", body = Schema),
@@ -45,9 +43,8 @@ pub async fn create_schema(
 /// This endpoint retrieves a schema by its id.
 #[utoipa::path(
     get,
-    path = "/schema/{schema_id}",
+    path = "/{schema_id}",
     tag = "Schema",
-    context_path = "/api",
     params(
         ("schema_id" = String, Path, description = "The id of the schema you want to retrieve."),
     ),

@@ -13,12 +13,10 @@ CREATE TABLE IF NOT EXISTS jobs (
     id String,
     schema_id String,
     input_id String,
-    status String,
-    batch_id String,
-    output_id String,
+    webhook_url String,
     created_at DateTime,
     updated_at DateTime
-) ENGINE = ReplacingMergeTree(updated_at)
+) ENGINE = MergeTree()
 ORDER BY (schema_id, id)
 PARTITION BY
     (schema_id);
@@ -29,3 +27,16 @@ CREATE TABLE IF NOT EXISTS inputs (
     updated_at DateTime
 ) ENGINE = MergeTree()
 ORDER BY (id);
+
+CREATE TABLE IF NOT EXISTS batches (
+    batch_id String,
+    job_id String,
+    output_id String,
+    status String,
+    created_at DateTime,
+    updated_at DateTime
+) ENGINE = ReplacingMergeTree(updated_at)
+ORDER BY (job_id, batch_id)
+PARTITION BY
+    (job_id);
+    

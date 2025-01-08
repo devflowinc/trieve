@@ -935,3 +935,26 @@ pub async fn update_dataset_last_processed_query(
 
     Ok(())
 }
+
+pub async fn get_dataset_config_query(
+    dataset_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<DatasetConfiguration, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let dataset = datasets_columns::datasets
+        .filter(datasets_columns::id.eq(dataset_id))
+        .select(datasets_columns::server_configuration)
+        .first::<serde_json::Value>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?;
+
+    let dataset_config: DatasetConfiguration = DatasetConfiguration::from_json(dataset);
+
+    Ok(dataset_config)
+}

@@ -1,4 +1,5 @@
 use actix_web::{delete, get, post, web, HttpResponse};
+use broccoli_queue::queue::BroccoliQueue;
 
 use crate::{
     errors::ServiceError,
@@ -11,9 +12,7 @@ use crate::{
 /// This endpoint creates a job in the Batch ETL system and OpenAI. The job is used to define the work that will be done on the data ingested into the system.
 #[utoipa::path(
     post,
-    path = "/job",
     tag = "Job",
-    context_path = "/api",
     request_body(content = CreateJobRequest, description = "JSON request payload to create a new job", content_type = "application/json"),
     responses(
         (status = 200, description = "JSON response payload containing the created job", body = Job),
@@ -24,8 +23,14 @@ use crate::{
 pub async fn create_job(
     clickhouse_client: web::Data<clickhouse::Client>,
     job: web::Json<CreateJobRequest>,
+    broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let job = create_job_query(&job.into_inner(), &clickhouse_client).await?;
+    let job = create_job_query(
+        &job.into_inner(),
+        &clickhouse_client,
+        &broccoli_queue.into_inner(),
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().json(job))
 }
@@ -35,9 +40,8 @@ pub async fn create_job(
 /// This endpoint retrieves a job by its id.
 #[utoipa::path(
     get,
-    path = "/job/{job_id}",
+    path = "/{job_id}",
     tag = "Job",
-    context_path = "/api",
     params(
         ("job_id" = String, Path, description = "The id of the job you want to retrieve."),
     ),
@@ -63,9 +67,8 @@ pub async fn get_job(
 /// This endpoint cancels a job by its id.
 #[utoipa::path(
     delete,
-    path = "/job/{job_id}",
+    path = "/{job_id}",
     tag = "Job",
-    context_path = "/api",
     params(
         ("job_id" = String, Path, description = "The id of the job you want to cancel."),
     ),
@@ -91,14 +94,13 @@ pub async fn cancel_job(
 /// This endpoint retrieves the output of a job by its id. The output is a S3 signed URL to the data that was processed by the job.
 #[utoipa::path(
     get,
-    path = "/output/{job_id}",
+    path = "/{job_id}",
     tag = "Job",
-    context_path = "/api",
     params(
         ("job_id" = String, Path, description = "The id of the job you want to retrieve the output for."),
     ),
     responses(
-        (status = 200, description = "JSON response payload containing the output URL", body = String),
+        (status = 200, description = "JSON response payload containing the output URL(s). The values will be empty if the job has not finished yet", body = HashMap<String, String>),
         (status = 400, description = "Error typically due to deserialization issues", body = ServiceError),
     ),
 )]

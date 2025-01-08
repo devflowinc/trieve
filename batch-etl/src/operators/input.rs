@@ -20,8 +20,8 @@ pub async fn create_input_query(
 
     let bucket = get_aws_bucket()?;
 
-    let s3_put_url = if let Some(input_type) = &request.input {
-        match &input_type {
+    let s3_put_url = if let Some(input_type) = request.input.clone() {
+        match input_type {
             InputType::File(file_url) => {
                 let client = Client::new();
                 let response = client.get(file_url).send().await.map_err(|e| {
@@ -36,7 +36,28 @@ pub async fn create_input_query(
 
                 upload_to_s3(&bucket, format!("/inputs/{}.jsonl", input.id), &input_jsonl).await?;
             }
-            InputType::UnstructuredObjects(objects) => {
+            InputType::UnstructuredObjects(mut objects) => {
+                let exisiting_input = get_input_as_bytes_query(&input.id).await;
+                if let Ok(existing_input) = exisiting_input {
+                    let input_str = String::from_utf8(existing_input).map_err(|err| {
+                        log::error!("Failed to convert input to string: {:?}", err);
+                        ServiceError::InternalServerError(
+                            "Failed to convert input to string".to_string(),
+                        )
+                    })?;
+
+                    let existing_objects: Vec<serde_json::Value> = input_str
+                        .lines()
+                        .map(serde_json::from_str)
+                        .collect::<Result<_, _>>()
+                        .map_err(|err| {
+                            log::error!("Failed to parse JSONL: {:?}", err);
+                            ServiceError::InternalServerError("Failed to parse JSONL".to_string())
+                        })?;
+
+                    objects.extend(existing_objects);
+                }
+
                 let input_jsonl = objects
                     .iter()
                     .map(|obj| obj.to_string())

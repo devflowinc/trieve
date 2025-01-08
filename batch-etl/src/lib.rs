@@ -1,7 +1,9 @@
 use actix_web::{
+    middleware::Logger,
     web::{self, PayloadConfig},
     App, HttpServer,
 };
+use broccoli_queue::queue::BroccoliQueue;
 use chm::tools::migrations::{run_pending_migrations, SetupArgs};
 use errors::custom_json_error_handler;
 use routes::{
@@ -131,6 +133,17 @@ pub async fn main() -> std::io::Result<()> {
         .limit(134200000)
         .error_handler(custom_json_error_handler);
 
+    let broccoli_queue = BroccoliQueue::builder(redis_url)
+        .pool_connections(redis_connections.try_into().unwrap())
+        .build()
+        .await
+        .map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to create broccoli queue {:?}", e),
+            )
+        })?;
+
     HttpServer::new(move || {
         App::new()
             .into_utoipa_app()
@@ -139,6 +152,7 @@ pub async fn main() -> std::io::Result<()> {
             .app_data(json_cfg.clone())
             .app_data(web::Data::new(redis_pool.clone()))
             .app_data(web::Data::new(clickhouse_client.clone()))
+            .app_data(web::Data::new(broccoli_queue.clone()))
             .service(utoipa_actix_web::scope("/api/schema").configure(|config| {
                 config.service(create_schema).service(get_schema);
             }))
@@ -154,6 +168,13 @@ pub async fn main() -> std::io::Result<()> {
             }))
             .openapi_service(|api| Redoc::with_url("/redoc", api))
             .into_app()
+            .wrap(
+                // Set up logger, but avoid logging hot status endpoints
+                Logger::new("%r %s %b %{Referer}i %{User-Agent}i %T %{TR-Dataset}i")
+                    .exclude("/")
+                    .exclude("/api/health")
+                    .exclude("/metrics"),
+            )
     })
     .bind(("0.0.0.0", 8082))?
     .run()

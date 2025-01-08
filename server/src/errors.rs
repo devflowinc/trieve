@@ -2,6 +2,7 @@ use actix_web::{
     error::{JsonPayloadError, ResponseError},
     HttpResponse,
 };
+use broccoli_queue::error::BroccoliError;
 use derive_more::Display;
 use diesel::result::{DatabaseErrorKind, Error as DBError};
 use serde::{Deserialize, Serialize};
@@ -89,6 +90,12 @@ impl ResponseError for ServiceError {
                 })
             }
         }
+    }
+}
+
+impl From<ServiceError> for BroccoliError {
+    fn from(val: ServiceError) -> Self {
+        BroccoliError::Job(val.to_string())
     }
 }
 

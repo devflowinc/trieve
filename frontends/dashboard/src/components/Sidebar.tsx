@@ -22,7 +22,7 @@ import { FiExternalLink, FiTrash, FiShare2 } from "solid-icons/fi";
 import { UserContext } from "../contexts/UserContext";
 import { IconTypes } from "solid-icons";
 import { IoOptionsOutline } from "solid-icons/io";
-import { TbSparkles, TbTimelineEventText } from "solid-icons/tb";
+import { TbSparkles, TbTimelineEventText, TbTransform } from "solid-icons/tb";
 import { createSignal } from "solid-js";
 import NewDatasetModal from "../components/NewDatasetModal";
 import { ImNewspaper } from "solid-icons/im";
@@ -228,6 +228,12 @@ export const DashboardSidebar = () => {
               icon={FiShare2}
               href={`/dataset/${datasetId()}/public-page`}
               label="Demo Page"
+            />
+            <Link
+              isExternal={false}
+              icon={TbTransform}
+              href={`/dataset/${datasetId()}/batch-transform`}
+              label="Batch Transform"
             />
             <Link
               isExternal={false}

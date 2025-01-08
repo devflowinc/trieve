@@ -4353,6 +4353,61 @@
         ]
       }
     },
+    "/api/etl/create_job": {
+      "post": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Create ETL Job",
+        "description": "This endpoint is used to create a new ETL job for a dataset.",
+        "operationId": "create_etl_job",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to create a new ETL Job",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSchemaReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "ETL Job created successfully"
+          },
+          "400": {
+            "description": "Service error relating to creating the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/file": {
       "post": {
         "tags": [
@@ -9198,6 +9253,32 @@
           "time_stamp": "2021-01-01 00:00:00.000Z"
         }
       },
+      "CreateSchemaReqPayload": {
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "properties": {
+          "include_images": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "nullable": true
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "tag_enum": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        }
+      },
       "CreateSetupCheckoutSessionResPayload": {
         "type": "object",
         "required": [
@@ -10147,6 +10228,7 @@
           "chunk_action_failed",
           "chunk_updated",
           "bulk_chunks_deleted",
+          "chunk_update_failed",
           "dataset_delete_failed",
           "qdrant_upload_failed",
           "bulk_chunk_upload_failed",
@@ -10160,7 +10242,10 @@
           "csv_jsonl_processing_completed",
           "video_uploaded",
           "pagefind_indexing_started",
-          "pagefind_indexing_finished"
+          "pagefind_indexing_finished",
+          "etl_started",
+          "etl_completed",
+          "etl_failed"
         ]
       },
       "EventTypes": {
