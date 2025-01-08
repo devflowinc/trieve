@@ -159,6 +159,7 @@ export const FilterItem = (props: FilterItemProps) => {
         ids: null,
         tracking_ids: idFilterText(),
       } as HasIdFilter);
+      filterIsHasIdFilter(curFilter());
     } else {
       if (curFieldFilter?.match_all?.length) {
         setTempFilterMode("match_all");
@@ -717,7 +718,6 @@ export const FilterItem = (props: FilterItemProps) => {
               placeholder="h1, h2, h3"
               class="rounded-md border border-neutral-400 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
               onChange={(e) => {
-                console.log("setIdFilterText");
                 setIdFilterText(e.currentTarget.value.split(","));
               }}
               value={idFilterText()}
