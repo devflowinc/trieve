@@ -7319,7 +7319,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
         struct Helper {
             search_type: SearchMethod,
             extend_results: Option<bool>,
-            query: String,
+            query: SearchModalities,
             page_size: Option<u64>,
             filters: Option<ChunkFilter>,
             sort_options: Option<SortOptions>,

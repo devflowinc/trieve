@@ -14,6 +14,7 @@ import { ProductItem } from "./ProductItem";
 import { ProductGroupItem } from "./ProductGroupItem";
 import { PdfItem } from "./PdfItem";
 import { SparklesIcon } from "../icons";
+import { UploadImage } from "./UploadImage";
 
 export const SearchMode = () => {
   const {
@@ -36,7 +37,7 @@ export const SearchMode = () => {
 
   const getItemComponent = (
     result: ChunkWithHighlights | GroupChunk[],
-    index: number,
+    index: number
   ) => {
     const isChunk = isChunkWithHighlights(result);
 
@@ -110,7 +111,7 @@ export const SearchMode = () => {
   const resultsDisplay = useMemo(() => {
     if (results.length) {
       const comps = results.map((result, index) =>
-        getItemComponent(result, index),
+        getItemComponent(result, index)
       );
       return comps;
     } else {
@@ -185,6 +186,9 @@ export const SearchMode = () => {
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
+        </div>
+        <div>
+          <UploadImage />
         </div>
         {props.suggestedQueries && (!query || (query && !results.length)) && (
           <div className={`suggested-queries-wrapper ${props.type}`}>

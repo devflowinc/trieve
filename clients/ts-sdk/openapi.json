@@ -6932,8 +6932,7 @@
             "minimum": 0
           },
           "query": {
-            "type": "string",
-            "description": "Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set."
+            "$ref": "#/components/schemas/SearchModalities"
           },
           "remove_stop_words": {
             "type": "boolean",

@@ -70,10 +70,11 @@ body {
     &.chat-modal-mobile {
       @apply flex flex-col top-0 sm:top-[calc(40%-30vh)] max-h-[100vh] w-full sm:w-[90vw] rounded-none sm:rounded-lg;
       &.trieve.popup-modal {
-        @apply pt-4 
+        @apply pt-4;
       }
 
-      &.docs, &.pdf {
+      &.docs,
+      &.pdf {
         @apply h-screen sm:h-auto;
       }
 
@@ -86,7 +87,8 @@ body {
       }
     }
 
-    .trieve-elements-docs, .trieve-elements-pdf {
+    .trieve-elements-docs,
+    .trieve-elements-pdf {
       @apply scroll-smooth;
 
       .item-group-container {
@@ -153,7 +155,8 @@ body {
         @apply top-2.5 right-4 z-30;
       }
 
-      &.docs.chat, &.pdf.chat {
+      &.docs.chat,
+      &.pdf.chat {
         @apply top-0;
 
         right: calc(max(calc(50% - 39.85rem), 4rem) + 0.25rem);
@@ -440,7 +443,6 @@ body {
       .user {
         @apply flex flex-row-reverse gap-1 text-center items-start;
 
-
         .user-text {
           @apply text-left px-5 py-2 rounded-xl;
 
@@ -582,7 +584,6 @@ body {
           @apply pb-6;
         }
       }
-
     }
     @media (max-height: 600px) {
       .chat-outer-wrapper {
@@ -770,7 +771,8 @@ body {
       @apply sticky top-0 z-10 flex flex-col gap-2 rounded-lg;
       background-color: var(--bg-color);
 
-      &.docs, &.pdf {
+      &.docs,
+      &.pdf {
         @apply m-2;
       }
 
@@ -814,7 +816,7 @@ body {
       }
 
       &.inline-input {
-        @apply pl-2; 
+        @apply pl-2;
 
         &:focus {
           background-color: #fff;
@@ -1244,7 +1246,7 @@ body {
     #trieve-search-modal.ecommerce {
       @apply top-1 max-w-[90rem] w-[95vw] pt-10 px-4 rounded-lg;
       &.trieve-popup-modal {
-        @apply max-w-[90rem] pt-10 px-4 ;
+        @apply max-w-[90rem] pt-10 px-4;
       }
     }
 
