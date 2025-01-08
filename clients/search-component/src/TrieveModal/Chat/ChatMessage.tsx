@@ -34,30 +34,30 @@ export const ChatMessage = ({
           </div>
         </div>
       ) : (
-        <div className={props.inline ? "": "message-wrapper"} key={idx}>
-          {!props.inline && 
-          <span className="ai-avatar assistant">
-            {props.brandLogoImgSrcUrl ? (
-              <img
-                src={props.brandLogoImgSrcUrl}
-                alt={props.brandName || "Brand logo"}
-              />
-            ) : (
-              <SparklesIcon strokeWidth={1.75} />
-            )}
-            <p
-              className="tag"
-              style={{
-                backgroundColor: props.brandColor
-                  ? `${props.brandColor}18`
-                  : "#CB53EB18",
-                color: props.brandColor ?? "#CB53EB",
-              }}
-            >
-              AI assistant
-            </p>
-          </span>
-            }
+        <div className={props.inline ? "" : "message-wrapper"} key={idx}>
+          {!props.inline && (
+            <span className="ai-avatar assistant">
+              {props.brandLogoImgSrcUrl ? (
+                <img
+                  src={props.brandLogoImgSrcUrl}
+                  alt={props.brandName || "Brand logo"}
+                />
+              ) : (
+                <SparklesIcon strokeWidth={1.75} />
+              )}
+              <p
+                className="tag"
+                style={{
+                  backgroundColor: props.brandColor
+                    ? `${props.brandColor}18`
+                    : "#CB53EB18",
+                  color: props.brandColor ?? "#CB53EB",
+                }}
+              >
+                AI assistant
+              </p>
+            </span>
+          )}
           <Message key={idx} message={message} idx={idx} />
         </div>
       )}
@@ -111,12 +111,14 @@ export const Message = ({
         <img
           src={item.imageUrl ?? ""}
           alt={item.title}
-          className="ecommerce-featured-image-chat"
+          className="ecommerce-featured-image-chat mb-1 max-h-48 aspect-auto mx-auto"
         />
-        <div className="ecomm-details">
-          <p className="ecomm-item-title">{item.title}</p>
+        <div className="ecomm-details flex gap-1 items-center text-center flex-col">
+          <p className="ecomm-item-title p-0 mb-0.5 line-clamp-2">
+            {item.title}
+          </p>
           <p
-            className="ecomm-item-price"
+            className="ecomm-item-price p-0 mb-0.5"
             style={{
               color: props.brandColor ?? "#CB53EB",
             }}
@@ -169,7 +171,7 @@ export const Message = ({
     ));
 
   return (
-    <div className="super-message-wrapper">
+    <div className="overflow-hidden">
       {message.text === "Loading..." ? (
         <div
           className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
@@ -181,22 +183,26 @@ export const Message = ({
         <div
           className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
         >
-          {message.additional && props.type === "ecommerce" && !props.inline &&(
-            <div className="additional-image-links">
-              <Carousel>{ecommerceItems}</Carousel>
-            </div>
-          )}
+          {message.additional &&
+            props.type === "ecommerce" &&
+            !props.inline && (
+              <div className="additional-image-links gap-2 mt-4 mb-4 flex flex-row">
+                <Carousel>{ecommerceItems}</Carousel>
+              </div>
+            )}
           {youtubeItems && youtubeItems.length > 0 && !props.inline && (
             <div className="additional-image-links">
               <Carousel>{youtubeItems}</Carousel>
             </div>
           )}
           {pdfItems && pdfItems.length > 0 && (
-            <div className="pdf-chat-items">{pdfItems}</div>
+            <div className="pdf-chat-items flex gap-2 overflow-x-scroll max-w-full">
+              {pdfItems}
+            </div>
           )}
           {message.text.length > 0 ? (
             <Markdown
-              className="code-markdown"
+              className="code-markdown max-w-[45vw]"
               components={{
                 code: (props) => {
                   const { children } = props || {};
@@ -257,55 +263,60 @@ export const Message = ({
                   </div>
                 )
               : null}
-              {props.followupQuestions && 
-                <FollowupQueries /> }
-            {isDoneReading && <div className="feedback-wrapper">
-              <span className="spacer"></span>
-              <div className="feedback-icons">
-                {copied ? (
-                  <span>
-                    <i className="fa-regular fa-circle-check"></i>
-                  </span>
-                ) : (
+            {props.followupQuestions && <FollowupQueries />}
+            {isDoneReading && (
+              <div className="feedback-wrapper flex justify-between my-4">
+                <span className="spacer"></span>
+                <div className="feedback-icons flex space-x-2">
+                  {copied ? (
+                    <span>
+                      <i className="fa-regular fa-circle-check"></i>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        void navigator.clipboard
+                          .writeText(message.text)
+                          .then(() => {
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 500);
+                          });
+                      }}
+                    >
+                      <i className="fa-regular fa-copy"></i>
+                    </button>
+                  )}
                   <button
+                    className={
+                      positive != null && positive ? "opacity-100" : ""
+                    }
                     onClick={() => {
-                      void navigator.clipboard
-                        .writeText(message.text)
-                        .then(() => {
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 500);
-                        });
+                      rateChatCompletion(true, message.queryId);
+                      setPositive((prev) => {
+                        if (prev === true) return null;
+                        return true;
+                      });
                     }}
                   >
-                    <i className="fa-regular fa-copy"></i>
+                    <i className="fa-regular fa-thumbs-up"></i>
                   </button>
-                )}
-                <button
-                  className={positive != null && positive ? "icon-darken" : ""}
-                  onClick={() => {
-                    rateChatCompletion(true, message.queryId);
-                    setPositive((prev) => {
-                      if (prev === true) return null;
-                      return true;
-                    });
-                  }}
-                >
-                  <i className="fa-regular fa-thumbs-up"></i>
-                </button>
-                <button
-                  className={positive != null && !positive ? "icon-darken" : ""}
-                  onClick={() => {
-                    rateChatCompletion(false, message.queryId);
-                    setPositive((prev) => {
-                      if (prev === false) return null;
-                      return false;
-                    });
-                  }}
-                >
-                  <i className="fa-regular fa-thumbs-down"></i>
-                </button>
+                  <button
+                    className={
+                      positive != null && !positive ? "icon-darken" : ""
+                    }
+                    onClick={() => {
+                      rateChatCompletion(false, message.queryId);
+                      setPositive((prev) => {
+                        if (prev === false) return null;
+                        return false;
+                      });
+                    }}
+                  >
+                    <i className="fa-regular fa-thumbs-down"></i>
+                  </button>
+                </div>
               </div>
-            </div>}
+            )}
           </div>
           {props.followupQuestions && <FollowupQueries />}
         </div>

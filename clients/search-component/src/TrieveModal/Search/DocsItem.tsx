@@ -35,7 +35,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
   const chunkHtmlHeadingsDiv = document.createElement("div");
   chunkHtmlHeadingsDiv.innerHTML = item.chunk.chunk_html || "";
   const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-    "h1, h2, h3, h4, h5, h6"
+    "h1, h2, h3, h4, h5, h6",
   );
 
   const $firstHeading = chunkHtmlHeadings[0] ?? document.createElement("h1");
@@ -83,7 +83,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
     case "DELETE":
       title = title.replace(
         "DELETE",
-        '<span class="delete-method">DELETE</span>'
+        '<span class="delete-method">DELETE</span>',
       );
       break;
     case "PATCH":
@@ -102,13 +102,13 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
         .concat(
           item.chunk.metadata?.title ||
             item.chunk.metadata.summary ||
-            urlElements.slice(-1)[0]
+            urlElements.slice(-1)[0],
         )
         .map((word) =>
           word
             .split(" ")
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-            .join(" ")
+            .join(" "),
         )
         .join(" > ");
     } else {
@@ -118,7 +118,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
 
   const onResultClick = async (
     chunk: Chunk & { position: number },
-    requestID: string
+    requestID: string,
   ) => {
     if (props.onResultClick) {
       props.onResultClick(chunk);
@@ -151,7 +151,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
               ...item.chunk,
               position: index,
             },
-            requestID
+            requestID,
           )
         }
         onMouseEnter={() => {

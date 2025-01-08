@@ -25,6 +25,7 @@ export default {
       ),
     }),
   ],
+  important: "#trieve-search-modal",
   theme: {
     fontFamily: {
       sans: ["Maven Pro", ...defaultTheme.fontFamily.sans],

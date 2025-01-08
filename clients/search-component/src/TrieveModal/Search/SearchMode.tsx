@@ -14,6 +14,7 @@ import { ProductItem } from "./ProductItem";
 import { ProductGroupItem } from "./ProductGroupItem";
 import { PdfItem } from "./PdfItem";
 import { SparklesIcon } from "../icons";
+import { cn } from "../../utils/styles";
 
 export const SearchMode = () => {
   const {
@@ -142,8 +143,13 @@ export const SearchMode = () => {
         </svg>
         <span>Close</span>
       </div>
-      <div className={`input-wrapper ${props.type}`}>
-        <div className="input-flex">
+      <div
+        className={cn(
+          "input-wrapper sticky top-0 z-10 flex flex-col gap-2 rounded-lg",
+          props.type === "ecommerce" && "max-w-7xl mx-auto",
+        )}
+      >
+        <div className="input-flex flex items-center rounded-lg">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -164,12 +170,18 @@ export const SearchMode = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={props.placeholder || "Search for anything"}
-            className={`search-input ${props.type}`}
+            className={cn(
+              "search-input pr-8",
+              props.type === "ecommerce" && "rounded-lg",
+            )}
           />
 
-          <button className="clear-query" onClick={() => setQuery("")}>
+          <button
+            className="clear-query flex items-center justify-end mt-2 absolute top-1.5 right-2 z-30 font-medium"
+            onClick={() => setQuery("")}
+          >
             <svg
-              className="clear-query-icon"
+              className="clear-query-icon w-5 h-5 fill-current"
               xmlns="http://www.w3.org/2000/svg"
               width="24"
               height="24"
@@ -187,19 +199,24 @@ export const SearchMode = () => {
           </button>
         </div>
         {props.suggestedQueries && (!query || (query && !results.length)) && (
-          <div className={`suggested-queries-wrapper ${props.type}`}>
+          <div
+            className={cn(
+              "suggested-queries-wrapper flex gap-2 items-center flex-wrap mb-2",
+              props.type === "ecommerce" && "pl-0",
+            )}
+          >
             <>
               <button
                 onClick={() => getQueries(new AbortController())}
                 disabled={isLoadingSuggestedQueries}
-                className="suggested-query"
+                className="suggested-query inline-flex items-center rounded-md px-2 py-1 text-xs text-left"
                 title="Refresh suggested queries"
               >
                 <i className="fa-solid fa-arrow-rotate-right"></i>
               </button>
               <p>Suggested Queries: </p>
               {!suggestedQueries.length && (
-                <p className="suggested-query empty-state-loading">
+                <p className="suggested-query inline-flex items-center rounded-md px-2 py-1 text-xs text-left empty-state-loading">
                   Loading random query suggestions...
                 </p>
               )}
@@ -210,7 +227,7 @@ export const SearchMode = () => {
                   <button
                     onClick={() => setQuery(q)}
                     key={q}
-                    className={`suggested-query${
+                    className={`suggested-query inline-flex items-center rounded-md px-2 py-1 text-xs text-left empty-state-loading ${
                       isLoadingSuggestedQueries ? " loading" : ""
                     }`}
                   >

@@ -91,7 +91,7 @@ export const PdfItem = (props: Props) => {
           });
         }
       }}
-      className="pdf-item"
+      className="pdf-item rounded-md p-2 hover:bg-neutral-100"
     >
       {presigned && (
         <div className="max-w-[400px]">
@@ -113,8 +113,8 @@ export const PdfItem = (props: Props) => {
             searchFor={toHighlight}
             url={presigned}
           />
-          <div className="pdf-result-page">
-            <div className="pdf-result-filename">
+          <div className="pdf-result-page text-sm opacity-70 flex gap-2">
+            <div className="pdf-result-filename text-sm opacity-80 flex gap-2">
               {props.item.chunk.metadata.file_name}
             </div>
             Page {props.item.chunk.metadata.page_num}

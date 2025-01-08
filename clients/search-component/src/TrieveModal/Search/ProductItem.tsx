@@ -147,9 +147,9 @@ export const ProductItem = ({
       >
         <div>
           {item.chunk.image_urls?.length && item.chunk.image_urls[0] ? (
-            <div className="ecommerce-featured-image">
+            <div className="ecommerce-featured-image w-full max-h-48 h-48 flex justify-center items-center shrink-0 overflow-hidden rounded-lg">
               {!imageLoaded ? (
-                <div className="img-placeholder"></div>
+                <div className="img-placeholder h-full w-full bg-gray-200 animate-pulse"></div>
               ) : (
                 <img src={shownImage} />
               )}

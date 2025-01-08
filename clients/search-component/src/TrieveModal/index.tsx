@@ -216,7 +216,7 @@ const Modal = () => {
               !props.inline &&
               !fullscreenPdfState && <ModeSwitch />}
             <div
-              className="search-container"
+              className="search-container rounded-lg"
               style={{
                 display:
                   mode === "search" && !fullscreenPdfState ? "block" : "none",
@@ -226,7 +226,7 @@ const Modal = () => {
             </div>
             <div
               className={
-                mode === "chat" && !fullscreenPdfState ? " chat-container" : " "
+                mode === "chat" && !fullscreenPdfState ? " h-full" : " "
               }
               style={{
                 display:
