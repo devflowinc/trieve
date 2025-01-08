@@ -24,7 +24,7 @@ jobs:
             tag: latest
             suffix: ""
           - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/arm64
             tag: latest-arm
             suffix: -arm
     steps:
@@ -73,7 +73,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -127,7 +127,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -182,7 +182,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -236,7 +236,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -290,7 +290,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -344,7 +344,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -398,7 +398,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -452,7 +452,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -506,7 +506,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -560,7 +560,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -614,7 +614,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -668,7 +668,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -722,7 +722,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -776,7 +776,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -830,7 +830,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -884,7 +884,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:
@@ -942,7 +942,7 @@ jobs:
   #           platform: linux/amd64
   #           tag: latest
   #         - runner: blacksmith-8vcpu-ubuntu-2204
-  #           platform: blacksmith-8vcpu-ubuntu-2204-arm
+  #           platform: linux/arm64
   #           tag: latest-arm
   #           suffix: -arm
   #       exclude:

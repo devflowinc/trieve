@@ -30,7 +30,7 @@ jobs:
             platform: linux/amd64
             tag: latest
           - runner: blacksmith-2vcpu-ubuntu-2204
-            platform: blacksmith-2vcpu-ubuntu-2204-arm
+            platform: linux/arm64
             tag: latest-arm
             suffix: -arm
         exclude:
@@ -87,7 +87,7 @@ jobs:
             platform: linux/amd64
             tag: latest
           - runner: blacksmith-2vcpu-ubuntu-2204
-            platform: blacksmith-2vcpu-ubuntu-2204-arm
+            platform: linux/arm64
             tag: latest-arm
             suffix: -arm
         exclude:
@@ -144,7 +144,7 @@ jobs:
             platform: linux/amd64
             tag: latest
           - runner: blacksmith-2vcpu-ubuntu-2204
-            platform: blacksmith-2vcpu-ubuntu-2204-arm
+            platform: linux/arm64
             tag: latest-arm
             suffix: -arm
         exclude:
