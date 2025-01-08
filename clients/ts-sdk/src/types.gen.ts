@@ -839,6 +839,13 @@ export type CreatePresignedUrlForCsvJsonlReqPayload = {
     upsert_by_tracking_id?: (boolean) | null;
 };
 
+export type CreateSchemaReqPayload = {
+    include_images?: (boolean) | null;
+    model?: (string) | null;
+    prompt: string;
+    tag_enum?: Array<(string)> | null;
+};
+
 export type CreateSetupCheckoutSessionResPayload = {
     url: string;
 };
@@ -1249,7 +1256,7 @@ export type EventReturn = {
     page_count: number;
 };
 
-export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started' | 'csv_jsonl_processing_failed' | 'csv_jsonl_processing_checkpoint' | 'csv_jsonl_processing_completed' | 'video_uploaded' | 'pagefind_indexing_started' | 'pagefind_indexing_finished';
+export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'chunk_update_failed' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started' | 'csv_jsonl_processing_failed' | 'csv_jsonl_processing_checkpoint' | 'csv_jsonl_processing_completed' | 'video_uploaded' | 'pagefind_indexing_started' | 'pagefind_indexing_finished' | 'etl_started' | 'etl_completed' | 'etl_failed';
 
 export type EventTypes = {
     /**
@@ -4388,6 +4395,19 @@ export type DeleteDatasetData = {
 
 export type DeleteDatasetResponse = (void);
 
+export type CreateEtlJobData = {
+    /**
+     * JSON request payload to create a new ETL Job
+     */
+    requestBody: CreateSchemaReqPayload;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type CreateEtlJobResponse = (void);
+
 export type UploadFileHandlerData = {
     /**
      * JSON request payload to upload a file
@@ -5903,6 +5923,21 @@ export type $OpenApiTs = {
                  * Dataset not found
                  */
                 404: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/etl/create_job': {
+        post: {
+            req: CreateEtlJobData;
+            res: {
+                /**
+                 * ETL Job created successfully
+                 */
+                204: void;
+                /**
+                 * Service error relating to creating the dataset
+                 */
+                400: ErrorResponseBody;
             };
         };
     };

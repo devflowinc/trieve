@@ -34,7 +34,7 @@ pub struct CreateInputRequest {
     pub input: Option<InputType>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 #[serde(untagged)]
 /// Create inputs to pass into jobs
 pub enum InputType {
@@ -65,7 +65,7 @@ pub struct CreateInputResponse {
     pub s3_put_url: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct CreateJobRequest {
     /// id of the input.
     pub input_id: String,
@@ -73,10 +73,26 @@ pub struct CreateJobRequest {
     pub schema_id: String,
     /// Model to use for the input
     pub model: Option<String>,
+    /// Url to call when the job is done
+    pub webhook_url: Option<String>,
+    /// Image options to use for the input
+    pub image_options: Option<ImageOptions>,
+    /// Id to use for the job. If none is provided, the system will generate a job id.
+    pub job_id: Option<String>,
+    /// Which key to use from the input that contains the custom id to use. If none is provided, the system will generate a custom id.
+    pub custom_id: Option<String>,
     /// Max tokens to generate
     pub max_tokens: Option<u32>,
     /// Pass your custom prompt to the system. If none is provided, the system will use the default prompt.
     pub system_prompt: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct ImageOptions {
+    /// If true, the API will look for a images_url array in the input and use the images in the array as the input to the model.
+    pub use_images: bool,
+    /// What key to look for the images in the input
+    pub image_key: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row, Clone)]
@@ -87,12 +103,26 @@ pub struct Job {
     pub input_id: String,
     /// id of the schema.
     pub schema_id: String,
-    /// Status of the job
-    pub status: String,
-    /// OpenAI batch job id
+    /// Url to call when the job is done
+    pub webhook_url: String,
+    /// Created at timestamp
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+    /// Updated at timestamp
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Row, Clone)]
+pub struct ClickhouseBatch {
+    /// Unique identifier of the batch
     pub batch_id: String,
-    /// Output of the job
+    /// id of the job.
+    pub job_id: String,
+    /// id of the output.
     pub output_id: String,
+    /// Status of the batch
+    pub status: String,
     /// Created at timestamp
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
@@ -107,4 +137,18 @@ pub struct OpenAIBatchInput {
     pub method: String,
     pub url: String,
     pub body: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateJobMessage {
+    pub payload: CreateJobRequest,
+    pub job_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct GetJobResponse {
+    /// Overarching Job
+    pub job: Job,
+    /// Batches of the job
+    pub batches: Vec<ClickhouseBatch>,
 }

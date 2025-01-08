@@ -8,7 +8,7 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -18,8 +18,8 @@ services:
   s3:
     image: minio/minio:RELEASE.2023-09-27T15-22-50Z
     ports:
-      - 9000:9000
-      - 42625:42625
+      - 9004:9000
+      - 42626:42625
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
@@ -64,9 +64,9 @@ services:
     volumes:
       - clickhouse-data:/var/lib/clickhouse
     ports:
-      - "8123:8123"
-      - "9001:9000"
-      - "9009:9009"
+      - "8124:8123"
+      - "9002:9000"
+      - "9010:9009"
     networks:
       - app-network
 

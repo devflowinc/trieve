@@ -2055,6 +2055,11 @@ pub enum EventType {
     ChunkUpdated { chunk_id: uuid::Uuid },
     #[display(fmt = "bulk_chunks_deleted")]
     BulkChunksDeleted { message: String },
+    #[display(fmt = "chunk_update_failed")]
+    ChunkUpdateFailed {
+        chunk_id: uuid::Uuid,
+        message: String,
+    },
     #[display(fmt = "dataset_delete_failed")]
     DatasetDeleteFailed { error: String },
     #[display(fmt = "bulk_chunk_upload_failed")]
@@ -2105,6 +2110,12 @@ pub enum EventType {
     PagefindIndexingStarted,
     #[display(fmt = "pagefind_indexing_finished")]
     PagefindIndexingFinished { total_files: usize },
+    #[display(fmt = "etl_started")]
+    EtlStarted,
+    #[display(fmt = "etl_completed")]
+    EtlCompleted,
+    #[display(fmt = "etl_failed")]
+    EtlFailed { error: String },
 }
 
 impl EventType {
@@ -2129,6 +2140,10 @@ impl EventType {
             EventTypeRequest::VideoUploaded,
             EventTypeRequest::PagefindIndexingStarted,
             EventTypeRequest::PagefindIndexingFinished,
+            EventTypeRequest::EtlStarted,
+            EventTypeRequest::EtlCompleted,
+            EventTypeRequest::EtlFailed,
+            EventTypeRequest::ChunkUpdateFailed,
         ]
     }
 }
@@ -6691,6 +6706,8 @@ pub enum EventTypeRequest {
     ChunkUpdated,
     #[display(fmt = "bulk_chunks_deleted")]
     BulkChunksDeleted,
+    #[display(fmt = "chunk_update_failed")]
+    ChunkUpdateFailed,
     #[display(fmt = "dataset_delete_failed")]
     DatasetDeleteFailed,
     #[display(fmt = "qdrant_index_failed")]
@@ -6719,6 +6736,12 @@ pub enum EventTypeRequest {
     PagefindIndexingStarted,
     #[display(fmt = "pagefind_indexing_finished")]
     PagefindIndexingFinished,
+    #[display(fmt = "etl_started")]
+    EtlStarted,
+    #[display(fmt = "etl_completed")]
+    EtlCompleted,
+    #[display(fmt = "etl_failed")]
+    EtlFailed,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

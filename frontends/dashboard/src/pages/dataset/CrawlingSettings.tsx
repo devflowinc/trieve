@@ -329,7 +329,6 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           />
         </div>
       </div>
-
       <div class="flex items-center gap-2 py-2 pt-4">
         <div class="flex items-center gap-2">
           <label class="block">Boost Titles</label>

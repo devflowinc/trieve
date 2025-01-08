@@ -31,6 +31,7 @@ use crate::operators::{chunk_operator::*, crawl_operator};
 use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
+use broccoli_queue::queue::BroccoliQueue;
 use chrono::NaiveDateTime;
 use crossbeam_channel::unbounded;
 use dateparser::DateTimeUtc;
@@ -668,9 +669,9 @@ pub struct UpdateIngestionMessage {
 pub async fn update_chunk(
     update_chunk_data: web::Json<UpdateChunkReqPayload>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let dataset_id = dataset_org_plan_sub.dataset.id;
     let chunk_id = update_chunk_data.chunk_id;
@@ -774,15 +775,8 @@ pub async fn update_chunk(
         semantic_boost: update_chunk_data.semantic_boost.clone(),
     };
 
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-    redis::cmd("lpush")
-        .arg("ingestion")
-        .arg(serde_json::to_string(&message)?)
-        .query_async::<_, ()>(&mut *redis_conn)
+    broccoli_queue
+        .publish("update_chunk_queue", &message, None)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -836,9 +830,9 @@ pub struct UpdateChunkByTrackingIdData {
 pub async fn update_chunk_by_tracking_id(
     update_chunk_data: web::Json<UpdateChunkByTrackingIdData>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<HttpResponse, actix_web::Error> {
     if update_chunk_data.tracking_id.is_empty() {
         return Err(ServiceError::BadRequest(
@@ -920,15 +914,8 @@ pub async fn update_chunk_by_tracking_id(
         semantic_boost: None,
     };
 
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-    redis::cmd("lpush")
-        .arg("ingestion")
-        .arg(serde_json::to_string(&message)?)
-        .query_async::<_, ()>(&mut *redis_conn)
+    broccoli_queue
+        .publish("update_chunk_queue", &message, None)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 

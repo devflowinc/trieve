@@ -13,14 +13,12 @@ use trieve_server::data::models::{
 };
 use trieve_server::errors::ServiceError;
 use trieve_server::handlers::chunk_handler::{
-    BulkUploadIngestionMessage, FullTextBoost, SemanticBoost, UpdateIngestionMessage,
-    UploadIngestionMessage,
+    BulkUploadIngestionMessage, FullTextBoost, SemanticBoost, UploadIngestionMessage,
 };
-use trieve_server::handlers::group_handler::dataset_owns_group;
 use trieve_server::operators::chunk_operator::{
     bulk_insert_chunk_metadata_query, bulk_revert_insert_chunk_metadata_query,
     get_row_count_for_organization_id_query, insert_chunk_boost, insert_chunk_metadata_query,
-    update_chunk_boost_query, update_chunk_metadata_query, update_dataset_chunk_count,
+    update_dataset_chunk_count,
 };
 use trieve_server::operators::clickhouse_operator::{ClickHouseEvent, EventQueue};
 use trieve_server::operators::dataset_operator::{
@@ -30,22 +28,13 @@ use trieve_server::operators::group_operator::{
     create_groups_query, get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
 use trieve_server::operators::model_operator::{
-    get_bm25_embeddings, get_dense_vector, get_dense_vectors, get_sparse_vectors,
+    get_bm25_embeddings, get_dense_vectors, get_sparse_vectors,
 };
 use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
 };
-use trieve_server::operators::qdrant_operator::{
-    bulk_upsert_qdrant_points_query, update_qdrant_point_query,
-};
+use trieve_server::operators::qdrant_operator::bulk_upsert_qdrant_points_query;
 use trieve_server::{establish_connection, get_env};
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(untagged)]
-pub enum IngestionMessage {
-    BulkUpload(BulkUploadIngestionMessage),
-    Update(UpdateIngestionMessage),
-}
 
 fn main() {
     dotenvy::dotenv().ok();
@@ -207,27 +196,22 @@ async fn ingestion_worker(
             }
         };
 
-        let ingestion_message: IngestionMessage = match serde_json::from_str(&serialized_message) {
-            Ok(message) => message,
-            Err(err) => {
-                log::error!(
-                    "Failed to deserialize message, was not an IngestionMessage: {:?}",
-                    err
-                );
-                continue;
-            }
-        };
+        let ingestion_message: BulkUploadIngestionMessage =
+            match serde_json::from_str(&serialized_message) {
+                Ok(message) => message,
+                Err(err) => {
+                    log::error!(
+                        "Failed to deserialize message, was not an IngestionMessage: {:?}",
+                        err
+                    );
+                    continue;
+                }
+            };
 
         log::info!("Selecting dataset for ingestion message");
-        let dataset_result: Result<models::Dataset, ServiceError> = match ingestion_message.clone()
-        {
-            IngestionMessage::Update(payload) => {
-                get_dataset_by_id_query(payload.dataset_id, web_pool.clone()).await
-            }
-            IngestionMessage::BulkUpload(payload) => {
-                get_dataset_by_id_query(payload.dataset_id, web_pool.clone()).await
-            }
-        };
+        let dataset_result: Result<models::Dataset, ServiceError> =
+            get_dataset_by_id_query(ingestion_message.dataset_id, web_pool.clone()).await;
+
         let dataset = match dataset_result {
             Ok(dataset) => dataset,
             Err(err) => {
@@ -244,138 +228,97 @@ async fn ingestion_worker(
         };
         let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
 
-        match ingestion_message.clone() {
-            IngestionMessage::BulkUpload(payload) => {
-                log::info!(
-                    "Starting bulk upload of {} chunks for dataset_id: {:?}",
-                    payload.ingestion_messages.len(),
-                    payload.dataset_id
-                );
-                match bulk_upload_chunks(
-                    payload.clone(),
-                    dataset_config.clone(),
-                    web_pool.clone(),
-                    reqwest_client.clone(),
-                )
-                .await
-                {
-                    Ok(chunk_ids) => {
-                        log::info!("Uploaded {:} chunks", chunk_ids.len());
+        log::info!(
+            "Starting bulk upload of {} chunks for dataset_id: {:?}",
+            ingestion_message.ingestion_messages.len(),
+            ingestion_message.dataset_id
+        );
+        match bulk_upload_chunks(
+            ingestion_message.clone(),
+            dataset_config.clone(),
+            web_pool.clone(),
+            reqwest_client.clone(),
+        )
+        .await
+        {
+            Ok(chunk_ids) => {
+                log::info!("Uploaded {:} chunks", chunk_ids.len());
 
-                        if dataset_config.PAGEFIND_ENABLED {
-                            let pagefind_worker_message = PagefindIndexWorkerMessage {
-                                dataset_id: payload.dataset_id,
-                                created_at: chrono::Utc::now().naive_utc(),
-                                attempt_number: 0,
-                            };
+                if dataset_config.PAGEFIND_ENABLED {
+                    let pagefind_worker_message = PagefindIndexWorkerMessage {
+                        dataset_id: ingestion_message.dataset_id,
+                        created_at: chrono::Utc::now().naive_utc(),
+                        attempt_number: 0,
+                    };
 
-                            let serialized_message =
-                                serde_json::to_string(&pagefind_worker_message).map_err(|_| {
-                                    ServiceError::InternalServerError(
-                                        "Failed to serialize message".to_string(),
-                                    )
-                                });
+                    let serialized_message = serde_json::to_string(&pagefind_worker_message)
+                        .map_err(|_| {
+                            ServiceError::InternalServerError(
+                                "Failed to serialize message".to_string(),
+                            )
+                        });
 
-                            let maybe_redis = redis_pool
-                                .get()
+                    let maybe_redis = redis_pool
+                        .get()
+                        .await
+                        .map_err(|err| ServiceError::BadRequest(err.to_string()));
+
+                    let response: Result<(), ServiceError> =
+                        match (serialized_message.clone(), maybe_redis) {
+                            (Ok(message), Ok(mut redis_conn)) => redis::cmd("lpush")
+                                .arg("pagefind-index-ingestion")
+                                .arg(&message)
+                                .query_async::<_, ()>(&mut *redis_conn)
                                 .await
-                                .map_err(|err| ServiceError::BadRequest(err.to_string()));
-
-                            let response: Result<(), ServiceError> = match (serialized_message.clone(), maybe_redis) {
-                                (Ok(message), Ok(mut redis_conn)) => {
-                                    redis::cmd("lpush")
-                                        .arg("pagefind-index-ingestion")
-                                        .arg(&message)
-                                        .query_async::<_, ()>(&mut *redis_conn)
-                                        .await
-                                        .map_err(|err| ServiceError::BadRequest(err.to_string()))
-                                        .map(|_| ())
-                                },
-                                (Err(serial_error), Ok(_)) => {
-                                    Err(ServiceError::InternalServerError(format!("couldn't get serialized message {:?}", serial_error)))
-                                }
-                                (Ok(_), Err(redis_error)) => {
-                                    Err(ServiceError::InternalServerError(format!("couldn't get redis conn {:?}", redis_error)))
-                                }
-                                (Err(serial_error), Err(redis_error)) => {
-                                    Err(ServiceError::InternalServerError(format!("couldn't get serialize message and couldn't redis conn {:?} {:?}", serial_error, redis_error)))
-                                }
-                            };
-
-                            match response {
-                                Ok(_) => log::info!("Queue'd dataset for pagefind indexing"),
-                                Err(e) => log::error!("Failed to start pagefind indexing {:?}", e),
+                                .map_err(|err| ServiceError::BadRequest(err.to_string()))
+                                .map(|_| ()),
+                            (Err(serial_error), Ok(_)) => Err(ServiceError::InternalServerError(
+                                format!("couldn't get serialized message {:?}", serial_error),
+                            )),
+                            (Ok(_), Err(redis_error)) => Err(ServiceError::InternalServerError(
+                                format!("couldn't get redis conn {:?}", redis_error),
+                            )),
+                            (Err(serial_error), Err(redis_error)) => {
+                                Err(ServiceError::InternalServerError(format!(
+                                "couldn't get serialize message and couldn't redis conn {:?} {:?}",
+                                serial_error, redis_error
+                            )))
                             }
-                        }
+                        };
 
-                        event_queue
-                            .send(ClickHouseEvent::WorkerEvent(
-                                WorkerEvent::from_details(
-                                    payload.dataset_id,
-                                    models::EventType::ChunksUploaded { chunk_ids },
-                                )
-                                .into(),
-                            ))
-                            .await;
-
-                        let _ = redis::cmd("LREM")
-                            .arg("processing")
-                            .arg(1)
-                            .arg(serialized_message)
-                            .query_async::<redis::aio::MultiplexedConnection, usize>(
-                                &mut *redis_connection,
-                            )
-                            .await;
-                    }
-                    Err(err) => {
-                        log::error!("Failed to upload chunks: {:?}", err);
-
-                        let _ = readd_error_to_queue(
-                            ingestion_message,
-                            err,
-                            redis_pool.clone(),
-                            event_queue.clone(),
-                        )
-                        .await;
+                    match response {
+                        Ok(_) => log::info!("Queue'd dataset for pagefind indexing"),
+                        Err(e) => log::error!("Failed to start pagefind indexing {:?}", e),
                     }
                 }
+
+                event_queue
+                    .send(ClickHouseEvent::WorkerEvent(
+                        WorkerEvent::from_details(
+                            ingestion_message.dataset_id,
+                            models::EventType::ChunksUploaded { chunk_ids },
+                        )
+                        .into(),
+                    ))
+                    .await;
+
+                let _ = redis::cmd("LREM")
+                    .arg("processing")
+                    .arg(1)
+                    .arg(serialized_message)
+                    .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_connection)
+                    .await;
             }
+            Err(err) => {
+                log::error!("Failed to upload chunks: {:?}", err);
 
-            IngestionMessage::Update(payload) => {
-                match update_chunk(payload.clone(), web_pool.clone(), dataset_config).await {
-                    Ok(_) => {
-                        log::info!("Updated chunk: {:?}", payload.chunk_metadata.id);
-                        event_queue
-                            .send(ClickHouseEvent::WorkerEvent(
-                                WorkerEvent::from_details(
-                                    payload.dataset_id,
-                                    models::EventType::ChunkUpdated {
-                                        chunk_id: payload.chunk_metadata.id,
-                                    },
-                                )
-                                .into(),
-                            ))
-                            .await;
-
-                        let _ = redis::cmd("LREM")
-                            .arg("processing")
-                            .arg(1)
-                            .arg(serialized_message)
-                            .query_async::<redis::aio::MultiplexedConnection, usize>(
-                                &mut *redis_connection,
-                            )
-                            .await;
-                    }
-                    Err(err) => {
-                        let _ = readd_error_to_queue(
-                            ingestion_message,
-                            err,
-                            redis_pool.clone(),
-                            event_queue.clone(),
-                        )
-                        .await;
-                    }
-                }
+                let _ = readd_error_to_queue(
+                    ingestion_message,
+                    err,
+                    redis_pool.clone(),
+                    event_queue.clone(),
+                )
+                .await;
             }
         }
     }
@@ -1200,155 +1143,8 @@ async fn upload_chunk(
     Ok(chunk_metadata_id)
 }
 
-async fn update_chunk(
-    payload: UpdateIngestionMessage,
-    web_pool: actix_web::web::Data<models::Pool>,
-    dataset_config: DatasetConfiguration,
-) -> Result<(), ServiceError> {
-    let content = match payload.convert_html_to_text.unwrap_or(true) {
-        true => convert_html_to_text(
-            &(payload
-                .chunk_metadata
-                .chunk_html
-                .clone()
-                .unwrap_or_default()),
-        ),
-        false => payload
-            .chunk_metadata
-            .chunk_html
-            .clone()
-            .unwrap_or_default(),
-    };
-
-    if content.is_empty() {
-        return Err(ServiceError::BadRequest(
-            "Chunk must not have empty chunk_html".into(),
-        ));
-    }
-
-    let chunk_metadata = payload.chunk_metadata.clone();
-
-    let embedding_vector = match dataset_config.SEMANTIC_ENABLED {
-        true => {
-            let embedding = get_dense_vector(
-                content.to_string(),
-                payload.semantic_boost.clone(),
-                "doc",
-                dataset_config.clone(),
-            )
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-            Some(embedding)
-        }
-        false => None,
-    };
-
-    let splade_vector = if dataset_config.FULLTEXT_ENABLED {
-        let reqwest_client = reqwest::Client::new();
-
-        match get_sparse_vectors(
-            vec![(content.clone(), payload.fulltext_boost.clone())],
-            "doc",
-            reqwest_client,
-        )
-        .await
-        {
-            Ok(v) => v.first().unwrap_or(&vec![(0, 0.0)]).clone(),
-            Err(_) => vec![(0, 0.0)],
-        }
-    } else {
-        vec![(0, 0.0)]
-    };
-
-    let bm25_vector = if dataset_config.BM25_ENABLED
-        && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true"
-    {
-        let vecs = get_bm25_embeddings(
-            vec![(content, payload.fulltext_boost.clone())],
-            dataset_config.BM25_AVG_LEN,
-            dataset_config.BM25_B,
-            dataset_config.BM25_K,
-        );
-
-        vecs.first().cloned()
-    } else {
-        None
-    };
-
-    if let Some(group_ids) = payload.group_ids {
-        let mut chunk_group_ids: Vec<uuid::Uuid> = vec![];
-        for group_id in group_ids {
-            let group = dataset_owns_group(group_id, payload.dataset_id, web_pool.clone())
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-            chunk_group_ids.push(group.id);
-        }
-
-        update_chunk_metadata_query(
-            chunk_metadata.clone().into(),
-            Some(chunk_group_ids.clone()),
-            payload.dataset_id,
-            web_pool.clone(),
-        )
-        .await?;
-
-        update_qdrant_point_query(
-            // If the chunk is a collision, we don't want to update the qdrant point
-            chunk_metadata.into(),
-            embedding_vector,
-            Some(chunk_group_ids),
-            payload.dataset_id,
-            splade_vector,
-            bm25_vector,
-            dataset_config,
-            web_pool.clone(),
-        )
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-    } else {
-        update_chunk_metadata_query(
-            chunk_metadata.clone().into(),
-            None,
-            payload.dataset_id,
-            web_pool.clone(),
-        )
-        .await?;
-
-        update_qdrant_point_query(
-            // If the chunk is a collision, we don't want to update the qdrant point
-            chunk_metadata.into(),
-            embedding_vector,
-            None,
-            payload.dataset_id,
-            splade_vector,
-            bm25_vector,
-            dataset_config,
-            web_pool.clone(),
-        )
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-    }
-
-    // If boosts are changed, reflect changes to chunk_boosts table
-    if payload.fulltext_boost.is_some() || payload.semantic_boost.is_some() {
-        update_chunk_boost_query(
-            ChunkBoost {
-                chunk_id: payload.chunk_metadata.id,
-                fulltext_boost_phrase: payload.fulltext_boost.clone().map(|x| x.phrase),
-                fulltext_boost_factor: payload.fulltext_boost.map(|x| x.boost_factor),
-                semantic_boost_phrase: payload.semantic_boost.clone().map(|x| x.phrase),
-                semantic_boost_factor: payload.semantic_boost.map(|x| x.distance_factor as f64),
-            },
-            web_pool,
-        )
-        .await?;
-    }
-
-    Ok(())
-}
-
 pub async fn readd_error_to_queue(
-    message: IngestionMessage,
+    mut message: BulkUploadIngestionMessage,
     error: ServiceError,
     redis_pool: actix_web::web::Data<models::RedisPool>,
     event_queue: actix_web::web::Data<EventQueue>,
@@ -1358,87 +1154,85 @@ pub async fn readd_error_to_queue(
         return Ok(());
     }
 
-    if let IngestionMessage::BulkUpload(mut payload) = message {
-        let old_payload_message = serde_json::to_string(&payload).map_err(|_| {
-            ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
-        })?;
+    let old_payload_message = serde_json::to_string(&message).map_err(|_| {
+        ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
+    })?;
 
-        let mut redis_conn = redis_pool
-            .get()
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-        let _ = redis::cmd("LREM")
-            .arg("processing")
-            .arg(1)
-            .arg(old_payload_message.clone())
-            .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+    let _ = redis::cmd("LREM")
+        .arg("processing")
+        .arg(1)
+        .arg(old_payload_message.clone())
+        .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+        .await;
+
+    message.attempt_number += 1;
+
+    if message.attempt_number == 10 {
+        log::error!("Failed to insert data 10 times quitting {:?}", error);
+        let count = message.ingestion_messages.len();
+        let chunk_ids = message
+            .ingestion_messages
+            .iter()
+            .map(|m| m.ingest_specific_chunk_metadata.id)
+            .collect();
+
+        event_queue
+            .send(ClickHouseEvent::WorkerEvent(
+                WorkerEvent::from_details(
+                    message.dataset_id,
+                    models::EventType::BulkChunkUploadFailed {
+                        chunk_ids,
+                        error: format!("Failed to upload {:} chunks: {:?}", count, error),
+                    },
+                )
+                .into(),
+            ))
             .await;
 
-        payload.attempt_number += 1;
-
-        if payload.attempt_number == 10 {
-            log::error!("Failed to insert data 10 times quitting {:?}", error);
-            let count = payload.ingestion_messages.len();
-            let chunk_ids = payload
-                .ingestion_messages
-                .iter()
-                .map(|m| m.ingest_specific_chunk_metadata.id)
-                .collect();
-
-            event_queue
-                .send(ClickHouseEvent::WorkerEvent(
-                    WorkerEvent::from_details(
-                        payload.dataset_id,
-                        models::EventType::BulkChunkUploadFailed {
-                            chunk_ids,
-                            error: format!("Failed to upload {:} chunks: {:?}", count, error),
-                        },
-                    )
-                    .into(),
-                ))
-                .await;
-
-            let mut redis_conn = redis_pool
-                .get()
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-            redis::cmd("lpush")
-                .arg("dead_letters")
-                .arg(old_payload_message)
-                .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-            return Err(ServiceError::InternalServerError(format!(
-                "Failed to create new qdrant point: {:?}",
-                error
-            )));
-        }
-
-        let new_payload_message = serde_json::to_string(&payload).map_err(|_| {
-            ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
-        })?;
-
         let mut redis_conn = redis_pool
             .get()
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
-        log::error!(
-            "Failed to insert data, re-adding {:?} retry: {:?}",
-            error,
-            payload.attempt_number
-        );
-
         redis::cmd("lpush")
-            .arg("ingestion")
-            .arg(&new_payload_message)
-            .query_async(&mut *redis_conn)
+            .arg("dead_letters")
+            .arg(old_payload_message)
+            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
             .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+        return Err(ServiceError::InternalServerError(format!(
+            "Failed to create new qdrant point: {:?}",
+            error
+        )));
     }
+
+    let new_payload_message = serde_json::to_string(&message).map_err(|_| {
+        ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
+    })?;
+
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    log::error!(
+        "Failed to insert data, re-adding {:?} retry: {:?}",
+        error,
+        message.attempt_number
+    );
+
+    redis::cmd("lpush")
+        .arg("ingestion")
+        .arg(&new_payload_message)
+        .query_async::<_, String>(&mut *redis_conn)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(())
 }

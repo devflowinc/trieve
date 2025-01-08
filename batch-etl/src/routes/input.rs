@@ -11,9 +11,7 @@ use crate::{
 /// This endpoint creates an input in the Batch ETL system. The input is used to define the data that will be ingested into the system.
 #[utoipa::path(
     post,
-    path = "/input",
     tag = "Input",
-    context_path = "/api",
     request_body(content = models::CreateInputRequest, description = "JSON request payload to create a new input", content_type = "application/json"),
     responses(
         (status = 201, description = "JSON response payload containing the created input", body = models::CreateInputResponse),
@@ -36,9 +34,8 @@ pub async fn create_input(
 /// This endpoint retrieves an s3 url for an input by its id.
 #[utoipa::path(
     get,
-    path = "/input/{input_id}",
+    path = "/{input_id}",
     tag = "Input",
-    context_path = "/api",
     params(
         ("input_id" = String, Path, description = "The id of the input you want to retrieve."),
     ),

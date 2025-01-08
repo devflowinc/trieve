@@ -1431,6 +1431,25 @@ pub async fn update_chunk_boost_query(
     Ok(())
 }
 
+pub async fn get_chunk_boost_query(
+    chunk_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Option<ChunkBoost>, ServiceError> {
+    use crate::data::schema::chunk_boosts::dsl as chunk_boosts_columns;
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    let chunk_boost: Option<ChunkBoost> = chunk_boosts_columns::chunk_boosts
+        .filter(chunk_boosts_columns::chunk_id.eq(chunk_id))
+        .first(&mut conn)
+        .await
+        .optional()
+        .map_err(|_| ServiceError::NotFound("Chunk Boost Not found".to_string()))?;
+
+    Ok(chunk_boost)
+}
+
 pub async fn delete_chunk_metadata_query(
     chunk_uuid: Vec<uuid::Uuid>,
     deleted_at: chrono::NaiveDateTime,
@@ -2612,6 +2631,65 @@ pub async fn scroll_chunk_ids_for_dictionary_query(
         return Ok(None);
     }
     Ok(Some(chunk_ids))
+}
+
+pub async fn scroll_chunks_from_pg(
+    pool: web::Data<Pool>,
+    dataset_id: uuid::Uuid,
+    limit: i64,
+    offset: Option<uuid::Uuid>,
+) -> Result<(Vec<ChunkMetadata>, Option<uuid::Uuid>), ServiceError> {
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
+    use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let chunk_metadata_pairs: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
+        chunk_metadata_columns::chunk_metadata
+            .left_join(
+                chunk_metadata_tags_columns::chunk_metadata_tags
+                    .on(chunk_metadata_tags_columns::chunk_metadata_id
+                        .eq(chunk_metadata_columns::id)),
+            )
+            .left_join(
+                dataset_tags_columns::dataset_tags
+                    .on(dataset_tags_columns::id.eq(chunk_metadata_tags_columns::tag_id)),
+            )
+            .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+            .filter(chunk_metadata_columns::id.gt(offset.unwrap_or(uuid::Uuid::nil())))
+            .select((
+                ChunkMetadataTable::as_select(),
+                sql::<sql_types::Array<sql_types::Text>>(
+                    "array_remove(array_agg(dataset_tags.tag), null)",
+                )
+                .nullable(),
+            ))
+            .group_by(chunk_metadata_columns::id)
+            .order_by(chunk_metadata_columns::id)
+            .limit(limit)
+            .load::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
+            .await
+            .map_err(|_| {
+                log::error!("Failed to scroll dataset ids for dictionary");
+                ServiceError::InternalServerError(
+                    "Failed to scroll dataset ids for dictionary".to_string(),
+                )
+            })?;
+
+    let chunk_metadatas: Vec<ChunkMetadata> = chunk_metadata_pairs
+        .into_iter()
+        .map(|(table, tag_set)| {
+            ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![]))
+        })
+        .collect();
+
+    let offset_id = chunk_metadatas.last().map(|x| x.id);
+
+    Ok((chunk_metadatas, offset_id))
 }
 
 pub async fn update_dataset_chunk_count(

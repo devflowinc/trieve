@@ -269,7 +269,8 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_all_events,
         handlers::analytics_handler::get_event_by_id,
         handlers::metrics_handler::get_metrics,
-        handlers::page_handler::public_page
+        handlers::page_handler::public_page,
+        handlers::etl_handler::create_etl_job
     ),
     components(
         schemas(
@@ -410,6 +411,7 @@ impl Modify for SecurityAddon {
             handlers::page_handler::PublicPageParameters,
             handlers::page_handler::PublicPageTabMessage,
             handlers::page_handler::HeroPattern,
+            handlers::etl_handler::CreateSchemaReqPayload,
             data::models::ChunkReqPayloadFields,
             data::models::ChunkReqPayloadMapping,
             data::models::ChunkReqPayloadMappings,
@@ -917,6 +919,16 @@ pub fn main() -> std::io::Result<()> {
                                 .service(web::resource("/files/{dataset_id}/{page}").route(
                                     web::get().to(handlers::file_handler::get_dataset_files_handler),
                                 )),
+                        )
+                        .service(web::scope("/etl")
+                            .service(
+                                web::resource("/create_job")
+                                    .route(web::post().to(handlers::etl_handler::create_etl_job)),
+                            )
+                            .service(
+                                web::resource("/webhook")
+                                    .route(web::post().to(handlers::etl_handler::webhook_response)),
+                            )
                         )
                         .service(
                             web::scope("/auth")
