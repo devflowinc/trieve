@@ -14,9 +14,7 @@ use trieve_server::{
     operators::{
         clickhouse_operator::{ClickHouseEvent, EventQueue},
         dataset_operator::get_dataset_and_organization_from_dataset_id_query,
-        file_operator::{
-            create_file_chunks, create_file_query, get_aws_bucket, preprocess_file_to_chunks,
-        },
+        file_operator::{create_file_chunks, get_aws_bucket, preprocess_file_to_chunks},
         group_operator::{create_group_from_file_query, create_groups_query},
     },
 };
@@ -313,17 +311,6 @@ async fn upload_file(
     )
     .await?;
 
-    let file_size_mb = (file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
-
-    let created_file = create_file_query(
-        file_id,
-        file_size_mb,
-        file_worker_message.upload_file_data.clone(),
-        file_worker_message.dataset_id,
-        web_pool.clone(),
-    )
-    .await?;
-
     let group_id = if !file_worker_message
         .upload_file_data
         .pdf2md_options
@@ -365,7 +352,7 @@ async fn upload_file(
 
         let group_id = chunk_group.id;
 
-        create_group_from_file_query(group_id, created_file.id, web_pool.clone())
+        create_group_from_file_query(group_id, file_worker_message.file_id, web_pool.clone())
             .await
             .map_err(|e| {
                 log::error!("Could not create group from file {:?}", e);
@@ -568,7 +555,7 @@ async fn upload_file(
 
                 if !new_chunks.is_empty() {
                     create_file_chunks(
-                        created_file.id,
+                        file_worker_message.file_id,
                         file_worker_message.upload_file_data.clone(),
                         new_chunks.clone(),
                         dataset_org_plan_sub.clone(),
@@ -724,7 +711,7 @@ async fn upload_file(
         .collect::<Vec<_>>();
 
     create_file_chunks(
-        created_file.id,
+        file_worker_message.file_id,
         file_worker_message.upload_file_data,
         chunks,
         dataset_org_plan_sub,
