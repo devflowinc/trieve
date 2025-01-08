@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import { cached } from "../cache";
 import { getAllChunksForGroup } from "../trieve";
 import { ChatMessageProxy, ChunkGroup, RoleProxy } from "trieve-ts-sdk";
-import { useFollowupQuestions } from "./useFollowupQuestions";
 
 type Messages = {
   queryId: string | null;
