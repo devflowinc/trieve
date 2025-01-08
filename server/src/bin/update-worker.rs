@@ -95,26 +95,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     async move { update_chunk(msg.payload, pool.clone()).await }
                 }
             },
-      {
-            let event_queue = event_queue.clone();
-              move |msg| {
-                let value = event_queue.clone();
-                async move {
-                    log::info!("Updated chunk: {:?}", msg.payload.chunk_metadata.id);
-                    value
-                        .send(ClickHouseEvent::WorkerEvent(
-                            WorkerEvent::from_details(
-                                msg.payload.dataset_id,
-                                EventType::ChunkUpdated {
-                                    chunk_id: msg.payload.chunk_metadata.id,
-                                },
-                            )
-                            .into(),
-                        ))
-                        .await;
-                    Ok(())
+            {
+                let event_queue = event_queue.clone();
+                move |msg| {
+                    let value = event_queue.clone();
+                    async move {
+                        log::info!("Updated chunk: {:?}", msg.payload.chunk_metadata.id);
+                        value
+                            .send(ClickHouseEvent::WorkerEvent(
+                                WorkerEvent::from_details(
+                                    msg.payload.dataset_id,
+                                    EventType::ChunkUpdated {
+                                        chunk_id: msg.payload.chunk_metadata.id,
+                                    },
+                                )
+                                .into(),
+                            ))
+                            .await;
+                        Ok(())
+                    }
                 }
-            }},
+            },
             move |msg, err| {
                 let value = event_queue.clone();
                 async move {
