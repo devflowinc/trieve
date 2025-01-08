@@ -379,6 +379,7 @@ pub async fn create_chunk(
         .clone()
         .into_iter()
         .chain(upsert_chunk_metadatas.clone().into_iter())
+        .dedup_by(|x, y| x.tracking_id == y.tracking_id)
         .collect::<Vec<ChunkMetadata>>();
 
     let mut redis_conn = redis_pool
