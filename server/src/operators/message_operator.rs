@@ -1245,6 +1245,7 @@ pub async fn get_topic_string(
 
 pub async fn get_text_from_image(
     image_url: String,
+    prompt: Option<String>,
     dataset: &Dataset,
 ) -> Result<String, ServiceError> {
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
@@ -1286,12 +1287,11 @@ pub async fn get_text_from_image(
         },
     };
 
+    let default_system_prompt = "Please describe the image and turn the description into a search query. DO NOT INCLUDE ANY OTHER CONTEXT OR INFORMATION. JUST OUTPUT THE SEARCH QUERY AND NOTHING ELSE".to_string();
+
     let messages = vec![
         ChatMessage::System {
-            content: ChatMessageContent::Text(
-                "Please describe the image and turn the description into a search query. DO NOT INCLUDE ANY OTHER CONTEXT OR INFORMATION. JUST OUTPUT THE SEARCH QUERY AND NOTHING ELSE"
-                    .to_string(),
-            ),
+            content: ChatMessageContent::Text(prompt.unwrap_or(default_system_prompt)),
             name: None,
         },
         ChatMessage::User {
