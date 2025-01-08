@@ -23,13 +23,14 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        runner: [blacksmith-2vcpu-ubuntu-2204, blacksmith-2vcpu-ubuntu-2204-arm]
-        platform: [linux/amd64, linux/arm64]
-        exclude:
+        include:
+          - runner: blacksmith-2vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
           - runner: blacksmith-2vcpu-ubuntu-2204
             platform: linux/arm64
-          - runner: blacksmith-2vcpu-ubuntu-2204-arm
-            platform: linux/amd64
+            tag: latest-arm
+            suffix: -arm
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -54,8 +55,8 @@ jobs:
           images: |
             trieve/chat
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -72,13 +73,14 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        runner: [blacksmith-2vcpu-ubuntu-2204, blacksmith-2vcpu-ubuntu-2204-arm]
-        platform: [linux/amd64, linux/arm64]
-        exclude:
+        include:
+          - runner: blacksmith-2vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
           - runner: blacksmith-2vcpu-ubuntu-2204
             platform: linux/arm64
-          - runner: blacksmith-2vcpu-ubuntu-2204-arm
-            platform: linux/amd64
+            tag: latest-arm
+            suffix: -arm
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -103,8 +105,8 @@ jobs:
           images: |
             trieve/search
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -121,13 +123,14 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        runner: [blacksmith-2vcpu-ubuntu-2204, blacksmith-2vcpu-ubuntu-2204-arm]
-        platform: [linux/amd64, linux/arm64]
-        exclude:
+        include:
+          - runner: blacksmith-2vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
           - runner: blacksmith-2vcpu-ubuntu-2204
             platform: linux/arm64
-          - runner: blacksmith-2vcpu-ubuntu-2204-arm
-            platform: linux/amd64
+            tag: latest-arm
+            suffix: -arm
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -152,8 +155,8 @@ jobs:
           images: |
             trieve/dashboard
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
