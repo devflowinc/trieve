@@ -20,6 +20,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -28,9 +36,6 @@ jobs:
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
-
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v3
@@ -49,8 +54,8 @@ jobs:
           images: |
             trieve/server
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -70,6 +75,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -96,8 +109,8 @@ jobs:
           images: |
             trieve/ingest
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -116,6 +129,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -142,8 +163,8 @@ jobs:
           images: |
             trieve/delete_worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -163,6 +184,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -189,8 +218,8 @@ jobs:
           images: |
             trieve/csv-jsonl-worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -209,6 +238,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -235,8 +272,8 @@ jobs:
           images: |
             trieve/file_worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -255,6 +292,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -281,8 +326,8 @@ jobs:
           images: |
             trieve/group_worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -301,6 +346,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -327,8 +380,8 @@ jobs:
           images: |
             trieve/clone_qdrant
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -347,6 +400,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -373,8 +434,8 @@ jobs:
           images: |
             trieve/sync_qdrant
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -393,6 +454,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -419,8 +488,8 @@ jobs:
           images: |
             trieve/queue-bm25-migration
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -439,6 +508,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -465,8 +542,8 @@ jobs:
           images: |
             trieve/reindex-worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -485,6 +562,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -511,8 +596,8 @@ jobs:
           images: |
             trieve/word-id-cronjob
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -531,6 +616,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -557,8 +650,8 @@ jobs:
           images: |
             trieve/word-worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -577,6 +670,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -603,8 +704,8 @@ jobs:
           images: |
             trieve/bktree-worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -623,6 +724,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -649,8 +758,8 @@ jobs:
           images: |
             trieve/crawl-worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -669,6 +778,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -695,8 +812,8 @@ jobs:
           images: |
             trieve/crawl-cron-job
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -715,6 +832,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -741,8 +866,8 @@ jobs:
           images: |
             trieve/dittofeed-sync-worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -761,6 +886,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -790,8 +923,8 @@ jobs:
           images: |
             trieve/video-worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
@@ -811,6 +944,14 @@ jobs:
       matrix:
         runner: [blacksmith-8vcpu-ubuntu-2204, blacksmith-8vcpu-ubuntu-2204-arm]
         platform: [linux/amd64, linux/arm64]
+        include:
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: linux/amd64
+            tag: latest
+          - runner: blacksmith-8vcpu-ubuntu-2204
+            platform: blacksmith-8vcpu-ubuntu-2204-arm
+            tag: latest-arm
+            suffix: -arm
         exclude:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/arm64
@@ -840,8 +981,8 @@ jobs:
           images: |
             trieve/pagefind-worker
           tags: |
-            type=raw,latest
-            type=sha
+            type=raw,tag=${{matrix.tag}}
+            type=sha,suffix=${{matrix.suffix}}
 
       - name: Build and push Docker image
         uses: useblacksmith/build-push-action@v1.0.0-beta
