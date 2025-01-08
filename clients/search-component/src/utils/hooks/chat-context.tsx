@@ -72,59 +72,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
-  const [text, setText] = useState("");
-  const [json, setJson] = useState(null);
-  const [offset, setOffset] = useState(0);
-  const [queryId, setQueryId] = useState<string | null>(null);
-  const [characterOffsetInterval, setCharacterOffsetInterval] = useState<NodeJS.Timeout | null>()
-  const { isLoadingSuggestedQueries } = useFollowupQuestions();
-  const streamingChunks = useRef(false);
-
-  useEffect(() => {
-    if (streamingChunks.current) {
-      setMessages(prevMessages => {
-        if (prevMessages.length <= 1) {
-          if (isDoneReading) {
-            streamingChunks.current = false;
-          }
-          return prevMessages;
-        }
-
-        const currentMessage = prevMessages[prevMessages.length - 1];
-
-        if (currentMessage.text === text.slice(0, offset)) {
-          if (isDoneReading) {
-            streamingChunks.current = false;
-          }
-          return prevMessages;
-        }
-
-        const newMessages = [
-          ...prevMessages.slice(0, -1),
-          {
-            type: "system",
-            text: text.slice(0, offset),
-            additional: json || null,
-            queryId,
-          }
-        ];
-
-        if (isDoneReading && characterOffsetInterval && offset >= text.length) {
-          clearInterval(characterOffsetInterval);
-          setCharacterOffsetInterval(null);
-          streamingChunks.current = false;
-        }
-        return newMessages;
-      });
-    }
-  }, [offset, text, isDoneReading, characterOffsetInterval, json, queryId]);
-
-  useEffect(() => {
-    if (isDoneReading || isLoadingSuggestedQueries) {
-      setOffset(text.length)
-    }
-  }, [text, isDoneReading, isLoadingSuggestedQueries])
-
   const createTopic = async ({ question }: { question: string }) => {
     if (!currentTopic) {
       called.current = true;
@@ -155,23 +102,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
+    queryId: string | null,
   ) => {
     setIsLoading(true);
     setIsDoneReading(false);
-    setOffset(0);
-    setText("");
-    setJson(null);
-    streamingChunks.current = true;
     let done = false;
     let textInStream = "";
-
-    setCharacterOffsetInterval(
-      setInterval(() => {
-        setOffset((prev) => {
-          return prev + 1
-        })
-      }, 2)
-    );
 
     while (!done) {
       const { value, done: doneReading } = await reader.read();
@@ -208,8 +144,15 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           json = null;
         }
 
-        setText(text);
-        setJson(json ? json : null);
+        setMessages((m) => [
+          ...m.slice(0, -1),
+          {
+            type: "system",
+            text: text,
+            additional: json ? json : null,
+            queryId,
+          },
+        ]);
       }
     }
   };
@@ -248,8 +191,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         },
         chatMessageAbortController.current.signal
       );
-      setQueryId(queryId);
-      handleReader(reader);
+      handleReader(reader, queryId);
     } else {
       const { reader, queryId } =
         await trieveSDK.createMessageReaderWithQueryId(
@@ -271,8 +213,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           },
           chatMessageAbortController.current.signal
         );
-      setQueryId(queryId);
-      handleReader(reader);
+      handleReader(reader, queryId);
     }
   };
 
