@@ -78,7 +78,7 @@ export default function Home() {
               baseUrl={baseUrl}
               datasetId={datasetId}
               problemLink={problemLink}
-              type="pdf"
+              type="docs"
               defaultSearchQueries={defaultSearchQueries}
               theme={theme}
               tags={[

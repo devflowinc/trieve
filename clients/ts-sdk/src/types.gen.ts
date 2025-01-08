@@ -88,10 +88,7 @@ export type AutocompleteReqPayload = {
      * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
      */
     page_size?: (number) | null;
-    /**
-     * Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
-     */
-    query: string;
+    query: SearchModalities;
     /**
      * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
      */

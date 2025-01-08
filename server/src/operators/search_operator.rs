@@ -3147,7 +3147,7 @@ pub async fn autocomplete_chunks_query(
             .query
             .clone()
             .unwrap_or(parsed_query.clone());
-        data.query.clone_from(&parsed_query.query);
+        data.query = SearchModalities::Text(parsed_query.query.clone());
         timer.add("corrected query");
     }
 
@@ -3192,9 +3192,10 @@ pub async fn autocomplete_chunks_query(
     ];
 
     if let Some(q) = qdrant_query.get_mut(0) {
-        q.filter
-            .must
-            .push(Condition::matches_text("content", data.query.clone()));
+        q.filter.must.push(Condition::matches_text(
+            "content",
+            parsed_query.query.clone(),
+        ));
     }
 
     if data.extend_results.unwrap_or(false) {

@@ -1312,7 +1312,7 @@ pub struct AutocompleteReqPayload {
     /// If specified to true, this will extend the search results to include non-exact prefix matches of the same search_type such that a full page_size of results are returned. Default is false.
     pub extend_results: Option<bool>,
     /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
-    pub query: String,
+    pub query: SearchModalities,
     /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
     pub page_size: Option<u64>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
@@ -1342,7 +1342,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
     fn from(autocomplete_data: AutocompleteReqPayload) -> Self {
         SearchChunksReqPayload {
             search_type: autocomplete_data.search_type,
-            query: QueryTypes::Single(SearchModalities::Text(autocomplete_data.query)),
+            query: QueryTypes::Single(autocomplete_data.query),
             page: Some(1),
             get_total_pages: None,
             page_size: autocomplete_data.page_size,
@@ -1395,7 +1395,7 @@ pub async fn autocomplete(
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let parsed_query = parse_query(
-        SearchModalities::Text(data.query.clone()),
+        data.query.clone(),
         &dataset_org_plan_sub.dataset,
         data.use_quote_negated_terms,
         data.remove_stop_words,
@@ -1406,7 +1406,7 @@ pub async fn autocomplete(
 
     let result_chunks = autocomplete_chunks_query(
         data.clone(),
-        parsed_query,
+        parsed_query.clone(),
         pool,
         redis_pool,
         dataset_org_plan_sub.dataset.clone(),
@@ -1422,7 +1422,7 @@ pub async fn autocomplete(
         let clickhouse_event = SearchQueryEventClickhouse {
             id: search_id,
             search_type: String::from("autocomplete"),
-            query: data.query.clone(),
+            query: parsed_query.query.clone(),
             request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
             latency: get_latency_from_header(timer.header_value()),
             top_score: result_chunks

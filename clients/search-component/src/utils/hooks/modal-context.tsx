@@ -151,14 +151,16 @@ const defaultProps = {
   showFloatingSearchIcon: false,
   showFloatingInput: false,
   inline: false,
-  inlineHeader: "AI Assistant by Trieve"
+  inlineHeader: "AI Assistant by Trieve",
 };
 
 const ModalContext = createContext<{
   props: ModalProps;
   trieveSDK: TrieveSDK;
   query: string;
+  imageUrl: string;
   setQuery: React.Dispatch<React.SetStateAction<string>>;
+  setImageUrl: React.Dispatch<React.SetStateAction<string>>;
   results: ChunkWithHighlights[] | GroupChunk[][];
   setResults: React.Dispatch<
     React.SetStateAction<ChunkWithHighlights[] | GroupChunk[][]>
@@ -184,6 +186,7 @@ const ModalContext = createContext<{
   props: defaultProps,
   trieveSDK: (() => {}) as unknown as TrieveSDK,
   query: "",
+  imageUrl: "",
   results: [],
   loadingResults: false,
   open: false,
@@ -193,6 +196,7 @@ const ModalContext = createContext<{
   setMode: () => {},
   setOpen: () => {},
   setQuery: () => {},
+  setImageUrl: () => {},
   setResults: () => {},
   requestID: "",
   setRequestID: () => {},
@@ -218,6 +222,7 @@ const ModalProvider = ({
     ...onLoadProps,
   });
   const [query, setQuery] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [results, setResults] = useState<
     ChunkWithHighlights[] | GroupChunk[][]
   >([]);
@@ -299,7 +304,8 @@ const ModalProvider = ({
         setResults(results);
       } else {
         const results = await searchWithTrieve({
-          query: query,
+          query_string: query,
+          image_url: imageUrl,
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
@@ -443,6 +449,8 @@ const ModalProvider = ({
         trieveSDK: trieve,
         query,
         setQuery,
+        imageUrl,
+        setImageUrl,
         open,
         setOpen,
         inputRef,
