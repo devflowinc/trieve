@@ -7656,7 +7656,10 @@ impl From<(ParsedQuery, f32)> for MultiQuery {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum SearchModalities {
-    Image { image_url: String },
+    Image {
+        image_url: String,
+        llm_prompt: Option<String>,
+    },
     Text(String),
 }
 

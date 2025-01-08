@@ -1618,7 +1618,10 @@ pub async fn parse_query(
     let stop_words = get_stop_words();
     let query = match query {
         SearchModalities::Text(query) => query,
-        SearchModalities::Image { image_url } => get_text_from_image(image_url, dataset).await?,
+        SearchModalities::Image {
+            image_url,
+            llm_prompt,
+        } => get_text_from_image(image_url, llm_prompt, dataset).await?,
     };
 
     let query = match remove_stop_words {
