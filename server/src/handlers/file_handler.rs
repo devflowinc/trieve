@@ -12,8 +12,8 @@ use crate::{
     operators::{
         crawl_operator::{process_crawl_doc, Document},
         file_operator::{
-            delete_file_query, get_aws_bucket, get_csvjsonl_aws_bucket, get_dataset_file_query,
-            get_file_query,
+            create_file_query, delete_file_query, get_aws_bucket, get_csvjsonl_aws_bucket,
+            get_dataset_file_query, get_file_query,
         },
         organization_operator::{get_file_size_sum_org, hash_function},
     },
@@ -188,6 +188,17 @@ pub async fn upload_file_handler(
             log::error!("Could not upload file to S3 {:?}", e);
             ServiceError::BadRequest("Could not upload file to S3".to_string())
         })?;
+
+    let file_size_mb = (decoded_file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
+
+    create_file_query(
+        file_id,
+        file_size_mb,
+        upload_file_data.clone(),
+        dataset_org_plan_sub.dataset.id,
+        pool.clone(),
+    )
+    .await?;
 
     let message = FileWorkerMessage {
         file_id,
