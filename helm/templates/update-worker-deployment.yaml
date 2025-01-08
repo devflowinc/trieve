@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: update-worker
+  labels:
+    app.kubernetes.io/name: update-worker
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+spec:
+  replicas: {{ $.Values.containers.update_worker.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: update-worker
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: update-worker
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+    spec:
+      containers:
+      - name: update-worker
+        image: {{ printf "%s:%s" "trieve/update-worker" $.Values.containers.update_worker.tag }}
+        envFrom:
+          - configMapRef:
+              name: trieve-server-config

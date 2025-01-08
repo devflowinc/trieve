@@ -9,12 +9,12 @@ name = "batch-etl-server"
 path = "src/main.rs"
 
 [[bin]]
-name = "create-job"
+name = "create-job-worker"
 path = "src/workers/create-job-worker.rs"
 
 [[bin]]
-name = "check-completion"
-path = "src/cron-jobs/check-completion.rs"
+name = "check-completion-worker"
+path = "src/cron-jobs/check-completion-worker.rs"
 
 [dependencies]
 utoipa-redoc = { version = "5.0.0", features = ["actix-web"] }

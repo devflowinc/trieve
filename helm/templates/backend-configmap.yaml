@@ -121,3 +121,4 @@ data:
   YOUTUBE_API_KEY: {{ .Values.config.trieve.youtubeApiKey | quote }}
   {{- end }}
   PAGEFIND_CDN_BASE_URL: {{ .Values.config.trieve.pagefindCdnUrl }}
+  BATCH_ETL_URL: {{ .Values.config.trieve.batchEtlUrl }}

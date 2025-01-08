@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: etl-worker
+  labels:
+    app.kubernetes.io/name: etl-worker
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+spec:
+  replicas: {{ $.Values.containers.etl_worker.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: etl-worker
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: etl-worker
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+    spec:
+      containers:
+      - name: etl-worker
+        image: {{ printf "%s:%s" "trieve/etl-worker" $.Values.containers.etl_worker.tag }}
+        envFrom:
+          - configMapRef:
+              name: trieve-server-config
