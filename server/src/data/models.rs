@@ -2111,7 +2111,12 @@ pub enum EventType {
     #[display(fmt = "pagefind_indexing_finished")]
     PagefindIndexingFinished { total_files: usize },
     #[display(fmt = "etl_started")]
-    EtlStarted,
+    EtlStarted {
+        prompt: String,
+        model: Option<String>,
+        tag_enum: Option<Vec<String>>,
+        include_images: Option<bool>,
+    },
     #[display(fmt = "etl_completed")]
     EtlCompleted,
     #[display(fmt = "etl_failed")]
