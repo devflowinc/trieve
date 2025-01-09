@@ -226,7 +226,7 @@ const Modal = () => {
             </div>
             <div
               className={
-                mode === "chat" && !fullscreenPdfState ? " h-full" : " "
+                mode === "chat" && !fullscreenPdfState ? "chat-container" : " "
               }
               style={{
                 display:

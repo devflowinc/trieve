@@ -55,7 +55,7 @@ export const ChatMode = () => {
         </div>
       ) : null}
       <div
-        className={`chat-outer-wrapper flex flex-col px-4 scroll-smooth mt-0${
+        className={`chat-outer-wrapper flex flex-col px-4 scroll-smooth mt-0 ${
           props.inline ? "" : "chat-outer-popup"
         }`}
         ref={modalRef}
@@ -140,7 +140,7 @@ export const ChatMode = () => {
             </button>
           </div>
         )}
-        <div className="input-wrapper chat">
+        <div className="input-wrapper chat sticky top-0 z-10 flex flex-col gap-2 rounded-lg">
           {!props.inline ? (
             <button
               onClick={() => {

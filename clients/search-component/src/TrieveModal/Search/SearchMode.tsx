@@ -145,7 +145,7 @@ export const SearchMode = () => {
       </div>
       <div
         className={cn(
-          "input-wrapper sticky top-0 z-10 flex flex-col gap-2 rounded-lg",
+          `input-wrapper sticky top-0 z-10 flex flex-col gap-2 rounded-lg ${props.type}`,
           props.type === "ecommerce" && "max-w-7xl mx-auto",
         )}
       >

@@ -56,6 +56,8 @@ body {
     }
 
     .chat-container {
+      @apply h-full;
+
       .chat-outer-wrapper {
         @apply overflow-auto sm:max-h-[50vh] max-h-[87vh];
       }

@@ -263,7 +263,6 @@ export const Message = ({
                   </div>
                 )
               : null}
-            {props.followupQuestions && <FollowupQueries />}
             {isDoneReading && (
               <div className="feedback-wrapper flex justify-between my-4">
                 <span className="spacer"></span>
