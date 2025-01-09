@@ -32,10 +32,10 @@ export default function Home() {
     import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "search";
 
   const defaultAiQuestions = (
-    import.meta.env.VITE_DEFAULT_AI_QUESTIONS ?? "What is Trieve?,How to perform autocomplete search?,How do I install the TS SDK?"
+    import.meta.env.VITE_DEFAULT_AI_QUESTIONS ??
+    "What is Trieve?,How to perform autocomplete search?,How do I install the TS SDK?"
   ).split(",");
-  const inline = 
-    import.meta.env.VITE_INLINE == "true";
+  const inline = import.meta.env.VITE_INLINE == "true";
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -155,6 +155,7 @@ export default function Home() {
               searchOptions={{
                 use_autocomplete: false,
                 search_type: "fulltext",
+                score_threshold: 0.1,
               }}
               floatingButtonPosition={floatingButtonPosition}
               floatingSearchIconPosition={floatingSearchIconPosition}

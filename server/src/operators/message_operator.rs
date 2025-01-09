@@ -764,6 +764,12 @@ pub async fn stream_response(
                 .filter_map(|image| image.clone())
                 .collect::<Vec<_>>()
         })
+        .chain(
+            create_message_req_payload
+                .image_urls
+                .clone()
+                .unwrap_or_default(),
+        )
         .collect();
 
     // replace the last message with the last message with evidence

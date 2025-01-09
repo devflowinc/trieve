@@ -87,6 +87,8 @@ pub fn check_completion_param_validity(
 pub struct CreateMessageReqPayload {
     /// The content of the user message to attach to the topic and then generate an assistant message in response to.
     pub new_message_content: String,
+    /// The URL of the image(s) to attach to the message.
+    pub image_urls: Option<Vec<String>>,
     /// The ID of the topic to attach the message to.
     pub topic_id: uuid::Uuid,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
@@ -385,6 +387,8 @@ pub struct EditMessageReqPayload {
     pub message_sort_order: i32,
     /// The new content of the message to replace the old content with.
     pub new_message_content: String,
+    /// The URL of the image(s) to attach to the message.
+    pub image_urls: Option<Vec<String>>,
     /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
     pub highlight_options: Option<HighlightOptions>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
@@ -417,6 +421,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
     fn from(data: EditMessageReqPayload) -> Self {
         CreateMessageReqPayload {
             new_message_content: data.new_message_content,
+            image_urls: data.image_urls,
             topic_id: data.topic_id,
             highlight_options: data.highlight_options,
             search_type: data.search_type,
@@ -439,6 +444,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
     fn from(data: RegenerateMessageReqPayload) -> Self {
         CreateMessageReqPayload {
             new_message_content: "".to_string(),
+            image_urls: None,
             topic_id: data.topic_id,
             highlight_options: data.highlight_options,
             search_type: data.search_type,

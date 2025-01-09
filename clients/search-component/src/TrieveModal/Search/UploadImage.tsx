@@ -39,7 +39,8 @@ export const UploadImage = () => {
 
         const fileId = await uploadFile(trieveSDK, file.name, base64File);
         const imageUrl = await getPresignedUrl(trieveSDK, fileId);
-        console.log(imageUrl);
+        setImageUrl(imageUrl);
+        setFile(null);
       })();
     }
   }, [file, trieveSDK]);
