@@ -96,22 +96,6 @@ export const ChatMode = () => {
             </span>
           </div>
         )}
-        {!props.inline && (currentQuestion || messages.length) ? (
-          <div className="chat-controls-row">
-            <button
-              onClick={() =>
-                currentQuestion
-                  ? askQuestion(currentQuestion)
-                  : isDoneReading
-                    ? clearConversation()
-                    : stopGeneratingMessage()
-              }
-              className="clear-button"
-            >
-              {currentQuestion ? "Enter" : isDoneReading ? "Clear" : "Stop"}
-            </button>
-          </div>
-        ) : null}
         <div
           className={`system-information-wrapper${
             currentGroup ? " with-group" : ""

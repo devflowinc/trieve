@@ -62,7 +62,7 @@ export const UploadImage = () => {
           mode === "chat"
             ? "right-14"
             : query.length == 0
-              ? "right-[9.5rem]"
+              ? "right-[10rem]"
               : "right-10"
         } absolute z-20 dark:text-white text-zinc-700`}
       >
