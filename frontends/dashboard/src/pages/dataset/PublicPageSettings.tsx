@@ -33,6 +33,21 @@ export const PublicPageSettingsPage = () => {
   );
 };
 
+const searchTypeOptions = [
+  {
+    label: "Docs",
+    value: "docs",
+  },
+  {
+    label: "Ecommerce",
+    value: "ecommerce",
+  },
+  {
+    label: "PDF",
+    value: "pdf",
+  },
+];
+
 const PublicPageControls = () => {
   const {
     extraParams,
@@ -346,6 +361,20 @@ const PublicPageControls = () => {
           </div>
 
           <div class="grid grid-cols-2 items-start gap-2 gap-x-9 pt-4">
+            <div class="col-span-2 max-w-[250px]">
+              <label>Search Type</label>
+              <Select
+                display={(option) => (option ? option.label : "Docs")}
+                onSelected={(option) => {
+                  setExtraParams("defaultSearchMode", option?.value ?? "docs");
+                }}
+                class="bg-white py-1 min-w-[250px]"
+                selected={searchTypeOptions.find(
+                  (option) => option.value === extraParams.defaultSearchMode,
+                )}
+                options={searchTypeOptions}
+              />
+            </div>
             <div class="flex gap-2">
               <div class="flex items-center gap-1">
                 <label class="block" for="">
@@ -456,28 +485,6 @@ const PublicPageControls = () => {
                 type="checkbox"
                 onChange={(e) => {
                   setExtraParams("chat", e.currentTarget.checked);
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Ecommerce Mode
-                </label>
-                <Tooltip
-                  tooltipText="Use the component in ecommerce mode"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                checked={extraParams.type === "ecommerce" || false}
-                type="checkbox"
-                onChange={(e) => {
-                  setExtraParams(
-                    "type",
-                    e.currentTarget.checked ? "ecommerce" : "docs",
-                  );
                 }}
                 class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
