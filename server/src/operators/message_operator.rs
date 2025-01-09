@@ -764,12 +764,6 @@ pub async fn stream_response(
                 .filter_map(|image| image.clone())
                 .collect::<Vec<_>>()
         })
-        .chain(
-            create_message_req_payload
-                .image_urls
-                .clone()
-                .unwrap_or_default(),
-        )
         .collect();
 
     // replace the last message with the last message with evidence
@@ -802,7 +796,24 @@ pub async fn stream_response(
         })
         .collect();
 
-    if !images.is_empty() {
+    if let Some(image_urls) = create_message_req_payload.image_urls.clone() {
+        open_ai_messages.push(ChatMessage::User {
+            name: None,
+            content: ChatMessageContent::ImageUrl(
+                image_urls
+                    .iter()
+                    .map(|url| ImageUrl {
+                        r#type: "image_url".to_string(),
+                        text: None,
+                        image_url: ImageUrlType {
+                            url: url.to_string(),
+                            detail: None,
+                        },
+                    })
+                    .collect(),
+            ),
+        });
+    } else if !images.is_empty() {
         if let Some(LLMOptions {
             image_config: Some(ref image_config),
             ..
