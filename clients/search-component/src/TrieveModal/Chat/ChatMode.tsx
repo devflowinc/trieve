@@ -7,6 +7,7 @@ import { Tags } from "../Tags";
 import { SparklesIcon } from "../icons";
 import { SuggestedQuestions } from "./SuggestedQuestions";
 import { UploadImage } from "../Search/UploadImage";
+import ImagePreview from "../ImagePreview";
 
 export const ChatMode = () => {
   const {
@@ -18,6 +19,8 @@ export const ChatMode = () => {
     mode,
     currentGroup,
     setCurrentGroup,
+    uploadingImage,
+    imageUrl
   } = useModalState();
   const {
     askQuestion,
@@ -122,6 +125,11 @@ export const ChatMode = () => {
               ))}
             </div>
           </div>
+          <ImagePreview
+            isUploading={uploadingImage}
+            imageUrl={imageUrl}
+            active
+          />
         </div>
       </div>
       <div
@@ -173,21 +181,19 @@ export const ChatMode = () => {
               }`}
             />
           </form>
-          {props.inline ? (
-            <button
-              onClick={() => {
-                if (currentQuestion) {
-                  askQuestion(currentQuestion);
-                }
-              }}
-              className="inline-submit-icon"
-            >
-              <i className="fa-solid fa-paper-plane"></i>
-            </button>
-          ) : null}
+          <button
+            onClick={() => {
+              if (currentQuestion) {
+                askQuestion(currentQuestion);
+              }
+            }}
+            className="inline-submit-icon"
+          >
+            <i className="fa-solid fa-paper-plane"></i>
+          </button>
+          <UploadImage />
         </div>
         <div className={`trieve-footer chat ${props.type}`}>
-          <UploadImage />
           {!props.inline && (currentQuestion || messages.length) ? (
             <div className="chat-controls-row">
               <button

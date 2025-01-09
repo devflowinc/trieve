@@ -5,7 +5,7 @@ import { getPresignedUrl, uploadFile } from "../../utils/trieve";
 export const UploadImage = () => {
   const fileInputRef = useRef(null);
   const [file, setFile] = React.useState<File | null>(null);
-  const { trieveSDK, setImageUrl } = useModalState();
+  const { trieveSDK, setImageUrl, setUploadingImage } = useModalState();
 
   const handleClick = () => {
     if (!fileInputRef.current) return;
@@ -29,6 +29,7 @@ export const UploadImage = () => {
 
   useEffect(() => {
     if (file) {
+      setUploadingImage(true);
       (async () => {
         const data = await toBase64(file);
         const base64File = data
@@ -40,6 +41,7 @@ export const UploadImage = () => {
         const fileId = await uploadFile(trieveSDK, file.name, base64File);
         const imageUrl = await getPresignedUrl(trieveSDK, fileId);
         setImageUrl(imageUrl);
+        setUploadingImage(false);
         setFile(null);
       })();
     }
@@ -49,9 +51,9 @@ export const UploadImage = () => {
     <div>
       <button
         onClick={handleClick}
-        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        className="text-zinc-700 rounded top-[0.825rem] right-14 absolute z-20"
       >
-        Upload Image
+        <i className="fa-solid fa-image"> </i>
       </button>
       <input
         ref={fileInputRef}
