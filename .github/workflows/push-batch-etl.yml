@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'main'
+      - "main"
     paths:
-    - 'batch-etl/**'
+      - "batch-etl/**"
 
 jobs:
   build_server:
@@ -23,10 +23,10 @@ jobs:
             platform: linux/amd64
             tag: latest
             suffix: ""
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
-            tag: latest-arm
-            suffix: -arm
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
+          #   tag: latest-arm
+          #   suffix: -arm
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -60,7 +60,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-
   create-job-worker:
     name: Push Create Job image
     runs-on: ${{ matrix.runner }}
@@ -70,10 +69,10 @@ jobs:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/amd64
             tag: latest
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
-            tag: latest-arm
-            suffix: -arm
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
+          #   tag: latest-arm
+          #   suffix: -arm
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -117,10 +116,10 @@ jobs:
           - runner: blacksmith-8vcpu-ubuntu-2204
             platform: linux/amd64
             tag: latest
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
-            tag: latest-arm
-            suffix: -arm
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
+          #   tag: latest-arm
+          #   suffix: -arm
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4

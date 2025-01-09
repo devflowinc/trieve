@@ -21,8 +21,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -66,8 +66,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -111,8 +111,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
