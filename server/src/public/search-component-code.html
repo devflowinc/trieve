@@ -25,9 +25,18 @@
       {% if params.type -%}
       type: "{{ params.type }}",
       {% endif -%}
+      {% if params.suggestedQueries -%}
       suggestedQueries: {{ params.suggestedQueries }},
+      {% endif -%}
+      {% if params.followupQuestions -%}
       followupQuestions: {{ params.followupQuestions }},
+      {% endif -%}
+      {% if params.inline -%}
       inline: {{ params.inline }},
+      {% endif -%}
+      {% if params.suggestedQueriesContext -%}
+      suggestedQueriesContext: "{{ params.suggestedQueriesContext }}",
+      {% endif -%}
       {% if params.analytics -%}
       analytics: {{ params.analytics }},
       {% endif -%}

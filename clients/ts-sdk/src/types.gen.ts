@@ -2119,6 +2119,7 @@ export type PublicPageParameters = {
     showFloatingSearchIcon?: (boolean) | null;
     singleProductOptions?: ((SingleProductOptions) | null);
     suggestedQueries?: (boolean) | null;
+    suggestedQueriesContext?: (string) | null;
     tabMessages?: Array<PublicPageTabMessage> | null;
     tags?: Array<PublicPageTag> | null;
     theme?: ((PublicPageTheme) | null);

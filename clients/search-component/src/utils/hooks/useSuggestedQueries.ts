@@ -21,6 +21,7 @@ export const useSuggestedQueries = () => {
       trieve: trieveSDK,
       query,
       count: props.numberOfSuggestions ?? 3,
+      context: props.suggestedQueriesContext,
       abortController,
     });
     setSuggestedQueries(queries.queries);

@@ -266,7 +266,7 @@ export const Message = ({
               : null}
               {props.followupQuestions && messages.length == idx + 1 &&
                 <FollowupQueries /> }
-            {isDoneReading && <div className="feedback-wrapper">
+            {isDoneReading && messages.length == idx + 1 && <div className="feedback-wrapper">
               <span className="spacer"></span>
               <div className="feedback-icons">
                 {copied ? (
