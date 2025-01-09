@@ -102,12 +102,20 @@ fn create_chunk_req_payload(
         variant.id
     );
 
-    let mut chunk_html = format!(
-        "<h1>{} - {}</h1>{}",
-        product.title.clone().unwrap_or_default(),
-        variant.title.clone().unwrap_or_default(),
-        product.body_html.clone().unwrap_or_default()
-    );
+    let mut chunk_html = if variant.title == Some("Default Title".to_string()) {
+        format!(
+            "<h1>{}</h1>{}",
+            product.title.clone().unwrap_or_default(),
+            product.body_html.clone().unwrap_or_default()
+        )
+    } else {
+        format!(
+            "<h1>{} - {}</h1>{}",
+            product.title.clone().unwrap_or_default(),
+            variant.title.clone().unwrap_or_default(),
+            product.body_html.clone().unwrap_or_default()
+        )
+    };
 
     if let Some(ScrapeOptions::Shopify(CrawlShopifyOptions {
         tag_regexes: Some(tag_regexes),
