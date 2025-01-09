@@ -41,6 +41,8 @@ export const ApiRoutes = {
     "GET /api/chunk/{chunk_id}",
     "GET /api/chunk_group/tracking_id/{tracking_id}",
     "GET /api/chunk_group/{group_id}",
+    "POST /api/file",
+    "GET /api/file/{file_id}",
   ],
   "api/analytics/*": [
     "POST /api/analytics/rag",
