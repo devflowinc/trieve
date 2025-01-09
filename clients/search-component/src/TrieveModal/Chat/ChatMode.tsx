@@ -12,13 +12,11 @@ import ImagePreview from "../ImagePreview";
 export const ChatMode = () => {
   const {
     props,
-    setMode,
     modalRef,
     open,
     setOpen,
     mode,
     currentGroup,
-    setCurrentGroup,
     uploadingImage,
     imageUrl,
   } = useModalState();
@@ -133,11 +131,6 @@ export const ChatMode = () => {
               ))}
             </div>
           </div>
-          <ImagePreview
-            isUploading={uploadingImage}
-            imageUrl={imageUrl}
-            active
-          />
         </div>
       </div>
       <div
@@ -145,6 +138,7 @@ export const ChatMode = () => {
           messages.length ? " with-messages" : ""
         }`}
       >
+        <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
         {currentGroup && (
           <div className="chat-group-disclaimer">
             <div>Chatting with {currentGroup.name.replace(/<[^>]*>/g, "")}</div>
@@ -162,19 +156,6 @@ export const ChatMode = () => {
             props.type == "ecommerce" ? "" : props.type
           } ${props.inline && "inline-input-wrapper"}`}
         >
-          {!props.inline ? (
-            <button
-              onClick={() => {
-                if (currentGroup) {
-                  setCurrentGroup(null);
-                }
-                setMode("search");
-              }}
-              className="back-icon"
-            >
-              <i className="fa-solid fa-chevron-left"></i>
-            </button>
-          ) : null}
           <form
             onSubmit={(e) => {
               e.preventDefault();

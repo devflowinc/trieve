@@ -804,7 +804,7 @@ body {
     }
 
     input {
-      @apply block w-full rounded-lg border-[1px] py-1.5 shadow-sm ring-0 outline-none sm:text-sm sm:leading-6 pl-8 pr-2 h-12 z-10 relative;
+      @apply block w-full rounded-lg border-[1px] py-1.5 shadow-sm ring-0 outline-none sm:text-sm sm:leading-6 pl-3 pr-[5rem] h-12 z-10 relative;
       color: var(--tv-zinc-900);
       background-color: var(--tv-zinc-50);
       border: 1px solid var(--tv-zinc-300);
@@ -813,7 +813,7 @@ body {
       }
 
       &.inline-input {
-        @apply pl-2;
+        @apply pl-1;
 
         &:focus {
           background-color: #fff;
