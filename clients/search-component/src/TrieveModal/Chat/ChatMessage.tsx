@@ -8,11 +8,13 @@ import { LoadingIcon, SparklesIcon } from "../icons";
 import { ChatPdfItem } from "../PdfView/ChatPdfItem";
 import { Carousel } from "./Carousel";
 import { FollowupQueries } from "./FollowupQueries";
+import ImagePreview from "../ImagePreview";
 
 type Message = {
   queryId: string | null;
   type: string;
   text: string;
+  imageUrl?: string;
   additional: Chunk[] | null;
 };
 
@@ -28,9 +30,14 @@ export const ChatMessage = ({
   return (
     <div key={idx}>
       {message.type == "user" ? (
-        <div className="" key={idx}>
+        <div key={idx}>
           <div className={message.type}>
-            <span className="user-text"> {message.text}</span>
+            <div className="flex flex-col space-y-1 items-end">
+              {message.imageUrl && 
+                <ImagePreview isUploading={false} imageUrl={message.imageUrl} />
+              }
+              <span className="user-text"> {message.text}</span>
+            </div>
           </div>
         </div>
       ) : (
@@ -307,7 +314,6 @@ export const Message = ({
               </div>
             </div>}
           </div>
-          {props.followupQuestions && <FollowupQueries />}
         </div>
       ) : null}
     </div>

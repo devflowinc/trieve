@@ -159,8 +159,10 @@ const ModalContext = createContext<{
   trieveSDK: TrieveSDK;
   query: string;
   imageUrl: string;
+  uploadingImage: boolean;
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   setImageUrl: React.Dispatch<React.SetStateAction<string>>;
+  setUploadingImage: React.Dispatch<React.SetStateAction<boolean>>;
   results: ChunkWithHighlights[] | GroupChunk[][];
   setResults: React.Dispatch<
     React.SetStateAction<ChunkWithHighlights[] | GroupChunk[][]>
@@ -187,6 +189,7 @@ const ModalContext = createContext<{
   trieveSDK: (() => {}) as unknown as TrieveSDK,
   query: "",
   imageUrl: "",
+  uploadingImage: false,
   results: [],
   loadingResults: false,
   open: false,
@@ -197,6 +200,7 @@ const ModalContext = createContext<{
   setOpen: () => {},
   setQuery: () => {},
   setImageUrl: () => {},
+  setUploadingImage: () => {},
   setResults: () => {},
   requestID: "",
   setRequestID: () => {},
@@ -223,6 +227,7 @@ const ModalProvider = ({
   });
   const [query, setQuery] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState<boolean>(false);
   const [results, setResults] = useState<
     ChunkWithHighlights[] | GroupChunk[][]
   >([]);
@@ -451,6 +456,8 @@ const ModalProvider = ({
         setQuery,
         imageUrl,
         setImageUrl,
+        uploadingImage,
+        setUploadingImage,
         open,
         setOpen,
         inputRef,

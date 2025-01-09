@@ -59,7 +59,7 @@ const ChatContext = createContext<{
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { query, trieveSDK, setMode, setCurrentGroup, imageUrl } =
+  const { query, trieveSDK, setMode, setCurrentGroup, imageUrl, setImageUrl } =
     useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
@@ -213,6 +213,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           },
           chatMessageAbortController.current.signal
         );
+
+      if (imageUrl) {
+        setImageUrl("");
+      }
       handleReader(reader, queryId);
     }
   };
@@ -266,6 +270,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         text: question || currentQuestion,
         additional: null,
         queryId: null,
+        imageUrl: imageUrl ? imageUrl : null
       },
     ]);
 
