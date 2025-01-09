@@ -218,8 +218,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -259,7 +259,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-
   ingest_worker:
     name: Push Ingest image
     runs-on: ${{ matrix.runner }}
@@ -268,8 +267,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -314,8 +313,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -352,7 +351,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-
   file_worker:
     name: Push File Worker image
     runs-on: ${{ matrix.runner }}
@@ -361,8 +359,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -407,8 +405,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -453,8 +451,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -499,8 +497,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -545,8 +543,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -591,8 +589,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -637,8 +635,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -683,8 +681,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -729,8 +727,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -775,8 +773,8 @@ jobs:
         runner: [blacksmith-8vcpu-ubuntu-2204]
         platform: [linux/amd64]
         exclude:
-          - runner: blacksmith-8vcpu-ubuntu-2204
-            platform: linux/arm64
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
           - runner: blacksmith-8vcpu-ubuntu-2204-arm
             platform: linux/amd64
     steps:
@@ -804,94 +802,93 @@ jobs:
             type=ref,event=tag
 
   crawl-cron-job:
-      name: Push Crawl Cron Job
-      runs-on: ${{ matrix.runner }}
-      strategy:
-        matrix:
-          runner: [blacksmith-8vcpu-ubuntu-2204]
-          platform: [linux/amd64]
-          exclude:
-            - runner: blacksmith-8vcpu-ubuntu-2204
-              platform: linux/arm64
-            - runner: blacksmith-8vcpu-ubuntu-2204-arm
-              platform: linux/amd64
-      steps:
-        - name: Checkout the repo
-          uses: actions/checkout@v4
+    name: Push Crawl Cron Job
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-8vcpu-ubuntu-2204]
+        platform: [linux/amd64]
+        exclude:
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
 
-        - name: Setup buildx
-          uses: docker/setup-buildx-action@v3
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
 
-        - name: Login to Docker Hub
-          uses: docker/login-action@v3
-          with:
-            username: ${{ secrets.DOCKER_USERNAME }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-        - name: Docker meta
-          id: meta
-          uses: docker/metadata-action@v5
-          with:
-            # list of Docker images to use as base name for tags
-            images: |
-              trieve/crawl-cron-job
-            tags: |
-              type=raw,latest
-              type=ref,event=tag
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/crawl-cron-job
+          tags: |
+            type=raw,latest
+            type=ref,event=tag
 
-        - name: Build and push Docker image
-          uses: useblacksmith/build-push-action@v1.0.0-beta
-          with:
-            platforms: ${{ matrix.platform }}
-            context: server/
-            file: ./server/Dockerfile.crawl-cron-job
-            push: true
-            tags: ${{ steps.meta.outputs.tags }}
-            labels: ${{ steps.meta.outputs.labels }}
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.crawl-cron-job
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   dittofeed-sync-worker:
-      name: Push Dittofeed Sync Worker
-      runs-on: ${{ matrix.runner }}
-      strategy:
-        matrix:
-          runner: [blacksmith-8vcpu-ubuntu-2204]
-          platform: [linux/amd64]
-          exclude:
-            - runner: blacksmith-8vcpu-ubuntu-2204
-              platform: linux/arm64
-            - runner: blacksmith-8vcpu-ubuntu-2204-arm
-              platform: linux/amd64
-      steps:
-        - name: Checkout the repo
-          uses: actions/checkout@v4
+    name: Push Dittofeed Sync Worker
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        runner: [blacksmith-8vcpu-ubuntu-2204]
+        platform: [linux/amd64]
+        exclude:
+          # - runner: blacksmith-8vcpu-ubuntu-2204
+          #   platform: linux/arm64
+          - runner: blacksmith-8vcpu-ubuntu-2204-arm
+            platform: linux/amd64
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
 
-        - name: Setup buildx
-          uses: docker/setup-buildx-action@v3
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
 
-        - name: Login to Docker Hub
-          uses: docker/login-action@v3
-          with:
-            username: ${{ secrets.DOCKER_USERNAME }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-        - name: Docker meta
-          id: meta
-          uses: docker/metadata-action@v5
-          with:
-            # list of Docker images to use as base name for tags
-            images: |
-              trieve/dittofeed-sync-worker
-            tags: |
-              type=raw,latest
-              type=ref,event=tag
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            trieve/dittofeed-sync-worker
+          tags: |
+            type=raw,latest
+            type=ref,event=tag
 
-        - name: Build and push Docker image
-          uses: useblacksmith/build-push-action@v1.0.0-beta
-          with:
-            platforms: ${{ matrix.platform }}
-            context: server/
-            file: ./server/Dockerfile.dittofeed-sync-worker
-            push: true
-            tags: ${{ steps.meta.outputs.tags }}
-            labels: ${{ steps.meta.outputs.labels }}
-
+      - name: Build and push Docker image
+        uses: useblacksmith/build-push-action@v1.0.0-beta
+        with:
+          platforms: ${{ matrix.platform }}
+          context: server/
+          file: ./server/Dockerfile.dittofeed-sync-worker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
