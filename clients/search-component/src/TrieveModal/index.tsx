@@ -85,7 +85,7 @@ const Modal = () => {
         group: ChunkGroup;
         betterGroupName?: string;
       }>;
-      if (customEvent.detail.group) {
+      if (customEvent.detail.group && !props.inline) {
         setOpen(true);
         if (customEvent.detail.betterGroupName) {
           customEvent.detail.group.name = customEvent.detail.betterGroupName;
@@ -111,6 +111,8 @@ const Modal = () => {
       }>;
 
       const defaultMode = props.defaultSearchMode || "search";
+      if (props.inline) return;
+
       if (defaultMode === "chat") {
         setOpen(true);
         setMode("chat");
@@ -226,13 +228,13 @@ const Modal = () => {
             </div>
             <div
               className={
-                mode === "chat" && !fullscreenPdfState ? " chat-container" : " "
+                mode === "chat" && !fullscreenPdfState ? "chat-container" : ""
               }
-              style={{
+              style={props.type == "pdf" ? {
                 display:
                   mode === "chat" && !fullscreenPdfState ? "block" : "none",
                 maxHeight: fullscreenPdfState ? "none" : "60vh",
-              }}
+              }: {}}
             >
               <ChatMode />
             </div>

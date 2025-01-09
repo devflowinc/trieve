@@ -79,7 +79,7 @@ export const Message = ({
   idx: number;
   message: Message;
 }) => {
-  const { rateChatCompletion, isDoneReading } = useChatState();
+  const { rateChatCompletion, isDoneReading, messages } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
   const { props } = useModalState();
@@ -264,7 +264,7 @@ export const Message = ({
                   </div>
                 )
               : null}
-              {props.followupQuestions && 
+              {props.followupQuestions && messages.length == idx + 1 &&
                 <FollowupQueries /> }
             {isDoneReading && <div className="feedback-wrapper">
               <span className="spacer"></span>

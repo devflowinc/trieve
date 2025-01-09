@@ -67,7 +67,13 @@ export const ChatMode = () => {
         {!props.inline && (
           <div
             className={`close-modal-button chat ${props.type}`}
-            onClick={() => setOpen(false)}
+            onClick={() =>
+              messages.length < 1
+                ? setOpen(false)
+                : isDoneReading
+                  ? clearConversation()
+                  : stopGeneratingMessage()
+            }
           >
             <svg
               className="close-icon"
@@ -85,9 +91,25 @@ export const ChatMode = () => {
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-            <span>Close</span>
+            <span>{messages.length < 1 ? "Close" : isDoneReading ? "Clear" : "Stop"} </span>
           </div>
         )}
+        {!props.inline && (currentQuestion || messages.length) ? (
+          <div className="chat-controls-row">
+            <button
+              onClick={() =>
+                currentQuestion
+                  ? askQuestion(currentQuestion)
+                  : isDoneReading
+                    ? clearConversation()
+                    : stopGeneratingMessage()
+              }
+              className="clear-button"
+            >
+              {currentQuestion ? "Enter" : isDoneReading ? "Clear" : "Stop"}
+            </button>
+          </div>
+        ) : null}
         <div
           className={`system-information-wrapper${
             currentGroup ? " with-group" : ""
@@ -149,7 +171,7 @@ export const ChatMode = () => {
             </button>
           </div>
         )}
-        <div className="input-wrapper chat">
+        <div className={`input-wrapper chat ${props.type == "ecommerce" ? "": props.type} ${props.inline && "inline-input-wrapper"}`}>
           {!props.inline ? (
             <button
               onClick={() => {
@@ -176,9 +198,7 @@ export const ChatMode = () => {
               value={currentQuestion}
               className={`${props.inline ? "inline-input" : ""}`}
               onChange={(e) => setCurrentQuestion(e.target.value)}
-              placeholder={`Ask me anything about${
-                props.brandName ? ` ${props.brandName}` : ""
-              }`}
+              placeholder="Ask anything ..."
             />
           </form>
           <button
@@ -194,22 +214,6 @@ export const ChatMode = () => {
           <UploadImage />
         </div>
         <div className={`trieve-footer chat ${props.type}`}>
-          {!props.inline && (currentQuestion || messages.length) ? (
-            <div className="chat-controls-row">
-              <button
-                onClick={() =>
-                  currentQuestion
-                    ? askQuestion(currentQuestion)
-                    : isDoneReading
-                      ? clearConversation()
-                      : stopGeneratingMessage()
-                }
-                className="clear-button"
-              >
-                {currentQuestion ? "Enter" : isDoneReading ? "Clear" : "Stop"}
-              </button>
-            </div>
-          ) : null}
           <div className="tags-row">
             {props.tags?.length ? <Tags /> : null}
             <div className="tags-spacer"></div>
