@@ -33,7 +33,6 @@ RUN apt-get update -y; \
     ;
 
 COPY ./ch_migrations /app/ch_migrations
-COPY --from=builder /app/static /app/static
 COPY --from=builder /app/target/release/batch-etl-server /app/batch-etl-server
 
 EXPOSE 8090
