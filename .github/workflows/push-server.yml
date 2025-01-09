@@ -16,6 +16,7 @@ jobs:
   build_server:
     name: Push No OCR image
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -65,6 +66,7 @@ jobs:
   ingest_worker:
     name: Push Ingest image
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -112,6 +114,7 @@ jobs:
   delete_worker:
     name: Push Delete worker
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -160,6 +163,7 @@ jobs:
   csv_jsonl_worker:
     name: Push CSV JSONL worker Image
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -207,6 +211,7 @@ jobs:
   file_worker:
     name: Push File Worker image
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -254,6 +259,7 @@ jobs:
   group_worker:
     name: Push Group worker
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -301,6 +307,7 @@ jobs:
   clone_qdrant:
     name: Push Clone Qdrant script
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -348,6 +355,7 @@ jobs:
   sync_qdrant:
     name: Push Sync Qdrant script
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -395,6 +403,7 @@ jobs:
   queue_bm25:
     name: Push Queue BM25 Script
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -442,6 +451,7 @@ jobs:
   reindex-worker:
     name: Push Reindex Worker
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -489,6 +499,7 @@ jobs:
   word-id-cronjob:
     name: Push Word ID cronjob
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -536,6 +547,7 @@ jobs:
   word-worker:
     name: Push Word Worker
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -583,6 +595,7 @@ jobs:
   bktree-worker:
     name: Push BK-Tree Worker
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -630,6 +643,7 @@ jobs:
   crawl-worker:
     name: Push Crawl Worker
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -677,6 +691,7 @@ jobs:
   crawl-cron-job:
     name: Push Crawl Cron Job
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -724,6 +739,7 @@ jobs:
   dittofeed-sync-worker:
     name: Push Dittofeed Sync Worker
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -771,6 +787,7 @@ jobs:
   video-worker:
     name: Push Video worker
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -822,6 +839,7 @@ jobs:
   pagefind-worker:
     name: Push Pagefind Index worker
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
