@@ -769,7 +769,7 @@ body {
 
       &.docs,
       &.pdf {
-        @apply m-2 mr-0;
+        @apply m-2;
       }
 
       &.inline-input-wrapper {
@@ -875,7 +875,7 @@ body {
     .item {
       @apply select-none cursor-pointer py-2 text-left flex items-start gap-2 w-full h-full text-sm outline-none rounded-lg px-5 overflow-ellipsis;
 
-      background-color: var(--tv-zinc-50);
+      background-color: white;
 
       .ecommerce-secondary-row {
         @apply flex justify-between items-center;
@@ -898,8 +898,7 @@ body {
       }
 
       .chunk-path {
-        color: var(--tv-zinc-600);
-        @apply text-xs line-clamp-1 overflow-ellipsis;
+        @apply text-xs line-clamp-1 overflow-ellipsis text-zinc-600 dark:text-zinc-300;
       }
 
       .chunk-title {
@@ -1234,7 +1233,7 @@ body {
       }
 
       .item {
-        color: var(--tv-zinc-50);
+        color: white;
         background-color: var(--tv-zinc-900);
         border-color: var(--tv-zinc-700);
 
@@ -1279,7 +1278,6 @@ body {
       @apply max-w-[90rem] pt-10 px-4;
     }
   }
-
 }
 
 body {

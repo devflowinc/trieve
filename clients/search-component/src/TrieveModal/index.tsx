@@ -93,7 +93,7 @@ const Modal = () => {
         clearConversation();
         chatWithGroup(
           customEvent.detail.group,
-          customEvent.detail.betterGroupName,
+          customEvent.detail.betterGroupName
         );
         if (customEvent.detail.message) {
           askQuestion(customEvent.detail.message, customEvent.detail.group);
@@ -139,14 +139,14 @@ const Modal = () => {
 
     window.addEventListener(
       "trieve-start-chat-with-group",
-      chatWithGroupListener,
+      chatWithGroupListener
     );
     window.addEventListener("trieve-open-with-text", openWithTextListener);
 
     return () => {
       window.removeEventListener(
         "trieve-start-chat-with-group",
-        chatWithGroupListener,
+        chatWithGroupListener
       );
 
       window.removeEventListener("trieve-open-with-text", openWithTextListener);
@@ -156,18 +156,18 @@ const Modal = () => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB",
+      props.brandColor ?? "#CB53EB"
     );
 
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)",
+        "var(--tv-zinc-700)"
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)",
+        "var(--tv-zinc-300)"
       );
     }
 
@@ -175,7 +175,7 @@ const Modal = () => {
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
         `Maven Pro, ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
     );
   }, [props.brandColor, props.brandFontFamily]);
 
@@ -230,11 +230,17 @@ const Modal = () => {
               className={
                 mode === "chat" && !fullscreenPdfState ? "chat-container" : ""
               }
-              style={props.type == "pdf" ? {
-                display:
-                  mode === "chat" && !fullscreenPdfState ? "block" : "none",
-                maxHeight: fullscreenPdfState ? "none" : "60vh",
-              }: {}}
+              style={
+                props.type == "pdf"
+                  ? {}
+                  : {
+                      display:
+                        mode === "chat" && !fullscreenPdfState
+                          ? "block"
+                          : "none",
+                      maxHeight: fullscreenPdfState ? "none" : "60vh",
+                    }
+              }
             >
               <ChatMode />
             </div>

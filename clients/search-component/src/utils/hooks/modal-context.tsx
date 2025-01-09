@@ -253,7 +253,7 @@ const ModalProvider = ({
   });
 
   const search = async (abortController: AbortController) => {
-    if (!query) {
+    if (!query && !imageUrl) {
       setResults([]);
       return;
     }
@@ -321,10 +321,7 @@ const ModalProvider = ({
         setRequestID(results.requestID);
       }
     } catch (e) {
-      if (
-        e != "AbortError" &&
-        e != "AbortError: signal is aborted without reason"
-      ) {
+      if ((e as DOMException)?.name != "AbortError") {
         console.error(e);
       }
     } finally {
@@ -427,7 +424,7 @@ const ModalProvider = ({
       clearTimeout(timeout);
       abortController.abort();
     };
-  }, [query, currentTag]);
+  }, [query, imageUrl, currentTag]);
 
   useEffect(() => {
     const abortController = new AbortController();
