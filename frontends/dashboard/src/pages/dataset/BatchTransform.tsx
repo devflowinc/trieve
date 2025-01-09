@@ -62,17 +62,17 @@ export const BatchTransform = () => {
         <div class="min-w-[49%]">
           <div class="flex items-center gap-2">
             <label for="url" class="block">
-              Site URL
+              Prompt
             </label>
             <Tooltip
-              tooltipText="The URL of the site to start the crawl from"
+              tooltipText="The prompt to give the vision model for transforming"
               body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
             />
           </div>
           <input
             name="url"
             value={prompt() || ""}
-            placeholder="Prompt..."
+            placeholder="Convert the following documents into a standardized format."
             onInput={(e) => {
               setPrompt(e.currentTarget.value);
             }}

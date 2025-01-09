@@ -317,7 +317,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     .send(ClickHouseEvent::WorkerEvent(
                                         WorkerEvent::from_details(
                                             job.dataset_id,
-                                            EventType::EtlStarted,
+                                            EventType::EtlStarted {
+                                                prompt: job.payload.prompt,
+                                                model: job.payload.model,
+                                                tag_enum: job.payload.tag_enum,
+                                                include_images: job.payload.include_images,
+                                            },
                                         )
                                         .into(),
                                     ))
