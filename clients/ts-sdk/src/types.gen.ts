@@ -740,6 +740,10 @@ export type CreateMessageReqPayload = {
     context_options?: ((ContextOptions) | null);
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
+    /**
+     * The URL of the image(s) to attach to the message.
+     */
+    image_urls?: Array<(string)> | null;
     llm_options?: ((LLMOptions) | null);
     /**
      * The content of the user message to attach to the topic and then generate an assistant message in response to.
@@ -1131,6 +1135,10 @@ export type EditMessageReqPayload = {
     context_options?: ((ContextOptions) | null);
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
+    /**
+     * The URL of the image(s) to attach to the message.
+     */
+    image_urls?: Array<(string)> | null;
     llm_options?: ((LLMOptions) | null);
     /**
      * The sort order of the message to edit.
@@ -2701,6 +2709,7 @@ export type SearchMethod = 'fulltext' | 'semantic' | 'hybrid' | 'bm25';
 
 export type SearchModalities = {
     image_url: string;
+    llm_prompt?: (string) | null;
 } | string;
 
 export type SearchOverGroupsReqPayload = {

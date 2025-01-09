@@ -9073,6 +9073,14 @@
             ],
             "nullable": true
           },
+          "image_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The URL of the image(s) to attach to the message.",
+            "nullable": true
+          },
           "llm_options": {
             "allOf": [
               {
@@ -9969,6 +9977,14 @@
                 "$ref": "#/components/schemas/HighlightOptions"
               }
             ],
+            "nullable": true
+          },
+          "image_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The URL of the image(s) to attach to the message.",
             "nullable": true
           },
           "llm_options": {
@@ -15066,6 +15082,10 @@
             "properties": {
               "image_url": {
                 "type": "string"
+              },
+              "llm_prompt": {
+                "type": "string",
+                "nullable": true
               }
             }
           },

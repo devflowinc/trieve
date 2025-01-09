@@ -59,14 +59,15 @@ const ChatContext = createContext<{
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { query, trieveSDK, setMode, setCurrentGroup } = useModalState();
+  const { query, trieveSDK, setMode, setCurrentGroup, imageUrl } =
+    useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
   const called = useRef(false);
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController(),
+    new AbortController()
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
@@ -100,7 +101,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     setIsLoading(true);
     setIsDoneReading(false);
@@ -187,7 +188,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ],
           stream_response: true,
         },
-        chatMessageAbortController.current.signal,
+        chatMessageAbortController.current.signal
       );
       handleReader(reader, queryId);
     } else {
@@ -196,6 +197,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           {
             topic_id: id || currentTopic,
             new_message_content: question || currentQuestion,
+            image_urls: imageUrl ? [imageUrl] : [],
             llm_options: {
               completion_first: false,
             },
@@ -209,7 +211,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                   }
                 : null,
           },
-          chatMessageAbortController.current.signal,
+          chatMessageAbortController.current.signal
         );
       handleReader(reader, queryId);
     }
@@ -287,7 +289,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({

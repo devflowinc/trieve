@@ -3791,6 +3791,7 @@ impl ApiKeyRequestParams {
             filters: self.filters.or(payload.filters),
             score_threshold: self.score_threshold.or(payload.score_threshold),
             llm_options: payload.llm_options,
+            image_urls: payload.image_urls,
             context_options: payload.context_options,
             no_result_message: self.no_result_message.or(payload.no_result_message),
         }
@@ -7492,6 +7493,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
         #[derive(Deserialize)]
         struct Helper {
             pub new_message_content: String,
+            pub image_urls: Option<Vec<String>>,
             pub topic_id: uuid::Uuid,
             pub highlight_options: Option<HighlightOptions>,
             pub search_type: Option<SearchMethod>,
@@ -7525,6 +7527,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
 
         Ok(CreateMessageReqPayload {
             new_message_content: helper.new_message_content,
+            image_urls: helper.image_urls,
             topic_id: helper.topic_id,
             highlight_options,
             sort_options: helper.sort_options,
@@ -7614,7 +7617,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub highlight_options: Option<HighlightOptions>,
             pub search_type: Option<SearchMethod>,
             pub sort_options: Option<SortOptions>,
-
+            pub image_urls: Option<Vec<String>>,
             pub use_group_search: Option<bool>,
             pub concat_user_messages_query: Option<bool>,
             pub search_query: Option<String>,
@@ -7645,6 +7648,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
         Ok(EditMessageReqPayload {
             topic_id: helper.topic_id,
             message_sort_order: helper.message_sort_order,
+            image_urls: helper.image_urls,
             sort_options: helper.sort_options,
             new_message_content: helper.new_message_content,
             highlight_options,
