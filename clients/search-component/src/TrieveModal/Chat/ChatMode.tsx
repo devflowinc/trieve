@@ -20,7 +20,7 @@ export const ChatMode = () => {
     currentGroup,
     setCurrentGroup,
     uploadingImage,
-    imageUrl
+    imageUrl,
   } = useModalState();
   const {
     askQuestion,
@@ -91,7 +91,9 @@ export const ChatMode = () => {
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-            <span>{messages.length < 1 ? "Close" : isDoneReading ? "Clear" : "Stop"} </span>
+            <span>
+              {messages.length < 1 ? "Close" : isDoneReading ? "Clear" : "Stop"}{" "}
+            </span>
           </div>
         )}
         {!props.inline && (currentQuestion || messages.length) ? (
@@ -171,7 +173,11 @@ export const ChatMode = () => {
             </button>
           </div>
         )}
-        <div className={`input-wrapper chat ${props.type == "ecommerce" ? "": props.type} ${props.inline && "inline-input-wrapper"}`}>
+        <div
+          className={`input-wrapper chat ${
+            props.type == "ecommerce" ? "" : props.type
+          } ${props.inline && "inline-input-wrapper"}`}
+        >
           {!props.inline ? (
             <button
               onClick={() => {

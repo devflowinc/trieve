@@ -5,7 +5,8 @@ import { getPresignedUrl, uploadFile } from "../../utils/trieve";
 export const UploadImage = () => {
   const fileInputRef = useRef(null);
   const [file, setFile] = React.useState<File | null>(null);
-  const { trieveSDK, setImageUrl, setUploadingImage } = useModalState();
+  const { trieveSDK, setImageUrl, setUploadingImage, mode, query, setQuery } =
+    useModalState();
 
   const handleClick = () => {
     if (!fileInputRef.current) return;
@@ -28,21 +29,27 @@ export const UploadImage = () => {
     });
 
   useEffect(() => {
-    if (file) {
+    const internalFile = file;
+    setFile(null);
+    if (internalFile) {
+      setQuery("");
       setUploadingImage(true);
       (async () => {
-        const data = await toBase64(file);
+        const data = await toBase64(internalFile);
         const base64File = data
           .split(",")[1]
           .replace(/\+/g, "-")
           .replace(/\//g, "_")
           .replace(/=+$/, "");
 
-        const fileId = await uploadFile(trieveSDK, file.name, base64File);
+        const fileId = await uploadFile(
+          trieveSDK,
+          internalFile.name,
+          base64File
+        );
         const imageUrl = await getPresignedUrl(trieveSDK, fileId);
         setImageUrl(imageUrl);
         setUploadingImage(false);
-        setFile(null);
       })();
     }
   }, [file, trieveSDK]);
@@ -51,7 +58,13 @@ export const UploadImage = () => {
     <div>
       <button
         onClick={handleClick}
-        className="text-zinc-700 rounded top-[0.825rem] right-14 absolute z-20"
+        className={`rounded top-[0.825rem] ${
+          mode === "chat"
+            ? "right-14"
+            : query.length == 0
+              ? "right-[9.5rem]"
+              : "right-10"
+        } absolute z-20 dark:text-white text-zinc-700`}
       >
         <i className="fa-solid fa-image"> </i>
       </button>
