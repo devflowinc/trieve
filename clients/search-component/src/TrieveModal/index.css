@@ -80,10 +80,6 @@ body {
 
       .chat-outer-wrapper {
         @apply justify-between w-full h-full;
-
-        &.chat-outer-popup {
-          @apply mt-10 sm:mt-12;
-        }
       }
     }
 
@@ -591,10 +587,6 @@ body {
 
     .chat-outer-wrapper {
       @apply flex flex-col px-4 scroll-smooth mt-0;
-
-      &.chat-outer-popup {
-        @apply mt-12;
-      }
 
       .ai-message {
         .message-wrapper {
