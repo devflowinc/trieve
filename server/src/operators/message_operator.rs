@@ -797,22 +797,24 @@ pub async fn stream_response(
         .collect();
 
     if let Some(image_urls) = create_message_req_payload.image_urls.clone() {
-        open_ai_messages.push(ChatMessage::User {
-            name: None,
-            content: ChatMessageContent::ImageUrl(
-                image_urls
-                    .iter()
-                    .map(|url| ImageUrl {
-                        r#type: "image_url".to_string(),
-                        text: None,
-                        image_url: ImageUrlType {
-                            url: url.to_string(),
-                            detail: None,
-                        },
-                    })
-                    .collect(),
-            ),
-        });
+        if !image_urls.is_empty() {
+            open_ai_messages.push(ChatMessage::User {
+                name: None,
+                content: ChatMessageContent::ImageUrl(
+                    image_urls
+                        .iter()
+                        .map(|url| ImageUrl {
+                            r#type: "image_url".to_string(),
+                            text: None,
+                            image_url: ImageUrlType {
+                                url: url.to_string(),
+                                detail: None,
+                            },
+                        })
+                        .collect(),
+                ),
+            });
+        }
     } else if !images.is_empty() {
         if let Some(LLMOptions {
             image_config: Some(ref image_config),
