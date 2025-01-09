@@ -401,7 +401,7 @@ const ResultsPage = (props: ResultsPageProps) => {
           void response.json().then((data) => {
             let resultingChunks: any = [];
             if (groupUnique) {
-              const groupResult = data.chunks as GroupScoreChunkDTO[];
+              const groupResult = data.results as GroupScoreChunkDTO[];
               setTotalPages(data.total_pages);
               setSearchID(data.id);
               setCorrectedQuery(data.corrected_query);
