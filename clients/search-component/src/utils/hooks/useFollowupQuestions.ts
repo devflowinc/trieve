@@ -35,6 +35,7 @@ export const useFollowupQuestions = () => {
         trieve: trieveSDK,
         abortController,
         group: currentGroup,
+        query,
         count: props.numberOfSuggestions ?? 3,
         context: "You are an assistant searching through a docs website"
       });
