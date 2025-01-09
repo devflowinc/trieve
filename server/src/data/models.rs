@@ -3297,6 +3297,9 @@ impl DatasetConfigurationDTO {
                     inline_header: page_parameters_self
                         .inline_header
                         .or(page_parameters_curr.inline_header),
+                    suggested_queries_context: page_parameters_self
+                        .suggested_queries_context
+                        .or(page_parameters_curr.suggested_queries_context),
                 }),
             },
             DISABLE_ANALYTICS: self

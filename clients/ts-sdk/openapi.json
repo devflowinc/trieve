@@ -12718,6 +12718,10 @@
             "type": "boolean",
             "nullable": true
           },
+          "suggestedQueriesContext": {
+            "type": "string",
+            "nullable": true
+          },
           "tabMessages": {
             "type": "array",
             "items": {

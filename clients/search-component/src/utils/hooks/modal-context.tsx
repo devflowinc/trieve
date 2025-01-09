@@ -109,6 +109,7 @@ export type ModalProps = {
   showFloatingSearchIcon?: boolean;
   showFloatingInput?: boolean;
   inlineHeader?: string;
+  suggestedQueriesContext: string;
 };
 
 const defaultProps = {
@@ -152,6 +153,7 @@ const defaultProps = {
   showFloatingInput: false,
   inline: false,
   inlineHeader: "AI Assistant by Trieve",
+  suggestedQueriesContext: "You are an ecommerce sales assistant to help people buy items."
 };
 
 const ModalContext = createContext<{

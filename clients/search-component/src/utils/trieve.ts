@@ -259,11 +259,13 @@ export const getSuggestedQueries = async ({
   trieve,
   query,
   count,
+  context,
   abortController,
 }: {
   query: string;
   trieve: TrieveSDK;
   count: number;
+  context: string;
   abortController?: AbortController;
 }) => {
   return trieve.suggestedQueries(
@@ -272,7 +274,7 @@ export const getSuggestedQueries = async ({
       suggestion_type: "keyword",
       suggestions_to_create: count,
       search_type: "semantic",
-      context: "You are a user searching through a docs website",
+      context: context
     },
     abortController?.signal
   );
@@ -288,22 +290,17 @@ export const getSuggestedQuestions = async ({
 }: {
   trieve: TrieveSDK;
   abortController?: AbortController;
-  context?: string;
+  context: string;
   query?: string;
   count: number;
   group?: ChunkGroup | null;
 }) => {
-  let suggestedQueriesContext =
-    "You are a user searching through a docs website";
-  if (context) {
-    suggestedQueriesContext = context;
-  }
   return trieve.suggestedQueries(
     {
       ...(query && { query }),
       suggestion_type: "question",
       search_type: "semantic",
-      context: suggestedQueriesContext,
+      context: context,
       suggestions_to_create: count,
       ...(group &&
         group?.tracking_id && {

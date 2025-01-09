@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { SuggestedQueriesResponse } from "trieve-ts-sdk";
 import { getSuggestedQuestions } from "../trieve";
 import { useModalState } from "./modal-context";
+import { useChatState } from "./chat-context";
 
 export const useFollowupQuestions = () => {
-  const { query, trieveSDK, currentGroup, props } = useModalState();
+  const { trieveSDK, currentGroup, props } = useModalState();
+  const { currentQuestion } = useChatState();
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
     SuggestedQueriesResponse["queries"]
@@ -14,11 +16,12 @@ export const useFollowupQuestions = () => {
     setIsLoading(true);
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
-      query,
+      query: currentQuestion,
       count: props.numberOfSuggestions ?? 3,
+      context: props.suggestedQueriesContext,
       group: currentGroup
     });
-    setSuggestedQuestions(queries.queries.splice(0, 3));
+    setSuggestedQuestions(queries.queries);
     setIsLoading(false);
   };
 
@@ -31,16 +34,7 @@ export const useFollowupQuestions = () => {
     const abortController = new AbortController();
 
     const timeoutId = setTimeout(async () => {
-      const queries = await getSuggestedQuestions({
-        trieve: trieveSDK,
-        abortController,
-        group: currentGroup,
-        query,
-        count: props.numberOfSuggestions ?? 3,
-        context: "You are an assistant searching through a docs website"
-      });
-      setSuggestedQuestions(queries.queries);
-      setIsLoading(false);
+      getQuestions();
     });
 
     return () => {
