@@ -440,20 +440,20 @@
     <script type="module">
         import {renderToDiv} from '{{ search_component_url | safe }}/dist/vanilla/index.js';
         const root = document.querySelector("#root");
-        const params = {{params | tojson}};
 
+        const params = {{ params | tojson }};
         if (params.inline) {
+          const inlineParams = {{ params | tojson }};
           const inlineRoot = document.querySelector("#inline-root");
-          const inlineParams = params;
           inlineParams.groupTrackingId = params.singleProductOptions.groupTrackingId;
           inlineParams.cleanGroupName = params.singleProductOptions.productName;
 
-          if (params.singleProductOptions && params.singleProductOptions.productQuestions) {
-            inlineParams.defaultAiQuestions = params.singleProductOptions.productQuestions;
+          if (inlineParams.singleProductOptions && inlineParams.singleProductOptions.productQuestions) {
+            inlineParams.defaultAiQuestions = inlineParams.singleProductOptions.productQuestions;
           }
 
           renderToDiv(inlineRoot, {
-            ...params,
+            ...inlineParams,
           })
         }
 

@@ -87,7 +87,7 @@
           class="recs mt-6 flex flex-nowrap overflow-x-auto gap-x-4 sm:gap-x-6 xl:gap-x-8 py-2"
         >
           {% for i in range(5) %}
-          <div class="w-64 flex-shrink-0" x-key="{{ i }}">
+          <div class="mt-auto w-64 flex-shrink-0" x-key="{{ i }}">
             <div class="h-72 w-full overflow-hidden rounded-lg">
               <div class="h-full w-full bg-gray-200 animate-pulse"></div>
             </div>
@@ -117,7 +117,7 @@
     recProducts.forEach((recProduct, i) => {
       if (!idsToKeep.includes(recProduct.getAttribute("x-group-tracking-id"))) {
         const newDiv = document.createElement("div");
-        newDiv.classList.add("w-64", "flex-shrink-0");
+        newDiv.classList.add("w-64", "flex-shrink-0", "mt-auto");
         newDiv.setAttribute("x-key", i);
         newDiv.innerHTML = `
           <div class="h-72 w-full overflow-hidden rounded-lg">
@@ -283,7 +283,7 @@
       const price = priceNum ? `$${priceNum.toFixed(2)}` : null;
 
       const chunkElement = document.createElement("div");
-      chunkElement.classList.add(...["rec", "w-64", "flex-shrink-0"]);
+      chunkElement.classList.add(...["rec", "w-64", "flex-shrink-0", "mt-auto"]);
       chunkElement.setAttribute("x-group-tracking-id", groupTrackingId);
       chunkElement.innerHTML = `
         <div
@@ -302,12 +302,12 @@
         </div>
         <div class="mt-6 flex gap-2">
           <button
-            class="similar-button rec-button bg-brand-color w-1/2 flex items-center justify-center rounded-md border border-transparent px-8 py-2 text-sm font-medium text-white"
+            class="similar-button rec-button bg-brand-color w-1/2 flex items-center justify-center rounded-md border border-transparent px-1 py-2 text-sm font-medium text-white"
           >
             More Like This
           </button>
           <button
-            class="different-button rec-button bg-brand-color w-1/2 flex items-center justify-center rounded-md border border-transparent px-8 py-2 text-sm font-medium text-white"
+            class="different-button rec-button bg-brand-color w-1/2 flex items-center justify-center rounded-md border border-transparent px-1 py-2 text-sm font-medium text-white"
           >
             Less Like This
           </button>
