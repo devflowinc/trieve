@@ -108,7 +108,6 @@ diesel = { version = "2", features = [
 diesel-async = { version = "0.4.1", features = ["postgres", "deadpool"] }
 log = "0.4"
 once_cell = "1"
-rust-argon2 = "2"
 serde_json = { version = "1" }
 serde = { version = "1" }
 time = { version = "0.3" }
@@ -121,14 +120,12 @@ openai_dive = { git = "https://github.com/devflowinc/openai-client.git", branch 
 tokio = { version = "1.27.0", features = ["rt-multi-thread"] }
 tokio-stream = "0.1.12"
 futures-util = "0.3.28"
-async-stream = "0.3.5"
 actix = "0.13.0"
 futures = "0.3.28"
 crossbeam-channel = "0.5.8"
 qdrant-client = "1.12.1"
 rust-s3 = { version = "0.35.1" }
 base64 = "0.22.0"
-glob = "0.3.1"
 itertools = "0.13.0"
 redis = { version = "0.25", features = ["tokio-rustls-comp", "aio"] }
 reqwest = { version = "0.12.2", features = ["json"] }
@@ -149,7 +146,6 @@ openidconnect = { version = "3.4.0", features = [
 ], default-features = false }
 oauth2 = "4.4.2"
 dateparser = "0.2.1"
-cfg-if = "1.0.0"
 lettre = "0.11.3"
 scraper = "0.19.0"
 regex-split = "0.1.0"
@@ -171,12 +167,9 @@ prometheus = "0.13.4"
 chm = "0.1.16"
 murmur3 = "0.5.2"
 tantivy = "0.22.0"
-strsim = "0.11.1"
-levenshtein_automata = "0.2.1"
 flate2 = "1.0.31"
 bincode = "1.3"
 rayon = "1.10.0"
-crossbeam = "0.8.4"
 dashmap = "6.0.1"
 oas3 = "0.10.0"
 sanitize_html = "0.8.1"
