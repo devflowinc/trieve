@@ -442,7 +442,8 @@
 
         if (params.inline) {
           const inlineRoot = document.querySelector("#inline-root");
-
+          params.groupTrackingId = params.singleProductOptions.groupTrackingId;
+          params.cleanGroupName = params.singleProductOptions.productName;
           renderToDiv(inlineRoot, {
             ...params,
           })
