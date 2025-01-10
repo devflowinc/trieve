@@ -75,7 +75,7 @@ body {
 
       &.docs,
       &.pdf {
-        @apply h-screen sm:h-auto;
+        @apply h-screen sm:h-auto pt-10;
       }
 
       .chat-outer-wrapper {
