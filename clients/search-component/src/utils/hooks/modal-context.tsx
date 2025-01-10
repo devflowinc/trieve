@@ -109,7 +109,6 @@ export type ModalProps = {
   showFloatingSearchIcon?: boolean;
   showFloatingInput?: boolean;
   inlineHeader?: string;
-  suggestedQueriesContext: string;
   groupTrackingId?: string;
   cleanGroupName?: string;
 };
@@ -155,7 +154,6 @@ const defaultProps = {
   showFloatingInput: false,
   inline: false,
   inlineHeader: "AI Assistant by Trieve",
-  suggestedQueriesContext: "You are an ecommerce sales assistant to help people buy items.",
   groupTrackingId: undefined,
   cleanGroupName: undefined,
 };

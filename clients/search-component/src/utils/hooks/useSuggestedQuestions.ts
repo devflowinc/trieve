@@ -15,7 +15,6 @@ export const useSuggestedQuestions = () => {
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
       count: props.numberOfSuggestions ?? 3,
-      context: props.suggestedQueriesContext,
       query,
     });
     setSuggestedQuestions(queries.queries);
@@ -39,7 +38,6 @@ export const useSuggestedQuestions = () => {
       const queries = await getSuggestedQuestions({
         trieve: trieveSDK,
         count: props.numberOfSuggestions ?? 3,
-        context: props.suggestedQueriesContext,
         abortController,
         query,
       });

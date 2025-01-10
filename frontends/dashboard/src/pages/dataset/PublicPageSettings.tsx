@@ -1073,21 +1073,6 @@ const PublicPageControls = () => {
               />
             </div>
 
-            <div class="flex gap-4 pb-2 pt-2">
-              <div class="grow">
-                <label class="block">Suggested Queries Context</label>
-                <textarea
-                  cols={2}
-                  placeholder="You are an ecommerce sales assistant to help people buy items."
-                  value={ extraParams.suggestedQueriesContext || ""}
-                  onInput={(e) => {
-                    setExtraParams("suggestedQueriesContext", e.currentTarget.value)
-                  }}
-                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
-
             <div class="grid grid-cols-2 gap-4">
               <div class="flex gap-2">
                 <div class="flex items-center gap-1">
