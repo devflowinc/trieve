@@ -23,7 +23,7 @@ body {
   }
 
   #trieve-search-modal {
-    @apply animate-contentShow scroll-smooth max-h-[60vh] w-[90vw] sm:max-w-[800px] rounded-lg focus:outline-none overflow-hidden text-base;
+    @apply scroll-smooth max-h-[60vh] w-[90vw] sm:max-w-[800px] rounded-lg focus:outline-none overflow-hidden text-base;
 
     color: var(--tv-zinc-950);
     background-color: #fff;
