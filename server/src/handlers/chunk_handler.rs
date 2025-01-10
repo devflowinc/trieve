@@ -38,9 +38,10 @@ use dateparser::DateTimeUtc;
 use itertools::Itertools;
 use openai_dive::v1::api::Client;
 use openai_dive::v1::resources::chat::{
-    ChatCompletionParameters, ChatMessage, ChatMessageContent, DeltaChatMessage,
+    ChatCompletionParameters, ChatMessage, ChatMessageContent, ChatMessageContentPart,
+    ChatMessageTextContentPart, DeltaChatMessage,
 };
-use openai_dive::v1::resources::chat::{ImageUrl, ImageUrlType};
+use openai_dive::v1::resources::chat::{ChatMessageImageContentPart, ImageUrlType};
 use openai_dive::v1::resources::shared::StopToken;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -2495,53 +2496,31 @@ pub async fn generate_off_chunks(
             name: None,
         });
 
-        if let Some(image_urls) = data.image_urls.clone() {
-            if !image_urls.is_empty() {
-                messages.push(ChatMessage::User {
-                    name: None,
-                    content: ChatMessageContent::ImageUrl(
-                        image_urls
-                            .iter()
-                            .map(|url| ImageUrl {
-                                r#type: "image_url".to_string(),
-                                text: None,
-                                image_url: ImageUrlType {
-                                    url: url.to_string(),
-                                    detail: None,
-                                },
-                            })
-                            .collect(),
-                    ),
-                });
-            }
-        } else if let Some(image_config) = &data.image_config {
+        if let Some(image_config) = &data.image_config {
             if image_config.use_images.unwrap_or(false) {
                 if let Some(image_urls) = chunk_metadata.image_urls.clone() {
-                    let urls = image_urls
-                        .iter()
-                        .filter_map(|image| image.clone())
-                        .take(image_config.images_per_chunk.unwrap_or(5))
-                        .map(|url| ImageUrl {
-                            r#type: "image_url".to_string(),
-                            text: None,
-                            image_url: ImageUrlType { url, detail: None },
-                        })
-                        .collect::<Vec<_>>();
-
                     messages.push(ChatMessage::User {
-                        content: ChatMessageContent::ImageUrl(urls),
                         name: None,
+                        content: ChatMessageContent::ContentPart(
+                            image_urls
+                                .iter()
+                                .filter_map(|image| image.clone())
+                                .take(image_config.images_per_chunk.unwrap_or(5))
+                                .map(|url| {
+                                    ChatMessageContentPart::Image(ChatMessageImageContentPart {
+                                        r#type: "image_url".to_string(),
+                                        image_url: ImageUrlType {
+                                            url: url.to_string(),
+                                            detail: None,
+                                        },
+                                    })
+                                })
+                                .collect::<Vec<_>>(),
+                        ),
                     });
                 }
             }
         }
-
-        messages.push(ChatMessage::Assistant {
-            content: Some(ChatMessageContent::Text("".to_string())),
-            tool_calls: None,
-            name: None,
-            refusal: None,
-        });
     });
 
     let last_prev_message = prev_messages
@@ -2556,6 +2535,36 @@ pub async fn generate_off_chunks(
     prev_messages
         .iter()
         .for_each(|message| messages.push(ChatMessage::from(message.clone())));
+
+    if let Some(image_urls) = data.image_urls.clone() {
+        if !image_urls.is_empty() {
+            messages.push(ChatMessage::User {
+                name: None,
+                content: ChatMessageContent::ContentPart(
+                    image_urls
+                        .iter()
+                        .map(|url| {
+                            ChatMessageContentPart::Image(ChatMessageImageContentPart {
+                                r#type: "image_url".to_string(),
+                                image_url: ImageUrlType {
+                                    url: url.to_string(),
+                                    detail: None,
+                                },
+                            })
+                        })
+                        .chain(std::iter::once(ChatMessageContentPart::Text(
+                            ChatMessageTextContentPart {
+                                r#type: "text".to_string(),
+                                text:
+                                    "These are the images that the user provided with their query."
+                                        .to_string(),
+                            },
+                        )))
+                        .collect::<Vec<_>>(),
+                ),
+            });
+        }
+    }
 
     messages.push(ChatMessage::User {
         content: ChatMessageContent::Text(format!(

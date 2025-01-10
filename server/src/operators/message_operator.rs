@@ -25,7 +25,10 @@ use futures::StreamExt;
 use futures_util::stream;
 #[cfg(feature = "hallucination-detection")]
 use hallucination_detection::{HallucinationDetector, HallucinationScore};
-use openai_dive::v1::resources::chat::{DeltaChatMessage, ImageUrl, ImageUrlType};
+use openai_dive::v1::resources::chat::{
+    ChatMessageContentPart, ChatMessageImageContentPart, ChatMessageTextContentPart,
+    DeltaChatMessage, ImageUrlType,
+};
 use openai_dive::v1::{
     api::Client,
     resources::{
@@ -800,22 +803,33 @@ pub async fn stream_response(
         if !image_urls.is_empty() {
             open_ai_messages.push(ChatMessage::User {
                 name: None,
-                content: ChatMessageContent::ImageUrl(
+                content: ChatMessageContent::ContentPart(
                     image_urls
                         .iter()
-                        .map(|url| ImageUrl {
-                            r#type: "image_url".to_string(),
-                            text: None,
-                            image_url: ImageUrlType {
-                                url: url.to_string(),
-                                detail: None,
-                            },
+                        .map(|url| {
+                            ChatMessageContentPart::Image(ChatMessageImageContentPart {
+                                r#type: "image_url".to_string(),
+                                image_url: ImageUrlType {
+                                    url: url.to_string(),
+                                    detail: None,
+                                },
+                            })
                         })
-                        .collect(),
+                        .chain(std::iter::once(ChatMessageContentPart::Text(
+                            ChatMessageTextContentPart {
+                                r#type: "text".to_string(),
+                                text:
+                                    "These are the images that the user provided with their query."
+                                        .to_string(),
+                            },
+                        )))
+                        .collect::<Vec<_>>(),
                 ),
             });
         }
-    } else if !images.is_empty() {
+    }
+
+    if !images.is_empty() {
         if let Some(LLMOptions {
             image_config: Some(ref image_config),
             ..
@@ -824,19 +838,20 @@ pub async fn stream_response(
             if image_config.use_images.unwrap_or(false) {
                 open_ai_messages.push(ChatMessage::User {
                     name: None,
-                    content: ChatMessageContent::ImageUrl(
+                    content: ChatMessageContent::ContentPart(
                         images
                             .iter()
                             .take(image_config.images_per_chunk.unwrap_or(5))
-                            .map(|url| ImageUrl {
-                                r#type: "image_url".to_string(),
-                                text: None,
-                                image_url: ImageUrlType {
-                                    url: url.to_string(),
-                                    detail: None,
-                                },
+                            .map(|url| {
+                                ChatMessageContentPart::Image(ChatMessageImageContentPart {
+                                    r#type: "image_url".to_string(),
+                                    image_url: ImageUrlType {
+                                        url: url.to_string(),
+                                        detail: None,
+                                    },
+                                })
                             })
-                            .collect(),
+                            .collect::<Vec<_>>(),
                     ),
                 })
             }
@@ -1297,15 +1312,6 @@ pub async fn get_text_from_image(
         organization: None,
     };
 
-    let image_url = ImageUrl {
-        r#type: "image_url".to_string(),
-        text: None,
-        image_url: ImageUrlType {
-            url: image_url,
-            detail: None,
-        },
-    };
-
     let default_system_prompt = "Please describe the image and turn the description into a search query. DO NOT INCLUDE ANY OTHER CONTEXT OR INFORMATION. JUST OUTPUT THE SEARCH QUERY AND NOTHING ELSE".to_string();
 
     let messages = vec![
@@ -1314,7 +1320,15 @@ pub async fn get_text_from_image(
             name: None,
         },
         ChatMessage::User {
-            content: ChatMessageContent::ImageUrl(vec![image_url]),
+            content: ChatMessageContent::ContentPart(vec![ChatMessageContentPart::Image(
+                ChatMessageImageContentPart {
+                    r#type: "image_url".to_string(),
+                    image_url: ImageUrlType {
+                        url: image_url.clone(),
+                        detail: None,
+                    },
+                },
+            )]),
             name: None,
         },
     ];
