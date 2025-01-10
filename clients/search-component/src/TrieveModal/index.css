@@ -639,7 +639,7 @@ body {
       @apply w-full max-h-48 h-48 flex justify-center items-center shrink-0 overflow-hidden rounded-lg;
 
       img {
-        @apply w-full h-full;
+        @apply w-full;
       }
 
       .img-placeholder {
