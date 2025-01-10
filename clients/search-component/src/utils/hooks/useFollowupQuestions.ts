@@ -18,7 +18,6 @@ export const useFollowupQuestions = () => {
       trieve: trieveSDK,
       query: currentQuestion,
       count: props.numberOfSuggestions ?? 3,
-      context: props.suggestedQueriesContext,
       group: currentGroup
     });
     setSuggestedQuestions(queries.queries);
