@@ -444,8 +444,14 @@
 
         if (params.inline) {
           const inlineRoot = document.querySelector("#inline-root");
-          params.groupTrackingId = params.singleProductOptions.groupTrackingId;
-          params.cleanGroupName = params.singleProductOptions.productName;
+          const inlineParams = params;
+          inlineParams.groupTrackingId = params.singleProductOptions.groupTrackingId;
+          inlineParams.cleanGroupName = params.singleProductOptions.productName;
+
+          if (params.singleProductOptions && params.singleProductOptions.productQuestions) {
+            inlineParams.defaultAiQuestions = params.singleProductOptions.productQuestions;
+          }
+
           renderToDiv(inlineRoot, {
             ...params,
           })
