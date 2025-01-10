@@ -616,6 +616,10 @@ video {
   margin-top: 2rem;
 }
 
+.mt-auto {
+  margin-top: auto;
+}
+
 .line-clamp-1 {
   overflow: hidden;
   display: -webkit-box;
@@ -637,11 +641,6 @@ video {
 
 .hidden {
   display: none;
-}
-
-.size-full {
-  width: 100%;
-  height: 100%;
 }
 
 .h-10 {
@@ -830,6 +829,11 @@ video {
 .object-cover {
   -o-object-fit: cover;
      object-fit: cover;
+}
+
+.px-1 {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
 }
 
 .px-3 {
