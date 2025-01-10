@@ -60,7 +60,7 @@ export const AIInitialMessage = () => {
         </p>
         <GroupChatImgCarousel />
       </span>
-      <p></p>
+      <p> </p>
       {!messages.length && !currentGroup ? <SuggestedQuestions /> : null}
     </>
   );
