@@ -180,6 +180,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       const { reader, queryId } = await trieveSDK.ragOnChunkReaderWithQueryId(
         {
           chunk_ids: groupChunks.map((c) => c.id),
+          image_urls: imageUrl ? [imageUrl] : [],
           prev_messages: [
             ...messages.slice(0, -1).map((m) => mapMessageType(m)),
             {
@@ -215,10 +216,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           chatMessageAbortController.current.signal
         );
 
-      if (imageUrl) {
-        setImageUrl("");
-      }
       handleReader(reader, queryId);
+    }
+    if (imageUrl) {
+      setImageUrl("");
     }
   };
 
@@ -260,9 +261,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setIsDoneReading(false);
 
     if (props.groupTrackingId) {
-      
       const fetchedGroup = await trieveSDK.getGroupByTrackingId({
-        trackingId: props.groupTrackingId
+        trackingId: props.groupTrackingId,
       });
       if (fetchedGroup) {
         group = {
@@ -290,7 +290,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         text: question || currentQuestion,
         additional: null,
         queryId: null,
-        imageUrl: imageUrl ? imageUrl : null
+        imageUrl: imageUrl ? imageUrl : null,
       },
     ]);
 
