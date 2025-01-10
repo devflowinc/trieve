@@ -5,7 +5,7 @@ use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfi
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use trieve_server::data::models::{EventType, WorkerEvent};
+use trieve_server::data::models::{EventType, UnifiedId, WorkerEvent};
 use trieve_server::handlers::chunk_handler::{
     FullTextBoost, SemanticBoost, UpdateIngestionMessage,
 };
@@ -14,6 +14,7 @@ use trieve_server::operators::chunk_operator::{get_chunk_boost_query, get_metada
 use trieve_server::operators::clickhouse_operator::ClickHouseEvent;
 use trieve_server::operators::dataset_operator::get_dataset_config_query;
 use trieve_server::operators::etl_operator::get_all_chunks_for_dataset_id;
+use trieve_server::operators::group_operator::get_groups_for_bookmark_query;
 use trieve_server::{
     data::models::Pool, establish_connection, get_env, operators::clickhouse_operator::EventQueue,
 };
@@ -216,10 +217,21 @@ async fn webhook_response(
                 })
         });
 
+        let chunk_group_ids: Vec<UnifiedId> =
+            get_groups_for_bookmark_query(vec![chunk_id], dataset_id, pool.clone())
+                .await
+                .map_err(|e| {
+                    BroccoliError::Job(format!("Failed to get chunk group ids {:?}", e))
+                })?[0]
+                .slim_groups
+                .iter()
+                .map(|x| UnifiedId::TrieveUuid(x.id))
+                .collect();
+
         let message = UpdateIngestionMessage {
             chunk_metadata: original_chunk.clone().into(),
             dataset_id,
-            group_ids: None,
+            group_ids: Some(chunk_group_ids),
             convert_html_to_text: Some(true),
             fulltext_boost: fulltext_boost.clone(),
             semantic_boost: semantic_boost.clone(),
