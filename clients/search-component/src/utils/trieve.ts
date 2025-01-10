@@ -294,8 +294,9 @@ export const getSuggestedQuestions = async ({
     {
       ...(query && { query }),
       suggestion_type: "question",
-      search_type: "semantic",
+      search_type: "hybrid",
       suggestions_to_create: count,
+      context: `.The users previous query was "${query}", all responses should look like that.`,
       ...(group &&
         group?.tracking_id && {
           filters: {
