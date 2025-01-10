@@ -11040,6 +11040,14 @@
             ],
             "nullable": true
           },
+          "image_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Image URLs to be used in the chat. These will be used to generate the image tokens for the model. The default is None.",
+            "nullable": true
+          },
           "max_tokens": {
             "type": "integer",
             "format": "int32",

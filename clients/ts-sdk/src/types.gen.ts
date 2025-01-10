@@ -1561,6 +1561,10 @@ export type GenerateOffChunksReqPayload = {
     highlight_results?: (boolean) | null;
     image_config?: ((ImageConfig) | null);
     /**
+     * Image URLs to be used in the chat. These will be used to generate the image tokens for the model. The default is None.
+     */
+    image_urls?: Array<(string)> | null;
+    /**
      * The maximum number of tokens to generate in the chat completion. Default is None.
      */
     max_tokens?: (number) | null;

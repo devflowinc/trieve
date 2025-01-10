@@ -2322,6 +2322,8 @@ pub struct GenerateOffChunksReqPayload {
     pub chunk_ids: Vec<uuid::Uuid>,
     /// Prompt will be used to tell the model what to generate in the next message in the chat. The default is 'Respond to the previous instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.
     pub prompt: Option<String>,
+    /// Image URLs to be used in the chat. These will be used to generate the image tokens for the model. The default is None.
+    pub image_urls: Option<Vec<String>>,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
     pub stream_response: Option<bool>,
     /// Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add `<mark><b>` tags to the chunk_html of the chunks to highlight matching splits.
@@ -2493,7 +2495,26 @@ pub async fn generate_off_chunks(
             name: None,
         });
 
-        if let Some(image_config) = &data.image_config {
+        if let Some(image_urls) = data.image_urls.clone() {
+            if !image_urls.is_empty() {
+                messages.push(ChatMessage::User {
+                    name: None,
+                    content: ChatMessageContent::ImageUrl(
+                        image_urls
+                            .iter()
+                            .map(|url| ImageUrl {
+                                r#type: "image_url".to_string(),
+                                text: None,
+                                image_url: ImageUrlType {
+                                    url: url.to_string(),
+                                    detail: None,
+                                },
+                            })
+                            .collect(),
+                    ),
+                });
+            }
+        } else if let Some(image_config) = &data.image_config {
             if image_config.use_images.unwrap_or(false) {
                 if let Some(image_urls) = chunk_metadata.image_urls.clone() {
                     let urls = image_urls
