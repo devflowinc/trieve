@@ -3795,8 +3795,9 @@ checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
 
 [[package]]
 name = "openai_dive"
-version = "0.6.3"
-source = "git+https://github.com/devflowinc/openai-client.git?branch=bugfix/parallel-tool-calls-public#3063114f48ac17e0648f7e3c77a6fa2356ae1de9"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2facfd14e5230e3a647348f1d9433b3b85a2201b102575b833524412c1b67b56"
 dependencies = [
  "bytes",
  "derive_builder",
@@ -3804,6 +3805,7 @@ dependencies = [
  "reqwest 0.12.9",
  "reqwest-eventsource",
  "serde",
+ "serde_html_form",
  "serde_json",
  "tokio",
  "tokio-stream",
@@ -5627,6 +5629,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.90",
+]
+
+[[package]]
+name = "serde_html_form"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d2de91cf02bbc07cde38891769ccd5d4f073d22a40683aa4bc7a95781aaa2c4"
+dependencies = [
+ "form_urlencoded",
+ "indexmap 2.2.6",
+ "itoa 1.0.11",
+ "ryu",
+ "serde",
 ]
 
 [[package]]
