@@ -930,12 +930,6 @@ pub async fn get_suggested_queries(
     };
     let context_sentence = match data.context.clone() {
         Some(context) => {
-            if context.split_whitespace().count() > 15 || context.len() > 200 {
-                return Err(ServiceError::BadRequest(
-                    "Context must be under 15 words and 200 characters".to_string(),
-                ));
-            }
-
             format!(
                 "\n\nSuggest things with the following context in mind: {}.\n\n",
                 context

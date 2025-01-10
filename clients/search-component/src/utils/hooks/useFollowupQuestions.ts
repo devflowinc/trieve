@@ -6,7 +6,7 @@ import { useChatState } from "./chat-context";
 
 export const useFollowupQuestions = () => {
   const { trieveSDK, currentGroup, props } = useModalState();
-  const { currentQuestion } = useChatState();
+  const { messages } = useChatState();
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
     SuggestedQueriesResponse["queries"]
@@ -14,9 +14,13 @@ export const useFollowupQuestions = () => {
 
   const getQuestions = async () => {
     setIsLoading(true);
+    const prevMessage = messages.filter((msg) => {
+      return msg.type == "user"
+    }).slice(-1)[0];
+
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
-      query: currentQuestion,
+      query: prevMessage.text,
       count: props.numberOfSuggestions ?? 3,
       group: currentGroup
     });

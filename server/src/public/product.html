@@ -88,7 +88,7 @@
         >
           {% for i in range(5) %}
           <div class="mt-auto w-64 flex-shrink-0" x-key="{{ i }}">
-            <div class="h-72 w-full overflow-hidden rounded-lg">
+            <div class="w-full overflow-hidden rounded-lg">
               <div class="h-full w-full bg-gray-200 animate-pulse"></div>
             </div>
             <div class="mt-4">
@@ -120,7 +120,7 @@
         newDiv.classList.add("w-64", "flex-shrink-0", "mt-auto");
         newDiv.setAttribute("x-key", i);
         newDiv.innerHTML = `
-          <div class="h-72 w-full overflow-hidden rounded-lg">
+          <div class="w-full overflow-hidden rounded-lg">
             <div class="h-full w-full bg-gray-200 animate-pulse"></div>
           </div>
           <div class="mt-4">
