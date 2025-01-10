@@ -88,6 +88,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const clearConversation = () => {
     setCurrentTopic("");
+    setCurrentGroup(null);
     setMessages([]);
   };
 
@@ -201,7 +202,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             llm_options: {
               completion_first: false,
             },
-            page_size: props.searchOptions?.page_size ?? 5,
+            page_size: props.searchOptions?.page_size ?? 8,
             score_threshold: props.searchOptions?.score_threshold || null,
             use_group_search: props.useGroupSearch,
             filters:
@@ -257,6 +258,25 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const askQuestion = async (question?: string, group?: ChunkGroup) => {
     setIsDoneReading(false);
+
+    if (props.groupTrackingId) {
+      
+      const fetchedGroup = await trieveSDK.getGroupByTrackingId({
+        trackingId: props.groupTrackingId
+      });
+      if (fetchedGroup) {
+        group = {
+          created_at: fetchedGroup.created_at,
+          updated_at: fetchedGroup.updated_at,
+          dataset_id: fetchedGroup.dataset_id,
+          description: fetchedGroup.description,
+          id: fetchedGroup.id,
+          metadata: fetchedGroup.metadata,
+          name: props.cleanGroupName ? props.cleanGroupName : fetchedGroup.name,
+          tag_set: fetchedGroup.tag_set,
+        } as ChunkGroup;
+      }
+    }
 
     if (!currentGroup && group) {
       chatWithGroup(group);
