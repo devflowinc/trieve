@@ -679,7 +679,7 @@ body {
         @apply text-base font-medium mb-4;
       }
 
-      .header {
+      .component-header {
         @apply m-0 uppercase text-xs pb-2 flex items-center gap-1;
         color: var(--tv-zinc-500);
 
@@ -1068,7 +1068,7 @@ body {
             }
           }
         }
-        .header {
+        .component-header {
           .suggested-question {
             border-color: var(--tv-zinc-700);
 
@@ -1087,7 +1087,7 @@ body {
             }
           }
         }
-        .header {
+        .component-header {
           .followup-question {
             border-color: var(--tv-zinc-700);
 
