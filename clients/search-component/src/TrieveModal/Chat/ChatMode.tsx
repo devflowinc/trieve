@@ -40,7 +40,7 @@ export const ChatMode = () => {
   }, [chatInput, mode, open]);
 
   return (
-    <Suspense>
+    <Suspense fallback={<div className="suspense-fallback w-96 h-96 bg-red-500">HIIIIII</div>}>
       {props.inline && messages.length ? (
         <div className="inline-chat-header">
           <div>
