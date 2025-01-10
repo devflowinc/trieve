@@ -48,15 +48,13 @@ const Modal = () => {
     if ((window.visualViewport?.width ?? 1000) <= 640) {
       const trieveSearchModal = document.getElementById("trieve-search-modal");
       if (trieveSearchModal) {
-        trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${
-          props.type == "ecommerce" ? "0.5rem" : "0rem"
-        })`;
+        trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${props.type == "ecommerce" ? "0.5rem" : "0rem"
+          })`;
       }
 
       if (chatOuterWrapper) {
         (chatOuterWrapper as HTMLElement).style.maxHeight =
-          `calc(${viewportHeight}px - ${
-            props.type == "ecommerce" ? "220px" : "175px"
+          `calc(${viewportHeight}px - ${props.type == "ecommerce" ? "150px" : "175px"
           })`;
       }
     }
@@ -174,7 +172,7 @@ const Modal = () => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
     );
   }, [props.brandColor, props.brandFontFamily]);
@@ -204,11 +202,9 @@ const Modal = () => {
           )}
           <div
             id="trieve-search-modal"
-            className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${
-              props.theme === "dark" ? "dark " : ""
-            } ${props.inline ? "trieve-inline-modal" : "trieve-popup-modal"} ${
-              props.type
-            }`.trim()}
+            className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${props.theme === "dark" ? "dark " : ""
+              } ${props.inline ? "trieve-inline-modal" : "trieve-popup-modal"} ${props.type
+              }`.trim()}
             style={{
               zIndex: props.zIndex ? props.zIndex + 1 : 1001,
               maxHeight: fullscreenPdfState ? "none" : "60vh",
@@ -232,14 +228,16 @@ const Modal = () => {
               }
               style={
                 props.type == "pdf"
-                  ? {}
+                  ? {
+                    display:
+                      mode === "chat" && !fullscreenPdfState
+                        ? "block"
+                        : "none",
+                    maxHeight: fullscreenPdfState ? "none" : "60vh",
+                  }
                   : {
-                      display:
-                        mode === "chat" && !fullscreenPdfState
-                          ? "block"
-                          : "none",
-                      maxHeight: fullscreenPdfState ? "none" : "60vh",
-                    }
+                    display: mode === "chat" ? "block" : "none"
+                  }
               }
             >
               <ChatMode />
