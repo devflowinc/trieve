@@ -616,7 +616,7 @@ async fn crawl(
             let cleaned_url = crawl_request.url.trim_end_matches("/");
             let url = format!("{}/products.json?page={}", cleaned_url, cur_page);
 
-            let response: ShopifyResponse = ureq::AgentBuilder::new()
+            let response = ureq::AgentBuilder::new()
                 .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
                     ServiceError::InternalServerError(
                         "Failed to acquire tls connection".to_string(),
@@ -624,7 +624,46 @@ async fn crawl(
                 })?))
                 .build()
                 .get(&url)
-                .call()
+                .call();
+
+            let response = match response {
+                Ok(_) => response,
+                Err(_) => {
+                    let proxy_url = std::env::var("PROXY_URL").ok();
+
+                    match proxy_url {
+                        Some(proxy_url) => ureq::AgentBuilder::new()
+                            .proxy(ureq::Proxy::new(proxy_url.as_str()).map_err(|_| {
+                                ServiceError::InternalServerError(
+                                    "Failed to acquire proxy".to_string(),
+                                )
+                            })?)
+                            .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(
+                                |_| {
+                                    ServiceError::InternalServerError(
+                                        "Failed to acquire tls connection".to_string(),
+                                    )
+                                },
+                            )?))
+                            .build()
+                            .get(&url)
+                            .call(),
+                        None => ureq::AgentBuilder::new()
+                            .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(
+                                |_| {
+                                    ServiceError::InternalServerError(
+                                        "Failed to acquire tls connection".to_string(),
+                                    )
+                                },
+                            )?))
+                            .build()
+                            .get(&url)
+                            .call(),
+                    }
+                }
+            };
+
+            let response: ShopifyResponse = response
                 .map_err(|e| ServiceError::InternalServerError(format!("Failed to fetch: {}", e)))?
                 .into_json()
                 .map_err(|e| {
