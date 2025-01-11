@@ -14,24 +14,24 @@ const ImagePreview = ({
   return (
     <>
       {isUploading ? (
-        <div className="relative w-fit">
-          <div className={`max-h-96 max-w-32 ${active ? "border p-2" : ""}`}>
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="tv-relative tv-w-fit">
+          <div className={`tv-max-h-96 tv-max-w-32 ${active ? "tv-border tv-p-2" : ""}`}>
+            <div className="tv-animate-spin tv-h-8 tv-w-8 tv-border-4 tv-border-blue-500 tv-rounded-full tv-border-t-transparent"></div>
           </div>
         </div>
       ) : imageUrl ? (
-        <div className="relative w-fit">
+        <div className="tv-relative tv-w-fit">
           {active && (
             <button
               onClick={() => {
                 setImageUrl("");
               }}
-              className={`flex items-center justify-center absolute -right-3 -top-2 rounded-full bg-zinc-500 `}
+              className={`tv-flex tv-items-center tv-justify-center tv-absolute tv--right-3 tv--top-2 tv-rounded-full tv-bg-zinc-500`}
             >
-              <i className="fa-solid fa-close p-1 w-4 h-4 cursor-pointer z-10"></i>
+              <i className="fa-solid fa-close tv-p-1 tv-w-4 tv-h-4 tv-cursor-pointer tv-z-10"></i>
             </button>
           )}
-          <div className={`max-h-96 max-w-32 ${active ? "border p-2" : ""}`}>
+          <div className={`tv-max-h-96 tv-max-w-32 ${active ? "tv-border tv-p-2" : ""}`}>
             <img src={imageUrl} alt="" />
           </div>
         </div>

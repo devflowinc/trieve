@@ -45,7 +45,7 @@ export const ChatPdfItem = memo((props: { chunk: PdfChunk["chunk"] }) => {
           });
         }
       }}
-      className="m-2 min-w-[400px]"
+      className="tv-m-2 tv-min-w-[400px]"
     >
       {presigned && (
         <PdfSpotlight
