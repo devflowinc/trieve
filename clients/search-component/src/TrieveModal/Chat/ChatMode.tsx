@@ -1,6 +1,5 @@
 import React, { Suspense, useEffect, useRef } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
-import { AIInitialMessage } from "./AIInitalMessage";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
 import { Tags } from "../Tags";
@@ -40,7 +39,7 @@ export const ChatMode = () => {
   }, [chatInput, mode, open]);
 
   return (
-    <Suspense fallback={<div className="suspense-fallback w-96 h-96 bg-red-500">HIIIIII</div>}>
+    <Suspense fallback={<div className="suspense-fallback tv-w-96 tv-h-96 tv-bg-red-500">HIIIIII</div>}>
       {props.inline && messages.length ? (
         <div className="inline-chat-header">
           <div>
@@ -102,29 +101,23 @@ export const ChatMode = () => {
           <div className="ai-message">
             <div className="chat-modal-wrapper">
               <div className="ai-message initial-message">
-                {props.inline ? (
+                {!messages.length && !currentGroup ? (
                   <>
-                    {!messages.length && !currentGroup ? (
-                      <>
-                        <div className="ai-avatar">
-                          {props.brandLogoImgSrcUrl ? (
-                            <img
-                              src={props.brandLogoImgSrcUrl}
-                              alt={props.brandName || "Brand logo"}
-                            />
-                          ) : (
-                            <SparklesIcon />
-                          )}
-                        </div>
-                      </>
-                    ) : null}
-                    {!messages.length && !currentGroup ? (
-                      <SuggestedQuestions />
-                    ) : null}
+                    <div className="ai-avatar">
+                      {props.brandLogoImgSrcUrl ? (
+                        <img
+                          src={props.brandLogoImgSrcUrl}
+                          alt={props.brandName || "Brand logo"}
+                        />
+                      ) : (
+                        <SparklesIcon />
+                      )}
+                    </div>
                   </>
-                ) : (
-                  <AIInitialMessage />
-                )}
+                ) : null}
+                {!messages.length && !currentGroup ? (
+                  <SuggestedQuestions />
+                ) : null}
               </div>
               {messages.map((message, i) => (
                 <ChatMessage key={`${i}-message`} idx={i} message={message} />
@@ -189,7 +182,7 @@ export const ChatMode = () => {
             {props.tags?.length ? <Tags /> : null}
             <div className="tags-spacer"></div>
             <a
-              className="trieve-powered text-right"
+              className="trieve-powered tv-text-right"
               href="https://trieve.ai"
               target="_blank"
               rel="noopener noreferrer"
@@ -197,7 +190,7 @@ export const ChatMode = () => {
               <img
                 src="https://cdn.trieve.ai/trieve-logo.png"
                 alt="logo"
-                className="inline-block mr-2"
+                className="tv-inline-block tv-mr-2"
               />
               Powered by Trieve
             </a>

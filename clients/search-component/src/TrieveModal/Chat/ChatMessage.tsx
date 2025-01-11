@@ -32,7 +32,7 @@ export const ChatMessage = ({
       {message.type == "user" ? (
         <div key={idx}>
           <div className={message.type}>
-            <div className="flex flex-col space-y-1 items-end">
+            <div className="tv-flex tv-flex-col tv-space-y-1 tv-items-end">
               {message.imageUrl && 
                 <ImagePreview isUploading={false} imageUrl={message.imageUrl} />
               }

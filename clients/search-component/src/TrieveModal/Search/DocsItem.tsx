@@ -206,7 +206,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
               }}
             />
           )}
-          <span className={!isHovered ? "text-transparent" : ""}>
+          <span className={!isHovered ? "tv-text-transparent" : ""}>
             <i className="fa-solid fa-chevron-right"></i>
           </span>
         </div>

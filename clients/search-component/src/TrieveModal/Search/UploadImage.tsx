@@ -58,13 +58,13 @@ export const UploadImage = () => {
     <div>
       <button
         onClick={handleClick}
-        className={`rounded top-[0.825rem] ${
+        className={`tv-rounded tv-top-[0.825rem] ${
           mode === "chat"
-            ? "right-14"
+            ? "tv-right-14"
             : query.length == 0
-              ? "right-[10rem]"
-              : "right-10"
-        } absolute z-20 dark:text-white text-zinc-700`}
+              ? "tv-right-[10rem]"
+              : "tv-right-10"
+        } tv-absolute tv-z-20 tv-dark:text-white tv-text-zinc-700`}
       >
         <i className="fa-solid fa-image"> </i>
       </button>
@@ -73,7 +73,7 @@ export const UploadImage = () => {
         type="file"
         accept="image/*"
         onChange={handleFileChange}
-        className="!hidden"
+        className="!tv-hidden"
       />
     </div>
   );

@@ -16,8 +16,8 @@ export const PdfViewer = (props: NonNullable<PdfViewState>) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [fullScreenState, setFullScreenState] = useAtom(pdfViewState);
   return (
-    <div className="overflow-y-scroll bg-white max-h-[80vh]">
-      <div className="flex justify-between items-center p-4 gap-2">
+    <div className="tv-overflow-y-scroll tv-bg-white tv-max-h-[80vh]">
+      <div className="tv-flex tv-justify-between tv-items-center tv-p-4 tv-gap-2">
         <button
           onClick={() => {
             setFullScreenState(null);
@@ -25,12 +25,12 @@ export const PdfViewer = (props: NonNullable<PdfViewState>) => {
         >
           {String.fromCharCode(8592)}
         </button>
-        <div className="flex items-center gap-2">
+        <div className="tv-flex tv-items-center tv-gap-2">
           <div className="opacity-60">{props.file_name}</div>
           <a
             target="_blank"
             href={props.url}
-            className="rounded p-2 hover:bg-neutral-100"
+            className="tv-rounded tv-p-2 tv-hover:bg-neutral-100"
           >
             <DownloadIcon />
           </a>

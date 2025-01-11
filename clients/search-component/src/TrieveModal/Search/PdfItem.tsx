@@ -94,7 +94,7 @@ export const PdfItem = (props: Props) => {
       className="pdf-item"
     >
       {presigned && (
-        <div className="max-w-[400px]">
+        <div className="tv-max-w-[400px]">
           <PdfSpotlight
             height={180}
             padding={{

@@ -25,6 +25,7 @@ export default {
       ),
     }),
   ],
+  prefix: "tv-",
   theme: {
     fontFamily: {
       sans: ["Maven Pro", ...defaultTheme.fontFamily.sans],
