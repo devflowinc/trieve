@@ -114,25 +114,25 @@ export default function ECommerce() {
           </>
         ) : (
           <>
-            <h2 className="font-bold text-center py-8">
+            <h2 className="tv-font-bold tv-text-center tv-py-8">
               Search Results Component
             </h2>
-            <h2 className="font-bold text-center py-8">
+            <h2 className="tv-font-bold tv-text-center tv-py-8">
               This was removed, see
               https://github.com/devflowinc/trieve/pull/2613
             </h2>
           </>
         )}
 
-        <ul className="absolute top-1/2 -translate-y-1/2 w-full">
+        <ul className="tv-absolute tv-top-1/2 -tv-translate-y-1/2 tv-w-full">
           {component > 0 ? (
-            <li className="left-6 absolute">
+            <li className="tv-left-6 tv-absolute">
               <button onClick={() => setComponent(0)}>
                 <i className="fa-solid fa-chevron-left"></i>
               </button>
             </li>
           ) : (
-            <li className="right-6 absolute">
+            <li className="tv-right-6 tv-absolute">
               <button onClick={() => setComponent(1)}>
                 <i className="fa-solid fa-chevron-right"></i>
               </button>

@@ -39,7 +39,7 @@ export const ChatMode = () => {
   }, [chatInput, mode, open]);
 
   return (
-    <Suspense fallback={<div className="suspense-fallback tv-w-96 tv-h-96 tv-bg-red-500">HIIIIII</div>}>
+    <Suspense fallback={<div className="suspense-fallback"></div>}>
       {props.inline && messages.length ? (
         <div className="inline-chat-header">
           <div>
@@ -96,28 +96,28 @@ export const ChatMode = () => {
         <div
           className={`system-information-wrapper${
             currentGroup ? " with-group" : ""
-          } ${(!props.inline && props.type === "ecommerce" && messages.length > 1) ? "tv-pt-8" : ""}`}
+          }${props.inline ? "" : " tv-pt-6"} `}
         >
           <div className="ai-message">
             <div className="chat-modal-wrapper">
               <div className="ai-message initial-message">
-                {!messages.length && !currentGroup ? (
-                  <>
-                    <div className="ai-avatar">
-                      {props.brandLogoImgSrcUrl ? (
-                        <img
-                          src={props.brandLogoImgSrcUrl}
-                          alt={props.brandName || "Brand logo"}
-                        />
-                      ) : (
-                        <SparklesIcon />
-                      )}
-                    </div>
-                  </>
-                ) : null}
-                {!messages.length && !currentGroup ? (
-                  <SuggestedQuestions />
-                ) : null}
+                  {!messages.length && !currentGroup ? (
+                    <>
+                      <div className="ai-avatar">
+                        {props.brandLogoImgSrcUrl ? (
+                          <img
+                            src={props.brandLogoImgSrcUrl}
+                            alt={props.brandName || "Brand logo"}
+                          />
+                        ) : (
+                          <SparklesIcon />
+                        )}
+                      </div>
+                    </>
+                  ) : null}
+                  {!messages.length && !currentGroup ? (
+                    <SuggestedQuestions />
+                  ) : null}
               </div>
               {messages.map((message, i) => (
                 <ChatMessage key={`${i}-message`} idx={i} message={message} />
@@ -133,7 +133,7 @@ export const ChatMode = () => {
       >
         <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
         {currentGroup && (
-          <div className={`chat-group-disclaimer ${props.inline ? "inline-disclaimer" : ""}`}>
+          <div className="chat-group-disclaimer">
             <div>Chatting with {currentGroup.name.replace(/<[^>]*>/g, "")}</div>
             <button
               onClick={() => {
@@ -182,7 +182,7 @@ export const ChatMode = () => {
             {props.tags?.length ? <Tags /> : null}
             <div className="tags-spacer"></div>
             <a
-              className="trieve-powered tv-text-right"
+              className="trieve-powered text-right"
               href="https://trieve.ai"
               target="_blank"
               rel="noopener noreferrer"
@@ -190,7 +190,7 @@ export const ChatMode = () => {
               <img
                 src="https://cdn.trieve.ai/trieve-logo.png"
                 alt="logo"
-                className="tv-inline-block tv-mr-2"
+                className="inline-block mr-2"
               />
               Powered by Trieve
             </a>
