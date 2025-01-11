@@ -111,6 +111,7 @@ export type ModalProps = {
   inlineHeader?: string;
   groupTrackingId?: string;
   cleanGroupName?: string;
+  cssRelease?: string;
 };
 
 const defaultProps = {
@@ -156,6 +157,7 @@ const defaultProps = {
   inlineHeader: "AI Assistant by Trieve",
   groupTrackingId: undefined,
   cleanGroupName: undefined,
+  cssRelease: "stable",
 };
 
 const ModalContext = createContext<{

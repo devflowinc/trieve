@@ -147,6 +147,7 @@ export default function Home() {
           brandFontFamily={brandFontFamily}
           allowSwitchingModes={true}
           responsive={false}
+          cssRelease="none"
           searchOptions={{
             use_autocomplete: false,
             search_type: "fulltext",

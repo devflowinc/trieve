@@ -65,6 +65,10 @@ body {
       .chat-outer-wrapper {
         @apply tv-overflow-auto sm:tv-max-h-[calc(50vh-122px)] tv-max-h-[87vh];
       }
+
+      &.chat-outer-popup {
+        @apply tv-mt-0 sm:!tv-mt-0;
+      }
     }
 
     &.chat-modal-mobile {
@@ -586,7 +590,11 @@ body {
     }
 
     .chat-outer-wrapper {
-      @apply tv-flex tv-flex-col tv-px-4 tv-scroll-smooth tv-mt-0;
+      @apply tv-flex tv-flex-col tv-px-4 tv-scroll-smooth !tv-mt-0;
+      
+      &.chat-outer-popup {
+        @apply sm:tv-mt-0 md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0;
+      }
 
       .ai-message {
         .message-wrapper {
