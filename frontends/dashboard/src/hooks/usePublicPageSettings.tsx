@@ -170,6 +170,8 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
                 extra_params: {
                   ...extraParams,
                   analytics: true,
+                  placeholder: "Search...",
+                  defaultSearchMode: "chat",
                 },
               },
             },

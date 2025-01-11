@@ -15,19 +15,17 @@ export const SuggestedQuestions = () => {
   return (
     <>
       <div className={props.inline ? "inline-suggestions-wrapper" : ""}>
-        {!props.inline && (
-          <p className="component-header">
-            <button
-              onClick={refetchSuggestedQuestion}
-              disabled={isLoadingSuggestedQueries}
-              className="suggested-question refetch"
-              title="Refresh suggested questions"
-            >
-              <i className="fa-solid fa-arrow-rotate-right"></i>
-            </button>{" "}
-            Example questions
-          </p>
-        )}
+        <p className="component-header">
+          <button
+            onClick={refetchSuggestedQuestion}
+            disabled={isLoadingSuggestedQueries}
+            className="suggested-question refetch"
+            title="Refresh suggested questions"
+          >
+            <i className="fa-solid fa-arrow-rotate-right"></i>
+          </button>{" "}
+          Example questions
+        </p>
         <div className={`questions ${props.inline ? "inline-questions" : ""}`}>
           {!props.inline && !suggestedQuestions.length ? (
             <p className="suggested-question empty-state-loading">

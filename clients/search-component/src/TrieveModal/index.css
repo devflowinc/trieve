@@ -363,7 +363,7 @@ body {
       }
 
       .additional-image-links {
-        @apply tv-gap-2 tv-mt-4 tv-mb-4 tv-flex tv-flex-row;
+        @apply tv-gap-2 tv-mt-2 tv-mb-2 tv-flex tv-flex-row;
 
         .carousel-root {
           width: 100%;
@@ -389,6 +389,12 @@ body {
 
           a {
             @apply tv-rounded tv-px-2 tv-text-xs tv-py-1 tv-bg-zinc-200/50 tv-flex tv-flex-col tv-gap-y-1 tv-h-full;
+
+            ::before {
+              content: "";
+              display: block;
+              flex: 0 0 100% 100%;
+            }
 
             &.yt-anchor {
               @apply tv-text-center;
@@ -457,7 +463,7 @@ body {
       }
 
       .system {
-        @apply tv-mt-2 sm:tv-mt-4 tv-mb-5 tv-items-center tv-overflow-ellipsis tv-max-w-[100vw];
+        @apply tv-mt-2 sm:tv-mt-2 tv-mb-2 tv-items-center tv-overflow-ellipsis tv-max-w-[100vw];
 
         p {
           @apply tv-pb-0.5;
@@ -602,7 +608,6 @@ body {
           border-color: var(--tv-zinc-200);
         }
 
-        &.initial-message,
         .message-wrapper {
           @apply sm:tv-grid sm:tv-grid-cols-[48px,1fr] tv-gap-2;
         }
@@ -670,7 +675,6 @@ body {
     /* SUGGESTED QUESTIONS */
 
     .system-information-wrapper {
-
       &.popup.ecommerce {
         @apply tv-pt-8;
       }
@@ -826,7 +830,7 @@ body {
       }
 
       &.inline-input {
-        @apply tv-pl-1;
+        @apply tv-pl-2;
 
         &:focus {
           background-color: #fff;

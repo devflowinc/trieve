@@ -3,7 +3,6 @@ import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
 import { Tags } from "../Tags";
-import { SparklesIcon } from "../icons";
 import { SuggestedQuestions } from "./SuggestedQuestions";
 import { UploadImage } from "../Search/UploadImage";
 import ImagePreview from "../ImagePreview";
@@ -96,28 +95,18 @@ export const ChatMode = () => {
         <div
           className={`system-information-wrapper${
             currentGroup ? " with-group" : ""
-          }${props.inline ? "" : " tv-pt-6"} `}
+          } ${
+            !props.inline && props.type === "ecommerce" && messages.length > 1
+              ? "tv-pt-8"
+              : ""
+          }`}
         >
           <div className="ai-message">
             <div className="chat-modal-wrapper">
               <div className="ai-message initial-message">
-                  {!messages.length && !currentGroup ? (
-                    <>
-                      <div className="ai-avatar">
-                        {props.brandLogoImgSrcUrl ? (
-                          <img
-                            src={props.brandLogoImgSrcUrl}
-                            alt={props.brandName || "Brand logo"}
-                          />
-                        ) : (
-                          <SparklesIcon />
-                        )}
-                      </div>
-                    </>
-                  ) : null}
-                  {!messages.length && !currentGroup ? (
-                    <SuggestedQuestions />
-                  ) : null}
+                {!messages.length && !currentGroup ? (
+                  <SuggestedQuestions />
+                ) : null}
               </div>
               {messages.map((message, i) => (
                 <ChatMessage key={`${i}-message`} idx={i} message={message} />
@@ -133,7 +122,11 @@ export const ChatMode = () => {
       >
         <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
         {currentGroup && (
-          <div className="chat-group-disclaimer">
+          <div
+            className={`chat-group-disclaimer ${
+              props.inline ? "inline-disclaimer" : ""
+            }`}
+          >
             <div>Chatting with {currentGroup.name.replace(/<[^>]*>/g, "")}</div>
             <button
               onClick={() => {

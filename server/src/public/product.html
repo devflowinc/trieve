@@ -34,10 +34,9 @@
         <div class="mt-2 text-gray-500 paragraph-text">
           {{ params.singleProductOptions.productDescriptionHtml|safe }}
         </div>
-        {% endif %}
-
-        {% if params.inline and params.singleProductOptions and params.singleProductOptions.productName %}
-          <div id="inline-root"></div>
+        {% endif %} {% if params.inline and params.singleProductOptions and
+        params.singleProductOptions.productName %}
+        <div id="inline-root"></div>
         {% else %}
         <div class="mt-4 border-t border-gray-200">
           <h3 class="text-brand-color text-sm font-medium mt-4">
@@ -66,8 +65,7 @@
         {% endif %}
       </div>
     </section>
-    {% endif %}
-    {% if params.singleProductOptions.recSearchQuery %}
+    {% endif %} {% if params.singleProductOptions.recSearchQuery %}
     <section
       aria-labelledby="related-heading"
       class="border-t border-gray-200 mt-4"
@@ -283,7 +281,9 @@
       const price = priceNum ? `$${priceNum.toFixed(2)}` : null;
 
       const chunkElement = document.createElement("div");
-      chunkElement.classList.add(...["rec", "w-64", "flex-shrink-0", "mt-auto"]);
+      chunkElement.classList.add(
+        ...["rec", "w-64", "flex-shrink-0", "mt-auto"]
+      );
       chunkElement.setAttribute("x-group-tracking-id", groupTrackingId);
       chunkElement.innerHTML = `
         <div
@@ -292,7 +292,7 @@
           <img
             src="${imageUrl}"
             alt="${title}"
-            class="rec-image w-full object-cover"
+            class="rec-image max-h-[380px] w-full object-cover"
           />
         </div>
         <div class="mt-4">
@@ -337,7 +337,7 @@
         use_quote_negated_terms: true,
         search_type: "semantic",
         group_size: 1,
-        page_size: 8,
+        page_size: 15,
       }),
       credentials: "omit",
     }

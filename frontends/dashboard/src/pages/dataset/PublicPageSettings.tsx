@@ -9,7 +9,6 @@ import {
   PublicPageProvider,
   usePublicPage,
 } from "../../hooks/usePublicPageSettings";
-import { HeroPatterns } from "./HeroPatterns";
 import { createStore } from "solid-js/store";
 import { PublicPageTabMessage } from "trieve-ts-sdk";
 
@@ -368,68 +367,11 @@ const PublicPageControls = () => {
                 onSelected={(option) => {
                   setExtraParams("type", option?.value ?? "docs");
                 }}
-                class="bg-white py-1 min-w-[250px]"
+                class="min-w-[250px] bg-white py-1"
                 selected={searchTypeOptions.find(
                   (option) => option.value === extraParams.type,
                 )}
                 options={searchTypeOptions}
-              />
-            </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Responsive View
-                </label>
-                <Tooltip
-                  tooltipText="Enable responsive layout for different screen sizes"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                checked={extraParams.responsive || false}
-                type="checkbox"
-                onInput={(e) => {
-                  setExtraParams("responsive", e.currentTarget.checked);
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Hide Drawn Text
-                </label>
-                <Tooltip
-                  tooltipText="Hide the underline, circles, bracket, and other drawn text"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                checked={extraParams.hideDrawnText || false}
-                type="checkbox"
-                onInput={(e) => {
-                  setExtraParams("hideDrawnText", e.currentTarget.checked);
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Analytics
-                </label>
-                <Tooltip
-                  tooltipText="Collect analytics for searches on the page"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                checked={extraParams.analytics || false}
-                type="checkbox"
-                onChange={(e) => {
-                  setExtraParams("analytics", e.currentTarget.checked);
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
             <div class="flex gap-2">
@@ -546,6 +488,25 @@ const PublicPageControls = () => {
                 class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
+            <div class="flex gap-2">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Use Beta component
+                </label>
+                <Tooltip
+                  tooltipText="Use the beta version of the search-component."
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                type="checkbox"
+                checked={extraParams.isTestMode || false}
+                onChange={(e) => {
+                  setExtraParams("isTestMode", e.currentTarget.checked);
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
           </div>
         </div>
         <SearchOptions />
@@ -596,83 +557,7 @@ const PublicPageControls = () => {
               inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
           </div>
-          <div class="grow">
-            <div class="flex items-center gap-1">
-              <label class="block" for="">
-                Tags
-              </label>
-              <Tooltip
-                tooltipText="Default tag filters for the search component. Each field has a `tag, label, iconClassName` separated by commas. Only tag is required."
-                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-              />
-            </div>
-            <MultiStringInput
-              placeholder={`documentation,docs,fa-solid fa-info`}
-              value={
-                extraParams.tags?.map((tag) => {
-                  return `${tag.tag},${tag.label},${tag.iconClassName}`;
-                }) ?? []
-              }
-              onChange={(e) => {
-                setExtraParams(
-                  "tags",
-                  e.map((tag) => {
-                    const [tagStr, label, iconClassName] = tag.split(",");
-                    return {
-                      tag: tagStr,
-                      label,
-                      iconClassName,
-                    };
-                  }),
-                );
-              }}
-              addLabel="Add Tag"
-              addClass="text-sm"
-              inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
-          <div class="grow">
-            <div class="flex items-center gap-1">
-              <label class="block" for="">
-                Button Triggers
-              </label>
-              <Tooltip
-                tooltipText="UI elements that can trigger the search component to open. Each field has a selector and mode (search/chat) separated by commas."
-                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-              />
-            </div>
-            <MultiStringInput
-              placeholder={`#search-icon,search,true`}
-              value={
-                extraParams.buttonTriggers?.map((trigger) => {
-                  return `${trigger.selector},${trigger.mode}`;
-                }) ?? []
-              }
-              onChange={(e) => {
-                setExtraParams(
-                  "buttonTriggers",
-                  e.map((trigger) => {
-                    const [selector, mode, replace] = trigger.split(",");
-                    if (replace) {
-                      return {
-                        selector,
-                        mode,
-                        removeTriggers: replace === "true",
-                      };
-                    }
-                    return {
-                      selector,
-                      mode,
-                      removeTriggers: false,
-                    };
-                  }),
-                );
-              }}
-              addLabel="Add Trigger"
-              addClass="text-sm"
-              inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
+
           <div class="grow">
             <div class="flex items-center gap-1">
               <label class="block">Placeholder Text</label>
@@ -692,23 +577,25 @@ const PublicPageControls = () => {
           </div>
           <div class="grow">
             <div class="flex items-center gap-1">
-              <label class="block">Hero Pattern</label>
+              <label class="block" for="">
+                Default Search Mode
+              </label>
               <Tooltip
-                tooltipText="Choose a hero pattern for the search component"
+                tooltipText="Set the initial search mode"
                 body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
               />
             </div>
             <Select
               display={(option) => option}
               onSelected={(option) => {
-                setExtraParams("heroPattern", "heroPatternName", option);
+                setExtraParams("defaultSearchMode", option);
               }}
               class="bg-white py-1"
-              selected={extraParams.heroPattern?.heroPatternName || "Solid"}
-              options={Object.keys(HeroPatterns)}
+              selected={extraParams.defaultSearchMode || "search"}
+              options={["search", "chat"]}
             />
           </div>
-          <div class="flex flex-row items-center justify-start gap-4 pt-4">
+          <div class="flex flex-row items-center justify-start gap-4">
             <div class="">
               <label class="block" for="">
                 {extraParams.heroPattern?.heroPatternName === "Solid"
@@ -819,6 +706,87 @@ const PublicPageControls = () => {
               <div class="grow">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">
+                    Tags
+                  </label>
+                  <Tooltip
+                    tooltipText="Default tag filters for the search component. Each field has a `tag, label, iconClassName` separated by commas. Only tag is required."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <MultiStringInput
+                  placeholder={`documentation,docs,fa-solid fa-info`}
+                  value={
+                    extraParams.tags?.map((tag) => {
+                      return `${tag.tag},${tag.label},${tag.iconClassName}`;
+                    }) ?? []
+                  }
+                  onChange={(e) => {
+                    setExtraParams(
+                      "tags",
+                      e.map((tag) => {
+                        const [tagStr, label, iconClassName] = tag.split(",");
+                        return {
+                          tag: tagStr,
+                          label,
+                          iconClassName,
+                        };
+                      }),
+                    );
+                  }}
+                  addLabel="Add Tag"
+                  addClass="text-sm"
+                  inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Button Triggers
+                  </label>
+                  <Tooltip
+                    tooltipText="UI elements that can trigger the search component to open. Each field has a selector and mode (search/chat) separated by commas."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <MultiStringInput
+                  placeholder={`#search-icon,search,true`}
+                  value={
+                    extraParams.buttonTriggers?.map((trigger) => {
+                      return `${trigger.selector},${trigger.mode}`;
+                    }) ?? []
+                  }
+                  onChange={(e) => {
+                    setExtraParams(
+                      "buttonTriggers",
+                      e.map((trigger) => {
+                        const [selector, mode, replace] = trigger.split(",");
+                        if (replace) {
+                          return {
+                            selector,
+                            mode,
+                            removeTriggers: replace === "true",
+                          };
+                        }
+                        return {
+                          selector,
+                          mode,
+                          removeTriggers: false,
+                        };
+                      }),
+                    );
+                  }}
+                  addLabel="Add Trigger"
+                  addClass="text-sm"
+                  inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
                     Default Currency
                   </label>
                   <Tooltip
@@ -865,29 +833,6 @@ const PublicPageControls = () => {
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-              <div class="grow">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Default Search Mode
-                  </label>
-                  <Tooltip
-                    tooltipText="Set the initial search mode"
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <Select
-                  display={(option) => option}
-                  onSelected={(option) => {
-                    setExtraParams("defaultSearchMode", option);
-                  }}
-                  class="bg-white py-1"
-                  selected={extraParams.defaultSearchMode || "search"}
-                  options={["search", "chat"]}
-                />
-              </div>
-
               <div class="grow">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">
@@ -999,15 +944,19 @@ const PublicPageControls = () => {
                     }
                   />
                 </div>
-                <input
-                  value={extraParams.floatingButtonPosition || "bottom-right"}
-                  onChange={(e) => {
-                    setExtraParams(
-                      "floatingButtonPosition",
-                      e.currentTarget.value,
-                    );
+                <Select
+                  display={(option) => option ?? "bottom-right"}
+                  onSelected={(option) => {
+                    setExtraParams("floatingButtonPosition", option);
                   }}
-                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="bg-white py-1"
+                  selected={extraParams.floatingButtonPosition}
+                  options={[
+                    "top-right",
+                    "bottom-right",
+                    "top-left",
+                    "bottom-left",
+                  ]}
                 />
               </div>
             </div>
@@ -1049,35 +998,16 @@ const PublicPageControls = () => {
                     }
                   />
                 </div>
-                <input
-                  value={extraParams.floatingSearchIconPosition || "right"}
-                  onChange={(e) => {
-                    setExtraParams(
-                      "floatingSearchIconPosition",
-                      e.currentTarget.value,
-                    );
+                <Select
+                  display={(option) => option ?? "right"}
+                  onSelected={(option) => {
+                    setExtraParams("floatingSearchIconPosition", option);
                   }}
-                  class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  class="bg-white py-1"
+                  selected={extraParams.floatingSearchIconPosition}
+                  options={["right", "left"]}
                 />
               </div>
-            </div>
-
-            <div class="grow">
-              <div class="flex items-center gap-1">
-                <label class="block">Inline header text</label>
-                <Tooltip
-                  tooltipText="Header text for inline mode"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                placeholder=""
-                value={extraParams.inlineHeader || ""}
-                onInput={(e) => {
-                  setExtraParams("inlineHeader", e.currentTarget.value);
-                }}
-                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -1122,56 +1052,12 @@ const PublicPageControls = () => {
                 </div>
                 <input
                   type="checkbox"
-                  checked={extraParams.allowSwitchingModes || false}
+                  checked={extraParams.allowSwitchingModes || true}
                   onChange={(e) => {
                     setExtraParams(
                       "allowSwitchingModes",
                       e.currentTarget.checked,
                     );
-                  }}
-                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-
-              <div class="flex gap-2">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Use Group Search
-                  </label>
-                  <Tooltip
-                    tooltipText="Enable grouped search results"
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <input
-                  type="checkbox"
-                  checked={extraParams.useGroupSearch || false}
-                  onChange={(e) => {
-                    setExtraParams("useGroupSearch", e.currentTarget.checked);
-                  }}
-                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-
-              <div class="flex gap-2">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Use Beta component
-                  </label>
-                  <Tooltip
-                    tooltipText="Use the beta version of the search-component."
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <input
-                  type="checkbox"
-                  checked={extraParams.isTestMode || false}
-                  onChange={(e) => {
-                    setExtraParams("isTestMode", e.currentTarget.checked);
                   }}
                   class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
@@ -1202,6 +1088,23 @@ const PublicPageControls = () => {
                   class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
               </div>
+            </div>
+            <div class="grow">
+              <div class="flex items-center gap-1">
+                <label class="block">Inline header text</label>
+                <Tooltip
+                  tooltipText="Header text for inline mode"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                placeholder=""
+                value={extraParams.inlineHeader || ""}
+                onInput={(e) => {
+                  setExtraParams("inlineHeader", e.currentTarget.value);
+                }}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
             </div>
           </div>
         </details>
