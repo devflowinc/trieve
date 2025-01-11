@@ -318,7 +318,7 @@ body {
       }
 
       .feedback-wrapper {
-        @apply tv-flex tv-justify-between tv-my-4;
+        @apply tv-flex tv-justify-between tv-my-2;
 
         .feedback-icons {
           @apply tv-flex tv-space-x-2;
@@ -453,10 +453,10 @@ body {
       }
 
       .system {
-        @apply tv-mt-2 sm:tv-mt-8 tv-mb-5 tv-items-center tv-overflow-ellipsis tv-max-w-[100vw];
+        @apply tv-mt-2 sm:tv-mt-4 tv-mb-5 tv-items-center tv-overflow-ellipsis tv-max-w-[100vw];
 
         p {
-          @apply tv-pb-1;
+          @apply tv-pb-0.5;
         }
 
         a:not(.carousel-item):not(.carousel-item *):not(.additional-links *) {
