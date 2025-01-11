@@ -100,6 +100,7 @@ export default function ECommerce() {
                 },
               ]}
               usePagefind={usePagefind}
+              cssRelease="none"
               defaultSearchQueries={defaultSearchQueries}
               defaultAiQuestions={defaultAIQuestions}
               tags={defaultTags}

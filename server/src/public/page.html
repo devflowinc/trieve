@@ -441,10 +441,13 @@
         import {renderToDiv} from '{{ search_component_url | safe }}/dist/vanilla/index.js';
         const root = document.querySelector("#root");
 
+        let mode = "none";
+
         const params = {{ params | tojson }};
         if (params.inline) {
           const inlineParams = {{ params | tojson }};
           const inlineRoot = document.querySelector("#inline-root");
+          inlineParams.mode = mode;
           inlineParams.groupTrackingId = params.singleProductOptions.groupTrackingId;
           inlineParams.cleanGroupName = params.singleProductOptions.productName;
 
@@ -463,6 +466,7 @@
           ...(params.buttonTriggers ?? [])
         ];
         params.inline = false;
+        params.cssRelease = mode;
         renderToDiv(root, {
           ...params,
         })
