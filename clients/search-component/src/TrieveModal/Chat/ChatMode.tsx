@@ -96,7 +96,7 @@ export const ChatMode = () => {
         <div
           className={`system-information-wrapper${
             currentGroup ? " with-group" : ""
-          }`}
+          } ${(!props.inline && props.type === "ecommerce" && messages.length > 1) ? "tv-pt-8" : ""}`}
         >
           <div className="ai-message">
             <div className="chat-modal-wrapper">
@@ -133,7 +133,7 @@ export const ChatMode = () => {
       >
         <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
         {currentGroup && (
-          <div className="chat-group-disclaimer">
+          <div className={`chat-group-disclaimer ${props.inline ? "inline-disclaimer" : ""}`}>
             <div>Chatting with {currentGroup.name.replace(/<[^>]*>/g, "")}</div>
             <button
               onClick={() => {
