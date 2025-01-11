@@ -366,11 +366,11 @@ const PublicPageControls = () => {
               <Select
                 display={(option) => (option ? option.label : "Docs")}
                 onSelected={(option) => {
-                  setExtraParams("defaultSearchMode", option?.value ?? "docs");
+                  setExtraParams("type", option?.value ?? "docs");
                 }}
                 class="bg-white py-1 min-w-[250px]"
                 selected={searchTypeOptions.find(
-                  (option) => option.value === extraParams.defaultSearchMode,
+                  (option) => option.value === extraParams.type,
                 )}
                 options={searchTypeOptions}
               />
