@@ -931,7 +931,7 @@ pub async fn get_suggested_queries(
     let context_sentence = match data.context.clone() {
         Some(context) => {
             format!(
-                "\n\nSuggest things with the following context in mind: {}.\n\n",
+                "\n\nSuggest varied {query_style} queries with the following context in mind: {}.\n\n",
                 context
             )
         }
@@ -941,7 +941,7 @@ pub async fn get_suggested_queries(
     let number_of_suggestions_to_create = data.suggestions_to_create.unwrap_or(10);
 
     let content = ChatMessageContent::Text(format!(
-        "Here is some context for the dataset for which the user is querying for {}{}. Generate {} suggested followup {} style queries based off the domain of this dataset. Your only response should be the {} followup {} style queries which are separated by new lines and are just text and you do not add any other context or information about the followup {} style queries. This should not be a list, so do not number each {} style queries. These followup {} style queries should be related to the domain of the dataset.",
+        "Here is some content which the user might be looking for: {}{}. Generate {} varied followup {} style queries based off the domain of this dataset. Your only response should be the {} followup {} style queries which are separated by new lines and are just text and you do not add any other context or information about the followup {} style queries. This should not be a list, so do not number each {} style queries.",
         rag_content,
         context_sentence,
         number_of_suggestions_to_create,
@@ -950,7 +950,6 @@ pub async fn get_suggested_queries(
         query_style,
         query_style,
         query_style,
-        query_style
     ));
 
     let message = ChatMessage::User {

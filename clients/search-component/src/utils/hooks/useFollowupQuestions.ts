@@ -14,17 +14,23 @@ export const useFollowupQuestions = () => {
 
   const getQuestions = async () => {
     setIsLoading(true);
-    const prevMessage = messages.filter((msg) => {
-      return msg.type == "user"
-    }).slice(-1)[0];
+    const prevMessage = messages
+      .filter((msg) => {
+        return msg.type == "user";
+      })
+      .slice(-1)[0];
 
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
       query: prevMessage.text,
       count: props.numberOfSuggestions ?? 3,
-      group: currentGroup
+      group: currentGroup,
     });
-    setSuggestedQuestions(queries.queries);
+    setSuggestedQuestions(
+      queries.queries.map((q) => {
+        return q.replace(/^[\d.-]+\s*/, "").trim();
+      })
+    );
     setIsLoading(false);
   };
 

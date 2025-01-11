@@ -663,6 +663,10 @@ video {
   max-height: 20rem;
 }
 
+.max-h-\[380px\] {
+  max-height: 380px;
+}
+
 .w-1\/2 {
   width: 50%;
 }

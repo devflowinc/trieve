@@ -4,7 +4,7 @@ import { getSuggestedQuestions } from "../trieve";
 import { useModalState } from "./modal-context";
 
 export const useSuggestedQuestions = () => {
-  const { props, query, trieveSDK } = useModalState();
+  const { props, query, trieveSDK, currentGroup } = useModalState();
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
     SuggestedQueriesResponse["queries"]
@@ -15,9 +15,14 @@ export const useSuggestedQuestions = () => {
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
       count: props.numberOfSuggestions ?? 3,
+      group: currentGroup,
       query,
     });
-    setSuggestedQuestions(queries.queries);
+    setSuggestedQuestions(
+      queries.queries.map((q) => {
+        return q.replace(/^[\d.-]+\s*/, "").trim();
+      })
+    );
     setIsLoading(false);
   };
 
@@ -41,7 +46,11 @@ export const useSuggestedQuestions = () => {
         abortController,
         query,
       });
-      setSuggestedQuestions(queries.queries);
+      setSuggestedQuestions(
+        queries.queries.map((q) => {
+          return q.replace(/^[\d.-]+\s*/, "").trim();
+        })
+      );
       setIsLoading(false);
     });
 
