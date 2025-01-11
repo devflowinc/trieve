@@ -662,6 +662,11 @@ body {
     /* SUGGESTED QUESTIONS */
 
     .system-information-wrapper {
+
+      &.popup.ecommerce {
+        @apply tv-pt-8;
+      }
+
       &.with-group {
         @apply tv-mb-8 sm:tv-mb-0;
       }
@@ -836,6 +841,10 @@ body {
     .chat-footer-wrapper {
       .chat-group-disclaimer {
         @apply tv-flex tv-items-center tv-justify-between tv-bg-zinc-200/60 dark:tv-bg-zinc-700 tv-px-3 tv-py-1 tv-text-sm tv-opacity-70 tv-mr-2 tv-border tv-border-zinc-300 dark:tv-border-zinc-500 tv-border-b-transparent tv-rounded-md;
+
+        &.inline-disclaimer {
+          @apply tv-ml-2 tv-border-b-zinc-300 dark:tv-border-b-zinc-500;
+        }
       }
 
       &:not(.with-messages) {
