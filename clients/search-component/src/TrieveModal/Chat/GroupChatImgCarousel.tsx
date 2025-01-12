@@ -47,7 +47,7 @@ export const GroupChatImgCarousel = () => {
         <div className="group-chat-carousel">
           {groupCarouselItems.map((image) => (
             <a href={link} key={image}>
-              <img className="tv-max-h-[270px]" src={image} />
+              <img className="tv-max-h-[16.5rem]" src={image} />
             </a>
           ))}
         </div>

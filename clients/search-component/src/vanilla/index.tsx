@@ -7,9 +7,11 @@ export function renderToDiv(element: HTMLElement, props: ModalProps) {
   if (props.cssRelease) {
     switch (props.cssRelease) {
       case "none": {
+        console.log("loading css styles: none");
         break;
       }
       case "stable": {
+        console.log("loading css styles: stable");
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = 'https://search-component.trieve.ai/dist/index.css';
@@ -17,6 +19,7 @@ export function renderToDiv(element: HTMLElement, props: ModalProps) {
         break;
       }
       case "beta": {
+        console.log("loading css styles: beta");
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = 'https://test-search-component.trieve.ai/dist/index.css';
@@ -26,6 +29,7 @@ export function renderToDiv(element: HTMLElement, props: ModalProps) {
     }
   } else {
     // load stable default
+    console.log("loading css styles: stable");
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://search-component.trieve.ai/dist/index.css';

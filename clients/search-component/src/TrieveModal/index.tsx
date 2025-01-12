@@ -47,14 +47,14 @@ const Modal = () => {
 
     if ((window.visualViewport?.width ?? 1000) <= 640) {
       const trieveSearchModal = document.getElementById("trieve-search-modal");
-      if (trieveSearchModal) {
-        trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${props.type == "ecommerce" ? "0.5rem" : "0rem"
+      if (trieveSearchModal && viewportHeight) {
+        trieveSearchModal.style.maxHeight = `calc(${viewportHeight * 0.063}rem - ${props.type == "ecommerce" ? "0.5rem" : "0rem"
           })`;
       }
 
-      if (chatOuterWrapper) {
+      if (chatOuterWrapper && viewportHeight) {
         (chatOuterWrapper as HTMLElement).style.maxHeight =
-          `calc(${viewportHeight}px - ${props.type == "ecommerce" ? "150px" : "175px"
+          `calc(${viewportHeight * 0.063}rem - ${props.type == "ecommerce" ? "150px" : "175px"
           })`;
       }
     }
@@ -204,7 +204,7 @@ const Modal = () => {
             id="trieve-search-modal"
             className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${props.theme === "dark" ? "dark " : ""
               } ${props.inline ? "trieve-inline-modal" : "trieve-popup-modal"} ${props.type
-              }`.trim()}
+              } ${props.scaleRem ? "scale-rem" : ""} `.trim()}
             style={{
               zIndex: props.zIndex ? props.zIndex + 1 : 1001,
               maxHeight: fullscreenPdfState ? "none" : "60vh",

@@ -112,6 +112,7 @@ export type ModalProps = {
   groupTrackingId?: string;
   cleanGroupName?: string;
   cssRelease?: string;
+  scaleRem: boolean;
 };
 
 const defaultProps = {
@@ -158,6 +159,7 @@ const defaultProps = {
   groupTrackingId: undefined,
   cleanGroupName: undefined,
   cssRelease: "stable",
+  scaleRem: false,
 };
 
 const ModalContext = createContext<{

@@ -145,6 +145,9 @@ export default {
           950: "#000000",
         },
       },
+      scale: {
+        '160': '1.6',
+      },
       keyframes: {
         overlayShow: {
           from: { opacity: "0" },
