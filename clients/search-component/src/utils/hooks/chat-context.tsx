@@ -95,6 +95,23 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const { currentTag, currentGroup, props } = useModalState();
 
   useEffect(() => {
+    if (props.groupTrackingId) {
+      trieveSDK
+        .getGroupByTrackingId({
+          trackingId: props.groupTrackingId,
+        })
+        .then((fetchedGroup) => {
+          if (fetchedGroup) {
+            chatWithGroup(fetchedGroup, props.cleanGroupName);
+          }
+        })
+        .catch((e) => {
+          console.error(e);
+        });
+    }
+  }, []);
+
+  useEffect(() => {
     if (currentTag) {
       clearConversation();
     }

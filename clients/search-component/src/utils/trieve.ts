@@ -16,7 +16,7 @@ import {
   SearchResults,
 } from "./types";
 import { defaultHighlightOptions, highlightText } from "./highlight";
-import { ModalTypes, PagefindApi } from "./hooks/modal-context";
+import { ModalProps, ModalTypes, PagefindApi } from "./hooks/modal-context";
 
 export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
@@ -314,12 +314,14 @@ export const getSuggestedQuestions = async ({
   query,
   count,
   group,
+  props: modalProps,
 }: {
   trieve: TrieveSDK;
   abortController?: AbortController;
   query?: string;
   count: number;
   group?: ChunkGroup | null;
+  props?: ModalProps;
 }) => {
   return trieve.suggestedQueries(
     {
@@ -327,7 +329,12 @@ export const getSuggestedQuestions = async ({
       suggestion_type: "question",
       search_type: "hybrid",
       suggestions_to_create: count,
-      context: `The users previous query was "${query}", all suggestions should look like that.`,
+      context:
+        group && modalProps?.cleanGroupName
+          ? `The user is specifically and exclusively interested in the ${modalProps.cleanGroupName}. Suggest short questions limited to 3-6 words based on the reference content.`
+          : query
+            ? `The user's previous query was "${query}", all suggestions should look like that.`
+            : "Keep your query recommendations short, limited to 3-6 words",
       ...(group &&
         group?.tracking_id && {
           filters: {

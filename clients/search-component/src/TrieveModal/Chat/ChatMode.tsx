@@ -104,9 +104,7 @@ export const ChatMode = () => {
           <div className="ai-message">
             <div className="chat-modal-wrapper">
               <div className="ai-message initial-message">
-                {!messages.length && !currentGroup ? (
-                  <SuggestedQuestions />
-                ) : null}
+                {!messages.length ? <SuggestedQuestions /> : null}
               </div>
               {messages.map((message, i) => (
                 <ChatMessage key={`${i}-message`} idx={i} message={message} />
