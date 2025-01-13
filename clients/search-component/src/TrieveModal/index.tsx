@@ -47,18 +47,22 @@ const Modal = () => {
     if (props.inline) {
       chatOuterWrapper = document.querySelector(".chat-outer-wrapper");
     } else {
-      chatOuterWrapper = document.querySelector(".chat-outer-wrapper.chat-outer-popup");
+      chatOuterWrapper = document.querySelector(
+        ".chat-outer-wrapper.chat-outer-popup",
+      );
     }
 
     if ((window.visualViewport?.width ?? 1000) <= 640) {
       const trieveSearchModal = document.getElementById("trieve-search-modal");
       if (trieveSearchModal) {
-        trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${props.type == "ecommerce" ? "0.5rem" : "0rem"
-          })`;
+        trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${
+          props.type == "ecommerce" ? "0.5rem" : "0rem"
+        })`;
       }
 
       if (chatOuterWrapper && props.type && viewportHeight) {
-        const newHeight = viewportHeight - ((props.type == "ecommerce") ? 150: 175);
+        const newHeight =
+          viewportHeight - (props.type == "ecommerce" ? 150 : 175);
         (chatOuterWrapper as HTMLElement).style.maxHeight = `${newHeight}px`;
       }
     } else if (chatOuterWrapper) {
@@ -97,7 +101,7 @@ const Modal = () => {
         clearConversation();
         chatWithGroup(
           customEvent.detail.group,
-          customEvent.detail.betterGroupName
+          customEvent.detail.betterGroupName,
         );
         if (customEvent.detail.message) {
           askQuestion(customEvent.detail.message, customEvent.detail.group);
@@ -143,14 +147,14 @@ const Modal = () => {
 
     window.addEventListener(
       "trieve-start-chat-with-group",
-      chatWithGroupListener
+      chatWithGroupListener,
     );
     window.addEventListener("trieve-open-with-text", openWithTextListener);
 
     return () => {
       window.removeEventListener(
         "trieve-start-chat-with-group",
-        chatWithGroupListener
+        chatWithGroupListener,
       );
 
       window.removeEventListener("trieve-open-with-text", openWithTextListener);
@@ -160,26 +164,26 @@ const Modal = () => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB"
+      props.brandColor ?? "#CB53EB",
     );
 
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)"
+        "var(--tv-zinc-700)",
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)"
+        "var(--tv-zinc-300)",
       );
     }
 
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
+        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);
 
@@ -208,12 +212,17 @@ const Modal = () => {
           )}
           <div
             id="trieve-search-modal"
-            className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${props.theme === "dark" ? "dark " : ""
-              } ${props.inline ? "trieve-inline-modal" : "trieve-popup-modal"} ${props.type
-              }`.trim()}
+            className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${
+              props.theme === "dark" ? "dark " : ""
+            } ${
+              props.inline
+                ? "trieve-inline-modal tv-trieve-inline-modal"
+                : "trieve-popup-modal"
+            } ${props.type}`.trim()}
             style={{
               zIndex: props.zIndex ? props.zIndex + 1 : 1001,
-              maxHeight: (!fullscreenPdfState && props.type == "pdf") ? "60vh" : "none",
+              maxHeight:
+                !fullscreenPdfState && props.type == "pdf" ? "60vh" : "none",
             }}
           >
             {props.allowSwitchingModes &&
@@ -235,15 +244,18 @@ const Modal = () => {
               style={
                 props.type == "pdf"
                   ? {
-                    display:
-                      mode === "chat" && !fullscreenPdfState
-                        ? "block"
-                        : "none",
-                    maxHeight: (fullscreenPdfState && props.type == "pdf") ? "none" : "60vh",
-                  }
+                      display:
+                        mode === "chat" && !fullscreenPdfState
+                          ? "block"
+                          : "none",
+                      maxHeight:
+                        fullscreenPdfState && props.type == "pdf"
+                          ? "none"
+                          : "60vh",
+                    }
                   : {
-                    display: mode === "chat" ? "block" : "none"
-                  }
+                      display: mode === "chat" ? "block" : "none",
+                    }
               }
             >
               <ChatMode />

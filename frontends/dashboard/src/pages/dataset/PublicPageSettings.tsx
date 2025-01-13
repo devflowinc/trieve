@@ -475,7 +475,7 @@ const PublicPageControls = () => {
                   Display Inline
                 </label>
                 <Tooltip
-                  tooltipText="Localsearch uses pagefind to do search on the client side, must enable pagefind in Dataset Settings"
+                  tooltipText="Display the search component inline"
                   body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
                 />
               </div>
@@ -1121,7 +1121,6 @@ const PublicPageControls = () => {
             onClick={() => {
               void publishDataset();
             }}
-            disabled={searchOptionsError() !== null}
           >
             Save
           </button>

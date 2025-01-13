@@ -1,4 +1,5 @@
 import defaultTheme from "tailwindcss/defaultTheme";
+import plugin from "tailwindcss/plugin";
 const {
   scopedPreflightStyles,
   isolateInsideOfContainer,
@@ -9,6 +10,12 @@ export default {
   darkMode: "class",
   content: ["src/**/*.tsx"],
   plugins: [
+    plugin(function ({ addVariant }) {
+      addVariant("inline", () => {
+        // Actually selects any child of .tv-trieve-inline-model
+        return `.trieve-inline-modal &`;
+      });
+    }),
     require("@tailwindcss/forms"),
     require("tailwind-scrollbar"),
     scopedPreflightStyles({
