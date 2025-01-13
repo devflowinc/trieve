@@ -63,7 +63,7 @@ body {
       @apply tv-h-full;
 
       .chat-outer-wrapper {
-        @apply tv-overflow-auto sm:tv-max-h-[calc(50vh-122px)] tv-max-h-[87vh];
+        @apply tv-overflow-auto sm:tv-max-h-[calc(60vh)] tv-max-h-[87vh];
       }
 
       &.chat-outer-popup {
@@ -1284,7 +1284,7 @@ body {
     @apply tv-top-1 tv-max-w-[90rem] tv-w-[95vw] tv-pt-10 tv-px-4 tv-rounded-lg;
 
     &:not(.trieve-popup-modal) {
-      @apply tv-top-1 tv-px-0 tv-pt-0;
+      @apply tv-top-1 tv-px-0 tv-pt-0 tv-max-w-full;
     }
 
     &.trieve-popup-modal {

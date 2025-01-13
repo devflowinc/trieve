@@ -43,7 +43,12 @@ const Modal = () => {
 
   const onViewportResize = useCallback(() => {
     const viewportHeight = window.visualViewport?.height;
-    const chatOuterWrapper = document.querySelector(".chat-outer-wrapper");
+    let chatOuterWrapper;
+    if (props.inline) {
+      chatOuterWrapper = document.querySelector(".chat-outer-wrapper");
+    } else {
+      chatOuterWrapper = document.querySelector(".chat-outer-wrapper.chat-outer-popup");
+    }
 
     if ((window.visualViewport?.width ?? 1000) <= 640) {
       const trieveSearchModal = document.getElementById("trieve-search-modal");
@@ -52,11 +57,12 @@ const Modal = () => {
           })`;
       }
 
-      if (chatOuterWrapper) {
-        (chatOuterWrapper as HTMLElement).style.maxHeight =
-          `calc(${viewportHeight}px - ${props.type == "ecommerce" ? "150px" : "175px"
-          })`;
+      if (chatOuterWrapper && props.type && viewportHeight) {
+        const newHeight = viewportHeight - ((props.type == "ecommerce") ? 150: 175);
+        (chatOuterWrapper as HTMLElement).style.maxHeight = `${newHeight}px`;
       }
+    } else if (chatOuterWrapper) {
+      (chatOuterWrapper as HTMLElement).style.maxHeight = "60vh";
     }
 
     if (chatOuterWrapper) {
@@ -207,7 +213,7 @@ const Modal = () => {
               }`.trim()}
             style={{
               zIndex: props.zIndex ? props.zIndex + 1 : 1001,
-              maxHeight: fullscreenPdfState ? "none" : "60vh",
+              maxHeight: (!fullscreenPdfState && props.type == "pdf") ? "60vh" : "none",
             }}
           >
             {props.allowSwitchingModes &&
@@ -233,7 +239,7 @@ const Modal = () => {
                       mode === "chat" && !fullscreenPdfState
                         ? "block"
                         : "none",
-                    maxHeight: fullscreenPdfState ? "none" : "60vh",
+                    maxHeight: (fullscreenPdfState && props.type == "pdf") ? "none" : "60vh",
                   }
                   : {
                     display: mode === "chat" ? "block" : "none"
