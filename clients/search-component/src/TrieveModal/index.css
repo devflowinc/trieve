@@ -597,7 +597,7 @@ body {
 
     .chat-outer-wrapper {
       @apply tv-flex tv-flex-col tv-px-4 tv-scroll-smooth !tv-mt-0;
-      
+
       &.chat-outer-popup {
         @apply sm:tv-mt-0 md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0;
       }
@@ -1432,15 +1432,15 @@ body {
   }
 
   .floating-search-btn-container {
-    @apply tv-fixed tv-flex tv-flex-row tv-justify-center tv-items-center tv-top-[calc(50%-34px)] tv-bg-white tv-w-min tv-z-[999] tv-p-2;
+    @apply tv-fixed tv-flex tv-flex-row tv-justify-center tv-items-center tv-top-[calc(50%-34px)] tv-bg-white tv-w-min tv-z-[999] tv-p-2 hover:tv-cursor-pointer;
     box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.05);
 
     &.dark {
       @apply tv-bg-zinc-900;
     }
 
-    button {
-      @apply tv-flex tv-justify-center tv-items-center tv-rounded-full tv-p-1;
+    .floating-search-btn {
+      @apply tv-flex tv-justify-center tv-items-center tv-rounded-full tv-p-1 tv-border-0;
 
       background-color: var(--tv-prop-brand-color);
 
