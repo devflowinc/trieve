@@ -3,6 +3,7 @@ import {
   ChunkMetadata,
   ChunkMetadataStringTagSet,
   CountChunkQueryResponseBody,
+  CTRType,
   SearchResponseBody,
   TrieveSDK,
 } from "trieve-ts-sdk";
@@ -236,6 +237,7 @@ export const countChunks = async ({
 
 export const sendCtrData = async ({
   trieve,
+  type,
   chunkID,
   requestID,
   index,
@@ -243,13 +245,42 @@ export const sendCtrData = async ({
   trieve: TrieveSDK;
   chunkID: string;
   requestID: string;
+  type: CTRType;
   index: number;
 }) => {
   await trieve.sendCTRAnalytics({
-    ctr_type: "search",
+    ctr_type: type,
     clicked_chunk_id: chunkID,
     request_id: requestID,
     position: index,
+  });
+
+  return null;
+};
+
+export const trackViews = async({
+  trieve,
+  type,
+  requestID,
+  items,
+}: {
+  trieve: TrieveSDK;
+  requestID: string;
+  type: CTRType;
+  items: string[];
+}) => {
+  trieve.trieve.fetch("/api/analytics/events", "put",
+  {
+      datasetId: trieve.datasetId ?? "",
+      data: {
+        event_name: "View",
+        event_type: "view",
+        items: items,
+        request: {
+          request_id: requestID,
+          request_type: type
+        },
+      }
   });
 
   return null;
@@ -311,10 +342,6 @@ export const getSuggestedQuestions = async ({
     },
     abortController?.signal
   );
-};
-
-export const sendFeedback = async ({ trieve }: { trieve: TrieveSDK }) => {
-  return trieve;
 };
 
 export type SimpleChunk = ChunkMetadata | ChunkMetadataStringTagSet;
