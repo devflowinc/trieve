@@ -88,7 +88,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const clearConversation = () => {
     setCurrentTopic("");
-    setCurrentGroup(null);
     setMessages([]);
   };
 
@@ -164,16 +163,15 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
         if (json && props.analytics && !calledAnalytics) {
           calledAnalytics = true;
-          const ecommerceChunks = (json as unknown as Chunk[])
-            .filter(
-              (chunk) =>
-                (chunk.metadata.heading ||
-                  chunk.metadata.title ||
-                  chunk.metadata.page_title) &&
-                chunk.link &&
-                chunk.image_urls?.length &&
-                chunk.num_value,
-            );
+          const ecommerceChunks = (json as unknown as Chunk[]).filter(
+            (chunk) =>
+              (chunk.metadata.heading ||
+                chunk.metadata.title ||
+                chunk.metadata.page_title) &&
+              chunk.link &&
+              chunk.image_urls?.length &&
+              chunk.num_value
+          );
           if (ecommerceChunks && queryId) {
             console.log("views");
             trackViews({
@@ -181,9 +179,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               requestID: queryId,
               type: "rag",
               items: ecommerceChunks.map((chunk) => {
-                return chunk.link ?? ""
-              })
-            })
+                return chunk.link ?? "";
+              }),
+            });
           }
         }
 
