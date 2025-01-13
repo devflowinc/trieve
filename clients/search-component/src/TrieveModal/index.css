@@ -15,7 +15,7 @@
 
 body {
   #trieve-search-modal-overlay {
-    @apply tv-bg-black/60 tv-w-screen tv-fixed tv-inset-0 tv-h-screen tv-animate-overlayShow tv-backdrop-blur-sm;
+    @apply tv-bg-black/60 tv-w-screen tv-fixed tv-inset-0 tv-h-screen tv-animate-overlayShow tv-backdrop-blur-sm tv-block;
   }
 
   .close-icon {
