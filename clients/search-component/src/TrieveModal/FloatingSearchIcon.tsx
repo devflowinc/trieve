@@ -27,21 +27,22 @@ export const FloatingSearchIcon = () => {
 
   return (
     <div
-      className={`floating-search-btn-container${props.theme == "dark" ? " dark" : ""}`}
+      className={`floating-search-btn-container${
+        props.theme == "dark" ? " dark" : ""
+      }`}
       style={{
         ...setButtonPosition(props.floatingSearchIconPosition || "right"),
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={() => {
+        startTransition(() => {
+          setOpen(true);
+          setMode(props.defaultSearchMode || "search");
+        });
+      }}
     >
-      <button
-        onClick={() => {
-          startTransition(() => {
-            setOpen(true);
-            setMode(props.defaultSearchMode || "search");
-          });
-        }}
-      >
+      <div className="floating-search-btn">
         <div className="floating-search-icon">
           <svg
             width="26"
@@ -54,7 +55,7 @@ export const FloatingSearchIcon = () => {
             <path d="M22.4282 7.85633L23.5023 5.50232L25.8563 4.42816L23.5023 3.35401L22.4282 1L21.354 3.35401L19 4.42816L21.354 5.50232L22.4282 7.85633Z"></path>
           </svg>
         </div>
-      </button>
+      </div>
     </div>
   );
 };
