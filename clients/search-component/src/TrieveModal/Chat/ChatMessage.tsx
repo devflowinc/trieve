@@ -1,4 +1,4 @@
-import React, { lazy } from "react";
+import React, { lazy, useEffect } from "react";
 const Markdown = lazy(() => import("react-markdown"));
 
 import { useChatState } from "../../utils/hooks/chat-context";
@@ -9,6 +9,7 @@ import { ChatPdfItem } from "../PdfView/ChatPdfItem";
 import { Carousel } from "./Carousel";
 import { FollowupQueries } from "./FollowupQueries";
 import ImagePreview from "../ImagePreview";
+import { sendCtrData, trackViews } from "../../utils/trieve";
 
 type Message = {
   queryId: string | null;
@@ -82,7 +83,34 @@ export const Message = ({
   const { rateChatCompletion, isDoneReading, messages } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
-  const { props } = useModalState();
+  const { props, trieveSDK } = useModalState();
+
+  useEffect(() => {
+    if (props.analytics) {
+      const ecommerceChunks = message.additional
+        ?.filter(
+          (chunk) =>
+            (chunk.metadata.heading ||
+              chunk.metadata.title ||
+              chunk.metadata.page_title) &&
+            chunk.link &&
+            chunk.image_urls?.length &&
+            chunk.num_value,
+        );
+      if (ecommerceChunks && message.queryId) {
+        console.log("views");
+        trackViews({
+          trieve: trieveSDK,
+          requestID: message.queryId,
+          type: "rag",
+          items: ecommerceChunks.map((chunk) => {
+            return chunk.link ?? ""
+          })
+        })
+      }
+    }
+  }, []);
+
 
   const ecommerceItems = message.additional
     ?.filter(
@@ -102,6 +130,7 @@ export const Message = ({
       link: chunk.link,
       imageUrl: (chunk.image_urls ?? [])[0],
       price: chunk.num_value,
+      id: chunk.id
     }))
     .filter(
       (item, index, array) =>
@@ -114,6 +143,17 @@ export const Message = ({
         href={item.link ?? ""}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => {
+          if (props.analytics && message.queryId) {
+            sendCtrData({
+              type: "rag",
+              trieve: trieveSDK,
+              index: index + 1,
+              requestID: message.queryId,
+              chunkID: item.id,
+            });
+          }
+        }}
       >
         <img
           src={item.imageUrl ?? ""}

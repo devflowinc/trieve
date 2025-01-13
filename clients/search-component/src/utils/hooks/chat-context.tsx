@@ -4,7 +4,7 @@ import { Chunk } from "../types";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
 import { cached } from "../cache";
-import { getAllChunksForGroup } from "../trieve";
+import { getAllChunksForGroup, trackViews } from "../trieve";
 import { ChatMessageProxy, ChunkGroup, RoleProxy } from "trieve-ts-sdk";
 
 type Messages = {
@@ -107,6 +107,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     setIsDoneReading(false);
     let done = false;
+    let calledAnalytics = false;
     let textInStream = "";
 
     while (!done) {
@@ -142,6 +143,31 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           json = JSON.parse(jsonData);
         } catch {
           json = null;
+        }
+
+        if (json && props.analytics && !calledAnalytics) {
+          calledAnalytics = true;
+          const ecommerceChunks = (json as unknown as Chunk[])
+            .filter(
+              (chunk) =>
+                (chunk.metadata.heading ||
+                  chunk.metadata.title ||
+                  chunk.metadata.page_title) &&
+                chunk.link &&
+                chunk.image_urls?.length &&
+                chunk.num_value,
+            );
+          if (ecommerceChunks && queryId) {
+            console.log("views");
+            trackViews({
+              trieve: trieveSDK,
+              requestID: queryId,
+              type: "rag",
+              items: ecommerceChunks.map((chunk) => {
+                return chunk.link ?? ""
+              })
+            })
+          }
         }
 
         setMessages((m) => [

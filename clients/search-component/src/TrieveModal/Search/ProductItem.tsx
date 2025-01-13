@@ -114,27 +114,33 @@ export const ProductItem = ({
     chunk: Chunk & { position: number },
     requestID: string,
   ) => {
-    if (props.onResultClick) {
-      props.onResultClick(chunk);
-    }
-
     if (props.analytics) {
       await sendCtrData({
         trieve: trieveSDK,
+        type: "search",
         index: chunk.position,
         requestID: requestID,
         chunkID: chunk.id,
       });
     }
+
+    if (props.onResultClick) {
+      props.onResultClick(chunk);
+    }
+
+    if (item.chunk.link) {
+      window.location.href = item.chunk.link
+    }
   };
 
   return (
     <li key={item.chunk.id}>
-      <Component
+      <a
         ref={itemRef}
         id={`trieve-search-item-${index + 1}`}
         className={className ?? "item product"}
-        onClick={() =>
+        onClick={(event) => {
+          event.preventDefault();
           onResultClick(
             {
               ...item.chunk,
@@ -142,7 +148,7 @@ export const ProductItem = ({
             },
             requestID,
           )
-        }
+        }}
         href={item.chunk.link ?? ""}
       >
         <div>
@@ -225,7 +231,7 @@ export const ProductItem = ({
             />
           )}
         </div>
-      </Component>
+      </a>
     </li>
   );
 };
