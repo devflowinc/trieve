@@ -17,6 +17,7 @@ export const useSuggestedQuestions = () => {
       count: props.numberOfSuggestions ?? 3,
       group: currentGroup,
       query,
+      props,
     });
     setSuggestedQuestions(
       queries.queries.map((q) => {
@@ -45,6 +46,8 @@ export const useSuggestedQuestions = () => {
         count: props.numberOfSuggestions ?? 3,
         abortController,
         query,
+        group: currentGroup,
+        props,
       });
       setSuggestedQuestions(
         queries.queries.map((q) => {

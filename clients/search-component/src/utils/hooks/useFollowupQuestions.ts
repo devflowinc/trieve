@@ -25,6 +25,7 @@ export const useFollowupQuestions = () => {
       query: prevMessage.text,
       count: props.numberOfSuggestions ?? 3,
       group: currentGroup,
+      props,
     });
     setSuggestedQuestions(
       queries.queries.map((q) => {
