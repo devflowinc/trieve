@@ -29,15 +29,14 @@ export default function ECommerce() {
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
   const defaultTags: any[] = JSON.parse(
-    import.meta.env.VITE_DEFAULT_TAGS ?? "[]"
+    import.meta.env.VITE_DEFAULT_TAGS ?? "[]",
   );
   const defaultSearchMode =
     import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "search";
   const defaultAIQuestions = (
     import.meta.env.VITE_DEFAULT_AI_QUESTIONS ?? ""
   ).split(",");
-  const inline = 
-    import.meta.env.VITE_INLINE == "true";
+  const inline = import.meta.env.VITE_INLINE == "true";
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -47,14 +46,12 @@ export default function ECommerce() {
       <div
         className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${
           theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
-        }`}
-      >
+        }`}>
         <div className="absolute top-6 right-6">
           <ul>
             <li key="theme">
               <button
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              >
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
                 {theme === "light" ? (
                   <span>
                     <i className="fa-regular fa-sun"></i>
