@@ -45,7 +45,7 @@ export const UploadImage = () => {
         const fileId = await uploadFile(
           trieveSDK,
           internalFile.name,
-          base64File
+          base64File,
         );
         const imageUrl = await getPresignedUrl(trieveSDK, fileId);
         setImageUrl(imageUrl);
@@ -62,7 +62,7 @@ export const UploadImage = () => {
           mode === "chat"
             ? "tv-right-14"
             : query.length == 0
-              ? "tv-right-[10rem]"
+              ? "tv-right-[10rem] inline:tv-right-4"
               : "tv-right-10"
         } tv-absolute tv-z-20 tv-dark:text-white tv-text-zinc-700`}
       >
