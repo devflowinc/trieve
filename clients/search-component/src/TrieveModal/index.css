@@ -724,10 +724,6 @@ body {
       .questions {
         @apply tv-text-sm tv-flex tv-flex-wrap tv-gap-2 tv-pb-12;
 
-        &.inline-questions {
-          @apply tv-pb-0;
-        }
-
         .suggested-question {
           @apply tv-p-2 tv-text-left tv-rounded-md tv-border tv-transition-all;
           border-color: var(--tv-zinc-200);
