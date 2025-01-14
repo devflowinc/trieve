@@ -1,0 +1,49 @@
+name: Update Beta Component
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "clients/search-component/**"
+
+jobs:
+  build-test:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download current production api.json
+        working-directory: ./clients/ts-sdk
+        run: wget https://api.trieve.ai/api-docs/openapi.json
+
+      - name: Use Node LTS ✨
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+          registry-url: https://registry.npmjs.org
+          cache: yarn
+
+      - name: Build the TS SDK
+        working-directory: ./clients/ts-sdk
+        run: yarn && yarn build:clean
+
+      - name: Install dependencies 📦️
+        working-directory: ./clients/search-component/
+        run: yarn --frozen-lockfile
+
+      - name: Build 🔨
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        working-directory: ./clients/search-component/
+        run: yarn build:clean
+
+      - name: Push to bunny 🚀
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        working-directory: ./clients/search-component/
+        run: yarn push:cdn:beta
