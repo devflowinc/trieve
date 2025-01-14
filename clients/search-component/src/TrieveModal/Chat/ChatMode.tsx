@@ -6,6 +6,7 @@ import { Tags } from "../Tags";
 import { SuggestedQuestions } from "./SuggestedQuestions";
 import { UploadImage } from "../Search/UploadImage";
 import ImagePreview from "../ImagePreview";
+import { cn } from "../../utils/styles";
 
 export const ChatMode = () => {
   const {
@@ -55,9 +56,12 @@ export const ChatMode = () => {
         </div>
       ) : null}
       <div
-        className={`chat-outer-wrapper ${
-          props.inline ? "" : "chat-outer-popup"
-        }`}
+        className={cn(
+          `chat-outer-wrapper tv-overflow-auto sm:tv-max-h-[calc(60vh)] tv-max-h-[87vh] tv-flex tv-flex-col tv-px-4 tv-scroll-smooth !tv-mt-0`,
+          props.inline &&
+            "chat-outer-popup md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0 tv-mt-0 sm:!tv-mt-0",
+          !props.inline && "tv-min-h-[175px]",
+        )}
         ref={modalRef}
       >
         {!props.inline && (
@@ -102,7 +106,7 @@ export const ChatMode = () => {
           }`}
         >
           <div className="ai-message">
-            <div className="chat-modal-wrapper">
+            <div className="chat-modal-wrapper tv-flex tv-flex-col tv-gap-1 tv-mt-1">
               <div className="ai-message initial-message">
                 {!messages.length ? <SuggestedQuestions /> : null}
               </div>

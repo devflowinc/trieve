@@ -30,7 +30,7 @@ export const useFollowupQuestions = () => {
     setSuggestedQuestions(
       queries.queries.map((q) => {
         return q.replace(/^[\d.-]+\s*/, "").trim();
-      })
+      }),
     );
     setIsLoading(false);
   };

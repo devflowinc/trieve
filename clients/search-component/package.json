@@ -66,12 +66,15 @@
     "typescript-eslint": "^8.3.0"
   },
   "dependencies": {
+    "@formkit/auto-animate": "^0.8.2",
     "@r2wc/react-to-web-component": "^2.0.3",
     "@thumbmarkjs/thumbmarkjs": "^0.16.1",
+    "clsx": "^2.1.1",
     "jotai": "^2.11.0",
     "react-markdown": "^9.0.1",
     "react-pdf-spotlight": "0.0.15",
     "react-snap-carousel": "^0.5.0",
+    "tailwind-merge": "^2.6.0",
     "trieve-ts-sdk": "*"
   },
   "peerDependencies": {

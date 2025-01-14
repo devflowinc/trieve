@@ -61,14 +61,6 @@ body {
 
     .chat-container {
       @apply tv-h-full;
-
-      .chat-outer-wrapper {
-        @apply tv-overflow-auto sm:tv-max-h-[calc(60vh)] tv-max-h-[87vh];
-      }
-
-      &.chat-outer-popup {
-        @apply tv-mt-0 sm:!tv-mt-0;
-      }
     }
 
     &.chat-modal-mobile {
@@ -315,12 +307,6 @@ body {
     }
 
     .chat-modal-wrapper {
-      @apply tv-flex tv-flex-col tv-gap-1 tv-mt-1;
-
-      .chat-ul {
-        @apply sm:tv-grid sm:tv-grid-cols-[48px,1fr] sm:tv-gap-2 -tv-mt-7;
-      }
-
       .feedback-wrapper {
         @apply tv-flex tv-justify-between tv-my-2;
 
@@ -596,12 +582,6 @@ body {
     }
 
     .chat-outer-wrapper {
-      @apply tv-flex tv-flex-col tv-px-4 tv-scroll-smooth !tv-mt-0;
-
-      &.chat-outer-popup {
-        @apply sm:tv-mt-0 md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0;
-      }
-
       .ai-message {
         .message-wrapper {
           @apply tv-col-span-2 tv-pr-4;
@@ -697,18 +677,11 @@ body {
       }
 
       .component-header {
-        @apply tv-m-0 tv-uppercase tv-text-xs tv-pb-2 tv-flex tv-items-center tv-gap-1;
         color: var(--tv-zinc-500);
 
         .refetch {
-          @apply tv-cursor-pointer tv-border tv-rounded-md tv-p-1 tv-text-xs;
-
           &:not(:disabled):hover {
             background-color: var(--tv-zinc-200);
-          }
-
-          &:disabled {
-            @apply tv-cursor-not-allowed;
           }
         }
       }
@@ -736,10 +709,6 @@ body {
             @apply tv-animate-pulse;
           }
         }
-      }
-
-      .inline-suggestions-wrapper {
-        @apply tv-flex tv-flex-wrap tv-items-center;
       }
 
       .questions {
@@ -1162,10 +1131,6 @@ body {
           fill: var(--tv-zinc-400);
         }
 
-        .chat-ul {
-          @apply tv-mb-0;
-          border-color: var(--tv-zinc-700);
-        }
 
         .additional-links {
           @apply tv-flex tv-flex-wrap tv-gap-2 tv-mt-4;
