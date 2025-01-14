@@ -55,7 +55,6 @@ const PublicPageControls = () => {
     publishDataset,
     unpublishDataset,
     publicUrl,
-    searchOptionsError,
   } = usePublicPage();
 
   return (

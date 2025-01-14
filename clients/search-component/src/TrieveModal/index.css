@@ -75,7 +75,7 @@ body {
       }
 
       .chat-outer-wrapper {
-        @apply tv-justify-between tv-w-full tv-h-full;
+        @apply tv-justify-between tv-w-full;
       }
     }
 

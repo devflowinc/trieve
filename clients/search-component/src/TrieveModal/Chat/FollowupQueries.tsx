@@ -2,40 +2,36 @@ import React from "react";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { useFollowupQuestions } from "../../utils/hooks/useFollowupQuestions";
 import { SparklesIcon } from "../icons";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 export const FollowupQueries = () => {
   const { isDoneReading, askQuestion } = useChatState();
 
-  const {
-    suggestedQuestions,
-    isLoadingSuggestedQueries,
-  } = useFollowupQuestions();
+  const { suggestedQuestions, isLoadingSuggestedQueries } =
+    useFollowupQuestions();
 
-  if (isDoneReading == true) {
-    return (
-      <div>
-        <div className="followup-questions">
-          {suggestedQuestions.length ? (
-            <>
-              {suggestedQuestions.map((q) => (
-                <button
-                  onClick={() => {
-                    askQuestion(q);
-                  }}
-                  key={q}
-                  className={`followup-question ${isLoadingSuggestedQueries ? "loading" : ""
-                    }`}
-                >
-                  <SparklesIcon className="followup-icon" />
-                  {q}
-                </button>
-              ))}
-            </>
-          ) : null}
+  const [parent] = useAutoAnimate();
+
+  return (
+    <div ref={parent}>
+      {isDoneReading && (
+        <div ref={parent} className="followup-questions">
+          {suggestedQuestions?.map((q) => (
+            <button
+              onClick={() => {
+                askQuestion(q);
+              }}
+              key={q}
+              className={`followup-question ${
+                isLoadingSuggestedQueries ? "loading" : ""
+              }`}
+            >
+              <SparklesIcon className="followup-icon" />
+              {q}
+            </button>
+          ))}
         </div>
-      </div>
-    );
-  } else {
-    return null
-  }
+      )}
+    </div>
+  );
 };

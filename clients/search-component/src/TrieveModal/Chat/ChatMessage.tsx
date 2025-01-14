@@ -10,6 +10,7 @@ import { Carousel } from "./Carousel";
 import { FollowupQueries } from "./FollowupQueries";
 import ImagePreview from "../ImagePreview";
 import { sendCtrData, trackViews } from "../../utils/trieve";
+import { motion } from "motion/react";
 
 type Message = {
   queryId: string | null;
@@ -29,47 +30,56 @@ export const ChatMessage = ({
   const { props } = useModalState();
 
   return (
-    <div key={idx}>
+    <motion.div
+      initial={{ height: 0 }}
+      animate={{ height: "auto" }}
+      exit={{ height: 0 }}
+      transition={{
+        duration: 0.2,
+        ease: "easeInOut",
+      }}
+      key={idx}
+    >
       {message.type == "user" ? (
         <div key={idx}>
           <div className={message.type}>
             <div className="tv-flex tv-flex-col tv-space-y-1 tv-items-end">
-              {message.imageUrl && 
+              {message.imageUrl && (
                 <ImagePreview isUploading={false} imageUrl={message.imageUrl} />
-              }
+              )}
               <span className="user-text"> {message.text}</span>
             </div>
           </div>
         </div>
       ) : (
-        <div className={props.inline ? "": "message-wrapper"} key={idx}>
-          {!props.inline && 
-          <span className="ai-avatar assistant">
-            {props.brandLogoImgSrcUrl ? (
-              <img
-                src={props.brandLogoImgSrcUrl}
-                alt={props.brandName || "Brand logo"}
-              />
-            ) : (
-              <SparklesIcon strokeWidth={1.75} />
-            )}
-            <p
-              className="tag"
-              style={{
-                backgroundColor: props.brandColor
-                  ? `${props.brandColor}18`
-                  : "#CB53EB18",
-                color: props.brandColor ?? "#CB53EB",
-              }}
-            >
-              AI assistant
-            </p>
-          </span>
-            }
+        <div className={props.inline ? "" : "message-wrapper"} key={idx}>
+          {!props.inline && (
+            <span className="ai-avatar assistant">
+              {props.brandLogoImgSrcUrl ? (
+                <img
+                  src={props.brandLogoImgSrcUrl}
+                  alt={props.brandName || "Brand logo"}
+                />
+              ) : (
+                <SparklesIcon strokeWidth={1.75} />
+              )}
+              <p
+                className="tag"
+                style={{
+                  backgroundColor: props.brandColor
+                    ? `${props.brandColor}18`
+                    : "#CB53EB18",
+                  color: props.brandColor ?? "#CB53EB",
+                }}
+              >
+                AI assistant
+              </p>
+            </span>
+          )}
           <Message key={idx} message={message} idx={idx} />
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 
@@ -87,16 +97,15 @@ export const Message = ({
 
   useEffect(() => {
     if (props.analytics) {
-      const ecommerceChunks = message.additional
-        ?.filter(
-          (chunk) =>
-            (chunk.metadata.heading ||
-              chunk.metadata.title ||
-              chunk.metadata.page_title) &&
-            chunk.link &&
-            chunk.image_urls?.length &&
-            chunk.num_value,
-        );
+      const ecommerceChunks = message.additional?.filter(
+        (chunk) =>
+          (chunk.metadata.heading ||
+            chunk.metadata.title ||
+            chunk.metadata.page_title) &&
+          chunk.link &&
+          chunk.image_urls?.length &&
+          chunk.num_value,
+      );
       if (ecommerceChunks && message.queryId) {
         console.log("views");
         trackViews({
@@ -104,13 +113,12 @@ export const Message = ({
           requestID: message.queryId,
           type: "rag",
           items: ecommerceChunks.map((chunk) => {
-            return chunk.link ?? ""
-          })
-        })
+            return chunk.link ?? "";
+          }),
+        });
       }
     }
   }, []);
-
 
   const ecommerceItems = message.additional
     ?.filter(
@@ -130,7 +138,7 @@ export const Message = ({
       link: chunk.link,
       imageUrl: (chunk.image_urls ?? [])[0],
       price: chunk.num_value,
-      id: chunk.id
+      id: chunk.id,
     }))
     .filter(
       (item, index, array) =>
@@ -228,11 +236,13 @@ export const Message = ({
         <div
           className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
         >
-          {message.additional && props.type === "ecommerce" && !props.inline &&(
-            <div className="additional-image-links">
-              <Carousel>{ecommerceItems}</Carousel>
-            </div>
-          )}
+          {message.additional &&
+            props.type === "ecommerce" &&
+            !props.inline && (
+              <div className="additional-image-links">
+                <Carousel>{ecommerceItems}</Carousel>
+              </div>
+            )}
           {youtubeItems && youtubeItems.length > 0 && !props.inline && (
             <div className="additional-image-links">
               <Carousel>{youtubeItems}</Carousel>
@@ -304,55 +314,62 @@ export const Message = ({
                   </div>
                 )
               : null}
-              {props.followupQuestions && messages.length == idx + 1 &&
-                <FollowupQueries /> }
-            {isDoneReading && messages.length == idx + 1 && <div className="feedback-wrapper">
-              <span className="spacer"></span>
-              <div className="feedback-icons">
-                {copied ? (
-                  <span>
-                    <i className="fa-regular fa-circle-check"></i>
-                  </span>
-                ) : (
+            {props.followupQuestions && messages.length == idx + 1 && (
+              <FollowupQueries />
+            )}
+            {isDoneReading && messages.length == idx + 1 && (
+              <div className="feedback-wrapper">
+                <span className="spacer"></span>
+                <div className="feedback-icons">
+                  {copied ? (
+                    <span>
+                      <i className="fa-regular fa-circle-check"></i>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        void navigator.clipboard
+                          .writeText(message.text)
+                          .then(() => {
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 500);
+                          });
+                      }}
+                    >
+                      <i className="fa-regular fa-copy"></i>
+                    </button>
+                  )}
                   <button
+                    className={
+                      positive != null && positive ? "icon-darken" : ""
+                    }
                     onClick={() => {
-                      void navigator.clipboard
-                        .writeText(message.text)
-                        .then(() => {
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 500);
-                        });
+                      rateChatCompletion(true, message.queryId);
+                      setPositive((prev) => {
+                        if (prev === true) return null;
+                        return true;
+                      });
                     }}
                   >
-                    <i className="fa-regular fa-copy"></i>
+                    <i className="fa-regular fa-thumbs-up"></i>
                   </button>
-                )}
-                <button
-                  className={positive != null && positive ? "icon-darken" : ""}
-                  onClick={() => {
-                    rateChatCompletion(true, message.queryId);
-                    setPositive((prev) => {
-                      if (prev === true) return null;
-                      return true;
-                    });
-                  }}
-                >
-                  <i className="fa-regular fa-thumbs-up"></i>
-                </button>
-                <button
-                  className={positive != null && !positive ? "icon-darken" : ""}
-                  onClick={() => {
-                    rateChatCompletion(false, message.queryId);
-                    setPositive((prev) => {
-                      if (prev === false) return null;
-                      return false;
-                    });
-                  }}
-                >
-                  <i className="fa-regular fa-thumbs-down"></i>
-                </button>
+                  <button
+                    className={
+                      positive != null && !positive ? "icon-darken" : ""
+                    }
+                    onClick={() => {
+                      rateChatCompletion(false, message.queryId);
+                      setPositive((prev) => {
+                        if (prev === false) return null;
+                        return false;
+                      });
+                    }}
+                  >
+                    <i className="fa-regular fa-thumbs-down"></i>
+                  </button>
+                </div>
               </div>
-            </div>}
+            )}
           </div>
         </div>
       ) : null}
