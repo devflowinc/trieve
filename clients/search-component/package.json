@@ -36,7 +36,8 @@
     "build:clean": "rm -rf dist && yarn type:dts && yarn build",
     "prepublish": "yarn build:clean",
     "lint": "eslint",
-    "serve": "./serve-component"
+    "serve": "./serve-component",
+    "push:cdn:beta": "curl --request PUT --url https://ny.storage.bunnycdn.com/trieve/beta/search-component/index.css --header \"AccessKey: ${BUNNY_API_KEY}\"  --header 'Content-Type: application/octet-stream' --header 'accept: application/json' --data-binary @dist/index.css && curl --request PUT --url https://ny.storage.bunnycdn.com/trieve/beta/search-component/index.js --header \"AccessKey: ${BUNNY_API_KEY}\"  --header 'Content-Type: application/octet-stream' --header 'accept: application/json' --data-binary @dist/index.js && curl --request PUT --url https://ny.storage.bunnycdn.com/trieve/beta/search-component/vanilla/index.js --header \"AccessKey: ${BUNNY_API_KEY}\"  --header 'Content-Type: application/octet-stream' --header 'accept: application/json' --data-binary @dist/vanilla/index.js "
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
