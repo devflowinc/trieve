@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="/static/output.css" />
     <link
       rel="stylesheet"
-      href="{{ search_component_url | safe }}/dist/index.css"
+      href="{{ search_component_url | safe }}/index.css"
     />
     <link
       rel="apple-touch-icon"
@@ -442,7 +442,7 @@
     </style>
 
     <script type="module">
-        import {renderToDiv} from '{{ search_component_url | safe }}/dist/vanilla/index.js';
+        import {renderToDiv} from '{{ search_component_url | safe }}/vanilla/index.js';
         const root = document.querySelector("#root");
 
         let mode = "none";
