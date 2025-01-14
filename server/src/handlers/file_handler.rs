@@ -181,13 +181,28 @@ pub async fn upload_file_handler(
     let file_id = uuid::Uuid::new_v4();
 
     let bucket = get_aws_bucket()?;
-    bucket
-        .put_object(file_id.to_string(), decoded_file_data.as_slice())
-        .await
-        .map_err(|e| {
-            log::error!("Could not upload file to S3 {:?}", e);
-            ServiceError::BadRequest("Could not upload file to S3".to_string())
-        })?;
+
+    if upload_file_data.file_name.clone().ends_with(".pdf") {
+        bucket
+            .put_object_with_content_type(
+                file_id.to_string(),
+                decoded_file_data.as_slice(),
+                "application/pdf",
+            )
+            .await
+            .map_err(|e| {
+                log::error!("Could not upload file to S3 {:?}", e);
+                ServiceError::BadRequest("Could not upload file to S3".to_string())
+            })?;
+    } else {
+        bucket
+            .put_object(file_id.to_string(), decoded_file_data.as_slice())
+            .await
+            .map_err(|e| {
+                log::error!("Could not upload file to S3 {:?}", e);
+                ServiceError::BadRequest("Could not upload file to S3".to_string())
+            })?;
+    }
 
     let file_size_mb = (decoded_file_data.len() as f64 / 1024.0 / 1024.0).round() as i64;
 
