@@ -67,7 +67,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController(),
+    new AbortController()
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
@@ -118,7 +118,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     setIsLoading(true);
     setIsDoneReading(false);
@@ -140,14 +140,17 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         let jsonData: string = "";
 
         if (textInStream.includes("||")) {
-          // The RAG over chunks endpoint returns references last
           if (currentGroup) {
             [text, jsonData] = textInStream.split("||");
           } else {
             [jsonData, text] = textInStream.split("||");
           }
         } else {
-          continue; // Wait for the chunks to come in before displaying
+          if (currentGroup) {
+            text = textInStream;
+          } else {
+            continue;
+          }
         }
 
         if (currentGroup) {
@@ -170,7 +173,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 chunk.metadata.page_title) &&
               chunk.link &&
               chunk.image_urls?.length &&
-              chunk.num_value,
+              chunk.num_value
           );
           if (ecommerceChunks && queryId) {
             trackViews({
@@ -230,7 +233,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ],
           stream_response: true,
         },
-        chatMessageAbortController.current.signal,
+        chatMessageAbortController.current.signal
       );
       handleReader(reader, queryId);
     } else {
@@ -253,7 +256,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                   }
                 : null,
           },
-          chatMessageAbortController.current.signal,
+          chatMessageAbortController.current.signal
         );
 
       handleReader(reader, queryId);
@@ -354,7 +357,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
@@ -379,7 +382,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         stopGeneratingMessage,
         isDoneReading,
         rateChatCompletion,
-      }}>
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );
