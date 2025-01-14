@@ -61,6 +61,10 @@ body {
 
     .chat-container {
       @apply tv-h-full;
+
+      .chat-outer-wrapper {
+        max-height: 85vh;
+      }
     }
 
     &.chat-modal-mobile {
@@ -76,6 +80,12 @@ body {
 
       .chat-outer-wrapper {
         @apply tv-justify-between tv-w-full;
+      }
+
+      .chat-container {
+        .chat-outer-wrapper {
+          max-height: 85vh;
+        }
       }
     }
 
@@ -1130,7 +1140,6 @@ body {
           @apply tv-w-12;
           fill: var(--tv-zinc-400);
         }
-
 
         .additional-links {
           @apply tv-flex tv-flex-wrap tv-gap-2 tv-mt-4;

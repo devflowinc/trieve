@@ -56,7 +56,7 @@ const Modal = () => {
       const trieveSearchModal = document.getElementById("trieve-search-modal");
       if (trieveSearchModal) {
         trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${
-          props.type == "ecommerce" ? "0.5rem" : "0rem"
+          props.type == "ecommerce" ? "8px" : "0px"
         })`;
       }
 

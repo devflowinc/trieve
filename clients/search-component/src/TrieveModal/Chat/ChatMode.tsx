@@ -58,10 +58,10 @@ export const ChatMode = () => {
       ) : null}
       <div
         className={cn(
-          `chat-outer-wrapper tv-overflow-auto sm:tv-max-h-[calc(60vh)] tv-max-h-[87vh] tv-flex tv-flex-col tv-px-4 tv-scroll-smooth !tv-mt-0`,
+          `chat-outer-wrapper tv-overflow-auto sm:tv-max-h-[calc(60vh)] tv-max-h-[85vh] tv-flex tv-flex-col tv-px-4 tv-scroll-smooth !tv-mt-0`,
           props.inline &&
             "chat-outer-popup md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0 tv-mt-0 sm:!tv-mt-0",
-          !props.inline && "tv-min-h-[175px]",
+          !props.inline && "tv-min-h-[175px]"
         )}
         ref={modalRef}
       >
