@@ -662,6 +662,29 @@ fn convert_value_to_chunkreqpayload(
                     .get(mapping.csv_jsonl_field)
                     .map(|val| chunk_req_payload.tracking_id = Some(val.to_string()));
             }
+            ChunkReqPayloadFields::GroupTrackingIds => {
+                let mut cur_group_tracking_ids = chunk_req_payload
+                    .group_tracking_ids
+                    .clone()
+                    .unwrap_or_default();
+                if let Some(val) = value.get(mapping.csv_jsonl_field) {
+                    if let Some(arr) = val.as_array() {
+                        for url in arr {
+                            if let Some(url) = url.as_str() {
+                                cur_group_tracking_ids.push(url.to_string());
+                            }
+                        }
+                    } else if let Some(arr) = get_array_from_string(val.as_str().unwrap_or("")) {
+                        for url in arr {
+                            cur_group_tracking_ids.push(url);
+                        }
+                    } else if let Some(val) = val.as_str() {
+                        cur_group_tracking_ids.push(val.to_string());
+                    }
+                }
+
+                chunk_req_payload.group_tracking_ids = Some(cur_group_tracking_ids);
+            }
             ChunkReqPayloadFields::TimeStamp => {
                 if let Some(val) = value.get(mapping.csv_jsonl_field) {
                     match val {

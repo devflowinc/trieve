@@ -1854,6 +1854,8 @@ pub enum ChunkReqPayloadFields {
     NumValue,
     #[serde(rename = "tracking_id")]
     TrackingId,
+    #[serde(rename = "group_tracking_ids")]
+    GroupTrackingIds,
     #[serde(rename = "time_stamp")]
     TimeStamp,
     #[serde(rename = "lat")]
@@ -1878,7 +1880,7 @@ pub struct ChunkReqPayloadMapping {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-/// Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set and image_urls can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used.
+/// Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set, image_urls, and group_tracking_ids can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used.
 pub struct ChunkReqPayloadMappings(pub Vec<ChunkReqPayloadMapping>);
 
 #[derive(
