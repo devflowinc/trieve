@@ -3539,6 +3539,15 @@ fraction.js@^4.3.7:
   resolved "https://registry.npmjs.org/fraction.js/-/fraction.js-4.3.7.tgz"
   integrity sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==
 
+framer-motion@^11.17.0:
+  version "11.17.0"
+  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-11.17.0.tgz#2c8fe7e008b3c5301efc6288a990cd5e73805353"
+  integrity sha512-uTNLH9JPMD3ad14WBt3KYRTR+If4tGPLgKTKTIIPaEBMkvazs6EkWNcmCh65qA/tyinOqIbQiuCorXX0qQsNoQ==
+  dependencies:
+    motion-dom "^11.16.4"
+    motion-utils "^11.16.0"
+    tslib "^2.4.0"
+
 fresh@0.5.2:
   version "0.5.2"
   resolved "https://registry.npmjs.org/fresh/-/fresh-0.5.2.tgz"
@@ -5540,6 +5549,26 @@ morgan@1.9.1:
     on-finished "~2.3.0"
     on-headers "~1.0.1"
 
+motion-dom@^11.16.4:
+  version "11.16.4"
+  resolved "https://registry.yarnpkg.com/motion-dom/-/motion-dom-11.16.4.tgz#7c18dbe8f8b0d4210a89992cda30f5926f003777"
+  integrity sha512-2wuCie206pCiP2K23uvwJeci4pMFfyQKpWI0Vy6HrCTDzDCer4TsYtT7IVnuGbDeoIV37UuZiUr6SZMHEc1Vww==
+  dependencies:
+    motion-utils "^11.16.0"
+
+motion-utils@^11.16.0:
+  version "11.16.0"
+  resolved "https://registry.yarnpkg.com/motion-utils/-/motion-utils-11.16.0.tgz#e75865442278be49e411ca9105c9139edc572811"
+  integrity sha512-ngdWPjg31rD4WGXFi0eZ00DQQqKKu04QExyv/ymlC+3k+WIgYVFbt6gS5JsFPbJODTF/r8XiE/X+SsoT9c0ocw==
+
+motion@^11.17.0:
+  version "11.17.0"
+  resolved "https://registry.yarnpkg.com/motion/-/motion-11.17.0.tgz#3da6e449bd6b673c22a4330b1d4bd95378c66c5f"
+  integrity sha512-mWZhIOWH2slNXPUWhr6cEu98bl9NMX7u9r7vdNI+Bm3/jrOEa3e44GmyUuwXr9hWR+rWII27YTnKb6CDD1vU2g==
+  dependencies:
+    framer-motion "^11.17.0"
+    tslib "^2.4.0"
+
 mri@^1.1.0:
   version "1.2.0"
   resolved "https://registry.npmjs.org/mri/-/mri-1.2.0.tgz"
@@ -7329,6 +7358,11 @@ tsconfig-paths@^3.15.0:
     json5 "^1.0.2"
     minimist "^1.2.6"
     strip-bom "^3.0.0"
+
+tslib@^2.4.0:
+  version "2.8.1"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.8.1.tgz#612efe4ed235d567e8aba5f2a5fab70280ade83f"
+  integrity sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==
 
 tslib@^2.4.1, tslib@^2.6.2:
   version "2.7.0"

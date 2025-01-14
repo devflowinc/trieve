@@ -3,6 +3,7 @@ import { useSuggestedQuestions } from "../../utils/hooks/useSuggestedQuestions";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { cn } from "../../utils/styles";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 export const SuggestedQuestions = () => {
   const { askQuestion, setCurrentQuestion } = useChatState();
@@ -13,6 +14,7 @@ export const SuggestedQuestions = () => {
   } = useSuggestedQuestions();
 
   const { props } = useModalState();
+  const [parent] = useAutoAnimate();
 
   return (
     <div
@@ -32,30 +34,29 @@ export const SuggestedQuestions = () => {
         </button>{" "}
         Example questions
       </p>
-      <div className={`questions ${props.inline ? "inline-questions" : ""}`}>
-        {!props.inline && !suggestedQuestions.length ? (
+      <div
+        ref={parent}
+        className={`questions ${props.inline ? "inline-questions" : ""}`}
+      >
+        {!props.inline && !suggestedQuestions.length && (
           <p className="suggested-question empty-state-loading">
             Loading example questions...
           </p>
-        ) : null}
-        {suggestedQuestions.length ? (
-          <>
-            {suggestedQuestions.map((q) => (
-              <button
-                onClick={() => {
-                  setCurrentQuestion(q);
-                  askQuestion(q);
-                }}
-                key={q}
-                className={`suggested-question ${
-                  isLoadingSuggestedQueries ? "loading" : ""
-                }`}
-              >
-                {q}
-              </button>
-            ))}
-          </>
-        ) : null}
+        )}
+        {suggestedQuestions?.map((q) => (
+          <button
+            onClick={() => {
+              setCurrentQuestion(q);
+              askQuestion(q);
+            }}
+            key={q}
+            className={`suggested-question ${
+              isLoadingSuggestedQueries ? "loading" : ""
+            }`}
+          >
+            {q}
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { Tags } from "../Tags";
 import { SuggestedQuestions } from "./SuggestedQuestions";
 import { UploadImage } from "../Search/UploadImage";
 import ImagePreview from "../ImagePreview";
+import { AnimatePresence } from "motion/react";
 import { cn } from "../../utils/styles";
 
 export const ChatMode = () => {
@@ -107,12 +108,14 @@ export const ChatMode = () => {
         >
           <div className="ai-message">
             <div className="chat-modal-wrapper tv-flex tv-flex-col tv-gap-1 tv-mt-1">
-              <div className="ai-message initial-message">
-                {!messages.length ? <SuggestedQuestions /> : null}
-              </div>
-              {messages.map((message, i) => (
-                <ChatMessage key={`${i}-message`} idx={i} message={message} />
-              ))}
+              <AnimatePresence mode="wait">
+                <div className="ai-message initial-message">
+                  {!messages.length ? <SuggestedQuestions /> : null}
+                </div>
+                {messages.map((message, i) => (
+                  <ChatMessage key={`${i}-message`} idx={i} message={message} />
+                ))}
+              </AnimatePresence>
             </div>
           </div>
         </div>
