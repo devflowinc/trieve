@@ -107,7 +107,6 @@ export const Message = ({
           chunk.num_value,
       );
       if (ecommerceChunks && message.queryId) {
-        console.log("views");
         trackViews({
           trieve: trieveSDK,
           requestID: message.queryId,

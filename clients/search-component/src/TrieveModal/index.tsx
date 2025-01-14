@@ -45,7 +45,7 @@ const Modal = () => {
     const viewportHeight = window.visualViewport?.height;
     let chatOuterWrapper;
     if (props.inline) {
-      chatOuterWrapper = document.querySelector(".chat-outer-wrapper");
+      chatOuterWrapper = document.querySelector(".chat-outer-wrapper.chat-outer-inline");
     } else {
       chatOuterWrapper = document.querySelector(
         ".chat-outer-wrapper.chat-outer-popup"
@@ -53,21 +53,23 @@ const Modal = () => {
     }
 
     if ((window.visualViewport?.width ?? 1000) <= 640) {
-      const trieveSearchModal = document.getElementById("trieve-search-modal");
-      if (trieveSearchModal) {
-        trieveSearchModal.style.maxHeight = `calc(${viewportHeight}px - ${
-          props.type == "ecommerce" ? "8px" : "0px"
-        })`;
+      if (!props.inline) {
+        const trieveSearchModal = document.querySelector("#trieve-search-modal.trieve-popup-modal");
+        if (trieveSearchModal) {
+          (trieveSearchModal as HTMLElement).style.maxHeight = `calc(${viewportHeight}px - ${
+            props.type == "ecommerce" ? "8px" : "0px"
+          })`;
+        }
       }
 
       if (chatOuterWrapper && props.type && viewportHeight) {
-        const newHeight =
-          viewportHeight -
-          (props.type == "ecommerce"
+        const pxRemoved = (props.type == "ecommerce"
             ? props.groupTrackingId
-              ? 225
-              : 150
+              ? 150
+              : 225
             : 175);
+        
+        const newHeight = viewportHeight - pxRemoved ;
         (chatOuterWrapper as HTMLElement).style.maxHeight = `${newHeight}px`;
       }
     } else if (chatOuterWrapper) {
