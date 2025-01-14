@@ -377,14 +377,19 @@ body {
           margin: 0;
         }
 
+        .carousel-scroll::-webkit-scrollbar {
+          display: none;
+        }
+
         .carousel-item {
           flex: 0 0 auto;
           padding: 0 0.25rem;
           scroll-snap-align: start;
           box-sizing: border-box;
+          border-color: var(--tv-zinc-200);
 
           a {
-            @apply tv-rounded tv-px-2 tv-text-xs tv-py-1 tv-bg-zinc-200/50 tv-flex tv-flex-col tv-gap-y-1 tv-h-full;
+            @apply tv-rounded tv-px-2 tv-text-xs tv-py-1 tv-flex tv-flex-col tv-gap-y-1 tv-h-full;
 
             ::before {
               content: "";
@@ -397,8 +402,13 @@ body {
             }
 
             &:hover {
-              background-color: var(--tv-zinc-200);
+              @apply tv-bg-white;
             }
+          }
+
+          &:hover {
+            border-color: var(--tv-prop-brand-color);
+            transition: border-color 0.2s ease;
           }
         }
 
