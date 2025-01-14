@@ -320,7 +320,7 @@ pub async fn public_page(
         "https://cdn.trieve.ai/beta/search-component".to_string()
     } else {
         std::env::var("SEARCH_COMPONENT_URL")
-            .unwrap_or("https://search-component.trieve.ai".to_string())
+            .unwrap_or("https://search-component.trieve.ai/dist".to_string())
     };
 
     if config.PUBLIC_DATASET.enabled {
