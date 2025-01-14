@@ -232,6 +232,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             },
           ],
           stream_response: true,
+          highlight_results: props.type === "pdf",
         },
         chatMessageAbortController.current.signal
       );
@@ -255,6 +256,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                     must: [{ field: "tag_set", match_any: [currentTag] }],
                   }
                 : null,
+            highlight_options: {
+              highlight_results: props.type === "pdf",
+            },
           },
           chatMessageAbortController.current.signal
         );
@@ -357,7 +361,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
