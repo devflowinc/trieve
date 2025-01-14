@@ -20,10 +20,10 @@ export const SuggestedQuestions = () => {
     <div
       className={cn(
         props.inline &&
-          "inline-suggestions-wrapper tv-flex tv-flex-wrap tv-items-center",
+          "inline-suggestions-wrapper tv-flex tv-gap-x-3 tv-flex-wrap tv-items-center",
       )}
     >
-      <p className="component-header tv-m-0 tv-uppercase tv-text-xs tv-pb-2 tv-flex tv-items-center tv-gap-1">
+      <p className="component-header !tv-m-0 tv-uppercase tv-text-xs tv-flex tv-items-center tv-gap-1">
         <button
           onClick={refetchSuggestedQuestion}
           disabled={isLoadingSuggestedQueries}
@@ -36,10 +36,13 @@ export const SuggestedQuestions = () => {
       </p>
       <div
         ref={parent}
-        className={`questions ${props.inline ? "inline-questions" : ""}`}
+        className={cn(
+          "questions tv-pt-2 ",
+          props.inline && "inline-questions !tv-pb-0",
+        )}
       >
         {!props.inline && !suggestedQuestions.length && (
-          <p className="suggested-question empty-state-loading">
+          <p className="suggested-question tv-text-nowrap empty-state-loading">
             Loading example questions...
           </p>
         )}
