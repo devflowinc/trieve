@@ -59,7 +59,6 @@
     "postcss-nested": "^6.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwind": "^4.0.0",
     "tailwindcss": "^3.4.11",
     "tailwindcss-scoped-preflight": "^3.4.10",
     "typescript": "^5.6.2",
