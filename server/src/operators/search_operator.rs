@@ -3233,14 +3233,12 @@ pub async fn autocomplete_chunks_query(
 
     let mut result_chunks = retrieve_chunks_from_point_ids(
         search_chunk_query_results.clone(),
-        None,
+        Some(timer),
         &data.clone().into(),
         config.QDRANT_ONLY,
         pool.clone(),
     )
     .await?;
-
-    timer.add("fetching from postgres");
 
     let first_increase = *search_chunk_query_results
         .batch_lengths
