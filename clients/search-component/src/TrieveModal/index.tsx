@@ -48,7 +48,7 @@ const Modal = () => {
       chatOuterWrapper = document.querySelector(".chat-outer-wrapper");
     } else {
       chatOuterWrapper = document.querySelector(
-        ".chat-outer-wrapper.chat-outer-popup",
+        ".chat-outer-wrapper.chat-outer-popup"
       );
     }
 
@@ -62,7 +62,12 @@ const Modal = () => {
 
       if (chatOuterWrapper && props.type && viewportHeight) {
         const newHeight =
-          viewportHeight - (props.type == "ecommerce" ? 150 : 175);
+          viewportHeight -
+          (props.type == "ecommerce"
+            ? props.groupTrackingId
+              ? 225
+              : 150
+            : 175);
         (chatOuterWrapper as HTMLElement).style.maxHeight = `${newHeight}px`;
       }
     } else if (chatOuterWrapper) {
@@ -101,7 +106,7 @@ const Modal = () => {
         clearConversation();
         chatWithGroup(
           customEvent.detail.group,
-          customEvent.detail.betterGroupName,
+          customEvent.detail.betterGroupName
         );
         if (customEvent.detail.message) {
           askQuestion(customEvent.detail.message, customEvent.detail.group);
@@ -147,14 +152,14 @@ const Modal = () => {
 
     window.addEventListener(
       "trieve-start-chat-with-group",
-      chatWithGroupListener,
+      chatWithGroupListener
     );
     window.addEventListener("trieve-open-with-text", openWithTextListener);
 
     return () => {
       window.removeEventListener(
         "trieve-start-chat-with-group",
-        chatWithGroupListener,
+        chatWithGroupListener
       );
 
       window.removeEventListener("trieve-open-with-text", openWithTextListener);
@@ -164,18 +169,18 @@ const Modal = () => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB",
+      props.brandColor ?? "#CB53EB"
     );
 
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)",
+        "var(--tv-zinc-700)"
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)",
+        "var(--tv-zinc-300)"
       );
     }
 
@@ -183,7 +188,7 @@ const Modal = () => {
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
         `Maven Pro, ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
     );
   }, [props.brandColor, props.brandFontFamily]);
 
