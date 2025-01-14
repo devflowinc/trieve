@@ -1051,7 +1051,6 @@ pub async fn send_event_data_query(
         data.id, data.event_type, data.event_name.replace('\'', "''").replace('?', "|q").replace('\n', ""), items.replace('?', "|q").replace('\n', ""), data.metadata.replace('\'', "''").replace('?', "|q").replace('\n', ""), data.user_id, data.is_conversion, data.request_id, data.dataset_id
     );
 
-    println!("{}", query_string);
     clickhouse_client
         .query(&query_string)
         .execute()

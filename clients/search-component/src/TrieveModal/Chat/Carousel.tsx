@@ -42,11 +42,25 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
     setItemsPerPage(itemsFit);
   }, []);
 
+  function onVisible(element: HTMLElement, callback: () => void) {
+    new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.intersectionRatio > 0) {
+          callback();
+          observer.disconnect();
+        }
+      });
+    }).observe(element);
+  }
+
   useEffect(() => {
     calcItemsPerPage();
 
     window.addEventListener("resize", calcItemsPerPage);
-    return () => window.removeEventListener("resize", calcItemsPerPage);
+    onVisible(document.querySelector(".carousel-root")!, calcItemsPerPage);
+    return () => {
+      window.removeEventListener("resize", calcItemsPerPage);
+    };
   }, []);
 
   const productItems = Children.toArray(children);
@@ -54,7 +68,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
   const numPages = Math.ceil(numItems / itemsPerPage);
 
   const placeholderItems = Array(itemsPerPage - (numItems % itemsPerPage)).fill(
-    null
+    null,
   );
 
   const allProductsCarousel =
@@ -92,8 +106,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
             style={{
               width: `calc(100% / ${itemsPerPage})`,
             }}
-            key={index}
-          >
+            key={index}>
             {child}
           </li>
         ))}
@@ -106,8 +119,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
               ...(currentPage == 0 ? styles.nextPrevButtonDisabled : {}),
             }}
             onClick={() => prev()}
-            disabled={currentPage == 0}
-          >
+            disabled={currentPage == 0}>
             {String.fromCharCode(8592)}
           </button>
           {[...Array(numPages)].map((_, i) => (
@@ -117,8 +129,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
                 ...styles.paginationButton,
                 ...(currentPage == i ? styles.paginationButtonActive : {}),
               }}
-              onClick={() => goToPage(i)}
-            >
+              onClick={() => goToPage(i)}>
               {i + 1}
             </button>
           ))}
@@ -130,8 +141,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
                 : {}),
             }}
             onClick={() => next()}
-            disabled={currentPage === numPages - 1}
-          >
+            disabled={currentPage === numPages - 1}>
             {String.fromCharCode(8594)}
           </button>
         </div>

@@ -67,7 +67,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController()
+    new AbortController(),
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
@@ -75,12 +75,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     if (!currentTopic) {
       called.current = true;
       setIsLoading(true);
+      setCurrentQuestion("");
       const fingerprint = await getFingerprint();
       const topic = await trieveSDK.createTopic({
         name: currentQuestion,
         owner_id: fingerprint.toString(),
       });
-      setCurrentQuestion("");
       setCurrentTopic(topic.id);
       createQuestion({ id: topic.id, question: question });
     }
@@ -118,7 +118,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     setIsLoading(true);
     setIsDoneReading(false);
@@ -147,7 +147,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             [jsonData, text] = textInStream.split("||");
           }
         } else {
-          text = textInStream;
+          continue; // Wait for the chunks to come in before displaying
         }
 
         if (currentGroup) {
@@ -170,10 +170,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 chunk.metadata.page_title) &&
               chunk.link &&
               chunk.image_urls?.length &&
-              chunk.num_value
+              chunk.num_value,
           );
           if (ecommerceChunks && queryId) {
-            console.log("views");
             trackViews({
               trieve: trieveSDK,
               requestID: queryId,
@@ -231,7 +230,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ],
           stream_response: true,
         },
-        chatMessageAbortController.current.signal
+        chatMessageAbortController.current.signal,
       );
       handleReader(reader, queryId);
     } else {
@@ -254,7 +253,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                   }
                 : null,
           },
-          chatMessageAbortController.current.signal
+          chatMessageAbortController.current.signal,
         );
 
       handleReader(reader, queryId);
@@ -300,6 +299,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const askQuestion = async (question?: string, group?: ChunkGroup) => {
     setIsDoneReading(false);
+    setCurrentQuestion("");
 
     if (props.groupTrackingId) {
       const fetchedGroup = await trieveSDK.getGroupByTrackingId({
@@ -341,7 +341,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       await createQuestion({ question: question || currentQuestion, group });
     }
 
-    setCurrentQuestion("");
     setMessages((m) => [
       ...m,
       { type: "system", text: "Loading...", additional: null, queryId: null },
@@ -355,7 +354,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
@@ -380,8 +379,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         stopGeneratingMessage,
         isDoneReading,
         rateChatCompletion,
-      }}
-    >
+      }}>
       {children}
     </ChatContext.Provider>
   );
