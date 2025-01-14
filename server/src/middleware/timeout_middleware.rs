@@ -10,6 +10,13 @@ pub async fn timeout_15secs(
     service_req: ServiceRequest,
     next: Next<impl MessageBody + 'static>,
 ) -> Result<ServiceResponse<impl MessageBody>, actix_web::Error> {
+    let disable_timeout_middleware =
+        std::env::var("DISABLE_TIMEOUT_MIDDLEWARE").unwrap_or_else(|_| "false".to_string());
+
+    if disable_timeout_middleware == *"true" {
+        return next.call(service_req).await;
+    }
+
     let path = service_req.path().to_string();
     let method = service_req.method().as_str().to_string();
     let queries = service_req.query_string().to_string();
