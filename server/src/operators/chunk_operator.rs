@@ -278,8 +278,8 @@ pub async fn get_content_chunk_from_point_ids_query(
                 })?;
 
         content_chunk_metadatas
-            .iter()
-            .map(|content_chunk| content_chunk.clone().into())
+            .into_iter()
+            .map(|content_chunk| content_chunk.into())
             .collect::<Vec<ChunkMetadataTypes>>()
     };
 

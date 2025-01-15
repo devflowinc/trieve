@@ -1476,13 +1476,10 @@ pub async fn retrieve_chunks_from_point_ids(
         .search_results
         .iter()
         .filter_map(|search_result| {
-            let Some(mut chunk) = metadata_chunks
+            let mut chunk = metadata_chunks
                 .iter()
                 .find(|metadata_chunk| metadata_chunk.qdrant_point_id() == search_result.point_id)
-                .cloned()
-            else {
-                return None;
-            };
+                .cloned()?;
 
             let mut highlights: Option<Vec<String>> = None;
 
@@ -1538,7 +1535,7 @@ pub async fn retrieve_chunks_from_point_ids(
             }
 
             Some(ScoreChunkDTO {
-                metadata: vec![chunk.clone()],
+                metadata: vec![chunk],
                 highlights,
                 score: search_result.score.into(),
             })
