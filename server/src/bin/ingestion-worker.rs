@@ -156,6 +156,7 @@ async fn ingestion_worker(
 
     let mut broken_pipe_sleep = std::time::Duration::from_secs(10);
     let reqwest_client = reqwest::Client::new();
+    let queue_name = std::env::var("INGESTION_QUEUE_NAME").unwrap_or("ingestion".to_string());
 
     loop {
         if should_terminate.load(Ordering::Relaxed) {
@@ -164,7 +165,7 @@ async fn ingestion_worker(
         }
 
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
-            .arg("ingestion")
+            .arg(&queue_name)
             .arg("processing")
             .arg(1.0)
             .query_async(&mut *redis_connection)
@@ -1227,8 +1228,10 @@ pub async fn readd_error_to_queue(
         message.attempt_number
     );
 
+    let queue_name = std::env::var("INGESTION_QUEUE_NAME").unwrap_or("ingestion".to_string());
+
     redis::cmd("lpush")
-        .arg("ingestion")
+        .arg(queue_name)
         .arg(&new_payload_message)
         .query_async::<_, String>(&mut *redis_conn)
         .await
