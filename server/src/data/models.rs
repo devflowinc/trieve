@@ -769,10 +769,11 @@ pub struct ChunkMetadataWithScore {
 
 impl From<ChunkMetadataWithScore> for ScoreChunk {
     fn from(val: ChunkMetadataWithScore) -> Self {
+        let score = val.score;
         ScoreChunk {
-            chunk: NewChunkMetadataTypes::Metadata(val.clone().into()),
+            chunk: NewChunkMetadataTypes::Metadata(val.into()),
             highlights: None,
-            score: val.score,
+            score,
         }
     }
 }

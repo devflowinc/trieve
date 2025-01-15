@@ -8189,6 +8189,7 @@
           "tag_set",
           "num_value",
           "tracking_id",
+          "group_tracking_ids",
           "time_stamp",
           "lat",
           "lon",
@@ -8219,7 +8220,7 @@
         "items": {
           "$ref": "#/components/schemas/ChunkReqPayloadMapping"
         },
-        "description": "Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set and image_urls can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used."
+        "description": "Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set, image_urls, and group_tracking_ids can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used."
       },
       "ChunkReturnTypes": {
         "oneOf": [

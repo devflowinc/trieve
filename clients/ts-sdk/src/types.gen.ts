@@ -435,7 +435,7 @@ export type ChunkReqPayload = {
 /**
  * The key in the ChunkReqPayload which you can map a column or field from the CSV or JSONL file to.
  */
-export type ChunkReqPayloadFields = 'link' | 'tag_set' | 'num_value' | 'tracking_id' | 'time_stamp' | 'lat' | 'lon' | 'image_urls' | 'weight' | 'boost_phrase';
+export type ChunkReqPayloadFields = 'link' | 'tag_set' | 'num_value' | 'tracking_id' | 'group_tracking_ids' | 'time_stamp' | 'lat' | 'lon' | 'image_urls' | 'weight' | 'boost_phrase';
 
 /**
  * Express a mapping between a column or field in a CSV or JSONL field and a key in the ChunkReqPayload created for each row or object.
@@ -449,7 +449,7 @@ export type ChunkReqPayloadMapping = {
 };
 
 /**
- * Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set and image_urls can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used.
+ * Specify all of the mappings between columns or fields in a CSV or JSONL file and keys in the ChunkReqPayload. Array fields like tag_set, image_urls, and group_tracking_ids can have multiple mappings. Boost phrase can also have multiple mappings which get concatenated. Other fields can only have one mapping and only the last mapping will be used.
  */
 export type ChunkReqPayloadMappings = Array<ChunkReqPayloadMapping>;
 
