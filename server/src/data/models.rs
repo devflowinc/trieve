@@ -1245,6 +1245,28 @@ impl ChunkMetadataTypes {
         }
     }
 
+    pub fn set_chunk_html(self, chunk_html: Option<String>) -> Self {
+        match self {
+            ChunkMetadataTypes::Metadata(mut metadata) => {
+                metadata.chunk_html = chunk_html;
+                ChunkMetadataTypes::Metadata(metadata)
+            }
+            ChunkMetadataTypes::Content(mut content_metadata) => {
+                content_metadata.chunk_html = chunk_html;
+                ChunkMetadataTypes::Content(content_metadata)
+            }
+            ChunkMetadataTypes::ID(slim_chunk) => ChunkMetadataTypes::ID(slim_chunk),
+        }
+    }
+
+    pub fn chunk_html(&self) -> Option<String> {
+        match self {
+            ChunkMetadataTypes::Metadata(metadata) => metadata.chunk_html.clone(),
+            ChunkMetadataTypes::Content(content_metadata) => content_metadata.chunk_html.clone(),
+            ChunkMetadataTypes::ID(_) => None,
+        }
+    }
+
     pub fn qdrant_point_id(&self) -> uuid::Uuid {
         match self {
             ChunkMetadataTypes::Metadata(metadata) => metadata.qdrant_point_id,
