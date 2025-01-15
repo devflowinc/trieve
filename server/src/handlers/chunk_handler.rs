@@ -320,6 +320,8 @@ pub async fn create_chunk(
         CreateChunkReqPayloadEnum::Single(chunk) => vec![chunk.0],
         CreateChunkReqPayloadEnum::Batch(chunks) => chunks.0,
     };
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
     let mut timer = Timer::new();
 
@@ -398,12 +400,21 @@ pub async fn create_chunk(
                 ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
             })?;
 
-        pos_in_queue = redis::cmd("lpush")
-            .arg("ingestion")
-            .arg(&serialized_message)
-            .query_async(&mut *redis_conn)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
+            pos_in_queue = redis::cmd("lpush")
+                .arg("openai_ingestion")
+                .arg(&serialized_message)
+                .query_async(&mut *redis_conn)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        } else {
+            pos_in_queue = redis::cmd("lpush")
+                .arg("ingestion")
+                .arg(&serialized_message)
+                .query_async(&mut *redis_conn)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        }
     }
     if !upsert_chunk_metadatas.is_empty() {
         let serialized_message: String = serde_json::to_string(&upsert_chunk_ingestion_message)
@@ -411,12 +422,21 @@ pub async fn create_chunk(
                 ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
             })?;
 
-        pos_in_queue = redis::cmd("lpush")
-            .arg("ingestion")
-            .arg(&serialized_message)
-            .query_async(&mut *redis_conn)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
+            pos_in_queue = redis::cmd("lpush")
+                .arg("openai_ingestion")
+                .arg(&serialized_message)
+                .query_async(&mut *redis_conn)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        } else {
+            pos_in_queue = redis::cmd("lpush")
+                .arg("ingestion")
+                .arg(&serialized_message)
+                .query_async(&mut *redis_conn)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        }
     }
 
     let response = match create_chunk_data.into_inner() {
