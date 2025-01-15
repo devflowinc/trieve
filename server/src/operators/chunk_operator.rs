@@ -1620,7 +1620,7 @@ pub fn get_highlights_with_exact_match(
     input: ChunkMetadata,
     query: String,
     threshold: Option<f64>,
-    delimiters: Vec<String>,
+    delimiters: Vec<char>,
     max_length: Option<u32>,
     max_num: Option<u32>,
     window_size: Option<u32>,
@@ -1629,7 +1629,7 @@ pub fn get_highlights_with_exact_match(
 ) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
     let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
     let cleaned_query = query.replace(
-        |c: char| (delimiters.contains(&c.to_string()) && c != ' ') || c == '\"',
+        |c: char| (delimiters.contains(&c) && c != ' ') || c == '\"',
         "",
     );
     let pre_tag = pre_tag.unwrap_or("<mark><b>".to_string());
@@ -2079,7 +2079,7 @@ pub fn get_highlights_with_exact_match(
     let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
     let mut engine: SimSearch<usize> = SimSearch::new_with(search_options);
     let split_content = content
-        .split_inclusive(|c: char| delimiters.contains(&c.to_string()))
+        .split_inclusive(|c: char| delimiters.contains(&c))
         .flat_map(|x| {
             x.to_string()
                 .split_inclusive(' ')
@@ -2228,7 +2228,7 @@ pub fn get_highlights(
     input: ChunkMetadata,
     query: String,
     threshold: Option<f64>,
-    delimiters: Vec<String>,
+    delimiters: Vec<char>,
     max_length: Option<u32>,
     max_num: Option<u32>,
     window_size: Option<u32>,
@@ -2242,7 +2242,7 @@ pub fn get_highlights(
     let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
     let mut engine: SimSearch<usize> = SimSearch::new_with(search_options);
     let split_content = content
-        .split_inclusive(|c: char| delimiters.contains(&c.to_string()))
+        .split_inclusive(|c: char| delimiters.contains(&c))
         .flat_map(|x| {
             x.to_string()
                 .split_inclusive(' ')
