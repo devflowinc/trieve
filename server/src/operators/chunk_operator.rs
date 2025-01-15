@@ -1621,7 +1621,7 @@ pub enum HighlightStrategy {
 
 #[allow(clippy::too_many_arguments)]
 pub fn get_highlights_with_exact_match(
-    input: ChunkMetadata,
+    chunk_html: Option<String>,
     query: String,
     threshold: Option<f64>,
     delimiters: Vec<char>,
@@ -1630,8 +1630,8 @@ pub fn get_highlights_with_exact_match(
     window_size: Option<u32>,
     pre_tag: Option<String>,
     post_tag: Option<String>,
-) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
-    let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
+) -> Result<(Option<String>, Vec<String>), ServiceError> {
+    let content = convert_html_to_text(&chunk_html.clone().unwrap_or_default());
     let cleaned_query = query.replace(
         |c: char| (delimiters.contains(&c) && c != ' ') || c == '\"',
         "",
@@ -1815,8 +1815,8 @@ pub fn get_highlights_with_exact_match(
             .take(max_num.unwrap_or(3) as usize)
             .flat_map(|(_, phrases)| phrases.clone())
             .collect_vec();
-        let new_output = apply_highlights_to_html(
-            input.clone(),
+        let new_output = Some(apply_highlights_to_html(
+            chunk_html.clone().unwrap_or_default(),
             phrases
                 .clone()
                 .into_iter()
@@ -1825,7 +1825,7 @@ pub fn get_highlights_with_exact_match(
                 .collect_vec(),
             &pre_tag,
             &post_tag,
-        );
+        ));
 
         let window = window_size.unwrap_or(0);
         if window == 0 {
@@ -2077,7 +2077,7 @@ pub fn get_highlights_with_exact_match(
     }
 
     if threshold.unwrap_or(0.8) >= 1.0 {
-        return Ok((input, vec![]));
+        return Ok((chunk_html, vec![]));
     }
 
     let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
@@ -2099,7 +2099,6 @@ pub fn get_highlights_with_exact_match(
         engine.insert(i, x);
     });
 
-    let new_output = input;
     let results: Vec<usize> = engine.search(&query);
 
     let mut matched_idxs = vec![];
@@ -2118,10 +2117,13 @@ pub fn get_highlights_with_exact_match(
             .map(|x| split_content.get(*x))
             .filter_map(|x| x.map(|x| x.to_string()))
             .collect::<Vec<String>>();
-        return Ok((
-            apply_highlights_to_html(new_output, phrases.clone(), &pre_tag, &post_tag),
+        let new_output = Some(apply_highlights_to_html(
+            chunk_html.unwrap_or_default().clone(),
             phrases.clone(),
+            &pre_tag,
+            &post_tag,
         ));
+        return Ok((new_output, phrases.clone()));
     }
 
     let half_window = std::cmp::max(window / 2, 1);
@@ -2220,16 +2222,20 @@ pub fn get_highlights_with_exact_match(
     } else {
         windowed_phrases.clone()
     };
-    Ok((
-        apply_highlights_to_html(new_output, matched_phrases, &pre_tag, &post_tag),
-        result_matches,
-    ))
+
+    let new_output = Some(apply_highlights_to_html(
+        chunk_html.clone().unwrap_or_default(),
+        matched_phrases,
+        &pre_tag,
+        &post_tag,
+    ));
+    Ok((new_output, result_matches))
 }
 
 #[allow(clippy::too_many_arguments)]
 
 pub fn get_highlights(
-    input: ChunkMetadata,
+    chunk_html: Option<String>,
     query: String,
     threshold: Option<f64>,
     delimiters: Vec<char>,
@@ -2238,11 +2244,11 @@ pub fn get_highlights(
     window_size: Option<u32>,
     pre_tag: Option<String>,
     post_tag: Option<String>,
-) -> Result<(ChunkMetadata, Vec<String>), ServiceError> {
+) -> Result<(Option<String>, Vec<String>), ServiceError> {
     let pre_tag = pre_tag.unwrap_or("<mark><b>".to_string());
     let post_tag = post_tag.unwrap_or("</b></mark>".to_string());
 
-    let content = convert_html_to_text(&(input.chunk_html.clone().unwrap_or_default()));
+    let content = convert_html_to_text(&chunk_html.clone().unwrap_or_default());
     let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
     let mut engine: SimSearch<usize> = SimSearch::new_with(search_options);
     let split_content = content
@@ -2262,7 +2268,6 @@ pub fn get_highlights(
         engine.insert(i, x);
     });
 
-    let new_output = input;
     let results: Vec<usize> = engine.search(&query);
 
     let mut matched_idxs = vec![];
@@ -2281,10 +2286,13 @@ pub fn get_highlights(
             .map(|x| split_content.get(*x))
             .filter_map(|x| x.map(|x| x.to_string()))
             .collect::<Vec<String>>();
-        return Ok((
-            apply_highlights_to_html(new_output, phrases.clone(), &pre_tag, &post_tag),
+        let new_output = Some(apply_highlights_to_html(
+            chunk_html.clone().unwrap_or_default(),
             phrases.clone(),
+            &pre_tag,
+            &post_tag,
         ));
+        return Ok((new_output, phrases));
     }
 
     let half_window = std::cmp::max(window / 2, 1);
@@ -2385,21 +2393,24 @@ pub fn get_highlights(
     } else {
         windowed_phrases.clone()
     };
-    Ok((
-        apply_highlights_to_html(new_output, matched_phrases, &pre_tag, &post_tag),
-        result_matches,
-    ))
+
+    let new_output = Some(apply_highlights_to_html(
+        chunk_html.clone().unwrap_or_default(),
+        matched_phrases,
+        &pre_tag,
+        &post_tag,
+    ));
+    Ok((new_output, result_matches))
 }
 
 fn apply_highlights_to_html(
-    input: ChunkMetadata,
+    input_chunk_html: String,
     phrases: Vec<String>,
     pre_tag: &str,
     post_tag: &str,
-) -> ChunkMetadata {
-    let mut meta_data = input;
-    let mut chunk_html = meta_data.chunk_html.clone().unwrap_or_default();
+) -> String {
     let mut replaced_phrases = HashSet::new();
+    let mut chunk_html = input_chunk_html.clone();
     for phrase in phrases.clone() {
         let lower_case_trimmed_phrase = phrase.to_lowercase().trim().to_string();
         if replaced_phrases.contains(&lower_case_trimmed_phrase) || phrase.len() <= 1 {
@@ -2438,8 +2449,7 @@ fn apply_highlights_to_html(
 
         replaced_phrases.insert(lower_case_trimmed_phrase);
     }
-    meta_data.chunk_html = Some(chunk_html);
-    meta_data
+    chunk_html
 }
 
 pub async fn get_row_count_for_organization_id_query(
