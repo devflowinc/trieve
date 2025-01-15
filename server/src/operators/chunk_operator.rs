@@ -2078,22 +2078,47 @@ pub fn get_highlights_with_exact_match(
 
     let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
     let mut engine: SimSearch<usize> = SimSearch::new_with(search_options);
-    let split_content = content
-        .split_inclusive(|c: char| delimiters.contains(&c.to_string()))
-        .flat_map(|x| {
-            x.to_string()
-                .split_inclusive(' ')
-                .map(|x| x.to_string())
-                .collect::<Vec<String>>()
-                .chunks(max_length.unwrap_or(5) as usize)
-                .map(|x| x.join(""))
-                .collect::<Vec<String>>()
-        })
-        .collect::<Vec<String>>();
+    // Avoid allocation for single-char delimiters
+    let is_delimiter = |c: char| delimiters.iter().any(|d| d == &c.to_string());
+    
+    let max_len: usize = max_length.unwrap_or(5) as usize;
+    let mut current_index = 0;
+    
+    // Process the content in a single pass
+    let mut current_chunk = String::with_capacity(max_len);
+    let mut start = 0;
 
-    split_content.iter().enumerate().for_each(|(i, x)| {
-        engine.insert(i, x);
-    });
+    let mut index_to_range: HashMap<usize, (usize, usize)> = HashMap::new();
+    let get_split_index = |index: &usize| {
+        index_to_range.get(index).map(|(start, end)| {
+            &content[*start..=*end]
+        }).ok_or(ServiceError::BadRequest("Split out of bounds".to_string()))
+    };
+    
+    for (i, c) in content.char_indices() {
+        if c == ' ' || is_delimiter(c) {
+            let segment = &content[start..=i];
+            
+            if current_chunk.len() + segment.len() > max_len && !current_chunk.is_empty() {
+                    index_to_range.insert(current_index, (i - current_chunk.len(), i));
+                    engine.insert(current_index, &current_chunk);
+                    current_index += 1;
+                    current_chunk.clear();
+            }
+            
+            current_chunk.push_str(segment);
+            start = i + 1;
+        }
+    }
+    
+    if start < content.len() {
+        current_chunk.push_str(&content[start..]);
+    }
+    if !current_chunk.is_empty() {
+        engine.insert(current_index, &current_chunk);
+    }
+
+    let index_count = current_index;
 
     let new_output = input;
     let results: Vec<usize> = engine.search(&query);
@@ -2111,7 +2136,7 @@ pub fn get_highlights_with_exact_match(
     if window == 0 {
         let phrases = matched_idxs
             .iter()
-            .map(|x| split_content.get(*x))
+            .map(|x| get_split_index(x))
             .filter_map(|x| x.map(|x| x.to_string()))
             .collect::<Vec<String>>();
         return Ok((
@@ -2128,16 +2153,16 @@ pub fn get_highlights_with_exact_match(
     // Used to keep track of the number of words used in the phrase
     let mut used_phrases: HashMap<usize, usize> = HashMap::new();
     for idx in matched_idxs.clone() {
-        let phrase = get_slice_from_vec_string(split_content.clone(), idx)?;
+        let phrase = get_split_index(&idx).clone();
         let mut next_phrase = String::new();
-        if idx < split_content.len() - 1 {
+        if idx < index_count - 1 {
             let mut start = idx + 1;
             let mut count: usize = 0;
             while (count as u32) < half_window {
-                if start >= split_content.len() || matched_idxs_set.contains(&start) {
+                if start >= index_count || matched_idxs_set.contains(&start) {
                     break;
                 }
-                let slice = get_slice_from_vec_string(split_content.clone(), start)?;
+                let slice = get_split_index(&idx).clone();
                 let candidate_words = slice
                     .split_inclusive(' ')
                     .take(half_window as usize - count)
@@ -2156,7 +2181,7 @@ pub fn get_highlights_with_exact_match(
             let mut start = idx - 1;
             let mut count: usize = 0;
             while (count as u32) < half_window {
-                let slice = get_slice_from_vec_string(split_content.clone(), start)?;
+                let slice = get_split_index(&start);
                 let split_words = slice.split_inclusive(' ').collect::<Vec<&str>>();
                 if matched_idxs_set.contains(&start) {
                     break;
@@ -2209,7 +2234,7 @@ pub fn get_highlights_with_exact_match(
     let matched_phrases = matched_idxs
         .clone()
         .iter()
-        .filter_map(|x| split_content.get(*x).cloned())
+        .filter_map(|x| get_split_index(x))
         .collect::<Vec<String>>();
     let result_matches = if windowed_phrases.is_empty() {
         matched_phrases.clone()
