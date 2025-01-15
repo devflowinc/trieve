@@ -38,8 +38,7 @@ export const ChatMessage = ({
         duration: 0.2,
         ease: "easeInOut",
       }}
-      key={idx}
-    >
+      key={idx}>
       {message.type == "user" ? (
         <div key={idx}>
           <div className={message.type}>
@@ -70,8 +69,7 @@ export const ChatMessage = ({
                     ? `${props.brandColor}18`
                     : "#CB53EB18",
                   color: props.brandColor ?? "#CB53EB",
-                }}
-              >
+                }}>
                 AI assistant
               </p>
             </span>
@@ -96,6 +94,7 @@ export const Message = ({
   const { props, trieveSDK } = useModalState();
 
   useEffect(() => {
+    console.log("message", props.analytics);
     if (props.analytics) {
       const ecommerceChunks = message.additional?.filter(
         (chunk) =>
@@ -112,7 +111,7 @@ export const Message = ({
           requestID: message.queryId,
           type: "rag",
           items: ecommerceChunks.map((chunk) => {
-            return chunk.link ?? "";
+            return chunk.id ?? "";
           }),
         });
       }
@@ -160,8 +159,7 @@ export const Message = ({
               chunkID: item.id,
             });
           }
-        }}
-      >
+        }}>
         <img
           src={item.imageUrl ?? ""}
           alt={item.title}
@@ -173,8 +171,7 @@ export const Message = ({
             className="ecomm-item-price"
             style={{
               color: props.brandColor ?? "#CB53EB",
-            }}
-          >
+            }}>
             ${item.price}
           </p>
         </div>
@@ -211,8 +208,7 @@ export const Message = ({
         className="source-anchor yt-anchor"
         key={index}
         href={item.link as string}
-        target="_blank"
-      >
+        target="_blank">
         {item.metadata?.yt_preview_src ? (
           <img className="yt-preview" src={item.metadata?.yt_preview_src} />
         ) : (
@@ -226,15 +222,13 @@ export const Message = ({
     <div className="super-message-wrapper">
       {message.text === "Loading..." ? (
         <div
-          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
-        >
+          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}>
           <LoadingIcon className="loading" />
         </div>
       ) : null}
       {message.type === "system" && message.text !== "Loading..." ? (
         <div
-          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
-        >
+          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}>
           {message.additional &&
             props.type === "ecommerce" &&
             !props.inline && (
@@ -260,8 +254,7 @@ export const Message = ({
                   return children?.toString();
                 },
               }}
-              key={idx}
-            >
+              key={idx}>
               {message.text.length > 0 ? message.text : "Loading..."}
             </Markdown>
           ) : (
@@ -297,8 +290,7 @@ export const Message = ({
                           }`}
                           key={index}
                           href={item.link as string}
-                          target="_blank"
-                        >
+                          target="_blank">
                           {item.metadata?.yt_preview_src ? (
                             <img
                               className="yt-preview"
@@ -333,8 +325,7 @@ export const Message = ({
                             setCopied(true);
                             setTimeout(() => setCopied(false), 500);
                           });
-                      }}
-                    >
+                      }}>
                       <i className="fa-regular fa-copy"></i>
                     </button>
                   )}
@@ -348,8 +339,7 @@ export const Message = ({
                         if (prev === true) return null;
                         return true;
                       });
-                    }}
-                  >
+                    }}>
                     <i className="fa-regular fa-thumbs-up"></i>
                   </button>
                   <button
@@ -362,8 +352,7 @@ export const Message = ({
                         if (prev === false) return null;
                         return false;
                       });
-                    }}
-                  >
+                    }}>
                     <i className="fa-regular fa-thumbs-down"></i>
                   </button>
                 </div>
