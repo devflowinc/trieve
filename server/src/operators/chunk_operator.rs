@@ -1601,11 +1601,15 @@ pub fn get_slice_from_vec_string(vec: Vec<String>, index: usize) -> Result<Strin
     }
 }
 
-pub fn get_stop_words() -> Vec<String> {
+static STOP_WORDS: once_cell::sync::Lazy<Vec<String>> = once_cell::sync::Lazy::new(|| {
     include_str!("../stop-words.txt")
         .lines()
         .map(|x| x.to_string())
         .collect()
+});
+
+pub fn get_stop_words() -> &'static Vec<String> {
+    &STOP_WORDS
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
