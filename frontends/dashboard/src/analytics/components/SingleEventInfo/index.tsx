@@ -12,10 +12,12 @@ import { IoArrowBackOutline } from "solid-icons/io";
 import { ArbitraryResultCard } from "../SingleQueryInfo/ArbitraryResultCard";
 import { FiExternalLink } from "solid-icons/fi";
 import { useNavigate } from "@solidjs/router";
+import { ProductItem } from "./ProductItem";
 
 interface SingleEventQueryProps {
   queryId: string;
 }
+
 export const SingleEventQuery = (props: SingleEventQueryProps) => {
   const dataset = useContext(DatasetContext);
   const navigate = useNavigate();
@@ -122,6 +124,25 @@ export const SingleEventQuery = (props: SingleEventQueryProps) => {
             </Show>
           </dl>
         </div>
+        <Show
+          when={
+            props.event_data.metadata &&
+            (props.event_data.metadata as { chunk_id: string }).chunk_id !==
+              undefined
+          }
+        >
+          <Card title="Items">
+            <ProductItem
+              chunkId={
+                (props.event_data.metadata as { chunk_id: string }).chunk_id
+              }
+              position={
+                (props.event_data.metadata as { position: string }).position
+              }
+              index={0}
+            />
+          </Card>
+        </Show>
         <Show when={props.event_data.items && props.event_data.items[0]}>
           <Card title="Items">
             <div class="grid gap-4 sm:grid-cols-2">
@@ -130,7 +151,7 @@ export const SingleEventQuery = (props: SingleEventQueryProps) => {
                 each={props.event_data.items}
               >
                 {(result) => {
-                  return <pre class="text-sm">{result}</pre>;
+                  return <ProductItem chunkId={result} index={0} />;
                 }}
               </For>
             </div>
