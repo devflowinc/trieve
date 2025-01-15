@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use ndarray::Array2;
 use regex::Regex;
 use regex_split::RegexSplit;
@@ -7,8 +8,15 @@ use std::cmp;
 use crate::errors::ServiceError;
 
 pub fn convert_html_to_text(html: &str) -> String {
-    let dom = Html::parse_fragment(html);
-    let text = dom.root_element().text().collect::<String>();
+    let dom = tl::parse(html, tl::ParserOptions::default()).unwrap();
+    let parser = dom.parser();
+
+    let text = dom.nodes()
+      .iter()
+      .map(|node| {
+            node.inner_text(parser)
+      }).join("\n");
+
     text
 }
 
