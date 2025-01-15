@@ -80,6 +80,16 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
       className="carousel-root tv-relative tv-w-full tv-max-w-full tv-overflow-hidden"
       ref={rootRef}
     >
+      <div
+        className="tv-absolute tv-left-0 tv-top-0 tv-bottom-0 tv-w-12 tv-pointer-events-none tv-z-10"
+        style={{
+          background:
+            "linear-gradient(to right, rgb(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 100%)",
+          opacity: showLeftArrow ? 0.4 : 0,
+          transition: "opacity 0.2s ease",
+        }}
+      />
+
       <AnimatePresence>
         {showLeftArrow && (
           <motion.button
@@ -119,6 +129,16 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
           </motion.li>
         ))}
       </ul>
+      <div
+        className="tv-absolute tv-right-0 tv-top-0 tv-bottom-0 tv-w-12 tv-pointer-events-none tv-z-10"
+        style={{
+          background:
+            "linear-gradient(to left, rgb(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 100%)",
+          opacity: showRightArrow ? 0.4 : 0,
+          transition: "opacity 0.2s ease",
+        }}
+      />
+
       <AnimatePresence>
         {showRightArrow && (
           <motion.button
