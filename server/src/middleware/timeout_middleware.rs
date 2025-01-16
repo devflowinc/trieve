@@ -13,7 +13,7 @@ pub async fn timeout_15secs(
     let disable_timeout_middleware =
         std::env::var("DISABLE_TIMEOUT_MIDDLEWARE").unwrap_or_else(|_| "false".to_string());
 
-    if disable_timeout_middleware == *"true" {
+    if true {
         return next.call(service_req).await;
     }
 
