@@ -1,4 +1,11 @@
-import React, { Suspense, useEffect, useRef, useState } from "react";
+import React, {
+  RefObject,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
@@ -9,6 +16,27 @@ import ImagePreview from "../ImagePreview";
 import { AnimatePresence } from "motion/react";
 import { cn } from "../../utils/styles";
 import { UploadAudio } from "../Search/UploadAudio";
+
+function useOnScreen(ref: RefObject<HTMLElement>) {
+  const [isIntersecting, setIntersecting] = useState(false);
+
+  const observer = useMemo(
+    () =>
+      new IntersectionObserver(([entry]) =>
+        setIntersecting(entry.isIntersecting),
+      ),
+    [ref],
+  );
+
+  useEffect(() => {
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+    return () => observer.disconnect();
+  }, []);
+
+  return isIntersecting;
+}
 
 export const ChatMode = () => {
   const {
@@ -40,38 +68,10 @@ export const ChatMode = () => {
     }
   }, [chatInput, mode, open]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [scrollPercentage, setScrollPercentage] = useState(0);
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const scrollTop = e.currentTarget.scrollTop;
-    const scrollHeight = e.currentTarget.scrollHeight;
-    const clientHeight = e.currentTarget.clientHeight;
-    const scrollPercentage = scrollTop / (scrollHeight - clientHeight);
-    setScrollPercentage(scrollPercentage);
-    console.log(`scrollPercentage: ${scrollPercentage} `);
-  };
+  const scrollTracker = useRef<HTMLDivElement>(null);
+  const isOnScreen = useOnScreen(scrollTracker);
 
-  // Get shadow intensity
-  useEffect(() => {
-    if (scrollRef.current) {
-      const scrollTop = scrollRef.current.scrollTop;
-      const scrollHeight = scrollRef.current.scrollHeight;
-      const clientHeight = scrollRef.current.clientHeight;
-      const scrollPercentage = scrollTop / (scrollHeight - clientHeight);
-      if (Number.isNaN(scrollPercentage)) {
-        setScrollPercentage(0);
-      } else {
-        setScrollPercentage(scrollPercentage);
-      }
-    }
-  });
-
-  const [shadowIntensity, setShadowIntensity] = useState(0);
-
-  useEffect(() => {
-    console.log(`percentage: ${scrollPercentage}`);
-    // console.log(`intnsity: ${shadowIntensity}`);
-  }, [shadowIntensity, scrollPercentage]);
   return (
     <Suspense fallback={<div className="suspense-fallback"></div>}>
       {props.inline && messages.length ? (
@@ -90,7 +90,6 @@ export const ChatMode = () => {
         </div>
       ) : null}
       <div
-        onScroll={handleScroll}
         className={cn(
           `chat-outer-wrapper tv-relative tv-overflow-hidden tv-flex tv-flex-col tv-px-4 tv-scroll-smooth !tv-mt-0`,
           props.inline &&
@@ -141,7 +140,6 @@ export const ChatMode = () => {
           }`}
         >
           <div
-            onScroll={handleScroll}
             ref={scrollRef}
             className="chat-modal-wrapper tv-relative tv-overflow-auto sm:tv-max-h-[calc(60vh)] tv-max-h-[85vh] tv-flex tv-flex-col tv-gap-1 tv-mt-1"
           >
@@ -152,10 +150,26 @@ export const ChatMode = () => {
               {messages.map((message, i) => (
                 <ChatMessage key={`${i}-message`} idx={i} message={message} />
               ))}
+              <div
+                ref={scrollTracker}
+                className="tv-opacity-0  tv-w-4 tv-h-1 tv-bg-red-500"
+              >
+                track
+              </div>
             </AnimatePresence>
           </div>
-          <div className="tv-h-[40px] tv-blur-md tv-translate-y-6 tv-absolute tv-left-3 tv-right-3 tv-bottom-0 tv-bg-gradient-to-t tv-from-neutral-300 tv-to-transparent"></div>
-          <div className="tv-h-[50px] tv-blur-lg tv-translate-y-8 tv-absolute tv-left-24 tv-right-24 tv-bottom-0 tv-bg-gradient-to-t tv-from-neutral-300 tv-to-transparent"></div>
+          <div
+            style={{
+              opacity: isOnScreen ? 0 : 1,
+            }}
+            className="tv-h-[40px] tv-blur-md tv-translate-y-6 tv-absolute tv-left-3 tv-right-3 tv-bottom-0 tv-bg-gradient-to-t tv-from-neutral-300 tv-to-transparent"
+          ></div>
+          <div
+            style={{
+              opacity: isOnScreen ? 0 : 1,
+            }}
+            className="tv-h-[50px] tv-blur-lg tv-translate-y-8 tv-absolute tv-left-24 tv-right-24 tv-bottom-0 tv-bg-gradient-to-t tv-from-neutral-300 tv-to-transparent"
+          ></div>
         </div>
       </div>
       <div
