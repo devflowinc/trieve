@@ -6448,8 +6448,13 @@ totalist@^3.0.0:
   resolved "https://registry.npmjs.org/totalist/-/totalist-3.0.1.tgz"
   integrity sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==
 
-"trieve-ts-sdk@file:clients/ts-sdk":
+trieve-ts-sdk@^0.0.50:
   version "0.0.50"
+  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.50.tgz#8b16f7a0f7f77d81811aa0e3a7ed7050b5938379"
+  integrity sha512-AbV41cEzxNSJ+gXUAOFK5OoMl4Kgu/DGkIU/fRS+k8rH+s0ePwBK6CYSPKBxGvNajbZ9hoqiUgN9/qZJX+k0yA==
+
+"trieve-ts-sdk@file:clients/ts-sdk":
+  version "0.0.54"
 
 trim-lines@^3.0.0:
   version "3.0.1"

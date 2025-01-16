@@ -30,7 +30,7 @@ body {
     font-family: var(--tv-prop-brand-font-family);
 
     &:not(.trieve-popup-modal) {
-      @apply tv-border tv-max-w-sm;
+      @apply tv-border tv-max-w-sm !tv-w-full;
     }
 
     &.trieve-popup-modal {
