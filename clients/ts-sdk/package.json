@@ -1,12 +1,23 @@
 {
   "name": "trieve-ts-sdk",
   "type": "module",
-  "exports": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/esm/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/cjs/index.cjs"
+      }
+    }
+  },
   "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "version": "0.0.50",
+  "version": "0.0.54",
   "license": "MIT",
   "scripts": {
     "lint": "eslint 'src/**/*.ts'",

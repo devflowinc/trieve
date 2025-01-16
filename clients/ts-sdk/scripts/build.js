@@ -4,18 +4,35 @@ import { build as esbuild } from "esbuild";
 const srcPath = path.join(process.cwd(), "src");
 const buildPath = path.join(process.cwd(), "dist");
 
+const commonConfig = {
+  platform: "node",
+  target: "node21",
+  nodePaths: [srcPath],
+  sourcemap: true,
+  treeShaking: true,
+  bundle: true,
+  entryPoints: [path.join(srcPath, "index.ts")],
+};
+
 async function build() {
-  return await esbuild({
-    platform: "node",
-    target: "node21",
+  // Build ESM
+  await esbuild({
+    ...commonConfig,
     format: "esm",
-    nodePaths: [srcPath],
-    sourcemap: true,
-    treeShaking: true,
-    bundle: true,
-    entryPoints: [path.join(srcPath, "index.ts")],
-    outdir: buildPath,
+    outdir: path.join(buildPath, "esm"),
+    outExtension: { ".js": ".mjs" },
+  });
+
+  // Build CJS
+  await esbuild({
+    ...commonConfig,
+    format: "cjs",
+    outdir: path.join(buildPath, "cjs"),
+    outExtension: { ".js": ".cjs" },
   });
 }
 
-build();
+build().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
