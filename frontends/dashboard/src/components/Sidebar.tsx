@@ -3,9 +3,7 @@ import { JSX } from "solid-js";
 import { DatasetContext } from "../contexts/DatasetContext";
 import { A, useLocation } from "@solidjs/router";
 import {
-  AiOutlineBarChart,
   AiOutlineCamera,
-  AiOutlineCaretDown,
   AiOutlineFilter,
   AiOutlineHistory,
   AiOutlineInfoCircle,
@@ -169,51 +167,28 @@ export const DashboardSidebar = () => {
             />
             <Link
               isExternal={false}
-              icon={AiOutlineBarChart}
-              href={`/dataset/${datasetId()}/analytics/trends`}
-              label="Trend Explorer"
-            />
-            <A
+              icon={AiOutlineSearch}
               href={`/dataset/${datasetId()}/analytics/data/searches`}
-              class="flex cursor-pointer items-center justify-between gap-2 rounded-md p-1 px-2 hover:underline"
-              classList={{
-                "bg-magenta-200/10":
-                  pathname.pathname.includes("/analytics/data"),
-              }}
-            >
-              <div class="flex items-center gap-2">
-                <div class="pl-[2px]">
-                  <AiOutlineCaretDown size={12} />
-                </div>
-                Data Explorer
-              </div>
-            </A>
-            <div class="pl-6">
-              <Link
-                isExternal={false}
-                icon={AiOutlineSearch}
-                href={`/dataset/${datasetId()}/analytics/data/searches`}
-                label="Searches"
-              />
-              <Link
-                isExternal={false}
-                icon={AiOutlineMessage}
-                href={`/dataset/${datasetId()}/analytics/data/messages`}
-                label="RAG Messages"
-              />
-              <Link
-                isExternal={false}
-                icon={AiOutlineFilter}
-                href={`/dataset/${datasetId()}/analytics/data/recommendations`}
-                label="Recommendations"
-              />
-              <Link
-                isExternal={false}
-                icon={TbTimelineEventText}
-                href={`/dataset/${datasetId()}/analytics/data/events`}
-                label="Events"
-              />
-            </div>
+              label="Searches"
+            />
+            <Link
+              isExternal={false}
+              icon={AiOutlineMessage}
+              href={`/dataset/${datasetId()}/analytics/data/messages`}
+              label="RAG Messages"
+            />
+            <Link
+              isExternal={false}
+              icon={AiOutlineFilter}
+              href={`/dataset/${datasetId()}/analytics/data/recommendations`}
+              label="Recommendations"
+            />
+            <Link
+              isExternal={false}
+              icon={TbTimelineEventText}
+              href={`/dataset/${datasetId()}/analytics/data/events`}
+              label="Events"
+            />
           </div>
           <div class="gap flex flex-col pt-4">
             <SectionLabel>Dataset Settings</SectionLabel>
