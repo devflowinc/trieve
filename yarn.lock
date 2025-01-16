@@ -5587,10 +5587,10 @@ react-markdown@^9.0.1:
     unist-util-visit "^5.0.0"
     vfile "^6.0.0"
 
-react-pdf-spotlight@0.0.15:
-  version "0.0.15"
-  resolved "https://registry.yarnpkg.com/react-pdf-spotlight/-/react-pdf-spotlight-0.0.15.tgz#00509fb6936625bfbeb96986d35e0e066bde4a67"
-  integrity sha512-GVm2DhXem7fSSv584n3wdkGiqrNvtattE3peHuGFsE8sJhAIkHPmps8V4eh/xoTM5gOJw3zpTPumA2BUnjBSPA==
+react-pdf-spotlight@0.0.16:
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/react-pdf-spotlight/-/react-pdf-spotlight-0.0.16.tgz#6189d1fa5789d1fc8d9de8c7cab17eef67714afb"
+  integrity sha512-uVA2fylaucIGfApua6c2eVYRpkqoHf8ntYknSDVE/5cGTUwRwpRDK+UTdphxAOpveEZlRBOaKiUG8D3yNnCNVw==
   dependencies:
     pdfjs-dist "^4.9.155"
 
