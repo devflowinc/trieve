@@ -129,7 +129,7 @@ export const ChatMode = () => {
         {currentGroup && (
           <div
             className={`chat-group-disclaimer ${
-              props.inline ? "inline-disclaimer" : ""
+              props.inline ? "!tv-hidden" : ""
             }`}
           >
             <div>Chatting with {currentGroup.name.replace(/<[^>]*>/g, "")}</div>

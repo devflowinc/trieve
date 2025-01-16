@@ -838,10 +838,6 @@ body {
     .chat-footer-wrapper {
       .chat-group-disclaimer {
         @apply tv-flex tv-items-center tv-justify-between tv-bg-zinc-200/60 tv-px-3 tv-py-1 tv-text-sm tv-opacity-70 tv-mr-2 tv-border tv-border-zinc-300 tv-border-b-transparent tv-rounded-md;
-
-        &.inline-disclaimer {
-          @apply tv-ml-2 tv-border-b-zinc-300;
-        }
       }
 
       &:not(.with-messages) {
@@ -1184,10 +1180,6 @@ body {
       .chat-footer-wrapper {
         .chat-group-disclaimer {
           @apply tv-bg-zinc-700 tv-border-zinc-500;
-
-          &.inline-disclaimer {
-            @apply tv-border-b-zinc-500;
-          }
         }
 
         &:not(.with-messages) {
