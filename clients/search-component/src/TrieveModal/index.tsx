@@ -45,31 +45,33 @@ const Modal = () => {
     const viewportHeight = window.visualViewport?.height;
     let chatOuterWrapper;
     if (props.inline) {
-      chatOuterWrapper = document.querySelector(".chat-outer-wrapper.chat-outer-inline");
+      chatOuterWrapper = document.querySelector(
+        ".chat-outer-wrapper.chat-outer-inline",
+      );
     } else {
       chatOuterWrapper = document.querySelector(
-        ".chat-outer-wrapper.chat-outer-popup"
+        ".chat-outer-wrapper.chat-outer-popup",
       );
     }
 
     if ((window.visualViewport?.width ?? 1000) <= 640) {
       if (!props.inline) {
-        const trieveSearchModal = document.querySelector("#trieve-search-modal.trieve-popup-modal");
+        const trieveSearchModal = document.querySelector(
+          "#trieve-search-modal.trieve-popup-modal",
+        );
         if (trieveSearchModal) {
-          (trieveSearchModal as HTMLElement).style.maxHeight = `calc(${viewportHeight}px - ${
-            props.type == "ecommerce" ? "8px" : "0px"
-          })`;
+          (trieveSearchModal as HTMLElement).style.maxHeight =
+            `calc(${viewportHeight}px - ${
+              props.type == "ecommerce" ? "8px" : "0px"
+            })`;
         }
       }
 
       if (chatOuterWrapper && props.type && viewportHeight) {
-        const pxRemoved = (props.type == "ecommerce"
-            ? props.groupTrackingId
-              ? 150
-              : 225
-            : 175);
-        
-        const newHeight = viewportHeight - pxRemoved ;
+        const pxRemoved =
+          props.type == "ecommerce" ? (props.groupTrackingId ? 150 : 225) : 175;
+
+        const newHeight = viewportHeight - pxRemoved;
         (chatOuterWrapper as HTMLElement).style.maxHeight = `${newHeight}px`;
       }
     } else if (chatOuterWrapper) {
@@ -108,7 +110,7 @@ const Modal = () => {
         clearConversation();
         chatWithGroup(
           customEvent.detail.group,
-          customEvent.detail.betterGroupName
+          customEvent.detail.betterGroupName,
         );
         if (customEvent.detail.message) {
           askQuestion(customEvent.detail.message, customEvent.detail.group);
@@ -154,14 +156,14 @@ const Modal = () => {
 
     window.addEventListener(
       "trieve-start-chat-with-group",
-      chatWithGroupListener
+      chatWithGroupListener,
     );
     window.addEventListener("trieve-open-with-text", openWithTextListener);
 
     return () => {
       window.removeEventListener(
         "trieve-start-chat-with-group",
-        chatWithGroupListener
+        chatWithGroupListener,
       );
 
       window.removeEventListener("trieve-open-with-text", openWithTextListener);
@@ -171,18 +173,18 @@ const Modal = () => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB"
+      props.brandColor ?? "#CB53EB",
     );
 
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)"
+        "var(--tv-zinc-700)",
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)"
+        "var(--tv-zinc-300)",
       );
     }
 
@@ -190,7 +192,7 @@ const Modal = () => {
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
         `Maven Pro, ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);
 
@@ -246,7 +248,9 @@ const Modal = () => {
             </div>
             <div
               className={
-                mode === "chat" && !fullscreenPdfState ? "chat-container" : ""
+                mode === "chat" && !fullscreenPdfState
+                  ? "chat-container tv-overflow-y-hidden"
+                  : ""
               }
               style={
                 props.type == "pdf"
