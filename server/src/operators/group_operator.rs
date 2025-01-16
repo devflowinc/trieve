@@ -360,9 +360,6 @@ pub async fn delete_group_by_file_id_query(
     pool: web::Data<Pool>,
     dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
-    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
-    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
     use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
 
     let mut conn = pool.get().await.map_err(|_e| {
@@ -378,75 +375,15 @@ pub async fn delete_group_by_file_id_query(
             ServiceError::BadRequest("Error getting group id for file_id".to_string())
         })?;
 
-    let delete_chunks = delete_chunks.unwrap_or(false);
-    let chunks = chunk_group_bookmarks_columns::chunk_group_bookmarks
-        .inner_join(chunk_metadata_columns::chunk_metadata)
-        .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
-        .select(ChunkMetadataTable::as_select())
-        .load::<ChunkMetadataTable>(&mut conn)
-        .await
-        .map_err(|_err| ServiceError::BadRequest("Error getting chunks".to_string()))?;
-
-    let transaction_result = conn
-        .transaction::<_, diesel::result::Error, _>(|conn| {
-            async move {
-                diesel::delete(
-                    groups_from_files_columns::groups_from_files
-                        .filter(groups_from_files_columns::group_id.eq(group_id))
-                        .filter(groups_from_files_columns::created_at.le(deleted_at)),
-                )
-                .execute(conn)
-                .await?;
-
-                diesel::delete(
-                    chunk_group_bookmarks_columns::chunk_group_bookmarks
-                        .filter(chunk_group_bookmarks_columns::group_id.eq(group_id))
-                        .filter(chunk_group_bookmarks_columns::created_at.le(deleted_at)),
-                )
-                .execute(conn)
-                .await?;
-
-                diesel::delete(
-                    chunk_group_columns::chunk_group
-                        .filter(chunk_group_columns::id.eq(group_id))
-                        .filter(chunk_group_columns::dataset_id.eq(dataset.id))
-                        .filter(chunk_group_columns::created_at.le(deleted_at)),
-                )
-                .execute(conn)
-                .await?;
-
-                Ok(())
-            }
-            .scope_boxed()
-        })
-        .await;
-
-    if delete_chunks {
-        let chunk_ids = chunks.iter().map(|chunk| chunk.id).collect();
-        delete_chunk_metadata_query(
-            chunk_ids,
-            deleted_at,
-            dataset.clone(),
-            pool.clone(),
-            dataset_config.clone(),
-        )
-        .await?;
-    } else {
-        let remove_chunks_from_groups_futures = chunks.iter().map(|chunk| {
-            remove_bookmark_from_qdrant_query(
-                chunk.qdrant_point_id,
-                group_id,
-                dataset_config.clone(),
-            )
-        });
-
-        futures::future::join_all(remove_chunks_from_groups_futures).await;
-    }
-
-    match transaction_result {
-        Ok(_) => Ok(()),
-        Err(_) => Err(ServiceError::BadRequest("Error deleting group".to_string())),
-    }
+    delete_group_by_id_query(
+        group_id,
+        dataset,
+        deleted_at,
+        delete_chunks,
+        pool,
+        dataset_config,
+    )
+    .await
 }
 
 pub async fn update_chunk_group_query(
