@@ -537,17 +537,7 @@ pub async fn delete_file_query(
         .await
         .map_err(|_| ServiceError::BadRequest("Could not delete file from S3".to_string()))?;
 
-    diesel::delete(
-        files_columns::files
-            .filter(files_columns::id.eq(file_uuid))
-            .filter(files_columns::dataset_id.eq(dataset.clone().id)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(|e| {
-        log::error!("Error deleting file {:?}", e);
-        ServiceError::BadRequest("Could not delete file".to_string())
-    })?;
+    let dataset_id = dataset.clone().id;
 
     if delete_chunks.is_some_and(|delete_chunks| delete_chunks) {
         delete_group_by_file_id_query(
@@ -560,6 +550,18 @@ pub async fn delete_file_query(
         )
         .await?;
     }
+
+    diesel::delete(
+        files_columns::files
+            .filter(files_columns::id.eq(file_uuid))
+            .filter(files_columns::dataset_id.eq(dataset_id)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Error deleting file {:?}", e);
+        ServiceError::BadRequest("Could not delete file".to_string())
+    })?;
 
     Ok(())
 }
