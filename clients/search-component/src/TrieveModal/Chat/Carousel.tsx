@@ -6,8 +6,15 @@ import React, {
   useCallback,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "../../utils/styles";
 
-export const Carousel = ({ children }: { children: React.ReactNode }) => {
+export const Carousel = ({
+  children,
+  itemClassName,
+}: {
+  children: React.ReactNode;
+  itemClassName?: string;
+}) => {
   const [itemsPerPage, setItemsPerPage] = useState(1);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -39,6 +46,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
   }, [calcItemsPerPage]);
 
   const productItems = Children.toArray(children);
+  console.log(productItems);
 
   const handleArrowClick = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -111,23 +119,30 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
           overflowX: "scroll",
         }}
       >
-        {productItems.map((child, index) => (
-          <motion.li
-            className={`carousel-item tv-flex-shrink-0 tv-list-none tv-rounded-lg tv-overflow-hidden tv-bg-white tv-shadow-sm tv-border-2`}
-            key={index}
-            style={{
-              width: `calc((100% / ${itemsPerPage}) - 1rem)`,
-              transition: "border-color 0.2s ease",
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <div className="tv-flex tv-flex-col tv-items-center tv-p-4 tv-h-full tv-w-full tv-box-border">
-              {child}
-            </div>
-          </motion.li>
-        ))}
+        {productItems.map((child, index) =>
+          child ? (
+            <motion.li
+              className={cn(
+                `carousel-item tv-flex-shrink-0 tv-list-none tv-rounded-lg tv-overflow-hidden tv-bg-white tv-p-4 tv-shadow-sm tv-border-2`,
+                itemClassName,
+              )}
+              key={index}
+              style={{
+                // width: `calc((100% / ${itemsPerPage}) - 1rem)`,
+                transition: "border-color 0.2s ease",
+              }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              {child && (
+                <div className="tv-flex tv-w-full tv-flex-col tv-items-center tv-h-full tv-box-border">
+                  {child}
+                </div>
+              )}
+            </motion.li>
+          ) : null,
+        )}
       </ul>
       <div
         className="tv-absolute tv-right-0 tv-top-0 tv-bottom-0 tv-w-12 tv-pointer-events-none tv-z-10"

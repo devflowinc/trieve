@@ -32,7 +32,8 @@ export const ChatPdfItem = memo((props: { chunk: PdfChunk["chunk"] }) => {
     getPresigned();
   }, []);
 
-  if (!found) return false;
+  if (!found) return null;
+
   return (
     <div
       onClick={() => {
@@ -45,13 +46,13 @@ export const ChatPdfItem = memo((props: { chunk: PdfChunk["chunk"] }) => {
           });
         }
       }}
-      className="tv-m-2 tv-min-w-[400px]"
+      className="tv-min-w-[370px]"
     >
       {presigned && (
         <PdfSpotlight
           height={140}
           padding={{
-            horizontal: 170,
+            horizontal: 150,
             vertical: 80,
           }}
           canvasStyle={{
