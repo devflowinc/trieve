@@ -117,7 +117,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
             className={`carousel-item tv-flex-shrink-0 tv-list-none tv-rounded-lg tv-overflow-hidden tv-bg-white tv-shadow-sm tv-border-2`}
             key={index}
             style={{
-              width: `calc((100% / ${itemsPerPage}) - 1rem)`,
+              width: `min(calc((100% / ${itemsPerPage}) - 1rem), calc(90% - 1rem))`,
               transition: "border-color 0.2s ease",
             }}
             initial={{ opacity: 0, y: 20 }}
