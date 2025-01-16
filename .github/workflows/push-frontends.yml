@@ -27,10 +27,10 @@ jobs:
           - runner: blacksmith-2vcpu-ubuntu-2204
             platform: linux/amd64
             tag: latest
-          # - runner: blacksmith-2vcpu-ubuntu-2204
-          #   platform: linux/arm64
-          #   tag: latest-arm
-          #   suffix: -arm
+          - runner: blacksmith-2vcpu-ubuntu-2204-arm
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -77,10 +77,10 @@ jobs:
           - runner: blacksmith-2vcpu-ubuntu-2204
             platform: linux/amd64
             tag: latest
-          # - runner: blacksmith-2vcpu-ubuntu-2204
-          #   platform: linux/arm64
-          #   tag: latest-arm
-          #   suffix: -arm
+          - runner: blacksmith-2vcpu-ubuntu-2204-arm
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -127,10 +127,10 @@ jobs:
           - runner: blacksmith-2vcpu-ubuntu-2204
             platform: linux/amd64
             tag: latest
-          # - runner: blacksmith-2vcpu-ubuntu-2204
-          #   platform: linux/arm64
-          #   tag: latest-arm
-          #   suffix: -arm
+          - runner: blacksmith-2vcpu-ubuntu-2204-arm
+            platform: linux/arm64
+            tag: latest-arm
+            suffix: -arm
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
