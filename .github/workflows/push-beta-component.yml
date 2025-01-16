@@ -47,3 +47,19 @@ jobs:
           BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
         working-directory: ./clients/search-component/
         run: yarn push:cdn:beta
+
+      - name: Invalidate Bunny cache
+        env:
+          BUNNY_NET_API_KEY: ${{ secrets.BUNNY_NET_API_KEY }}
+        run: |
+          curl --request POST \
+               --url 'https://api.bunny.net/purge?url=https%3A%2F%2Fcdn.trieve.ai%2Fbeta%2Fsearch-component%2Findex.css&async=false' \
+               --header "AccessKey: ${BUNNY_NET_API_KEY}"
+
+          curl --request POST \
+               --url 'https://api.bunny.net/purge?url=https%3A%2F%2Fcdn.trieve.ai%2Fbeta%2Fsearch-component%2Findex.js&async=false' \
+               --header "AccessKey: ${BUNNY_NET_API_KEY}"
+
+          curl --request POST \
+               --url 'https://api.bunny.net/purge?url=https%3A%2F%2Fcdn.trieve.ai%2Fbeta%2Fsearch-component%2Fvanilla%2Findex.js&async=false' \
+               --header "AccessKey: ${BUNNY_NET_API_KEY}"
