@@ -2,7 +2,6 @@
 import { AnalyticsParams, SearchQueryEvent } from "shared/types";
 import { createSignal, Show, useContext } from "solid-js";
 import { FullScreenModal, SortableColumnDef, TanStackTable } from "shared/ui";
-import { SearchQueryEventModal } from "../../pages/TrendExplorer";
 import { IoOpenOutline } from "solid-icons/io";
 import { Card } from "./Card";
 import { useBetterNav } from "../../utils/useBetterNav";
@@ -10,6 +9,7 @@ import { useLowConfidenceQueries } from "../../hooks/data/useLowConfidenceQuerie
 import { createSolidTable, getCoreRowModel } from "@tanstack/solid-table";
 import { MagicSuspense } from "../../../components/MagicBox";
 import { DatasetContext } from "../../../contexts/DatasetContext";
+import { SearchQueryEventModal } from "../SearchQueryEventModal";
 
 interface LowConfidenceQueriesProps {
   params: AnalyticsParams;

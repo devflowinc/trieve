@@ -26,7 +26,6 @@ import { DangerZoneForm } from "./components/dataset-settings/DangerZone.tsx";
 import { Chart, registerables } from "chart.js";
 import { AnalyticsOverviewPage } from "./analytics/pages/AnalyticsOverviewPage.tsx";
 import { SearchAnalyticsPage } from "./analytics/pages/SearchAnalyticsPage.tsx";
-import { TrendExplorer } from "./analytics/pages/TrendExplorer.tsx";
 import { SingleQueryPage } from "./analytics/pages/SingleQueryPage.tsx";
 import { RAGAnalyticsPage } from "./analytics/pages/tablePages/RAGAnalyticsPage.tsx";
 import { ApiContext, trieve } from "./api/trieve.ts";
@@ -164,10 +163,6 @@ const routes: RouteDefinition[] = [
                   {
                     path: "/",
                     component: AnalyticsOverviewPage,
-                  },
-                  {
-                    path: "/trends",
-                    component: TrendExplorer,
                   },
                   {
                     path: "/query/:queryId",
