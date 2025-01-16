@@ -412,6 +412,10 @@ body {
           }
         }
 
+        .carousel-arrow {
+          @apply tv-hidden md:tv-block;
+        }
+
         .carousel-item-hidden {
           visibility: hidden;
         }

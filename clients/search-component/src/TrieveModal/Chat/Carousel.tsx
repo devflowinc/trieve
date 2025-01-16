@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
 
 export const Carousel = ({ children }: { children: React.ReactNode }) => {
   const [itemsPerPage, setItemsPerPage] = useState(1);
@@ -97,10 +98,10 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2 }}
-            className="tv-absolute tv-top-[43%] tv-left-2 tv-text-gray-100 tv-bg-gray-900/65 tv-rounded-full tv-px-4 tv-py-3 tv-cursor-pointer tv-z-[999]"
+            className="carousel-arrow tv-absolute tv-top-[43%] tv-left-2 tv-text-gray-100 tv-bg-gray-900/65 tv-rounded-full tv-px-4 tv-py-3 tv-cursor-pointer tv-z-[999]"
             onClick={() => handleArrowClick("left")}
           >
-            {String.fromCharCode(8592)}
+            <ArrowLeftIcon className="tv-w-2 tv-h-4" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -146,10 +147,10 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
             transition={{ duration: 0.2 }}
-            className="tv-absolute tv-top-[43%] tv-right-2 tv-text-gray-100 tv-bg-gray-900/65 tv-rounded-full tv-px-4 tv-py-3 tv-cursor-pointer tv-z-[999]"
+            className="carousel-arrow tv-absolute tv-top-[43%] tv-right-2 tv-text-gray-100 tv-bg-gray-900/65 tv-rounded-full tv-px-4 tv-py-3 tv-cursor-pointer tv-z-[999]"
             onClick={() => handleArrowClick("right")}
           >
-            {String.fromCharCode(8594)}
+            <ArrowRightIcon className="tv-w-2 tv-h-4" />
           </motion.button>
         )}
       </AnimatePresence>
