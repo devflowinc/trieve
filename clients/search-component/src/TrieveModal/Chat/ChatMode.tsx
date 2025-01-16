@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useRef } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
@@ -39,7 +39,39 @@ export const ChatMode = () => {
       chatInput.current?.focus();
     }
   }, [chatInput, mode, open]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollPercentage, setScrollPercentage] = useState(0);
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    const scrollHeight = e.currentTarget.scrollHeight;
+    const clientHeight = e.currentTarget.clientHeight;
+    const scrollPercentage = scrollTop / (scrollHeight - clientHeight);
+    setScrollPercentage(scrollPercentage);
+    console.log(`scrollPercentage: ${scrollPercentage} `);
+  };
+
+  // Get shadow intensity
+  useEffect(() => {
+    if (scrollRef.current) {
+      const scrollTop = scrollRef.current.scrollTop;
+      const scrollHeight = scrollRef.current.scrollHeight;
+      const clientHeight = scrollRef.current.clientHeight;
+      const scrollPercentage = scrollTop / (scrollHeight - clientHeight);
+      if (Number.isNaN(scrollPercentage)) {
+        setScrollPercentage(0);
+      } else {
+        setScrollPercentage(scrollPercentage);
+      }
+    }
+  });
+
+  const [shadowIntensity, setShadowIntensity] = useState(0);
+
+  useEffect(() => {
+    console.log(`percentage: ${scrollPercentage}`);
+    // console.log(`intnsity: ${shadowIntensity}`);
+  }, [shadowIntensity, scrollPercentage]);
   return (
     <Suspense fallback={<div className="suspense-fallback"></div>}>
       {props.inline && messages.length ? (
@@ -58,11 +90,12 @@ export const ChatMode = () => {
         </div>
       ) : null}
       <div
+        onScroll={handleScroll}
         className={cn(
-          `chat-outer-wrapper tv-overflow-auto sm:tv-max-h-[calc(60vh)] tv-max-h-[85vh] tv-flex tv-flex-col tv-px-4 tv-scroll-smooth !tv-mt-0`,
+          `chat-outer-wrapper tv-relative tv-overflow-hidden tv-flex tv-flex-col tv-px-4 tv-scroll-smooth !tv-mt-0`,
           props.inline &&
             "chat-outer-popup md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0 tv-mt-0 sm:!tv-mt-0",
-          !props.inline && "chat-outer-inline tv-min-h-[175px]"
+          !props.inline && "chat-outer-inline tv-min-h-[175px]",
         )}
         ref={modalRef}
       >
@@ -107,18 +140,22 @@ export const ChatMode = () => {
               : ""
           }`}
         >
-          <div className="ai-message">
-            <div className="chat-modal-wrapper tv-flex tv-flex-col tv-gap-1 tv-mt-1">
-              <AnimatePresence mode="wait">
-                <div className="ai-message initial-message">
-                  {!messages.length ? <SuggestedQuestions /> : null}
-                </div>
-                {messages.map((message, i) => (
-                  <ChatMessage key={`${i}-message`} idx={i} message={message} />
-                ))}
-              </AnimatePresence>
-            </div>
+          <div
+            onScroll={handleScroll}
+            ref={scrollRef}
+            className="chat-modal-wrapper tv-relative tv-overflow-auto sm:tv-max-h-[calc(60vh)] tv-max-h-[85vh] tv-flex tv-flex-col tv-gap-1 tv-mt-1"
+          >
+            <AnimatePresence mode="wait">
+              <div className="ai-message initial-message">
+                {!messages.length ? <SuggestedQuestions /> : null}
+              </div>
+              {messages.map((message, i) => (
+                <ChatMessage key={`${i}-message`} idx={i} message={message} />
+              ))}
+            </AnimatePresence>
           </div>
+          <div className="tv-h-[40px] tv-blur-md tv-translate-y-6 tv-absolute tv-left-3 tv-right-3 tv-bottom-0 tv-bg-gradient-to-t tv-from-neutral-300 tv-to-transparent"></div>
+          <div className="tv-h-[50px] tv-blur-lg tv-translate-y-8 tv-absolute tv-left-24 tv-right-24 tv-bottom-0 tv-bg-gradient-to-t tv-from-neutral-300 tv-to-transparent"></div>
         </div>
       </div>
       <div
@@ -145,6 +182,7 @@ export const ChatMode = () => {
             </button>
           </div>
         )}
+
         <div
           className={`input-wrapper chat ${
             props.type == "ecommerce" ? "" : props.type

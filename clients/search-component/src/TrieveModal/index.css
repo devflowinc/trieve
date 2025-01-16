@@ -13,6 +13,11 @@
   --tv-zinc-600: rgb(82 82 91);
 }
 
+.debug {
+  outline: 1px solid red;
+  border: 1px solid red;
+}
+
 body {
   #trieve-search-modal-overlay {
     @apply tv-bg-black/60 tv-w-screen tv-fixed tv-inset-0 tv-h-screen tv-animate-overlayShow tv-backdrop-blur-sm tv-block;
@@ -229,7 +234,7 @@ body {
     }
 
     .chat-footer-wrapper {
-      @apply tv-sticky tv-bottom-0 tv-flex tv-flex-col tv-py-3 tv-pb-0;
+      @apply tv-sticky tv-bottom-0 tv-flex tv-flex-col tv-pb-0;
       background-color: #fff;
     }
 
@@ -606,47 +611,45 @@ body {
     }
 
     .chat-outer-wrapper {
-      .ai-message {
-        .message-wrapper {
-          @apply tv-col-span-2 tv-pr-4;
-          border-color: var(--tv-zinc-200);
+      .message-wrapper {
+        @apply tv-col-span-2 tv-pr-4;
+        border-color: var(--tv-zinc-200);
+      }
+
+      .message-wrapper {
+        @apply sm:tv-grid sm:tv-grid-cols-[48px,1fr] tv-gap-2;
+      }
+
+      .ai-avatar {
+        @apply sm:tv-w-12 sm:tv-h-12 tv-rounded-full tv-flex tv-items-center tv-space-x-2;
+
+        &.user {
+          @apply sm:tv-w-10 tv-ml-1;
         }
 
-        .message-wrapper {
-          @apply sm:tv-grid sm:tv-grid-cols-[48px,1fr] tv-gap-2;
+        &.assistant {
+          @apply tv-my-5;
         }
 
-        .ai-avatar {
-          @apply sm:tv-w-12 sm:tv-h-12 tv-rounded-full tv-flex tv-items-center tv-space-x-2;
-
-          &.user {
-            @apply sm:tv-w-10 tv-ml-1;
-          }
-
-          &.assistant {
-            @apply tv-my-5;
-          }
-
-          img {
-            @apply tv-w-7 sm:tv-w-3/4 sm:tv-h-3/4 sm:tv-mx-auto sm:tv-mt-2;
-          }
-
-          svg {
-            @apply tv-w-5 tv-h-5 sm:tv-w-3/4 sm:tv-h-3/4 sm:tv-mx-auto sm:tv-mt-2;
-          }
-
-          .tag {
-            @apply tv-text-sm tv-w-fit tv-px-1.5 tv-py-1 tv-mb-0 tv-rounded-md sm:tv-hidden;
-          }
+        img {
+          @apply tv-w-7 sm:tv-w-3/4 sm:tv-h-3/4 sm:tv-mx-auto sm:tv-mt-2;
         }
 
-        .brand-paragraph {
-          @apply tv-leading-8 tv-w-full;
+        svg {
+          @apply tv-w-5 tv-h-5 sm:tv-w-3/4 sm:tv-h-3/4 sm:tv-mx-auto sm:tv-mt-2;
         }
 
-        .brand-name {
-          @apply tv-text-white tv-px-1.5 tv-py-1 tv-rounded-md tv-font-[500] tv-w-fit;
+        .tag {
+          @apply tv-text-sm tv-w-fit tv-px-1.5 tv-py-1 tv-mb-0 tv-rounded-md sm:tv-hidden;
         }
+      }
+
+      .brand-paragraph {
+        @apply tv-leading-8 tv-w-full;
+      }
+
+      .brand-name {
+        @apply tv-text-white tv-px-1.5 tv-py-1 tv-rounded-md tv-font-[500] tv-w-fit;
       }
     }
 
@@ -767,7 +770,7 @@ body {
 
       &.docs,
       &.pdf {
-        @apply tv-m-2;
+        @apply tv-px-2;
       }
 
       &.inline-input-wrapper {
@@ -1007,7 +1010,7 @@ body {
       color: var(--tv-zinc-100);
       border-color: var(--tv-zinc-700);
 
-      .ai-message .message-wrapper {
+      .message-wrapper {
         border-color: var(--tv-zinc-600);
       }
 
