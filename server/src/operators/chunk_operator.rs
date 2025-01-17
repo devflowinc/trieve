@@ -4,6 +4,7 @@ use crate::data::models::{
     DatasetConfiguration, DatasetTags, DatasetUsageCount, IngestSpecificChunkMetadata,
     SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
+use simple_server_timing_header::Timer;
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
 use crate::handlers::chunk_handler::{ChunkFilter, UploadIngestionMessage};
 use crate::operators::parse_operator::convert_html_to_text;
@@ -1630,7 +1631,9 @@ pub fn get_highlights_with_exact_match(
     window_size: Option<u32>,
     pre_tag: Option<String>,
     post_tag: Option<String>,
+    timer: std::rc::Rc<Option<&mut Timer>>
 ) -> Result<(Option<String>, Vec<String>), ServiceError> {
+
     let content = convert_html_to_text(&chunk_html.clone().unwrap_or_default());
     let cleaned_query = query.replace(
         |c: char| (delimiters.contains(&c) && c != ' ') || c == '\"',
@@ -1682,6 +1685,14 @@ pub fn get_highlights_with_exact_match(
         .zip(idxs_of_non_stop_words.iter().skip(1))
         .map(|(a, b)| (*a, *b))
         .collect_vec();
+
+    let timer = if let Some(timer) = {
+        timer.add("part 1 highlight");
+        Some(timer)
+    } else {
+        None
+    };
+
     let mut start_index = 0;
     for (start, end) in tweens {
         let mut valid_start_char_boundary = start;
@@ -1723,6 +1734,14 @@ pub fn get_highlights_with_exact_match(
     if !query_split.is_empty() {
         starting_length = query_split.len() - 1;
     }
+
+    let timer = if let Some(timer) = timer {
+        timer.add("part 2 highlight");
+        Some(timer)
+    } else {
+        None
+    };
+
     while starting_length > 0 {
         let mut current_skip = 0;
         while current_skip <= query_split.len() - starting_length {
@@ -1770,6 +1789,11 @@ pub fn get_highlights_with_exact_match(
     });
 
     let mut cumulative_phrases: Vec<(String, Vec<String>)> = vec![];
+    let timer = if let Some(timer) = timer {
+        Some(timer)
+    } else {
+        None
+    };
     for potential_query in additional_multi_token_queries {
         if cumulative_phrases
             .iter()
@@ -2080,6 +2104,12 @@ pub fn get_highlights_with_exact_match(
         return Ok((chunk_html, vec![]));
     }
 
+    let timer = if let Some(timer) = timer {
+        timer.add("part 4 highlight");
+        Some(timer)
+    } else {
+        None
+    };
     let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
     let mut engine: SimSearch<usize> = SimSearch::new_with(search_options);
     let split_content = content
@@ -2095,11 +2125,23 @@ pub fn get_highlights_with_exact_match(
         })
         .collect::<Vec<String>>();
 
+    let timer = if let Some(timer) = timer {
+        timer.add("part 5 highlight");
+        Some(timer)
+    } else {
+        None
+    };
     split_content.iter().enumerate().for_each(|(i, x)| {
         engine.insert(i, x);
     });
 
     let results: Vec<usize> = engine.search(&query);
+    let timer = if let Some(timer) = timer {
+        timer.add("part 6 highlight");
+        Some(timer)
+    } else {
+        None
+    };
 
     let mut matched_idxs = vec![];
     let mut matched_idxs_set = HashSet::new();
@@ -2133,6 +2175,12 @@ pub fn get_highlights_with_exact_match(
     let mut windowed_phrases = vec![];
     // Used to keep track of the number of words used in the phrase
     let mut used_phrases: HashMap<usize, usize> = HashMap::new();
+    let timer = if let Some(timer) = timer {
+        timer.add("part 7 highlight");
+        Some(timer)
+    } else {
+        None
+    };
     for idx in matched_idxs.clone() {
         let phrase = get_slice_from_vec_string(split_content.clone(), idx)?;
         let mut next_phrase = String::new();
@@ -2212,6 +2260,14 @@ pub fn get_highlights_with_exact_match(
         let windowed_phrase = format!("{}{}{}", prev_phrase, highlighted_phrase, next_phrase);
         windowed_phrases.push(windowed_phrase);
     }
+
+    let timer = if let Some(timer) = timer {
+        timer.add("part 8 highlight");
+        Some(timer)
+    } else {
+        None
+    };
+
     let matched_phrases = matched_idxs
         .clone()
         .iter()
@@ -2229,6 +2285,9 @@ pub fn get_highlights_with_exact_match(
         &pre_tag,
         &post_tag,
     ));
+    if let Some(timer) = timer {
+        timer.add("apply highlights to html, finish");
+    }
     Ok((new_output, result_matches))
 }
 

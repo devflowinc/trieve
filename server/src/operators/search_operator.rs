@@ -48,6 +48,7 @@ use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 use utoipa::ToSchema;
 
 pub trait SearchResultTrait {
@@ -1291,25 +1292,28 @@ pub async fn retrieve_chunks_for_groups(
                                         .unwrap_or((chunk.chunk_html(), vec![]))
                                 },
                                 _ => {
-                                    get_highlights_with_exact_match(
-                                            chunk.chunk_html(),
-                                            data.query.clone().to_single_query().expect("Should never be multi query"),
-                                            highlight_options.highlight_threshold,
-                                            highlight_options.highlight_delimiters.clone().unwrap_or(vec![
-                                                '.',
-                                                '!',
-                                                '?',
-                                                '\n',
-                                                '\t',
-                                                ',',
-                                            ]),
-                                            highlight_options.highlight_max_length,
-                                            highlight_options.highlight_max_num,
-                                            highlight_options.highlight_window,
-                                            highlight_options.pre_tag.clone(),
-                                            highlight_options.post_tag.clone()
-                                        )
-                                        .unwrap_or((chunk.chunk_html(), vec![]))
+                                    web::block(|| {
+                                        get_highlights_with_exact_match(
+                                                chunk.chunk_html(),
+                                                data.query.clone().to_single_query().expect("Should never be multi query"),
+                                                highlight_options.highlight_threshold,
+                                                highlight_options.highlight_delimiters.clone().unwrap_or(vec![
+                                                    '.',
+                                                    '!',
+                                                    '?',
+                                                    '\n',
+                                                    '\t',
+                                                    ',',
+                                                ]),
+                                                highlight_options.highlight_max_length,
+                                                highlight_options.highlight_max_num,
+                                                highlight_options.highlight_window,
+                                                highlight_options.pre_tag.clone(),
+                                                highlight_options.post_tag.clone(),
+                                                None.into()
+                                            )
+                                            .unwrap_or((chunk.chunk_html(), vec![]))
+                                    });
                                 },
                             };
 
@@ -1472,10 +1476,14 @@ pub async fn retrieve_chunks_from_point_ids(
         None
     };
 
+    let timer_rc = Rc::new(timer);
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
         .iter()
-        .filter_map(|search_result| {
+        .enumerate()
+        .filter_map(|(i, search_result)| {
+            log::info!("Chunk {}", i);
+
             let mut chunk = metadata_chunks
                 .iter()
                 .find(|metadata_chunk| metadata_chunk.qdrant_point_id() == search_result.point_id)
@@ -1524,6 +1532,7 @@ pub async fn retrieve_chunks_from_point_ids(
                                 highlight_options.highlight_window,
                                 highlight_options.pre_tag.clone(),
                                 highlight_options.post_tag.clone(),
+                                timer_rc.clone()
                             )
                             .unwrap_or((chunk.chunk_html().clone(), vec![])),
                         };
@@ -1541,10 +1550,6 @@ pub async fn retrieve_chunks_from_point_ids(
             })
         })
         .collect();
-
-    if let Some(timer) = timer {
-        timer.add("highlight chunks");
-    }
 
     Ok(SearchChunkQueryResponseBody {
         score_chunks,
