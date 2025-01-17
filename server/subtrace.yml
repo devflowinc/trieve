@@ -1,0 +1,12 @@
+
+rules:
+- if: response >= 400
+  then: include
+- if: request.url.endsWith("/api/health")
+  then: exclude
+- if: request.url == "/api/health"
+  then: exclude
+- if: request.url == "/"
+  then: exclude
+- if: request.url == "/metrics"
+  then: exclude
