@@ -586,8 +586,6 @@ pub fn main() -> std::io::Result<()> {
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL should be set");
     let redis_url = get_env!("REDIS_URL", "REDIS_URL should be set");
 
-    console_subscriber::init();
-
     log::info!("Running migrations");
     run_migrations(database_url);
 

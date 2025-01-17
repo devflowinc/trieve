@@ -1773,12 +1773,7 @@ pub fn get_highlights_with_exact_match(
         .collect_vec();
     timer.add("part 2.7 highlight");
     additional_multi_token_queries.sort_by(|a, b| {
-        let a_len = a.split_whitespace().count();
-        let b_len: usize = b.split_whitespace().count();
-        match b_len.cmp(&a_len) {
-            std::cmp::Ordering::Equal => b.trim().len().cmp(&a.trim().len()),
-            other => other,
-        }
+        b.trim().len().cmp(&a.trim().len())
     });
 
     let mut cumulative_phrases: Vec<(String, Vec<String>)> = vec![];
