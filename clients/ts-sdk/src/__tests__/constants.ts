@@ -27,4 +27,4 @@ Brought to you by Whole Foods Market.  When it comes to innovative flavors and p
 Country: US
 Marketplace: WholeFoods
 Domain: wholefoodsmarket.com`;
-export const EXAMPLE_FILE_ID = "ea924959-9289-4918-a49b-cd3f3ce4e809";
+export const EXAMPLE_FILE_ID = "a88bea87-7eb7-467e-84d2-01bbdfecdf11";
