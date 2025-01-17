@@ -1719,6 +1719,7 @@ pub fn get_highlights_with_exact_match(
             .to_string(),
     );
     let query_split = cleaned_query.split_whitespace().collect_vec();
+    let num_words_in_query = query_split.len();
     let mut starting_length = 0;
     if !query_split.is_empty() {
         starting_length = query_split.len() - 1;
@@ -1761,6 +1762,12 @@ pub fn get_highlights_with_exact_match(
         .unique()
         .collect_vec();
     additional_multi_token_queries.sort_by(|a, b| {
+        // Use More effecient algo for ranking
+        //
+        if num_words_in_query > 20 {
+            return b.trim().len().cmp(&a.trim().len());
+        }
+
         let a_len = a.split_whitespace().count();
         let b_len: usize = b.split_whitespace().count();
         match b_len.cmp(&a_len) {

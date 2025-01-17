@@ -1307,7 +1307,7 @@ pub async fn retrieve_chunks_for_groups(
                                             highlight_options.highlight_max_num,
                                             highlight_options.highlight_window,
                                             highlight_options.pre_tag.clone(),
-                                            highlight_options.post_tag.clone()
+                                            highlight_options.post_tag.clone(),
                                         )
                                         .unwrap_or((chunk.chunk_html(), vec![]))
                                 },
@@ -1466,81 +1466,80 @@ pub async fn retrieve_chunks_from_point_ids(
 
     let timer = if let Some(timer) = timer {
         timer.add("fetched from postgres");
-
         Some(timer)
     } else {
         None
     };
 
-    let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
-        .search_results
-        .iter()
-        .filter_map(|search_result| {
-            let mut chunk = metadata_chunks
-                .iter()
-                .find(|metadata_chunk| metadata_chunk.qdrant_point_id() == search_result.point_id)
-                .cloned()?;
+    let mut score_chunks: Vec<ScoreChunkDTO> = vec![];
+    for search_result in search_chunk_query_results.search_results {
+        let Some(mut chunk) = metadata_chunks
+            .iter()
+            .find(|metadata_chunk| metadata_chunk.qdrant_point_id() == search_result.point_id)
+            .cloned()
+        else {
+            continue;
+        };
 
-            let mut highlights: Option<Vec<String>> = None;
+        let mut highlights: Option<Vec<String>> = None;
 
-            if let Some(highlight_options) = &data.highlight_options {
-                if highlight_options.highlight_results.unwrap_or(true)
-                    && !data.slim_chunks.unwrap_or(false)
-                    && !matches!(data.query, QueryTypes::Multi(_))
-                {
-                    let (highlighted_chunk_html, highlighted_snippets) =
-                        match highlight_options.highlight_strategy {
-                            Some(HighlightStrategy::V1) => get_highlights(
-                                chunk.chunk_html().clone(),
-                                data.query
-                                    .clone()
-                                    .to_single_query()
-                                    .expect("Should never be multi query"),
-                                highlight_options.highlight_threshold,
-                                highlight_options
-                                    .highlight_delimiters
-                                    .clone()
-                                    .unwrap_or(vec!['.', '!', '?', '\n', '\t', ',']),
-                                highlight_options.highlight_max_length,
-                                highlight_options.highlight_max_num,
-                                highlight_options.highlight_window,
-                                highlight_options.pre_tag.clone(),
-                                highlight_options.post_tag.clone(),
-                            )
-                            .unwrap_or((chunk.chunk_html().clone(), vec![])),
-                            _ => get_highlights_with_exact_match(
-                                chunk.chunk_html().clone(),
-                                data.query
-                                    .clone()
-                                    .to_single_query()
-                                    .expect("Should never be multi query"),
-                                highlight_options.highlight_threshold,
-                                highlight_options
-                                    .highlight_delimiters
-                                    .clone()
-                                    .unwrap_or(vec!['.', '!', '?', '\n', '\t', ',']),
-                                highlight_options.highlight_max_length,
-                                highlight_options.highlight_max_num,
-                                highlight_options.highlight_window,
-                                highlight_options.pre_tag.clone(),
-                                highlight_options.post_tag.clone(),
-                            )
-                            .unwrap_or((chunk.chunk_html().clone(), vec![])),
-                        };
+        if let Some(highlight_options) = &data.highlight_options {
+            if highlight_options.highlight_results.unwrap_or(true)
+                && !data.slim_chunks.unwrap_or(false)
+                && !matches!(data.query, QueryTypes::Multi(_))
+            {
+                let (highlighted_chunk_html, highlighted_snippets) = {
+                    let highlight_algo = match highlight_options.highlight_strategy {
+                        Some(HighlightStrategy::V1) => get_highlights,
+                        _ => get_highlights_with_exact_match,
+                    };
 
-                    highlights = Some(highlighted_snippets);
+                    let highlight_options_clone = highlight_options.clone();
+                    let query = data
+                        .query
+                        .clone()
+                        .to_single_query()
+                        .expect("Should never be multi query");
+                    let html = chunk.chunk_html().clone();
+                    let html_default = html.clone();
 
-                    chunk = chunk.set_chunk_html(highlighted_chunk_html);
-                }
+                    // TODO we should call these in parallel
+                    web::block(move || {
+                        highlight_algo(
+                            html,
+                            query,
+                            highlight_options_clone.highlight_threshold,
+                            highlight_options_clone
+                                .highlight_delimiters
+                                .unwrap_or(vec!['.', '!', '?', '\n', '\t', ',']),
+                            highlight_options_clone.highlight_max_length,
+                            highlight_options_clone.highlight_max_num,
+                            highlight_options_clone.highlight_window,
+                            highlight_options_clone.pre_tag,
+                            highlight_options_clone.post_tag,
+                        )
+                    })
+                    .await
+                    .map_err(|e| log::warn!("Thread error calling highlights {e}"))
+                    .ok()
+                    .transpose()
+                    .ok()
+                    .flatten() // Result.flatten is in unstable
+                    .unwrap_or((html_default, vec![]))
+                };
+
+                highlights = Some(highlighted_snippets);
+
+                chunk = chunk.set_chunk_html(highlighted_chunk_html);
             }
+        }
 
-            Some(ScoreChunkDTO {
-                metadata: vec![chunk],
-                highlights,
-                score: search_result.score.into(),
-            })
+        score_chunks.push(ScoreChunkDTO {
+            metadata: vec![chunk],
+            highlights,
+            score: search_result.score.into(),
         })
-        .collect();
+    }
 
     if let Some(timer) = timer {
         timer.add("highlight chunks");
