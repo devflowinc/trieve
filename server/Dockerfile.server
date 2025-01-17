@@ -32,7 +32,7 @@ RUN apt-get update -y; \
     unzip \
     ;
 
-RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b143/subtrace-linux-amd64 \
+RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b204/subtrace-linux-amd64 \
     && chmod +x ./subtrace-linux-amd64
 
 RUN curl -L -o libtorch-cxx11-abi-shared-with-deps-2.4.0+cpu.zip https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.4.0%2Bcpu.zip \
@@ -47,6 +47,9 @@ COPY ./ch_migrations /app/ch_migrations
 COPY ./src/public/ /app/src/public
 COPY --from=builder /app/static /app/static
 COPY --from=builder /app/target/release/trieve-server /app/trieve-server
+COPY ./subtrace.yml /app/subtrace.yml
+
+ENV SUBTRACE_REFLECTOR="both"
 
 EXPOSE 8090
 ENTRYPOINT ["/app/trieve-server"]
