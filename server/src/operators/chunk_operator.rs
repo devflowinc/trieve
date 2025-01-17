@@ -1631,8 +1631,9 @@ pub fn get_highlights_with_exact_match(
     window_size: Option<u32>,
     pre_tag: Option<String>,
     post_tag: Option<String>,
-    timer: std::rc::Rc<Option<&mut Timer>>
 ) -> Result<(Option<String>, Vec<String>), ServiceError> {
+
+    let mut timer = Timer::new();
 
     let content = convert_html_to_text(&chunk_html.clone().unwrap_or_default());
     let cleaned_query = query.replace(
@@ -1686,12 +1687,7 @@ pub fn get_highlights_with_exact_match(
         .map(|(a, b)| (*a, *b))
         .collect_vec();
 
-    let timer = if let Some(timer) = {
-        timer.add("part 1 highlight");
-        Some(timer)
-    } else {
-        None
-    };
+    timer.add("part 1 highlight");
 
     let mut start_index = 0;
     for (start, end) in tweens {
@@ -1735,12 +1731,7 @@ pub fn get_highlights_with_exact_match(
         starting_length = query_split.len() - 1;
     }
 
-    let timer = if let Some(timer) = timer {
-        timer.add("part 2 highlight");
-        Some(timer)
-    } else {
-        None
-    };
+    timer.add("part 2 highlight");
 
     while starting_length > 0 {
         let mut current_skip = 0;
@@ -1771,6 +1762,7 @@ pub fn get_highlights_with_exact_match(
         }
         starting_length -= 1;
     }
+    timer.add("part 2.5 highlight");
     additional_multi_token_queries.retain(|x| !x.trim().is_empty());
     additional_multi_token_queries.insert(0, cleaned_query.clone());
     additional_multi_token_queries.insert(0, query.clone());
@@ -1779,6 +1771,7 @@ pub fn get_highlights_with_exact_match(
         .map(|x| x.to_string())
         .unique()
         .collect_vec();
+    timer.add("part 2.7 highlight");
     additional_multi_token_queries.sort_by(|a, b| {
         let a_len = a.split_whitespace().count();
         let b_len: usize = b.split_whitespace().count();
@@ -1789,11 +1782,9 @@ pub fn get_highlights_with_exact_match(
     });
 
     let mut cumulative_phrases: Vec<(String, Vec<String>)> = vec![];
-    let timer = if let Some(timer) = timer {
-        Some(timer)
-    } else {
-        None
-    };
+
+    timer.add("highlight part 3");
+
     for potential_query in additional_multi_token_queries {
         if cumulative_phrases
             .iter()
@@ -1853,6 +1844,7 @@ pub fn get_highlights_with_exact_match(
 
         let window = window_size.unwrap_or(0);
         if window == 0 {
+    log::info!("Timer {:}", timer.header_value());
             return Ok((
                 new_output,
                 phrases
@@ -2096,20 +2088,18 @@ pub fn get_highlights_with_exact_match(
             .collect_vec();
 
         if !final_highlights_with_window.is_empty() {
+    log::info!("Timer {:}", timer.header_value());
             return Ok((new_output, final_highlights_with_window));
         }
     }
 
     if threshold.unwrap_or(0.8) >= 1.0 {
+    log::info!("Timer {:}", timer.header_value());
         return Ok((chunk_html, vec![]));
     }
 
-    let timer = if let Some(timer) = timer {
-        timer.add("part 4 highlight");
-        Some(timer)
-    } else {
-        None
-    };
+    timer.add("part 4 highlight");
+
     let search_options = SearchOptions::new().threshold(threshold.unwrap_or(0.8));
     let mut engine: SimSearch<usize> = SimSearch::new_with(search_options);
     let split_content = content
@@ -2125,23 +2115,13 @@ pub fn get_highlights_with_exact_match(
         })
         .collect::<Vec<String>>();
 
-    let timer = if let Some(timer) = timer {
         timer.add("part 5 highlight");
-        Some(timer)
-    } else {
-        None
-    };
     split_content.iter().enumerate().for_each(|(i, x)| {
         engine.insert(i, x);
     });
 
     let results: Vec<usize> = engine.search(&query);
-    let timer = if let Some(timer) = timer {
-        timer.add("part 6 highlight");
-        Some(timer)
-    } else {
-        None
-    };
+    timer.add("part 6 highlight");
 
     let mut matched_idxs = vec![];
     let mut matched_idxs_set = HashSet::new();
@@ -2165,6 +2145,7 @@ pub fn get_highlights_with_exact_match(
             &pre_tag,
             &post_tag,
         ));
+    log::info!("Timer {:}", timer.header_value());
         return Ok((new_output, phrases.clone()));
     }
 
@@ -2175,12 +2156,7 @@ pub fn get_highlights_with_exact_match(
     let mut windowed_phrases = vec![];
     // Used to keep track of the number of words used in the phrase
     let mut used_phrases: HashMap<usize, usize> = HashMap::new();
-    let timer = if let Some(timer) = timer {
-        timer.add("part 7 highlight");
-        Some(timer)
-    } else {
-        None
-    };
+    timer.add("part 7 highlight");
     for idx in matched_idxs.clone() {
         let phrase = get_slice_from_vec_string(split_content.clone(), idx)?;
         let mut next_phrase = String::new();
@@ -2261,12 +2237,7 @@ pub fn get_highlights_with_exact_match(
         windowed_phrases.push(windowed_phrase);
     }
 
-    let timer = if let Some(timer) = timer {
-        timer.add("part 8 highlight");
-        Some(timer)
-    } else {
-        None
-    };
+    timer.add("part 8 highlight");
 
     let matched_phrases = matched_idxs
         .clone()
@@ -2285,9 +2256,8 @@ pub fn get_highlights_with_exact_match(
         &pre_tag,
         &post_tag,
     ));
-    if let Some(timer) = timer {
-        timer.add("apply highlights to html, finish");
-    }
+    timer.add("apply highlights to html, finish");
+    log::info!("Timer {:}", timer.header_value());
     Ok((new_output, result_matches))
 }
 

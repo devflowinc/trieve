@@ -1292,28 +1292,25 @@ pub async fn retrieve_chunks_for_groups(
                                         .unwrap_or((chunk.chunk_html(), vec![]))
                                 },
                                 _ => {
-                                    web::block(|| {
-                                        get_highlights_with_exact_match(
-                                                chunk.chunk_html(),
-                                                data.query.clone().to_single_query().expect("Should never be multi query"),
-                                                highlight_options.highlight_threshold,
-                                                highlight_options.highlight_delimiters.clone().unwrap_or(vec![
-                                                    '.',
-                                                    '!',
-                                                    '?',
-                                                    '\n',
-                                                    '\t',
-                                                    ',',
-                                                ]),
-                                                highlight_options.highlight_max_length,
-                                                highlight_options.highlight_max_num,
-                                                highlight_options.highlight_window,
-                                                highlight_options.pre_tag.clone(),
-                                                highlight_options.post_tag.clone(),
-                                                None.into()
-                                            )
-                                            .unwrap_or((chunk.chunk_html(), vec![]))
-                                    });
+                                    get_highlights_with_exact_match(
+                                            chunk.chunk_html(),
+                                            data.query.clone().to_single_query().expect("Should never be multi query"),
+                                            highlight_options.highlight_threshold,
+                                            highlight_options.highlight_delimiters.clone().unwrap_or(vec![
+                                                '.',
+                                                '!',
+                                                '?',
+                                                '\n',
+                                                '\t',
+                                                ',',
+                                            ]),
+                                            highlight_options.highlight_max_length,
+                                            highlight_options.highlight_max_num,
+                                            highlight_options.highlight_window,
+                                            highlight_options.pre_tag.clone(),
+                                            highlight_options.post_tag.clone(),
+                                        )
+                                        .unwrap_or((chunk.chunk_html(), vec![]))
                                 },
                             };
 
@@ -1476,7 +1473,6 @@ pub async fn retrieve_chunks_from_point_ids(
         None
     };
 
-    let timer_rc = Rc::new(timer);
     let score_chunks: Vec<ScoreChunkDTO> = search_chunk_query_results
         .search_results
         .iter()
@@ -1531,8 +1527,7 @@ pub async fn retrieve_chunks_from_point_ids(
                                 highlight_options.highlight_max_num,
                                 highlight_options.highlight_window,
                                 highlight_options.pre_tag.clone(),
-                                highlight_options.post_tag.clone(),
-                                timer_rc.clone()
+                                highlight_options.post_tag.clone()
                             )
                             .unwrap_or((chunk.chunk_html().clone(), vec![])),
                         };
