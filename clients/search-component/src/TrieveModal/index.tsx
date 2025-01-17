@@ -10,7 +10,7 @@ import {
   useModalState,
 } from "../utils/hooks/modal-context";
 import { useKeyboardNavigation } from "../utils/hooks/useKeyboardNavigation";
-import { ModeSwitch } from "./ModeSwitch";
+import { ChatModeSwitch } from "./ModeSwitch";
 import { OpenModalButton } from "./OpenModalButton";
 import { ChatProvider, useChatState } from "../utils/hooks/chat-context";
 import r2wc from "@r2wc/react-to-web-component";
@@ -236,9 +236,9 @@ const Modal = () => {
           >
             {props.allowSwitchingModes &&
               !props.inline &&
-              !fullscreenPdfState && <ModeSwitch />}
+              !fullscreenPdfState && <ChatModeSwitch />}
             <div
-              className="search-container"
+              className="search-container tv-pt-3"
               style={{
                 display:
                   mode === "search" && !fullscreenPdfState ? "block" : "none",

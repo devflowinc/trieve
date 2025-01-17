@@ -80,7 +80,7 @@ body {
 
       &.docs,
       &.pdf {
-        @apply tv-h-screen sm:tv-h-auto tv-pt-10;
+        @apply tv-h-screen sm:tv-h-auto;
       }
 
       .chat-outer-wrapper {
@@ -156,17 +156,13 @@ body {
     }
 
     .mode-switch-wrapper {
-      @apply tv-flex tv-items-center tv-justify-end tv-mt-2 tv-absolute tv-font-medium;
-
       &.mode-switch-popup {
-        @apply tv-top-2.5 tv-right-4 tv-z-30;
+        @apply tv-top-2.5 tv-z-30;
       }
 
       &.docs.chat,
       &.pdf.chat {
         @apply tv-top-0;
-
-        right: calc(max(calc(50% - 39.85rem), 4rem) + 0.25rem);
       }
 
       &.search.has-query {
@@ -192,12 +188,6 @@ body {
           }
         }
       }
-    }
-
-    .mode-switch-wrapper.ecommerce.search {
-      @apply tv-top-[2.625rem];
-
-      right: calc(max(calc(50% - 39.85rem), 1.25rem) + 0.25rem);
     }
 
     .mode-switch-wrapper.ecommerce.chat {
@@ -760,25 +750,13 @@ body {
       }
     }
 
-    .close-modal-button {
-      @apply tv-w-full tv-flex tv-justify-end tv-text-xs tv-items-center tv-absolute tv-top-1 tv-right-1.5 tv-p-2 tv-gap-0.5 tv-cursor-pointer;
-    }
 
     .input-wrapper {
-      @apply tv-sticky tv-top-0 tv-z-10 tv-flex tv-flex-col tv-gap-2 tv-rounded-lg;
       background-color: var(--bg-color);
 
       &.docs,
       &.pdf {
         @apply tv-px-2;
-      }
-
-      &.inline-input-wrapper {
-        @apply tv-ml-2;
-      }
-
-      .input-flex {
-        @apply tv-flex tv-items-center tv-rounded-lg;
       }
 
       .search-icon {
@@ -812,7 +790,7 @@ body {
       @apply tv-max-w-7xl tv-mx-auto;
     }
 
-    input {
+    input.chat {
       @apply tv-block tv-w-full tv-rounded-lg tv-border-[1px] tv-py-1.5 tv-shadow-sm tv-ring-0 tv-outline-none sm:tv-text-sm sm:tv-leading-6 tv-pl-3 tv-pr-[5rem] tv-h-12 tv-z-10 tv-relative;
       color: var(--tv-zinc-900);
       background-color: var(--tv-zinc-50);
@@ -834,8 +812,10 @@ body {
       }
     }
 
-    input.search-input {
-      @apply tv-pr-8;
+    .input-flex {
+      &:focus {
+        border: 1px solid var(--tv-prop-brand-color);
+      }
     }
 
     input.search-input.ecommerce {
@@ -1053,21 +1033,6 @@ body {
 
           &.active {
             border-color: var(--tv-prop-brand-color);
-          }
-        }
-      }
-
-      .mode-switch-wrapper {
-        > div {
-          background-color: var(--tv-zinc-800);
-
-          button {
-            color: var(--tv-zinc-400);
-
-            &.active {
-              background-color: var(--tv-zinc-700);
-              color: var(--tv-zinc-200);
-            }
           }
         }
       }

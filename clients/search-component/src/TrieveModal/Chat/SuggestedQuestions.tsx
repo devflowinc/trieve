@@ -20,8 +20,7 @@ export const SuggestedQuestions = () => {
   return (
     <div
       className={cn(
-        props.inline &&
-          "tv-flex tv-gap-x-3 tv-flex-wrap tv-items-center",
+        props.inline && "tv-flex tv-gap-x-3 tv-flex-wrap tv-items-center",
       )}
     >
       <div
