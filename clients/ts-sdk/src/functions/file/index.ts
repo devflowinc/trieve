@@ -5,8 +5,11 @@
  */
 
 import {
+  $OpenApiTs,
   CreatePresignedUrlForCsvJsonlReqPayload,
   DeleteFileHandlerData,
+  DeleteFileHandlerResponse,
+  FileDTO,
   GetDatasetFilesHandlerData,
   GetFileHandlerData,
   UploadFileReqPayload,
@@ -36,7 +39,7 @@ export async function uploadFile(
   /** @hidden */
   this: TrieveSDK,
   data: UploadFileReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -49,7 +52,7 @@ export async function uploadFile(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -57,7 +60,7 @@ export async function createPresignedUrlForCsvJsonl(
   /** @hidden */
   this: TrieveSDK,
   data: CreatePresignedUrlForCsvJsonlReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -70,7 +73,7 @@ export async function createPresignedUrlForCsvJsonl(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -88,7 +91,7 @@ export async function getFilesForDataset(
   /** @hidden */
   this: TrieveSDK,
   data: Omit<Omit<GetDatasetFilesHandlerData, "datasetId">, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -101,7 +104,7 @@ export async function getFilesForDataset(
       ...data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -119,21 +122,25 @@ export async function getFile(
   /** @hidden */
   this: TrieveSDK,
   data: Omit<GetFileHandlerData, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
   }
 
-  return await this.trieve.fetch(
-    "/api/file/{file_id}",
-    "get",
+  return (await this.trieve.fetch(
+    `/api/file/{file_id}${
+      data.contentType
+        ? `?content_type=${encodeURIComponent(data.contentType)}`
+        : ""
+    }` as unknown as keyof $OpenApiTs,
+    "get" as unknown as never,
     {
       ...data,
       datasetId: this.datasetId,
     },
-    signal
-  );
+    signal,
+  )) as FileDTO;
 }
 
 /**
@@ -150,19 +157,21 @@ export async function deleteFile(
   /** @hidden */
   this: TrieveSDK,
   data: Omit<DeleteFileHandlerData, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
   }
 
-  return await this.trieve.fetch(
-    "/api/file/{file_id}",
-    "delete",
+  return (await this.trieve.fetch(
+    `/api/file/{file_id}${
+      data.deleteChunks ? `?delete_chunks=${data.deleteChunks}` : ""
+    }` as unknown as keyof $OpenApiTs,
+    "delete" as unknown as never,
     {
       ...data,
       datasetId: this.datasetId,
     },
-    signal
-  );
+    signal,
+  )) as DeleteFileHandlerResponse;
 }
