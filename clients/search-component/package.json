@@ -71,6 +71,7 @@
     "clsx": "^2.1.1",
     "jotai": "^2.11.0",
     "motion": "^11.17.0",
+    "react-intersection-observer-hook": "^3.0.1",
     "react-markdown": "^9.0.1",
     "react-pdf-spotlight": "0.0.16",
     "react-snap-carousel": "^0.5.0",

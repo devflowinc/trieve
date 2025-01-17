@@ -17,6 +17,7 @@ import { SparklesIcon } from "../icons";
 import { UploadImage } from "./UploadImage";
 import ImagePreview from "../ImagePreview";
 import { UploadAudio } from "./UploadAudio";
+import { ModeSwitch } from "../ModeSwitch";
 
 export const SearchMode = () => {
   const {
@@ -25,7 +26,6 @@ export const SearchMode = () => {
     loadingResults,
     query,
     setQuery,
-    setOpen,
     requestID,
     inputRef,
     open,
@@ -42,7 +42,7 @@ export const SearchMode = () => {
 
   const getItemComponent = (
     result: ChunkWithHighlights | GroupChunk[],
-    index: number,
+    index: number
   ) => {
     const isChunk = isChunkWithHighlights(result);
 
@@ -116,7 +116,7 @@ export const SearchMode = () => {
   const resultsDisplay = useMemo(() => {
     if (results.length) {
       const comps = results.map((result, index) =>
-        getItemComponent(result, index),
+        getItemComponent(result, index)
       );
       return comps;
     } else {
@@ -126,28 +126,8 @@ export const SearchMode = () => {
 
   return (
     <Suspense fallback={<div className="suspense-fallback"></div>}>
-      <div
-        className={`close-modal-button search ${props.type}`}
-        onClick={() => setOpen(false)}>
-        <svg
-          className="close-icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-        <span>Close</span>
-      </div>
       <div className={`input-wrapper ${props.type}`}>
-        <div className="input-flex">
+        <div className="input-flex group-focus:tv-border has-[:focus]:tv-border  has-[:focus]:tv-border-[var(--tv-prop-brand-color)] tv-mb-2 sm:tv-text-sm sm:tv-leading-6 tv-px-4 tv-items-center tv-flex tv-justify-between tv-w-full tv-rounded-lg tv-border-[1px]">
           <input
             ref={inputRef}
             value={audioBase64 && query.length == 0 ? "Searching..." : query}
@@ -157,7 +137,7 @@ export const SearchMode = () => {
                 ? "Using Image for Search"
                 : props.placeholder || "Search for anything"
             }
-            className={`search-input ${props.type}`}
+            className={`search-input focus:tv-ring-0 tv-ring-0 tv-grow tv-py-1.5 tv-pr-8 ${props.type} tv-outline-none tv-border-none`}
             disabled={imageUrl.length > 0}
           />
           {query && (
@@ -172,7 +152,8 @@ export const SearchMode = () => {
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round">
+                strokeLinejoin="round"
+              >
                 <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -180,11 +161,39 @@ export const SearchMode = () => {
             </button>
           )}
         </div>
-        <div>
-          <UploadAudio />
-        </div>
-        <div>
+        <div className="right-side tv-items-center flex gap-4">
+          <div>
+            <UploadAudio />
+          </div>
           <UploadImage />
+          {query ? (
+            <button onClick={() => setQuery("")}>
+              <svg
+                className="clear-query-icon tv-w-5 tv-h-5 tv-fill-current"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          ) : (
+            <>
+              {!props.inline && (
+                <div className="mode-switch-wrapper !tv-mt-0">
+                  <ModeSwitch />
+                </div>
+              )}
+            </>
+          )}
         </div>
         <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
         {props.suggestedQueries && (!query || (query && !results.length)) && (
@@ -194,7 +203,8 @@ export const SearchMode = () => {
                 onClick={() => getQueries(new AbortController())}
                 disabled={isLoadingSuggestedQueries}
                 className="suggested-query"
-                title="Refresh suggested queries">
+                title="Refresh suggested queries"
+              >
                 <i className="fa-solid fa-arrow-rotate-right"></i>
               </button>
               <p>Suggested Queries: </p>
@@ -212,7 +222,8 @@ export const SearchMode = () => {
                     key={q}
                     className={`suggested-query${
                       isLoadingSuggestedQueries ? " loading" : ""
-                    }`}>
+                    }`}
+                  >
                     {q}
                   </button>
                 );
@@ -228,11 +239,13 @@ export const SearchMode = () => {
             <button
               id="trieve-search-item-0"
               className="item start-chat"
-              onClick={() => switchToChatAndAskQuestion(query)}>
+              onClick={() => switchToChatAndAskQuestion(query)}
+            >
               <div
                 style={{
                   paddingLeft: props.type === "ecommerce" ? "1rem" : "",
-                }}>
+                }}
+              >
                 <SparklesIcon />
                 <div>
                   <h4>
@@ -268,7 +281,8 @@ export const SearchMode = () => {
                   href={`${props.problemLink}No results found for query: ${
                     query.length > 0 ? query : ""
                   } on ${props.brandName}`}
-                  target="_blank">
+                  target="_blank"
+                >
                   Contact us
                 </a>
               </p>
@@ -287,7 +301,8 @@ export const SearchMode = () => {
           <a
             className="trieve-powered"
             href="https://trieve.ai"
-            target="_blank">
+            target="_blank"
+          >
             <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
             Powered by Trieve
           </a>
