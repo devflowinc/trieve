@@ -1476,6 +1476,11 @@ pub async fn retrieve_chunks_from_point_ids(
         .parse::<u64>()
         .unwrap_or(500);
 
+    let highlight_query_max_word_length = std::env::var("HIGHLIGHT_QUERY_MAX_WORD_LENGTH")
+        .unwrap_or("20".to_string())
+        .parse::<usize>()
+        .unwrap_or(20);
+
     let mut score_chunks: Vec<ScoreChunkDTO> = vec![];
     for search_result in search_chunk_query_results.search_results {
         let Some(mut chunk) = metadata_chunks
@@ -1493,52 +1498,77 @@ pub async fn retrieve_chunks_from_point_ids(
                 && !data.slim_chunks.unwrap_or(false)
                 && !matches!(data.query, QueryTypes::Multi(_))
             {
-                let (highlighted_chunk_html, highlighted_snippets) = {
-                    let highlight_algo = match highlight_options.highlight_strategy {
-                        Some(HighlightStrategy::V1) => get_highlights,
-                        _ => get_highlights_with_exact_match,
-                    };
+                let delimiters = highlight_options
+                    .highlight_delimiters
+                    .clone()
+                    .unwrap_or(vec!['.', '!', '?', '\n', '\t', ',']);
 
-                    let highlight_options_clone = highlight_options.clone();
-                    let query = data
-                        .query
-                        .clone()
-                        .to_single_query()
-                        .expect("Should never be multi query");
-                    let html = chunk.chunk_html().clone();
-                    let html_default = html.clone();
-
-                    // TODO we should call these in parallel
-                    tokio::time::timeout(
-                        std::time::Duration::from_millis(highlight_timeout_ms),
-                        web::block(move || {
-                            highlight_algo(
-                                html,
-                                query,
-                                highlight_options_clone.highlight_threshold,
-                                highlight_options_clone
-                                    .highlight_delimiters
-                                    .unwrap_or(vec!['.', '!', '?', '\n', '\t', ',']),
-                                highlight_options_clone.highlight_max_length,
-                                highlight_options_clone.highlight_max_num,
-                                highlight_options_clone.highlight_window,
-                                highlight_options_clone.pre_tag,
-                                highlight_options_clone.post_tag,
-                            )
-                        }),
+                let query_length = data
+                    .query
+                    .clone()
+                    .to_single_query()
+                    .expect("should never be multi query")
+                    .replace(
+                        |c: char| (delimiters.contains(&c) && c != ' ') || c == '\"',
+                        "",
                     )
-                    .await
-                    .map_err(|_| log::warn!("Highlight chunks timed out"))
-                    .ok()
-                    .transpose()
-                    .map_err(|e| log::warn!("Thread error calling highlights {e}"))
-                    .ok()
-                    .flatten()
-                    .transpose()
-                    .ok()
-                    .flatten()
-                    .unwrap_or((html_default, vec![]))
-                };
+                    .split_whitespace()
+                    .count();
+
+                let (highlighted_chunk_html, highlighted_snippets) =
+                    if query_length > highlight_query_max_word_length {
+                        (chunk.chunk_html().clone(), vec![])
+                    } else {
+                        let highlight_algo = match highlight_options.highlight_strategy {
+                            Some(HighlightStrategy::V1) => get_highlights,
+                            _ => get_highlights_with_exact_match,
+                        };
+
+                        let highlight_options_clone = highlight_options.clone();
+                        let query = data
+                            .query
+                            .clone()
+                            .to_single_query()
+                            .expect("Should never be multi query");
+                        let html = chunk.chunk_html().clone();
+                        let html_default = html.clone();
+
+                        // TODO we should call these in parallel
+                        tokio::time::timeout(
+                            std::time::Duration::from_millis(highlight_timeout_ms),
+                            web::block(move || {
+                                highlight_algo(
+                                    html,
+                                    query,
+                                    highlight_options_clone.highlight_threshold,
+                                    highlight_options_clone
+                                        .highlight_delimiters
+                                        .unwrap_or(vec!['.', '!', '?', '\n', '\t', ',']),
+                                    highlight_options_clone.highlight_max_length,
+                                    highlight_options_clone.highlight_max_num,
+                                    highlight_options_clone.highlight_window,
+                                    highlight_options_clone.pre_tag,
+                                    highlight_options_clone.post_tag,
+                                )
+                            }),
+                        )
+                        .await
+                        .map_err(|_| {
+                            log::warn!(
+                                "Highlight chunks timed out on query {:?}",
+                                data.query.clone()
+                            )
+                        })
+                        .ok()
+                        .transpose()
+                        .map_err(|e| log::warn!("Thread error calling highlights {e}"))
+                        .ok()
+                        .flatten()
+                        .transpose()
+                        .ok()
+                        .flatten()
+                        .unwrap_or((html_default, vec![]))
+                    };
 
                 highlights = Some(highlighted_snippets);
 
