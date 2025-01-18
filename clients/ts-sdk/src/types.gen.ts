@@ -1715,7 +1715,8 @@ export type GetEventsResponseBody = {
 };
 
 export type GetGroupsForChunksReqPayload = {
-    chunk_ids: Array<(string)>;
+    chunk_ids?: Array<(string)> | null;
+    chunk_tracking_ids?: Array<(string)> | null;
 };
 
 export type GetPagefindIndexResponse = {

@@ -2,6 +2,7 @@ use super::{
     auth_handler::{AdminOnly, LoggedUser},
     chunk_handler::{ChunkFilter, SearchChunksReqPayload},
 };
+use crate::operators::chunk_operator::get_metadata_from_tracking_ids_query;
 use crate::{
     data::models::{
         escape_quotes, ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadata,
@@ -29,6 +30,7 @@ use crate::{
     },
 };
 use actix_web::{web, HttpResponse};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use simple_server_timing_header::Timer;
 use utoipa::{IntoParams, ToSchema};
@@ -1062,7 +1064,8 @@ pub async fn get_chunks_in_group_by_tracking_id(
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct GetGroupsForChunksReqPayload {
-    pub chunk_ids: Vec<uuid::Uuid>,
+    pub chunk_ids: Option<Vec<uuid::Uuid>>,
+    pub chunk_tracking_ids: Option<Vec<String>>,
 }
 
 /// Get Groups for Chunks
@@ -1091,8 +1094,30 @@ pub async fn get_groups_for_chunks(
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _required_user: LoggedUser,
-) -> Result<HttpResponse, actix_web::Error> {
-    let chunk_ids = data.chunk_ids.clone();
+) -> Result<HttpResponse, ServiceError> {
+    let mut chunk_ids = vec![];
+
+    if let Some(chunks) = data.chunk_ids.clone() {
+        chunk_ids.extend(chunks);
+    }
+
+    if let Some(tracking_ids) = data.chunk_tracking_ids.clone() {
+        chunk_ids.extend(
+            get_metadata_from_tracking_ids_query(
+                tracking_ids,
+                dataset_org_plan_sub.dataset.id,
+                pool.clone(),
+            )
+            .await?
+            .into_iter()
+            .map(|chunk| chunk.id)
+            .collect_vec(),
+        );
+    }
+
+    if chunk_ids.is_empty() {
+        return Err(ServiceError::NotFound("No valid chunks found. Ensure you pass at least 1 valid tracking_id or chunk_id and that it is present in the dataset".to_string()));
+    }
 
     let dataset_id = dataset_org_plan_sub.dataset.id;
 

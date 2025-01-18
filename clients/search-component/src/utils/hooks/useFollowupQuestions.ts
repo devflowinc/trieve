@@ -18,7 +18,7 @@ export const useFollowupQuestions = () => {
       .filter((msg) => {
         return msg.type == "user";
       })
-      .slice(-1)[0];
+      .slice(-1)[0] ?? messages.slice(-1)[0];
 
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
