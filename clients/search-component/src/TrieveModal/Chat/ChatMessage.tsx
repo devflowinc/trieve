@@ -46,7 +46,9 @@ export const ChatMessage = ({
               {message.imageUrl && (
                 <ImagePreview isUploading={false} imageUrl={message.imageUrl} />
               )}
-              <span className="user-text"> {message.text}</span>
+              {(message.text != "" && message.text != props.defaultImageQuestion) ?
+                <span className="user-text"> {message.text}</span>
+                : null}
             </div>
           </div>
         </div>

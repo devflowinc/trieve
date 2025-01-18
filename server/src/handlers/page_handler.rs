@@ -270,6 +270,8 @@ pub struct PublicPageParameters {
     pub number_of_suggestions: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inline_header: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_image_question: Option<String>,
 }
 
 #[utoipa::path(

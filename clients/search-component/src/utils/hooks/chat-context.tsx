@@ -331,6 +331,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       setCurrentGroup(group);
     }
 
+    if (question == undefined || question == null || question == "") {
+      question = props.defaultImageQuestion;
+    }
+
     setMessages((m) => [
       ...m,
       {

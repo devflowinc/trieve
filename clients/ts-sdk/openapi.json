@@ -12612,6 +12612,10 @@
             "type": "string",
             "nullable": true
           },
+          "defaultImageQuestion": {
+            "type": "string",
+            "nullable": true
+          },
           "defaultSearchMode": {
             "type": "string",
             "nullable": true

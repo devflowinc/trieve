@@ -112,7 +112,8 @@ export type ModalProps = {
   groupTrackingId?: string;
   cleanGroupName?: string;
   cssRelease?: string;
-  hideOpenButton? : boolean;
+  hideOpenButton?: boolean;
+  defaultImageQuestion?: string;
 };
 
 const defaultProps = {
@@ -159,6 +160,8 @@ const defaultProps = {
   groupTrackingId: undefined,
   cleanGroupName: undefined,
   cssRelease: "stable",
+  defaultImageQuestion:
+    "This is an image of a product that I want you to show similar recomendations for.",
 };
 
 const ModalContext = createContext<{
