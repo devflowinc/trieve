@@ -196,7 +196,7 @@ const Modal = () => {
 
   return (
     <>
-      {!props.inline && (
+      {!props.inline && !props.hideOpenButton && (
         <OpenModalButton
           setOpen={() => {
             startTransition(() => {

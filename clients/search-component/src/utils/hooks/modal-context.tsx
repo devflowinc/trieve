@@ -112,6 +112,7 @@ export type ModalProps = {
   groupTrackingId?: string;
   cleanGroupName?: string;
   cssRelease?: string;
+  hideOpenButton? : boolean;
 };
 
 const defaultProps = {
