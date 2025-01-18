@@ -65,7 +65,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController()
+    new AbortController(),
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
@@ -122,7 +122,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     setIsLoading(true);
     setIsDoneReading(false);
@@ -173,7 +173,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 chunk.metadata.page_title) &&
               chunk.link &&
               chunk.image_urls?.length &&
-              chunk.num_value
+              chunk.num_value,
           );
           if (ecommerceChunks && queryId) {
             trackViews({
@@ -241,26 +241,28 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           if (headers["x-tr-query"] && audioBase64) {
             transcribedQuery = headers["x-tr-query"];
           }
-        }
+        },
       );
       if (transcribedQuery && audioBase64) {
         setAudioBase64("");
-        setMessages((m) => [
-          ...m.slice(0, -1),
-          {
-            type: "user",
-            text: transcribedQuery ?? "",
-            additional: null,
-            queryId: null,
-            imageUrl: imageUrl ? imageUrl : null,
-          },
-          {
-            type: "system",
-            text: "Loading...",
-            additional: null,
-            queryId: null,
-          },
-        ]);
+        setMessages((m) => {
+          return [
+            ...m.slice(0, -1),
+            {
+              type: "user",
+              text: transcribedQuery ?? "",
+              additional: null,
+              queryId: null,
+              imageUrl: imageUrl ? imageUrl : null,
+            },
+            {
+              type: "system",
+              text: "Loading...",
+              additional: null,
+              queryId: null,
+            },
+          ];
+        });
       }
       handleReader(reader, queryId);
     } else {
@@ -293,7 +295,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             if (headers["x-tr-query"] && audioBase64) {
               transcribedQuery = headers["x-tr-query"];
             }
-          }
+          },
         );
       if (transcribedQuery && audioBase64) {
         setAudioBase64("");
@@ -432,7 +434,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
@@ -457,8 +459,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         stopGeneratingMessage,
         isDoneReading,
         rateChatCompletion,
-      }}
-    >
+      }}>
       {children}
     </ChatContext.Provider>
   );

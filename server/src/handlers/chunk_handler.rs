@@ -2715,6 +2715,7 @@ pub async fn generate_off_chunks(
 
         return Ok(HttpResponse::Ok()
             .insert_header(("TR-QueryID", query_id.to_string()))
+            .insert_header(("X-TR-Query", last_prev_message.content.clone()))
             .json(completion_content));
     }
 
@@ -2725,6 +2726,7 @@ pub async fn generate_off_chunks(
         .await
         .unwrap();
 
+    let last_message_arb = last_prev_message.content.clone();
     Arbiter::new().spawn(async move {
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
@@ -2770,7 +2772,7 @@ pub async fn generate_off_chunks(
                     })
                     .collect(),
                 top_score: 0.0,
-                user_message: format!("{} {}", rag_prompt, last_prev_message.content.clone()),
+                user_message: format!("{} {}", rag_prompt, last_message_arb.clone()),
                 rag_type: "chosen_chunks".to_string(),
                 query_rating: String::new(),
                 llm_response: completion,
@@ -2836,6 +2838,7 @@ pub async fn generate_off_chunks(
 
     Ok(HttpResponse::Ok()
         .insert_header(("TR-QueryID", query_id.to_string()))
+        .insert_header(("X-TR-Query", last_prev_message.content.clone()))
         .streaming(completion_stream))
 }
 
