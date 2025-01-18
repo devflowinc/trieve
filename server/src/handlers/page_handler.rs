@@ -345,7 +345,7 @@ pub async fn public_page(
             .PUBLIC_DATASET
             .extra_params
             .as_ref()
-            .and_then(|p| p.tab_messages.clone())
+            .cloned()
             .unwrap_or_default();
 
         let response_body = templ
