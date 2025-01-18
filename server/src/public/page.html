@@ -455,7 +455,7 @@
         if (params.inline) {
           const inlineParams = {{ params | tojson }};
           const inlineRoot = document.querySelector("#inline-root");
-          inlineParams.mode = mode;
+          inlineParams.cssRelease = mode;
           inlineParams.groupTrackingId = params.singleProductOptions.groupTrackingId;
           inlineParams.cleanGroupName = params.singleProductOptions.productName;
           inlineParams.showFloatingButton = false;
@@ -582,8 +582,9 @@
         </div>
         {% endif %} {% if params.singleProductOptions and
         params.singleProductOptions.productName %} {% include "product.html" %}
-        {% endif %} {% if tabs|length > 0 %} {% include "tabs.html" %} {% endif
-        %} {% if params.videoLink and params.videoPosition == "floating" %}
+        {% endif %} {% if tabs and tabs|length > 0 %} {% include "tabs.html" %}
+        {% endif %} {% if params.videoLink and params.videoPosition ==
+        "floating" %}
         <div class="video-wrapper">
           <iframe
             src="{{params.videoLink}}"

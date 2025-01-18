@@ -750,7 +750,6 @@ body {
       }
     }
 
-
     .input-wrapper {
       background-color: var(--bg-color);
 
@@ -1268,14 +1267,14 @@ body {
   }
 
   #trieve-search-modal.ecommerce {
-    @apply tv-top-1 tv-max-w-[90rem] tv-w-[95vw] tv-pt-10 tv-px-4 tv-rounded-lg;
+    @apply tv-top-1 tv-max-w-[90rem] tv-w-[95vw] tv-px-4 tv-rounded-lg;
 
     &:not(.trieve-popup-modal) {
       @apply tv-top-1 tv-px-0 tv-pt-0 tv-max-w-full;
     }
 
     &.trieve-popup-modal {
-      @apply tv-max-w-[90rem] tv-pt-10 tv-px-4;
+      @apply tv-max-w-[90rem] tv-px-4;
     }
   }
 }
