@@ -8,6 +8,7 @@ import { UploadImage } from "../Search/UploadImage";
 import ImagePreview from "../ImagePreview";
 import { AnimatePresence } from "motion/react";
 import { cn } from "../../utils/styles";
+import { UploadAudio } from "../Search/UploadAudio";
 
 export const ChatMode = () => {
   const {
@@ -175,6 +176,7 @@ export const ChatMode = () => {
           >
             <i className="fa-solid fa-paper-plane"></i>
           </button>
+          <UploadAudio />
           <UploadImage />
         </div>
         <div className={`trieve-footer chat ${props.type}`}>

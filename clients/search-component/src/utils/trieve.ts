@@ -22,7 +22,7 @@ export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
 
   return Object.fromEntries(
-    Object.entries(obj).filter(([key]) => !keys.includes(key))
+    Object.entries(obj).filter(([key]) => !keys.includes(key)),
   );
 };
 
@@ -30,6 +30,7 @@ export const searchWithTrieve = async ({
   trieve,
   query_string,
   image_url,
+  audioBase64,
   searchOptions = {
     search_type: "fulltext",
   },
@@ -40,6 +41,7 @@ export const searchWithTrieve = async ({
   trieve: TrieveSDK;
   query_string: string;
   image_url?: string;
+  audioBase64?: string;
   searchOptions: Props["searchOptions"];
   abortController?: AbortController;
   tag?: string;
@@ -53,7 +55,11 @@ export const searchWithTrieve = async ({
       : 0.3);
 
   let query;
-  if (image_url) {
+  if (audioBase64) {
+    query = {
+      audio_base64: audioBase64,
+    };
+  } else if (image_url) {
     query = {
       image_url: image_url,
     };
@@ -85,7 +91,7 @@ export const searchWithTrieve = async ({
         search_type: searchOptions.search_type ?? "fulltext",
         ...omit(searchOptions, ["use_autocomplete"]),
       },
-      abortController?.signal
+      abortController?.signal,
     )) as SearchResponseBody;
   } else {
     results = (await trieve.search(
@@ -109,7 +115,7 @@ export const searchWithTrieve = async ({
         search_type: searchOptions.search_type ?? "fulltext",
         ...omit(searchOptions, ["use_autocomplete"]),
       },
-      abortController?.signal
+      abortController?.signal,
     )) as SearchResponseBody;
   }
 
@@ -174,7 +180,7 @@ export const groupSearchWithTrieve = async ({
       search_type: searchOptions.search_type ?? "fulltext",
       ...omit(searchOptions, ["use_autocomplete"]),
     },
-    abortController?.signal
+    abortController?.signal,
   );
 
   const resultsWithHighlight = results.results.map((group) => {
@@ -230,7 +236,7 @@ export const countChunks = async ({
       search_type: "fulltext",
       ...omit(searchOptions, ["search_type"]),
     },
-    abortController?.signal
+    abortController?.signal,
   );
   return results;
 };
@@ -258,7 +264,7 @@ export const sendCtrData = async ({
   return null;
 };
 
-export const trackViews = async({
+export const trackViews = async ({
   trieve,
   type,
   requestID,
@@ -269,18 +275,17 @@ export const trackViews = async({
   type: CTRType;
   items: string[];
 }) => {
-  trieve.trieve.fetch("/api/analytics/events", "put",
-  {
-      datasetId: trieve.datasetId ?? "",
-      data: {
-        event_name: "View",
-        event_type: "view",
-        items: items,
-        request: {
-          request_id: requestID,
-          request_type: type
-        },
-      }
+  trieve.trieve.fetch("/api/analytics/events", "put", {
+    datasetId: trieve.datasetId ?? "",
+    data: {
+      event_name: "View",
+      event_type: "view",
+      items: items,
+      request: {
+        request_id: requestID,
+        request_type: type,
+      },
+    },
   });
 
   return null;
@@ -304,7 +309,7 @@ export const getSuggestedQueries = async ({
       suggestions_to_create: count,
       search_type: "semantic",
     },
-    abortController?.signal
+    abortController?.signal,
   );
 };
 
@@ -347,7 +352,7 @@ export const getSuggestedQuestions = async ({
           },
         }),
     },
-    abortController?.signal
+    abortController?.signal,
   );
 };
 
@@ -355,7 +360,7 @@ export type SimpleChunk = ChunkMetadata | ChunkMetadataStringTagSet;
 
 export const getAllChunksForGroup = async (
   groupId: string,
-  trieve: TrieveSDK
+  trieve: TrieveSDK,
 ): Promise<SimpleChunk[]> => {
   let moreToFind = true;
   let page = 1;
@@ -368,7 +373,7 @@ export const getAllChunksForGroup = async (
         datasetId: trieve.datasetId as string,
         groupId,
         page,
-      }
+      },
     );
     if (results.chunks.length === 0) {
       moreToFind = false;
@@ -386,7 +391,7 @@ export const searchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
   datasetId: string,
-  tag?: string
+  tag?: string,
 ) => {
   const response = await pagefind.search(
     query,
@@ -394,14 +399,14 @@ export const searchWithPagefind = async (
       filters: {
         tag_set: tag,
       },
-    }
+    },
   );
 
   const results = await Promise.all(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     response.results.map(async (result: any) => {
       return await result.data();
-    })
+    }),
   );
 
   // Set pagesize to 20
@@ -436,7 +441,7 @@ export const groupSearchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
   datasetId: string,
-  tag?: string
+  tag?: string,
 ): Promise<GroupSearchResults> => {
   const response = await pagefind.search(
     query,
@@ -444,14 +449,14 @@ export const groupSearchWithPagefind = async (
       filters: {
         tag_set: tag,
       },
-    }
+    },
   );
 
   const results = await Promise.all(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     response.results.map(async (result: any) => {
       return await result.data();
-    })
+    }),
   );
 
   const groupMap = new Map<string, ChunkWithHighlights[]>();
@@ -525,7 +530,7 @@ export const countChunksWithPagefind = async (
     selected?: boolean;
     iconClassName?: string;
     icon?: () => JSX.Element;
-  }[]
+  }[],
 ): Promise<CountChunkQueryResponseBody[]> => {
   let queryParam: string | null = query;
   if (query.trim() === "") {
@@ -565,7 +570,7 @@ export const getPagefindIndex = async (trieve: TrieveSDK): Promise<string> => {
 export const uploadFile = async (
   trieve: TrieveSDK,
   file_name: string,
-  base64_file: string
+  base64_file: string,
 ): Promise<string> => {
   const response = await trieve.trieve.fetch("/api/file", "post", {
     datasetId: trieve.datasetId as string,
@@ -581,7 +586,7 @@ export const uploadFile = async (
 
 export const getPresignedUrl = async (
   trieve: TrieveSDK,
-  fileId: string
+  fileId: string,
 ): Promise<string> => {
   const response = await trieve.trieve.fetch("/api/file/{file_id}", "get", {
     datasetId: trieve.datasetId as string,

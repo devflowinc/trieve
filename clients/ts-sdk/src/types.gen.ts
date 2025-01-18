@@ -734,6 +734,10 @@ export type CreateDatasetReqPayload = {
 
 export type CreateMessageReqPayload = {
     /**
+     * The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.
+     */
+    audio_input?: (string) | null;
+    /**
      * If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
      */
     concat_user_messages_query?: (boolean) | null;
@@ -748,7 +752,7 @@ export type CreateMessageReqPayload = {
     /**
      * The content of the user message to attach to the topic and then generate an assistant message in response to.
      */
-    new_message_content: string;
+    new_message_content?: (string) | null;
     /**
      * No result message for when there are no chunks found above the score threshold.
      */
@@ -1129,6 +1133,10 @@ export type Document = {
 
 export type EditMessageReqPayload = {
     /**
+     * The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.
+     */
+    audio_input?: (string) | null;
+    /**
      * If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
      */
     concat_user_messages_query?: (boolean) | null;
@@ -1147,7 +1155,7 @@ export type EditMessageReqPayload = {
     /**
      * The new content of the message to replace the old content with.
      */
-    new_message_content: string;
+    new_message_content?: (string) | null;
     /**
      * No result message for when there are no chunks found above the score threshold.
      */
@@ -1546,6 +1554,10 @@ export type FullTextBoost = {
 };
 
 export type GenerateOffChunksReqPayload = {
+    /**
+     * Audio input to be used in the chat. This will be used to generate the audio tokens for the model. The default is None.
+     */
+    audio_input?: (string) | null;
     /**
      * The ids of the chunks to be retrieved and injected into the context window for RAG.
      */
@@ -2716,7 +2728,9 @@ export type SearchMethod = 'fulltext' | 'semantic' | 'hybrid' | 'bm25';
 export type SearchModalities = {
     image_url: string;
     llm_prompt?: (string) | null;
-} | string;
+} | string | {
+    audio_base64: string;
+};
 
 export type SearchOverGroupsReqPayload = {
     filters?: ((ChunkFilter) | null);

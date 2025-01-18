@@ -1631,7 +1631,7 @@ pub async fn parse_query(
             image_url,
             llm_prompt,
         } => get_text_from_image(image_url, llm_prompt, dataset).await?,
-        SearchModalities::Audio { audio_base64 } => get_text_from_audio(audio_base64).await?,
+        SearchModalities::Audio { audio_base64 } => get_text_from_audio(&audio_base64).await?,
     };
 
     let query = match remove_stop_words {

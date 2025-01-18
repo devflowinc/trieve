@@ -7,7 +7,7 @@ use crate::data::models::{
     DatasetAndOrgWithSubAndPlan, DatasetConfiguration, GeoInfo, HighlightOptions, ImageConfig,
     IngestSpecificChunkMetadata, MultiQuery, Pool, QdrantChunkMetadata, QueryTypes,
     RagQueryEventClickhouse, RecommendType, RecommendationEventClickhouse, RecommendationStrategy,
-    RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod, SearchModalities,
+    RedisPool, RoleProxy, ScoreChunk, ScoreChunkDTO, SearchMethod, SearchModalities,
     SearchQueryEventClickhouse, SlimChunkMetadataWithScore, SortByField, SortOptions, TypoOptions,
     UnifiedId, UpdateSpecificChunkMetadata,
 };
@@ -19,6 +19,7 @@ use crate::operators::clickhouse_operator::{get_latency_from_header, ClickHouseE
 use crate::operators::dataset_operator::{
     get_dataset_usage_query, ChunkDeleteMessage, DeleteMessage,
 };
+use crate::operators::message_operator::get_text_from_audio;
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
     point_ids_exists_in_qdrant, recommend_qdrant_query, scroll_dataset_points,
@@ -2343,6 +2344,8 @@ pub struct GenerateOffChunksReqPayload {
     pub chunk_ids: Vec<uuid::Uuid>,
     /// Prompt will be used to tell the model what to generate in the next message in the chat. The default is 'Respond to the previous instruction and include the doc numbers that you used in square brackets at the end of the sentences that you used the docs for:'. You can also specify an empty string to leave the final message alone such that your user's final message can be used as the prompt. See docs.trieve.ai or contact us for more information.
     pub prompt: Option<String>,
+    /// Audio input to be used in the chat. This will be used to generate the audio tokens for the model. The default is None.
+    pub audio_input: Option<String>,
     /// Image URLs to be used in the chat. These will be used to generate the image tokens for the model. The default is None.
     pub image_urls: Option<Vec<String>>,
     /// Whether or not to stream the response. If this is set to true or not included, the response will be a stream. If this is set to false, the response will be a normal JSON response. Default is true.
@@ -2527,11 +2530,17 @@ pub async fn generate_off_chunks(
         }
     });
 
-    let last_prev_message = prev_messages
-        .last()
-        .expect("There needs to be at least 1 prior message")
-        .clone();
-
+    let last_prev_message = if let Some(audio_input) = data.audio_input.clone() {
+        ChatMessageProxy {
+            role: RoleProxy::User,
+            content: get_text_from_audio(&audio_input).await?,
+        }
+    } else {
+        prev_messages
+            .last()
+            .expect("There needs to be at least 1 prior message")
+            .clone()
+    };
     let mut prev_messages = prev_messages.clone();
 
     prev_messages.truncate(prev_messages.len() - 1);

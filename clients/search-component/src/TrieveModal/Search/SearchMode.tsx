@@ -16,6 +16,7 @@ import { PdfItem } from "./PdfItem";
 import { SparklesIcon } from "../icons";
 import { UploadImage } from "./UploadImage";
 import ImagePreview from "../ImagePreview";
+import { UploadAudio } from "./UploadAudio";
 
 export const SearchMode = () => {
   const {
@@ -31,6 +32,7 @@ export const SearchMode = () => {
     mode,
     uploadingImage,
     imageUrl,
+    audioBase64,
   } = useModalState();
 
   const { suggestedQueries, getQueries, isLoadingSuggestedQueries } =
@@ -40,7 +42,7 @@ export const SearchMode = () => {
 
   const getItemComponent = (
     result: ChunkWithHighlights | GroupChunk[],
-    index: number
+    index: number,
   ) => {
     const isChunk = isChunkWithHighlights(result);
 
@@ -114,7 +116,7 @@ export const SearchMode = () => {
   const resultsDisplay = useMemo(() => {
     if (results.length) {
       const comps = results.map((result, index) =>
-        getItemComponent(result, index)
+        getItemComponent(result, index),
       );
       return comps;
     } else {
@@ -126,8 +128,7 @@ export const SearchMode = () => {
     <Suspense fallback={<div className="suspense-fallback"></div>}>
       <div
         className={`close-modal-button search ${props.type}`}
-        onClick={() => setOpen(false)}
-      >
+        onClick={() => setOpen(false)}>
         <svg
           className="close-icon"
           xmlns="http://www.w3.org/2000/svg"
@@ -138,8 +139,7 @@ export const SearchMode = () => {
           stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+          strokeLinejoin="round">
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
@@ -172,14 +172,16 @@ export const SearchMode = () => {
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+                strokeLinejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           )}
+        </div>
+        <div>
+          <UploadAudio />
         </div>
         <div>
           <UploadImage />
@@ -192,8 +194,7 @@ export const SearchMode = () => {
                 onClick={() => getQueries(new AbortController())}
                 disabled={isLoadingSuggestedQueries}
                 className="suggested-query"
-                title="Refresh suggested queries"
-              >
+                title="Refresh suggested queries">
                 <i className="fa-solid fa-arrow-rotate-right"></i>
               </button>
               <p>Suggested Queries: </p>
@@ -211,8 +212,7 @@ export const SearchMode = () => {
                     key={q}
                     className={`suggested-query${
                       isLoadingSuggestedQueries ? " loading" : ""
-                    }`}
-                  >
+                    }`}>
                     {q}
                   </button>
                 );
@@ -228,13 +228,11 @@ export const SearchMode = () => {
             <button
               id="trieve-search-item-0"
               className="item start-chat"
-              onClick={() => switchToChatAndAskQuestion(query)}
-            >
+              onClick={() => switchToChatAndAskQuestion(query)}>
               <div
                 style={{
                   paddingLeft: props.type === "ecommerce" ? "1rem" : "",
-                }}
-              >
+                }}>
                 <SparklesIcon />
                 <div>
                   <h4>
@@ -257,7 +255,9 @@ export const SearchMode = () => {
           resultsDisplay
         )}
 
-        {(imageUrl || query) && !resultsLength && !loadingResults ? (
+        {(imageUrl || query || audioBase64) &&
+        !resultsLength &&
+        !loadingResults ? (
           <div className="no-results">
             <p className="no-results-text">No results found</p>
             {props.problemLink && (
@@ -268,14 +268,13 @@ export const SearchMode = () => {
                   href={`${props.problemLink}No results found for query: ${
                     query.length > 0 ? query : ""
                   } on ${props.brandName}`}
-                  target="_blank"
-                >
+                  target="_blank">
                   Contact us
                 </a>
               </p>
             )}
           </div>
-        ) : (imageUrl || query) && !resultsLength && loadingResults ? (
+        ) : (imageUrl || query || audioBase64) && !resultsLength && loadingResults ? (
           <p className={`no-results-loading ${props.type}`}>Searching...</p>
         ) : null}
       </ul>
@@ -286,8 +285,7 @@ export const SearchMode = () => {
           <a
             className="trieve-powered"
             href="https://trieve.ai"
-            target="_blank"
-          >
+            target="_blank">
             <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
             Powered by Trieve
           </a>

@@ -15,7 +15,7 @@ use crate::{
         clickhouse_operator::EventQueue,
         message_operator::{
             create_topic_message_query, delete_message_query, get_message_by_id_query,
-            get_message_by_sort_for_topic_query, get_messages_for_topic_query,
+            get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_text_from_audio,
             get_topic_messages_query, stream_response,
         },
         organization_operator::get_message_org_count,
@@ -86,9 +86,11 @@ pub fn check_completion_param_validity(
 #[derive(Serialize, Debug, ToSchema, Clone)]
 pub struct CreateMessageReqPayload {
     /// The content of the user message to attach to the topic and then generate an assistant message in response to.
-    pub new_message_content: String,
+    pub new_message_content: Option<String>,
     /// The URL of the image(s) to attach to the message.
     pub image_urls: Option<Vec<String>>,
+    /// The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.
+    pub audio_input: Option<String>,
     /// The ID of the topic to attach the message to.
     pub topic_id: uuid::Uuid,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
@@ -190,8 +192,20 @@ pub async fn create_message(
         }
     }
 
+    let message_content = if let Some(ref audio_input) = create_message_data.audio_input {
+        get_text_from_audio(audio_input).await?
+    } else {
+        create_message_data
+            .new_message_content
+            .clone()
+            .ok_or(ServiceError::BadRequest(
+                "No message content provided. Must provide either a audio or text input"
+                    .to_string(),
+            ))?
+    };
+
     let new_message = models::Message::from_details(
-        create_message_data.new_message_content.clone(),
+        message_content.clone(),
         topic_id,
         0,
         "user".to_string(),
@@ -386,7 +400,9 @@ pub struct EditMessageReqPayload {
     /// The sort order of the message to edit.
     pub message_sort_order: i32,
     /// The new content of the message to replace the old content with.
-    pub new_message_content: String,
+    pub new_message_content: Option<String>,
+    /// The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.
+    pub audio_input: Option<String>,
     /// The URL of the image(s) to attach to the message.
     pub image_urls: Option<Vec<String>>,
     /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
@@ -422,6 +438,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
         CreateMessageReqPayload {
             new_message_content: data.new_message_content,
             image_urls: data.image_urls,
+            audio_input: data.audio_input,
             topic_id: data.topic_id,
             highlight_options: data.highlight_options,
             search_type: data.search_type,
@@ -443,8 +460,9 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
 impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
     fn from(data: RegenerateMessageReqPayload) -> Self {
         CreateMessageReqPayload {
-            new_message_content: "".to_string(),
+            new_message_content: None,
             image_urls: None,
+            audio_input: None,
             topic_id: data.topic_id,
             highlight_options: data.highlight_options,
             search_type: data.search_type,

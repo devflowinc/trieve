@@ -3820,6 +3820,7 @@ impl ApiKeyRequestParams {
             score_threshold: self.score_threshold.or(payload.score_threshold),
             llm_options: payload.llm_options,
             image_urls: payload.image_urls,
+            audio_input: payload.audio_input,
             context_options: payload.context_options,
             no_result_message: self.no_result_message.or(payload.no_result_message),
         }
@@ -7520,8 +7521,9 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
     {
         #[derive(Deserialize)]
         struct Helper {
-            pub new_message_content: String,
+            pub new_message_content: Option<String>,
             pub image_urls: Option<Vec<String>>,
+            pub audio_input: Option<String>,
             pub topic_id: uuid::Uuid,
             pub highlight_options: Option<HighlightOptions>,
             pub search_type: Option<SearchMethod>,
@@ -7555,6 +7557,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
 
         Ok(CreateMessageReqPayload {
             new_message_content: helper.new_message_content,
+            audio_input: helper.audio_input,
             image_urls: helper.image_urls,
             topic_id: helper.topic_id,
             highlight_options,
@@ -7641,7 +7644,8 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
         struct Helper {
             pub topic_id: uuid::Uuid,
             pub message_sort_order: i32,
-            pub new_message_content: String,
+            pub new_message_content: Option<String>,
+            pub audio_input: Option<String>,
             pub highlight_options: Option<HighlightOptions>,
             pub search_type: Option<SearchMethod>,
             pub sort_options: Option<SortOptions>,
@@ -7678,6 +7682,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             message_sort_order: helper.message_sort_order,
             image_urls: helper.image_urls,
             sort_options: helper.sort_options,
+            audio_input: helper.audio_input,
             new_message_content: helper.new_message_content,
             highlight_options,
             search_type: helper.search_type,

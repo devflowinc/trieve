@@ -49,8 +49,16 @@ const ChatContext = createContext<{
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { query, trieveSDK, setMode, setCurrentGroup, imageUrl, setImageUrl } =
-    useModalState();
+  const {
+    query,
+    trieveSDK,
+    setMode,
+    setCurrentGroup,
+    imageUrl,
+    setImageUrl,
+    audioBase64,
+    setAudioBase64,
+  } = useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
   const called = useRef(false);
@@ -105,6 +113,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       clearConversation();
     }
   }, [currentTag]);
+
+  useEffect(() => {
+    if (audioBase64 != "") {
+      askQuestion(" ");
+    }
+  }, [audioBase64]);
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -196,7 +210,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     group?: ChunkGroup;
   }) => {
     setIsLoading(true);
-
     const curGroup = group || currentGroup;
 
     // Use group search
@@ -210,6 +223,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         {
           chunk_ids: groupChunks.map((c) => c.id),
           image_urls: imageUrl ? [imageUrl] : [],
+          audio_input: audioBase64,
           prev_messages: [
             ...messages.slice(0, -1).map((m) => mapMessageType(m)),
             {
@@ -222,6 +236,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         },
         chatMessageAbortController.current.signal
       );
+      if (imageUrl) {
+        setImageUrl("");
+      }
+      if (audioBase64) {
+        setAudioBase64("");
+      }
       handleReader(reader, queryId);
     } else {
       const { reader, queryId } =
@@ -229,6 +249,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           {
             topic_id: id || currentTopic,
             new_message_content: question || currentQuestion,
+            audio_input: audioBase64,
             image_urls: imageUrl ? [imageUrl] : [],
             llm_options: {
               completion_first: false,
@@ -253,6 +274,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
     if (imageUrl) {
       setImageUrl("");
+    }
+    if (audioBase64) {
+      setAudioBase64("");
     }
   };
 
