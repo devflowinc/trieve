@@ -2455,7 +2455,10 @@ pub async fn generate_off_chunks(
         organization: None,
     };
 
-    let mut messages: Vec<ChatMessage> = vec![];
+    let mut messages: Vec<ChatMessage> = vec![ChatMessage::System {
+        content: ChatMessageContent::Text(dataset_config.SYSTEM_PROMPT),
+        name: None,
+    }];
 
     check_completion_param_validity(
         data.temperature,
@@ -2463,23 +2466,6 @@ pub async fn generate_off_chunks(
         data.presence_penalty,
         data.stop_tokens.clone(),
     )?;
-
-    messages.truncate(prev_messages.len() - 1);
-
-    messages.push(ChatMessage::User {
-        content: ChatMessageContent::Text("I am going to provide several pieces of information (documents) for you to use in response to a request or question.".to_string()),
-        name: None,
-    });
-
-    messages.push(ChatMessage::Assistant {
-        content: Some(ChatMessageContent::Text(
-            "Understood, I will use the provided documents as information to respond to any future questions or instructions."
-                .to_string(),
-        )),
-        tool_calls: None,
-        name: None,
-        refusal: None,
-    });
 
     chunks.sort_by(|a, b| {
         data.chunk_ids
@@ -2492,26 +2478,24 @@ pub async fn generate_off_chunks(
     chunks.iter().enumerate().for_each(|(idx, chunk_metadata)| {
         let content =
             convert_html_to_text(&(chunk_metadata.chunk_html.clone().unwrap_or_default()));
-        let first_2000_words = content
-            .split_whitespace()
-            .take(2000)
-            .collect::<Vec<_>>()
-            .join(" ");
 
         messages.push(ChatMessage::User {
             content: ChatMessageContent::Text(format!(
-                "Doc {}{}: {}",
+                "{{'doc': {}, 'text': '{}', {}}}",
                 idx + 1,
                 if context_options
                     .as_ref()
                     .is_some_and(|x| x.include_links.unwrap_or(false))
                     && chunk_metadata.link.is_some()
                 {
-                    format!(" ({})", chunk_metadata.link.clone().unwrap_or_default())
+                    format!(
+                        "'link': '{}'",
+                        chunk_metadata.link.clone().unwrap_or_default()
+                    )
                 } else {
                     "".to_string()
                 },
-                first_2000_words
+                content
             )),
             name: None,
         });
