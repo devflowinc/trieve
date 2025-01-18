@@ -1223,7 +1223,7 @@ pub async fn search_chunks(
         let clickhouse_event = SearchQueryEventClickhouse {
             id: search_id,
             search_type: String::from("search"),
-            query,
+            query: query.clone(),
             request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
             latency: get_latency_from_header(timer.header_value()),
             top_score: result_chunks
@@ -1257,6 +1257,7 @@ pub async fn search_chunks(
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
+            .insert_header(("X-TR-Query", query))
             .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
     }
 
@@ -1465,6 +1466,7 @@ pub async fn autocomplete(
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
+            .insert_header(("X-TR-Query", parsed_query.query))
             .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
     }
 

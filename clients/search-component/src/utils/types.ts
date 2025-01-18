@@ -23,11 +23,13 @@ export type ChunkWithHighlights = { chunk: Chunk; highlights: string[] };
 export type SearchResults = {
   chunks: ChunkWithHighlights[];
   requestID: string;
+  transcribedQuery?: string;
 };
 
 export type GroupSearchResults = {
   groups: GroupChunk[];
   requestID: string;
+  transcribedQuery?: string;
 };
 
 export function isChunkWithHighlights(

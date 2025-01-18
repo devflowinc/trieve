@@ -44,7 +44,8 @@ export async function search(
   /** @hidden */
   this: TrieveSDK,
   props: SearchChunksReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  parseHeaders?: (headers: Record<string, string>) => void,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -57,7 +58,8 @@ export async function search(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
+    parseHeaders,
   ) as Promise<SearchResponseBody>;
 }
 
@@ -79,7 +81,7 @@ export async function createChunk(
   /** @hidden */
   this: TrieveSDK,
   props: CreateChunkReqPayloadEnum,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -92,7 +94,7 @@ export async function createChunk(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -113,7 +115,8 @@ export async function autocomplete(
   /** @hidden */
   this: TrieveSDK,
   props: AutocompleteReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  parseHeaders?: (headers: Record<string, string>) => void,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -127,7 +130,8 @@ export async function autocomplete(
       datasetId: this.datasetId,
       xApiVersion: "V2",
     },
-    signal
+    signal,
+    parseHeaders,
   ) as Promise<SearchResponseBody>;
 }
 
@@ -147,7 +151,7 @@ export async function getRecommendedChunks(
   /** @hidden */
   this: TrieveSDK,
   props: RecommendChunksRequest,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -160,7 +164,7 @@ export async function getRecommendedChunks(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   ) as Promise<RecommendChunksResponseBody>;
 }
 
@@ -187,7 +191,7 @@ export async function ragOnChunk(
   /** @hidden */
   this: TrieveSDK,
   props: GenerateOffChunksReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -200,7 +204,7 @@ export async function ragOnChunk(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -229,7 +233,7 @@ export async function ragOnChunkReader(
   /** @hidden */
   this: TrieveSDK,
   props: GenerateOffChunksReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -280,7 +284,8 @@ export async function ragOnChunkReaderWithQueryId(
   /** @hidden */
   this: TrieveSDK,
   props: GenerateOffChunksReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  parseHeaders?: (headers: Record<string, string>) => void,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -302,6 +307,10 @@ export async function ragOnChunkReaderWithQueryId(
       signal,
     }
   );
+
+  if (parseHeaders) {
+    parseHeaders(Object.fromEntries(response.headers.entries()));
+  }
 
   const reader = response.body?.getReader();
 
@@ -331,7 +340,7 @@ export async function suggestedQueries(
   /** @hidden */
   this: TrieveSDK,
   props: SuggestedQueriesReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -344,7 +353,7 @@ export async function suggestedQueries(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -364,7 +373,7 @@ export async function countChunksAboveThreshold(
   /** @hidden */
   this: TrieveSDK,
   props: CountChunksReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -377,7 +386,7 @@ export async function countChunksAboveThreshold(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -395,7 +404,7 @@ export async function scroll(
   /** @hidden */
   this: TrieveSDK,
   props: ScrollChunksReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -408,7 +417,7 @@ export async function scroll(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -427,7 +436,7 @@ export async function updateChunk(
   /** @hidden */
   this: TrieveSDK,
   props: UpdateChunkReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -440,7 +449,7 @@ export async function updateChunk(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -459,7 +468,7 @@ export async function updateChunkByTrackingId(
   /** @hidden */
   this: TrieveSDK,
   props: UpdateChunkByTrackingIdData,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -472,7 +481,7 @@ export async function updateChunkByTrackingId(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -490,7 +499,7 @@ export async function getChunkByTrackingId(
   /** @hidden */
   this: TrieveSDK,
   props: Omit<GetChunkByTrackingIdData, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -504,7 +513,7 @@ export async function getChunkByTrackingId(
       datasetId: this.datasetId,
       xApiVersion: props.xApiVersion ?? "V2",
     },
-    signal
+    signal,
   );
 }
 
@@ -522,7 +531,7 @@ export async function deleteChunkByTrackingId(
   /** @hidden */
   this: TrieveSDK,
   props: Omit<DeleteChunkByTrackingIdData, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -535,7 +544,7 @@ export async function deleteChunkByTrackingId(
       trackingId: props.trackingId,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -553,7 +562,7 @@ export async function getChunkById(
   /** @hidden */
   this: TrieveSDK,
   props: Omit<GetChunkByIdData, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -567,7 +576,7 @@ export async function getChunkById(
       xApiVersion: props.xApiVersion ?? "V2",
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -585,7 +594,7 @@ export async function deleteChunkById(
   /** @hidden */
   this: TrieveSDK,
   props: DeleteChunkData,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -598,7 +607,7 @@ export async function deleteChunkById(
       chunkId: props.chunkId,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -616,7 +625,7 @@ export async function getChunksByIds(
   /** @hidden */
   this: TrieveSDK,
   props: GetChunksData,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -629,7 +638,7 @@ export async function getChunksByIds(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -647,7 +656,7 @@ export async function getChunksByTrackingIds(
   /** @hidden */
   this: TrieveSDK,
   props: GetTrackingChunksData,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -660,7 +669,7 @@ export async function getChunksByTrackingIds(
       data: props,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -679,7 +688,7 @@ export async function splitChunkHtml(
   /** @hidden */
   this: TrieveSDK,
   props: ChunkHtmlContentReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   return this.trieve.fetch(
     "/api/chunk/split",
@@ -687,6 +696,6 @@ export async function splitChunkHtml(
     {
       data: props,
     },
-    signal
+    signal,
   );
 }

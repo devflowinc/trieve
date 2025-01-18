@@ -27,7 +27,8 @@ export async function createMessage(
   /** @hidden */
   this: TrieveSDK,
   data: CreateMessageReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  parseHeaders?: (headers: Record<string, string>) => void,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -40,7 +41,8 @@ export async function createMessage(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
+    parseHeaders
   );
 }
 
@@ -68,7 +70,8 @@ export async function createMessageReader(
   /** @hidden */
   this: TrieveSDK,
   data: CreateMessageReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  parseHeaders?: (headers: Record<string, string>) => void,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -85,10 +88,15 @@ export async function createMessageReader(
       Authorization: `Bearer ${this.trieve.apiKey}`,
     },
     body: JSON.stringify(data),
-    signal,
+    signal
   });
 
+  if (parseHeaders) {
+    parseHeaders(Object.fromEntries(response.headers.entries()));
+  }
+
   const reader = response.body?.getReader();
+
 
   if (!reader) {
     throw new Error("Failed to get reader from response body");
@@ -112,7 +120,8 @@ export async function createMessageReaderWithQueryId(
   /** @hidden */
   this: TrieveSDK,
   data: CreateMessageReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  parseHeaders?: (headers: Record<string, string>) => void,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -131,6 +140,10 @@ export async function createMessageReaderWithQueryId(
     body: JSON.stringify(data),
     signal,
   });
+
+  if (parseHeaders) {
+    parseHeaders(Object.fromEntries(response.headers.entries()));
+  }
 
   const reader = response.body?.getReader();
 

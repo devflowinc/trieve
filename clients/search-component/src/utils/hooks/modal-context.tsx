@@ -169,11 +169,11 @@ const ModalContext = createContext<{
   trieveSDK: TrieveSDK;
   query: string;
   imageUrl: string;
-  audioBase64: string;
+  audioBase64: string | undefined;
   uploadingImage: boolean;
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   setImageUrl: React.Dispatch<React.SetStateAction<string>>;
-  setAudioBase64: React.Dispatch<React.SetStateAction<string>>;
+  setAudioBase64: React.Dispatch<React.SetStateAction<string | undefined>>;
   setUploadingImage: React.Dispatch<React.SetStateAction<boolean>>;
   results: ChunkWithHighlights[] | GroupChunk[][];
   setResults: React.Dispatch<
@@ -241,7 +241,7 @@ const ModalProvider = ({
   });
   const [query, setQuery] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [audioBase64, setAudioBase64] = useState("");
+  const [audioBase64, setAudioBase64] = useState<string | undefined>(undefined);
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
   const [results, setResults] = useState<
     ChunkWithHighlights[] | GroupChunk[][]
@@ -272,18 +272,14 @@ const ModalProvider = ({
       setResults([]);
       return;
     }
-    if (audioBase64) {
-      setQuery("");
-    }
-    if (imageUrl) {
-      setQuery("");
-    }
 
     try {
       setLoadingResults(true);
       if (props.useGroupSearch && !props.usePagefind) {
         const results = await groupSearchWithTrieve({
-          query: query,
+          query_string: query,
+          image_url: imageUrl,
+          audioBase64: audioBase64,
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
@@ -301,6 +297,9 @@ const ModalProvider = ({
           }
         });
 
+        if (results.transcribedQuery && audioBase64) {
+          setQuery(results.transcribedQuery);
+        }
         setResults(Array.from(groupMap.values()));
         setRequestID(results.requestID);
       } else if (props.useGroupSearch && props.usePagefind) {
@@ -339,6 +338,9 @@ const ModalProvider = ({
           ...(currentTag !== "all" && { tag: currentTag }),
           type: props.type,
         });
+        if (results.transcribedQuery && audioBase64) {
+          setQuery(results.transcribedQuery);
+        }
         setResults(results.chunks);
         setRequestID(results.requestID);
       }

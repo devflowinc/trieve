@@ -73,7 +73,8 @@ export async function searchOverGroups(
   /** @hidden */
   this: TrieveSDK,
   data: SearchOverGroupsReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  parseHeaders?: (headers: Record<string, string>) => void
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -86,7 +87,8 @@ export async function searchOverGroups(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
+    parseHeaders
   ) as Promise<SearchOverGroupsResponseBody>;
 }
 
@@ -104,7 +106,8 @@ export async function searchInGroup(
   /** @hidden */
   this: TrieveSDK,
   data: SearchWithinGroupReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  parseHeaders?: (headers: Record<string, string>) => void
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -117,7 +120,8 @@ export async function searchInGroup(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
+    parseHeaders
   ) as Promise<SearchWithinGroupResponseBody>;
 }
 

@@ -1734,7 +1734,10 @@ pub async fn search_within_group(
     if api_version == APIVersion::V1 {
         Ok(HttpResponse::Ok().json(result_chunks))
     } else {
-        Ok(HttpResponse::Ok().json(result_chunks.into_v2(search_id)))
+        Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .insert_header(("X-TR-Query", query))
+            .json(result_chunks.into_v2(search_id)))
     }
 }
 
@@ -1919,6 +1922,9 @@ pub async fn search_over_groups(
     if api_version == APIVersion::V1 {
         Ok(HttpResponse::Ok().json(result_chunks))
     } else {
-        Ok(HttpResponse::Ok().json(result_chunks.into_v2(search_id)))
+        Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .insert_header(("X-TR-Query", query))
+            .json(result_chunks.into_v2(search_id)))
     }
 }

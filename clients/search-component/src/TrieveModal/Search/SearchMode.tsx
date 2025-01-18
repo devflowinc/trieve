@@ -150,7 +150,7 @@ export const SearchMode = () => {
         <div className="input-flex">
           <input
             ref={inputRef}
-            value={query}
+            value={audioBase64 && query.length == 0 ? "Searching..." : query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={
               imageUrl.length > 0
@@ -274,7 +274,9 @@ export const SearchMode = () => {
               </p>
             )}
           </div>
-        ) : (imageUrl || query || audioBase64) && !resultsLength && loadingResults ? (
+        ) : (imageUrl || query || audioBase64) &&
+          !resultsLength &&
+          loadingResults ? (
           <p className={`no-results-loading ${props.type}`}>Searching...</p>
         ) : null}
       </ul>
