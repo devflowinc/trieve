@@ -21,16 +21,6 @@ const mapMessageType = (message: Messages[0]): ChatMessageProxy => {
   } satisfies ChatMessageProxy;
 };
 
-function removeBrackets(str: string) {
-  let result = str.replace(/\[.*?\]/g, "");
-
-  // Handle unclosed brackets: remove from [ to end
-  result = result.replace(/\[.*$/, "");
-
-  // Replace multiple spaces with single space and trim, but preserve period at end
-  return result.replace(/\s+/g, " ").trim().replace(/\s+\./g, ".");
-}
-
 const ChatContext = createContext<{
   askQuestion: (question?: string, group?: ChunkGroup) => Promise<void>;
   isLoading: boolean;
@@ -67,7 +57,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController(),
+    new AbortController()
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
@@ -118,7 +108,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     setIsLoading(true);
     setIsDoneReading(false);
@@ -153,10 +143,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        if (currentGroup) {
-          text = removeBrackets(text);
-        }
-
         let json;
         try {
           json = JSON.parse(jsonData);
@@ -173,7 +159,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 chunk.metadata.page_title) &&
               chunk.link &&
               chunk.image_urls?.length &&
-              chunk.num_value,
+              chunk.num_value
           );
           if (ecommerceChunks && queryId) {
             trackViews({
@@ -191,7 +177,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ...m.slice(0, -1),
           {
             type: "system",
-            text: text,
+            text,
             additional: json ? json : null,
             queryId,
           },
@@ -234,7 +220,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           stream_response: true,
           highlight_results: props.type === "pdf",
         },
-        chatMessageAbortController.current.signal,
+        chatMessageAbortController.current.signal
       );
       handleReader(reader, queryId);
     } else {
@@ -260,7 +246,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               highlight_results: props.type === "pdf",
             },
           },
-          chatMessageAbortController.current.signal,
+          chatMessageAbortController.current.signal
         );
 
       handleReader(reader, queryId);
@@ -365,7 +351,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
@@ -390,7 +376,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         stopGeneratingMessage,
         isDoneReading,
         rateChatCompletion,
-      }}>
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );
