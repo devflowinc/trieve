@@ -34,7 +34,7 @@ export const FloatingSearchInput = () => {
         type="textarea"
         className="floating-search-input"
         placeholder={props.placeholder}
-        value={query}
+        value=""
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
