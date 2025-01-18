@@ -1471,6 +1471,11 @@ pub async fn retrieve_chunks_from_point_ids(
         None
     };
 
+    let highlight_timeout_ms = std::env::var("HIGHLIGHT_TIMEOUT_MS")
+        .unwrap_or("500".to_string())
+        .parse::<u64>()
+        .unwrap_or(500);
+
     let mut score_chunks: Vec<ScoreChunkDTO> = vec![];
     for search_result in search_chunk_query_results.search_results {
         let Some(mut chunk) = metadata_chunks
@@ -1504,27 +1509,34 @@ pub async fn retrieve_chunks_from_point_ids(
                     let html_default = html.clone();
 
                     // TODO we should call these in parallel
-                    web::block(move || {
-                        highlight_algo(
-                            html,
-                            query,
-                            highlight_options_clone.highlight_threshold,
-                            highlight_options_clone
-                                .highlight_delimiters
-                                .unwrap_or(vec!['.', '!', '?', '\n', '\t', ',']),
-                            highlight_options_clone.highlight_max_length,
-                            highlight_options_clone.highlight_max_num,
-                            highlight_options_clone.highlight_window,
-                            highlight_options_clone.pre_tag,
-                            highlight_options_clone.post_tag,
-                        )
-                    })
+                    tokio::time::timeout(
+                        std::time::Duration::from_millis(highlight_timeout_ms),
+                        web::block(move || {
+                            highlight_algo(
+                                html,
+                                query,
+                                highlight_options_clone.highlight_threshold,
+                                highlight_options_clone
+                                    .highlight_delimiters
+                                    .unwrap_or(vec!['.', '!', '?', '\n', '\t', ',']),
+                                highlight_options_clone.highlight_max_length,
+                                highlight_options_clone.highlight_max_num,
+                                highlight_options_clone.highlight_window,
+                                highlight_options_clone.pre_tag,
+                                highlight_options_clone.post_tag,
+                            )
+                        }),
+                    )
                     .await
-                    .map_err(|e| log::warn!("Thread error calling highlights {e}"))
+                    .map_err(|_| log::warn!("Highlight chunks timed out"))
                     .ok()
                     .transpose()
+                    .map_err(|e| log::warn!("Thread error calling highlights {e}"))
                     .ok()
-                    .flatten() // Result.flatten is in unstable
+                    .flatten()
+                    .transpose()
+                    .ok()
+                    .flatten()
                     .unwrap_or((html_default, vec![]))
                 };
 
