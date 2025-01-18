@@ -25,10 +25,13 @@ use futures::StreamExt;
 use futures_util::stream;
 #[cfg(feature = "hallucination-detection")]
 use hallucination_detection::{HallucinationDetector, HallucinationScore};
+use openai_dive::v1::models::WhisperEngine;
+use openai_dive::v1::resources::audio::{AudioOutputFormat, AudioTranscriptionParametersBuilder};
 use openai_dive::v1::resources::chat::{
     ChatMessageContentPart, ChatMessageImageContentPart, ChatMessageTextContentPart,
     DeltaChatMessage, ImageUrlType,
 };
+use openai_dive::v1::resources::shared::{FileUpload, FileUploadBytes};
 use openai_dive::v1::{
     api::Client,
     resources::{
@@ -1382,6 +1385,44 @@ pub async fn get_text_from_image(
         } => text.clone(),
         _ => "".to_string(),
     };
+
+    Ok(text)
+}
+
+pub async fn get_text_from_audio(audio_base64: String) -> Result<String, ServiceError> {
+    let client = Client {
+        headers: None,
+        api_key: get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into(),
+        project: None,
+        http_client: reqwest::Client::new(),
+        base_url: "https://api.openai.com/v1/".into(),
+        organization: None,
+    };
+
+    let audio_bytes = base64::decode(audio_base64).map_err(|err| {
+        ServiceError::BadRequest(format!("Error decoding audio base64: {:?}", err))
+    })?;
+
+    let parameters = AudioTranscriptionParametersBuilder::default()
+        .file(FileUpload::Bytes(FileUploadBytes {
+            filename: "audio.mp3".to_string(),
+            bytes: audio_bytes.into(),
+        }))
+        .model(WhisperEngine::Whisper1.to_string())
+        .response_format(AudioOutputFormat::Text)
+        .language("en".to_string())
+        .build()
+        .map_err(|err| {
+            ServiceError::InternalServerError(format!("Transcription Error: {:?}", err))
+        })?;
+
+    let text = client
+        .audio()
+        .create_transcription(parameters)
+        .await
+        .map_err(|err| {
+            ServiceError::InternalServerError(format!("Transcription Error: {:?}", err))
+        })?;
 
     Ok(text)
 }
