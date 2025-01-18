@@ -104,6 +104,8 @@ declare module "solid-js" {
 | showFloatingSearchIcon     | boolean                                                                                        | false                                                                 |     
 | showFloatingInput          | boolean                                                                                        | false                                                                 |      
 | buttonTriggers             | { selector: <"query-selector">, mode: "chat"|"search" }                                        | []                                                                    |      
+| hideopenButton             | boolean                                                                                        | false                                                                 |
+
 
 ### Search Results
 
