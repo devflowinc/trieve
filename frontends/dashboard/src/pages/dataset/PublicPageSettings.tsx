@@ -479,7 +479,7 @@ const PublicPageControls = () => {
                 />
               </div>
               <input
-                checked={extraParams.inline ?? false}
+                checked={extraParams.inline ?? true}
                 type="checkbox"
                 onChange={(e) => {
                   setExtraParams("inline", e.currentTarget.checked);

@@ -63,9 +63,18 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
       },
     }));
 
-    // If the useGroupSearch has not been manually set,
-    // set to true if shopify scraping is enabled
     createEffect(() => {
+      // manually set the array for rolemessages to simplify logic
+      // context blocks until it's set
+      if (
+        extraParams.tabMessages === undefined ||
+        extraParams.tabMessages === null
+      ) {
+        setExtraParams("tabMessages", []);
+      }
+
+      // If the useGroupSearch has not been manually set,
+      // set to true if shopify scraping is enabled
       if (
         crawlSettingsQuery.data &&
         crawlSettingsQuery.data.scrape_options?.type === "shopify"
@@ -77,16 +86,12 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
           setExtraParams("useGroupSearch", true);
         }
       }
-    });
 
-    // manually set the array for rolemessages to simplify logic
-    // context blocks until it's set
-    createEffect(() => {
       if (
-        extraParams.tabMessages === undefined ||
-        extraParams.tabMessages === null
+        extraParams.inline == undefined || 
+        extraParams.inline == null
       ) {
-        setExtraParams("tabMessages", []);
+        setExtraParams("inline", true);
       }
     });
 
