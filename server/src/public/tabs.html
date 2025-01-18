@@ -24,6 +24,10 @@
 <script type="module">
   window.tabData = {{ tabs | tojson }};
 
+  if (!window.tabData || !windoew.tabData.length) {
+    return;
+  }
+
   function setOpenTab(tabIndex) {
     const tabButtonsCarousel = document.querySelector('#tab-buttons');
     const tabButtons = document.querySelectorAll('.tab-button');

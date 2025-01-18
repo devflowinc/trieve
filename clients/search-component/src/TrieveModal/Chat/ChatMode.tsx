@@ -66,8 +66,8 @@ export const ChatMode = () => {
         className={cn(
           `chat-outer-wrapper tv-relative tv-flex tv-flex-col tv-scroll-smooth !tv-mt-0`,
           props.inline &&
-            "chat-outer-popup md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0 tv-mt-0 sm:!tv-mt-0",
-          !props.inline && "chat-outer-inline tv-min-h-[175px]",
+            "chat-outer-inline md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0 tv-mt-0 sm:!tv-mt-0",
+          !props.inline && "chat-outer-popup tv-min-h-[175px]"
         )}
         ref={modalRef}
       >
@@ -76,13 +76,17 @@ export const ChatMode = () => {
             currentGroup ? " with-group" : ""
           } ${
             !props.inline && props.type === "ecommerce" && messages.length > 1
-              ? "tv-pt-8"
+              ? "tv-pt-4"
               : ""
           }`}
         >
           <div
             ref={rootRef}
-            className="chat-modal-wrapper tv-relative tv-px-4 tv-overflow-auto sm:tv-max-h-[calc(60vh)] tv-max-h-[85vh] tv-flex tv-flex-col tv-gap-1 tv-mt-1"
+            className={cn(
+              "chat-modal-wrapper tv-relative tv-px-4 tv-overflow-auto tv-flex tv-flex-col tv-gap-1",
+              props.inline && "chat-modal-inline",
+              !props.inline && "chat-modal-popup"
+            )}
           >
             <AnimatePresence mode="wait">
               <div className="ai-message initial-message">
@@ -106,7 +110,11 @@ export const ChatMode = () => {
         }`}
       >
         <div className="inline:tv-ml-2 inline:tv-mb-1">
-          <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
+          <ImagePreview
+            isUploading={uploadingImage}
+            imageUrl={imageUrl}
+            active
+          />
         </div>
         {currentGroup && (
           <div
@@ -126,9 +134,9 @@ export const ChatMode = () => {
         )}
 
         <div
-          className={`input-wrapper tv-sticky tv-top-0 tv-z-10 tv-flex tv-flex-col tv-gap-2 tv-rounded-lg chat ${
-            props.type == "ecommerce" ? "" : props.type
-          } ${props.inline && "tv-ml-2"}`}
+          className={`input-wrapper tv-sticky tv-top-0 tv-z-10 tv-flex tv-flex-col tv-gap-2 tv-rounded-lg chat${
+            props.type == "ecommerce" ? "" : " " + props.type
+          }${props.inline && " tv-ml-2"}`}
         >
           <form
             onSubmit={(e) => {
@@ -141,7 +149,7 @@ export const ChatMode = () => {
             <input
               ref={chatInput}
               value={currentQuestion}
-              className={`${props.inline ? "inline-input" : ""} ${mode}`}
+              className={`${props.inline ? "inline-input " : ""}${mode}`}
               onChange={(e) => setCurrentQuestion(e.target.value)}
               placeholder="Ask anything ..."
             />

@@ -5566,6 +5566,11 @@ react-dom@^18.3.1:
     loose-envify "^1.1.0"
     scheduler "^0.23.2"
 
+react-intersection-observer-hook@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/react-intersection-observer-hook/-/react-intersection-observer-hook-3.0.1.tgz#bc56fd9da64d26e45d277bba10ccad57c7510a64"
+  integrity sha512-nehzFUV+jVY49tc9FOm4yJHrmFFtCmsBZKiN1rUUB2675CMBf6kKu1ekuTqvCnmh4XG7RFP3bMyAevfqfV94xw==
+
 react-is@^16.13.1:
   version "16.13.1"
   resolved "https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz"
@@ -6454,7 +6459,7 @@ trieve-ts-sdk@^0.0.50:
   integrity sha512-AbV41cEzxNSJ+gXUAOFK5OoMl4Kgu/DGkIU/fRS+k8rH+s0ePwBK6CYSPKBxGvNajbZ9hoqiUgN9/qZJX+k0yA==
 
 "trieve-ts-sdk@file:clients/ts-sdk":
-  version "0.0.54"
+  version "0.0.59"
 
 trim-lines@^3.0.0:
   version "3.0.1"
