@@ -44,6 +44,15 @@ export async function createMessage(
   );
 }
 
+export const getCleanFetch = () => {
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  document.body.appendChild(iframe);
+  const cleanFetch = iframe.contentWindow?.fetch.bind(window);
+  document.body.removeChild(iframe);
+  return cleanFetch;
+};
+
 /**
  * Create a message as a stream and returns a reader. Messages are attached to topics in order to coordinate memory of gen-AI chat sessions.Auth’ed user or api key must have an admin or owner role for the specified dataset’s organization.
  * 
@@ -65,7 +74,10 @@ export async function createMessageReader(
     throw new Error("datasetId is required");
   }
 
-  const response = await fetch(this.trieve.baseUrl + "/api/message", {
+  const cleanFetch = getCleanFetch();
+  const fetchToUse = cleanFetch ?? fetch;
+
+  const response = await fetchToUse(this.trieve.baseUrl + "/api/message", {
     method: "post",
     headers: {
       "Content-Type": "application/json",
@@ -106,7 +118,10 @@ export async function createMessageReaderWithQueryId(
     throw new Error("datasetId is required");
   }
 
-  const response = await fetch(this.trieve.baseUrl + "/api/message", {
+  const cleanFetch = getCleanFetch();
+  const fetchToUse = cleanFetch ?? fetch;
+
+  const response = await fetchToUse(this.trieve.baseUrl + "/api/message", {
     method: "post",
     headers: {
       "Content-Type": "application/json",

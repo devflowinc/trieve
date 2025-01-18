@@ -94,7 +94,6 @@ export const Message = ({
   const { props, trieveSDK } = useModalState();
 
   useEffect(() => {
-    console.log("message", props.analytics);
     if (props.analytics) {
       const ecommerceChunks = message.additional?.filter(
         (chunk) =>
