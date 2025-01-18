@@ -169,9 +169,11 @@ const ModalContext = createContext<{
   trieveSDK: TrieveSDK;
   query: string;
   imageUrl: string;
+  audioBase64: string;
   uploadingImage: boolean;
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   setImageUrl: React.Dispatch<React.SetStateAction<string>>;
+  setAudioBase64: React.Dispatch<React.SetStateAction<string>>;
   setUploadingImage: React.Dispatch<React.SetStateAction<boolean>>;
   results: ChunkWithHighlights[] | GroupChunk[][];
   setResults: React.Dispatch<
@@ -199,6 +201,7 @@ const ModalContext = createContext<{
   trieveSDK: (() => {}) as unknown as TrieveSDK,
   query: "",
   imageUrl: "",
+  audioBase64: "",
   uploadingImage: false,
   results: [],
   loadingResults: false,
@@ -210,6 +213,7 @@ const ModalContext = createContext<{
   setOpen: () => {},
   setQuery: () => {},
   setImageUrl: () => {},
+  setAudioBase64: () => {},
   setUploadingImage: () => {},
   setResults: () => {},
   requestID: "",
@@ -237,6 +241,7 @@ const ModalProvider = ({
   });
   const [query, setQuery] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [audioBase64, setAudioBase64] = useState("");
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
   const [results, setResults] = useState<
     ChunkWithHighlights[] | GroupChunk[][]
@@ -249,7 +254,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all"
+    props.tags?.find((t) => t.selected)?.tag || "all",
   );
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
 
@@ -263,9 +268,15 @@ const ModalProvider = ({
   });
 
   const search = async (abortController: AbortController) => {
-    if (!query && !imageUrl) {
+    if (!query && !imageUrl && !audioBase64) {
       setResults([]);
       return;
+    }
+    if (audioBase64) {
+      setQuery("");
+    }
+    if (imageUrl) {
+      setQuery("");
     }
 
     try {
@@ -297,7 +308,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          currentTag !== "all" ? currentTag : undefined
+          currentTag !== "all" ? currentTag : undefined,
         );
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
@@ -314,13 +325,14 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          currentTag !== "all" ? currentTag : undefined
+          currentTag !== "all" ? currentTag : undefined,
         );
         setResults(results);
       } else {
         const results = await searchWithTrieve({
           query_string: query,
           image_url: imageUrl,
+          audioBase64: audioBase64,
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
@@ -349,7 +361,7 @@ const ModalProvider = ({
         const filterCounts = await countChunksWithPagefind(
           pagefind,
           query,
-          props.tags
+          props.tags,
         );
         setTagCounts(filterCounts);
       } else {
@@ -361,8 +373,8 @@ const ModalProvider = ({
                 trieve: trieve,
                 abortController,
                 ...(tag.tag !== "all" && { tag: tag.tag }),
-              })
-            )
+              }),
+            ),
           );
           setTagCounts(numberOfRecords);
         } catch (e) {
@@ -413,7 +425,7 @@ const ModalProvider = ({
         setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
       }
     },
-    [open, props.allowSwitchingModes]
+    [open, props.allowSwitchingModes],
   );
 
   useEffect(() => {
@@ -434,7 +446,7 @@ const ModalProvider = ({
       clearTimeout(timeout);
       abortController.abort();
     };
-  }, [query, imageUrl, currentTag]);
+  }, [query, imageUrl, audioBase64, currentTag]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -463,6 +475,8 @@ const ModalProvider = ({
         setQuery,
         imageUrl,
         setImageUrl,
+        audioBase64,
+        setAudioBase64,
         uploadingImage,
         setUploadingImage,
         open,
@@ -482,8 +496,7 @@ const ModalProvider = ({
         currentGroup,
         setCurrentGroup,
         tagCounts,
-      }}
-    >
+      }}>
       {children}
     </ModalContext.Provider>
   );

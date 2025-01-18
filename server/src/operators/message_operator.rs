@@ -1389,7 +1389,7 @@ pub async fn get_text_from_image(
     Ok(text)
 }
 
-pub async fn get_text_from_audio(audio_base64: String) -> Result<String, ServiceError> {
+pub async fn get_text_from_audio(audio_base64: &str) -> Result<String, ServiceError> {
     let client = Client {
         headers: None,
         api_key: get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into(),
@@ -1423,6 +1423,8 @@ pub async fn get_text_from_audio(audio_base64: String) -> Result<String, Service
         .map_err(|err| {
             ServiceError::InternalServerError(format!("Transcription Error: {:?}", err))
         })?;
+
+    dbg!(&text);
 
     Ok(text)
 }

@@ -234,6 +234,7 @@ export default function Home() {
           brandFontFamily={brandFontFamily}
           allowSwitchingModes={true}
           responsive={false}
+          zIndex={0}
           cssRelease="none"
           searchOptions={{
             use_autocomplete: false,

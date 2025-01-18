@@ -9041,10 +9041,14 @@
       "CreateMessageReqPayload": {
         "type": "object",
         "required": [
-          "new_message_content",
           "topic_id"
         ],
         "properties": {
+          "audio_input": {
+            "type": "string",
+            "description": "The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.",
+            "nullable": true
+          },
           "concat_user_messages_query": {
             "type": "boolean",
             "description": "If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.",
@@ -9092,7 +9096,8 @@
           },
           "new_message_content": {
             "type": "string",
-            "description": "The content of the user message to attach to the topic and then generate an assistant message in response to."
+            "description": "The content of the user message to attach to the topic and then generate an assistant message in response to.",
+            "nullable": true
           },
           "no_result_message": {
             "type": "string",
@@ -9947,10 +9952,14 @@
         "type": "object",
         "required": [
           "topic_id",
-          "message_sort_order",
-          "new_message_content"
+          "message_sort_order"
         ],
         "properties": {
+          "audio_input": {
+            "type": "string",
+            "description": "The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.",
+            "nullable": true
+          },
           "concat_user_messages_query": {
             "type": "boolean",
             "description": "If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.",
@@ -10003,7 +10012,8 @@
           },
           "new_message_content": {
             "type": "string",
-            "description": "The new content of the message to replace the old content with."
+            "description": "The new content of the message to replace the old content with.",
+            "nullable": true
           },
           "no_result_message": {
             "type": "string",
@@ -11006,6 +11016,11 @@
           "chunk_ids"
         ],
         "properties": {
+          "audio_input": {
+            "type": "string",
+            "description": "Audio input to be used in the chat. This will be used to generate the audio tokens for the model. The default is None.",
+            "nullable": true
+          },
           "chunk_ids": {
             "type": "array",
             "items": {
@@ -15109,6 +15124,17 @@
           },
           {
             "type": "string"
+          },
+          {
+            "type": "object",
+            "required": [
+              "audio_base64"
+            ],
+            "properties": {
+              "audio_base64": {
+                "type": "string"
+              }
+            }
           }
         ]
       },
