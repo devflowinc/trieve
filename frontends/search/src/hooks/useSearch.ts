@@ -88,6 +88,7 @@ export interface SearchOptions {
   removeStopWords: boolean;
   filters: Filters | null;
   multiQueries: MultiQuery[];
+  audioBase64?: string;
   scoringOptions?: ScoringOptions;
 }
 
@@ -132,6 +133,7 @@ const initalState: SearchOptions = {
     should: [],
   } as Filters,
   multiQueries: [],
+  audioBase64: "",
   scoringOptions: undefined,
 };
 

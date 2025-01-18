@@ -19,7 +19,7 @@ import {
   PopoverButton,
   PopoverPanel,
 } from "solid-headless";
-import { FaRegularFlag, FaSolidCheck } from "solid-icons/fa";
+import { FaRegularFlag, FaSolidCheck, FaSolidMicrophone } from "solid-icons/fa";
 import { Filter, FilterItem } from "./FilterModal";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 import {
@@ -244,6 +244,60 @@ const SearchForm = (props: {
     );
   });
 
+  const [isRecording, setIsRecording] = createSignal(false);
+  const [mediaRecorder, setMediaRecorder] = createSignal<MediaRecorder | null>(
+    null,
+  );
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const recorder = new MediaRecorder(stream);
+      const audioChunks: BlobPart[] = [];
+
+      recorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      recorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+          let base64data = reader.result as string;
+          base64data = base64data?.split(",")[1];
+          props.search.setSearch("audioBase64", base64data);
+          props.search.setSearch("version", (prev) => prev + 1);
+        };
+      };
+
+      setMediaRecorder(recorder);
+      recorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      alert(
+        "Error accessing microphone. Please make sure you have granted microphone permissions.",
+      );
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder() && mediaRecorder()?.state !== "inactive") {
+      mediaRecorder()?.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording()) {
+      stopRecording();
+    } else {
+      void startRecording();
+    }
+  };
+
   return (
     <>
       <div class="w-full">
@@ -326,6 +380,20 @@ const SearchForm = (props: {
                   type="submit"
                 >
                   <BiRegularSearch class="mt-1 h-6 w-6 fill-current" />
+                </button>
+                <button
+                  type="button"
+                  classList={{
+                    "border-l border-neutral-600 pl-[10px] dark:border-neutral-200 cursor-pointer pb-1":
+                      true,
+                    "text-red-500": isRecording(),
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleRecording();
+                  }}
+                >
+                  <FaSolidMicrophone class="mt-1 h-5 w-5 fill-current" />
                 </button>
               </div>
             </Show>

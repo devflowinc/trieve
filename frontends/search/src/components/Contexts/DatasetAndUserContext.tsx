@@ -77,6 +77,7 @@ export const DatasetAndUserContextWrapper = (props: RouteSectionProps) => {
       .then((res) => {
         if (res.status === 401) {
           if (res.status === 401) {
+            console.log(window.origin);
             window.location.href = `${apiHost}/auth?redirect_uri=${window.origin}`;
           }
           setUser(null);

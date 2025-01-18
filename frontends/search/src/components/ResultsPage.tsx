@@ -271,12 +271,19 @@ const ResultsPage = (props: ResultsPageProps) => {
         mmr = props.search.debounced.mmr;
       }
 
-      const query =
+      let query: (string | number)[][] | string | { audio_base64: string } =
+        props.search.debounced.audioBase64
+          ? {
+              audio_base64: props.search.debounced.audioBase64,
+            }
+          : props.search.debounced.query;
+
+      query =
         props.search.debounced.multiQueries.length > 0
           ? props.search.debounced.multiQueries
               .map((q) => [q.query, q.weight])
               .filter((q) => q[0] != "")
-          : props.search.debounced.query;
+          : query;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const requestBody: any = {

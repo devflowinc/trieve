@@ -7721,6 +7721,9 @@ pub enum SearchModalities {
         llm_prompt: Option<String>,
     },
     Text(String),
+    Audio {
+        audio_base64: String,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
@@ -7744,6 +7747,9 @@ impl QueryTypes {
                 SearchModalities::Text(text) => Ok(text.clone()),
                 SearchModalities::Image { .. } => Err(ServiceError::BadRequest(
                     "Cannot use Image Query with cross encoder or highlights".to_string(),
+                )),
+                SearchModalities::Audio { .. } => Err(ServiceError::BadRequest(
+                    "Cannot use Audio Query with cross encoder or highlights".to_string(),
                 )),
             },
             QueryTypes::Multi(_) => Err(ServiceError::BadRequest(

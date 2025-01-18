@@ -6,7 +6,7 @@ use super::chunk_operator::{
 use super::group_operator::{
     get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
-use super::message_operator::get_text_from_image;
+use super::message_operator::{get_text_from_audio, get_text_from_image};
 use super::model_operator::{
     cross_encoder, get_bm25_embeddings, get_dense_vector, get_sparse_vector,
 };
@@ -1631,6 +1631,7 @@ pub async fn parse_query(
             image_url,
             llm_prompt,
         } => get_text_from_image(image_url, llm_prompt, dataset).await?,
+        SearchModalities::Audio { audio_base64 } => get_text_from_audio(audio_base64).await?,
     };
 
     let query = match remove_stop_words {
