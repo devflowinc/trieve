@@ -40,7 +40,18 @@ export const ChatMessage = ({
       }}
       key={idx}
     >
-      {message.type == "user" ? (
+      {message.type === "user" && message.text === "Loading..." ? (
+        <div>
+          <div className={message.type}>
+            <div className="tv-flex tv-flex-col tv-space-y-1 tv-items-end">
+              <span className="tv-text-left tv-px-3 tv-py-1 tv-rounded-xl tv-text-zinc-50 tv-bg-zinc-800">
+                <LoadingIcon className="tv-w-8 tv-h-8 tv-p-0" />
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {message.type == "user" && message.text !== "Loading..." ? (
         <div key={idx}>
           <div className={message.type}>
             <div className="tv-flex tv-flex-col tv-space-y-1 tv-items-end">
@@ -234,6 +245,7 @@ export const Message = ({
           <LoadingIcon className="loading" />
         </div>
       ) : null}
+
       {message.type === "system" && message.text !== "Loading..." ? (
         <div
           className={`system${props.type === "ecommerce" ? " ecommerce" : ""}`}

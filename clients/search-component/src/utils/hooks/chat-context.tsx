@@ -115,7 +115,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [currentTag]);
 
   useEffect(() => {
-    if (audioBase64 != "") {
+    if (audioBase64 && audioBase64 != "") {
       askQuestion(" ");
     }
   }, [audioBase64]);
@@ -211,6 +211,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   }) => {
     setIsLoading(true);
     const curGroup = group || currentGroup;
+    let transcribedQuery: string | null = null;
 
     // Use group search
     if (curGroup) {
@@ -223,7 +224,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         {
           chunk_ids: groupChunks.map((c) => c.id),
           image_urls: imageUrl ? [imageUrl] : [],
-          audio_input: audioBase64,
+          audio_input:
+            audioBase64 && audioBase64?.length > 0 ? audioBase64 : undefined,
           prev_messages: [
             ...messages.slice(0, -1).map((m) => mapMessageType(m)),
             {
@@ -234,13 +236,31 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           stream_response: true,
           highlight_results: props.type === "pdf",
         },
-        chatMessageAbortController.current.signal
+        chatMessageAbortController.current.signal,
+        (headers: Record<string, string>) => {
+          if (headers["x-tr-query"] && audioBase64) {
+            transcribedQuery = headers["x-tr-query"];
+          }
+        }
       );
-      if (imageUrl) {
-        setImageUrl("");
-      }
-      if (audioBase64) {
+      if (transcribedQuery && audioBase64) {
         setAudioBase64("");
+        setMessages((m) => [
+          ...m.slice(0, -1),
+          {
+            type: "user",
+            text: transcribedQuery ?? "",
+            additional: null,
+            queryId: null,
+            imageUrl: imageUrl ? imageUrl : null,
+          },
+          {
+            type: "system",
+            text: "Loading...",
+            additional: null,
+            queryId: null,
+          },
+        ]);
       }
       handleReader(reader, queryId);
     } else {
@@ -249,7 +269,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           {
             topic_id: id || currentTopic,
             new_message_content: question || currentQuestion,
-            audio_input: audioBase64,
+            audio_input:
+              audioBase64 && audioBase64?.length > 0 ? audioBase64 : undefined,
             image_urls: imageUrl ? [imageUrl] : [],
             llm_options: {
               completion_first: false,
@@ -267,11 +288,35 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               highlight_results: props.type === "pdf",
             },
           },
-          chatMessageAbortController.current.signal
+          chatMessageAbortController.current.signal,
+          (headers: Record<string, string>) => {
+            if (headers["x-tr-query"] && audioBase64) {
+              transcribedQuery = headers["x-tr-query"];
+            }
+          }
         );
-
+      if (transcribedQuery && audioBase64) {
+        setAudioBase64("");
+        setMessages((m) => [
+          ...m.slice(0, -1),
+          {
+            type: "user",
+            text: transcribedQuery ?? "",
+            additional: null,
+            queryId: null,
+            imageUrl: imageUrl ? imageUrl : null,
+          },
+          {
+            type: "system",
+            text: "Loading...",
+            additional: null,
+            queryId: null,
+          },
+        ]);
+      }
       handleReader(reader, queryId);
     }
+
     if (imageUrl) {
       setImageUrl("");
     }
@@ -340,32 +385,44 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       chatWithGroup(group);
       setCurrentGroup(group);
     }
+    if (!audioBase64) {
+      if (question == undefined || question == null || question == "") {
+        question = props.defaultImageQuestion;
+      }
 
-    if (question == undefined || question == null || question == "") {
-      question = props.defaultImageQuestion;
+      setMessages((m) => [
+        ...m,
+        {
+          type: "user",
+          text: question || currentQuestion,
+          additional: null,
+          queryId: null,
+          imageUrl: imageUrl ? imageUrl : null,
+        },
+      ]);
+    } else {
+      setMessages((m) => [
+        ...m,
+        {
+          type: "user",
+          text: "Loading...",
+          additional: null,
+          queryId: null,
+        },
+      ]);
     }
-
-    setMessages((m) => [
-      ...m,
-      {
-        type: "user",
-        text: question || currentQuestion,
-        additional: null,
-        queryId: null,
-        imageUrl: imageUrl ? imageUrl : null,
-      },
-    ]);
 
     if (!currentTopic && !currentGroup && !group) {
       await createTopic({ question: question || currentQuestion });
     } else {
       await createQuestion({ question: question || currentQuestion, group });
     }
-
-    setMessages((m) => [
-      ...m,
-      { type: "system", text: "Loading...", additional: null, queryId: null },
-    ]);
+    if (!audioBase64) {
+      setMessages((m) => [
+        ...m,
+        { type: "system", text: "Loading...", additional: null, queryId: null },
+      ]);
+    }
   };
 
   const switchToChatAndAskQuestion = async (query: string) => {

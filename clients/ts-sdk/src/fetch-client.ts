@@ -69,7 +69,7 @@ function camelcaseToSnakeCase(str: string) {
 // Convert camelcase to snake case and replace
 function replacePathParams(
   path: string,
-  params: Record<string, string>
+  params: Record<string, string>,
 ): string {
   for (const [key, value] of Object.entries(params)) {
     path = path.replaceAll(`{${camelcaseToSnakeCase(key)}}`, value);
@@ -116,7 +116,8 @@ export class TrieveFetchClient {
     path: P,
     method: EJECT extends false ? M : HttpMethod,
     params?: EJECT extends false ? RequestParams<P, M> : URQ,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    parseHeaders?: (headers: Record<string, string>) => void,
   ): Promise<EJECT extends false ? ResponseBody<P, M> : URE> {
     let requestBody: unknown;
 
@@ -179,15 +180,21 @@ export class TrieveFetchClient {
     if (!response.ok) {
       throw new Error(
         `HTTP error! status: ${await response.text()} \nPayload ${JSON.stringify(
-          requestBody
-        )} \nroute: ${method} ${this.baseUrl + updatedPath}`
+          requestBody,
+        )} \nroute: ${method} ${this.baseUrl + updatedPath}`,
       );
     }
     let responseObject: unknown;
 
     try {
+      if (parseHeaders) {
+        parseHeaders(Object.fromEntries(response.headers.entries()));
+      }
       responseObject = await response.clone().json();
     } catch {
+      if (parseHeaders) {
+        parseHeaders(Object.fromEntries(response.headers.entries()));
+      }
       responseObject = await response.clone().text();
     }
     if (this.debug) {

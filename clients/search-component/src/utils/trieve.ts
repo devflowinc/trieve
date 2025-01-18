@@ -68,6 +68,7 @@ export const searchWithTrieve = async ({
   }
 
   let results;
+  let transcribedQuery: string | null = null;
   if (searchOptions.use_autocomplete === true) {
     results = (await trieve.autocomplete(
       {
@@ -92,6 +93,11 @@ export const searchWithTrieve = async ({
         ...omit(searchOptions, ["use_autocomplete"]),
       },
       abortController?.signal,
+      (headers: Record<string, string>) => {
+        if (headers["x-tr-query"] && audioBase64) {
+          transcribedQuery = headers["x-tr-query"];
+        }
+      },
     )) as SearchResponseBody;
   } else {
     results = (await trieve.search(
@@ -116,6 +122,11 @@ export const searchWithTrieve = async ({
         ...omit(searchOptions, ["use_autocomplete"]),
       },
       abortController?.signal,
+      (headers: Record<string, string>) => {
+        if (headers["x-tr-query"] && audioBase64) {
+          transcribedQuery = headers["x-tr-query"];
+        }
+      },
     )) as SearchResponseBody;
   }
 
@@ -134,12 +145,15 @@ export const searchWithTrieve = async ({
   return {
     chunks: resultsWithHighlight,
     requestID: results.id,
+    transcribedQuery,
   } as unknown as SearchResults;
 };
 
 export const groupSearchWithTrieve = async ({
   trieve,
-  query,
+  query_string,
+  image_url,
+  audioBase64,
   searchOptions = {
     search_type: "fulltext",
   },
@@ -148,7 +162,9 @@ export const groupSearchWithTrieve = async ({
   type,
 }: {
   trieve: TrieveSDK;
-  query: string;
+  query_string: string;
+  image_url?: string;
+  audioBase64?: string;
   searchOptions: Props["searchOptions"];
   abortController?: AbortController;
   tag?: string;
@@ -161,6 +177,19 @@ export const groupSearchWithTrieve = async ({
       ? 2
       : 0.3);
 
+  let query;
+  if (audioBase64) {
+    query = {
+      audio_base64: audioBase64,
+    };
+  } else if (image_url) {
+    query = {
+      image_url: image_url,
+    };
+  } else {
+    query = query_string;
+  }
+  let transcribedQuery: string | null = null;
   const results = await trieve.searchOverGroups(
     {
       query,
@@ -181,6 +210,11 @@ export const groupSearchWithTrieve = async ({
       ...omit(searchOptions, ["use_autocomplete"]),
     },
     abortController?.signal,
+    (headers: Record<string, string>) => {
+      if (headers["x-tr-query"] && audioBase64) {
+        transcribedQuery = headers["x-tr-query"];
+      }
+    },
   );
 
   const resultsWithHighlight = results.results.map((group) => {
@@ -190,7 +224,10 @@ export const groupSearchWithTrieve = async ({
         ...chunk,
         chunk: {
           ...chunk.chunk,
-          highlight: highlightText(query, c.chunk_html),
+          highlight:
+            typeof query == "string"
+              ? highlightText(query, c.chunk_html)
+              : null,
         },
       };
     });
@@ -200,6 +237,7 @@ export const groupSearchWithTrieve = async ({
   return {
     groups: resultsWithHighlight,
     requestID: results.id,
+    transcribedQuery,
   } as unknown as GroupSearchResults;
 };
 

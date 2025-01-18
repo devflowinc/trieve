@@ -737,26 +737,28 @@ pub async fn stream_response(
         .collect::<Vec<String>>()
         .join("\n\n");
 
+    let user_message = match &openai_messages
+        .last()
+        .expect("There needs to be at least 1 prior message")
+    {
+        ChatMessage::User {
+            content: ChatMessageContent::Text(text),
+            ..
+        }
+        | ChatMessage::System {
+            content: ChatMessageContent::Text(text),
+            ..
+        }
+        | ChatMessage::Assistant {
+            content: Some(ChatMessageContent::Text(text)),
+            ..
+        } => text.clone(),
+        _ => "".to_string(),
+    };
+
     let last_message = ChatMessageContent::Text(format!(
         "Here's my prompt: {} \n\n {} {}",
-        match &openai_messages
-            .last()
-            .expect("There needs to be at least 1 prior message")
-        {
-            ChatMessage::User {
-                content: ChatMessageContent::Text(text),
-                ..
-            }
-            | ChatMessage::System {
-                content: ChatMessageContent::Text(text),
-                ..
-            }
-            | ChatMessage::Assistant {
-                content: Some(ChatMessageContent::Text(text)),
-                ..
-            } => text.clone(),
-            _ => "".to_string(),
-        },
+        user_message.clone(),
         rag_prompt,
         rag_content,
     ));
@@ -1024,6 +1026,7 @@ pub async fn stream_response(
         create_messages_query(vec![new_message], &pool).await?;
 
         return Ok(HttpResponse::Ok()
+            .insert_header(("X-TR-Query", user_message))
             .insert_header(("TR-QueryID", query_id.to_string()))
             .json(response_string));
     }
@@ -1176,11 +1179,13 @@ pub async fn stream_response(
         .unwrap_or(false)
     {
         return Ok(HttpResponse::Ok()
+            .insert_header(("X-TR-Query", user_message))
             .insert_header(("TR-QueryID", query_id.to_string()))
             .streaming(completion_stream.chain(chunk_stream)));
     }
 
     Ok(HttpResponse::Ok()
+        .insert_header(("X-TR-Query", user_message))
         .insert_header(("TR-QueryID", query_id.to_string()))
         .streaming(chunk_stream.chain(completion_stream)))
 }
@@ -1426,5 +1431,5 @@ pub async fn get_text_from_audio(audio_base64: &str) -> Result<String, ServiceEr
 
     dbg!(&text);
 
-    Ok(text)
+    Ok(text.replace("\n", ""))
 }
