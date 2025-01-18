@@ -26,6 +26,7 @@ import {
   UpdateChunkReqPayload,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
+import { getCleanFetch } from "../message";
 
 /**
  * Function that provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results’ chunk_html values will be modified with <b><mark> tags for sub-sentence highlighting.
@@ -285,16 +286,22 @@ export async function ragOnChunkReaderWithQueryId(
     throw new Error("datasetId is required");
   }
 
-  const response = await fetch(this.trieve.baseUrl + "/api/chunk/generate", {
-    method: "post",
-    headers: {
-      "Content-Type": "application/json",
-      "TR-Dataset": this.datasetId,
-      Authorization: `Bearer ${this.trieve.apiKey}`,
-    },
-    body: JSON.stringify(props),
-    signal,
-  });
+  const cleanFetch = getCleanFetch();
+  const fetchToUse = cleanFetch ?? fetch;
+
+  const response = await fetchToUse(
+    this.trieve.baseUrl + "/api/chunk/generate",
+    {
+      method: "post",
+      headers: {
+        "Content-Type": "application/json",
+        "TR-Dataset": this.datasetId,
+        Authorization: `Bearer ${this.trieve.apiKey}`,
+      },
+      body: JSON.stringify(props),
+      signal,
+    }
+  );
 
   const reader = response.body?.getReader();
 
