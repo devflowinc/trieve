@@ -87,10 +87,7 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
         }
       }
 
-      if (
-        extraParams.inline == undefined || 
-        extraParams.inline == null
-      ) {
+      if (extraParams.inline == undefined || extraParams.inline == null) {
         setExtraParams("inline", true);
       }
     });

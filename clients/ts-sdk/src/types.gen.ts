@@ -2099,6 +2099,7 @@ export type PublicPageParameters = {
     debounceMs?: (number) | null;
     defaultAiQuestions?: Array<(string)> | null;
     defaultCurrency?: (string) | null;
+    defaultImageQuestion?: (string) | null;
     defaultSearchMode?: (string) | null;
     defaultSearchQueries?: Array<(string)> | null;
     floatingButtonPosition?: (string) | null;

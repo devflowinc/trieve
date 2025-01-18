@@ -559,6 +559,24 @@ const PublicPageControls = () => {
 
           <div class="grow">
             <div class="flex items-center gap-1">
+              <label class="block">Default Image Query</label>
+              <Tooltip
+                tooltipText="The prompt to send when the user only uploads an image"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
+            <input
+              placeholder="Search..."
+              value={extraParams.defaultImageQuestion || "This is an image of a product that I want you to show similar recomendations for."}
+              onInput={(e) => {
+                setExtraParams("defaultImageQuestion", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+
+          <div class="grow">
+            <div class="flex items-center gap-1">
               <label class="block">Placeholder Text</label>
               <Tooltip
                 tooltipText="Text shown in the search box before user input"

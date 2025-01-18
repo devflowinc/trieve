@@ -125,7 +125,9 @@ export const ChatMode = () => {
           messages.length ? " with-messages" : ""
         }`}
       >
-        <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
+        <div className="inline:tv-ml-2 inline:tv-mb-1">
+          <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
+        </div>
         {currentGroup && (
           <div
             className={`chat-group-disclaimer ${
@@ -150,7 +152,7 @@ export const ChatMode = () => {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (currentQuestion) {
+              if (currentQuestion || imageUrl !== "") {
                 askQuestion(currentQuestion);
               }
             }}
@@ -165,7 +167,7 @@ export const ChatMode = () => {
           </form>
           <button
             onClick={() => {
-              if (currentQuestion) {
+              if (currentQuestion || imageUrl !== "") {
                 askQuestion(currentQuestion);
               }
             }}

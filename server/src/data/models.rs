@@ -3322,6 +3322,9 @@ impl DatasetConfigurationDTO {
                     inline_header: page_parameters_self
                         .inline_header
                         .or(page_parameters_curr.inline_header),
+                    default_image_question: page_parameters_self
+                        .default_image_question
+                        .or(page_parameters_curr.default_image_question),
                 }),
             },
             DISABLE_ANALYTICS: self
