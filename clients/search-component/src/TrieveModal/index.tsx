@@ -75,14 +75,13 @@ const Modal = () => {
       }
 
       if (chatOuterWrapper && props.type && viewportHeight) {
-        const pxRemoved =
-          props.type == "ecommerce" ? 125 : props.type == "pdf" ? 265 : 175;
+        const pxRemoved = props.type == "ecommerce" ? 125 : 110;
 
         const newHeight = viewportHeight - pxRemoved;
         (chatOuterWrapper as HTMLElement).style.maxHeight = `${newHeight}px`;
         if (chatModalWrapper) {
           (chatModalWrapper as HTMLElement).style.maxHeight = `${
-            newHeight - 16
+            newHeight - 24
           }px`;
         }
       }
@@ -237,12 +236,12 @@ const Modal = () => {
           )}
           <div
             id="trieve-search-modal"
-            className={`${mode === "chat" ? "chat-modal-mobile " : ""} ${
-              props.theme === "dark" ? "dark " : ""
-            } ${
+            className={`${mode === "chat" ? "chat-modal-mobile" : ""}${
+              props.theme === "dark" ? " dark" : ""
+            }${
               props.inline
-                ? "trieve-inline-modal tv-trieve-inline-modal"
-                : "trieve-popup-modal"
+                ? " trieve-inline-modal tv-trieve-inline-modal"
+                : " trieve-popup-modal"
             } ${props.type}`.trim()}
             style={{
               zIndex: props.zIndex ? props.zIndex + 1 : 1001,
@@ -275,10 +274,6 @@ const Modal = () => {
                         mode === "chat" && !fullscreenPdfState
                           ? "block"
                           : "none",
-                      maxHeight:
-                        fullscreenPdfState && props.type == "pdf"
-                          ? "none"
-                          : "60vh",
                     }
                   : {
                       display: mode === "chat" ? "block" : "none",
