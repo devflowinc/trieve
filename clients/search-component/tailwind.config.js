@@ -16,7 +16,9 @@ export default {
         return `.trieve-inline-modal &`;
       });
     }),
-    require("@tailwindcss/forms"),
+    require("@tailwindcss/forms")({
+      strategy: "class",
+    }),
     require("tailwind-scrollbar"),
     scopedPreflightStyles({
       isolationStrategy: isolateInsideOfContainer(
@@ -28,7 +30,7 @@ export default {
         ],
         {
           rootStyles: true,
-        },
+        }
       ),
     }),
   ],
