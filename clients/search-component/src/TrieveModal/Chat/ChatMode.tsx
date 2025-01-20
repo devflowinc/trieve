@@ -194,13 +194,13 @@ const ChatShadow = ({ visible }: { visible: boolean }) => {
         style={{
           opacity: visible ? 1 : 0,
         }}
-        className="tv-h-[40px] tv-blur-md tv-translate-y-6 tv-absolute tv-left-3 tv-right-3 tv-bottom-0 tv-bg-gradient-to-t tv-from-neutral-300 tv-to-transparent"
+        className="tv-h-[40px] tv-blur-md tv-translate-y-6 tv-absolute tv-left-3 tv-right-3 tv-bottom-0 tv-bg-gradient-to-t tv-from-neutral-300 tv-dark-from-neutral-700 tv-to-transparent"
       ></div>
       <div
         style={{
           opacity: visible ? 1 : 0,
         }}
-        className="tv-h-[50px] tv-blur-lg tv-translate-y-8 tv-absolute tv-left-24 tv-right-24 tv-bottom-0 tv-bg-gradient-to-t tv-from-neutral-300 tv-to-transparent"
+        className="tv-h-[50px] tv-blur-lg tv-translate-y-8 tv-absolute tv-left-24 tv-right-24 tv-bottom-0 tv-bg-gradient-to-t tv-from-neutral-300 tv-dark-from-neutral-700 tv-to-transparent"
       ></div>
     </>
   );
