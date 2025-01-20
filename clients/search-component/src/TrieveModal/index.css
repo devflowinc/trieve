@@ -1011,6 +1011,10 @@ body {
         @apply tv-text-zinc-400;
       }
 
+      .tv-dark-from-neutral-700 {
+        @apply tv-from-neutral-700;
+      }
+
       .message-wrapper {
         border-color: var(--tv-zinc-600);
       }
