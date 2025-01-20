@@ -157,7 +157,7 @@ export const SearchMode = () => {
         </div>
       )}
       <div className={`input-wrapper ${props.type} ${mode}`}>
-        <div className="input-flex group-focus:tv-border has-[:focus]:tv-border has-[:focus]:tv-border-[var(--tv-prop-brand-color)] tv-mb-2 sm:tv-text-sm sm:tv-leading-6 tv-px-4 tv-items-center tv-flex tv-justify-between tv-w-full tv-rounded-lg tv-border-[1px]">
+        <div className="input-flex group-focus:tv-border has-[:focus]:tv-border has-[:focus]:tv-border-[var(--tv-prop-brand-color)] tv-mb-2 sm:tv-text-sm sm:tv-leading-6 tv-py-1.5 tv-px-4 tv-items-center tv-flex tv-justify-between tv-w-full tv-rounded-lg tv-border-[1px]">
           <input
             ref={inputRef}
             value={audioBase64 && query.length == 0 ? "Searching..." : query}
@@ -170,13 +170,13 @@ export const SearchMode = () => {
             className={`search-input focus:tv-ring-0 tv-ring-0 tv-grow tv-py-1.5 tv-pr-8 ${props.type} tv-outline-none tv-border-none`}
             disabled={imageUrl.length > 0}
           />
-          <div className="right-side tv-items-center flex gap-2">
+          <div className="right-side tv-items-center tv-flex tv-gap-2.5 tv-text-base">
             <UploadAudio />
             <UploadImage />
             {query ? (
               <button onClick={() => setQuery("")}>
                 <svg
-                  className="clear-query-icon tv-w-[14px] tv-h-[14px] tv-fill-current"
+                  className="clear-query-icon tv-w-[16px] tv-h-[16px]  tv-fill-current"
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
                   height="24"
@@ -194,7 +194,7 @@ export const SearchMode = () => {
               </button>
             ) : (
               <div>
-                <i className="fa-solid fa-magnifying-glass" />
+                <i className="fa-solid fa-magnifying-glass tv-fill-current" />
               </div>
             )}
           </div>

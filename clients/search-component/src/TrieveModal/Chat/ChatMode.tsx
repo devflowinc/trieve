@@ -74,16 +74,12 @@ export const ChatMode = () => {
         <div
           className={`system-information-wrapper${
             currentGroup ? " with-group" : ""
-          } ${
-            !props.inline && props.type === "ecommerce" && messages.length > 1
-              ? "tv-pt-4"
-              : ""
-          }`}
+          } ${!props.inline && messages.length > 1 ? "tv-pt-4" : ""}`}
         >
           <div
             ref={rootRef}
             className={cn(
-              "chat-modal-wrapper tv-relative tv-px-4 tv-overflow-auto tv-flex tv-flex-col tv-gap-1",
+              "chat-modal-wrapper tv-relative tv-px-4 tv-overflow-auto tv-flex tv-flex-col tv-gap-4",
               props.inline && "chat-modal-inline",
               !props.inline && "chat-modal-popup"
             )}

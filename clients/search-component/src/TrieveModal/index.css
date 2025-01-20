@@ -151,7 +151,7 @@ body {
       @apply tv-flex tv-items-center tv-justify-end tv-mt-2 tv-absolute tv-top-1.5 tv-right-2 tv-z-30 tv-font-medium;
 
       > .clear-query-icon {
-        @apply tv-w-5 tv-h-5 tv-fill-current;
+        @apply tv-fill-current;
       }
     }
 
@@ -456,6 +456,10 @@ body {
         }
       }
 
+      .user-message-container {
+        @apply tv-max-w-[80%] tv-ml-auto;
+      }
+
       .user {
         @apply tv-flex tv-flex-row-reverse tv-gap-1 tv-text-center tv-items-start;
 
@@ -464,10 +468,6 @@ body {
 
           color: var(--tv-zinc-50);
           background-color: var(--tv-zinc-800);
-
-          &:not(.ecommerce) {
-            @apply tv-max-w-[80%];
-          }
         }
       }
 

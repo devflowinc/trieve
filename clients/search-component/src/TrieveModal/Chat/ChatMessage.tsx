@@ -52,7 +52,7 @@ export const ChatMessage = ({
         </div>
       ) : null}
       {message.type == "user" && message.text !== "Loading..." ? (
-        <div key={idx}>
+        <div className="user-message-container" key={idx}>
           <div className={message.type}>
             <div className="tv-flex tv-flex-col tv-space-y-1 tv-items-end">
               {message.imageUrl && (

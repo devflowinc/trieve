@@ -1052,7 +1052,7 @@ pub async fn get_suggested_queries(
     .map(|query| query.to_string().trim().trim_matches('\n').to_string())
     .collect();
 
-    while queries.len() < 3 {
+    while queries.len() < number_of_suggestions_to_create {
         query = match client.chat().create(parameters.clone()).await {
             Ok(query) => query,
             Err(err) => {
@@ -1110,6 +1110,7 @@ pub async fn get_suggested_queries(
         .iter()
         .sorted_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
         .map(|(content, _length)| content)
+        .take(number_of_suggestions_to_create)
         .cloned()
         .cloned()
         .collect_vec();
