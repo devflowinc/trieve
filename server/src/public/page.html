@@ -2,10 +2,7 @@
 <html>
   <head>
     <link rel="stylesheet" href="/static/output.css" />
-    <link
-      rel="stylesheet"
-      href="{{ search_component_url | safe }}/index.css"
-    />
+    <link rel="stylesheet" href="{{ search_component_url | safe }}/index.css" />
     <link
       rel="apple-touch-icon"
       sizes="180x180"
@@ -194,6 +191,13 @@
             font-size: 1.25rem;
             line-height: 50px;
           }
+        }
+
+        .action-icons {
+          display: flex;
+          gap: 0.75rem;
+          font-size: 1rem;
+          padding-right: 0.5rem;
         }
       }
 
@@ -528,6 +532,15 @@
                 </div>
                 <div>
                   <span> + K</span>
+                </div>
+              </span>
+              {% else %}
+              <span class="action-icons">
+                <div>
+                  <i class="fa-solid fa-microphone"> </i>
+                </div>
+                <div>
+                  <i class="fa-solid fa-image"> </i>
                 </div>
               </span>
               {% endif %}
