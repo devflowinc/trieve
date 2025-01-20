@@ -27,22 +27,16 @@ export const ModeSwitch = () => {
   const { mode, setMode } = useModalState();
 
   return (
-    <div className="tv-bg-zinc-800">
+    <div>
       <button
-        className={cn(
-          "tv-text-zinc-400 active:tv-bg-zinc-200 active:tv-text-zinc-200",
-          mode === "search" ? "active" : ""
-        )}
+        className={cn(mode === "search" ? "active" : "")}
         onClick={() => setMode("search")}
       >
         <i className="fa-solid fa-magnifying-glass"></i>
         Search
       </button>
       <button
-        className={cn(
-          "tv-text-zinc-400 active:tv-bg-zinc-200 active:tv-text-zinc-200",
-          mode === "chat" ? "active" : ""
-        )}
+        className={cn(mode === "chat" ? "active" : "")}
         onClick={() => setMode("chat")}
       >
         <SparklesIcon />

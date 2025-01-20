@@ -60,7 +60,7 @@ export const UploadImage = () => {
         onClick={handleClick}
         className={`tv-rounded ${
           mode === "chat" && "tv-right-9 tv-top-[0.825rem] tv-absolute"
-        } tv-z-20 tv-dark:text-white tv-text-zinc-700`}
+        } tv-z-20 tv-dark-text-white tv-text-zinc-700`}
       >
         <i className="fa-solid fa-image"> </i>
       </button>
