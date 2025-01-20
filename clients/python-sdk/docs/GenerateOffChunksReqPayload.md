@@ -5,11 +5,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**audio_input** | **str** | Audio input to be used in the chat. This will be used to generate the audio tokens for the model. The default is None. | [optional] 
 **chunk_ids** | **List[str]** | The ids of the chunks to be retrieved and injected into the context window for RAG. | 
 **context_options** | [**ContextOptions**](ContextOptions.md) |  | [optional] 
 **frequency_penalty** | **float** | Frequency penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model&#39;s likelihood to repeat the same line verbatim. Default is 0.7. | [optional] 
 **highlight_results** | **bool** | Set highlight_results to false for a slight latency improvement (1-10ms). If not specified, this defaults to true. This will add &#x60;&lt;mark&gt;&lt;b&gt;&#x60; tags to the chunk_html of the chunks to highlight matching splits. | [optional] 
 **image_config** | [**ImageConfig**](ImageConfig.md) |  | [optional] 
+**image_urls** | **List[str]** | Image URLs to be used in the chat. These will be used to generate the image tokens for the model. The default is None. | [optional] 
 **max_tokens** | **int** | The maximum number of tokens to generate in the chat completion. Default is None. | [optional] 
 **presence_penalty** | **float** | Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model&#39;s likelihood to talk about new topics. Default is 0.7. | [optional] 
 **prev_messages** | [**List[ChatMessageProxy]**](ChatMessageProxy.md) | The previous messages to be placed into the chat history. There must be at least one previous message. | 

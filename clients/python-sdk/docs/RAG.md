@@ -5,7 +5,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**detected_hallucinations** | **List[str]** | The detected hallucinations of the RAG event | [optional] 
 **event_type** | **str** |  | 
+**hallucination_score** | **float** | The hallucination score of the RAG event | [optional] 
 **llm_response** | **str** | The response from the LLM | [optional] 
 **query_rating** | [**SearchQueryRating**](SearchQueryRating.md) |  | [optional] 
 **rag_type** | [**ClickhouseRagTypes**](ClickhouseRagTypes.md) |  | [optional] 

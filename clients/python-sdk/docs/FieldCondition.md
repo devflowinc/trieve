@@ -1,12 +1,14 @@
 # FieldCondition
 
+FieldCondition is a JSON object which can be used to filter chunks by a field. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**boolean** | **bool** | Boolean is a true false value for a field. This only works for boolean fields. You can specify this if you want values to be true or false. | [optional] 
 **date_range** | [**DateRange**](DateRange.md) |  | [optional] 
-**field** | **str** | Field is the name of the field to filter on. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with &#x60;metadata.&#x60;. | 
+**field** | **str** | Field is the name of the field to filter on. Commonly used fields are &#x60;timestamp&#x60;, &#x60;link&#x60;, &#x60;tag_set&#x60;, &#x60;location&#x60;, &#x60;num_value&#x60;, &#x60;group_ids&#x60;, and &#x60;group_tracking_ids&#x60;. The field value will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with &#x60;metadata.&#x60;. | 
 **geo_bounding_box** | [**LocationBoundingBox**](LocationBoundingBox.md) |  | [optional] 
 **geo_polygon** | [**LocationPolygon**](LocationPolygon.md) |  | [optional] 
 **geo_radius** | [**LocationRadius**](LocationRadius.md) |  | [optional] 

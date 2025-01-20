@@ -10,12 +10,15 @@ Name | Type | Description | Notes
 **usage_points** | [**List[UsageGraphPoint]**](UsageGraphPoint.md) |  | 
 **created_at** | **str** |  | 
 **dataset_id** | **str** |  | 
+**detected_hallucinations** | **List[str]** |  | 
+**hallucination_score** | **float** |  | 
 **id** | **str** |  | 
 **llm_response** | **str** |  | 
 **query_rating** | [**SearchQueryRating**](SearchQueryRating.md) |  | [optional] 
 **rag_type** | [**ClickhouseRagTypes**](ClickhouseRagTypes.md) |  | 
 **results** | **List[object]** |  | 
 **search_id** | **str** |  | 
+**top_score** | **float** |  | 
 **user_id** | **str** |  | 
 **user_message** | **str** |  | 
 

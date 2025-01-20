@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **filters** | [**ChunkFilter**](ChunkFilter.md) |  | [optional] 
 **highlight_options** | [**HighlightOptions**](HighlightOptions.md) |  | [optional] 
+**no_result_message** | **str** | Options for handling the response for the llm to return when no results are found | [optional] 
 **page_size** | **int** | Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time. | [optional] 
 **remove_stop_words** | **bool** | If true, stop words will be removed. Queries that are entirely stop words will be preserved. | [optional] 
 **score_threshold** | **float** | Set score_threshold to a float to filter out chunks with a score below the threshold. | [optional] 

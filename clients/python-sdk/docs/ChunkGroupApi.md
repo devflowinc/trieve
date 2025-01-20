@@ -6,6 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**add_chunk_to_group**](ChunkGroupApi.md#add_chunk_to_group) | **POST** /api/chunk_group/chunk/{group_id} | Add Chunk to Group
 [**add_chunk_to_group_by_tracking_id**](ChunkGroupApi.md#add_chunk_to_group_by_tracking_id) | **POST** /api/chunk_group/tracking_id/{tracking_id} | Add Chunk to Group by Tracking ID
+[**count_group_chunks**](ChunkGroupApi.md#count_group_chunks) | **POST** /api/chunk_group/count | Count Chunks in a Group
 [**create_chunk_group**](ChunkGroupApi.md#create_chunk_group) | **POST** /api/chunk_group | Create or Upsert Group or Groups
 [**delete_chunk_group**](ChunkGroupApi.md#delete_chunk_group) | **DELETE** /api/chunk_group/{group_id} | Delete Group
 [**delete_group_by_tracking_id**](ChunkGroupApi.md#delete_group_by_tracking_id) | **DELETE** /api/chunk_group/tracking_id/{tracking_id} | Delete Group by Tracking ID
@@ -183,6 +184,90 @@ void (empty response body)
 |-------------|-------------|------------------|
 **204** | Confirmation that the chunk was added to the group |  -  |
 **400** | Service error related to adding the chunk group by tracking_id |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **count_group_chunks**
+> GetChunkGroupCountResponse count_group_chunks(tr_dataset, get_chunk_group_count_request)
+
+Count Chunks in a Group
+
+Route to get the number of chunks that is in a group
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.models.get_chunk_group_count_request import GetChunkGroupCountRequest
+from trieve_py_client.models.get_chunk_group_count_response import GetChunkGroupCountResponse
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.ChunkGroupApi(api_client)
+    tr_dataset = 'tr_dataset_example' # str | The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+    get_chunk_group_count_request = trieve_py_client.GetChunkGroupCountRequest() # GetChunkGroupCountRequest | JSON request payload to add a chunk to a group (bookmark it)
+
+    try:
+        # Count Chunks in a Group
+        api_response = api_instance.count_group_chunks(tr_dataset, get_chunk_group_count_request)
+        print("The response of ChunkGroupApi->count_group_chunks:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ChunkGroupApi->count_group_chunks: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
+ **get_chunk_group_count_request** | [**GetChunkGroupCountRequest**](GetChunkGroupCountRequest.md)| JSON request payload to add a chunk to a group (bookmark it) | 
+
+### Return type
+
+[**GetChunkGroupCountResponse**](GetChunkGroupCountResponse.md)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | JSON body representing the group with the count |  -  |
+**400** | Service error relating to getting the group with the given tracking id |  -  |
+**404** | Group not found |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

@@ -7,6 +7,8 @@ Method | HTTP request | Description
 [**batch_create_datasets**](DatasetApi.md#batch_create_datasets) | **POST** /api/dataset/batch_create_datasets | Batch Create Datasets
 [**clear_dataset**](DatasetApi.md#clear_dataset) | **PUT** /api/dataset/clear/{dataset_id} | Clear Dataset
 [**create_dataset**](DatasetApi.md#create_dataset) | **POST** /api/dataset | Create Dataset
+[**create_etl_job**](DatasetApi.md#create_etl_job) | **POST** /api/etl/create_job | Create ETL Job
+[**create_pagefind_index_for_dataset**](DatasetApi.md#create_pagefind_index_for_dataset) | **PUT** /api/dataset/pagefind | Create Pagefind Index for Dataset
 [**delete_dataset**](DatasetApi.md#delete_dataset) | **DELETE** /api/dataset/{dataset_id} | Delete Dataset
 [**delete_dataset_by_tracking_id**](DatasetApi.md#delete_dataset_by_tracking_id) | **DELETE** /api/dataset/tracking_id/{tracking_id} | Delete Dataset by Tracking ID
 [**get_all_tags**](DatasetApi.md#get_all_tags) | **POST** /api/dataset/get_all_tags | Get All Tags
@@ -15,6 +17,7 @@ Method | HTTP request | Description
 [**get_dataset_crawl_options**](DatasetApi.md#get_dataset_crawl_options) | **GET** /api/dataset/crawl_options/{dataset_id} | Get Dataset Crawl Options
 [**get_datasets_from_organization**](DatasetApi.md#get_datasets_from_organization) | **GET** /api/dataset/organization/{organization_id} | Get Datasets from Organization
 [**get_events**](DatasetApi.md#get_events) | **POST** /api/dataset/events | Get events for the dataset
+[**get_pagefind_index_for_dataset**](DatasetApi.md#get_pagefind_index_for_dataset) | **GET** /api/dataset/pagefind | Get Pagefind Index Url for Dataset
 [**get_usage_by_dataset_id**](DatasetApi.md#get_usage_by_dataset_id) | **GET** /api/dataset/usage/{dataset_id} | Get Usage By Dataset ID
 [**update_dataset**](DatasetApi.md#update_dataset) | **PUT** /api/dataset | Update Dataset by ID or Tracking ID
 
@@ -262,6 +265,163 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | Dataset created successfully |  -  |
 **400** | Service error relating to creating the dataset |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **create_etl_job**
+> create_etl_job(tr_dataset, create_schema_req_payload)
+
+Create ETL Job
+
+This endpoint is used to create a new ETL job for a dataset.
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.models.create_schema_req_payload import CreateSchemaReqPayload
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.DatasetApi(api_client)
+    tr_dataset = 'tr_dataset_example' # str | The dataset id to use for the request
+    create_schema_req_payload = trieve_py_client.CreateSchemaReqPayload() # CreateSchemaReqPayload | JSON request payload to create a new ETL Job
+
+    try:
+        # Create ETL Job
+        api_instance.create_etl_job(tr_dataset, create_schema_req_payload)
+    except Exception as e:
+        print("Exception when calling DatasetApi->create_etl_job: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tr_dataset** | **str**| The dataset id to use for the request | 
+ **create_schema_req_payload** | [**CreateSchemaReqPayload**](CreateSchemaReqPayload.md)| JSON request payload to create a new ETL Job | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**204** | ETL Job created successfully |  -  |
+**400** | Service error relating to creating the dataset |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **create_pagefind_index_for_dataset**
+> create_pagefind_index_for_dataset(tr_dataset)
+
+Create Pagefind Index for Dataset
+
+Uses pagefind to index the dataset and store the result into a CDN for retrieval. The auth'ed user must be an admin of the organization to create a pagefind index for a dataset.
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.DatasetApi(api_client)
+    tr_dataset = 'tr_dataset_example' # str | The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+
+    try:
+        # Create Pagefind Index for Dataset
+        api_instance.create_pagefind_index_for_dataset(tr_dataset)
+    except Exception as e:
+        print("Exception when calling DatasetApi->create_pagefind_index_for_dataset: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**204** | Dataset indexed successfully |  -  |
+**400** | Service error relating to creating the index |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
@@ -592,7 +752,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_dataset_by_tracking_id**
-> Dataset get_dataset_by_tracking_id(tr_dataset, tracking_id)
+> Dataset get_dataset_by_tracking_id(tr_organization, tracking_id)
 
 Get Dataset by Tracking ID
 
@@ -629,12 +789,12 @@ configuration.api_key['ApiKey'] = os.environ["API_KEY"]
 with trieve_py_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = trieve_py_client.DatasetApi(api_client)
-    tr_dataset = 'tr_dataset_example' # str | The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+    tr_organization = 'tr_organization_example' # str | The organization id to use for the request
     tracking_id = 'tracking_id_example' # str | The tracking id of the dataset you want to retrieve.
 
     try:
         # Get Dataset by Tracking ID
-        api_response = api_instance.get_dataset_by_tracking_id(tr_dataset, tracking_id)
+        api_response = api_instance.get_dataset_by_tracking_id(tr_organization, tracking_id)
         print("The response of DatasetApi->get_dataset_by_tracking_id:\n")
         pprint(api_response)
     except Exception as e:
@@ -648,7 +808,7 @@ with trieve_py_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
+ **tr_organization** | **str**| The organization id to use for the request | 
  **tracking_id** | **str**| The tracking id of the dataset you want to retrieve. | 
 
 ### Return type
@@ -924,6 +1084,86 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | Events for the dataset |  -  |
 **400** | Service error relating to getting events for the dataset |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_pagefind_index_for_dataset**
+> GetPagefindIndexResponse get_pagefind_index_for_dataset(tr_dataset)
+
+Get Pagefind Index Url for Dataset
+
+Returns the root URL for your pagefind index, will error if pagefind is not enabled
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.models.get_pagefind_index_response import GetPagefindIndexResponse
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.DatasetApi(api_client)
+    tr_dataset = 'tr_dataset_example' # str | The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+
+    try:
+        # Get Pagefind Index Url for Dataset
+        api_response = api_instance.get_pagefind_index_for_dataset(tr_dataset)
+        print("The response of DatasetApi->get_pagefind_index_for_dataset:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling DatasetApi->get_pagefind_index_for_dataset: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
+
+### Return type
+
+[**GetPagefindIndexResponse**](GetPagefindIndexResponse.md)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Dataset indexed successfully |  -  |
+**400** | Service error relating to creating the index |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

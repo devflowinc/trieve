@@ -7,6 +7,7 @@ Method | HTTP request | Description
 [**create_message**](MessageApi.md#create_message) | **POST** /api/message | Create message
 [**edit_message**](MessageApi.md#edit_message) | **PUT** /api/message | Edit message
 [**get_all_topic_messages**](MessageApi.md#get_all_topic_messages) | **GET** /api/messages/{messages_topic_id} | Get all messages for a given topic
+[**get_message_by_id**](MessageApi.md#get_message_by_id) | **GET** /api/message/{message_id} | Get a message by its ID
 [**regenerate_message**](MessageApi.md#regenerate_message) | **DELETE** /api/message | Regenerate message
 [**regenerate_message_patch**](MessageApi.md#regenerate_message_patch) | **PATCH** /api/message | Regenerate message
 
@@ -178,7 +179,7 @@ void (empty response body)
 
 Get all messages for a given topic
 
-Get all messages for a given topic. If the topic is a RAG topic then the response will include Chunks first on each message. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.
+If the topic is a RAG topic then the response will include Chunks first on each message. The structure will look like `[chunks]||mesage`. See docs.trieve.ai for more information.
 
 ### Example
 
@@ -252,6 +253,88 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | All messages relating to the topic with the given ID |  -  |
 **400** | Service error relating to getting the messages |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_message_by_id**
+> Message get_message_by_id(tr_dataset, message_id)
+
+Get a message by its ID
+
+Quickly get the full object for a given message. From the message, you can get the topic and all messages which exist on that topic.
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.models.message import Message
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.MessageApi(api_client)
+    tr_dataset = 'tr_dataset_example' # str | The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+    message_id = 'message_id_example' # str | The ID of the message to get.
+
+    try:
+        # Get a message by its ID
+        api_response = api_instance.get_message_by_id(tr_dataset, message_id)
+        print("The response of MessageApi->get_message_by_id:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling MessageApi->get_message_by_id: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tr_dataset** | **str**| The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid. | 
+ **message_id** | **str**| The ID of the message to get. | 
+
+### Return type
+
+[**Message**](Message.md)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Message with the given ID |  -  |
+**400** | Service error relating to getting the message |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
