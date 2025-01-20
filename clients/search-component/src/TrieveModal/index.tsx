@@ -75,7 +75,8 @@ const Modal = () => {
       }
 
       if (chatOuterWrapper && props.type && viewportHeight) {
-        const pxRemoved = props.type == "ecommerce" ? 125 : 175;
+        const pxRemoved =
+          props.type == "ecommerce" ? 125 : props.type == "pdf" ? 265 : 175;
 
         const newHeight = viewportHeight - pxRemoved;
         (chatOuterWrapper as HTMLElement).style.maxHeight = `${newHeight}px`;
@@ -88,7 +89,8 @@ const Modal = () => {
     } else if (chatOuterWrapper) {
       (chatOuterWrapper as HTMLElement).style.maxHeight = "60vh";
       if (chatModalWrapper) {
-        (chatModalWrapper as HTMLElement).style.maxHeight = "58vh";
+        (chatModalWrapper as HTMLElement).style.maxHeight =
+          props.type == "pdf" ? "49vh" : "58vh";
       }
     }
 

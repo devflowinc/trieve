@@ -843,7 +843,8 @@ body {
         @apply tv-mt-12 sm:tv-mt-0;
       }
 
-      &.docs {
+      &.docs,
+      &.pdf {
         @apply tv-px-2;
       }
 
@@ -1268,7 +1269,8 @@ body {
           }
         }
 
-        &.docs.search {
+        &.docs.search,
+        &.pdf.search {
           background-color: var(--tv-zinc-900);
           color: var(--tv-zinc-50);
           outline: none;
