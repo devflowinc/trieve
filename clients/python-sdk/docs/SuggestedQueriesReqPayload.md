@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **query** | **str** | The query to base the generated suggested queries off of using RAG. A hybrid search for 10 chunks from your dataset using this query will be performed and the context of the chunks will be used to generate the suggested queries. | [optional] 
 **search_type** | [**SearchMethod**](SearchMethod.md) |  | [optional] 
 **suggestion_type** | [**SuggestType**](SuggestType.md) |  | [optional] 
+**suggestions_to_create** | **int** | The number of suggested queries to create, defaults to 10 | [optional] 
 
 ## Example
 

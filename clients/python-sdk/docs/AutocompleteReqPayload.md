@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **filters** | [**ChunkFilter**](ChunkFilter.md) |  | [optional] 
 **highlight_options** | [**HighlightOptions**](HighlightOptions.md) |  | [optional] 
 **page_size** | **int** | Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time. | [optional] 
-**query** | **str** | Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set. | 
+**query** | [**SearchModalities**](SearchModalities.md) |  | 
 **remove_stop_words** | **bool** | If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved. | [optional] 
 **score_threshold** | **float** | Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0. | [optional] 
 **scoring_options** | [**ScoringOptions**](ScoringOptions.md) |  | [optional] 

@@ -9,10 +9,10 @@ Name | Type | Description | Notes
 **dataset_ids** | **List[str]** |  | [optional] 
 **id** | **str** |  | 
 **name** | **str** |  | 
+**organization_id** | **str** |  | 
 **organization_ids** | **List[str]** |  | [optional] 
 **role** | **int** |  | 
 **updated_at** | **datetime** |  | 
-**user_id** | **str** |  | 
 
 ## Example
 

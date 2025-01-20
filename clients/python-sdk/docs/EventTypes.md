@@ -22,6 +22,8 @@ Name | Type | Description | Notes
 **results** | **List[object]** | The results of the Recommendation event | [optional] 
 **search_type** | [**ClickhouseSearchTypes**](ClickhouseSearchTypes.md) |  | [optional] 
 **top_score** | **float** | Top score of the recommendation | [optional] 
+**detected_hallucinations** | **List[str]** | The detected hallucinations of the RAG event | [optional] 
+**hallucination_score** | **float** | The hallucination score of the RAG event | [optional] 
 **llm_response** | **str** | The response from the LLM | [optional] 
 **rag_type** | [**ClickhouseRagTypes**](ClickhouseRagTypes.md) |  | [optional] 
 **search_id** | **str** | The search id to associate the RAG event with a search | [optional] 

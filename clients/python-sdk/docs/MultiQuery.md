@@ -6,7 +6,7 @@ MultiQuery allows you to construct a dense vector from multiple queries with a w
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**query** | **str** | Query to embed for the final weighted sum vector. | 
+**query** | [**SearchModalities**](SearchModalities.md) |  | 
 **weight** | **float** | Float value which is applies as a multiplier to the query vector when summing. | 
 
 ## Example

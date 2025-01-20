@@ -5,7 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**chunk_ids** | **List[str]** |  | 
+**chunk_ids** | **List[str]** |  | [optional] 
+**chunk_tracking_ids** | **List[str]** |  | [optional] 
 
 ## Example
 

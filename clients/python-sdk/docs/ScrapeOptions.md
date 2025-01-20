@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **openapi_tag** | **str** | Tag to look for to determine if a page should create an openapi route chunk instead of chunks from heading-split of the HTML | 
 **type** | **str** |  | 
 **group_variants** | **bool** | This option will ingest all variants as individual chunks and place them in groups by product id. Turning this off will only scrape 1 variant per product. default: true | [optional] 
+**tag_regexes** | **List[str]** |  | [optional] 
 
 ## Example
 

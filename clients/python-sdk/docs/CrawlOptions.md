@@ -19,6 +19,8 @@ Name | Type | Description | Notes
 **limit** | **int** | How many pages to crawl, defaults to 1000 | [optional] 
 **scrape_options** | [**ScrapeOptions**](ScrapeOptions.md) |  | [optional] 
 **site_url** | **str** | The URL to crawl | [optional] 
+**webhook_metadata** | **object** | Metadata to send back with the webhook call for each successful page scrape | [optional] 
+**webhook_url** | **str** | Host to call back on the webhook for each successful page scrape | [optional] 
 
 ## Example
 

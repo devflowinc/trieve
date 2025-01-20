@@ -31,7 +31,7 @@ configuration = trieve_py_client.Configuration(
 with trieve_py_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = trieve_py_client.PublicApi(api_client)
-    dataset_id = 'dataset_id_example' # str | The id of the organization you want to fetch.
+    dataset_id = 'dataset_id_example' # str | The id or tracking_id of the dataset you want to get the demo page for.
 
     try:
         api_instance.public_page(dataset_id)
@@ -46,7 +46,7 @@ with trieve_py_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **dataset_id** | **str**| The id of the organization you want to fetch. | 
+ **dataset_id** | **str**| The id or tracking_id of the dataset you want to get the demo page for. | 
 
 ### Return type
 

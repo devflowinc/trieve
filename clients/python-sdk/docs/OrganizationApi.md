@@ -5,8 +5,11 @@ All URIs are relative to *https://api.trieve.ai*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**create_organization**](OrganizationApi.md#create_organization) | **POST** /api/organization | Create Organization
+[**create_organization_api_key**](OrganizationApi.md#create_organization_api_key) | **POST** /api/organization/api_key | Create Organization Api Key
 [**delete_organization**](OrganizationApi.md#delete_organization) | **DELETE** /api/organization/{organization_id} | Delete Organization
+[**delete_organization_api_key**](OrganizationApi.md#delete_organization_api_key) | **DELETE** /api/organization/api_key/{api_key_id} | Delete Organization Api Key
 [**get_organization**](OrganizationApi.md#get_organization) | **GET** /api/organization/{organization_id} | Get Organization
+[**get_organization_api_keys**](OrganizationApi.md#get_organization_api_keys) | **GET** /api/organization/api_key | Get Organization Api Keys
 [**get_organization_usage**](OrganizationApi.md#get_organization_usage) | **GET** /api/organization/usage/{organization_id} | Get Organization Usage
 [**get_organization_users**](OrganizationApi.md#get_organization_users) | **GET** /api/organization/users/{organization_id} | Get Organization Users
 [**update_all_org_dataset_configs**](OrganizationApi.md#update_all_org_dataset_configs) | **POST** /api/organization/update_dataset_configs | Update All Dataset Configurations
@@ -94,6 +97,89 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **create_organization_api_key**
+> CreateApiKeyResponse create_organization_api_key(tr_organization, create_api_key_req_payload)
+
+Create Organization Api Key
+
+Create a new api key for the organization. Successful response will contain the newly created api key.
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.models.create_api_key_req_payload import CreateApiKeyReqPayload
+from trieve_py_client.models.create_api_key_response import CreateApiKeyResponse
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.OrganizationApi(api_client)
+    tr_organization = 'tr_organization_example' # str | The organization id to use for the request.
+    create_api_key_req_payload = trieve_py_client.CreateApiKeyReqPayload() # CreateApiKeyReqPayload | JSON request payload to create a new organization api key
+
+    try:
+        # Create Organization Api Key
+        api_response = api_instance.create_organization_api_key(tr_organization, create_api_key_req_payload)
+        print("The response of OrganizationApi->create_organization_api_key:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling OrganizationApi->create_organization_api_key: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tr_organization** | **str**| The organization id to use for the request. | 
+ **create_api_key_req_payload** | [**CreateApiKeyReqPayload**](CreateApiKeyReqPayload.md)| JSON request payload to create a new organization api key | 
+
+### Return type
+
+[**CreateApiKeyResponse**](CreateApiKeyResponse.md)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | JSON body representing the api_key for the organization |  -  |
+**400** | Service error relating to creating api_key for the organization |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **delete_organization**
 > delete_organization(tr_organization, organization_id)
 
@@ -170,6 +256,85 @@ void (empty response body)
 |-------------|-------------|------------------|
 **204** | Confirmation that the organization was deleted |  -  |
 **400** | Service error relating to deleting the organization by id |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **delete_organization_api_key**
+> delete_organization_api_key(api_key_id, tr_organization)
+
+Delete Organization Api Key
+
+Delete an api key for the auth'ed organization.
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.OrganizationApi(api_client)
+    api_key_id = 'api_key_id_example' # str | The id of the api key to delete
+    tr_organization = 'tr_organization_example' # str | The organization id to use for the request.
+
+    try:
+        # Delete Organization Api Key
+        api_instance.delete_organization_api_key(api_key_id, tr_organization)
+    except Exception as e:
+        print("Exception when calling OrganizationApi->delete_organization_api_key: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **api_key_id** | **str**| The id of the api key to delete | 
+ **tr_organization** | **str**| The organization id to use for the request. | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**204** | Confirmation that the api key was deleted |  -  |
+**400** | Service error relating to creating api_key for the organization |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
@@ -253,6 +418,86 @@ Name | Type | Description  | Notes
 **200** | Organization with the id that was requested |  -  |
 **400** | Service error relating to finding the organization by id |  -  |
 **404** | Organization not found |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_organization_api_keys**
+> List[ApiKeyRespBody] get_organization_api_keys(tr_organization)
+
+Get Organization Api Keys
+
+Get the api keys which belong to the organization. The actual api key values are not returned, only the ids, names, and creation dates.
+
+### Example
+
+* Api Key Authentication (ApiKey):
+
+```python
+import trieve_py_client
+from trieve_py_client.models.api_key_resp_body import ApiKeyRespBody
+from trieve_py_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://api.trieve.ai
+# See configuration.py for a list of all supported configuration parameters.
+configuration = trieve_py_client.Configuration(
+    host = "https://api.trieve.ai"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: ApiKey
+configuration.api_key['ApiKey'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['ApiKey'] = 'Bearer'
+
+# Enter a context with an instance of the API client
+with trieve_py_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = trieve_py_client.OrganizationApi(api_client)
+    tr_organization = 'tr_organization_example' # str | The organization id to use for the request.
+
+    try:
+        # Get Organization Api Keys
+        api_response = api_instance.get_organization_api_keys(tr_organization)
+        print("The response of OrganizationApi->get_organization_api_keys:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling OrganizationApi->get_organization_api_keys: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **tr_organization** | **str**| The organization id to use for the request. | 
+
+### Return type
+
+[**List[ApiKeyRespBody]**](ApiKeyRespBody.md)
+
+### Authorization
+
+[ApiKey](../README.md#ApiKey)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | JSON body representing the api_key for the organization |  -  |
+**400** | Service error relating to creating api_key for the organization |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

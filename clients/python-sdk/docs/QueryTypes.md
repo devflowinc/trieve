@@ -6,6 +6,9 @@ Query is the search query. This can be any string. The query will be used to cre
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**image_url** | **str** |  | 
+**llm_prompt** | **str** |  | [optional] 
+**audio_base64** | **str** |  | 
 
 ## Example
 

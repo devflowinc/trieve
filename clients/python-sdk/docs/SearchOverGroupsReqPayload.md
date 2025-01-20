@@ -16,6 +16,7 @@ Name | Type | Description | Notes
 **score_threshold** | **float** | Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0. | [optional] 
 **search_type** | [**SearchMethod**](SearchMethod.md) |  | 
 **slim_chunks** | **bool** | Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false. | [optional] 
+**sort_options** | [**SortOptions**](SortOptions.md) |  | [optional] 
 **typo_options** | [**TypoOptions**](TypoOptions.md) |  | [optional] 
 **use_quote_negated_terms** | **bool** | If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false. | [optional] 
 **user_id** | **str** | The user_id is the id of the user who is making the request. This is used to track user interactions with the search results. | [optional] 
