@@ -252,7 +252,7 @@ const Modal = () => {
               !props.inline &&
               !fullscreenPdfState && <ChatModeSwitch />}
             <div
-              className="search-container tv-pt-3"
+              className="search-container"
               style={{
                 display:
                   mode === "search" && !fullscreenPdfState ? "block" : "none",

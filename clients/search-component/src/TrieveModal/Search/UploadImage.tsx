@@ -45,7 +45,7 @@ export const UploadImage = () => {
         const fileId = await uploadFile(
           trieveSDK,
           internalFile.name,
-          base64File,
+          base64File
         );
         const imageUrl = await getPresignedUrl(trieveSDK, fileId);
         setImageUrl(imageUrl);
@@ -59,7 +59,7 @@ export const UploadImage = () => {
       <button
         onClick={handleClick}
         className={`tv-rounded ${
-          mode === "chat" && "tv-right-14 tv-top-[0.825rem] tv-absolute"
+          mode === "chat" && "tv-right-[53px] tv-top-[0.825rem] tv-absolute"
         } tv-z-20 tv-dark:text-white tv-text-zinc-700`}
       >
         <i className="fa-solid fa-image"> </i>

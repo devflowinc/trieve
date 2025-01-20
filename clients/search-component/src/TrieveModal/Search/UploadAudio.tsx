@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 
 export const UploadAudio = () => {
-  const { mode, query, setAudioBase64 } = useModalState();
+  const { mode, setAudioBase64 } = useModalState();
 
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
-    null,
+    null
   );
 
   const startRecording = async () => {
@@ -38,7 +38,7 @@ export const UploadAudio = () => {
     } catch (err) {
       console.error("Error accessing microphone:", err);
       alert(
-        "Error accessing microphone. Please make sure you have granted microphone permissions.",
+        "Error accessing microphone. Please make sure you have granted microphone permissions."
       );
     }
   };
@@ -62,21 +62,19 @@ export const UploadAudio = () => {
     <div>
       <button
         type="button"
-        className={`tv-rounded tv-top-[0.825rem] ${
-          mode === "chat"
-            ? "tv-right-20"
-            : query.length == 0
-              ? "tv-right-[11.5rem] inline:tv-right-[2.5rem]"
-              : "tv-right-[4rem]"
-        } tv-absolute tv-z-20 cursor-pointer ${
+        className={`tv-rounded${
+          mode === "chat" ? " tv-right-20 tv-top-[0.825rem] tv-absolute" : ""
+        } tv-z-20 cursor-pointer ${
           isRecording
             ? "tv-text-red-500"
             : "tv-dark:text-white tv-text-zinc-700"
-        }`}
+        }
+        `}
         onClick={(e) => {
           e.preventDefault();
           toggleRecording();
-        }}>
+        }}
+      >
         <i className="fa-solid fa-microphone"> </i>
       </button>
     </div>

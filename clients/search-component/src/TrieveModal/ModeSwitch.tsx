@@ -12,11 +12,9 @@ export const ChatModeSwitch = () => {
   return (
     <div
       className={cn(
-        `mode-switch-wrapper
- tv-flex tv-items-center tv-px-2 tv-gap-2 tv-justify-end tv-mt-2 tv-font-medium
-${mode} ${query ? "has-query " : ""}
-            ${props.inline ? "" : "mode-switch-popup"}
-       ${props.type}`.trim(),
+        `mode-switch-wrapper tv-flex tv-items-center tv-px-2 tv-gap-2 tv-justify-end tv-mt-2 tv-font-medium ${mode}${
+          query ? " has-query" : ""
+        }${props.inline ? "" : " mode-switch-popup"}${" " + props.type}`.trim()
       )}
     >
       <ModeSwitch />
@@ -33,7 +31,7 @@ export const ModeSwitch = () => {
       <button
         className={cn(
           "tv-text-zinc-400 active:tv-bg-zinc-200 active:tv-text-zinc-200",
-          mode === "search" ? "active" : "",
+          mode === "search" ? "active" : ""
         )}
         onClick={() => setMode("search")}
       >
@@ -43,7 +41,7 @@ export const ModeSwitch = () => {
       <button
         className={cn(
           "tv-text-zinc-400 active:tv-bg-zinc-200 active:tv-text-zinc-200",
-          mode === "chat" ? "active" : "",
+          mode === "chat" ? "active" : ""
         )}
         onClick={() => setMode("chat")}
       >

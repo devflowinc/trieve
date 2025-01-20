@@ -26,6 +26,7 @@ export const SearchMode = () => {
     loadingResults,
     query,
     setQuery,
+    setOpen,
     requestID,
     inputRef,
     open,
@@ -126,7 +127,36 @@ export const SearchMode = () => {
 
   return (
     <Suspense fallback={<div className="suspense-fallback"></div>}>
-      <div className={`input-wrapper ${props.type}`}>
+      {!props.inline && (
+        <div
+          className={`mode-switch-wrapper tv-flex tv-items-center tv-px-2 tv-gap-2 tv-justify-end tv-mt-2 tv-font-medium ${mode}`}
+        >
+          <ModeSwitch />
+          <div
+            className={`tv-text-xs tv-rounded-md !tv-bg-transparent tv-flex !hover:bg-tv-zinc-200 tv-px-2 tv-justify-end tv-items-center tv-p-2 tv-gap-0.5 tv-cursor-pointer ${props.type}`}
+            onClick={() => setOpen(false)}
+          >
+            <svg
+              className="close-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            <span>Close</span>
+          </div>
+        </div>
+      )}
+      <div className={`input-wrapper ${props.type} ${mode}`}>
         <div className="input-flex group-focus:tv-border has-[:focus]:tv-border  has-[:focus]:tv-border-[var(--tv-prop-brand-color)] tv-mb-2 sm:tv-text-sm sm:tv-leading-6 tv-px-4 tv-items-center tv-flex tv-justify-between tv-w-full tv-rounded-lg tv-border-[1px]">
           <input
             ref={inputRef}
@@ -140,95 +170,67 @@ export const SearchMode = () => {
             className={`search-input focus:tv-ring-0 tv-ring-0 tv-grow tv-py-1.5 tv-pr-8 ${props.type} tv-outline-none tv-border-none`}
             disabled={imageUrl.length > 0}
           />
-          {query && (
-            <button className="clear-query" onClick={() => setQuery("")}>
-              <svg
-                className="clear-query-icon"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          )}
-        </div>
-        <div className="right-side tv-items-center flex gap-4">
-          <div>
+          <div className="right-side tv-items-center flex gap-2">
             <UploadAudio />
+            <UploadImage />
+            {query ? (
+              <button onClick={() => setQuery("")}>
+                <svg
+                  className="clear-query-icon tv-w-[14px] tv-h-[14px] tv-fill-current"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            ) : (
+              <div>
+                <i className="fa-solid fa-magnifying-glass" />
+              </div>
+            )}
           </div>
-          <UploadImage />
-          {query ? (
-            <button onClick={() => setQuery("")}>
-              <svg
-                className="clear-query-icon tv-w-5 tv-h-5 tv-fill-current"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          ) : (
-            <>
-              {!props.inline && (
-                <div className="mode-switch-wrapper !tv-mt-0">
-                  <ModeSwitch />
-                </div>
-              )}
-            </>
-          )}
         </div>
         <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
         {props.suggestedQueries && (!query || (query && !results.length)) && (
           <div className={`suggested-queries-wrapper ${props.type}`}>
-            <>
-              <button
-                onClick={() => getQueries(new AbortController())}
-                disabled={isLoadingSuggestedQueries}
-                className="suggested-query"
-                title="Refresh suggested queries"
-              >
-                <i className="fa-solid fa-arrow-rotate-right"></i>
-              </button>
-              <p>Suggested Queries: </p>
-              {!suggestedQueries.length && (
-                <p className="suggested-query empty-state-loading">
-                  Loading query suggestions...
-                </p>
-              )}
-              {suggestedQueries.map((q) => {
-                q = q.replace(/^-|\*$/g, "");
-                q = q.trim();
-                return (
-                  <button
-                    onClick={() => setQuery(q)}
-                    key={q}
-                    className={`suggested-query${
-                      isLoadingSuggestedQueries ? " loading" : ""
-                    }`}
-                  >
-                    {q}
-                  </button>
-                );
-              })}
-            </>
+            <button
+              onClick={() => getQueries(new AbortController())}
+              disabled={isLoadingSuggestedQueries}
+              className="suggested-query"
+              title="Refresh suggested queries"
+            >
+              <i className="fa-solid fa-arrow-rotate-right"></i>
+            </button>
+            <p>Suggested Queries: </p>
+            {!suggestedQueries.length && (
+              <p className="suggested-query empty-state-loading">
+                Loading query suggestions...
+              </p>
+            )}
+            {suggestedQueries.map((q) => {
+              q = q.replace(/^-|\*$/g, "");
+              q = q.trim();
+              return (
+                <button
+                  onClick={() => setQuery(q)}
+                  key={q}
+                  className={`suggested-query${
+                    isLoadingSuggestedQueries ? " loading" : ""
+                  }`}
+                >
+                  {q}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

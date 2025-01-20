@@ -165,10 +165,6 @@ body {
         @apply tv-top-0;
       }
 
-      &.search.has-query {
-        @apply tv-hidden;
-      }
-
       > div {
         @apply tv-p-0.5 tv-text-xs tv-rounded-md tv-flex;
         background-color: var(--tv-zinc-200);
@@ -782,6 +778,10 @@ body {
         .back-icon {
           @apply tv-top-[0.825rem] tv-left-5 tv-absolute tv-z-20;
         }
+      }
+
+      &.search {
+        @apply tv-pt-2;
       }
     }
 
