@@ -230,7 +230,7 @@ body {
     }
 
     .inline-submit-icon {
-      @apply tv-top-[0.825rem] tv-right-7 tv-absolute tv-z-20;
+      @apply tv-top-[0.825rem] tv-right-3 tv-absolute tv-z-20;
     }
 
     .trieve-footer {
@@ -257,6 +257,15 @@ body {
 
         .chat-controls-row {
           @apply tv-flex tv-w-full tv-justify-end tv-mt-0.5;
+        }
+
+        &.docs,
+        &.pdf {
+          @apply tv-pr-0;
+        }
+
+        &.ecommerce {
+          @apply tv-px-0;
         }
       }
 
@@ -455,6 +464,10 @@ body {
 
           color: var(--tv-zinc-50);
           background-color: var(--tv-zinc-800);
+
+          &:not(.ecommerce) {
+            @apply tv-max-w-[80%];
+          }
         }
       }
 
@@ -764,7 +777,7 @@ body {
 
         &.docs,
         &.pdf {
-          @apply tv-pl-2 tv-pr-0;
+          @apply tv-px-0;
         }
 
         &::after {
@@ -828,6 +841,10 @@ body {
 
       &:not(.with-messages) {
         @apply tv-mt-12 sm:tv-mt-0;
+      }
+
+      &.docs {
+        @apply tv-px-2;
       }
 
       input {

@@ -62,6 +62,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const {
     query,
     trieveSDK,
+    mode,
     setMode,
     setCurrentGroup,
     imageUrl,
@@ -125,10 +126,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [currentTag]);
 
   useEffect(() => {
-    if (audioBase64 && audioBase64 != "") {
+    if (mode == "chat" && audioBase64 && audioBase64 != "") {
       askQuestion(" ");
     }
-  }, [audioBase64]);
+  }, [audioBase64, mode]);
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,

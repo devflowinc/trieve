@@ -60,7 +60,10 @@ export const ChatMessage = ({
               )}
               {message.text != "" &&
               message.text != props.defaultImageQuestion ? (
-                <span className="user-text"> {message.text}</span>
+                <span className={`user-text ${props.type}`}>
+                  {" "}
+                  {message.text}
+                </span>
               ) : null}
             </div>
           </div>

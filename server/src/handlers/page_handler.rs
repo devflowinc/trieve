@@ -343,11 +343,14 @@ pub async fn public_page(
             .and_then(|p| p.background_color.as_ref())
             .map(|color| format!("background-color: {color}"));
 
-        let public_page_params = config
+        let tabs = config
             .PUBLIC_DATASET
             .extra_params
             .as_ref()
             .cloned()
+            .unwrap_or_default()
+            .tab_messages
+            .clone()
             .unwrap_or_default();
 
         let response_body = templ
@@ -358,7 +361,7 @@ pub async fn public_page(
                 search_component_url,
                 has_hero_pattern => hero_pattern.is_some(),
                 body_style,
-                public_page_params,
+                tabs,
                 params => PublicPageParameters {
                     dataset_id: Some(dataset.id),
                     base_url: Some(base_server_url.to_string()),

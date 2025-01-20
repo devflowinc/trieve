@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
+import { cn } from "../../utils/styles";
 
 export const UploadAudio = () => {
   const { mode, setAudioBase64 } = useModalState();
@@ -62,14 +63,14 @@ export const UploadAudio = () => {
     <div>
       <button
         type="button"
-        className={`tv-rounded${
-          mode === "chat" ? " tv-right-20 tv-top-[0.825rem] tv-absolute" : ""
+        className={cn(`tv-rounded${
+          mode === "chat" ? " tv-right-16 tv-top-[0.825rem] tv-absolute" : ""
         } tv-z-20 cursor-pointer ${
           isRecording
             ? "tv-text-red-500"
             : "tv-dark:text-white tv-text-zinc-700"
         }
-        `}
+        `)}
         onClick={(e) => {
           e.preventDefault();
           toggleRecording();
