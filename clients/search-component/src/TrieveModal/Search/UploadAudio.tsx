@@ -68,7 +68,7 @@ export const UploadAudio = () => {
         } tv-z-20 cursor-pointer ${
           isRecording
             ? "tv-text-red-500"
-            : "tv-dark:text-white tv-text-zinc-700"
+            : "tv-dark-text-white tv-text-zinc-700"
         }
         `)}
         onClick={(e) => {

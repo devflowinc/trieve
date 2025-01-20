@@ -1006,6 +1006,11 @@ body {
       color: var(--tv-zinc-100);
       border-color: var(--tv-zinc-700);
 
+      .tv-dark-text-white,
+      .fa-magnifying-glass {
+        @apply tv-text-zinc-400;
+      }
+
       .message-wrapper {
         border-color: var(--tv-zinc-600);
       }
@@ -1015,6 +1020,26 @@ body {
 
         button {
           @apply tv-border-zinc-700;
+        }
+      }
+
+      .mode-switch-wrapper {
+        > div {
+          background-color: var(--tv-zinc-800);
+
+          button {
+            color: var(--tv-zinc-400);
+
+            &.active {
+              @apply tv-shadow-sm;
+              background-color: var(--tv-zinc-700);
+              color: var(--tv-zinc-200);
+            }
+
+            svg {
+              @apply tv-h-3 tv-w-3;
+            }
+          }
         }
       }
 
@@ -1236,6 +1261,25 @@ body {
           > p {
             @apply tv-text-xs tv-m-0;
             color: var(--tv-zinc-300);
+          }
+        }
+
+        &.docs.search {
+          background-color: var(--tv-zinc-900);
+          color: var(--tv-zinc-50);
+          outline: none;
+
+          div.input-flex:not(:focus):not(:focus-within) {
+            border-color: var(--tv-zinc-700);
+          }
+
+          input {
+            @apply tv-border-none tv-outline-none;
+            box-shadow: none;
+
+            &:focus {
+              @apply tv-border-none tv-outline-none;
+            }
           }
         }
       }
