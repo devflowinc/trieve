@@ -105,9 +105,9 @@ export const ChatMode = () => {
         </div>
       </div>
       <div
-        className={`chat-footer-wrapper${
+        className={`chat-footer-wrapper ${props.type}${
           messages.length ? " with-messages" : ""
-        }`}
+        }${props.inline ? " tv-pr-2" : ""}`}
       >
         <div className="inline:tv-ml-2 inline:tv-mb-1">
           <ImagePreview
@@ -134,9 +134,9 @@ export const ChatMode = () => {
         )}
 
         <div
-          className={`input-wrapper tv-sticky tv-top-0 tv-z-10 tv-flex tv-flex-col tv-gap-2 tv-rounded-lg chat${
+          className={`input-wrapper tv-sticky tv-top-0 tv-z-10 tv-flex tv-flex-col tv-rounded-lg chat${
             props.type == "ecommerce" ? "" : " " + props.type
-          }${props.inline && " tv-ml-2"}`}
+          }${props.inline ? " tv-ml-2" : ""}`}
         >
           <form
             onSubmit={(e) => {

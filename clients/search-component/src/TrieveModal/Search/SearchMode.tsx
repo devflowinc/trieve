@@ -157,7 +157,7 @@ export const SearchMode = () => {
         </div>
       )}
       <div className={`input-wrapper ${props.type} ${mode}`}>
-        <div className="input-flex group-focus:tv-border has-[:focus]:tv-border  has-[:focus]:tv-border-[var(--tv-prop-brand-color)] tv-mb-2 sm:tv-text-sm sm:tv-leading-6 tv-px-4 tv-items-center tv-flex tv-justify-between tv-w-full tv-rounded-lg tv-border-[1px]">
+        <div className="input-flex group-focus:tv-border has-[:focus]:tv-border has-[:focus]:tv-border-[var(--tv-prop-brand-color)] tv-mb-2 sm:tv-text-sm sm:tv-leading-6 tv-px-4 tv-items-center tv-flex tv-justify-between tv-w-full tv-rounded-lg tv-border-[1px]">
           <input
             ref={inputRef}
             value={audioBase64 && query.length == 0 ? "Searching..." : query}
