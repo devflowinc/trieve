@@ -1257,7 +1257,7 @@ pub async fn search_chunks(
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
-            .insert_header(("X-TR-Query", query))
+            .insert_header(("X-TR-Query", query.replace("\n", "")))
             .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
     }
 
@@ -1466,7 +1466,7 @@ pub async fn autocomplete(
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
-            .insert_header(("X-TR-Query", parsed_query.query))
+            .insert_header(("X-TR-Query", parsed_query.query.replace("\n", "")))
             .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
     }
 
@@ -2715,7 +2715,10 @@ pub async fn generate_off_chunks(
 
         return Ok(HttpResponse::Ok()
             .insert_header(("TR-QueryID", query_id.to_string()))
-            .insert_header(("X-TR-Query", last_prev_message.content.clone()))
+            .insert_header((
+                "X-TR-Query",
+                last_prev_message.content.clone().replace("\n", ""),
+            ))
             .json(completion_content));
     }
 
@@ -2838,7 +2841,10 @@ pub async fn generate_off_chunks(
 
     Ok(HttpResponse::Ok()
         .insert_header(("TR-QueryID", query_id.to_string()))
-        .insert_header(("X-TR-Query", last_prev_message.content.clone()))
+        .insert_header((
+            "X-TR-Query",
+            last_prev_message.content.clone().replace("\n", ""),
+        ))
         .streaming(completion_stream))
 }
 
