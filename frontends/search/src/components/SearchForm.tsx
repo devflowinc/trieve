@@ -298,6 +298,16 @@ const SearchForm = (props: {
     }
   };
 
+  createEffect(() => {
+    if (mustNotFilters().length > 0) {
+      setTempFilterType("must not");
+    } else if (shouldFilters().length > 0) {
+      setTempFilterType("should");
+    } else {
+      setTempFilterType("must");
+    }
+  });
+
   return (
     <>
       <div class="w-full">
