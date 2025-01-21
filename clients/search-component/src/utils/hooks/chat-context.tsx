@@ -140,6 +140,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     let done = false;
     let calledAnalytics = false;
     let textInStream = "";
+    let state: "READING_TEXT" | "READING_LABEL" | "READING_URL" =
+      "READING_TEXT";
+    let linkBuffer = ""; // Combined buffer for the entire markdown link
+    let outputBuffer = ""; // Buffer for the final output text
 
     while (!done) {
       const { value, done: doneReading } = await reader.read();
@@ -198,11 +202,45 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
+        // Buffer incomplete markdown links
+        outputBuffer = "";
+        linkBuffer = "";
+        for (let i = 0; i < text.length; i++) {
+          const char = text[i];
+
+          switch (state) {
+            case "READING_TEXT":
+              if (char === "[") {
+                state = "READING_LABEL";
+                linkBuffer = "[";
+              } else {
+                outputBuffer += char;
+              }
+              break;
+
+            case "READING_LABEL":
+              linkBuffer += char;
+              if (char === "]") {
+                state = "READING_URL";
+              }
+              break;
+
+            case "READING_URL":
+              linkBuffer += char;
+              if (char === ")") {
+                state = "READING_TEXT";
+                outputBuffer += linkBuffer;
+                linkBuffer = "";
+              }
+              break;
+          }
+        }
+
         setMessages((m) => [
           ...m.slice(0, -1),
           {
             type: "system",
-            text,
+            text: outputBuffer,
             additional: json ? json : null,
             queryId,
           },
