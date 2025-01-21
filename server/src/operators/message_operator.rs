@@ -2,8 +2,8 @@
 use crate::data::models::DummyHallucinationScore;
 use crate::data::models::{
     self, escape_quotes, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset,
-    DatasetConfiguration, LLMOptions, QueryTypes, RagQueryEventClickhouse, RedisPool, SearchMethod,
-    SearchModalities,
+    DatasetConfiguration, LLMOptions, MultiQuery, QueryTypes, RagQueryEventClickhouse, RedisPool,
+    SearchMethod, SearchModalities,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
@@ -289,10 +289,38 @@ pub async fn get_rag_chunks_query(
     let use_message_to_query_prompt = dataset_config.USE_MESSAGE_TO_QUERY_PROMPT;
     if create_message_req_payload.search_query.is_none() && use_message_to_query_prompt {
         let message_to_query_prompt = dataset_config.MESSAGE_TO_QUERY_PROMPT.clone();
-        let gen_inference_msgs = vec![ChatMessage::User {
+        let mut gen_inference_msgs = vec![ChatMessage::User {
             content: ChatMessageContent::Text(format!("{}\n{}", message_to_query_prompt, query)),
             name: None,
         }];
+
+        if let Some(ref image_urls) = create_message_req_payload.image_urls {
+            if !image_urls.is_empty() {
+                gen_inference_msgs.push(ChatMessage::User {
+                    name: None,
+                    content: ChatMessageContent::ContentPart(
+                        image_urls
+                            .iter()
+                            .map(|url| {
+                                ChatMessageContentPart::Image(ChatMessageImageContentPart {
+                                    r#type: "image_url".to_string(),
+                                    image_url: ImageUrlType {
+                                        url: url.to_string(),
+                                        detail: None,
+                                    },
+                                })
+                            })
+                            .collect::<Vec<_>>(),
+                    ),
+                });
+                gen_inference_msgs.push(ChatMessage::User {
+                    name: None,
+                    content: ChatMessageContent::Text(
+                        "These are the images that the user provided with their query. Use them to create your search query".to_string(),
+                    ),
+                });
+            }
+        }
 
         let gen_inference_parameters = ChatCompletionParameters {
             model: chosen_model.clone(),
@@ -356,13 +384,36 @@ pub async fn get_rag_chunks_query(
     let search_type = create_message_req_payload
         .search_type
         .unwrap_or(SearchMethod::Hybrid);
+
+    let query_type = if let Some(ref image_urls) = create_message_req_payload.image_urls {
+        let image_queries = image_urls.iter().map(|url| MultiQuery {
+            query: SearchModalities::Image {
+                image_url: url.clone(),
+                llm_prompt: None,
+            },
+            weight: 0.5 / image_urls.len() as f32,
+        });
+
+        QueryTypes::Multi(
+            vec![MultiQuery {
+                query: SearchModalities::Text(query.clone()),
+                weight: 0.5,
+            }]
+            .into_iter()
+            .chain(image_queries)
+            .collect(),
+        )
+    } else {
+        QueryTypes::Single(SearchModalities::Text(query.clone()))
+    };
+
     if create_message_req_payload
         .use_group_search
         .is_some_and(|x| x)
     {
         let search_groups_data = SearchOverGroupsReqPayload {
             search_type: search_type.clone(),
-            query: QueryTypes::Single(SearchModalities::Text(query.clone())),
+            query: query_type.clone(),
             score_threshold: create_message_req_payload.score_threshold,
             page_size: Some(
                 create_message_req_payload
@@ -473,7 +524,7 @@ pub async fn get_rag_chunks_query(
     } else {
         let search_chunk_data = SearchChunksReqPayload {
             search_type: search_type.clone(),
-            query: QueryTypes::Single(SearchModalities::Text(query.clone())),
+            query: query_type.clone(),
             score_threshold: create_message_req_payload.score_threshold,
             sort_options: create_message_req_payload.sort_options,
             page_size: Some(
