@@ -1103,7 +1103,10 @@ pub async fn stream_response(
         create_messages_query(vec![new_message], &pool).await?;
 
         return Ok(HttpResponse::Ok()
-            .insert_header(("X-TR-Query", user_message))
+            .insert_header((
+                "X-TR-Query",
+                user_message.to_string().replace("\n", "[NEWLINE]"),
+            ))
             .insert_header(("TR-QueryID", query_id.to_string().replace("\n", "")))
             .json(final_response));
     }
@@ -1295,7 +1298,7 @@ pub async fn stream_response(
     });
 
     Ok(HttpResponse::Ok()
-        .insert_header(("X-TR-Query", user_message))
+        .insert_header(("X-TR-Query", user_message.replace("\n", "[NEWLINE]")))
         .insert_header(("TR-QueryID", query_id.to_string().replace("\n", "")))
         .streaming(completion_stream))
 }

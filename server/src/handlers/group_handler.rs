@@ -1736,7 +1736,7 @@ pub async fn search_within_group(
     } else {
         Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
-            .insert_header(("X-TR-Query", query.replace("\n", "")))
+            .insert_header(("X-TR-Query", query.replace("\n", "[NEWLINE]")))
             .json(result_chunks.into_v2(search_id)))
     }
 }
@@ -1924,7 +1924,7 @@ pub async fn search_over_groups(
     } else {
         Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
-            .insert_header(("X-TR-Query", query.replace("\n", "")))
+            .insert_header(("X-TR-Query", query.replace("\n", "[NEWLINE]")))
             .json(result_chunks.into_v2(search_id)))
     }
 }
