@@ -1,0 +1,55 @@
+<link
+  rel="stylesheet"
+  href="https://cdn.trieve.ai/beta/search-component/index.css"
+/>
+
+<div class="trieve-inline-root">
+</div>
+
+<script type="module">
+  import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
+
+  const inlineRoot = document.querySelector(".trieve-inline-root");
+  console.log("root", inlineRoot,"please", "{{ block.settings.product.title }}", "{{ block.settings.product.id }}");
+  
+  renderToDiv(inlineRoot, {
+    apiKey: "tr-6PMi6K7zGqOIrMcMKuA0d4RGNLRMomJc",
+    datasetId: "94ad9127-8d76-46ed-ba8d-cc471059aa57",
+    baseUrl: "https://api.trieve.ai",
+    type: "ecommerce",
+    analytics: true,
+    useGroupSearch: true,
+    zIndex: 1,
+    inline: true,
+    scaleRem: true,
+    cssRelease: "none",
+    defaultSearchMode: "chat",
+
+    brandLogoImgSrcUrl: "https://findvectorlogo.com/wp-content/uploads/2019/03/graphtech-guitar-labs-vector-logo.png",
+    brandName: "{{ block.settings.brand_name }}",
+    brandColor: "{{ block.settings.brand_color }}",
+    cleanGroupName: "{{ block.settings.product.title }}",
+    groupTrackingId: "{{ block.settings.product.id }}",
+    inlineHeader: "{{ block.settings.inline_header }} ",
+  });
+
+</script>
+
+
+{% comment %}
+  see more about the schema section here. https://shopify.dev/docs/storefronts/themes/architecture/sections/section-schema#schema
+
+  If the input is not valid json, it will not work
+{% endcomment %}
+{% schema %}
+{
+  "name": "Trieve Product Chat",
+  "target": "section",
+  "settings": [
+    { "type": "product", "id": "product", "label": "product", "autofill": true },
+    { "type": "color", "id": "brand_color", "label": "Brand Color", "default": "#ff0000" },
+    { "type": "text", "id": "brand_name", "label": "Brand Name", "default": "TrieveAi" },
+    { "type": "text", "id": "inline_header", "label": "Header Text", "default": "Ask a Product Specialist" }
+  ]
+}
+{% endschema %}
