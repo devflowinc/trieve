@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { Chunk, ChunkWithHighlights, GroupChunk } from "../types";
 import {
+    ChunkFilter,
   ChunkGroup,
   CountChunkQueryResponseBody,
   SearchChunksReqPayload,
@@ -58,6 +59,7 @@ export type ModalProps = {
   onResultClick?: (chunk: Chunk) => void;
   theme?: "light" | "dark";
   searchOptions?: searchOptions;
+  chatFilters?: ChunkFilter;
   placeholder?: string;
   chatPlaceholder?: string;
   chat?: boolean;
@@ -132,6 +134,7 @@ const defaultProps = {
       correct_typos: true,
     },
   } as searchOptions,
+  chatFilters: undefined,
   analytics: true,
   chat: true,
   suggestedQueries: true,

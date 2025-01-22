@@ -5,7 +5,7 @@ import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
 import { cached } from "../cache";
 import { getAllChunksForGroup, trackViews } from "../trieve";
-import { ChatMessageProxy, ChunkGroup, RoleProxy } from "trieve-ts-sdk";
+import { ChatMessageProxy, ChunkFilter, ChunkGroup, RoleProxy } from "trieve-ts-sdk";
 
 const scrollToBottomOfChatModalWrapper = () => {
   const chatModal = document.querySelector(".chat-modal-wrapper");
@@ -315,6 +315,38 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       }
       handleReader(reader, queryId);
     } else {
+      let filters: ChunkFilter | null = {
+        must: null,
+        must_not: null,
+        should: null
+      };
+
+      if (currentTag !== "all") {
+        filters.must = []
+        filters.must?.push({ field: "tag_set", match_any: [currentTag] });
+      }
+
+      if (props.chatFilters) {
+        if (props.chatFilters.must) {
+          if (!filters.must) {
+            filters.must = [];
+          }
+          filters.must?.push(...props.chatFilters.must);
+        }
+        if (props.chatFilters.must_not) {
+          filters.must_not = [];
+          filters.must_not?.push(...props.chatFilters.must_not);
+        }
+        if (props.chatFilters.should) {
+          filters.should = [];
+          filters.should?.push(...props.chatFilters.should);
+        }
+      }
+
+      if (filters.must == null && filters.must_not == null && filters.should == null) {
+        filters = null;
+      }
+
       const { reader, queryId } =
         await trieveSDK.createMessageReaderWithQueryId(
           {
@@ -329,12 +361,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             page_size: props.searchOptions?.page_size ?? 8,
             score_threshold: props.searchOptions?.score_threshold || null,
             use_group_search: props.useGroupSearch,
-            filters:
-              currentTag !== "all"
-                ? {
-                    must: [{ field: "tag_set", match_any: [currentTag] }],
-                  }
-                : null,
+            filters: filters,
             highlight_options: {
               highlight_results: props.type === "pdf",
             },
