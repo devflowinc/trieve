@@ -147,7 +147,7 @@ export const ChatMode = () => {
               value={currentQuestion}
               className={`${props.inline ? "inline-input " : ""}${mode}`}
               onChange={(e) => setCurrentQuestion(e.target.value)}
-              placeholder="Ask anything ..."
+              placeholder={props.chatPlaceholder || "Ask Anything..."}
             />
           </form>
           <button
