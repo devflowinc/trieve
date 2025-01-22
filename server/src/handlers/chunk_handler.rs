@@ -1257,7 +1257,10 @@ pub async fn search_chunks(
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
-            .insert_header(("X-TR-Query", query.replace("\n", "[NEWLINE]")))
+            .insert_header((
+                "X-TR-Query",
+                query.replace("\n", "[NEWLINE]").replace("\r", ""),
+            ))
             .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
     }
 
@@ -1466,7 +1469,13 @@ pub async fn autocomplete(
     if api_version == APIVersion::V2 {
         return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
-            .insert_header(("X-TR-Query", parsed_query.query.replace("\n", "[NEWLINE]")))
+            .insert_header((
+                "X-TR-Query",
+                parsed_query
+                    .query
+                    .replace("\n", "[NEWLINE]")
+                    .replace("\r", ""),
+            ))
             .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
     }
 
@@ -2717,7 +2726,11 @@ pub async fn generate_off_chunks(
             .insert_header(("TR-QueryID", query_id.to_string()))
             .insert_header((
                 "X-TR-Query",
-                last_prev_message.content.clone().replace("\n", "[NEWLINE]"),
+                last_prev_message
+                    .content
+                    .clone()
+                    .replace("\n", "[NEWLINE]")
+                    .replace("\r", ""),
             ))
             .json(completion_content));
     }
@@ -2843,7 +2856,11 @@ pub async fn generate_off_chunks(
         .insert_header(("TR-QueryID", query_id.to_string()))
         .insert_header((
             "X-TR-Query",
-            last_prev_message.content.clone().replace("\n", "[NEWLINE]"),
+            last_prev_message
+                .content
+                .clone()
+                .replace("\n", "[NEWLINE]")
+                .replace("\r", ""),
         ))
         .streaming(completion_stream))
 }
