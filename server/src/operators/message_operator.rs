@@ -1137,10 +1137,13 @@ pub async fn stream_response(
             let chunk_data: Vec<ChunkMetadataStringTagSet> =
                 serde_json::from_str(completion.split("||").collect::<Vec<&str>>()[0])
                     .unwrap_or_default();
-            (
-                completion.split("||").collect::<Vec<&str>>()[1].to_string(),
-                chunk_data,
-            )
+            let response = completion
+                .split("||")
+                .nth(1)
+                .unwrap_or_default()
+                .to_string();
+
+            (response, chunk_data)
         };
 
         let chunk_data: Vec<String> = chunks
