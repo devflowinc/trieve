@@ -1124,24 +1124,22 @@ pub async fn stream_response(
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
 
+        let mut split_completion = completion.split("||");
+
         #[allow(unused_variables)]
         let (response, chunks) = if completion_first {
+            let response = split_completion.next().unwrap_or_default().to_string();
             let chunk_data: Vec<ChunkMetadataStringTagSet> =
-                serde_json::from_str(completion.split("||").collect::<Vec<&str>>()[1])
+                serde_json::from_str(split_completion.next().unwrap_or_default())
                     .unwrap_or_default();
-            (
-                completion.split("||").collect::<Vec<&str>>()[0].to_string(),
-                chunk_data,
-            )
+
+            (response, chunk_data)
         } else {
             let chunk_data: Vec<ChunkMetadataStringTagSet> =
-                serde_json::from_str(completion.split("||").collect::<Vec<&str>>()[0])
+                serde_json::from_str(split_completion.next().unwrap_or_default())
                     .unwrap_or_default();
-            let response = completion
-                .split("||")
-                .nth(1)
-                .unwrap_or_default()
-                .to_string();
+
+            let response = split_completion.next().unwrap_or_default().to_string();
 
             (response, chunk_data)
         };
