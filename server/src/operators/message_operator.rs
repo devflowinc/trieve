@@ -1105,7 +1105,10 @@ pub async fn stream_response(
         return Ok(HttpResponse::Ok()
             .insert_header((
                 "X-TR-Query",
-                user_message.to_string().replace("\n", "[NEWLINE]"),
+                user_message
+                    .to_string()
+                    .replace("\n", "[NEWLINE]")
+                    .replace("\r", ""),
             ))
             .insert_header(("TR-QueryID", query_id.to_string().replace("\n", "")))
             .json(final_response));
@@ -1298,7 +1301,10 @@ pub async fn stream_response(
     });
 
     Ok(HttpResponse::Ok()
-        .insert_header(("X-TR-Query", user_message.replace("\n", "[NEWLINE]")))
+        .insert_header((
+            "X-TR-Query",
+            user_message.replace("\n", "[NEWLINE]").replace("\r", ""),
+        ))
         .insert_header(("TR-QueryID", query_id.to_string().replace("\n", "")))
         .streaming(completion_stream))
 }
