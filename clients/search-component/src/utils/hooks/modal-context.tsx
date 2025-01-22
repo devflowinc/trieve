@@ -59,6 +59,7 @@ export type ModalProps = {
   theme?: "light" | "dark";
   searchOptions?: searchOptions;
   placeholder?: string;
+  chatPlaceholder?: string;
   chat?: boolean;
   analytics?: boolean;
   ButtonEl?: JSX.ElementType;
@@ -122,6 +123,7 @@ const defaultProps = {
   baseUrl: "https://api.trieve.ai",
   defaultSearchMode: "search" as SearchModes,
   placeholder: "Search...",
+  chatPlaceholder: "Ask Anything...",
   theme: "light" as "light" | "dark",
   searchOptions: {
     use_autocomplete: true,
