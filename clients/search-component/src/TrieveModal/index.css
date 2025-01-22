@@ -214,7 +214,7 @@ body {
     }
 
     .inline-chat-header {
-      @apply tv-flex tv-justify-between tv-px-4 tv-py-4 tv-rounded-t-lg tv-border-b-2;
+      @apply tv-flex tv-justify-between tv-px-4 tv-py-4 tv-mb-2 tv-rounded-t-lg tv-border-b-2;
 
       background-color: var(--tv-zinc-100);
     }
@@ -686,7 +686,7 @@ body {
       }
 
       &.with-group {
-        @apply tv-mb-8 sm:tv-mb-0;
+        @apply tv-mb-8 sm:tv-mb-2;
       }
 
       p {
