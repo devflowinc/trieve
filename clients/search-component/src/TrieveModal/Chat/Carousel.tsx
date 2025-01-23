@@ -106,7 +106,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
         )}
       </AnimatePresence>
       <ul
-        className="carousel-scroll tv-flex tv-gap-4 tv-m-0 tv-p-4 tv-overflow-y-hidden tv-scroll-smooth tv-scrollbar-none"
+        className="carousel-scroll tv-flex tv-gap-4 tv-m-0 tv-overflow-y-hidden tv-scroll-smooth tv-scrollbar-none"
         ref={scrollRef}
         style={{
           overflowX: "scroll",
@@ -124,7 +124,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
           >
-            <div className="tv-flex tv-flex-col tv-items-center tv-p-4 tv-h-full tv-w-full tv-box-border">
+            <div className="tv-flex tv-flex-col tv-items-center tv-h-full tv-w-full tv-box-border">
               {child}
             </div>
           </motion.li>

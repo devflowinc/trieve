@@ -7,7 +7,7 @@ const {
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: "class",
+  darkMode: ["selector", ".dark &"],
   content: ["src/**/*.tsx"],
   plugins: [
     plugin(function ({ addVariant }) {

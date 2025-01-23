@@ -237,7 +237,7 @@ const Modal = () => {
           <div
             id="trieve-search-modal"
             className={`${mode === "chat" ? "chat-modal-mobile" : ""}${
-              props.theme === "dark" ? " dark" : ""
+              props.theme === "dark" ? " dark tv-dark" : ""
             }${
               props.inline
                 ? " trieve-inline-modal tv-trieve-inline-modal"

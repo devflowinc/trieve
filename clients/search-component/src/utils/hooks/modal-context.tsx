@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { Chunk, ChunkWithHighlights, GroupChunk } from "../types";
 import {
-    ChunkFilter,
+  ChunkFilter,
   ChunkGroup,
   CountChunkQueryResponseBody,
   SearchChunksReqPayload,
@@ -117,6 +117,8 @@ export type ModalProps = {
   cssRelease?: string;
   hideOpenButton?: boolean;
   defaultImageQuestion?: string;
+  onAddToCart?: (chunk: Chunk) => Promise<void> | void;
+  getCartQuantity?: (trackingId: string) => Promise<number> | number;
 };
 
 const defaultProps = {
@@ -140,7 +142,6 @@ const defaultProps = {
   suggestedQueries: true,
   followupQuestions: true,
   numberOfSuggestions: 3,
-  trieve: (() => {}) as unknown as TrieveSDK,
   openKeyCombination: [{ ctrl: true }, { key: "k", label: "K" }],
   type: "docs" as ModalTypes,
   useGroupSearch: false,
@@ -167,7 +168,8 @@ const defaultProps = {
   cssRelease: "stable",
   defaultImageQuestion:
     "This is an image of a product that I want you to show similar recomendations for.",
-};
+  onAddToCart: async () => {},
+} satisfies ModalProps;
 
 const ModalContext = createContext<{
   props: ModalProps;
@@ -503,7 +505,8 @@ const ModalProvider = ({
         currentGroup,
         setCurrentGroup,
         tagCounts,
-      }}>
+      }}
+    >
       {children}
     </ModalContext.Provider>
   );

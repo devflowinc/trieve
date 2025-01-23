@@ -5,6 +5,7 @@ import { sendCtrData } from "../../utils/trieve";
 import { ChunkGroup, CTRType } from "trieve-ts-sdk";
 import { guessTitleAndDesc, uniquifyVariants } from "../../utils/estimation";
 import { useChatState } from "../../utils/hooks/chat-context";
+import { AddToCartButton } from "../AddToCartButton";
 
 type Props = {
   item: ChunkWithHighlights;
@@ -45,7 +46,7 @@ export const ProductItem = ({
 
   const { title, descriptionHtml } = useMemo(
     () => guessTitleAndDesc(item),
-    [item]
+    [item],
   );
 
   const filteredVariants = useMemo(() => {
@@ -53,12 +54,12 @@ export const ProductItem = ({
       item.chunk.metadata?.variants as unknown as {
         featured_image: { src: string };
         title: string;
-      }[]
+      }[],
     )?.filter((variant) => variant.featured_image?.src);
   }, [item]);
 
   const [shownImage, setShownImage] = useState<string>(
-    item.chunk?.image_urls?.[0] || ""
+    item.chunk?.image_urls?.[0] || "",
   );
   const imageLoaded = useImageLoaded(shownImage);
 
@@ -106,7 +107,7 @@ export const ProductItem = ({
     }
   }
   const formatedPriceRange = `${formatPrice(priceMin)} - ${formatPrice(
-    priceMax
+    priceMax,
   )}`;
 
   if (!title.trim() || title == "undefined") {
@@ -115,7 +116,7 @@ export const ProductItem = ({
 
   const onResultClick = async (
     chunk: Chunk & { position: number },
-    requestID: string
+    requestID: string,
   ) => {
     if (props.analytics) {
       await sendCtrData({
@@ -149,7 +150,7 @@ export const ProductItem = ({
               ...item.chunk,
               position: index,
             },
-            requestID
+            requestID,
           );
         }}
         href={item.chunk.link ?? ""}
@@ -186,7 +187,7 @@ export const ProductItem = ({
                   <button
                     title={`Chat with ${(betterGroupName || group.name).replace(
                       /<[^>]*>/g,
-                      ""
+                      "",
                     )}`}
                     className="chat-product-button"
                     onClick={(e) => {
@@ -233,6 +234,7 @@ export const ProductItem = ({
               }}
             />
           )}
+          <AddToCartButton item={item} />
         </div>
       </a>
     </li>

@@ -383,7 +383,7 @@ body {
 
         .carousel-item {
           flex: 0 0 auto;
-          padding: 0 0.25rem;
+          padding: 0 0.15rem;
           scroll-snap-align: start;
           box-sizing: border-box;
           border-color: var(--tv-zinc-200);
@@ -436,11 +436,11 @@ body {
         }
 
         .ecomm-details {
-          @apply tv-flex tv-gap-1 tv-items-center tv-text-center tv-flex-col tv-px-8;
+          @apply tv-flex tv-gap-1 tv-items-center tv-text-center tv-flex-col tv-px-2;
         }
 
         .ecomm-item-title {
-          @apply tv-p-0 tv-line-clamp-4 tv-text-base tv-mb-0 tv-px-8;
+          @apply tv-p-0 tv-line-clamp-4 tv-text-base tv-mb-0;
 
           mark {
             @apply tv-bg-inherit;
@@ -453,7 +453,7 @@ body {
         }
 
         .ecom-item-description {
-          @apply tv-p-0 tv-line-clamp-3 tv-px-8;
+          @apply tv-p-0 tv-line-clamp-3;
 
           mark {
             @apply tv-bg-inherit;
