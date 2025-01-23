@@ -440,7 +440,29 @@ body {
         }
 
         .ecomm-item-title {
-          @apply tv-p-0 tv-mb-0.5 tv-line-clamp-2;
+          @apply tv-p-0 tv-line-clamp-4 tv-text-base tv-mb-0;
+
+          mark {
+            @apply tv-bg-inherit;
+            color: var(--tv-prop-brand-color);
+
+            b {
+              @apply tv-font-semibold;
+            }
+          }
+        }
+
+        .ecom-item-description {
+          @apply tv-p-0 tv-line-clamp-3;
+
+          mark {
+            @apply tv-bg-inherit;
+            color: var(--tv-prop-brand-color);
+
+            b {
+              @apply tv-font-semibold;
+            }
+          }
         }
 
         .ecomm-item-price {

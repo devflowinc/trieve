@@ -12,31 +12,30 @@ export const useFollowupQuestions = () => {
     SuggestedQueriesResponse["queries"]
   >([]);
 
-  const getQuestions = async () => {
+  const getFollowUpQuestions = async () => {
     setIsLoading(true);
-    const prevMessage = messages
-      .filter((msg) => {
-        return msg.type == "user";
-      })
-      .slice(-1)[0] ?? messages.slice(-1)[0];
+    const prevMessage =
+      messages
+        .filter((msg) => {
+          return msg.type == "user";
+        })
+        .slice(-1)[0] ?? messages.slice(-1)[0];
 
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
       query: prevMessage.text,
       count: props.numberOfSuggestions ?? 3,
-      group: currentGroup,
+      groupTrackingId: props.inline
+        ? (props.groupTrackingId ?? currentGroup?.tracking_id)
+        : currentGroup?.tracking_id,
       props,
     });
     setSuggestedQuestions(
       queries.queries.map((q) => {
         return q.replace(/^[\d.-]+\s*/, "").trim();
-      }),
+      })
     );
     setIsLoading(false);
-  };
-
-  const refetchSuggestedQuestion = () => {
-    getQuestions();
   };
 
   useEffect(() => {
@@ -44,7 +43,7 @@ export const useFollowupQuestions = () => {
     const abortController = new AbortController();
 
     const timeoutId = setTimeout(async () => {
-      getQuestions();
+      getFollowUpQuestions();
     });
 
     return () => {
@@ -55,7 +54,7 @@ export const useFollowupQuestions = () => {
 
   return {
     suggestedQuestions,
-    refetchSuggestedQuestion,
+    getQuestions: getFollowUpQuestions,
     isLoadingSuggestedQueries: isLoading,
   };
 };

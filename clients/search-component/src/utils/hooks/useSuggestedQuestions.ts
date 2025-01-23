@@ -15,7 +15,9 @@ export const useSuggestedQuestions = () => {
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
       count: props.numberOfSuggestions ?? 3,
-      group: currentGroup,
+      groupTrackingId: props.inline
+        ? (props.groupTrackingId ?? currentGroup?.tracking_id)
+        : currentGroup?.tracking_id,
       query,
       props,
     });
@@ -25,10 +27,6 @@ export const useSuggestedQuestions = () => {
       })
     );
     setIsLoading(false);
-  };
-
-  const refetchSuggestedQuestion = () => {
-    getQuestions();
   };
 
   useEffect(() => {
@@ -46,7 +44,9 @@ export const useSuggestedQuestions = () => {
         count: props.numberOfSuggestions ?? 3,
         abortController,
         query,
-        group: currentGroup,
+        groupTrackingId: props.inline
+          ? (props.groupTrackingId ?? currentGroup?.tracking_id)
+          : currentGroup?.tracking_id,
         props,
       });
       setSuggestedQuestions(
@@ -65,7 +65,7 @@ export const useSuggestedQuestions = () => {
 
   return {
     suggestedQuestions,
-    refetchSuggestedQuestion,
+    getQuestions,
     isLoadingSuggestedQueries: isLoading,
   };
 };

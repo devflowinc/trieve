@@ -22,6 +22,9 @@ export const guessTitleAndDesc = (
     "h1, h2, h3, h4, h5, h6"
   );
   const $firstHeading = chunkHtmlHeadings[0] ?? document.createElement("h1");
+  $firstHeading.querySelectorAll("b").forEach((b) => {
+    return b.replaceWith(b.textContent || "");
+  });
   const cleanFirstHeading = $firstHeading?.innerHTML;
   const title = `${
     cleanFirstHeading ||
@@ -30,9 +33,14 @@ export const guessTitleAndDesc = (
     item.chunk.metadata?.name
   }`;
 
+  console.log("title", title);
+  console.log("descriptionHtml before replace", descriptionHtml);
+
   descriptionHtml = descriptionHtml
     .replace(" </mark>", "</mark> ")
     .replace(cleanFirstHeading || "", "");
+
+  console.log("descriptionHtml after replace", descriptionHtml);
 
   return {
     title,

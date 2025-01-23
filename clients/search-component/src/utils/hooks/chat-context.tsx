@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { cached } from "../cache";
 import { getAllChunksForGroup, trackViews } from "../trieve";
 import { ChatMessageProxy, ChunkFilter, ChunkGroup, RoleProxy } from "trieve-ts-sdk";
+import { defaultHighlightOptions } from "../highlight";
 
 const scrollToBottomOfChatModalWrapper = () => {
   const chatModal = document.querySelector(".chat-modal-wrapper");
@@ -363,7 +364,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             use_group_search: props.useGroupSearch,
             filters: filters,
             highlight_options: {
-              highlight_results: props.type === "pdf",
+              ...defaultHighlightOptions,
+              highlight_delimiters: ["?", ",", ".", "!", "\n"],
+              highlight_window: props.type === "ecommerce" ? 5 : 10,
+              highlight_results: true,
             },
           },
           chatMessageAbortController.current.signal,

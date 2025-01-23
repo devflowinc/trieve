@@ -1219,6 +1219,18 @@ impl From<ChunkMetadataTypes> for ChunkMetadata {
     }
 }
 
+impl From<NewChunkMetadataTypes> for ChunkMetadata {
+    fn from(val: NewChunkMetadataTypes) -> Self {
+        match val {
+            NewChunkMetadataTypes::ID(slim_chunk_metadata_with_array_tag_set) => {
+                ChunkMetadataStringTagSet::from(slim_chunk_metadata_with_array_tag_set).into()
+            }
+            NewChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata,
+            NewChunkMetadataTypes::Content(content_chunk_metadata) => content_chunk_metadata.into(),
+        }
+    }
+}
+
 impl From<ChunkMetadata> for ChunkMetadataTypes {
     fn from(chunk_metadata: ChunkMetadata) -> Self {
         ChunkMetadataTypes::Metadata(chunk_metadata.into())
@@ -1428,6 +1440,81 @@ impl From<ContentChunkMetadata> for ChunkMetadataStringTagSet {
             image_urls: chunk.image_urls,
             tag_set: None,
             num_value: chunk.num_value,
+        }
+    }
+}
+
+impl From<SlimChunkMetadataWithArrayTagSet> for ChunkMetadataStringTagSet {
+    fn from(slim_chunk_metadata: SlimChunkMetadataWithArrayTagSet) -> Self {
+        ChunkMetadataStringTagSet {
+            id: slim_chunk_metadata.id,
+            link: slim_chunk_metadata.link,
+            qdrant_point_id: slim_chunk_metadata.qdrant_point_id,
+            created_at: slim_chunk_metadata.created_at,
+            updated_at: slim_chunk_metadata.updated_at,
+            chunk_html: None,
+            metadata: slim_chunk_metadata.metadata,
+            tracking_id: slim_chunk_metadata.tracking_id,
+            time_stamp: slim_chunk_metadata.time_stamp,
+            dataset_id: slim_chunk_metadata.dataset_id,
+            weight: slim_chunk_metadata.weight,
+            location: slim_chunk_metadata.location,
+            image_urls: slim_chunk_metadata.image_urls,
+            tag_set: slim_chunk_metadata
+                .tag_set
+                .map(|tags| tags.into_iter().join(",")),
+            num_value: slim_chunk_metadata.num_value,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChunkMetadataStringTagSetWithHighlightsScore {
+    pub id: uuid::Uuid,
+    pub link: Option<String>,
+    #[serde(skip)]
+    pub qdrant_point_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub chunk_html: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub tracking_id: Option<String>,
+    pub time_stamp: Option<NaiveDateTime>,
+    pub dataset_id: uuid::Uuid,
+    pub weight: f64,
+    pub location: Option<GeoInfo>,
+    pub image_urls: Option<Vec<Option<String>>>,
+    pub tag_set: Option<String>,
+    pub num_value: Option<f64>,
+    pub highlights: Option<Vec<String>>,
+    pub score: f32,
+}
+
+impl From<ScoreChunk> for ChunkMetadataStringTagSetWithHighlightsScore {
+    fn from(score_chunk: ScoreChunk) -> Self {
+        let chunk_metadata: ChunkMetadata = score_chunk.chunk.into();
+        ChunkMetadataStringTagSetWithHighlightsScore {
+            id: chunk_metadata.id,
+            link: chunk_metadata.link,
+            qdrant_point_id: chunk_metadata.qdrant_point_id,
+            created_at: chunk_metadata.created_at,
+            updated_at: chunk_metadata.updated_at,
+            chunk_html: chunk_metadata.chunk_html,
+            metadata: chunk_metadata.metadata,
+            tracking_id: chunk_metadata.tracking_id,
+            time_stamp: chunk_metadata.time_stamp,
+            dataset_id: chunk_metadata.dataset_id,
+            weight: chunk_metadata.weight,
+            location: chunk_metadata.location,
+            image_urls: chunk_metadata.image_urls,
+            tag_set: chunk_metadata.tag_set.map(|tags| {
+                tags.into_iter()
+                    .map(|tag| tag.unwrap_or_default())
+                    .join(",")
+            }),
+            num_value: chunk_metadata.num_value,
+            highlights: score_chunk.highlights,
+            score: score_chunk.score,
         }
     }
 }
@@ -6222,7 +6309,7 @@ fn convert_filter(
         return Err("Invalid filter format. Expected 'path = value'".into());
     }
 
-    let path = parts[0].trim();
+    let path = parts.first().unwrap_or(&"").trim();
     let value = &parts[1].trim().replace("'", "\"");
 
     // Parse the value as JSON to handle different types
@@ -7721,21 +7808,24 @@ impl From<(ParsedQuery, f32)> for MultiQuery {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum SearchModalities {
+    #[schema(title = "Image")]
     Image {
         image_url: String,
         llm_prompt: Option<String>,
     },
+    #[schema(title = "Text")]
     Text(String),
-    Audio {
-        audio_base64: String,
-    },
+    #[schema(title = "Audio")]
+    Audio { audio_base64: String },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
 #[serde(untagged)]
 /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.
 pub enum QueryTypes {
+    #[schema(title = "SingleQuery")]
     Single(SearchModalities),
+    #[schema(title = "MultiQuery")]
     Multi(Vec<MultiQuery>),
 }
 
@@ -7757,9 +7847,22 @@ impl QueryTypes {
                     "Cannot use Audio Query with cross encoder or highlights".to_string(),
                 )),
             },
-            QueryTypes::Multi(_) => Err(ServiceError::BadRequest(
-                "Cannot use Multi Query with cross encoder or highlights".to_string(),
-            )),
+            QueryTypes::Multi(queries) => {
+                let mut query_strings = Vec::new();
+                for query in queries {
+                    if let SearchModalities::Text(text) = &query.query {
+                        query_strings.push(text);
+                    }
+                }
+                if query_strings.is_empty() {
+                    Err(ServiceError::BadRequest(
+                        "Cannot use Image or Audio Query alone in a multi-query with cross encoder or highlights"
+                            .to_string(),
+                    ))
+                } else {
+                    Ok(query_strings.into_iter().join(", "))
+                }
+            }
         }
     }
 }

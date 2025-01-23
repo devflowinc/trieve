@@ -4,9 +4,10 @@ use std::sync::{Arc, Mutex};
 #[cfg(not(feature = "hallucination-detection"))]
 use crate::data::models::DummyHallucinationScore;
 use crate::data::models::{
-    self, escape_quotes, ChunkMetadataStringTagSet, ChunkMetadataTypes, Dataset,
-    DatasetConfiguration, LLMOptions, MultiQuery, QueryTypes, RagQueryEventClickhouse, RedisPool,
-    SearchMethod, SearchModalities,
+    self, escape_quotes, ChunkMetadata, ChunkMetadataStringTagSet,
+    ChunkMetadataStringTagSetWithHighlightsScore, Dataset, DatasetConfiguration, LLMOptions,
+    MultiQuery, QueryTypes, RagQueryEventClickhouse, RedisPool, ScoreChunk, SearchMethod,
+    SearchModalities,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
@@ -295,7 +296,7 @@ pub async fn get_rag_chunks_query(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     event_queue: web::Data<EventQueue>,
-) -> Result<(SearchQueryEventClickhouse, Vec<ChunkMetadataStringTagSet>), actix_web::Error> {
+) -> Result<(SearchQueryEventClickhouse, Vec<ScoreChunk>), actix_web::Error> {
     let mut query =
         if let Some(create_message_query) = create_message_req_payload.search_query.clone() {
             create_message_query
@@ -402,27 +403,34 @@ pub async fn get_rag_chunks_query(
         .search_type
         .unwrap_or(SearchMethod::Hybrid);
 
-    let query_type = if let Some(ref image_urls) = create_message_req_payload.image_urls {
-        let image_queries = image_urls.iter().map(|url| MultiQuery {
-            query: SearchModalities::Image {
-                image_url: url.clone(),
-                llm_prompt: None,
-            },
-            weight: 0.5 / image_urls.len() as f32,
-        });
+    let query_type =
+        if let Some(ref image_urls) = create_message_req_payload.image_urls.and_then(|x| {
+            if x.is_empty() {
+                None
+            } else {
+                Some(x)
+            }
+        }) {
+            let image_queries = image_urls.iter().map(|url| MultiQuery {
+                query: SearchModalities::Image {
+                    image_url: url.clone(),
+                    llm_prompt: None,
+                },
+                weight: 0.5 / image_urls.len() as f32,
+            });
 
-        QueryTypes::Multi(
-            vec![MultiQuery {
-                query: SearchModalities::Text(query.clone()),
-                weight: 0.5,
-            }]
-            .into_iter()
-            .chain(image_queries)
-            .collect(),
-        )
-    } else {
-        QueryTypes::Single(SearchModalities::Text(query.clone()))
-    };
+            QueryTypes::Multi(
+                vec![MultiQuery {
+                    query: SearchModalities::Text(query.clone()),
+                    weight: 0.5,
+                }]
+                .into_iter()
+                .chain(image_queries)
+                .collect(),
+            )
+        } else {
+            QueryTypes::Single(SearchModalities::Text(query.clone()))
+        };
 
     if create_message_req_payload
         .use_group_search
@@ -520,23 +528,14 @@ pub async fn get_rag_chunks_query(
             result_groups
                 .group_chunks
                 .into_iter()
-                .flat_map(|group_chunk| {
-                    group_chunk
+                .flat_map(|group_score_chunk| {
+                    group_score_chunk
                         .metadata
                         .into_iter()
-                        .map(|score_chunk| {
-                            match score_chunk.metadata.get(0).expect("No metadata found") {
-                                ChunkMetadataTypes::Metadata(chunk_metadata) => {
-                                    chunk_metadata.clone()
-                                }
-                                _ => unreachable!(
-                                    "The operator should never return slim chunks for this"
-                                ),
-                            }
-                        })
-                        .collect::<Vec<ChunkMetadataStringTagSet>>()
+                        .map(ScoreChunk::from)
+                        .collect::<Vec<ScoreChunk>>()
                 })
-                .collect::<Vec<ChunkMetadataStringTagSet>>(),
+                .collect::<Vec<ScoreChunk>>(),
         ))
     } else {
         let search_chunk_data = SearchChunksReqPayload {
@@ -627,14 +626,9 @@ pub async fn get_rag_chunks_query(
             clickhouse_search_event,
             result_chunks
                 .score_chunks
-                .iter()
-                .map(
-                    |score_chunk| match score_chunk.metadata.get(0).expect("No metadata found") {
-                        ChunkMetadataTypes::Metadata(chunk_metadata) => chunk_metadata.clone(),
-                        _ => unreachable!("The operator should never return slim chunks for this"),
-                    },
-                )
-                .collect::<Vec<ChunkMetadataStringTagSet>>(),
+                .into_iter()
+                .map(ScoreChunk::from)
+                .collect::<Vec<ScoreChunk>>(),
         ))
     }
 }
@@ -755,7 +749,7 @@ pub async fn stream_response(
     let rag_prompt = dataset_config.RAG_PROMPT.clone();
     let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
 
-    let (search_event, chunk_metadatas) = get_rag_chunks_query(
+    let (search_event, score_chunks) = get_rag_chunks_query(
         create_message_req_payload.clone(),
         dataset_config.clone(),
         dataset.clone(),
@@ -768,7 +762,7 @@ pub async fn stream_response(
     )
     .await?;
 
-    if chunk_metadatas.is_empty() {
+    if score_chunks.is_empty() {
         let response_stream = stream::iter(vec![Ok::<actix_web::web::Bytes, actix_web::Error>(
             Bytes::from(format!(
                 "[]||{}",
@@ -783,14 +777,14 @@ pub async fn stream_response(
             .streaming(response_stream));
     }
 
-    let rag_content = chunk_metadatas
+    let rag_content = score_chunks
         .iter()
         .enumerate()
-        .map(|(idx, chunk)| {
+        .map(|(idx, score_chunk)| {
             json!({
                 "doc": idx + 1,
-                "text": convert_html_to_text(&(chunk.chunk_html.clone().unwrap_or_default())),
-                "link": chunk.link.clone().unwrap_or_default()
+                "text": convert_html_to_text(&(ChunkMetadata::from(score_chunk.chunk.clone()).chunk_html.clone().unwrap_or_default())),
+                "link": ChunkMetadata::from(score_chunk.chunk.clone()).link.clone().unwrap_or_default()
             })
             .to_string()
         })
@@ -823,9 +817,13 @@ pub async fn stream_response(
         rag_content,
     ));
 
-    let images: Vec<String> = chunk_metadatas
+    let images: Vec<String> = score_chunks
         .iter()
-        .filter_map(|chunk| chunk.image_urls.clone())
+        .filter_map(|score_chunk| {
+            ChunkMetadata::from(score_chunk.chunk.clone())
+                .image_urls
+                .clone()
+        })
         .flat_map(|image_urls| {
             image_urls
                 .iter()
@@ -999,7 +997,7 @@ pub async fn stream_response(
                     .filter_map(|doc_idx| {
                         doc_idx
                             .as_u64()
-                            .and_then(|idx| chunk_metadatas.get(idx as usize - 1))
+                            .and_then(|idx| score_chunks.get(idx as usize - 1))
                             .cloned()
                     })
                     .collect();
@@ -1050,7 +1048,12 @@ pub async fn stream_response(
         let score = {
             let docs = filtered_chunks
                 .iter()
-                .map(|x| x.chunk_html.clone().unwrap_or_default())
+                .map(|score_chunk| {
+                    ChunkMetadata::from(score_chunk.chunk.clone())
+                        .chunk_html
+                        .clone()
+                        .unwrap_or_default()
+                })
                 .collect::<Vec<String>>();
             hallucination_detector
                 .detect_hallucinations(&clean_markdown(&response_text), &docs)
@@ -1241,15 +1244,15 @@ pub async fn stream_response(
                     if choice.finish_reason.is_some() {
                         let docs = documents.lock().unwrap();
                         if !docs.is_empty() && completion_first {
-                            let filtered_chunks = chunk_metadatas.iter().enumerate()
-                                    .filter_map(|(idx, chunk)| {
+                            let filtered_chunks = score_chunks.iter().enumerate()
+                                    .filter_map(|(idx, score_chunk)| {
                                         if docs.contains(&(idx as u32)) {
-                                            Some(chunk.clone())
+                                            Some(ChunkMetadataStringTagSetWithHighlightsScore::from(score_chunk.clone()))
                                         } else {
                                             None
                                         }
                                     })
-                                    .collect::<Vec<ChunkMetadataStringTagSet>>();
+                                    .collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
                                 Some(format!("||{}", serde_json::to_string(&filtered_chunks).unwrap_or_default()))
                         } else {
                             Some("".to_string())
@@ -1267,13 +1270,13 @@ pub async fn stream_response(
                                 let (text, docs) = parse_streaming_completetion(text, state.clone(), documents.clone());
                                 if let Some(docs) = docs {
                                     if !completion_first {
-                                        let filtered_chunks = chunk_metadatas.iter().enumerate().filter_map(|(idx, chunk)| {
+                                        let filtered_chunks = score_chunks.iter().enumerate().filter_map(|(idx, score_chunk)| {
                                             if docs.contains(&(idx as u32)) {
-                                                Some(chunk.clone())
+                                                Some(ChunkMetadataStringTagSetWithHighlightsScore::from(score_chunk.clone()))
                                             } else {
                                                 None
                                             }
-                                        }).collect::<Vec<ChunkMetadataStringTagSet>>();
+                                        }).collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
                                         return Some(format!("{}||", serde_json::to_string(&filtered_chunks).unwrap_or_default()));
                                     }
                                 }

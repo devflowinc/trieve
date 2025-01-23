@@ -2,7 +2,7 @@ import { Chunk, ChunkWithHighlights } from "../../utils/types";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { sendCtrData } from "../../utils/trieve";
-import { ChunkGroup } from "trieve-ts-sdk";
+import { ChunkGroup, CTRType } from "trieve-ts-sdk";
 import { guessTitleAndDesc, uniquifyVariants } from "../../utils/estimation";
 import { useChatState } from "../../utils/hooks/chat-context";
 
@@ -13,6 +13,7 @@ type Props = {
   className?: string;
   group?: ChunkGroup;
   betterGroupName?: string;
+  ctrType?: CTRType;
 };
 
 function useImageLoaded(src: string) {
@@ -35,6 +36,7 @@ export const ProductItem = ({
   className,
   group,
   betterGroupName,
+  ctrType: type,
 }: Props) => {
   const { props, trieveSDK } = useModalState();
   const { chatWithGroup } = useChatState();
@@ -64,10 +66,12 @@ export const ProductItem = ({
     return price
       ? `${
           props.currencyPosition === "before"
-            ? props.defaultCurrency ?? "$"
+            ? (props.defaultCurrency ?? "$")
             : ""
         }${price}${
-          props.currencyPosition === "after" ? props.defaultCurrency ?? "$" : ""
+          props.currencyPosition === "after"
+            ? (props.defaultCurrency ?? "$")
+            : ""
         }`
       : "";
   };
@@ -116,7 +120,7 @@ export const ProductItem = ({
     if (props.analytics) {
       await sendCtrData({
         trieve: trieveSDK,
-        type: "search",
+        type: type ?? "search",
         index: chunk.position,
         requestID: requestID,
         chunkID: chunk.id,
