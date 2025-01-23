@@ -523,7 +523,7 @@ body {
         }
 
         ol {
-          @apply tv-list-decimal tv-pl-4 tv-my-4 tv-overflow-hidden;
+          @apply tv-list-decimal tv-pl-5 tv-my-4 tv-overflow-hidden;
         }
 
         li {
