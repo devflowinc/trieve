@@ -142,8 +142,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     let textInStream = "";
     let state: "READING_TEXT" | "READING_LABEL" | "READING_URL" =
       "READING_TEXT";
-    let linkBuffer = ""; // Combined buffer for the entire markdown link
-    let outputBuffer = ""; // Buffer for the final output text
+    let linkBuffer = "";
+    let outputBuffer = "";
 
     while (!done) {
       const { value, done: doneReading } = await reader.read();
@@ -202,9 +202,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Buffer incomplete markdown links
         outputBuffer = "";
         linkBuffer = "";
+        state = "READING_TEXT";
         for (let i = 0; i < text.length; i++) {
           const char = text[i];
 

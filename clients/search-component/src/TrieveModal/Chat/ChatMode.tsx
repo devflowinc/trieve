@@ -43,10 +43,6 @@ export const ChatMode = () => {
   const [ref, { entry, rootRef }] = useIntersectionObserver();
   const isOnScreen = entry && entry.isIntersecting;
 
-  const clear = () => {
-    clearConversation();
-  };
-
   return (
     <Suspense fallback={<div className="suspense-fallback"></div>}>
       {props.inline && messages.length ? (
@@ -55,7 +51,9 @@ export const ChatMode = () => {
             <p>{props.inlineHeader}</p>
           </div>
           <button
-            onClick={() => (isDoneReading ? clear() : stopGeneratingMessage())}
+            onClick={() =>
+              isDoneReading ? clearConversation() : stopGeneratingMessage()
+            }
             className="clear-button"
           >
             {isDoneReading ? "Clear" : "Stop"}
@@ -85,9 +83,7 @@ export const ChatMode = () => {
             )}
           >
             <AnimatePresence mode="wait">
-              <div className="ai-message initial-message">
-                {!messages.length ? <SuggestedQuestions /> : null}
-              </div>
+              <SuggestedQuestions />
               {messages.map((message, i) => (
                 <ChatMessage key={`${i}-message`} idx={i} message={message} />
               ))}
