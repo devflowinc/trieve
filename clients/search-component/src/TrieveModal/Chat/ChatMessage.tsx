@@ -17,6 +17,7 @@ import { sendCtrData, trackViews } from "../../utils/trieve";
 import { motion } from "motion/react";
 import { ScoreChunk } from "trieve-ts-sdk";
 import { guessTitleAndDesc } from "../../utils/estimation";
+import { AddToCartButton } from "../AddToCartButton";
 
 type Message = {
   queryId: string | null;
@@ -127,7 +128,7 @@ export const Message = ({
             chunk.metadata.page_title) &&
           chunk.link &&
           chunk.image_urls?.length &&
-          chunk.num_value
+          chunk.num_value,
       );
       if (ecommerceChunks && message.queryId) {
         trackViews({
@@ -150,7 +151,7 @@ export const Message = ({
           chunk.metadata.page_title) &&
         chunk.link &&
         chunk.image_urls?.length &&
-        chunk.num_value
+        chunk.num_value,
     )
     .map((chunk) => ({
       chunk,
@@ -168,13 +169,14 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title
+          index && item.title,
     )
     .map((item, index) => {
       const { title, descriptionHtml } = guessTitleAndDesc(item);
 
       return (
         <a
+          className="tv-flex tv-flex-col"
           key={index}
           href={item.link ?? ""}
           target="_blank"
@@ -218,6 +220,9 @@ export const Message = ({
               }}
             />
           </div>
+          <div className="tv-w-full mt-auto tv-justify-self-end">
+            <AddToCartButton item={item} />
+          </div>
         </a>
       );
     });
@@ -235,7 +240,7 @@ export const Message = ({
           chunk.metadata.title ||
           chunk.metadata.page_title) &&
         chunk.link &&
-        chunk.metadata.yt_preview_src
+        chunk.metadata.yt_preview_src,
     )
     .map((chunk) => {
       return {
@@ -320,7 +325,7 @@ export const Message = ({
                             chunk.metadata.title ||
                             chunk.metadata.page_title) &&
                           chunk.link &&
-                          !chunk.metadata.yt_preview_src
+                          !chunk.metadata.yt_preview_src,
                       )
                       .map((chunk) => {
                         return {
