@@ -33,14 +33,9 @@ export const guessTitleAndDesc = (
     item.chunk.metadata?.name
   }`;
 
-  console.log("title", title);
-  console.log("descriptionHtml before replace", descriptionHtml);
-
   descriptionHtml = descriptionHtml
     .replace(" </mark>", "</mark> ")
     .replace(cleanFirstHeading || "", "");
-
-  console.log("descriptionHtml after replace", descriptionHtml);
 
   return {
     title,
