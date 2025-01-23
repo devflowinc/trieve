@@ -544,7 +544,6 @@ pub async fn bulk_delete_chunks_query(
     dataset_config: DatasetConfiguration,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     if dataset_config.LOCKED {
@@ -598,23 +597,10 @@ pub async fn bulk_delete_chunks_query(
                             .get_results::<(uuid::Uuid, uuid::Uuid)>(conn)
                             .await?;
 
-                            let (deleted_ids, deleted_point_ids): (
+                            let (_deleted_ids, deleted_point_ids): (
                                 Vec<uuid::Uuid>,
                                 Vec<uuid::Uuid>,
                             ) = deleted_ids_uuids.into_iter().unzip();
-
-                            diesel::delete(
-                                chunk_group_bookmarks_columns::chunk_group_bookmarks
-                                    .filter(
-                                        chunk_group_bookmarks_columns::chunk_metadata_id
-                                            .eq_any(deleted_ids.clone()),
-                                    )
-                                    .filter(
-                                        chunk_group_bookmarks_columns::created_at.le(deleted_at),
-                                    ),
-                            )
-                            .execute(conn)
-                            .await?;
 
                             Ok(deleted_point_ids)
                         }
@@ -1457,7 +1443,6 @@ pub async fn delete_chunk_metadata_query(
     pool: web::Data<Pool>,
     dataset_config: DatasetConfiguration,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool.get().await.map_err(|_e| {
@@ -1468,18 +1453,6 @@ pub async fn delete_chunk_metadata_query(
         .transaction::<_, diesel::result::Error, _>(|conn| {
             async move {
                 {
-                    diesel::delete(
-                        chunk_group_bookmarks_columns::chunk_group_bookmarks
-                            .filter(
-                                chunk_group_bookmarks_columns::chunk_metadata_id
-                                    .eq_any(chunk_uuid.clone()),
-                            )
-                            .filter(chunk_group_bookmarks_columns::created_at.le(deleted_at)),
-                    )
-                    .execute(conn)
-                    .await?;
-
-                    // if there were no collisions, just delete the chunk_metadata without issue
                     let deleted_points = diesel::delete(
                         chunk_metadata_columns::chunk_metadata
                             .filter(chunk_metadata_columns::id.eq_any(chunk_uuid.clone()))
