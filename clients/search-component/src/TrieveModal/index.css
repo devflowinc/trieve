@@ -436,11 +436,11 @@ body {
         }
 
         .ecomm-details {
-          @apply tv-flex tv-gap-1 tv-items-center tv-text-center tv-flex-col;
+          @apply tv-flex tv-gap-1 tv-items-center tv-text-center tv-flex-col tv-px-8;
         }
 
         .ecomm-item-title {
-          @apply tv-p-0 tv-line-clamp-4 tv-text-base tv-mb-0;
+          @apply tv-p-0 tv-line-clamp-4 tv-text-base tv-mb-0 tv-px-8;
 
           mark {
             @apply tv-bg-inherit;
@@ -453,7 +453,7 @@ body {
         }
 
         .ecom-item-description {
-          @apply tv-p-0 tv-line-clamp-3;
+          @apply tv-p-0 tv-line-clamp-3 tv-px-8;
 
           mark {
             @apply tv-bg-inherit;
