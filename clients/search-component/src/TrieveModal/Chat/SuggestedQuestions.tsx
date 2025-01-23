@@ -8,11 +8,8 @@ import { SparklesIcon } from "../icons";
 
 export const SuggestedQuestions = () => {
   const { askQuestion, messages, setCurrentQuestion } = useChatState();
-  const {
-    suggestedQuestions,
-    isLoadingSuggestedQueries,
-    refetchSuggestedQuestion,
-  } = useSuggestedQuestions();
+  const { suggestedQuestions, isLoadingSuggestedQueries, getQuestions } =
+    useSuggestedQuestions();
 
   const { props } = useModalState();
   const [parent] = useAutoAnimate();
@@ -36,7 +33,7 @@ export const SuggestedQuestions = () => {
           )}
         >
           <button
-            onClick={refetchSuggestedQuestion}
+            onClick={() => getQuestions()}
             disabled={isLoadingSuggestedQueries}
             className="suggested-question tv-cursor-pointer tv-border tv-rounded-md tv-p-1 tv-text-xs disabled:tv-cursor-not-allowed tv-text-center"
             title="Refresh suggested questions"

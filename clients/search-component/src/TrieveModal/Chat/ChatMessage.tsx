@@ -3,7 +3,11 @@ const Markdown = lazy(() => import("react-markdown"));
 
 import { useChatState } from "../../utils/hooks/chat-context";
 import { useModalState } from "../../utils/hooks/modal-context";
-import { Chunk, isSimplePdfChunk } from "../../utils/types";
+import {
+  Chunk,
+  ChunkWithHighlights,
+  isSimplePdfChunk,
+} from "../../utils/types";
 import { LoadingIcon, SparklesIcon } from "../icons";
 import { ChatPdfItem } from "../PdfView/ChatPdfItem";
 import { Carousel } from "./Carousel";
@@ -11,6 +15,8 @@ import { FollowupQueries } from "./FollowupQueries";
 import ImagePreview from "../ImagePreview";
 import { sendCtrData, trackViews } from "../../utils/trieve";
 import { motion } from "motion/react";
+import { ScoreChunk } from "trieve-ts-sdk";
+import { guessTitleAndDesc } from "../../utils/estimation";
 
 type Message = {
   queryId: string | null;
@@ -147,6 +153,7 @@ export const Message = ({
         chunk.num_value
     )
     .map((chunk) => ({
+      chunk,
       title:
         chunk.metadata.heading ||
         chunk.metadata.title ||
@@ -155,48 +162,65 @@ export const Message = ({
       imageUrl: (chunk.image_urls ?? [])[0],
       price: chunk.num_value,
       id: chunk.id,
+      score: (chunk as unknown as ScoreChunk).score,
+      highlights: (chunk as unknown as ChunkWithHighlights).highlights,
     }))
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
           index && item.title
     )
-    .map((item, index) => (
-      <a
-        key={index}
-        href={item.link ?? ""}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => {
-          if (props.analytics && message.queryId) {
-            sendCtrData({
-              type: "rag",
-              trieve: trieveSDK,
-              index: index + 1,
-              requestID: message.queryId,
-              chunkID: item.id,
-            });
-          }
-        }}
-      >
-        <img
-          src={item.imageUrl ?? ""}
-          alt={item.title}
-          className="ecommerce-featured-image-chat"
-        />
-        <div className="ecomm-details">
-          <p className="ecomm-item-title">{item.title}</p>
-          <p
-            className="ecomm-item-price"
-            style={{
-              color: props.brandColor ?? "#CB53EB",
-            }}
-          >
-            ${item.price}
-          </p>
-        </div>
-      </a>
-    ));
+    .map((item, index) => {
+      const { title, descriptionHtml } = guessTitleAndDesc(item);
+
+      return (
+        <a
+          key={index}
+          href={item.link ?? ""}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => {
+            if (props.analytics && message.queryId) {
+              sendCtrData({
+                type: "rag",
+                trieve: trieveSDK,
+                index: index + 1,
+                requestID: message.queryId,
+                chunkID: item.id,
+              });
+            }
+          }}
+        >
+          <img
+            src={item.imageUrl ?? ""}
+            alt={item.title}
+            className="ecommerce-featured-image-chat"
+          />
+          <div className="ecomm-details">
+            <p
+              className="ecomm-item-title"
+              dangerouslySetInnerHTML={{
+                __html: title ?? item.title,
+              }}
+            />
+            <p
+              className="ecomm-item-price"
+              style={{
+                color: props.brandColor ?? "#CB53EB",
+              }}
+            >
+              ${item.price}
+            </p>
+            <p
+              className="ecom-item-description"
+              dangerouslySetInnerHTML={{
+                __html: descriptionHtml,
+              }}
+            />
+          </div>
+        </a>
+      );
+    });
 
   const pdfItems = message.additional
     ?.filter((chunk) => isSimplePdfChunk(chunk))

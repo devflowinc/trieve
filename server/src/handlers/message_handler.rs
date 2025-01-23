@@ -964,7 +964,7 @@ pub async fn get_suggested_queries(
         context_sentence,
         number_of_suggestions_to_create,
         query_style,
-	number_of_suggestions_to_create,
+	    number_of_suggestions_to_create,
         query_style,
         query_style,
         query_style,

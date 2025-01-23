@@ -47,7 +47,7 @@ export const hybridSearchRequest = (
     Authorization: "${apiKey}",
   },
   body: JSON.stringify({
-    content: "AI will take over and maybe reward those who aided its rise",
+    query: "AI will take over and maybe reward those who aided its rise",
     search_type: "hybrid",
   }),
 });

@@ -1,5 +1,4 @@
 import {
-  ChunkGroup,
   ChunkMetadata,
   ChunkMetadataStringTagSet,
   CountChunkQueryResponseBody,
@@ -22,7 +21,7 @@ export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
 
   return Object.fromEntries(
-    Object.entries(obj).filter(([key]) => !keys.includes(key)),
+    Object.entries(obj).filter(([key]) => !keys.includes(key))
   );
 };
 
@@ -97,7 +96,7 @@ export const searchWithTrieve = async ({
         if (headers["x-tr-query"] && audioBase64) {
           transcribedQuery = headers["x-tr-query"];
         }
-      },
+      }
     )) as SearchResponseBody;
   } else {
     results = (await trieve.search(
@@ -126,7 +125,7 @@ export const searchWithTrieve = async ({
         if (headers["x-tr-query"] && audioBase64) {
           transcribedQuery = headers["x-tr-query"];
         }
-      },
+      }
     )) as SearchResponseBody;
   }
 
@@ -214,7 +213,7 @@ export const groupSearchWithTrieve = async ({
       if (headers["x-tr-query"] && audioBase64) {
         transcribedQuery = headers["x-tr-query"];
       }
-    },
+    }
   );
 
   const resultsWithHighlight = results.results.map((group) => {
@@ -274,7 +273,7 @@ export const countChunks = async ({
       search_type: "fulltext",
       ...omit(searchOptions, ["search_type"]),
     },
-    abortController?.signal,
+    abortController?.signal
   );
   return results;
 };
@@ -347,7 +346,7 @@ export const getSuggestedQueries = async ({
       suggestions_to_create: count,
       search_type: "semantic",
     },
-    abortController?.signal,
+    abortController?.signal
   );
 };
 
@@ -356,14 +355,14 @@ export const getSuggestedQuestions = async ({
   abortController,
   query,
   count,
-  group,
+  groupTrackingId,
   props: modalProps,
 }: {
   trieve: TrieveSDK;
   abortController?: AbortController;
   query?: string;
   count: number;
-  group?: ChunkGroup | null;
+  groupTrackingId?: string | null;
   props?: ModalProps;
 }) => {
   return trieve.suggestedQueries(
@@ -373,24 +372,24 @@ export const getSuggestedQuestions = async ({
       search_type: "hybrid",
       suggestions_to_create: count,
       context:
-        group && modalProps?.cleanGroupName
+        groupTrackingId && modalProps?.cleanGroupName
           ? `The user is specifically and exclusively interested in the ${modalProps.cleanGroupName}. Suggest short questions limited to 3-6 words based on the reference content.`
           : query
             ? `The user's previous query was "${query}", all suggestions should look like that.`
             : "Keep your query recommendations short, limited to 3-6 words",
-      ...(group &&
-        group?.tracking_id && {
+      ...(groupTrackingId &&
+        groupTrackingId && {
           filters: {
             must: [
               {
                 field: "group_tracking_ids",
-                match_all: [group.tracking_id],
+                match_all: [groupTrackingId],
               },
             ],
           },
         }),
     },
-    abortController?.signal,
+    abortController?.signal
   );
 };
 
@@ -398,7 +397,7 @@ export type SimpleChunk = ChunkMetadata | ChunkMetadataStringTagSet;
 
 export const getAllChunksForGroup = async (
   groupId: string,
-  trieve: TrieveSDK,
+  trieve: TrieveSDK
 ): Promise<SimpleChunk[]> => {
   let moreToFind = true;
   let page = 1;
@@ -411,7 +410,7 @@ export const getAllChunksForGroup = async (
         datasetId: trieve.datasetId as string,
         groupId,
         page,
-      },
+      }
     );
     if (results.chunks.length === 0) {
       moreToFind = false;
@@ -429,7 +428,7 @@ export const searchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
   datasetId: string,
-  tag?: string,
+  tag?: string
 ) => {
   const response = await pagefind.search(
     query,
@@ -437,14 +436,14 @@ export const searchWithPagefind = async (
       filters: {
         tag_set: tag,
       },
-    },
+    }
   );
 
   const results = await Promise.all(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     response.results.map(async (result: any) => {
       return await result.data();
-    }),
+    })
   );
 
   // Set pagesize to 20
@@ -479,7 +478,7 @@ export const groupSearchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
   datasetId: string,
-  tag?: string,
+  tag?: string
 ): Promise<GroupSearchResults> => {
   const response = await pagefind.search(
     query,
@@ -487,14 +486,14 @@ export const groupSearchWithPagefind = async (
       filters: {
         tag_set: tag,
       },
-    },
+    }
   );
 
   const results = await Promise.all(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     response.results.map(async (result: any) => {
       return await result.data();
-    }),
+    })
   );
 
   const groupMap = new Map<string, ChunkWithHighlights[]>();
@@ -568,7 +567,7 @@ export const countChunksWithPagefind = async (
     selected?: boolean;
     iconClassName?: string;
     icon?: () => JSX.Element;
-  }[],
+  }[]
 ): Promise<CountChunkQueryResponseBody[]> => {
   let queryParam: string | null = query;
   if (query.trim() === "") {
@@ -608,7 +607,7 @@ export const getPagefindIndex = async (trieve: TrieveSDK): Promise<string> => {
 export const uploadFile = async (
   trieve: TrieveSDK,
   file_name: string,
-  base64_file: string,
+  base64_file: string
 ): Promise<string> => {
   const response = await trieve.trieve.fetch("/api/file", "post", {
     datasetId: trieve.datasetId as string,
@@ -624,7 +623,7 @@ export const uploadFile = async (
 
 export const getPresignedUrl = async (
   trieve: TrieveSDK,
-  fileId: string,
+  fileId: string
 ): Promise<string> => {
   const response = await trieve.trieve.fetch("/api/file/{file_id}", "get", {
     datasetId: trieve.datasetId as string,
