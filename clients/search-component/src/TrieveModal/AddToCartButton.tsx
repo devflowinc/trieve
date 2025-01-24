@@ -29,7 +29,7 @@ export const AddToCartButton = ({ item }: Props) => {
   }
   return (
     <div
-      className="tv-flex tv-font-semibold tv-rounded-md tv-items-center tv-text-[--tv-prop-brand-color] tv-justify-center tv-w-full tv-gap-1 tv-px-2 tv-py-2 tv-mt-1 hover:tv-bg-[--tv-prop-brand-color] hover:tv-text-white"
+      className="tv-flex tv-font-semibold tv-rounded-md tv-items-center tv-justify-center tv-w-full tv-gap-1 tv-px-2 tv-py-2 tv-mt-1 tv-bg-[--tv-prop-brand-color] tv-text-white hover:tv-ring-1 hover:tv-ring-[--tv-prop-brand-color] hover:tv-ring-offset-1"
       onClick={async (e) => {
         e.preventDefault();
         e.stopPropagation();

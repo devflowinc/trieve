@@ -168,7 +168,7 @@ const defaultProps = {
   cssRelease: "stable",
   defaultImageQuestion:
     "This is an image of a product that I want you to show similar recomendations for.",
-  onAddToCart: async () => {},
+  onAddToCart: undefined,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
@@ -261,7 +261,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all",
+    props.tags?.find((t) => t.selected)?.tag || "all"
   );
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
 
@@ -314,7 +314,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          currentTag !== "all" ? currentTag : undefined,
+          currentTag !== "all" ? currentTag : undefined
         );
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
@@ -331,7 +331,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          currentTag !== "all" ? currentTag : undefined,
+          currentTag !== "all" ? currentTag : undefined
         );
         setResults(results);
       } else {
@@ -370,7 +370,7 @@ const ModalProvider = ({
         const filterCounts = await countChunksWithPagefind(
           pagefind,
           query,
-          props.tags,
+          props.tags
         );
         setTagCounts(filterCounts);
       } else {
@@ -382,8 +382,8 @@ const ModalProvider = ({
                 trieve: trieve,
                 abortController,
                 ...(tag.tag !== "all" && { tag: tag.tag }),
-              }),
-            ),
+              })
+            )
           );
           setTagCounts(numberOfRecords);
         } catch (e) {
@@ -434,7 +434,7 @@ const ModalProvider = ({
         setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
       }
     },
-    [open, props.allowSwitchingModes],
+    [open, props.allowSwitchingModes]
   );
 
   useEffect(() => {
