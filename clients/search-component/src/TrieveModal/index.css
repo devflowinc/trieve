@@ -118,7 +118,7 @@ body {
       }
 
       > li > .product > div {
-        @apply tv-block;
+        @apply tv-flex tv-flex-col tv-h-full;
       }
     }
 
