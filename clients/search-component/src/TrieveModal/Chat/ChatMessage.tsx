@@ -45,8 +45,7 @@ export const ChatMessage = ({
         duration: 0.2,
         ease: "easeInOut",
       }}
-      key={idx}
-    >
+      key={idx}>
       {message.type === "user" && message.text === "Loading..." ? (
         <div>
           <div className={message.type}>
@@ -94,8 +93,7 @@ export const ChatMessage = ({
                     ? `${props.brandColor}18`
                     : "#CB53EB18",
                   color: props.brandColor ?? "#CB53EB",
-                }}
-              >
+                }}>
                 AI assistant
               </p>
             </span>
@@ -191,8 +189,7 @@ export const Message = ({
                 chunkID: item.id,
               });
             }
-          }}
-        >
+          }}>
           <img
             src={item.imageUrl ?? ""}
             alt={item.title}
@@ -209,8 +206,7 @@ export const Message = ({
               className="ecomm-item-price"
               style={{
                 color: props.brandColor ?? "#CB53EB",
-              }}
-            >
+              }}>
               ${item.price}
             </p>
             <p
@@ -257,8 +253,49 @@ export const Message = ({
         className="source-anchor yt-anchor"
         key={index}
         href={item.link as string}
-        target="_blank"
-      >
+        target="_blank">
+        {item.metadata?.yt_preview_src ? (
+          <img className="yt-preview" src={item.metadata?.yt_preview_src} />
+        ) : (
+          <></>
+        )}
+        {item.title}
+      </a>
+    ));
+
+  const docsItems = message.additional
+    ?.map((chunk) => {
+      const chunkHtmlHeadingsDiv = document.createElement("div");
+      chunkHtmlHeadingsDiv.innerHTML = chunk.chunk_html || "";
+      const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
+        "h1, h2, h3, h4, h5, h6",
+      );
+      const $firstHeading =
+        chunkHtmlHeadings[0] ?? document.createElement("h1");
+      $firstHeading?.querySelectorAll(":not(mark)")?.forEach((tag) => {
+        return tag.replaceWith(tag.textContent || "");
+      });
+      const cleanFirstHeading = $firstHeading?.textContent;
+      const title = `${
+        chunk.metadata?.heading ||
+        chunk.metadata?.title ||
+        chunk.metadata?.page_title ||
+        chunk.metadata?.name ||
+        cleanFirstHeading
+      }`.replace("#", "");
+      return {
+        title: title,
+        link: chunk.link,
+        metadata: chunk.metadata,
+      };
+    })
+    .filter((chunk) => chunk.link && !chunk.metadata.yt_preview_src)
+    .map((item, index) => (
+      <a
+        className={`source-anchor${item.metadata?.yt_preview_src ? " yt-anchor" : ""}`}
+        key={index}
+        href={item.link as string}
+        target="_blank">
         {item.metadata?.yt_preview_src ? (
           <img className="yt-preview" src={item.metadata?.yt_preview_src} />
         ) : (
@@ -272,16 +309,14 @@ export const Message = ({
     <div className="super-message-wrapper">
       {message.text === "Loading..." ? (
         <div
-          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
-        >
+          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}>
           <LoadingIcon className="loading" />
         </div>
       ) : null}
 
       {message.type === "system" && message.text !== "Loading..." ? (
         <div
-          className={`system${props.type === "ecommerce" ? " ecommerce" : ""}`}
-        >
+          className={`system${props.type === "ecommerce" ? " ecommerce" : ""}`}>
           {message.additional &&
             props.type === "ecommerce" &&
             !props.inline && (
@@ -307,8 +342,7 @@ export const Message = ({
                   return children?.toString();
                 },
               }}
-              key={idx}
-            >
+              key={idx}>
               {message.text.length > 0 ? message.text : "Loading..."}
             </Markdown>
           ) : (
@@ -317,47 +351,7 @@ export const Message = ({
           <div>
             {message.additional
               ? props.type !== "ecommerce" && (
-                  <div className="additional-links">
-                    {message.additional
-                      .filter(
-                        (chunk) =>
-                          (chunk.metadata.heading ||
-                            chunk.metadata.title ||
-                            chunk.metadata.page_title) &&
-                          chunk.link &&
-                          !chunk.metadata.yt_preview_src,
-                      )
-                      .map((chunk) => {
-                        return {
-                          title:
-                            chunk.metadata.heading ||
-                            chunk.metadata.title ||
-                            chunk.metadata.page_title,
-                          link: chunk.link,
-                          metadata: chunk.metadata,
-                        };
-                      })
-                      .map((item, index) => (
-                        <a
-                          className={`source-anchor${
-                            item.metadata?.yt_preview_src ? " yt-anchor" : ""
-                          }`}
-                          key={index}
-                          href={item.link as string}
-                          target="_blank"
-                        >
-                          {item.metadata?.yt_preview_src ? (
-                            <img
-                              className="yt-preview"
-                              src={item.metadata?.yt_preview_src}
-                            />
-                          ) : (
-                            <></>
-                          )}
-                          {item.title}
-                        </a>
-                      ))}
-                  </div>
+                  <div className="additional-links">{docsItems}</div>
                 )
               : null}
             {props.followupQuestions && messages.length == idx + 1 && (
@@ -380,8 +374,7 @@ export const Message = ({
                             setCopied(true);
                             setTimeout(() => setCopied(false), 500);
                           });
-                      }}
-                    >
+                      }}>
                       <i className="fa-regular fa-copy"></i>
                     </button>
                   )}
@@ -395,8 +388,7 @@ export const Message = ({
                         if (prev === true) return null;
                         return true;
                       });
-                    }}
-                  >
+                    }}>
                     <i className="fa-regular fa-thumbs-up"></i>
                   </button>
                   <button
@@ -409,8 +401,7 @@ export const Message = ({
                         if (prev === false) return null;
                         return false;
                       });
-                    }}
-                  >
+                    }}>
                     <i className="fa-regular fa-thumbs-down"></i>
                   </button>
                 </div>
