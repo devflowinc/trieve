@@ -1,6 +1,6 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{ChunkFilter, SearchChunksReqPayload},
+    chunk_handler::{is_audio, ChunkFilter, SearchChunksReqPayload},
 };
 use crate::operators::chunk_operator::get_metadata_from_tracking_ids_query;
 use crate::{
@@ -1733,14 +1733,18 @@ pub async fn search_within_group(
 
     if api_version == APIVersion::V1 {
         Ok(HttpResponse::Ok().json(result_chunks))
-    } else {
-        Ok(HttpResponse::Ok()
+    } else if is_audio(data.query.clone()) {
+        return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
             .insert_header((
                 "X-TR-Query",
-                query.replace("\n", "[NEWLINE]").replace("\r", ""),
+                query.replace(|c: char| c.is_ascii_control(), ""),
             ))
-            .json(result_chunks.into_v2(search_id)))
+            .json(result_chunks.into_v2(search_id)));
+    } else {
+        return Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(result_chunks.into_v2(search_id)));
     }
 }
 
@@ -1924,13 +1928,17 @@ pub async fn search_over_groups(
 
     if api_version == APIVersion::V1 {
         Ok(HttpResponse::Ok().json(result_chunks))
-    } else {
-        Ok(HttpResponse::Ok()
+    } else if is_audio(data.query.clone()) {
+        return Ok(HttpResponse::Ok()
             .insert_header((Timer::header_key(), timer.header_value()))
             .insert_header((
                 "X-TR-Query",
-                query.replace("\n", "[NEWLINE]").replace("\r", ""),
+                query.replace(|c: char| c.is_ascii_control(), ""),
             ))
-            .json(result_chunks.into_v2(search_id)))
+            .json(result_chunks.into_v2(search_id)));
+    } else {
+        return Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(result_chunks.into_v2(search_id)));
     }
 }

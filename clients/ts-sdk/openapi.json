@@ -15109,6 +15109,7 @@
         "oneOf": [
           {
             "type": "object",
+            "title": "Image",
             "required": [
               "image_url"
             ],
@@ -15123,10 +15124,12 @@
             }
           },
           {
-            "type": "string"
+            "type": "string",
+            "title": "Text"
           },
           {
             "type": "object",
+            "title": "Audio",
             "required": [
               "audio_base64"
             ],
