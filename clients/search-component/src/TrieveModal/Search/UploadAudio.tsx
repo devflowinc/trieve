@@ -24,6 +24,7 @@ export const UploadAudio = () => {
       };
 
       recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
         setAudioBase64("");
         const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
         const reader = new FileReader();
