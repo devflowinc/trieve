@@ -1106,6 +1106,10 @@ impl SearchChunkQueryResponseBody {
     }
 }
 
+pub fn is_audio(query: QueryTypes) -> bool {
+    matches!(query, QueryTypes::Single(SearchModalities::Audio { .. }))
+}
+
 /// Search
 ///
 /// This route provides the primary search functionality for the API. It can be used to search for chunks by semantic similarity, full-text similarity, or a combination of both. Results' `chunk_html` values will be modified with `<mark><b>` or custom specified tags for sub-sentence highlighting.
@@ -1255,13 +1259,19 @@ pub async fn search_chunks(
     timer.add("send_to_clickhouse");
 
     if api_version == APIVersion::V2 {
-        return Ok(HttpResponse::Ok()
-            .insert_header((Timer::header_key(), timer.header_value()))
-            .insert_header((
-                "X-TR-Query",
-                query.replace("\n", "[NEWLINE]").replace("\r", ""),
-            ))
-            .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
+        if is_audio(data.query.clone()) {
+            return Ok(HttpResponse::Ok()
+                .insert_header((Timer::header_key(), timer.header_value()))
+                .insert_header((
+                    "X-TR-Query",
+                    query.replace(|c: char| c.is_ascii_control(), ""),
+                ))
+                .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
+        } else {
+            return Ok(HttpResponse::Ok()
+                .insert_header((Timer::header_key(), timer.header_value()))
+                .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
+        }
     }
 
     Ok(HttpResponse::Ok()
@@ -1467,16 +1477,21 @@ pub async fn autocomplete(
     timer.add("send_to_clickhouse");
 
     if api_version == APIVersion::V2 {
-        return Ok(HttpResponse::Ok()
-            .insert_header((Timer::header_key(), timer.header_value()))
-            .insert_header((
-                "X-TR-Query",
-                parsed_query
-                    .query
-                    .replace("\n", "[NEWLINE]")
-                    .replace("\r", ""),
-            ))
-            .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
+        if is_audio(QueryTypes::Single(data.query.clone())) {
+            return Ok(HttpResponse::Ok()
+                .insert_header((Timer::header_key(), timer.header_value()))
+                .insert_header((
+                    "X-TR-Query",
+                    parsed_query
+                        .query
+                        .replace(|c: char| c.is_ascii_control(), ""),
+                ))
+                .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
+        } else {
+            return Ok(HttpResponse::Ok()
+                .insert_header((Timer::header_key(), timer.header_value()))
+                .json(SearchResponseTypes::V2(result_chunks.into_v2(search_id))));
+        }
     }
 
     Ok(HttpResponse::Ok()
@@ -2722,17 +2737,22 @@ pub async fn generate_off_chunks(
                 .await;
         }
 
-        return Ok(HttpResponse::Ok()
-            .insert_header(("TR-QueryID", query_id.to_string()))
-            .insert_header((
-                "X-TR-Query",
-                last_prev_message
-                    .content
-                    .clone()
-                    .replace("\n", "[NEWLINE]")
-                    .replace("\r", ""),
-            ))
-            .json(completion_content));
+        if data.audio_input.is_some() {
+            return Ok(HttpResponse::Ok()
+                .insert_header(("TR-QueryID", query_id.to_string()))
+                .insert_header((
+                    "X-TR-Query",
+                    last_prev_message
+                        .content
+                        .clone()
+                        .replace(|c: char| c.is_ascii_control(), ""),
+                ))
+                .json(completion_content));
+        } else {
+            return Ok(HttpResponse::Ok()
+                .insert_header(("TR-QueryID", query_id.to_string()))
+                .json(completion_content));
+        };
     }
 
     let (s, r) = unbounded::<String>();
@@ -2743,6 +2763,7 @@ pub async fn generate_off_chunks(
         .unwrap();
 
     let last_message_arb = last_prev_message.content.clone();
+    let user_id = data.user_id.clone().unwrap_or_default();
     Arbiter::new().spawn(async move {
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
@@ -2792,7 +2813,7 @@ pub async fn generate_off_chunks(
                 rag_type: "chosen_chunks".to_string(),
                 query_rating: String::new(),
                 llm_response: completion,
-                user_id: data.user_id.clone().unwrap_or_default(),
+                user_id,
                 hallucination_score: score.total_score,
                 detected_hallucinations: score.detected_hallucinations,
             };
@@ -2852,17 +2873,22 @@ pub async fn generate_off_chunks(
         }
     });
 
-    Ok(HttpResponse::Ok()
-        .insert_header(("TR-QueryID", query_id.to_string()))
-        .insert_header((
-            "X-TR-Query",
-            last_prev_message
-                .content
-                .clone()
-                .replace("\n", "[NEWLINE]")
-                .replace("\r", ""),
-        ))
-        .streaming(completion_stream))
+    if data.audio_input.is_some() {
+        return Ok(HttpResponse::Ok()
+            .insert_header(("TR-QueryID", query_id.to_string()))
+            .insert_header((
+                "X-TR-Query",
+                last_prev_message
+                    .content
+                    .clone()
+                    .replace(|c: char| c.is_ascii_control(), ""),
+            ))
+            .streaming(completion_stream));
+    } else {
+        return Ok(HttpResponse::Ok()
+            .insert_header(("TR-QueryID", query_id.to_string()))
+            .streaming(completion_stream));
+    };
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

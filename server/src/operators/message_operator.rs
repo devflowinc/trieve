@@ -1104,17 +1104,21 @@ pub async fn stream_response(
                 .await;
         }
         create_messages_query(vec![new_message], &pool).await?;
-
-        return Ok(HttpResponse::Ok()
-            .insert_header((
-                "X-TR-Query",
-                user_message
-                    .to_string()
-                    .replace("\n", "[NEWLINE]")
-                    .replace("\r", ""),
-            ))
-            .insert_header(("TR-QueryID", query_id.to_string().replace("\n", "")))
-            .json(final_response));
+        if create_message_req_payload.audio_input.is_some() {
+            return Ok(HttpResponse::Ok()
+                .insert_header((
+                    "X-TR-Query",
+                    user_message
+                        .to_string()
+                        .replace(|c: char| c.is_ascii_control(), ""),
+                ))
+                .insert_header(("TR-QueryID", query_id.to_string().replace("\n", "")))
+                .json(final_response));
+        } else {
+            return Ok(HttpResponse::Ok()
+                .insert_header(("TR-QueryID", query_id.to_string().replace("\n", "")))
+                .json(final_response));
+        }
     }
 
     let (s, r) = unbounded::<String>();
@@ -1303,13 +1307,21 @@ pub async fn stream_response(
         .into())
     });
 
-    Ok(HttpResponse::Ok()
-        .insert_header((
-            "X-TR-Query",
-            user_message.replace("\n", "[NEWLINE]").replace("\r", ""),
-        ))
-        .insert_header(("TR-QueryID", query_id.to_string().replace("\n", "")))
-        .streaming(completion_stream))
+    if create_message_req_payload.audio_input.is_some() {
+        return Ok(HttpResponse::Ok()
+            .insert_header((
+                "X-TR-Query",
+                user_message
+                    .to_string()
+                    .replace(|c: char| c.is_ascii_control(), ""),
+            ))
+            .insert_header(("TR-QueryID", query_id.to_string().replace("\n", "")))
+            .streaming(completion_stream));
+    } else {
+        return Ok(HttpResponse::Ok()
+            .insert_header(("TR-QueryID", query_id.to_string().replace("\n", "")))
+            .streaming(completion_stream));
+    }
 }
 
 pub async fn get_topic_string(
