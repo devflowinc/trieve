@@ -16,7 +16,9 @@ export const UploadAudio = () => {
         audio: true,
       });
 
-      const recorder = new MediaRecorder(stream);
+      const recorder = new MediaRecorder(stream, {
+        mimeType: "audio/mp4",
+      });
       const audioChunks: BlobPart[] = [];
 
       recorder.ondataavailable = (event) => {
@@ -26,7 +28,7 @@ export const UploadAudio = () => {
       recorder.onstop = () => {
         stream.getTracks().forEach((track) => track.stop());
         setAudioBase64("");
-        const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
+        const audioBlob = new Blob(audioChunks, { type: "audio/mp4" });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = () => {
@@ -37,7 +39,7 @@ export const UploadAudio = () => {
       };
 
       setMediaRecorder(recorder);
-      recorder.start();
+      recorder.start(100);
       setIsRecording(true);
     } catch (err) {
       console.error("Error accessing microphone:", err);
