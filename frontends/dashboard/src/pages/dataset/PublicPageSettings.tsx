@@ -506,6 +506,25 @@ const PublicPageControls = () => {
                 class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
+            <div class="flex gap-2">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Use local component
+                </label>
+                <Tooltip
+                  tooltipText="Use your locally hosted version of the search-component."
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                type="checkbox"
+                checked={extraParams.useLocal ?? false}
+                onChange={(e) => {
+                  setExtraParams("useLocal", e.currentTarget.checked);
+                }}
+                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
           </div>
         </div>
         <SearchOptions />
@@ -567,7 +586,10 @@ const PublicPageControls = () => {
             </div>
             <input
               placeholder="Search..."
-              value={extraParams.defaultImageQuestion || "This is an image of a product that I want you to show similar recomendations for."}
+              value={
+                extraParams.defaultImageQuestion ||
+                "This is an image of a product that I want you to show similar recomendations for."
+              }
               onInput={(e) => {
                 setExtraParams("defaultImageQuestion", e.currentTarget.value);
               }}
