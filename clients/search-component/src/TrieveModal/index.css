@@ -852,6 +852,10 @@ body {
       }
     }
 
+    input.search-input {
+      color-scheme: light;
+    }
+
     input.search-input.ecommerce {
       @apply tv-rounded-lg;
     }
