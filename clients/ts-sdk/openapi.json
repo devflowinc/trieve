@@ -12781,6 +12781,10 @@
             "type": "boolean",
             "nullable": true
           },
+          "useLocal": {
+            "type": "boolean",
+            "nullable": true
+          },
           "usePagefind": {
             "type": "boolean",
             "nullable": true

@@ -3412,6 +3412,9 @@ impl DatasetConfigurationDTO {
                     default_image_question: page_parameters_self
                         .default_image_question
                         .or(page_parameters_curr.default_image_question),
+                    use_local: page_parameters_self
+                        .use_local
+                        .or(page_parameters_curr.use_local),
                 }),
             },
             DISABLE_ANALYTICS: self

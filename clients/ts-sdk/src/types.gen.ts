@@ -2142,6 +2142,7 @@ export type PublicPageParameters = {
     theme?: ((PublicPageTheme) | null);
     type?: (string) | null;
     useGroupSearch?: (boolean) | null;
+    useLocal?: (boolean) | null;
     usePagefind?: (boolean) | null;
     videoLink?: (string) | null;
     videoPosition?: (string) | null;

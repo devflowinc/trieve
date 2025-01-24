@@ -272,6 +272,8 @@ pub struct PublicPageParameters {
     pub inline_header: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default_image_question: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub use_local: Option<bool>,
 }
 
 #[utoipa::path(
@@ -320,6 +322,15 @@ pub async fn public_page(
         .unwrap_or(false)
     {
         "https://cdn.trieve.ai/beta/search-component".to_string()
+    } else if config
+        .clone()
+        .PUBLIC_DATASET
+        .extra_params
+        .unwrap_or_default()
+        .use_local
+        .unwrap_or(false)
+    {
+        "http://localhost:8000/dist".to_string()
     } else {
         std::env::var("SEARCH_COMPONENT_URL")
             .unwrap_or("https://search-component.trieve.ai/dist".to_string())
