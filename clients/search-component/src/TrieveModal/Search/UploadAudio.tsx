@@ -7,7 +7,7 @@ export const UploadAudio = () => {
 
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
-    null
+    null,
   );
 
   const startRecording = async () => {
@@ -22,6 +22,7 @@ export const UploadAudio = () => {
       };
 
       recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
         setAudioBase64("");
         const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
         const reader = new FileReader();
@@ -39,7 +40,7 @@ export const UploadAudio = () => {
     } catch (err) {
       console.error("Error accessing microphone:", err);
       alert(
-        "Error accessing microphone. Please make sure you have granted microphone permissions."
+        "Error accessing microphone. Please make sure you have granted microphone permissions.",
       );
     }
   };
@@ -74,8 +75,7 @@ export const UploadAudio = () => {
         onClick={(e) => {
           e.preventDefault();
           toggleRecording();
-        }}
-      >
+        }}>
         <i className="fa-solid fa-microphone"> </i>
       </button>
     </div>
