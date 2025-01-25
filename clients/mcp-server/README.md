@@ -1,5 +1,7 @@
 # trieve-mcp-server
 
+[![smithery badge](https://smithery.ai/badge/trieve-mcp-server)](https://smithery.ai/server/trieve-mcp-server)
+
 A Model Context Protocol (MCP) server that provides agentic tools for interacting with the Trieve API. This server enables AI agents to search and interact with Trieve datasets through a standardized interface.
 
 ## Features
@@ -11,6 +13,15 @@ A Model Context Protocol (MCP) server that provides agentic tools for interactin
 
 ## Installation
 
+### Installing via Smithery
+
+To install Trieve for Claude Desktop automatically via [Smithery](https://smithery.ai/server/trieve-mcp-server):
+
+```bash
+npx -y @smithery/cli install trieve-mcp-server --client claude
+```
+
+### Manual Installation
 ```bash
 npm install trieve-mcp-server
 ```
