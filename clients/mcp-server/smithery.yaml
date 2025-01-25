@@ -1,0 +1,26 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+build:
+  dockerBuildPath: ../../
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - trieveApiKey
+      - trieveOrganizationId
+    properties:
+      trieveApiKey:
+        type: string
+        description: Your Trieve API key from dashboard.trieve.ai.
+      trieveOrganizationId:
+        type: string
+        description: Your Trieve organization ID from dashboard.trieve.ai.
+      trieveDatasetId:
+        type: string
+        description: Specific dataset ID to use.
+  commandFunction:
+    # A function that produces the CLI command to start the MCP on stdio.
+    |-
+    config => ({ command: 'node', args: ['build/index.js'], env: { TRIEVE_API_KEY: config.trieveApiKey, TRIEVE_ORGANIZATION_ID: config.trieveOrganizationId, TRIEVE_DATASET_ID: config.trieveDatasetId } })
