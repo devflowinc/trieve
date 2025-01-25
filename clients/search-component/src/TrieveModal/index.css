@@ -35,7 +35,7 @@ body {
     font-family: var(--tv-prop-brand-font-family);
 
     &:not(.trieve-popup-modal) {
-      @apply tv-border tv-max-w-sm !tv-w-full;
+      @apply tv-border-2 tv-max-w-sm !tv-w-full;
     }
 
     &.trieve-popup-modal {
@@ -1202,13 +1202,22 @@ body {
         }
 
         .carousel-item {
+          color: var(--tv-zinc-100);
+          background-color: var(--tv-zinc-800);
+          border-color: var(--tv-zinc-800);
+
+          &:hover {
+            color: var(--tv-zinc-50);
+            background-color: var(--tv-zinc-900);
+          }
+
           a {
-            color: var(--tv-zinc-200);
-            background-color: var(--tv-zinc-700);
+            color: var(--tv-zinc-100);
+            background-color: var(--tv-zinc-800);
 
             &:hover {
               color: var(--tv-zinc-50);
-              background-color: var(--tv-zinc-800);
+              background-color: var(--tv-zinc-900);
             }
           }
         }
