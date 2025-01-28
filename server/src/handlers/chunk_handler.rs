@@ -394,6 +394,13 @@ pub async fn create_chunk(
 
     timer.add("got redis connection");
 
+    let premium_organization_ids: Vec<uuid::Uuid> = std::env::var("PREMIUM_ORGANIZATION_UUIDS")
+        .unwrap_or("".to_string())
+        .split(',')
+        .map(|x| x.parse().ok())
+        .collect::<Option<Vec<uuid::Uuid>>>()
+        .unwrap_or(vec![]);
+
     let mut pos_in_queue = 0;
     if !non_upsert_chunk_metadatas.is_empty() {
         let serialized_message: String = serde_json::to_string(&non_upsert_chunk_ingestion_message)
@@ -401,9 +408,16 @@ pub async fn create_chunk(
                 ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
             })?;
 
-        if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
+        if premium_organization_ids.contains(&dataset_org_plan_sub.organization.organization.id) {
             pos_in_queue = redis::cmd("lpush")
-                .arg("openai_ingestion")
+                .arg("premium_ingestion")
+                .arg(&serialized_message)
+                .query_async(&mut *redis_conn)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        } else if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
+            pos_in_queue = redis::cmd("lpush")
+                .arg("premium_ingestion")
                 .arg(&serialized_message)
                 .query_async(&mut *redis_conn)
                 .await
@@ -423,7 +437,14 @@ pub async fn create_chunk(
                 ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
             })?;
 
-        if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
+        if premium_organization_ids.contains(&dataset_org_plan_sub.organization.organization.id) {
+            pos_in_queue = redis::cmd("lpush")
+                .arg("premium_ingestion")
+                .arg(&serialized_message)
+                .query_async(&mut *redis_conn)
+                .await
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        } else if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
             pos_in_queue = redis::cmd("lpush")
                 .arg("openai_ingestion")
                 .arg(&serialized_message)
