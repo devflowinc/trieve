@@ -65,23 +65,26 @@ export const UploadAudio = () => {
   };
 
   return (
-    <div>
-      <button
-        type="button"
-        className={cn(`tv-rounded${
-          mode === "chat" ? " tv-right-16 tv-top-[0.825rem] tv-absolute" : ""
-        } tv-z-20 cursor-pointer ${
-          isRecording
-            ? "tv-text-red-500"
-            : "tv-dark-text-white tv-text-zinc-700"
-        }
-        `)}
+    <div
+      aria-role="button"
+      className={cn(
+        "tv-rounded tv-z-20 cursor-pointer",
+        mode === "chat" && "tv-right-16 tv-top-[0.825rem] tv-absolute",
+        isRecording ? "tv-text-red-500" : "tv-dark-text-white tv-text-zinc-700",
+      )}
+      onClick={(e) => {
+        e.preventDefault();
+        toggleRecording();
+      }}
+    >
+      <div
         onClick={(e) => {
           e.preventDefault();
           toggleRecording();
-        }}>
-        <i className="fa-solid fa-microphone"> </i>
-      </button>
+        }}
+        className="tv-block md:tv-hidden tv-top-0 tv-bottom-0 tv-left-0 tv-right-0 tv-scale-125 tv-pr-3 tv-pl-6 tv-py-8 -tv-translate-x-5 tv-absolute"
+      ></div>
+      <i className="fa-solid fa-microphone"> </i>
     </div>
   );
 };
