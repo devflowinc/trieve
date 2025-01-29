@@ -19,16 +19,23 @@ export const OrganizationUsageOverview = () => {
     <div class="mb-3 grid grid-cols-1 gap-5 lg:grid-cols-4">
       <dl class="col-span-4 grid grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg border bg-white shadow md:grid-cols-2 md:divide-x md:divide-y-0">
         <div class="px-4 py-5 sm:p-6">
-          <dt class="text-base font-normal"> Total Users </dt>
+          <dt class="text-base font-normal">Total Users</dt>
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
-            <div class="flex items-baseline text-2xl font-semibold text-magenta">
-              {formatNumberWithCommas(usageQuery.data?.user_count ?? 0)}
-              <span class="ml-2 text-sm font-medium text-neutral-600">
-                of
-                {formatNumberWithCommas(
-                  subscriptionQuery.data?.plan?.user_count || 0,
-                )}
-              </span>
+            <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
+              <div>
+                {formatNumberWithCommas(usageQuery.data?.user_count ?? 0)}
+                <span class="ml-2 text-sm font-medium text-neutral-600">
+                  of{" "}
+                  {formatNumberWithCommas(
+                    subscriptionQuery.data?.plan?.user_count || 0,
+                  )}
+                </span>
+              </div>
+              <ProgressBar
+                width={"200px"}
+                max={subscriptionQuery.data?.plan?.user_count || 0}
+                progress={usageQuery.data?.user_count || 0}
+              />
             </div>
           </dd>
         </div>
@@ -95,7 +102,7 @@ export const OrganizationUsageOverview = () => {
             </div>
           </dd>
         </div>
-        <div class="px-4 md:!border-r py-5 sm:p-6">
+        <div class="px-4 py-5 sm:p-6 md:!border-r">
           <dt class="text-base font-normal">Total Dataset Count</dt>
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
