@@ -3088,6 +3088,7 @@ export type StripePlan = {
     stripe_id: string;
     updated_at: string;
     user_count: number;
+    visible: boolean;
 };
 
 export type StripeSubscription = {

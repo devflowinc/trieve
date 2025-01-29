@@ -414,6 +414,10 @@ export const PlansTable = (props: PlansTableProps) => {
                     }
                   }
 
+                  if (!plan.visible && plan.id != curPlan?.id) {
+                    return null;
+                  }
+
                   return (
                     <tr>
                       <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-6">

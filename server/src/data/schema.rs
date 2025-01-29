@@ -239,6 +239,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         name -> Text,
+        visible -> Bool,
     }
 }
 

@@ -60,6 +60,7 @@ pub async fn create_stripe_plan_query(
         10000,
         amount,
         "Project".to_string(),
+        false,
     );
 
     let mut conn = pool

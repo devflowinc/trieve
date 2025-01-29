@@ -73,6 +73,7 @@ export interface StripePlan {
   created_at: string;
   updated_at: string;
   name: string;
+  visible: boolean;
 }
 
 export interface OrganizationUsageCount {
