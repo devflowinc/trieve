@@ -5,6 +5,7 @@
 
 <script type="module">
   import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
+  import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
 
   const root = document.createElement('div');
   document.body.appendChild(root);
@@ -41,6 +42,12 @@
     followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
     numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
     theme: getValue("{{ block.settings.theme }}", "light"),
+    onAddToCart: (chunk) => {
+      addToCart(parseInt(chunk.tracking_id))
+    },
+    getCartQuantity: (trackingId) => {
+      return checkCartQuantity(parseInt(trackingId));
+    },
   });
 </script>
 

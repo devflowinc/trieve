@@ -8,6 +8,7 @@
 
 <script type="module">
   import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
+  import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
 
   const inlineRoot = document.querySelector(".trieve-inline-root");
   console.log("root", inlineRoot,"please", "{{ block.settings.product.title }}", "{{ block.settings.product.id }}");
@@ -40,6 +41,12 @@
     numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
     theme: getValue("{{ block.settings.theme }}", "light"),
     inlineHeader: "{{ block.settings.inline_header }} ",
+    onAddToCart: (chunk) => {
+      addToCart(parseInt(chunk.tracking_id))
+    },
+    getCartQuantity: (trackingId) => {
+      return checkCartQuantity(parseInt(trackingId));
+    },
   });
 
 </script>
