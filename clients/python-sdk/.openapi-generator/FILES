@@ -8,6 +8,7 @@ docs/AddToCart.md
 docs/AnalyticsApi.md
 docs/ApiKeyRequestParams.md
 docs/ApiKeyRespBody.md
+docs/Audio.md
 docs/AuthApi.md
 docs/AuthQuery.md
 docs/AutocompleteReqPayload.md
@@ -138,6 +139,7 @@ docs/HealthApi.md
 docs/HeroPattern.md
 docs/HighlightOptions.md
 docs/HighlightStrategy.md
+docs/Image.md
 docs/ImageConfig.md
 docs/Invitation.md
 docs/InvitationApi.md
@@ -250,8 +252,6 @@ docs/SearchLatencyGraph.md
 docs/SearchMethod.md
 docs/SearchMetrics.md
 docs/SearchModalities.md
-docs/SearchModalitiesOneOf.md
-docs/SearchModalitiesOneOf1.md
 docs/SearchOverGroupsReqPayload.md
 docs/SearchOverGroupsResponseBody.md
 docs/SearchOverGroupsResponseTypes.md
@@ -354,6 +354,7 @@ trieve_py_client/models/add_to_cart.py
 trieve_py_client/models/api_key_request_params.py
 trieve_py_client/models/api_key_resp_body.py
 trieve_py_client/models/api_version.py
+trieve_py_client/models/audio.py
 trieve_py_client/models/auth_query.py
 trieve_py_client/models/autocomplete_req_payload.py
 trieve_py_client/models/batch_queued_chunk_response.py
@@ -478,6 +479,7 @@ trieve_py_client/models/head_query_response.py
 trieve_py_client/models/hero_pattern.py
 trieve_py_client/models/highlight_options.py
 trieve_py_client/models/highlight_strategy.py
+trieve_py_client/models/image.py
 trieve_py_client/models/image_config.py
 trieve_py_client/models/invitation.py
 trieve_py_client/models/invitation_data.py
@@ -585,8 +587,6 @@ trieve_py_client/models/search_latency_graph.py
 trieve_py_client/models/search_method.py
 trieve_py_client/models/search_metrics.py
 trieve_py_client/models/search_modalities.py
-trieve_py_client/models/search_modalities_one_of.py
-trieve_py_client/models/search_modalities_one_of1.py
 trieve_py_client/models/search_over_groups_req_payload.py
 trieve_py_client/models/search_over_groups_response_body.py
 trieve_py_client/models/search_over_groups_response_types.py

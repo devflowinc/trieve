@@ -53,6 +53,7 @@ Name | Type | Description | Notes
 **theme** | [**PublicPageTheme**](PublicPageTheme.md) |  | [optional] 
 **type** | **str** |  | [optional] 
 **use_group_search** | **bool** |  | [optional] 
+**use_local** | **bool** |  | [optional] 
 **use_pagefind** | **bool** |  | [optional] 
 **video_link** | **str** |  | [optional] 
 **video_position** | **str** |  | [optional] 

@@ -18,29 +18,17 @@ import pprint
 import re  # noqa: F401
 import json
 
-from datetime import datetime
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 
-class StripePlan(BaseModel):
+class Audio(BaseModel):
     """
-    StripePlan
+    Audio
     """ # noqa: E501
-    amount: StrictInt
-    chunk_count: StrictInt
-    created_at: datetime
-    dataset_count: StrictInt
-    file_storage: StrictInt
-    id: StrictStr
-    message_count: StrictInt
-    name: StrictStr
-    stripe_id: StrictStr
-    updated_at: datetime
-    user_count: StrictInt
-    visible: StrictBool
-    __properties: ClassVar[List[str]] = ["amount", "chunk_count", "created_at", "dataset_count", "file_storage", "id", "message_count", "name", "stripe_id", "updated_at", "user_count", "visible"]
+    audio_base64: StrictStr
+    __properties: ClassVar[List[str]] = ["audio_base64"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -60,7 +48,7 @@ class StripePlan(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of StripePlan from a JSON string"""
+        """Create an instance of Audio from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -85,7 +73,7 @@ class StripePlan(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of StripePlan from a dict"""
+        """Create an instance of Audio from a dict"""
         if obj is None:
             return None
 
@@ -93,18 +81,7 @@ class StripePlan(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "amount": obj.get("amount"),
-            "chunk_count": obj.get("chunk_count"),
-            "created_at": obj.get("created_at"),
-            "dataset_count": obj.get("dataset_count"),
-            "file_storage": obj.get("file_storage"),
-            "id": obj.get("id"),
-            "message_count": obj.get("message_count"),
-            "name": obj.get("name"),
-            "stripe_id": obj.get("stripe_id"),
-            "updated_at": obj.get("updated_at"),
-            "user_count": obj.get("user_count"),
-            "visible": obj.get("visible")
+            "audio_base64": obj.get("audio_base64")
         })
         return _obj
 

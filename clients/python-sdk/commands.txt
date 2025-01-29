@@ -1,5 +1,5 @@
 PYTHON COMMAND
 
-npx @openapitools/openapi-generator-cli generate -i https://api.trieve.ai/api-docs/openapi.json -g python -c ./openapi-generator.yaml -o ./ --skip-validate-spec
+npx @openapitools/openapi-generator-cli generate -i https://api.trieve.ai/api-docs/openapi.json -g python -t ./templates -c ./openapi-generator.yaml -o ./ --skip-validate-spec
 python -m build
 twine upload dist/*

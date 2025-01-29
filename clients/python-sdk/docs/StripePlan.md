@@ -16,6 +16,7 @@ Name | Type | Description | Notes
 **stripe_id** | **str** |  | 
 **updated_at** | **datetime** |  | 
 **user_count** | **int** |  | 
+**visible** | **bool** |  | 
 
 ## Example
 

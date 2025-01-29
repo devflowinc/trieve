@@ -15,7 +15,7 @@
 """  # noqa: E501
 
 
-__version__ = "0.12.9"
+__version__ = "0.12.10"
 
 # import apis into sdk package
 from trieve_py_client.api.analytics_api import AnalyticsApi
@@ -51,6 +51,7 @@ from trieve_py_client.models.add_chunk_to_group_req_payload import AddChunkToGro
 from trieve_py_client.models.add_to_cart import AddToCart
 from trieve_py_client.models.api_key_request_params import ApiKeyRequestParams
 from trieve_py_client.models.api_key_resp_body import ApiKeyRespBody
+from trieve_py_client.models.audio import Audio
 from trieve_py_client.models.auth_query import AuthQuery
 from trieve_py_client.models.autocomplete_req_payload import AutocompleteReqPayload
 from trieve_py_client.models.batch_queued_chunk_response import BatchQueuedChunkResponse
@@ -175,6 +176,7 @@ from trieve_py_client.models.head_query_response import HeadQueryResponse
 from trieve_py_client.models.hero_pattern import HeroPattern
 from trieve_py_client.models.highlight_options import HighlightOptions
 from trieve_py_client.models.highlight_strategy import HighlightStrategy
+from trieve_py_client.models.image import Image
 from trieve_py_client.models.image_config import ImageConfig
 from trieve_py_client.models.invitation import Invitation
 from trieve_py_client.models.invitation_data import InvitationData
@@ -282,8 +284,6 @@ from trieve_py_client.models.search_latency_graph import SearchLatencyGraph
 from trieve_py_client.models.search_method import SearchMethod
 from trieve_py_client.models.search_metrics import SearchMetrics
 from trieve_py_client.models.search_modalities import SearchModalities
-from trieve_py_client.models.search_modalities_one_of import SearchModalitiesOneOf
-from trieve_py_client.models.search_modalities_one_of1 import SearchModalitiesOneOf1
 from trieve_py_client.models.search_over_groups_req_payload import SearchOverGroupsReqPayload
 from trieve_py_client.models.search_over_groups_response_body import SearchOverGroupsResponseBody
 from trieve_py_client.models.search_over_groups_response_types import SearchOverGroupsResponseTypes

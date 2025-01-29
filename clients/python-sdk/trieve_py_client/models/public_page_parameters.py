@@ -84,11 +84,12 @@ class PublicPageParameters(BaseModel):
     theme: Optional[PublicPageTheme] = None
     type: Optional[StrictStr] = None
     use_group_search: Optional[StrictBool] = Field(default=None, alias="useGroupSearch")
+    use_local: Optional[StrictBool] = Field(default=None, alias="useLocal")
     use_pagefind: Optional[StrictBool] = Field(default=None, alias="usePagefind")
     video_link: Optional[StrictStr] = Field(default=None, alias="videoLink")
     video_position: Optional[StrictStr] = Field(default=None, alias="videoPosition")
     z_index: Optional[StrictInt] = Field(default=None, alias="zIndex")
-    __properties: ClassVar[List[str]] = ["allowSwitchingModes", "analytics", "apiKey", "baseUrl", "brandColor", "brandFontFamily", "brandLogoImgSrcUrl", "brandName", "buttonTriggers", "chat", "creatorLinkedInUrl", "creatorName", "currencyPosition", "datasetId", "debounceMs", "defaultAiQuestions", "defaultCurrency", "defaultImageQuestion", "defaultSearchMode", "defaultSearchQueries", "floatingButtonPosition", "floatingSearchIconPosition", "followupQuestions", "forBrandName", "headingPrefix", "heroPattern", "hideDrawnText", "inline", "inlineHeader", "isTestMode", "navLogoImgSrcUrl", "numberOfSuggestions", "openGraphMetadata", "openLinksInNewTab", "placeholder", "problemLink", "responsive", "searchOptions", "showFloatingButton", "showFloatingInput", "showFloatingSearchIcon", "singleProductOptions", "suggestedQueries", "tabMessages", "tags", "theme", "type", "useGroupSearch", "usePagefind", "videoLink", "videoPosition", "zIndex"]
+    __properties: ClassVar[List[str]] = ["allowSwitchingModes", "analytics", "apiKey", "baseUrl", "brandColor", "brandFontFamily", "brandLogoImgSrcUrl", "brandName", "buttonTriggers", "chat", "creatorLinkedInUrl", "creatorName", "currencyPosition", "datasetId", "debounceMs", "defaultAiQuestions", "defaultCurrency", "defaultImageQuestion", "defaultSearchMode", "defaultSearchQueries", "floatingButtonPosition", "floatingSearchIconPosition", "followupQuestions", "forBrandName", "headingPrefix", "heroPattern", "hideDrawnText", "inline", "inlineHeader", "isTestMode", "navLogoImgSrcUrl", "numberOfSuggestions", "openGraphMetadata", "openLinksInNewTab", "placeholder", "problemLink", "responsive", "searchOptions", "showFloatingButton", "showFloatingInput", "showFloatingSearchIcon", "singleProductOptions", "suggestedQueries", "tabMessages", "tags", "theme", "type", "useGroupSearch", "useLocal", "usePagefind", "videoLink", "videoPosition", "zIndex"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -402,6 +403,11 @@ class PublicPageParameters(BaseModel):
         if self.use_group_search is None and "use_group_search" in self.model_fields_set:
             _dict['useGroupSearch'] = None
 
+        # set to None if use_local (nullable) is None
+        # and model_fields_set contains the field
+        if self.use_local is None and "use_local" in self.model_fields_set:
+            _dict['useLocal'] = None
+
         # set to None if use_pagefind (nullable) is None
         # and model_fields_set contains the field
         if self.use_pagefind is None and "use_pagefind" in self.model_fields_set:
@@ -482,6 +488,7 @@ class PublicPageParameters(BaseModel):
             "theme": obj.get("theme"),
             "type": obj.get("type"),
             "useGroupSearch": obj.get("useGroupSearch"),
+            "useLocal": obj.get("useLocal"),
             "usePagefind": obj.get("usePagefind"),
             "videoLink": obj.get("videoLink"),
             "videoPosition": obj.get("videoPosition"),
