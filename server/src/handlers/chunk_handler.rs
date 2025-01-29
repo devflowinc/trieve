@@ -417,7 +417,7 @@ pub async fn create_chunk(
                 .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         } else if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
             pos_in_queue = redis::cmd("lpush")
-                .arg("premium_ingestion")
+                .arg("openai_ingestion")
                 .arg(&serialized_message)
                 .query_async(&mut *redis_conn)
                 .await
