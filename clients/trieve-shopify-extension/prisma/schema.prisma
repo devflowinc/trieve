@@ -30,3 +30,11 @@ model Session {
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
 }
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  userId    String
+  organizationId String @default("")
+  key       String
+  createdAt DateTime @default(now())
+}
