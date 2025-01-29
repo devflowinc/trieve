@@ -23,7 +23,7 @@
     apiKey: getValue("{{ block.settings.api_key }}", ""),
     datasetId: getValue("{{ block.settings.dataset_id }}", ""),
     baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
-    useGroupSearch: true, true)),
+    useGroupSearch: true,
     allowSwitchingModes: toBool(getValue("{{ block.settings.allow_switching_modes }}", true)),
     zIndex: Number(getValue("{{ block.settings.z_index }}", 21474830000000)),
     scaleRem: true,
