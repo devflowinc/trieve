@@ -548,6 +548,7 @@ async fn upload_file(
                             num_value: None,
                             fulltext_boost: None,
                             semantic_boost: None,
+                            high_priority: None,
                         };
                         new_chunks.push(create_chunk_data);
                     }
@@ -659,6 +660,7 @@ async fn upload_file(
             num_value: None,
             fulltext_boost: None,
             semantic_boost: None,
+            high_priority: None,
         };
 
         create_file_chunks(
@@ -707,6 +709,7 @@ async fn upload_file(
             num_value: None,
             fulltext_boost: None,
             semantic_boost: None,
+            high_priority: None,
         })
         .collect::<Vec<_>>();
 

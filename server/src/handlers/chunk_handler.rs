@@ -141,6 +141,8 @@ pub struct ChunkReqPayload {
     /// Semantic boost is useful for moving the embedding vector of the chunk in the direction of the distance phrase. I.e. you can push a chunk with a chunk_html of "iphone" 25% closer to the term "flagship" by using the distance phrase "flagship" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
     #[serde(alias = "distance_phrase")]
     pub semantic_boost: Option<SemanticBoost>,
+    /// High Priority allows you to place this chunk into a priority queue with its own ingestion workers. Can only be used by users with a Custom Pro plan.
+    pub high_priority: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -338,6 +340,7 @@ pub async fn create_chunk(
             > dataset_org_plan_sub
                 .organization
                 .plan
+                .clone()
                 .unwrap_or_default()
                 .chunk_count as usize
         {
@@ -394,67 +397,124 @@ pub async fn create_chunk(
 
     timer.add("got redis connection");
 
-    let premium_organization_ids: Vec<uuid::Uuid> = std::env::var("PREMIUM_ORGANIZATION_UUIDS")
+    let mut pos_in_queue = 0;
+    let is_premium = std::env::var("PREMIUM_ORGANIZATION_UUIDS")
         .unwrap_or("".to_string())
         .split(',')
         .map(|x| x.parse().ok())
         .collect::<Option<Vec<uuid::Uuid>>>()
-        .unwrap_or(vec![]);
+        .unwrap_or(vec![])
+        .contains(&dataset_org_plan_sub.organization.organization.id);
 
-    let mut pos_in_queue = 0;
     if !non_upsert_chunk_metadatas.is_empty() {
-        let serialized_message: String = serde_json::to_string(&non_upsert_chunk_ingestion_message)
+        let prio_chunks_message: Vec<UploadIngestionMessage> = non_upsert_chunk_ingestion_message
+            .ingestion_messages
+            .clone()
+            .into_iter()
+            .filter(|msg| msg.chunk.high_priority.unwrap_or(false) && is_premium)
+            .collect();
+
+        let non_prio_chunks_message = non_upsert_chunk_ingestion_message
+            .ingestion_messages
+            .into_iter()
+            .filter(|msg| !msg.chunk.high_priority.unwrap_or(false))
+            .collect();
+
+        let non_prio_serialized_message: String =
+            serde_json::to_string(&BulkUploadIngestionMessage {
+                attempt_number: 0,
+                dataset_id: dataset_org_plan_sub.dataset.id,
+                ingestion_messages: non_prio_chunks_message,
+            })
             .map_err(|_| {
                 ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
             })?;
 
-        if premium_organization_ids.contains(&dataset_org_plan_sub.organization.organization.id) {
+        let prio_serialized_message: String = serde_json::to_string(&BulkUploadIngestionMessage {
+            attempt_number: 0,
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            ingestion_messages: prio_chunks_message.clone(),
+        })
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+        })?;
+
+        // If the organization has a premium plan, send to the premium ingestion queue
+        if is_premium && !prio_chunks_message.is_empty() {
             pos_in_queue = redis::cmd("lpush")
                 .arg("premium_ingestion")
-                .arg(&serialized_message)
+                .arg(&prio_serialized_message)
                 .query_async(&mut *redis_conn)
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         } else if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
             pos_in_queue = redis::cmd("lpush")
                 .arg("openai_ingestion")
-                .arg(&serialized_message)
+                .arg(&non_prio_serialized_message)
                 .query_async(&mut *redis_conn)
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         } else {
             pos_in_queue = redis::cmd("lpush")
                 .arg("ingestion")
-                .arg(&serialized_message)
+                .arg(&non_prio_serialized_message)
                 .query_async(&mut *redis_conn)
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         }
     }
     if !upsert_chunk_metadatas.is_empty() {
-        let serialized_message: String = serde_json::to_string(&upsert_chunk_ingestion_message)
+        let prio_chunks_message: Vec<UploadIngestionMessage> = upsert_chunk_ingestion_message
+            .ingestion_messages
+            .clone()
+            .into_iter()
+            .filter(|msg| msg.chunk.high_priority.unwrap_or(false) && is_premium)
+            .collect();
+
+        let non_prio_chunks_message = upsert_chunk_ingestion_message
+            .ingestion_messages
+            .into_iter()
+            .filter(|msg| !msg.chunk.high_priority.unwrap_or(false))
+            .collect();
+
+        let non_prio_serialized_message: String =
+            serde_json::to_string(&BulkUploadIngestionMessage {
+                attempt_number: 0,
+                dataset_id: dataset_org_plan_sub.dataset.id,
+                ingestion_messages: non_prio_chunks_message,
+            })
             .map_err(|_| {
                 ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
             })?;
 
-        if premium_organization_ids.contains(&dataset_org_plan_sub.organization.organization.id) {
+        let prio_serialized_message: String = serde_json::to_string(&BulkUploadIngestionMessage {
+            attempt_number: 0,
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            ingestion_messages: prio_chunks_message.clone(),
+        })
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+        })?;
+
+        // If the organization has a premium plan, send to the premium ingestion queue
+        if is_premium && !prio_chunks_message.is_empty() {
             pos_in_queue = redis::cmd("lpush")
                 .arg("premium_ingestion")
-                .arg(&serialized_message)
+                .arg(&prio_serialized_message)
                 .query_async(&mut *redis_conn)
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         } else if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
             pos_in_queue = redis::cmd("lpush")
                 .arg("openai_ingestion")
-                .arg(&serialized_message)
+                .arg(&non_prio_serialized_message)
                 .query_async(&mut *redis_conn)
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         } else {
             pos_in_queue = redis::cmd("lpush")
                 .arg("ingestion")
-                .arg(&serialized_message)
+                .arg(&non_prio_serialized_message)
                 .query_async(&mut *redis_conn)
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
