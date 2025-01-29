@@ -25,8 +25,8 @@
     apiKey: getValue("{{ block.settings.api_key }}", ""),
     datasetId: getValue("{{ block.settings.dataset_id }}", ""),
     baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
-    type: getValue("{{ block.settings.type }}", "ecommerce"),
-    useGroupSearch: toBool(getValue("{{ block.settings.use_group_search }}", true)),
+    type: "ecommerce",
+    useGroupSearch: true,
     allowSwitchingModes: toBool(getValue("{{ block.settings.allow_switching_modes }}", true)),
     zIndex: Number(getValue("{{ block.settings.z_index }}", 21474830000000)),
     scaleRem: true,
@@ -36,7 +36,7 @@
     placeholder: getValue("{{ block.settings.placeholder }}", "Search..."),
     chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask Anything..."),
     suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
-    followupQuestions: toBool(getValue("{{ block.settings.followup_questions }}", true)),
+    followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
     numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
     theme: getValue("{{ block.settings.theme }}", "light"),
     inlineHeader: "{{ block.settings.inline_header }} ",
@@ -79,7 +79,7 @@
         {"label": "Search", "value": "search"},
         {"label": "Chat", "value": "chat"}
       ],
-      "default": "search"
+      "default": "chat"
     },
     {
       "type": "text",
@@ -117,20 +117,8 @@
     },
     {
       "type": "checkbox",
-      "id": "chat",
-      "label": "Enable Chat",
-      "default": true
-    },
-    {
-      "type": "checkbox",
       "id": "suggested_queries",
       "label": "Show Suggested Queries",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "followup_questions",
-      "label": "Show Followup Questions",
       "default": true
     },
     {
@@ -151,12 +139,6 @@
     },
     {
       "type": "checkbox",
-      "id": "use_group_search",
-      "label": "Use Group Search",
-      "default": false
-    },
-    {
-      "type": "checkbox",
       "id": "allow_switching_modes",
       "label": "Allow Switching Modes",
       "default": true
@@ -171,6 +153,11 @@
       "type": "text",
       "id": "inline_header",
       "label": "Inline Header",
+    },
+    {
+      "type": "number",
+      "id": "z_index",
+      "label": "Z-Index",
     }
   ]
 }
