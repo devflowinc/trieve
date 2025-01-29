@@ -16304,7 +16304,8 @@
           "amount",
           "created_at",
           "updated_at",
-          "name"
+          "name",
+          "visible"
         ],
         "properties": {
           "amount": {
@@ -16348,6 +16349,9 @@
           "user_count": {
             "type": "integer",
             "format": "int32"
+          },
+          "visible": {
+            "type": "boolean"
           }
         },
         "example": {

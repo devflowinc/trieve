@@ -3556,6 +3556,7 @@ pub struct StripePlan {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub name: String,
+    pub visible: bool,
 }
 
 impl StripePlan {
@@ -3569,6 +3570,7 @@ impl StripePlan {
         message_count: i32,
         amount: i64,
         name: String,
+        visible: bool,
     ) -> Self {
         StripePlan {
             id: uuid::Uuid::new_v4(),
@@ -3582,6 +3584,7 @@ impl StripePlan {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             name,
+            visible,
         }
     }
 }
@@ -3602,6 +3605,7 @@ impl Default for StripePlan {
                 created_at: chrono::Utc::now().naive_local(),
                 updated_at: chrono::Utc::now().naive_local(),
                 name: "Unlimited".to_string(),
+                visible: true,
             };
         }
 
@@ -3617,6 +3621,7 @@ impl Default for StripePlan {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             name: "Free".to_string(),
+            visible: true,
         }
     }
 }
