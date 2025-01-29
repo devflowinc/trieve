@@ -265,23 +265,14 @@ export const Message = ({
 
   const docsItems = message.additional
     ?.map((chunk) => {
-      const chunkHtmlHeadingsDiv = document.createElement("div");
-      chunkHtmlHeadingsDiv.innerHTML = chunk.chunk_html || "";
-      const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-        "h1, h2, h3, h4, h5, h6",
-      );
-      const $firstHeading =
-        chunkHtmlHeadings[0] ?? document.createElement("h1");
-      $firstHeading?.querySelectorAll(":not(mark)")?.forEach((tag) => {
-        return tag.replaceWith(tag.textContent || "");
-      });
-      const cleanFirstHeading = $firstHeading?.textContent;
+      console.log(chunk);
       const title = `${
         chunk.metadata?.heading ||
         chunk.metadata?.title ||
         chunk.metadata?.page_title ||
         chunk.metadata?.name ||
-        cleanFirstHeading
+        // @ts-expect-error Property 'highlights' does not exist on type 'Chunk'.
+        chunk.highlights[0].replace(/<[^>]*>/g, "")
       }`.replace("#", "");
       return {
         title: title,
