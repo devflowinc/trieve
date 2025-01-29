@@ -228,6 +228,7 @@ async fn video_worker(
                         num_value: None,
                         fulltext_boost: None,
                         semantic_boost: None,
+                        high_priority: None,
                     };
 
                     chunks.push(create_chunk_data);

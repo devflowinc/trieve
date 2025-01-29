@@ -616,6 +616,7 @@ fn convert_value_to_chunkreqpayload(
         convert_html_to_text: None,
         fulltext_boost: None,
         semantic_boost: None,
+        high_priority: None,
     };
 
     let mut boost_phrase = String::new();
