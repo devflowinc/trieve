@@ -95,6 +95,27 @@ export const OrganizationUsageOverview = () => {
             </div>
           </dd>
         </div>
+        <div class="px-4 md:!border-r py-5 sm:p-6">
+          <dt class="text-base font-normal">Total Dataset Count</dt>
+          <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+            <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
+              <div>
+                {formatNumberWithCommas(usageQuery.data?.dataset_count ?? 0)}
+                <span class="ml-2 text-sm font-medium text-neutral-600">
+                  of{" "}
+                  {formatNumberWithCommas(
+                    subscriptionQuery.data?.plan?.dataset_count ?? 0,
+                  )}
+                </span>
+              </div>
+              <ProgressBar
+                width={"200px"}
+                max={subscriptionQuery.data?.plan?.dataset_count || 0}
+                progress={usageQuery.data?.dataset_count || 0}
+              />
+            </div>
+          </dd>
+        </div>
       </dl>
     </div>
   );
