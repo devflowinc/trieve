@@ -1,7 +1,7 @@
 generatorName: python
 outputDir: ./generated-code/python-client
 packageName: trieve_py_client
-packageVersion: 0.12.9
+packageVersion: 0.12.10
 
 additionalProperties:
   projectName: trieve_py_client

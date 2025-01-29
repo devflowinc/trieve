@@ -18,26 +18,26 @@ import json
 import pprint
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Any, List, Optional
-from trieve_py_client.models.search_modalities_one_of import SearchModalitiesOneOf
-from trieve_py_client.models.search_modalities_one_of1 import SearchModalitiesOneOf1
+from trieve_py_client.models.audio import Audio
+from trieve_py_client.models.image import Image
 from pydantic import StrictStr, Field
 from typing import Union, List, Optional, Dict
 from typing_extensions import Literal, Self
 
-SEARCHMODALITIES_ONE_OF_SCHEMAS = ["SearchModalitiesOneOf", "SearchModalitiesOneOf1", "str"]
+SEARCHMODALITIES_ONE_OF_SCHEMAS = ["Audio", "Image", "str"]
 
 class SearchModalities(BaseModel):
     """
     SearchModalities
     """
-    # data type: SearchModalitiesOneOf
-    oneof_schema_1_validator: Optional[SearchModalitiesOneOf] = None
+    # data type: Image
+    oneof_schema_1_validator: Optional[Image] = None
     # data type: str
     oneof_schema_2_validator: Optional[StrictStr] = None
-    # data type: SearchModalitiesOneOf1
-    oneof_schema_3_validator: Optional[SearchModalitiesOneOf1] = None
-    actual_instance: Optional[Union[SearchModalitiesOneOf, SearchModalitiesOneOf1, str]] = None
-    one_of_schemas: List[str] = Field(default=Literal["SearchModalitiesOneOf", "SearchModalitiesOneOf1", "str"])
+    # data type: Audio
+    oneof_schema_3_validator: Optional[Audio] = None
+    actual_instance: Optional[Union[Audio, Image, str]] = None
+    one_of_schemas: List[str] = Field(default=Literal["Audio", "Image", "str"])
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -60,9 +60,9 @@ class SearchModalities(BaseModel):
         instance = SearchModalities.model_construct()
         error_messages = []
         match = 0
-        # validate data type: SearchModalitiesOneOf
-        if not isinstance(v, SearchModalitiesOneOf):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `SearchModalitiesOneOf`")
+        # validate data type: Image
+        if not isinstance(v, Image):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `Image`")
         else:
             match += 1
         # validate data type: str
@@ -71,17 +71,17 @@ class SearchModalities(BaseModel):
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
-        # validate data type: SearchModalitiesOneOf1
-        if not isinstance(v, SearchModalitiesOneOf1):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `SearchModalitiesOneOf1`")
+        # validate data type: Audio
+        if not isinstance(v, Audio):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `Audio`")
         else:
             match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in SearchModalities with oneOf schemas: SearchModalitiesOneOf, SearchModalitiesOneOf1, str. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in SearchModalities with oneOf schemas: Audio, Image, str. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in SearchModalities with oneOf schemas: SearchModalitiesOneOf, SearchModalitiesOneOf1, str. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in SearchModalities with oneOf schemas: Audio, Image, str. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -96,9 +96,9 @@ class SearchModalities(BaseModel):
         error_messages = []
         match = 0
 
-        # deserialize data into SearchModalitiesOneOf
+        # deserialize data into Image
         try:
-            instance.actual_instance = SearchModalitiesOneOf.from_json(json_str)
+            instance.actual_instance = Image.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
@@ -111,19 +111,19 @@ class SearchModalities(BaseModel):
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
-        # deserialize data into SearchModalitiesOneOf1
+        # deserialize data into Audio
         try:
-            instance.actual_instance = SearchModalitiesOneOf1.from_json(json_str)
+            instance.actual_instance = Audio.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into SearchModalities with oneOf schemas: SearchModalitiesOneOf, SearchModalitiesOneOf1, str. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into SearchModalities with oneOf schemas: Audio, Image, str. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into SearchModalities with oneOf schemas: SearchModalitiesOneOf, SearchModalitiesOneOf1, str. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into SearchModalities with oneOf schemas: Audio, Image, str. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -137,7 +137,7 @@ class SearchModalities(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], SearchModalitiesOneOf, SearchModalitiesOneOf1, str]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], Audio, Image, str]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None
