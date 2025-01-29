@@ -18,3 +18,14 @@ CREATE TABLE "Session" (
 
     CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateTable
+CREATE TABLE "ApiKey" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL DEFAULT '',
+    "key" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ApiKey_pkey" PRIMARY KEY ("id")
+);

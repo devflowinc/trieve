@@ -43,6 +43,12 @@ export default function Index() {
   const [datasets, setDatasets] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!loadData?.organizationId) {
+      shopify.idToken().then((token) => {
+        window.open(`https://dens-shopify.trieve.ai?token=${token}`, "_blank");
+      });
+    }
+
     fetch(
       `https://api.trieve.ai/api/dataset/organization/${loadData?.organizationId}`,
       {
