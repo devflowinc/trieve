@@ -11,25 +11,35 @@
 
   const inlineRoot = document.querySelector(".trieve-inline-root");
   console.log("root", inlineRoot,"please", "{{ block.settings.product.title }}", "{{ block.settings.product.id }}");
-  
-  renderToDiv(inlineRoot, {
-    apiKey: "tr-6PMi6K7zGqOIrMcMKuA0d4RGNLRMomJc",
-    datasetId: "94ad9127-8d76-46ed-ba8d-cc471059aa57",
-    baseUrl: "https://api.trieve.ai",
-    type: "ecommerce",
-    analytics: true,
-    useGroupSearch: true,
-    zIndex: 1,
-    inline: true,
-    scaleRem: true,
-    cssRelease: "none",
-    defaultSearchMode: "chat",
 
-    brandLogoImgSrcUrl: "https://findvectorlogo.com/wp-content/uploads/2019/03/graphtech-guitar-labs-vector-logo.png",
-    brandName: "{{ block.settings.brand_name }}",
-    brandColor: "{{ block.settings.brand_color }}",
-    cleanGroupName: "{{ block.settings.product.title }}",
-    groupTrackingId: "{{ block.settings.product.id }}",
+  const toBool = (value) => value === 'true';
+  const getValue = (value, defaultValue) => {
+    if (value === null || value === undefined || value === '') {
+      return defaultValue;
+    }
+    return value;
+  };
+
+  renderToDiv(inlineRoot, {
+    inline: true,
+    type: "ecommerce",
+    apiKey: getValue("{{ block.settings.api_key }}", ""),
+    datasetId: getValue("{{ block.settings.dataset_id }}", ""),
+    baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
+    type: getValue("{{ block.settings.type }}", "ecommerce"),
+    useGroupSearch: toBool(getValue("{{ block.settings.use_group_search }}", true)),
+    allowSwitchingModes: toBool(getValue("{{ block.settings.allow_switching_modes }}", true)),
+    zIndex: Number(getValue("{{ block.settings.z_index }}", 21474830000000)),
+    scaleRem: true,
+    defaultSearchMode: getValue("{{ block.settings.default_search_mode }}", "chat"),
+    brandName: getValue("{{ block.settings.brand_name }}", ""),
+    brandColor: getValue("{{ block.settings.brand_color }}", ""),
+    placeholder: getValue("{{ block.settings.placeholder }}", "Search..."),
+    chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask Anything..."),
+    suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
+    followupQuestions: toBool(getValue("{{ block.settings.followup_questions }}", true)),
+    numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
+    theme: getValue("{{ block.settings.theme }}", "light"),
     inlineHeader: "{{ block.settings.inline_header }} ",
   });
 
@@ -46,10 +56,123 @@
   "name": "Trieve Product Chat",
   "target": "section",
   "settings": [
-    { "type": "product", "id": "product", "label": "product", "autofill": true },
-    { "type": "color", "id": "brand_color", "label": "Brand Color", "default": "#ff0000" },
-    { "type": "text", "id": "brand_name", "label": "Brand Name", "default": "TrieveAi" },
-    { "type": "text", "id": "inline_header", "label": "Header Text", "default": "Ask a Product Specialist" }
+    {
+      "type": "text",
+      "id": "base_url",
+      "label": "Base URL",
+      "default": "https://api.trieve.ai"
+    },
+    {
+      "type": "text",
+      "id": "api_key",
+      "label": "Trieve API Key"
+    },
+    {
+      "type": "text",
+      "id": "dataset_id",
+      "label": "Dataset ID"
+    },
+    {
+      "type": "select",
+      "id": "default_search_mode",
+      "label": "Default Search Mode",
+      "options": [
+        {"label": "Search", "value": "search"},
+        {"label": "Chat", "value": "chat"}
+      ],
+      "default": "search"
+    },
+    {
+      "type": "text",
+      "id": "placeholder",
+      "label": "Search Placeholder Text",
+      "default": "Search..."
+    },
+    {
+      "type": "text",
+      "id": "chat_placeholder",
+      "label": "Chat Placeholder Text",
+      "default": "Ask Anything..."
+    },
+    {
+      "type": "select",
+      "id": "theme",
+      "label": "Theme",
+      "options": [
+        {"label": "Light", "value": "light"},
+        {"label": "Dark", "value": "dark"}
+      ],
+      "default": "light"
+    },
+    {
+      "type": "color",
+      "id": "brand_color",
+      "label": "Brand Color",
+      "default": "#ff0000"
+    },
+    {
+      "type": "text",
+      "id": "brand_name",
+      "label": "Brand Name",
+      "default": "TrieveAi"
+    },
+    {
+      "type": "checkbox",
+      "id": "chat",
+      "label": "Enable Chat",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "suggested_queries",
+      "label": "Show Suggested Queries",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "followup_questions",
+      "label": "Show Followup Questions",
+      "default": true
+    },
+    {
+      "type": "number",
+      "id": "number_of_suggestions",
+      "label": "Number of Suggestions",
+      "default": 3
+    },
+    {
+      "type": "select",
+      "id": "type",
+      "label": "Modal Type",
+      "options": [
+        {"label": "Docs", "value": "docs"},
+        {"label": "E-commerce", "value": "ecommerce"}
+      ],
+      "default": "docs"
+    },
+    {
+      "type": "checkbox",
+      "id": "use_group_search",
+      "label": "Use Group Search",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "allow_switching_modes",
+      "label": "Allow Switching Modes",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "open_links_new_tab",
+      "label": "Open Links in New Tab",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "inline_header",
+      "label": "Inline Header",
+    }
   ]
 }
 {% endschema %}
