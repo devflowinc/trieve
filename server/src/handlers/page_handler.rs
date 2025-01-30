@@ -274,6 +274,8 @@ pub struct PublicPageParameters {
     pub default_image_question: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub use_local: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_result_highlights: Option<bool>,
 }
 
 #[utoipa::path(

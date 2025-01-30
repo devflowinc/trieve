@@ -3415,6 +3415,9 @@ impl DatasetConfigurationDTO {
                     use_local: page_parameters_self
                         .use_local
                         .or(page_parameters_curr.use_local),
+                    show_result_highlights: page_parameters_self
+                        .show_result_highlights
+                        .or(page_parameters_curr.show_result_highlights),
                 }),
             },
             DISABLE_ANALYTICS: self
