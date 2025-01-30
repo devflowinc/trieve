@@ -38,10 +38,17 @@ module "vpc" {
   private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
   public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
 
-  database_subnets                       = ["10.0.104.0/24", "10.0.105.0/24", "10.0.106.0/24"]
   create_database_subnet_group           = true
   create_database_subnet_route_table     = true
   create_database_internet_gateway_route = true
+
+  public_subnet_tags = {
+    "kubernetes.io/role/elb" = "1"
+  }
+
+  private_subnet_tags = {
+    "kubernetes.io/role/internal-elb" = "1"
+  }
 
   enable_nat_gateway = true
   single_nat_gateway = true
@@ -77,6 +84,14 @@ module "eks" {
       instance_types = [var.instance_type_qdrant]
       capacity_type  = "ON_DEMAND"
       ami_type       = "AL2_x86_64"
+
+      taints = [
+        {
+          key    = "qdrant-node"
+          value  = "present"
+          effect = "NO_SCHEDULE"
+        }
+      ]
     }
 
     gpu = {
@@ -87,11 +102,17 @@ module "eks" {
       instance_types = [var.instance_type_gpu]
       capacity_type  = "ON_DEMAND"
       ami_type       = "BOTTLEROCKET_x86_64_NVIDIA"
+
+      taints = [
+        {
+          key    = "nvidia.com/gpu"
+          value  = "present"
+          effect = "NO_SCHEDULE"
+        }
+      ]
     }
   }
-
-  # Enable IRSA
-  enable_irsa = false
+  cluster_endpoint_public_access = true
 
   # Add-ons
   cluster_addons = {
@@ -110,11 +131,32 @@ module "eks" {
   }
 }
 
-# Pod Identity
-resource "aws_eks_addon" "pod_identity" {
-  cluster_name  = module.eks.cluster_name
-  addon_name    = "eks-pod-identity-agent"
-  addon_version = var.pod_identity_version
+resource "aws_db_subnet_group" "database" {
+  name       = "${var.name}-db-subnet-group"
+  subnet_ids = concat(module.vpc.public_subnets, module.vpc.private_subnets)
+
+  tags = {
+    Name = "${var.name}-db-subnet-group"
+  }
+}
+
+resource "aws_security_group" "postgres" {
+  name   = "postgres"
+  vpc_id = module.vpc.vpc_id
+
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 # RDS Module
@@ -139,11 +181,14 @@ module "db" {
   port     = 5432
 
   multi_az             = false
-  db_subnet_group_name = module.vpc.database_subnet_group
-  vpc_security_group_ids = [module.vpc.default_security_group_id]
+  db_subnet_group_name = aws_db_subnet_group.database.name
+  vpc_security_group_ids = [aws_security_group.postgres.id]
 
   maintenance_window = "Mon:00:00-Mon:03:00"
   backup_window = "03:00-06:00"
+
+  manage_master_user_password = false
+  password = var.rds_master_password
 
   # Disable backups to create DB faster
   backup_retention_period = 0
@@ -153,30 +198,35 @@ module "db" {
   }
 }
 
-# Elasticache Module
-module "elasticache" {
-  source = "cloudposse/elasticache-redis/aws"
+resource "aws_security_group" "redis" {
+  name   = "redis"
+  vpc_id = module.vpc.vpc_id
 
-  count = var.use_elasticache ? 1 : 0
+  ingress {
+    from_port   = 6379
+    to_port     = 6379
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-  name                             = "${var.name}-redis"
-  vpc_id                           = module.vpc.vpc_id
-  subnets                          = module.vpc.private_subnets
-  availability_zones               = module.vpc.azs
-  cluster_size                     = var.cluster_size_redis
-  instance_type                    = var.instance_type_redis
-  apply_immediately                = true
-  automatic_failover_enabled       = false
-  engine_version                   = var.engine_version_redis
-  family                           = var.family_redis
-  at_rest_encryption_enabled       = true
-  transit_encryption_enabled       = true
-  cloudwatch_metric_alarms_enabled = false
+}
 
-  parameter = [
-    {
-      name  = "maxmemory-policy"
-      value = "allkeys-lru"
-    }
-  ]
+resource "aws_elasticache_subnet_group" "redis_subnet_group" {
+  name       = "${var.name}-redis-security-group"
+  subnet_ids = module.vpc.private_subnets
+}
+
+resource "aws_elasticache_cluster" "cache_cluster" {
+  cluster_id           = "${var.name}-redis-cluster"
+  engine               = "redis"
+  node_type            = var.instance_type_redis
+  num_cache_nodes      = var.cluster_size_redis
+  parameter_group_name = "default.redis7"
+  engine_version       = "7.1"
+  security_group_ids   = [aws_security_group.redis.id]
+  subnet_group_name    = aws_elasticache_subnet_group.redis_subnet_group.name
+}
+
+output "redis_output" {
+  value = aws_elasticache_cluster.cache_cluster.cache_nodes[0].address
 }
