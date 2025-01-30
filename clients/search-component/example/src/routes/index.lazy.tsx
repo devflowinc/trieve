@@ -30,6 +30,8 @@ export default function Home() {
   ).split(",");
   const defaultSearchMode =
     import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "search";
+  const showResultHighlights =
+    import.meta.env.VITE_SHOW_RESULT_HIGHLIGHTS == "true";
 
   const defaultAiQuestions = (
     import.meta.env.VITE_DEFAULT_AI_QUESTIONS ??
@@ -72,6 +74,7 @@ export default function Home() {
           type="docs"
           defaultSearchQueries={defaultSearchQueries}
           theme={theme}
+          showResultHighlights={showResultHighlights}
           tags={[
             {
               tag: "openapi-route",

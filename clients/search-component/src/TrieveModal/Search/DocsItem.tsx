@@ -59,6 +59,14 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
     descriptionHtml = descriptionHtml.replace(curHeadingText || "", "");
   }
   descriptionHtml = descriptionHtml.replace(/([.,!?;:])/g, "$1 ");
+
+  descriptionHtml = props.showResultHighlights
+    ? descriptionHtml
+    : descriptionHtml.replace(
+        /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+        "",
+      );
+
   let title = `${
     cleanFirstHeading ||
     item.chunk.metadata?.title ||
@@ -190,7 +198,12 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
                   item.chunk.metadata?.yt_preview_src ? " yt-item" : ""
                 }`}
                 dangerouslySetInnerHTML={{
-                  __html: title,
+                  __html: props.showResultHighlights
+                    ? title
+                    : title.replace(
+                        /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                        "",
+                      ),
                 }}
               />
               <p
