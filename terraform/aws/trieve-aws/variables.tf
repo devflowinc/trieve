@@ -131,3 +131,7 @@ variable "install_alb_controller" {
 }
 
 variable "pod_identity_version" { default = "v1.2.0-eksbuild.1" }
+
+variable "rds_master_password" {
+  type = string
+}
