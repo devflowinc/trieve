@@ -199,7 +199,12 @@ export const Message = ({
             <p
               className="ecomm-item-title"
               dangerouslySetInnerHTML={{
-                __html: title ?? item.title,
+                __html: props.showResultHighlights
+                  ? title
+                  : title.replace(
+                      /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                      "",
+                    ),
               }}
             />
             <p
@@ -212,7 +217,12 @@ export const Message = ({
             <p
               className="ecom-item-description"
               dangerouslySetInnerHTML={{
-                __html: descriptionHtml,
+                __html: props.showResultHighlights
+                  ? descriptionHtml
+                  : descriptionHtml.replace(
+                      /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                      "",
+                    ),
               }}
             />
           </div>

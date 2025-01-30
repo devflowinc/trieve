@@ -176,7 +176,12 @@ export const ProductItem = ({
               <h4
                 className={`chunk-title ${props.type}`}
                 dangerouslySetInnerHTML={{
-                  __html: betterGroupName || title,
+                  __html: props.showResultHighlights
+                    ? betterGroupName || title
+                    : (betterGroupName || title).replace(
+                        /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                        "",
+                      ),
                 }}
               />
               <div className="ecommerce-secondary-row">
@@ -203,7 +208,12 @@ export const ProductItem = ({
               <p
                 className="description"
                 dangerouslySetInnerHTML={{
-                  __html: descriptionHtml,
+                  __html: props.showResultHighlights
+                    ? descriptionHtml
+                    : descriptionHtml.replace(
+                        /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                        "",
+                      ),
                 }}
               />
               <>
