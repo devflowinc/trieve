@@ -1270,6 +1270,10 @@ pub async fn search_chunks(
         .unwrap_or_default(),
     };
 
+    if query.is_empty() {
+        return Err(ServiceError::BadRequest("Query cannot be empty".to_string()).into());
+    }
+
     data.score_threshold = data.score_threshold.filter(|threshold| *threshold != 0.0);
 
     let mut timer = Timer::new();
@@ -1505,6 +1509,10 @@ pub async fn autocomplete(
         data.remove_stop_words,
     )
     .await?;
+
+    if parsed_query.query.is_empty() {
+        return Err(ServiceError::BadRequest("Query cannot be empty".to_string()).into());
+    }
 
     let mut timer = Timer::new();
 
