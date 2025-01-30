@@ -1860,6 +1860,10 @@ pub async fn search_over_groups(
         .unwrap_or_default(),
     };
 
+    if query.is_empty() {
+        return Err(ServiceError::BadRequest("Query cannot be empty".to_string()).into());
+    }
+
     let mut timer = Timer::new();
 
     let result_chunks = match data.search_type {
