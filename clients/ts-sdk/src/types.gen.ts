@@ -2147,6 +2147,7 @@ export type PublicPageParameters = {
     videoLink?: (string) | null;
     videoPosition?: (string) | null;
     zIndex?: (number) | null;
+    showResultHighlights?: (boolean) | null;
 };
 
 export type PublicPageSearchOptions = {
