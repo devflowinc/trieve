@@ -251,7 +251,7 @@ body {
           width: 100%;
 
           .tags-spacer {
-            @apply tv-flex-1;
+            @apply tv-flex-1 tv-block;
           }
         }
 
