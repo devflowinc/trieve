@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { Page, Layout, Text, Card, BlockStack, List } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { validateTrieveAuth } from "app/auth";
@@ -24,7 +24,6 @@ export default function Index() {
   const datasets = useLoaderData<typeof loader>();
   return (
     <Page>
-      <TitleBar title="Remix app template"></TitleBar>
       <BlockStack gap="500">
         <Layout>
           <Layout.Section variant="oneHalf">
@@ -32,13 +31,15 @@ export default function Index() {
               <Card>
                 <BlockStack gap="200">
                   <Text as="h2" variant="headingMd">
-                    Datasets
+                    Select Dataset
                   </Text>
                   {datasets.length > 0 ? (
                     <List>
                       {datasets.map((dataset) => (
                         <List.Item key={dataset.dataset.id}>
-                          {dataset.dataset.name}
+                          <Link to={`/app/dataset/${dataset.dataset.id}`}>
+                            {dataset.dataset.name}
+                          </Link>
                         </List.Item>
                       ))}
                     </List>
