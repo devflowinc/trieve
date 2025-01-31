@@ -8065,6 +8065,11 @@
             "description": "Group tracking_ids are the user-assigned tracking_ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. If a group with the tracking_id does not exist, it will be created.",
             "nullable": true
           },
+          "high_priority": {
+            "type": "boolean",
+            "description": "High Priority allows you to place this chunk into a priority queue with its own ingestion workers. Can only be used by users with a Custom Pro plan.",
+            "nullable": true
+          },
           "image_urls": {
             "type": "array",
             "items": {
@@ -9104,6 +9109,11 @@
             "description": "No result message for when there are no chunks found above the score threshold.",
             "nullable": true
           },
+          "only_include_docs_used": {
+            "type": "boolean",
+            "description": "Only include docs used in the completion. If not specified, this defaults to false.",
+            "nullable": true
+          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -10018,6 +10028,11 @@
           "no_result_message": {
             "type": "string",
             "description": "No result message for when there are no chunks found above the score threshold.",
+            "nullable": true
+          },
+          "only_include_docs_used": {
+            "type": "boolean",
+            "description": "Only include docs used in the completion. If not specified, this defaults to false.",
             "nullable": true
           },
           "page_size": {
@@ -12739,6 +12754,10 @@
             "type": "boolean",
             "nullable": true
           },
+          "showResultHighlights": {
+            "type": "boolean",
+            "nullable": true
+          },
           "singleProductOptions": {
             "allOf": [
               {
@@ -14132,6 +14151,11 @@
           "no_result_message": {
             "type": "string",
             "description": "No result message for when there are no chunks found above the score threshold.",
+            "nullable": true
+          },
+          "only_include_docs_used": {
+            "type": "boolean",
+            "description": "Only include docs used in the completion. If not specified, this defaults to false.",
             "nullable": true
           },
           "page_size": {

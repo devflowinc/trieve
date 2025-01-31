@@ -5,7 +5,12 @@ import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
 import { cached } from "../cache";
 import { getAllChunksForGroup, trackViews } from "../trieve";
-import { ChatMessageProxy, ChunkFilter, ChunkGroup, RoleProxy } from "trieve-ts-sdk";
+import {
+  ChatMessageProxy,
+  ChunkFilter,
+  ChunkGroup,
+  RoleProxy,
+} from "trieve-ts-sdk";
 import { defaultHighlightOptions } from "../highlight";
 
 const scrollToBottomOfChatModalWrapper = () => {
@@ -77,7 +82,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController()
+    new AbortController(),
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
@@ -134,7 +139,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     setIsLoading(true);
     setIsDoneReading(false);
@@ -189,7 +194,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 chunk.metadata.page_title) &&
               chunk.link &&
               chunk.image_urls?.length &&
-              chunk.num_value
+              chunk.num_value,
           );
           if (ecommerceChunks && queryId) {
             trackViews({
@@ -291,7 +296,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           if (headers["x-tr-query"] && audioBase64) {
             transcribedQuery = headers["x-tr-query"];
           }
-        }
+        },
       );
       if (transcribedQuery && audioBase64) {
         setAudioBase64("");
@@ -319,11 +324,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       let filters: ChunkFilter | null = {
         must: null,
         must_not: null,
-        should: null
+        should: null,
       };
 
       if (currentTag !== "all") {
-        filters.must = []
+        filters.must = [];
         filters.must?.push({ field: "tag_set", match_any: [currentTag] });
       }
 
@@ -344,7 +349,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      if (filters.must == null && filters.must_not == null && filters.should == null) {
+      if (
+        filters.must == null &&
+        filters.must_not == null &&
+        filters.should == null
+      ) {
         filters = null;
       }
 
@@ -369,13 +378,14 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               highlight_window: props.type === "ecommerce" ? 5 : 10,
               highlight_results: true,
             },
+            only_include_docs_used: true,
           },
           chatMessageAbortController.current.signal,
           (headers: Record<string, string>) => {
             if (headers["x-tr-query"] && audioBase64) {
               transcribedQuery = headers["x-tr-query"];
             }
-          }
+          },
         );
       if (transcribedQuery && audioBase64) {
         setAudioBase64("");
@@ -515,7 +525,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null
+    queryId: string | null,
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
@@ -540,8 +550,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         stopGeneratingMessage,
         isDoneReading,
         rateChatCompletion,
-      }}
-    >
+      }}>
       {children}
     </ChatContext.Provider>
   );

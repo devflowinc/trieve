@@ -385,6 +385,10 @@ export type ChunkReqPayload = {
      */
     group_tracking_ids?: Array<(string)> | null;
     /**
+     * High Priority allows you to place this chunk into a priority queue with its own ingestion workers. Can only be used by users with a Custom Pro plan.
+     */
+    high_priority?: (boolean) | null;
+    /**
      * Image urls are a list of urls to images that are associated with the chunk. This is useful for when you want to associate images with a chunk.
      */
     image_urls?: Array<(string)> | null;
@@ -757,6 +761,10 @@ export type CreateMessageReqPayload = {
      * No result message for when there are no chunks found above the score threshold.
      */
     no_result_message?: (string) | null;
+    /**
+     * Only include docs used in the completion. If not specified, this defaults to false.
+     */
+    only_include_docs_used?: (boolean) | null;
     /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
@@ -1160,6 +1168,10 @@ export type EditMessageReqPayload = {
      * No result message for when there are no chunks found above the score threshold.
      */
     no_result_message?: (string) | null;
+    /**
+     * Only include docs used in the completion. If not specified, this defaults to false.
+     */
+    only_include_docs_used?: (boolean) | null;
     /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
@@ -2135,6 +2147,7 @@ export type PublicPageParameters = {
     showFloatingButton?: (boolean) | null;
     showFloatingInput?: (boolean) | null;
     showFloatingSearchIcon?: (boolean) | null;
+    showResultHighlights?: (boolean) | null;
     singleProductOptions?: ((SingleProductOptions) | null);
     suggestedQueries?: (boolean) | null;
     tabMessages?: Array<PublicPageTabMessage> | null;
@@ -2147,7 +2160,6 @@ export type PublicPageParameters = {
     videoLink?: (string) | null;
     videoPosition?: (string) | null;
     zIndex?: (number) | null;
-    showResultHighlights?: (boolean) | null;
 };
 
 export type PublicPageSearchOptions = {
@@ -2501,6 +2513,10 @@ export type RegenerateMessageReqPayload = {
      * No result message for when there are no chunks found above the score threshold.
      */
     no_result_message?: (string) | null;
+    /**
+     * Only include docs used in the completion. If not specified, this defaults to false.
+     */
+    only_include_docs_used?: (boolean) | null;
     /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
