@@ -834,12 +834,13 @@ dependencies = [
 
 [[package]]
 name = "broccoli_queue"
-version = "0.1.2"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3be7581e0ad10a1479943d3e43c7dbd7adfcd597cfe8bf58c1a9212f7b148c50"
+checksum = "270916c445aa80134c70b44449021d1169832418532812d4a27ff18c0eed60ee"
 dependencies = [
  "async-trait",
  "bb8-redis 0.18.0",
+ "dashmap",
  "futures",
  "log",
  "redis 0.27.6",
@@ -1563,9 +1564,9 @@ dependencies = [
 
 [[package]]
 name = "dashmap"
-version = "6.0.1"
+version = "6.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "804c8821570c3f8b70230c2ba75ffa5c0f9a4189b9a432b6656c536712acae28"
+checksum = "5041cc499144891f3790297212f32a74fb938e5136a14943f338ef9e0ae276cf"
 dependencies = [
  "cfg-if",
  "crossbeam-utils",
