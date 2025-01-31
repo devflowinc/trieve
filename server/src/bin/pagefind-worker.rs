@@ -127,11 +127,16 @@ async fn pagefind_indexer(
             break;
         }
 
+        log::info!(
+            "Retrying to get redis connection out of loop after {:?} secs",
+            redis_conn_sleep
+        );
         tokio::time::sleep(redis_conn_sleep).await;
         redis_conn_sleep = std::cmp::min(redis_conn_sleep * 2, std::time::Duration::from_secs(300));
     }
 
-    let redis_conn = opt_redis_connection.expect("Failed to get redis connection outside of loop");
+    let mut redis_connection =
+        opt_redis_connection.expect("Failed to get redis connection outside of loop");
 
     let mut broken_pipe_sleep = std::time::Duration::from_secs(10);
 
@@ -145,7 +150,7 @@ async fn pagefind_indexer(
             .arg("pagefind-index-ingestion")
             .arg("pagefind-index-processing")
             .arg(1.0)
-            .query_async(&mut redis_conn.clone())
+            .query_async(&mut redis_connection.clone())
             .await;
 
         let serialized_message = if let Ok(payload) = payload_result {
@@ -163,6 +168,20 @@ async fn pagefind_indexer(
             log::error!("Unable to process {:?}", payload_result);
 
             if payload_result.is_err_and(|err| err.is_io_error()) {
+                log::error!("IO broken pipe error, trying to acquire new connection");
+                match redis_pool.get().await {
+                    Ok(redis_conn) => {
+                        log::info!("Got new redis connection after broken pipe! Resuming polling");
+                        redis_connection = redis_conn;
+                    }
+                    Err(err) => {
+                        log::error!(
+                                "Failed to get redis connection after broken pipe, will try again after {broken_pipe_sleep:?} secs, err: {:?}",
+                                err
+                            );
+                    }
+                }
+
                 tokio::time::sleep(broken_pipe_sleep).await;
                 broken_pipe_sleep =
                     std::cmp::min(broken_pipe_sleep * 2, std::time::Duration::from_secs(300));

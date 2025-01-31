@@ -144,6 +144,10 @@ async fn file_worker(
             break;
         }
 
+        log::info!(
+            "Retrying to get redis connection out of loop after {:?} secs",
+            redis_conn_sleep
+        );
         tokio::time::sleep(redis_conn_sleep).await;
         redis_conn_sleep = std::cmp::min(redis_conn_sleep * 2, std::time::Duration::from_secs(300));
     }
@@ -181,6 +185,20 @@ async fn file_worker(
             log::error!("Unable to process {:?}", payload_result);
 
             if payload_result.is_err_and(|err| err.is_io_error()) {
+                log::error!("IO broken pipe error, trying to acquire new connection");
+                match redis_pool.get().await {
+                    Ok(redis_conn) => {
+                        log::info!("Got new redis connection after broken pipe! Resuming polling");
+                        redis_connection = redis_conn;
+                    }
+                    Err(err) => {
+                        log::error!(
+                                "Failed to get redis connection after broken pipe, will try again after {broken_pipe_sleep:?} secs, err: {:?}",
+                                err
+                            );
+                    }
+                }
+
                 tokio::time::sleep(broken_pipe_sleep).await;
                 broken_pipe_sleep =
                     std::cmp::min(broken_pipe_sleep * 2, std::time::Duration::from_secs(300));

@@ -32,8 +32,8 @@ async fn main() -> Result<(), ServiceError> {
         .await
         .expect("Failed to create redis pool");
 
-    let web_redis_pool = actix_web::web::Data::new(redis_pool);
-    let mut connection = web_redis_pool
+    let redis_pool = actix_web::web::Data::new(redis_pool);
+    let mut redis_connection = redis_pool
         .get()
         .await
         .map_err(|e| ServiceError::BadRequest(format!("Failed to connect to redis {}", e)))?;
@@ -44,7 +44,7 @@ async fn main() -> Result<(), ServiceError> {
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpop")
             .arg("collection_migration")
             .arg(1)
-            .query_async(&mut *connection)
+            .query_async(&mut *redis_connection)
             .await;
 
         let serialized_message = match payload_result {
@@ -62,7 +62,19 @@ async fn main() -> Result<(), ServiceError> {
                     .clone()
             }
             Err(err) => {
-                log::error!("Unable to process {:?}", err);
+                log::error!("IO broken pipe error, trying to acquire new connection");
+                match redis_pool.get().await {
+                    Ok(redis_conn) => {
+                        log::info!("Got new redis connection after broken pipe! Resuming polling");
+                        redis_connection = redis_conn;
+                    }
+                    Err(err) => {
+                        log::error!(
+                            "Failed to get redis connection after broken pipe, will try again after {broken_pipe_sleep:?} secs, err: {:?}",
+                            err
+                        );
+                    }
+                }
 
                 if err.is_io_error() {
                     tokio::time::sleep(broken_pipe_sleep).await;

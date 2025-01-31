@@ -138,11 +138,15 @@ async fn file_worker(
             break;
         }
 
+        log::info!(
+            "Retrying to get redis connection out of loop after {:?} secs",
+            redis_conn_sleep
+        );
         tokio::time::sleep(redis_conn_sleep).await;
         redis_conn_sleep = std::cmp::min(redis_conn_sleep * 2, std::time::Duration::from_secs(300));
     }
 
-    let mut redis_conn =
+    let mut redis_connection =
         opt_redis_connection.expect("Failed to get redis connection outside of loop");
 
     let mut broken_pipe_sleep = std::time::Duration::from_secs(10);
@@ -157,7 +161,7 @@ async fn file_worker(
             .arg("csv_jsonl_ingestion")
             .arg("csv_jsonl_processing")
             .arg(1.0)
-            .query_async(&mut redis_conn.clone())
+            .query_async(&mut redis_connection.clone())
             .await;
 
         let serialized_message = if let Ok(payload) = payload_result {
@@ -175,6 +179,20 @@ async fn file_worker(
             log::error!("Unable to process {:?}", payload_result);
 
             if payload_result.is_err_and(|err| err.is_io_error()) {
+                log::error!("IO broken pipe error, trying to acquire new connection");
+                match redis_pool.get().await {
+                    Ok(redis_conn) => {
+                        log::info!("Got new redis connection after broken pipe! Resuming polling");
+                        redis_connection = redis_conn;
+                    }
+                    Err(err) => {
+                        log::error!(
+                                "Failed to get redis connection after broken pipe, will try again after {broken_pipe_sleep:?} secs, err: {:?}",
+                                err
+                            );
+                    }
+                }
+
                 tokio::time::sleep(broken_pipe_sleep).await;
                 broken_pipe_sleep =
                     std::cmp::min(broken_pipe_sleep * 2, std::time::Duration::from_secs(300));
@@ -203,7 +221,7 @@ async fn file_worker(
                     .arg("csv_jsonl_processing")
                     .arg(1)
                     .arg(serialized_message.clone())
-                    .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+                    .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_connection)
                     .await;
 
                 if chrono::Utc::now().timestamp()
@@ -226,7 +244,9 @@ async fn file_worker(
                     let _ = redis::cmd("lpush")
                         .arg("dead_letters_csv_jsonl")
                         .arg(serialized_message)
-                        .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
+                        .query_async::<redis::aio::MultiplexedConnection, ()>(
+                            &mut *redis_connection,
+                        )
                         .await;
 
                     continue;
@@ -235,7 +255,7 @@ async fn file_worker(
                 let _ = redis::cmd("lpush")
                     .arg("csv_jsonl_ingestion")
                     .arg(serialized_message)
-                    .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
+                    .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_connection)
                     .await;
 
                 tokio::time::sleep(std::time::Duration::from_millis(500)).await;
@@ -247,7 +267,7 @@ async fn file_worker(
         let _ = process_csv_jsonl_file(
             csv_jsonl_worker_message,
             web_pool.clone(),
-            redis_conn.clone(),
+            redis_connection.clone(),
         )
         .await;
     }
