@@ -46,7 +46,7 @@ export default defineConfig({
       // See https://vitejs.dev/config/server-options.html#server-fs-allow for more information
       allow: ["app", "node_modules"],
     },
-    allowedHosts: ["dens-shopify.trieve.ai"],
+    allowedHosts: [process.env.TRIEVE_AUTH_URL!.replace("https://", "")],
   },
   plugins: [
     remix({

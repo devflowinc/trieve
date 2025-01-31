@@ -1,18 +1,25 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
+import {
+  Link,
+  Outlet,
+  useLoaderData,
+  useRouteError,
+  isRouteErrorResponse,
+  useRouteLoaderData,
+} from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-
-import { authenticate } from "../shopify.server";
+import { MustLoginPage } from "app/components/MustLoginPage";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+  return {
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+    trieveAuthUrl: process.env.TRIEVE_AUTH_URL!,
+  };
 };
 
 export default function App() {
@@ -33,6 +40,19 @@ export default function App() {
 
 // Shopify needs Remix to catch some thrown responses, so that their headers are included in the response.
 export function ErrorBoundary() {
+  const { apiKey, trieveAuthUrl } = useRouteLoaderData("routes/app") as {
+    apiKey: string;
+    trieveAuthUrl: string;
+  };
+  const error = useRouteError();
+  if (isRouteErrorResponse(error) && error.status === 404 && apiKey) {
+    return (
+      // MustLoginPage needs access to use `useAppBridge`
+      <AppProvider isEmbeddedApp apiKey={apiKey}>
+        <MustLoginPage authUrl={trieveAuthUrl} />
+      </AppProvider>
+    );
+  }
   return boundary.error(useRouteError());
 }
 
