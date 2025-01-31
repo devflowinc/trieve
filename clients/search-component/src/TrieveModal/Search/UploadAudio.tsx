@@ -7,7 +7,7 @@ export const UploadAudio = () => {
 
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
-    null,
+    null
   );
 
   const startRecording = async () => {
@@ -44,7 +44,7 @@ export const UploadAudio = () => {
     } catch (err) {
       console.error("Error accessing microphone:", err);
       alert(
-        "Error accessing microphone. Please make sure you have granted microphone permissions.",
+        "Error accessing microphone. Please make sure you have granted microphone permissions."
       );
     }
   };
@@ -68,9 +68,9 @@ export const UploadAudio = () => {
     <div
       aria-role="button"
       className={cn(
-        "tv-rounded tv-z-20 cursor-pointer",
+        "tv-rounded tv-z-20 tv-cursor-pointer",
         mode === "chat" && "tv-right-16 tv-top-[0.825rem] tv-absolute",
-        isRecording ? "tv-text-red-500" : "tv-dark-text-white tv-text-zinc-700",
+        isRecording ? "tv-text-red-500" : "tv-dark-text-white tv-text-zinc-700"
       )}
       onClick={(e) => {
         e.preventDefault();
