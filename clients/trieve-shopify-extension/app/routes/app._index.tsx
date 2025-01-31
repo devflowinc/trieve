@@ -1,225 +1,34 @@
-import { useEffect, useState } from "react";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useLoaderData, useLocation } from "@remix-run/react";
-import {
-  Page,
-  Layout,
-  Text,
-  Card,
-  Button,
-  BlockStack,
-  Box,
-  List,
-  Link,
-  InlineStack,
-} from "@shopify/polaris";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
-import { authenticate } from "../shopify.server";
-import jwt from "jsonwebtoken";
+import type { LoaderFunctionArgs } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+import { Page, Layout, Text, Card, BlockStack, List } from "@shopify/polaris";
+import { TitleBar } from "@shopify/app-bridge-react";
+import { validateTrieveAuth } from "app/auth";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  let { sessionToken } = await authenticate.admin(request);
-
-  const key = await prisma.apiKey.findFirst({
-    where: {
-      userId: (sessionToken.sub as string) ?? "",
+export const loader = async (args: LoaderFunctionArgs) => {
+  const key = await validateTrieveAuth(args);
+  const datasetsResponse = await fetch(
+    `https://api.trieve.ai/api/dataset/organization/${key.organizationId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${key.key}`,
+        "TR-Organization": key.organizationId ?? "",
+      },
     },
-  });
-  return key;
-};
+  );
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const { redirect } = await authenticate.admin(request);
-  const formData = await request.formData();
-
-  return null;
+  const datasets = await datasetsResponse.json();
+  return datasets as any[];
 };
 
 export default function Index() {
-  const shopify = useAppBridge();
-  const loadData = useLoaderData<typeof loader>();
-  const fetcher = useFetcher<typeof action>();
-  const [user, setUser] = useState<string | null>(null);
-  const [datasets, setDatasets] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (!loadData?.organizationId) {
-      shopify.idToken().then((token) => {
-        window.open(`https://dens-shopify.trieve.ai?token=${token}`, "_blank");
-      });
-    }
-
-    fetch(
-      `https://api.trieve.ai/api/dataset/organization/${loadData?.organizationId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${loadData?.key}`,
-          "TR-Organization": loadData?.organizationId ?? "",
-        },
-      },
-    ).then((response) => {
-      if (response.status === 401) {
-        shopify.idToken().then((token) => {
-          window.open(
-            `https://dens-shopify.trieve.ai?token=${token}`,
-            "_blank",
-          );
-        });
-      }
-
-      response.json().then((data) => {
-        setDatasets(data);
-      });
-    });
-  }, []);
-
+  const datasets = useLoaderData<typeof loader>();
   return (
     <Page>
       <TitleBar title="Remix app template"></TitleBar>
       <BlockStack gap="500">
         <Layout>
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="500">
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Welcome to Trieve!
-                  </Text>
-                  <Text variant="bodyMd" as="p">
-                    This embedded app template uses{" "}
-                    <Link
-                      url="https://shopify.dev/docs/apps/tools/app-bridge"
-                      target="_blank"
-                      removeUnderline>
-                      App Bridge
-                    </Link>{" "}
-                    interface examples like an{" "}
-                    <Link url="/app/additional" removeUnderline>
-                      additional page in the app nav
-                    </Link>
-                    , as well as an{" "}
-                    <Link
-                      url="https://shopify.dev/docs/api/admin-graphql"
-                      target="_blank"
-                      removeUnderline>
-                      Admin GraphQL
-                    </Link>{" "}
-                    mutation demo, to provide a starting point for app
-                    development.
-                  </Text>
-                </BlockStack>
-                <BlockStack gap="200">
-                  <Text as="h3" variant="headingMd">
-                    Get started with products
-                  </Text>
-                  <Text as="p" variant="bodyMd">
-                    Generate a product with GraphQL and get the JSON output for
-                    that product. Learn more about the{" "}
-                    <Link
-                      url="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate"
-                      target="_blank"
-                      removeUnderline>
-                      productCreate
-                    </Link>{" "}
-                    mutation in our API references.
-                  </Text>
-                </BlockStack>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-          <Layout.Section variant="oneThird">
+          <Layout.Section variant="oneHalf">
             <BlockStack gap="500">
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    App template specs
-                  </Text>
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Framework
-                      </Text>
-                      <Link
-                        url="https://remix.run"
-                        target="_blank"
-                        removeUnderline>
-                        Remix
-                      </Link>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Database
-                      </Text>
-                      <Link
-                        url="https://www.prisma.io/"
-                        target="_blank"
-                        removeUnderline>
-                        Prisma
-                      </Link>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Interface
-                      </Text>
-                      <span>
-                        <Link
-                          url="https://polaris.shopify.com"
-                          target="_blank"
-                          removeUnderline>
-                          Polaris
-                        </Link>
-                        {", "}
-                        <Link
-                          url="https://shopify.dev/docs/apps/tools/app-bridge"
-                          target="_blank"
-                          removeUnderline>
-                          App Bridge
-                        </Link>
-                      </span>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        API
-                      </Text>
-                      <Link
-                        url="https://shopify.dev/docs/api/admin-graphql"
-                        target="_blank"
-                        removeUnderline>
-                        GraphQL API
-                      </Link>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Next steps
-                  </Text>
-                  <List>
-                    <List.Item>
-                      Build an{" "}
-                      <Link
-                        url="https://shopify.dev/docs/apps/getting-started/build-app-example"
-                        target="_blank"
-                        removeUnderline>
-                        {" "}
-                        example app
-                      </Link>{" "}
-                      to get started
-                    </List.Item>
-                    <List.Item>
-                      Explore Shopify’s API with{" "}
-                      <Link
-                        url="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
-                        target="_blank"
-                        removeUnderline>
-                        GraphiQL
-                      </Link>
-                    </List.Item>
-                  </List>
-                </BlockStack>
-              </Card>
               <Card>
                 <BlockStack gap="200">
                   <Text as="h2" variant="headingMd">

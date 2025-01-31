@@ -3,10 +3,9 @@ import { redirect } from "@remix-run/node";
 import { useFetcher } from "@remix-run/react";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
-import { authenticate, login } from "../../shopify.server";
+import { login } from "../../shopify.server";
 
 import { useEffect, useState } from "react";
-import { time } from "console";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
@@ -44,19 +43,12 @@ export const action = async ({ request }: LoaderFunctionArgs) => {
     throw new Error("Token not yet valid");
   }
   if (type === "insert") {
-    await prisma.apiKey.create({
+    const key = await prisma.apiKey.create({
       data: {
         userId: decoded.sub ?? "",
         organizationId: orgId.toString(),
         key: apiKey.toString(),
         createdAt: new Date(),
-      },
-    });
-    return null;
-  } else if (type === "get") {
-    const key = await prisma.apiKey.findFirst({
-      where: {
-        userId: decoded.sub ?? "",
       },
     });
     return key;
@@ -79,15 +71,13 @@ export default function App() {
   const fetcher = useFetcher<typeof action>();
   const [orgs, setOrgs] = useState<Orgs[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
-  const [userApiKey, setUserApiKey] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("https://api.trieve.ai/api/auth/me", {
       credentials: "include",
     }).then((response) => {
       if (response.status === 401) {
-        window.location.href =
-          "https://api.trieve.ai/api/auth?redirect_uri=https://dens-shopify.trieve.ai";
+        window.location.href = `https://api.trieve.ai/api/auth?redirect_uri=${window.location}`;
       }
       response.json().then((data: User) => {
         setOrgs(data.orgs);
@@ -96,14 +86,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    let params = new URLSearchParams(window.location.search);
-    fetcher.submit(
-      { type: "get", idToken: params.get("token") },
-      { method: "POST" },
-    );
-
-    setUserApiKey(fetcher.data?.key ?? "");
+    if (fetcher.data?.key) {
+      window.close();
+    }
   }, [fetcher.data?.key]);
+
+  // Auto select an org if there are orgs and its undefined
+  useEffect(() => {
+    if (orgs.length > 0 && !selectedOrg) {
+      setSelectedOrg(orgs[0].id);
+    }
+  }, [orgs]);
 
   const generateApiKey = () => {
     if (!selectedOrg) {
@@ -138,15 +131,17 @@ export default function App() {
     <div>
       <select
         value={selectedOrg ?? undefined}
-        onChange={(e) => setSelectedOrg(e.target.value)}>
+        onChange={(e) => setSelectedOrg(e.target.value)}
+      >
         {orgs.map((org) => (
           <option key={org.id} value={org.id}>
             {org.name}
           </option>
         ))}
       </select>
-      <button onClick={() => generateApiKey()}>Generate API Key</button>
-      {userApiKey && <p>Your API Key: {userApiKey}</p>}
+      <button disabled={selectedOrg === null} onClick={() => generateApiKey()}>
+        Generate API Key
+      </button>
     </div>
   );
 }
