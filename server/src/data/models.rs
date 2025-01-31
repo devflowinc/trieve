@@ -3921,6 +3921,7 @@ impl ApiKeyRequestParams {
             audio_input: payload.audio_input,
             context_options: payload.context_options,
             no_result_message: self.no_result_message.or(payload.no_result_message),
+            only_include_docs_used: payload.only_include_docs_used,
         }
     }
 
@@ -7636,6 +7637,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub use_group_search: Option<bool>,
             pub context_options: Option<ContextOptions>,
             pub no_result_message: Option<String>,
+            pub only_include_docs_used: Option<bool>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -7671,6 +7673,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             user_id: helper.user_id,
             context_options,
             no_result_message: helper.no_result_message,
+            only_include_docs_used: helper.only_include_docs_used,
         })
     }
 }
@@ -7687,7 +7690,6 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub search_type: Option<SearchMethod>,
             pub concat_user_messages_query: Option<bool>,
             pub sort_options: Option<SortOptions>,
-
             pub search_query: Option<String>,
             pub page_size: Option<u64>,
             pub filters: Option<ChunkFilter>,
@@ -7697,6 +7699,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub use_group_search: Option<bool>,
             pub context_options: Option<ContextOptions>,
             pub no_result_message: Option<String>,
+            pub only_include_docs_used: Option<bool>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -7729,6 +7732,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             user_id: helper.user_id,
             context_options,
             no_result_message: helper.no_result_message,
+            only_include_docs_used: helper.only_include_docs_used,
         })
     }
 }
@@ -7758,6 +7762,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub user_id: Option<String>,
             pub context_options: Option<ContextOptions>,
             pub no_result_message: Option<String>,
+            pub only_include_docs_used: Option<bool>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -7794,6 +7799,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             llm_options,
             context_options,
             no_result_message: helper.no_result_message,
+            only_include_docs_used: helper.only_include_docs_used,
         })
     }
 }

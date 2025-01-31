@@ -119,6 +119,8 @@ pub struct CreateMessageReqPayload {
     pub context_options: Option<ContextOptions>,
     /// No result message for when there are no chunks found above the score threshold.
     pub no_result_message: Option<String>,
+    /// Only include docs used in the completion. If not specified, this defaults to false.
+    pub only_include_docs_used: Option<bool>,
 }
 
 /// Create message
@@ -256,6 +258,7 @@ pub async fn create_message(
         &dataset_config,
         previous_messages,
         new_message,
+        create_message_data.only_include_docs_used,
         dataset_org_plan_sub.dataset.id,
         &create_message_pool,
     )
@@ -391,6 +394,8 @@ pub struct RegenerateMessageReqPayload {
     pub context_options: Option<ContextOptions>,
     /// No result message for when there are no chunks found above the score threshold.
     pub no_result_message: Option<String>,
+    /// Only include docs used in the completion. If not specified, this defaults to false.
+    pub only_include_docs_used: Option<bool>,
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -431,6 +436,8 @@ pub struct EditMessageReqPayload {
     pub context_options: Option<ContextOptions>,
     /// No result message for when there are no chunks found above the score threshold.
     pub no_result_message: Option<String>,
+    /// Only include docs used in the completion. If not specified, this defaults to false.
+    pub only_include_docs_used: Option<bool>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -453,6 +460,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             user_id: data.user_id,
             context_options: data.context_options,
             no_result_message: data.no_result_message,
+            only_include_docs_used: data.only_include_docs_used,
         }
     }
 }
@@ -477,6 +485,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             user_id: data.user_id,
             context_options: data.context_options,
             no_result_message: data.no_result_message,
+            only_include_docs_used: data.only_include_docs_used,
         }
     }
 }
