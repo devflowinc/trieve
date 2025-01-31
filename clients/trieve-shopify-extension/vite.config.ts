@@ -1,6 +1,6 @@
 import { vitePlugin as remix } from "@remix-run/dev";
 import { installGlobals } from "@remix-run/node";
-import { defineConfig, type UserConfig } from "vite";
+import { defineConfig, type UserConfig, loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 installGlobals({ nativeFetch: true });
@@ -37,32 +37,40 @@ if (host === "localhost") {
   };
 }
 
-export default defineConfig({
-  server: {
-    host: "0.0.0.0",
-    port: Number(process.env.PORT || 3000),
-    hmr: hmrConfig,
-    fs: {
-      // See https://vitejs.dev/config/server-options.html#server-fs-allow for more information
-      allow: ["app", "node_modules"],
-    },
-    allowedHosts: [process.env.TRIEVE_AUTH_URL!.replace("https://", "")],
-  },
-  plugins: [
-    remix({
-      ignoredRouteFiles: ["**/.*"],
-      future: {
-        v3_fetcherPersist: true,
-        v3_relativeSplatPath: true,
-        v3_throwAbortReason: true,
-        v3_lazyRouteDiscovery: true,
-        v3_singleFetch: false,
-        v3_routeConfig: true,
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  return {
+    server: {
+      host: "0.0.0.0",
+      port: Number(process.env.PORT || 3000),
+      hmr: hmrConfig,
+      fs: {
+        // See https://vitejs.dev/config/server-options.html#server-fs-allow for more information
+        allow: ["app", "node_modules"],
       },
-    }),
-    tsconfigPaths(),
-  ],
-  build: {
-    assetsInlineLimit: 0,
-  },
-}) satisfies UserConfig;
+      allowedHosts: [
+        (process.env.TRIEVE_AUTH_URL || env.TRIEVE_AUTH_URL)!.replace(
+          "https://",
+          "",
+        ),
+      ],
+    },
+    plugins: [
+      remix({
+        ignoredRouteFiles: ["**/.*"],
+        future: {
+          v3_fetcherPersist: true,
+          v3_relativeSplatPath: true,
+          v3_throwAbortReason: true,
+          v3_lazyRouteDiscovery: true,
+          v3_singleFetch: false,
+          v3_routeConfig: true,
+        },
+      }),
+      tsconfigPaths(),
+    ],
+    build: {
+      assetsInlineLimit: 0,
+    },
+  } satisfies UserConfig;
+});
