@@ -109,7 +109,7 @@ export default function App() {
         "Content-Type": "application/json",
         "TR-Organization": selectedOrg.toString(),
       },
-      body: JSON.stringify({ name: "Shopify-Access", role: 1 }),
+      body: JSON.stringify({ name: "Shopify-Access", role: 2 }),
     }).then((response) => {
       response.json().then((data) => {
         let params = new URLSearchParams(window.location.search);
