@@ -104,6 +104,8 @@ const MainLayout = (props: LayoutProps) => {
   const [searchType, setSearchType] = createSignal<string | null>("hybrid");
   const [contextOptions, setContextOptions] =
     createSignal<ContextOptions | null>(null);
+  const [onlyIncludeDocsUsed, setOnlyIncludeDocsUsed] =
+    createSignal<boolean>(true);
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -250,6 +252,7 @@ const MainLayout = (props: LayoutProps) => {
           highlight_options: {
             highlight_results: highlightResults(),
           },
+          only_include_docs_used: onlyIncludeDocsUsed(),
         }),
         signal: completionAbortController().signal,
       });
@@ -483,6 +486,20 @@ const MainLayout = (props: LayoutProps) => {
                       checked={streamCompletionsFirst() ?? false}
                       onChange={(e) => {
                         setStreamCompletionsFirst(e.target.checked);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <label for="stream_completion_first">
+                      Only include docs used
+                    </label>
+                    <input
+                      type="checkbox"
+                      id="stream_completion_first"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={onlyIncludeDocsUsed() ?? false}
+                      onChange={(e) => {
+                        setOnlyIncludeDocsUsed(e.target.checked);
                       }}
                     />
                   </div>
