@@ -1,4 +1,4 @@
-use std::sync::atomic::AtomicU16;
+use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
 use std::sync::{Arc, Mutex};
 
 #[cfg(not(feature = "hallucination-detection"))]
@@ -149,6 +149,7 @@ documents: [1,2]
 pub async fn create_generic_system_message(
     system_prompt: String,
     messages_topic_id: uuid::Uuid,
+    only_include_used_docs: Option<bool>,
     dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<Message, ServiceError> {
@@ -156,8 +157,14 @@ pub async fn create_generic_system_message(
         crate::operators::topic_operator::get_topic_query(messages_topic_id, dataset_id, pool)
             .await?;
 
+    let system_prompt = if only_include_used_docs.unwrap_or(false) {
+        format!("{}\n\n{}", system_prompt, STRUCTURE_SYSTEM_PROMPT)
+    } else {
+        system_prompt
+    };
+
     let system_message = Message::from_details(
-        format!("{}\n\n{}", system_prompt, STRUCTURE_SYSTEM_PROMPT),
+        system_prompt,
         topic.id,
         0,
         "system".into(),
@@ -174,6 +181,7 @@ pub async fn create_topic_message_query(
     config: &DatasetConfiguration,
     previous_messages: Vec<Message>,
     new_message: Message,
+    only_include_used_docs: Option<bool>,
     dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
 ) -> Result<Vec<Message>, ServiceError> {
@@ -185,6 +193,7 @@ pub async fn create_topic_message_query(
         let system_message = create_generic_system_message(
             config.SYSTEM_PROMPT.clone(),
             new_message.topic_id,
+            only_include_used_docs,
             dataset_id,
             pool,
         )
@@ -1236,7 +1245,15 @@ pub async fn stream_response(
         .unwrap_or(60);
 
     let state = Arc::new(AtomicU16::new(0));
-    let documents = Arc::new(Mutex::new(vec![]));
+    let documents = if create_message_req_payload
+        .only_include_docs_used
+        .unwrap_or(false)
+    {
+        Arc::new(Mutex::new(vec![]))
+    } else {
+        Arc::new(Mutex::new((0..score_chunks.len() as u32).collect()))
+    };
+    let started = AtomicBool::new(false);
     let completion_stream = stream
         .take_until(tokio::time::sleep(std::time::Duration::from_secs(chat_completion_timeout)))
         .map(move |response| -> Result<Bytes, actix_web::Error> {
@@ -1271,20 +1288,31 @@ pub async fn stream_response(
                                 content: Some(ChatMessageContent::Text(text)),
                                 ..
                             } => {
-                                let (text, docs) = parse_streaming_completetion(text, state.clone(), documents.clone());
-                                if let Some(docs) = docs {
-                                    if !completion_first {
-                                        let filtered_chunks = score_chunks.iter().enumerate().filter_map(|(idx, score_chunk)| {
-                                            if docs.contains(&(idx as u32)) {
-                                                Some(ChunkMetadataStringTagSetWithHighlightsScore::from(score_chunk.clone()))
-                                            } else {
-                                                None
+                                if create_message_req_payload
+                                    .only_include_docs_used
+                                    .unwrap_or(false) {
+                                        let (text, docs) = parse_streaming_completetion(text, state.clone(), documents.clone());
+                                        if let Some(docs) = docs {
+                                            if !completion_first {
+                                                let filtered_chunks = score_chunks.iter().enumerate().filter_map(|(idx, score_chunk)| {
+                                                    if docs.contains(&(idx as u32)) {
+                                                        Some(ChunkMetadataStringTagSetWithHighlightsScore::from(score_chunk.clone()))
+                                                    } else {
+                                                        None
+                                                    }
+                                                }).collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
+                                                return Some(format!("{}||", serde_json::to_string(&filtered_chunks).unwrap_or_default()));
                                             }
+                                        }
+                                        text.clone()
+                                    } else if !started.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| Some(true)).unwrap_or(true) {
+                                        let returned_chunks = score_chunks.iter().map(|score_chunk| {
+                                            ChunkMetadataStringTagSetWithHighlightsScore::from(score_chunk.clone())
                                         }).collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
-                                        return Some(format!("{}||", serde_json::to_string(&filtered_chunks).unwrap_or_default()));
+                                        return Some(format!("{}||", serde_json::to_string(&returned_chunks).unwrap_or_default()));
+                                    } else {
+                                        Some(text.clone())
                                     }
-                                }
-                                text.clone()
                             },
                             _ => {
                                 log::error!("Delta of first choice did not have text or was either Tool or Function {:?}", choice);
