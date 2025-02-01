@@ -247,13 +247,13 @@ export const MicIcon = (props: SVGAttributes<SVGElement>) => (
   </svg>
 );
 
-export const CircleDotIcon = (props: SVGAttributes<SVGElement>) => (
+export const StopSquareIcon = (props: SVGAttributes<SVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 512 512"
     fill="currentColor"
     {...props}
   >
-    <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zm0-352a96 96 0 1 1 0 192 96 96 0 1 1 0-192z" />
+    <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM192 160l128 0c17.7 0 32 14.3 32 32l0 128c0 17.7-14.3 32-32 32l-128 0c-17.7 0-32-14.3-32-32l0-128c0-17.7 14.3-32 32-32z" />
   </svg>
 );
