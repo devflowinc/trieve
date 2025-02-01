@@ -308,6 +308,7 @@ const ModalProvider = ({
 
         if (results.transcribedQuery && audioBase64) {
           setQuery(results.transcribedQuery);
+          setAudioBase64(undefined);
         }
         setResults(Array.from(groupMap.values()));
         setRequestID(results.requestID);
@@ -349,6 +350,7 @@ const ModalProvider = ({
         });
         if (results.transcribedQuery && audioBase64) {
           setQuery(results.transcribedQuery);
+          setAudioBase64(undefined);
         }
         setResults(results.chunks);
         setRequestID(results.requestID);
