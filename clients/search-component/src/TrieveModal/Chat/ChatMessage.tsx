@@ -297,7 +297,9 @@ export const Message = ({
         chunk.metadata?.page_title ||
         chunk.metadata?.name ||
         cleanFirstHeading
-      }`.replace("#", "");
+      }`
+        .replace("#", "")
+        .replace("¶", "");
       return {
         title: title,
         link: chunk.link,
