@@ -20,6 +20,7 @@ export const ChatMode = () => {
     currentGroup,
     uploadingImage,
     imageUrl,
+    isRecording,
   } = useModalState();
   const {
     askQuestion,
@@ -143,7 +144,13 @@ export const ChatMode = () => {
               value={currentQuestion}
               className={`${props.inline ? "inline-input " : ""}${mode}`}
               onChange={(e) => setCurrentQuestion(e.target.value)}
-              placeholder={props.chatPlaceholder || "Ask Anything..."}
+              placeholder={
+                isRecording
+                  ? "Recording... Press stop icon to submit"
+                  : props.chatPlaceholder ||
+                    props.placeholder ||
+                    "Ask Anything..."
+              }
             />
           </form>
           <button
