@@ -70,44 +70,50 @@ export const UploadAudio = () => {
   };
 
   return (
-    <div
-      aria-role="button"
-      className={cn(
-        "tv-rounded tv-z-20 tv-cursor-pointer",
-        mode === "chat" && "tv-right-16 tv-top-[0.825rem] tv-absolute",
-      )}
-      onClick={(e) => {
-        e.preventDefault();
-        toggleRecording();
-      }}
-    >
+    <div>
       <div
+        aria-role="button"
+        className={cn(
+          "tv-rounded tv-z-20 tv-cursor-pointer",
+          mode === "chat" && "tv-right-[60px] tv-top-[17px] tv-absolute"
+        )}
         onClick={(e) => {
           e.preventDefault();
           toggleRecording();
         }}
-        className="tv-block md:tv-hidden tv-top-0 tv-bottom-0 tv-left-0 tv-right-0 tv-scale-125 tv-pr-3 tv-pl-6 tv-py-8 -tv-translate-x-5 tv-absolute"
-      ></div>
-      {isRecording ? (
-        <motion.div
-          animate={{
-            opacity: [1, 0.7, 1],
+      >
+        <div
+          onClick={(e) => {
+            e.preventDefault();
+            toggleRecording();
           }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          <StopSquareIcon
+          className="tv-block md:tv-hidden tv-top-0 tv-bottom-0 tv-left-0 tv-right-0 tv-scale-125 tv-pr-3 tv-pl-6 tv-py-8 -tv-translate-x-5 tv-absolute"
+        ></div>
+        {isRecording ? (
+          <motion.div
+            animate={{
+              opacity: [1, 0.7, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <StopSquareIcon
+              width={16}
+              height={16}
+              className={"tv-text-red-500"}
+            />
+          </motion.div>
+        ) : (
+          <MicIcon
             width={16}
             height={16}
-            className={"tv-text-red-500"}
+            className="tv-text-zinc-700 tv-dark-text-white"
           />
-        </motion.div>
-      ) : (
-        <MicIcon width={16} height={16} className={"tv-text-zinc-700"} />
-      )}
+        )}
+      </div>
     </div>
   );
 };

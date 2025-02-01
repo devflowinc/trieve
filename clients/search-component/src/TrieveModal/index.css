@@ -1305,7 +1305,8 @@ body {
         }
 
         &.docs.search,
-        &.pdf.search {
+        &.pdf.search,
+        &.ecommerce.search {
           background-color: var(--tv-zinc-900);
           color: var(--tv-zinc-50);
           outline: none;
