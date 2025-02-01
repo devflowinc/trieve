@@ -45,7 +45,8 @@ export const ChatMessage = ({
         duration: 0.2,
         ease: "easeInOut",
       }}
-      key={idx}>
+      key={idx}
+    >
       {message.type === "user" && message.text === "Loading..." ? (
         <div>
           <div className={message.type}>
@@ -93,7 +94,8 @@ export const ChatMessage = ({
                     ? `${props.brandColor}18`
                     : "#CB53EB18",
                   color: props.brandColor ?? "#CB53EB",
-                }}>
+                }}
+              >
                 AI assistant
               </p>
             </span>
@@ -126,7 +128,7 @@ export const Message = ({
             chunk.metadata.page_title) &&
           chunk.link &&
           chunk.image_urls?.length &&
-          chunk.num_value,
+          chunk.num_value
       );
       if (ecommerceChunks && message.queryId) {
         trackViews({
@@ -149,7 +151,7 @@ export const Message = ({
           chunk.metadata.page_title) &&
         chunk.link &&
         chunk.image_urls?.length &&
-        chunk.num_value,
+        chunk.num_value
     )
     .map((chunk) => ({
       chunk,
@@ -167,7 +169,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title,
+          index && item.title
     )
     .map((item, index) => {
       const { title, descriptionHtml } = guessTitleAndDesc(item);
@@ -189,7 +191,8 @@ export const Message = ({
                 chunkID: item.id,
               });
             }
-          }}>
+          }}
+        >
           <img
             src={item.imageUrl ?? ""}
             alt={item.title}
@@ -203,7 +206,7 @@ export const Message = ({
                   ? title
                   : title.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      "",
+                      ""
                     ),
               }}
             />
@@ -211,7 +214,8 @@ export const Message = ({
               className="ecomm-item-price"
               style={{
                 color: props.brandColor ?? "#CB53EB",
-              }}>
+              }}
+            >
               ${item.price}
             </p>
             <p
@@ -221,7 +225,7 @@ export const Message = ({
                   ? descriptionHtml
                   : descriptionHtml.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      "",
+                      ""
                     ),
               }}
             />
@@ -246,7 +250,7 @@ export const Message = ({
           chunk.metadata.title ||
           chunk.metadata.page_title) &&
         chunk.link &&
-        chunk.metadata.yt_preview_src,
+        chunk.metadata.yt_preview_src
     )
     .map((chunk) => {
       return {
@@ -263,7 +267,8 @@ export const Message = ({
         className="source-anchor yt-anchor"
         key={index}
         href={item.link as string}
-        target="_blank">
+        target="_blank"
+      >
         {item.metadata?.yt_preview_src ? (
           <img className="yt-preview" src={item.metadata?.yt_preview_src} />
         ) : (
@@ -278,7 +283,7 @@ export const Message = ({
       const chunkHtmlHeadingsDiv = document.createElement("div");
       chunkHtmlHeadingsDiv.innerHTML = chunk.chunk_html || "";
       const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-        "h1, h2, h3, h4, h5, h6",
+        "h1, h2, h3, h4, h5, h6"
       );
       const $firstHeading =
         chunkHtmlHeadings[0] ?? document.createElement("h1");
@@ -300,12 +305,19 @@ export const Message = ({
       };
     })
     .filter((chunk) => chunk.link && !chunk.metadata.yt_preview_src)
+    .filter(
+      (item, index, array) =>
+        array.findIndex((arrayItem) => arrayItem.title === item.title) === index
+    )
     .map((item, index) => (
       <a
-        className={`source-anchor${item.metadata?.yt_preview_src ? " yt-anchor" : ""}`}
+        className={`source-anchor${
+          item.metadata?.yt_preview_src ? " yt-anchor" : ""
+        }`}
         key={index}
         href={item.link as string}
-        target="_blank">
+        target="_blank"
+      >
         {item.metadata?.yt_preview_src ? (
           <img className="yt-preview" src={item.metadata?.yt_preview_src} />
         ) : (
@@ -319,14 +331,16 @@ export const Message = ({
     <div className="super-message-wrapper">
       {message.text === "Loading..." ? (
         <div
-          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}>
+          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
+        >
           <LoadingIcon className="loading" />
         </div>
       ) : null}
 
       {message.type === "system" && message.text !== "Loading..." ? (
         <div
-          className={`system${props.type === "ecommerce" ? " ecommerce" : ""}`}>
+          className={`system${props.type === "ecommerce" ? " ecommerce" : ""}`}
+        >
           {message.additional &&
             props.type === "ecommerce" &&
             !props.inline && (
@@ -352,7 +366,8 @@ export const Message = ({
                   return children?.toString();
                 },
               }}
-              key={idx}>
+              key={idx}
+            >
               {message.text.length > 0 ? message.text : "Loading..."}
             </Markdown>
           ) : (
@@ -384,7 +399,8 @@ export const Message = ({
                             setCopied(true);
                             setTimeout(() => setCopied(false), 500);
                           });
-                      }}>
+                      }}
+                    >
                       <i className="fa-regular fa-copy"></i>
                     </button>
                   )}
@@ -398,7 +414,8 @@ export const Message = ({
                         if (prev === true) return null;
                         return true;
                       });
-                    }}>
+                    }}
+                  >
                     <i className="fa-regular fa-thumbs-up"></i>
                   </button>
                   <button
@@ -411,7 +428,8 @@ export const Message = ({
                         if (prev === false) return null;
                         return false;
                       });
-                    }}>
+                    }}
+                  >
                     <i className="fa-regular fa-thumbs-down"></i>
                   </button>
                 </div>

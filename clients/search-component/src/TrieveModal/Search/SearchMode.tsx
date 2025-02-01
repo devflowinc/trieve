@@ -44,7 +44,7 @@ export const SearchMode = () => {
 
   const getItemComponent = (
     result: ChunkWithHighlights | GroupChunk[],
-    index: number,
+    index: number
   ) => {
     const isChunk = isChunkWithHighlights(result);
 
@@ -118,7 +118,7 @@ export const SearchMode = () => {
   const resultsDisplay = useMemo(() => {
     if (results.length) {
       const comps = results.map((result, index) =>
-        getItemComponent(result, index),
+        getItemComponent(result, index)
       );
       return comps;
     } else {
@@ -130,11 +130,13 @@ export const SearchMode = () => {
     <Suspense fallback={<div className="suspense-fallback"></div>}>
       {!props.inline && (
         <div
-          className={`mode-switch-wrapper tv-flex tv-items-center tv-px-2 tv-gap-2 tv-justify-end tv-mt-2 tv-font-medium ${mode}`}>
+          className={`mode-switch-wrapper tv-flex tv-items-center tv-px-2 tv-gap-2 tv-justify-end tv-mt-2 tv-font-medium ${mode}`}
+        >
           <ModeSwitch />
           <div
             className={`tv-text-xs tv-rounded-md !tv-bg-transparent tv-flex !hover:bg-tv-zinc-200 tv-px-2 tv-justify-end tv-items-center tv-p-2 tv-gap-0.5 tv-cursor-pointer ${props.type}`}
-            onClick={() => setOpen(false)}>
+            onClick={() => setOpen(false)}
+          >
             <svg
               className="close-icon"
               xmlns="http://www.w3.org/2000/svg"
@@ -145,7 +147,8 @@ export const SearchMode = () => {
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
-              strokeLinejoin="round">
+              strokeLinejoin="round"
+            >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -164,7 +167,7 @@ export const SearchMode = () => {
               imageUrl.length > 0
                 ? "Using Image for Search"
                 : isRecording
-                  ? "Recording audio..."
+                  ? "Recording... Press stop icon to submit"
                   : props.placeholder || "Search for anything"
             }
             className={`search-input focus:tv-ring-0 tv-ring-0 tv-grow tv-py-1.5 tv-pr-8 ${props.type} tv-outline-none tv-border-none`}
@@ -185,7 +188,8 @@ export const SearchMode = () => {
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  strokeLinejoin="round">
+                  strokeLinejoin="round"
+                >
                   <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
@@ -205,7 +209,8 @@ export const SearchMode = () => {
               onClick={() => getQueries(new AbortController())}
               disabled={isLoadingSuggestedQueries}
               className="suggested-query"
-              title="Refresh suggested queries">
+              title="Refresh suggested queries"
+            >
               <i className="fa-solid fa-arrow-rotate-right"></i>
             </button>
             <p>Suggested Queries: </p>
@@ -223,7 +228,8 @@ export const SearchMode = () => {
                   key={q}
                   className={`suggested-query${
                     isLoadingSuggestedQueries ? " loading" : ""
-                  }`}>
+                  }`}
+                >
                   {q}
                 </button>
               );
@@ -238,11 +244,13 @@ export const SearchMode = () => {
             <button
               id="trieve-search-item-0"
               className="item start-chat"
-              onClick={() => switchToChatAndAskQuestion(query)}>
+              onClick={() => switchToChatAndAskQuestion(query)}
+            >
               <div
                 style={{
                   paddingLeft: props.type === "ecommerce" ? "1rem" : "",
-                }}>
+                }}
+              >
                 <SparklesIcon />
                 <div>
                   <h4>
@@ -278,7 +286,8 @@ export const SearchMode = () => {
                   href={`${props.problemLink}No results found for query: ${
                     query.length > 0 ? query : ""
                   } on ${props.brandName}`}
-                  target="_blank">
+                  target="_blank"
+                >
                   Contact us
                 </a>
               </p>
@@ -297,7 +306,8 @@ export const SearchMode = () => {
           <a
             className="trieve-powered"
             href="https://trieve.ai"
-            target="_blank">
+            target="_blank"
+          >
             <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
             Powered by Trieve
           </a>
