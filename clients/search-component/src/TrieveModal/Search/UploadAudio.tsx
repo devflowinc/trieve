@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { cn } from "../../utils/styles";
+import { CircleDotIcon, MicIcon } from "../icons";
+import { motion } from "motion/react";
 
 export const UploadAudio = () => {
   const { mode, setAudioBase64 } = useModalState();
@@ -16,8 +18,10 @@ export const UploadAudio = () => {
         audio: true,
       });
 
+      const isFirefox = navigator.userAgent.toLowerCase().includes("firefox");
+
       const recorder = new MediaRecorder(stream, {
-        mimeType: "audio/mp4",
+        mimeType: isFirefox ? "audio/webm" : "audio/mp4",
       });
       const audioChunks: BlobPart[] = [];
 
@@ -28,7 +32,9 @@ export const UploadAudio = () => {
       recorder.onstop = () => {
         stream.getTracks().forEach((track) => track.stop());
         setAudioBase64("");
-        const audioBlob = new Blob(audioChunks, { type: "audio/mp4" });
+        const audioBlob = new Blob(audioChunks, {
+          type: isFirefox ? "audio/webm" : "audio/mp4",
+        });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = () => {
@@ -70,7 +76,6 @@ export const UploadAudio = () => {
       className={cn(
         "tv-rounded tv-z-20 tv-cursor-pointer",
         mode === "chat" && "tv-right-16 tv-top-[0.825rem] tv-absolute",
-        isRecording ? "tv-text-red-500" : "tv-dark-text-white tv-text-zinc-700"
       )}
       onClick={(e) => {
         e.preventDefault();
@@ -84,7 +89,22 @@ export const UploadAudio = () => {
         }}
         className="tv-block md:tv-hidden tv-top-0 tv-bottom-0 tv-left-0 tv-right-0 tv-scale-125 tv-pr-3 tv-pl-6 tv-py-8 -tv-translate-x-5 tv-absolute"
       ></div>
-      <i className="fa-solid fa-microphone"> </i>
+      {isRecording ? (
+        <motion.div
+          animate={{
+            opacity: [1, 0.7, 1],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <CircleDotIcon width={16} height={16} className={"tv-text-red-500"} />
+        </motion.div>
+      ) : (
+        <MicIcon width={16} height={16} className={"tv-text-zinc-700"} />
+      )}
     </div>
   );
 };
