@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { cn } from "../../utils/styles";
-import { CircleDotIcon, MicIcon } from "../icons";
+import { StopSquareIcon, MicIcon } from "../icons";
 import { motion } from "motion/react";
 
 export const UploadAudio = () => {
-  const { mode, setAudioBase64 } = useModalState();
+  const { mode, setAudioBase64, isRecording, setIsRecording } = useModalState();
 
-  const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
     null
   );
@@ -100,7 +99,11 @@ export const UploadAudio = () => {
             ease: "easeInOut",
           }}
         >
-          <CircleDotIcon width={16} height={16} className={"tv-text-red-500"} />
+          <StopSquareIcon
+            width={16}
+            height={16}
+            className={"tv-text-red-500"}
+          />
         </motion.div>
       ) : (
         <MicIcon width={16} height={16} className={"tv-text-zinc-700"} />

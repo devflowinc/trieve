@@ -205,6 +205,8 @@ const ModalContext = createContext<{
   setCurrentGroup: React.Dispatch<React.SetStateAction<ChunkGroup | null>>;
   tagCounts: CountChunkQueryResponseBody[];
   pagefind?: PagefindApi;
+  isRecording: boolean;
+  setIsRecording: React.Dispatch<React.SetStateAction<boolean>>;
 }>({
   props: defaultProps,
   trieveSDK: (() => {}) as unknown as TrieveSDK,
@@ -235,6 +237,8 @@ const ModalContext = createContext<{
   tagCounts: [],
   setContextProps: () => {},
   pagefind: null,
+  isRecording: false,
+  setIsRecording: () => {},
 });
 
 const ModalProvider = ({
@@ -251,6 +255,7 @@ const ModalProvider = ({
   const [query, setQuery] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [audioBase64, setAudioBase64] = useState<string | undefined>(undefined);
+  const [isRecording, setIsRecording] = useState(false);
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
   const [results, setResults] = useState<
     ChunkWithHighlights[] | GroupChunk[][]
@@ -509,7 +514,10 @@ const ModalProvider = ({
         currentGroup,
         setCurrentGroup,
         tagCounts,
-      }}>
+        isRecording,
+        setIsRecording,
+      }}
+    >
       {children}
     </ModalContext.Provider>
   );
