@@ -137,6 +137,20 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   }, [audioBase64, mode]);
 
+  useEffect(() => {
+    const lastMessage = messages.at(-1);
+    const timer = setTimeout(() => {
+      if (isLoading && lastMessage?.text === "Loading...") {
+        stopGeneratingMessage();
+        const lastUserQuestion = messages.at(-2);
+        setMessages((m) => m.slice(0, -2));
+        askQuestion(lastUserQuestion?.text);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [isLoading, messages]);
+
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
     queryId: string | null,
@@ -496,7 +510,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       setMessages((m) => [
         ...m,
         {
-          type: "user",
+          type: "system",
           text: "Loading...",
           additional: null,
           queryId: null,
@@ -550,7 +564,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         stopGeneratingMessage,
         isDoneReading,
         rateChatCompletion,
-      }}>
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );
