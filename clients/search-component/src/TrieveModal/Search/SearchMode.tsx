@@ -27,6 +27,7 @@ export const SearchMode = () => {
     query,
     setQuery,
     setOpen,
+    setLoadingResults,
     requestID,
     inputRef,
     open,
@@ -162,7 +163,10 @@ export const SearchMode = () => {
           <input
             ref={inputRef}
             value={audioBase64 && query.length == 0 ? "Searching..." : query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setLoadingResults(true);
+              setQuery(e.target.value);
+            }}
             placeholder={
               imageUrl.length > 0
                 ? "Using Image for Search"
