@@ -34,6 +34,7 @@ export const SearchMode = () => {
     uploadingImage,
     imageUrl,
     audioBase64,
+    isRecording,
   } = useModalState();
 
   const { suggestedQueries, getQueries, isLoadingSuggestedQueries } =
@@ -162,7 +163,9 @@ export const SearchMode = () => {
             placeholder={
               imageUrl.length > 0
                 ? "Using Image for Search"
-                : props.placeholder || "Search for anything"
+                : isRecording
+                  ? "Recording audio..."
+                  : props.placeholder || "Search for anything"
             }
             className={`search-input focus:tv-ring-0 tv-ring-0 tv-grow tv-py-1.5 tv-pr-8 ${props.type} tv-outline-none tv-border-none`}
             disabled={imageUrl.length > 0}

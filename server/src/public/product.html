@@ -31,7 +31,7 @@
           </iframe>
         </div>
         {% else %}
-        <div class="mt-2 text-gray-500 paragraph-text">
+        <div class="mt-2 text-gray-500 dark:text-gray-300 paragraph-text">
           {{ params.singleProductOptions.productDescriptionHtml|safe }}
         </div>
         {% endif %} {% if params.inline and params.singleProductOptions and
@@ -68,7 +68,7 @@
     {% endif %} {% if params.singleProductOptions.recSearchQuery %}
     <section
       aria-labelledby="related-heading"
-      class="border-t border-gray-200 mt-4"
+      class="border-t border-gray-200 dark:border-gray-600 mt-4"
     >
       <div class="recs-section">
         <h2
@@ -77,7 +77,7 @@
         >
           Products Related to {{ params.singleProductOptions.productName }}
         </h2>
-        <h4 class="text-sm text-gray-500 mt-2 w-fit">
+        <h4 class="text-sm text-gray-500 dark:text-gray-300 mt-2 w-fit">
           Tailored to user history. AI automatically optimizes conversions.
         </h4>
 
@@ -282,7 +282,7 @@
 
       const chunkElement = document.createElement("div");
       chunkElement.classList.add(
-        ...["rec", "w-64", "flex-shrink-0", "mt-auto"]
+        ...["rec", "w-64", "flex-shrink-0", "flex", "flex-col"]
       );
       chunkElement.setAttribute("x-group-tracking-id", groupTrackingId);
       chunkElement.innerHTML = `
@@ -297,9 +297,10 @@
         </div>
         <div class="mt-4">
           <a href="${chunk.link}" target="_blank" class="text-brand-color line-clamp-1 text-sm font-medium">${title}</a>
-          <h6 class="rec-price mt-1 text-sm text-gray-700">${price}</h6>
-          <p class="rec-description line-clamp-1 mt-1 text-sm text-gray-500">${description}</p>
+          <h6 class="rec-price mt-1 text-sm text-gray-700 dark:text-gray-300">${price}</h6>
+          <p class="rec-description line-clamp-1 mt-1 text-sm text-gray-500 dark:text-gray-200">${description}</p>
         </div>
+        <div class="flex-1 block"></div>
         <div class="mt-6 flex gap-2">
           <button
             class="similar-button rec-button bg-brand-color w-1/2 flex items-center justify-center rounded-md border border-transparent px-1 py-2 text-sm font-medium text-white"
