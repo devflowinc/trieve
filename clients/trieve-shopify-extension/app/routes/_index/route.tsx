@@ -6,6 +6,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { login } from "../../shopify.server";
 
 import { useEffect, useState } from "react";
+import styles from "./styles.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
@@ -70,7 +71,6 @@ type Orgs = {
 export default function App() {
   const fetcher = useFetcher<typeof action>();
   const [orgs, setOrgs] = useState<Orgs[]>([]);
-  const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("https://api.trieve.ai/api/auth/me", {
@@ -91,14 +91,7 @@ export default function App() {
     }
   }, [fetcher.data?.key]);
 
-  // Auto select an org if there are orgs and its undefined
-  useEffect(() => {
-    if (orgs.length > 0 && !selectedOrg) {
-      setSelectedOrg(orgs[0].id);
-    }
-  }, [orgs]);
-
-  const generateApiKey = () => {
+  const generateApiKey = (selectedOrg: string) => {
     if (!selectedOrg) {
       return;
     }
@@ -129,19 +122,44 @@ export default function App() {
 
   return (
     <div>
-      <select
-        value={selectedOrg ?? undefined}
-        onChange={(e) => setSelectedOrg(e.target.value)}
-      >
-        {orgs.map((org) => (
-          <option key={org.id} value={org.id}>
-            {org.name}
-          </option>
-        ))}
-      </select>
-      <button disabled={selectedOrg === null} onClick={() => generateApiKey()}>
-        Generate API Key
-      </button>
+      <div>
+        <div className={styles.container}>
+          <div className={styles.logoContainer}>
+            <img
+              className={styles.logo}
+              src="https://cdn.trieve.ai/trieve-logo.png"
+              alt="Logo"
+            />
+            <span className={styles.logoText}>Trieve</span>
+          </div>
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardTitle}>Select An Organization</div>
+            </div>
+            <div className={styles.orgList}>
+              {orgs.length === 0 ? (
+                <div className={styles.noOrgs}>
+                  You do not have access to any organizations.
+                </div>
+              ) : (
+                orgs.map((org) => (
+                  <button
+                    key={org.id}
+                    onClick={() => {
+                      generateApiKey(org.id);
+                    }}
+                    className={styles.orgButton}>
+                    <div className={styles.orgContent}>
+                      <div className={styles.orgName}>{org.name}</div>
+                      <div className={styles.orgId}>{org.id}</div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
