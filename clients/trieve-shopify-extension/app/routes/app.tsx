@@ -1,4 +1,4 @@
-import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
+import type { HeadersFunction } from "@remix-run/node";
 import {
   Link,
   Outlet,
@@ -15,7 +15,7 @@ import { MustLoginPage } from "app/components/MustLoginPage";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async () => {
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
     trieveAuthUrl: process.env.TRIEVE_AUTH_URL!,
@@ -44,7 +44,7 @@ export function ErrorBoundary() {
     trieveAuthUrl: string;
   };
   const error = useRouteError();
-  if (isRouteErrorResponse(error) && error.status === 404 && apiKey) {
+  if (isRouteErrorResponse(error) && error.status === 401 && apiKey) {
     return (
       // MustLoginPage needs access to use `useAppBridge`
       <AppProvider isEmbeddedApp apiKey={apiKey}>

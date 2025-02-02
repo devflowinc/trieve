@@ -1,12 +1,12 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
+import "./tailwind.css";
 import { useFetcher } from "@remix-run/react";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 import { login } from "../../shopify.server";
 
 import { useEffect, useState } from "react";
-import styles from "./styles.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
@@ -121,43 +121,33 @@ export default function App() {
   };
 
   return (
-    <div>
-      <div>
-        <div className={styles.container}>
-          <div className={styles.logoContainer}>
-            <img
-              className={styles.logo}
-              src="https://cdn.trieve.ai/trieve-logo.png"
-              alt="Logo"
-            />
-            <span className={styles.logoText}>Trieve</span>
-          </div>
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardTitle}>Select An Organization</div>
-            </div>
-            <div className={styles.orgList}>
-              {orgs.length === 0 ? (
-                <div className={styles.noOrgs}>
-                  You do not have access to any organizations.
-                </div>
-              ) : (
-                orgs.map((org) => (
-                  <button
-                    key={org.id}
-                    onClick={() => {
-                      generateApiKey(org.id);
-                    }}
-                    className={styles.orgButton}>
-                    <div className={styles.orgContent}>
-                      <div className={styles.orgName}>{org.name}</div>
-                      <div className={styles.orgId}>{org.id}</div>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
+    <div className="relative flex min-h-screen flex-col items-center bg-neutral-200 py-36">
+      <div className="absolute left-4 top-2 mb-8 flex items-center gap-1">
+        <img
+          className="h-12 w-12 cursor-pointer"
+          src="https://cdn.trieve.ai/trieve-logo.png"
+          alt="Logo"
+        />
+        <span className="text-2xl font-semibold">Trieve</span>
+      </div>
+      <div className="rounded-md border border-neutral-300 bg-white p-4 md:min-w-[500px]">
+        <div className="flex justify-between">
+          <div className="text-lg font-medium">Select An Organization</div>
+        </div>
+        <div className="flex flex-col py-2">
+          {orgs?.map((org) => (
+            <button
+              onClick={() => {
+                generateApiKey(org.id);
+              }}
+              className="flex cursor-pointer items-center justify-between rounded-md border-b border-b-neutral-200 p-2 last:border-b-transparent hover:bg-neutral-100"
+            >
+              <div className="flex w-full items-center justify-between">
+                <div className="text-sm font-medium">{org.name}</div>
+                <div className="text-xs text-neutral-500">{org.id}</div>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
     </div>

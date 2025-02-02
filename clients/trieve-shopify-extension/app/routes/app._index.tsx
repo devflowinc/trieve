@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import {
   ClientLoaderFunctionArgs,
+  json,
   Link,
   useLoaderData,
 } from "@remix-run/react";
@@ -8,6 +9,7 @@ import {
   Page,
   Layout,
   Text,
+  Link as PolarisLink,
   Card,
   BlockStack,
   List,
@@ -17,19 +19,28 @@ import {
 import { validateTrieveAuth } from "app/auth";
 
 export const clientLoader = async (args: ClientLoaderFunctionArgs) => {
-  const key = await args.serverLoader<typeof loader>();
-  const datasetsResponse = await fetch(
-    `https://api.trieve.ai/api/dataset/organization/${key.organizationId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${key.key}`,
-        "TR-Organization": key.organizationId ?? "",
+  try {
+    const key = await args.serverLoader<typeof loader>();
+    if (!key) {
+      throw json({ message: "No Key" }, 401);
+    }
+    const datasetsResponse = await fetch(
+      `https://api.trieve.ai/api/dataset/organization/${key.organizationId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${key.key}`,
+          "TR-Organization": key.organizationId ?? "",
+        },
       },
-    },
-  );
-
-  const datasets = await datasetsResponse.json();
-  return datasets;
+    );
+    const datasets = await datasetsResponse.json();
+    return datasets;
+  } catch (e) {
+    if (e instanceof Error && e.message != "No Key") {
+      throw json({ message: e.message }, 401);
+    }
+    throw json({ message: "No Key" }, 401);
+  }
 };
 
 clientLoader.hydrate = true;
@@ -89,7 +100,7 @@ export default function Index() {
                         {datasets.map((dataset: any) => (
                           <List.Item key={dataset.dataset.id}>
                             <Link to={`/app/dataset/${dataset.dataset.id}`}>
-                              {dataset.dataset.name}
+                              <PolarisLink>{dataset.dataset.name}</PolarisLink>
                             </Link>
                           </List.Item>
                         ))}
