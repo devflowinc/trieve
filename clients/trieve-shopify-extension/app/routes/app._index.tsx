@@ -1,11 +1,23 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
-import { Page, Layout, Text, Card, BlockStack, List } from "@shopify/polaris";
-import { TitleBar } from "@shopify/app-bridge-react";
+import {
+  ClientLoaderFunctionArgs,
+  Link,
+  useLoaderData,
+} from "@remix-run/react";
+import {
+  Page,
+  Layout,
+  Text,
+  Card,
+  BlockStack,
+  List,
+  SkeletonBodyText,
+  Box,
+} from "@shopify/polaris";
 import { validateTrieveAuth } from "app/auth";
 
-export const loader = async (args: LoaderFunctionArgs) => {
-  const key = await validateTrieveAuth(args);
+export const clientLoader = async (args: ClientLoaderFunctionArgs) => {
+  const key = await args.serverLoader<typeof loader>();
   const datasetsResponse = await fetch(
     `https://api.trieve.ai/api/dataset/organization/${key.organizationId}`,
     {
@@ -17,11 +29,17 @@ export const loader = async (args: LoaderFunctionArgs) => {
   );
 
   const datasets = await datasetsResponse.json();
-  return datasets as any[];
+  return datasets;
 };
 
-export default function Index() {
-  const datasets = useLoaderData<typeof loader>();
+clientLoader.hydrate = true;
+
+export const loader = async (args: LoaderFunctionArgs) => {
+  const key = await validateTrieveAuth(args);
+  return key;
+};
+
+function PageLayout({ children }: { children: React.ReactNode }) {
   return (
     <Page>
       <BlockStack gap="500">
@@ -33,21 +51,55 @@ export default function Index() {
                   <Text as="h2" variant="headingMd">
                     Select Dataset
                   </Text>
-                  {datasets.length > 0 ? (
-                    <List>
-                      {datasets.map((dataset) => (
-                        <List.Item key={dataset.dataset.id}>
-                          <Link to={`/app/dataset/${dataset.dataset.id}`}>
-                            {dataset.dataset.name}
-                          </Link>
-                        </List.Item>
-                      ))}
-                    </List>
-                  ) : (
-                    <Text as="p" variant="bodyMd">
-                      No datasets available.
-                    </Text>
-                  )}
+                  {children}
+                </BlockStack>
+              </Card>
+            </BlockStack>
+          </Layout.Section>
+        </Layout>
+      </BlockStack>
+    </Page>
+  );
+}
+
+export function HydrateFallback() {
+  return (
+    <PageLayout>
+      <SkeletonBodyText lines={8} />
+    </PageLayout>
+  );
+}
+
+export default function Index() {
+  const datasets = useLoaderData<typeof clientLoader>();
+  return (
+    <Page>
+      <BlockStack gap="500">
+        <Layout>
+          <Layout.Section variant="oneHalf">
+            <BlockStack gap="500">
+              <Card>
+                <BlockStack gap="200">
+                  <Text as="h2" variant="headingMd">
+                    Select Dataset
+                  </Text>
+                  <Box>
+                    {datasets.length > 0 ? (
+                      <List>
+                        {datasets.map((dataset: any) => (
+                          <List.Item key={dataset.dataset.id}>
+                            <Link to={`/app/dataset/${dataset.dataset.id}`}>
+                              {dataset.dataset.name}
+                            </Link>
+                          </List.Item>
+                        ))}
+                      </List>
+                    ) : (
+                      <Text as="p" variant="bodyMd">
+                        No datasets available.
+                      </Text>
+                    )}
+                  </Box>
                 </BlockStack>
               </Card>
             </BlockStack>
