@@ -4,6 +4,7 @@
 
 # Dependency directory
 node_modules/*
+node_modules
 
 # Test coverage directory
 coverage
