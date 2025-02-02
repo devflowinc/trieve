@@ -13,7 +13,7 @@ export const validateTrieveAuth = async ({
     },
   });
   if (!key) {
-    throw json({ message: "No Key" }, 404);
+    throw json({ message: "No Key" }, 401);
   }
   return {
     createdAt: new Date(key.createdAt).toISOString(),
