@@ -82,7 +82,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController(),
+    new AbortController()
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
@@ -141,19 +141,22 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     const lastMessage = messages.at(-1);
     const timer = setTimeout(() => {
       if (isLoading && lastMessage?.text === "Loading...") {
+        console.log(
+          "Timeout reached, stopping message generation and retrying"
+        );
+
         stopGeneratingMessage();
         const lastUserQuestion = messages.at(-2);
-        setMessages((m) => m.slice(0, -2));
-        askQuestion(lastUserQuestion?.text);
+        askQuestion(lastUserQuestion?.text, currentGroup ?? undefined, true);
       }
-    }, 3000);
+    }, 4000);
 
     return () => clearTimeout(timer);
-  }, [isLoading, messages]);
+  }, [isLoading, messages, currentGroup]);
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     setIsLoading(true);
     setIsDoneReading(false);
@@ -208,7 +211,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 chunk.metadata.page_title) &&
               chunk.link &&
               chunk.image_urls?.length &&
-              chunk.num_value,
+              chunk.num_value
           );
           if (ecommerceChunks && queryId) {
             trackViews({
@@ -289,29 +292,51 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         return getAllChunksForGroup(curGroup.id, trieveSDK);
       }, `chunk-ids-${curGroup.id}`);
 
-      const { reader, queryId } = await trieveSDK.ragOnChunkReaderWithQueryId(
-        {
-          chunk_ids: groupChunks.map((c) => c.id),
-          image_urls: imageUrl ? [imageUrl] : [],
-          audio_input:
-            audioBase64 && audioBase64?.length > 0 ? audioBase64 : undefined,
-          prev_messages: [
-            ...messages.slice(0, -1).map((m) => mapMessageType(m)),
+      let {
+        reader,
+        queryId,
+      }: {
+        reader: ReadableStreamDefaultReader<Uint8Array> | null;
+        queryId: string | null;
+      } = { reader: null, queryId: null };
+      let retries = 0;
+      while (retries < 3) {
+        try {
+          const result = await trieveSDK.ragOnChunkReaderWithQueryId(
             {
-              content: question || currentQuestion,
-              role: "user",
+              chunk_ids: groupChunks.map((c) => c.id),
+              image_urls: imageUrl ? [imageUrl] : [],
+              audio_input:
+                audioBase64 && audioBase64?.length > 0
+                  ? audioBase64
+                  : undefined,
+              prev_messages: [
+                ...messages.slice(0, -1).map((m) => mapMessageType(m)),
+                {
+                  content: question || currentQuestion,
+                  role: "user",
+                },
+              ],
+              stream_response: true,
+              highlight_results: props.type === "pdf",
             },
-          ],
-          stream_response: true,
-          highlight_results: props.type === "pdf",
-        },
-        chatMessageAbortController.current.signal,
-        (headers: Record<string, string>) => {
-          if (headers["x-tr-query"] && audioBase64) {
-            transcribedQuery = headers["x-tr-query"];
-          }
-        },
-      );
+            chatMessageAbortController.current.signal,
+            (headers: Record<string, string>) => {
+              if (headers["x-tr-query"] && audioBase64) {
+                transcribedQuery = headers["x-tr-query"];
+              }
+            }
+          );
+
+          reader = result.reader;
+          queryId = result.queryId;
+          break;
+        } catch (e) {
+          console.error("error getting ragOnChunkReaderWithQueryId", e);
+          retries++;
+        }
+      }
+
       if (transcribedQuery && audioBase64) {
         setAudioBase64("");
         setMessages((m) => {
@@ -333,7 +358,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ];
         });
       }
-      handleReader(reader, queryId);
+      if (reader) handleReader(reader, queryId);
     } else {
       let filters: ChunkFilter | null = {
         must: null,
@@ -371,36 +396,57 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         filters = null;
       }
 
-      const { reader, queryId } =
-        await trieveSDK.createMessageReaderWithQueryId(
-          {
-            topic_id: id || currentTopic,
-            new_message_content: question || currentQuestion,
-            audio_input:
-              audioBase64 && audioBase64?.length > 0 ? audioBase64 : undefined,
-            image_urls: imageUrl ? [imageUrl] : [],
-            llm_options: {
-              completion_first: false,
+      let retries = 0;
+      let {
+        reader,
+        queryId,
+      }: {
+        reader: ReadableStreamDefaultReader<Uint8Array> | null;
+        queryId: string | null;
+      } = { reader: null, queryId: null };
+
+      while (retries < 3) {
+        try {
+          const result = await trieveSDK.createMessageReaderWithQueryId(
+            {
+              topic_id: id || currentTopic,
+              new_message_content: question || currentQuestion,
+              audio_input:
+                audioBase64 && audioBase64?.length > 0
+                  ? audioBase64
+                  : undefined,
+              image_urls: imageUrl ? [imageUrl] : [],
+              llm_options: {
+                completion_first: false,
+              },
+              page_size: props.searchOptions?.page_size ?? 8,
+              score_threshold: props.searchOptions?.score_threshold || null,
+              use_group_search: props.useGroupSearch,
+              filters: filters,
+              highlight_options: {
+                ...defaultHighlightOptions,
+                highlight_delimiters: ["?", ",", ".", "!", "\n"],
+                highlight_window: props.type === "ecommerce" ? 5 : 10,
+                highlight_results: true,
+              },
+              only_include_docs_used: true,
             },
-            page_size: props.searchOptions?.page_size ?? 8,
-            score_threshold: props.searchOptions?.score_threshold || null,
-            use_group_search: props.useGroupSearch,
-            filters: filters,
-            highlight_options: {
-              ...defaultHighlightOptions,
-              highlight_delimiters: ["?", ",", ".", "!", "\n"],
-              highlight_window: props.type === "ecommerce" ? 5 : 10,
-              highlight_results: true,
-            },
-            only_include_docs_used: true,
-          },
-          chatMessageAbortController.current.signal,
-          (headers: Record<string, string>) => {
-            if (headers["x-tr-query"] && audioBase64) {
-              transcribedQuery = headers["x-tr-query"];
+            chatMessageAbortController.current.signal,
+            (headers: Record<string, string>) => {
+              if (headers["x-tr-query"] && audioBase64) {
+                transcribedQuery = headers["x-tr-query"];
+              }
             }
-          },
-        );
+          );
+          reader = result.reader;
+          queryId = result.queryId;
+          break;
+        } catch (e) {
+          console.error("error getting createMessageReaderWithQueryId", e);
+          retries++;
+        }
+      }
+
       if (transcribedQuery && audioBase64) {
         setAudioBase64("");
         setMessages((m) => [
@@ -420,7 +466,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           },
         ]);
       }
-      handleReader(reader, queryId);
+      if (reader) handleReader(reader, queryId);
     }
 
     if (imageUrl) {
@@ -446,13 +492,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const stopGeneratingMessage = () => {
+  const stopGeneratingMessage = (retry?: boolean) => {
     chatMessageAbortController.current.abort();
     chatMessageAbortController.current = new AbortController();
     setIsDoneReading(true);
     setIsLoading(false);
-    // is the last message loading? If it is we need to delete it
-    if (messages.at(-1)?.text === "Loading...") {
+
+    if (!retry && messages.at(-1)?.text === "Loading...") {
       setMessages((messages) => [
         ...messages.slice(0, -1),
         messages[messages.length - 1],
@@ -465,7 +511,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     clearConversation();
   };
 
-  const askQuestion = async (question?: string, group?: ChunkGroup) => {
+  const askQuestion = async (
+    question?: string,
+    group?: ChunkGroup,
+    retry?: boolean
+  ) => {
     setIsDoneReading(false);
     setCurrentQuestion("");
 
@@ -496,26 +546,30 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         question = props.defaultImageQuestion;
       }
 
-      setMessages((m) => [
-        ...m,
-        {
-          type: "user",
-          text: question || currentQuestion,
-          additional: null,
-          queryId: null,
-          imageUrl: imageUrl ? imageUrl : null,
-        },
-      ]);
+      if (!retry) {
+        setMessages((m) => [
+          ...m,
+          {
+            type: "user",
+            text: question || currentQuestion,
+            additional: null,
+            queryId: null,
+            imageUrl: imageUrl ? imageUrl : null,
+          },
+        ]);
+      }
     } else {
-      setMessages((m) => [
-        ...m,
-        {
-          type: "system",
-          text: "Loading...",
-          additional: null,
-          queryId: null,
-        },
-      ]);
+      if (!retry) {
+        setMessages((m) => [
+          ...m,
+          {
+            type: "system",
+            text: "Loading...",
+            additional: null,
+            queryId: null,
+          },
+        ]);
+      }
     }
     scrollToBottomOfChatModalWrapper();
 
@@ -525,10 +579,17 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       await createQuestion({ question: question || currentQuestion, group });
     }
     if (!audioBase64) {
-      setMessages((m) => [
-        ...m,
-        { type: "system", text: "Loading...", additional: null, queryId: null },
-      ]);
+      if (!retry) {
+        setMessages((m) => [
+          ...m,
+          {
+            type: "system",
+            text: "Loading...",
+            additional: null,
+            queryId: null,
+          },
+        ]);
+      }
     }
   };
 
@@ -539,7 +600,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
