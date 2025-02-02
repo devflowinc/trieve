@@ -5,7 +5,13 @@ import { DatasetAndUsage } from "trieve-ts-sdk";
 const FETCHING_SIZE = 1000;
 const PAGE_SIZE = 20;
 
-const getDatasets = async ({ orgId }: { orgId: string }) => {
+const getDatasets = async ({
+  orgId,
+  onPageFetched,
+}: {
+  orgId: string;
+  onPageFetched?: (page: DatasetAndUsage[]) => void;
+}) => {
   let page = 0;
   const results: DatasetAndUsage[] = [];
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -33,6 +39,9 @@ const getDatasets = async ({ orgId }: { orgId: string }) => {
       const datasets = (await response.json()) as unknown as DatasetAndUsage[];
       if (datasets.length > 0) {
         results.push(...datasets);
+        if (onPageFetched) {
+          onPageFetched(datasets);
+        }
         page++;
       } else {
         canFetchAgain = false;
@@ -62,7 +71,13 @@ export const useDatasetPages = (props: {
     }
 
     setHasLoaded(false);
-    void getDatasets({ orgId: org_id }).then((datasets) => {
+    void getDatasets({
+      orgId: org_id,
+      onPageFetched: (datasets) => {
+        setRealDatasets((prevDatasets) => [...prevDatasets, ...datasets]);
+        setHasLoaded(true);
+      },
+    }).then((datasets) => {
       setRealDatasets(datasets);
       setHasLoaded(true);
     });
