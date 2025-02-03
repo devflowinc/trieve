@@ -64,6 +64,7 @@ pub async fn create_organization_query(
 pub async fn update_organization_query(
     id: uuid::Uuid,
     name: &str,
+    partner_configuration: serde_json::Value,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<Organization, ServiceError> {
@@ -79,6 +80,7 @@ pub async fn update_organization_query(
         .filter(organizations_columns::deleted.eq(0))
         .set((
             organizations_columns::name.eq(name),
+            organizations_columns::partner_configuration.eq(partner_configuration),
             organizations_columns::updated_at.eq(chrono::Utc::now().naive_local()),
         ))
         .get_result(&mut conn)

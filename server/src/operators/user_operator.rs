@@ -56,7 +56,7 @@ pub async fn get_user_by_id_query(
                 .collect::<Vec<UserOrganization>>();
             let orgs = user_orgs_orgs
                 .iter()
-                .map(|user_org_org| user_org_org.2.clone())
+                .map(|user_org_org| user_org_org.2.with_complete_partner_config().clone())
                 .collect::<Vec<Organization>>();
             Ok((user, user_orgs, orgs))
         }
