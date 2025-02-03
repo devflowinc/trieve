@@ -12,6 +12,7 @@ use crate::data::models::{
     UnifiedId, UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
+use crate::get_env;
 use crate::middleware::api_version::APIVersion;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::clickhouse_operator::{get_latency_from_header, ClickHouseEvent, EventQueue};
@@ -28,7 +29,6 @@ use crate::operators::search_operator::{
     search_chunks_query, search_hybrid_chunks, ParsedQuery, ParsedQueryTypes,
 };
 use crate::operators::{chunk_operator::*, crawl_operator};
-use crate::{get_env, FairBroccoliQueue};
 use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -175,6 +175,8 @@ pub enum ReturnQueuedChunk {
 pub struct SingleQueuedChunkResponse {
     /// The chunk that got queue'd
     pub chunk_metadata: ChunkMetadata,
+    /// The current position the last access item is in the queue
+    pub pos_in_queue: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
@@ -204,6 +206,8 @@ pub struct SingleQueuedChunkResponse {
 pub struct BatchQueuedChunkResponse {
     // All the chunks that got queue'd
     pub chunk_metadata: Vec<ChunkMetadata>,
+    /// The current position the last access item is in the queue
+    pub pos_in_queue: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -312,8 +316,8 @@ pub async fn create_chunk(
     create_chunk_data: web::Json<CreateChunkReqPayloadEnum>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
-    fair_broccoli_queue: web::Data<FairBroccoliQueue>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunks = match create_chunk_data.clone() {
         CreateChunkReqPayloadEnum::Single(chunk) => vec![chunk.0],
@@ -386,6 +390,14 @@ pub async fn create_chunk(
         .dedup_by(|x, y| x.tracking_id == y.tracking_id)
         .collect::<Vec<ChunkMetadata>>();
 
+    let mut redis_conn = redis_pool
+        .get()
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    timer.add("got redis connection");
+
+    let mut pos_in_queue = 0;
     let is_premium = std::env::var("PREMIUM_ORGANIZATION_UUIDS")
         .unwrap_or("".to_string())
         .split(',')
@@ -408,58 +420,47 @@ pub async fn create_chunk(
             .filter(|msg| !msg.chunk.high_priority.unwrap_or(false))
             .collect();
 
+        let non_prio_serialized_message: String =
+            serde_json::to_string(&BulkUploadIngestionMessage {
+                attempt_number: 0,
+                dataset_id: dataset_org_plan_sub.dataset.id,
+                ingestion_messages: non_prio_chunks_message,
+            })
+            .map_err(|_| {
+                ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+            })?;
+
+        let prio_serialized_message: String = serde_json::to_string(&BulkUploadIngestionMessage {
+            attempt_number: 0,
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            ingestion_messages: prio_chunks_message.clone(),
+        })
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+        })?;
+
         // If the organization has a premium plan, send to the premium ingestion queue
         if is_premium && !prio_chunks_message.is_empty() {
-            fair_broccoli_queue
-                .publish(
-                    "premium_ingestion",
-                    Some(dataset_org_plan_sub.dataset.id.to_string()),
-                    &BulkUploadIngestionMessage {
-                        attempt_number: 0,
-                        dataset_id: dataset_org_plan_sub.dataset.id,
-                        ingestion_messages: prio_chunks_message.clone(),
-                    },
-                    None,
-                )
+            pos_in_queue = redis::cmd("lpush")
+                .arg("premium_ingestion")
+                .arg(&prio_serialized_message)
+                .query_async(&mut *redis_conn)
                 .await
-                .map_err(|e| {
-                    log::error!("Error publishing to queue: {:?}", e);
-                    ServiceError::InternalServerError("Error publishing to queue".to_string())
-                })?;
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         } else if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
-            fair_broccoli_queue
-                .publish(
-                    "openai_ingestion",
-                    Some(dataset_org_plan_sub.dataset.id.to_string()),
-                    &BulkUploadIngestionMessage {
-                        attempt_number: 0,
-                        dataset_id: dataset_org_plan_sub.dataset.id,
-                        ingestion_messages: non_prio_chunks_message,
-                    },
-                    None,
-                )
+            pos_in_queue = redis::cmd("lpush")
+                .arg("openai_ingestion")
+                .arg(&non_prio_serialized_message)
+                .query_async(&mut *redis_conn)
                 .await
-                .map_err(|e| {
-                    log::error!("Error publishing to queue: {:?}", e);
-                    ServiceError::InternalServerError("Error publishing to queue".to_string())
-                })?;
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         } else {
-            fair_broccoli_queue
-                .publish(
-                    "ingestion",
-                    Some(dataset_org_plan_sub.dataset.id.to_string()),
-                    &BulkUploadIngestionMessage {
-                        attempt_number: 0,
-                        dataset_id: dataset_org_plan_sub.dataset.id,
-                        ingestion_messages: non_prio_chunks_message,
-                    },
-                    None,
-                )
+            pos_in_queue = redis::cmd("lpush")
+                .arg("ingestion")
+                .arg(&non_prio_serialized_message)
+                .query_async(&mut *redis_conn)
                 .await
-                .map_err(|e| {
-                    log::error!("Error publishing to queue: {:?}", e);
-                    ServiceError::InternalServerError("Error publishing to queue".to_string())
-                })?;
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         }
     }
     if !upsert_chunk_metadatas.is_empty() {
@@ -476,58 +477,47 @@ pub async fn create_chunk(
             .filter(|msg| !msg.chunk.high_priority.unwrap_or(false))
             .collect();
 
+        let non_prio_serialized_message: String =
+            serde_json::to_string(&BulkUploadIngestionMessage {
+                attempt_number: 0,
+                dataset_id: dataset_org_plan_sub.dataset.id,
+                ingestion_messages: non_prio_chunks_message,
+            })
+            .map_err(|_| {
+                ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+            })?;
+
+        let prio_serialized_message: String = serde_json::to_string(&BulkUploadIngestionMessage {
+            attempt_number: 0,
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            ingestion_messages: prio_chunks_message.clone(),
+        })
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
+        })?;
+
         // If the organization has a premium plan, send to the premium ingestion queue
         if is_premium && !prio_chunks_message.is_empty() {
-            fair_broccoli_queue
-                .publish(
-                    "premium_ingestion",
-                    Some(dataset_org_plan_sub.dataset.id.to_string()),
-                    &BulkUploadIngestionMessage {
-                        attempt_number: 0,
-                        dataset_id: dataset_org_plan_sub.dataset.id,
-                        ingestion_messages: prio_chunks_message.clone(),
-                    },
-                    None,
-                )
+            pos_in_queue = redis::cmd("lpush")
+                .arg("premium_ingestion")
+                .arg(&prio_serialized_message)
+                .query_async(&mut *redis_conn)
                 .await
-                .map_err(|e| {
-                    log::error!("Error publishing to queue: {:?}", e);
-                    ServiceError::InternalServerError("Error publishing to queue".to_string())
-                })?;
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         } else if dataset_config.EMBEDDING_BASE_URL.contains("openai") {
-            fair_broccoli_queue
-                .publish(
-                    "openai_ingestion",
-                    Some(dataset_org_plan_sub.dataset.id.to_string()),
-                    &BulkUploadIngestionMessage {
-                        attempt_number: 0,
-                        dataset_id: dataset_org_plan_sub.dataset.id,
-                        ingestion_messages: non_prio_chunks_message,
-                    },
-                    None,
-                )
+            pos_in_queue = redis::cmd("lpush")
+                .arg("openai_ingestion")
+                .arg(&non_prio_serialized_message)
+                .query_async(&mut *redis_conn)
                 .await
-                .map_err(|e| {
-                    log::error!("Error publishing to queue: {:?}", e);
-                    ServiceError::InternalServerError("Error publishing to queue".to_string())
-                })?;
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         } else {
-            fair_broccoli_queue
-                .publish(
-                    "ingestion",
-                    Some(dataset_org_plan_sub.dataset.id.to_string()),
-                    &BulkUploadIngestionMessage {
-                        attempt_number: 0,
-                        dataset_id: dataset_org_plan_sub.dataset.id,
-                        ingestion_messages: non_prio_chunks_message,
-                    },
-                    None,
-                )
+            pos_in_queue = redis::cmd("lpush")
+                .arg("ingestion")
+                .arg(&non_prio_serialized_message)
+                .query_async(&mut *redis_conn)
                 .await
-                .map_err(|e| {
-                    log::error!("Error publishing to queue: {:?}", e);
-                    ServiceError::InternalServerError("Error publishing to queue".to_string())
-                })?;
+                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         }
     }
 
@@ -539,9 +529,11 @@ pub async fn create_chunk(
                     "Failed to queue a single chunk due to deriving 0 ingestion_messages from the request data".to_string(),
                 ))?
                 .clone(),
+            pos_in_queue,
         }),
         CreateChunkReqPayloadEnum::Batch(_) => ReturnQueuedChunk::Batch(BatchQueuedChunkResponse {
             chunk_metadata: chunk_metadatas,
+            pos_in_queue,
         }),
     };
 
@@ -888,7 +880,7 @@ pub async fn update_chunk(
     };
 
     broccoli_queue
-        .publish("update_chunk_queue", None, &message, None)
+        .publish("update_chunk_queue", &message, None)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
@@ -1027,7 +1019,7 @@ pub async fn update_chunk_by_tracking_id(
     };
 
     broccoli_queue
-        .publish("update_chunk_queue", None, &message, None)
+        .publish("update_chunk_queue", &message, None)
         .await
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 

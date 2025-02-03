@@ -61,7 +61,7 @@ pub async fn create_etl_job(
     };
 
     broccoli_queue
-        .publish("etl_queue", None, &payload, None)
+        .publish("etl_queue", &payload, None)
         .await
         .map_err(|e| {
             log::error!("Error publishing to queue: {:?}", e);
@@ -82,7 +82,7 @@ pub async fn webhook_response(
     broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<HttpResponse, actix_web::Error> {
     broccoli_queue
-        .publish("etl_queue", None, &data.clone(), None)
+        .publish("etl_queue", &data.clone(), None)
         .await
         .map_err(|e| {
             log::error!("Error publishing to queue: {:?}", e);

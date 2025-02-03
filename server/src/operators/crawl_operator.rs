@@ -347,7 +347,7 @@ pub async fn create_youtube_crawl_request(
         dataset_id,
     };
     broccoli_queue
-        .publish("video_queue", None, &message, None)
+        .publish("video_queue", &message, None)
         .await
         .map_err(|e| {
             log::error!("Error publishing message to video_queue: {:?}", e);

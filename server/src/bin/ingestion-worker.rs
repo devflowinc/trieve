@@ -1,6 +1,3 @@
-use broccoli_queue::brokers::broker::BrokerMessage;
-use broccoli_queue::error::BroccoliError;
-use broccoli_queue::queue::BroccoliQueue;
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
@@ -9,8 +6,7 @@ use itertools::{izip, Itertools};
 use qdrant_client::qdrant::{PointStruct, Vector};
 use signal_hook::consts::SIGTERM;
 use std::collections::HashMap;
-use std::error::Error;
-use std::sync::{atomic::AtomicBool, Arc};
+use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
 use trieve_server::data::models::{
     self, ChunkBoost, ChunkData, ChunkGroup, ChunkMetadata, DatasetConfiguration,
     PagefindIndexWorkerMessage, QdrantPayload, WorkerEvent,
@@ -40,8 +36,7 @@ use trieve_server::operators::parse_operator::{
 use trieve_server::operators::qdrant_operator::bulk_upsert_qdrant_points_query;
 use trieve_server::{establish_connection, get_env};
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     dotenvy::dotenv().ok();
     env_logger::builder()
         .target(env_logger::Target::Stdout)
@@ -65,199 +60,289 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-    let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
-        .unwrap_or("2".to_string())
-        .parse()
-        .unwrap_or(2);
-
-    let redis_manager =
-        bb8_redis::RedisConnectionManager::new(redis_url).expect("Failed to connect to redis");
-
-    let redis_pool = bb8_redis::bb8::Pool::builder()
-        .max_size(redis_connections)
-        .connection_timeout(std::time::Duration::from_secs(2))
-        .build(redis_manager)
-        .await
-        .expect("Failed to create redis pool");
-
-    let queue = BroccoliQueue::builder(redis_url)
-        .pool_connections(redis_connections.try_into().unwrap())
-        .failed_message_retry_strategy(Default::default())
-        .enable_fairness(true)
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
         .build()
-        .await?;
+        .expect("Failed to create tokio runtime")
+        .block_on(async move {
+            let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+            let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
+                .unwrap_or("2".to_string())
+                .parse()
+                .unwrap_or(2);
 
-    let event_queue = if std::env::var("USE_ANALYTICS")
-        .unwrap_or("false".to_string())
-        .parse()
-        .unwrap_or(false)
-    {
-        log::info!("Analytics enabled");
+            let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
+                .expect("Failed to connect to redis");
 
-        let clickhouse_client = clickhouse::Client::default()
-            .with_url(
-                std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()),
-            )
-            .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
-            .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
-            .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
-            .with_option("async_insert", "1")
-            .with_option("wait_for_async_insert", "0");
+            let redis_pool = bb8_redis::bb8::Pool::builder()
+                .max_size(redis_connections)
+                .connection_timeout(std::time::Duration::from_secs(2))
+                .build(redis_manager)
+                .await
+                .expect("Failed to create redis pool");
 
-        let mut event_queue = EventQueue::new(clickhouse_client.clone());
-        event_queue.start_service();
-        event_queue
-    } else {
-        log::info!("Analytics disabled");
-        EventQueue::default()
-    };
+            let web_redis_pool = actix_web::web::Data::new(redis_pool);
 
-    let web_event_queue = actix_web::web::Data::new(event_queue);
-    let queue_name = std::env::var("INGESTION_QUEUE_NAME").unwrap_or("ingestion".to_string());
-
-    let should_terminate = Arc::new(AtomicBool::new(false));
-    signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
-        .expect("Failed to register shutdown hook");
-
-    let ingestion_web_pool = web_pool.clone();
-
-    log::info!("Starting ingestion service thread");
-
-    queue
-        .process_messages_with_handlers(
-            &queue_name,
-            None,
-            move |msg| {
-                let pool = ingestion_web_pool.clone();
-                async move { ingestion_worker(msg.payload, pool.clone()).await }
-            },
+            let event_queue = if std::env::var("USE_ANALYTICS")
+                .unwrap_or("false".to_string())
+                .parse()
+                .unwrap_or(false)
             {
-                let web_pool = web_pool.clone();
-                let redis_pool = redis_pool.clone();
-                move |msg: BrokerMessage<BulkUploadIngestionMessage>| {
-                    let web_pool = web_pool.clone();
-                    let redis_pool = redis_pool.clone();
-                    let event_queue = web_event_queue.clone();
+                log::info!("Analytics enabled");
 
-                    async move {
-                        let chunk_ids = msg
-                            .payload
-                            .ingestion_messages
-                            .iter()
-                            .map(|message| message.ingest_specific_chunk_metadata.id)
-                            .collect::<Vec<uuid::Uuid>>();
+                let clickhouse_client = clickhouse::Client::default()
+                    .with_url(
+                        std::env::var("CLICKHOUSE_URL")
+                            .unwrap_or("http://localhost:8123".to_string()),
+                    )
+                    .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
+                    .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
+                    .with_database(
+                        std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
+                    )
+                    .with_option("async_insert", "1")
+                    .with_option("wait_for_async_insert", "0");
 
-                        log::info!("Uploaded {:} chunks", chunk_ids.len());
-                        let dataset_result: Result<models::Dataset, ServiceError> =
-                            get_dataset_by_id_query(msg.payload.dataset_id, web_pool.clone()).await;
+                let mut event_queue = EventQueue::new(clickhouse_client.clone());
+                event_queue.start_service();
+                event_queue
+            } else {
+                log::info!("Analytics disabled");
+                EventQueue::default()
+            };
+            let web_event_queue = actix_web::web::Data::new(event_queue);
 
-                        let dataset = match dataset_result {
-                            Ok(dataset) => dataset,
-                            Err(err) => {
-                                log::error!(
-                                    "Failed to get dataset; likely does not exist: {:?}",
-                                    err
-                                );
-                                return Err(BroccoliError::Job(
-                                    "Failed to get dataset".to_string(),
-                                ));
-                            }
-                        };
-                        let dataset_config =
-                            DatasetConfiguration::from_json(dataset.server_configuration);
+            let should_terminate = Arc::new(AtomicBool::new(false));
+            signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
+                .expect("Failed to register shutdown hook");
 
-                        if dataset_config.PAGEFIND_ENABLED {
-                            let pagefind_worker_message = PagefindIndexWorkerMessage {
-                                dataset_id: msg.payload.dataset_id,
-                                created_at: chrono::Utc::now().naive_utc(),
-                                attempt_number: 0,
-                            };
-
-                            let serialized_message =
-                                serde_json::to_string(&pagefind_worker_message).map_err(|_| {
-                                    BroccoliError::Job(
-                                        "Failed to serialize pagefind message".to_string(),
-                                    )
-                                })?;
-
-                            let mut redis_conn = redis_pool
-                                .get()
-                                .await
-                                .map_err(|err| BroccoliError::Job(err.to_string()))?;
-
-                            redis::cmd("lpush")
-                                .arg("pagefind-index-ingestion")
-                                .arg(&serialized_message)
-                                .query_async::<_, ()>(&mut *redis_conn)
-                                .await
-                                .map_err(|err| {
-                                    BroccoliError::Job(format!(
-                                        "Failed to push pagefind message: {:?}",
-                                        err
-                                    ))
-                                })?;
-
-                            log::info!("Queue'd dataset for pagefind indexing");
-                        }
-
-                        event_queue
-                            .send(ClickHouseEvent::WorkerEvent(
-                                WorkerEvent::from_details(
-                                    msg.payload.dataset_id,
-                                    models::EventType::ChunksUploaded { chunk_ids },
-                                )
-                                .into(),
-                            ))
-                            .await;
-
-                        Ok(())
-                    }
-                }
-            },
-            |_msg, err| async move {
-                log::error!("Failed to upload chunks: {:?}", err);
-                Ok(())
-            },
-        )
-        .await?;
-
-    Ok(())
+            ingestion_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
+        });
 }
 
 async fn ingestion_worker(
-    ingestion_message: BulkUploadIngestionMessage,
+    should_terminate: Arc<AtomicBool>,
+    redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
-) -> Result<(), BroccoliError> {
+    event_queue: actix_web::web::Data<EventQueue>,
+) {
     log::info!("Starting ingestion service thread");
-    log::info!("Selecting dataset for ingestion message");
-    let dataset_result: Result<models::Dataset, ServiceError> =
-        get_dataset_by_id_query(ingestion_message.dataset_id, web_pool.clone()).await;
 
-    let dataset = match dataset_result {
-        Ok(dataset) => dataset,
-        Err(err) => {
-            log::error!("Failed to get dataset; likely does not exist: {:?}", err);
-            return Err(BroccoliError::Job("Failed to get dataset".to_string()));
+    let mut redis_conn_sleep = std::time::Duration::from_secs(1);
+
+    #[allow(unused_assignments)]
+    let mut opt_redis_connection = None;
+
+    loop {
+        let borrowed_redis_connection = match redis_pool.get().await {
+            Ok(redis_connection) => Some(redis_connection),
+            Err(err) => {
+                log::error!("Failed to get redis connection outside of loop: {:?}", err);
+                None
+            }
+        };
+
+        if borrowed_redis_connection.is_some() {
+            opt_redis_connection = borrowed_redis_connection;
+            break;
         }
-    };
-    let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
 
-    log::info!(
-        "Starting bulk upload of {} chunks for dataset_id: {:?}",
-        ingestion_message.ingestion_messages.len(),
-        ingestion_message.dataset_id
-    );
+        log::info!(
+            "Retrying to get redis connection out of loop after {:?} secs",
+            redis_conn_sleep
+        );
+        tokio::time::sleep(redis_conn_sleep).await;
+        redis_conn_sleep = std::cmp::min(redis_conn_sleep * 2, std::time::Duration::from_secs(300));
+    }
 
+    let mut redis_connection =
+        opt_redis_connection.expect("Failed to get redis connection outside of loop");
+
+    let mut broken_pipe_sleep = std::time::Duration::from_secs(10);
     let reqwest_client = reqwest::Client::new();
+    let queue_name = std::env::var("INGESTION_QUEUE_NAME").unwrap_or("ingestion".to_string());
 
-    bulk_upload_chunks(
-        ingestion_message.clone(),
-        dataset_config.clone(),
-        web_pool.clone(),
-        reqwest_client.clone(),
-    )
-    .await
+    loop {
+        if should_terminate.load(Ordering::Relaxed) {
+            log::info!("Shutting down");
+            break;
+        }
+
+        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
+            .arg(&queue_name)
+            .arg("processing")
+            .arg(1.0)
+            .query_async(&mut *redis_connection)
+            .await;
+
+        let serialized_message = match payload_result {
+            Ok(payload) => {
+                broken_pipe_sleep = std::time::Duration::from_secs(10);
+
+                if payload.is_empty() {
+                    continue;
+                }
+
+                payload
+                    .first()
+                    .expect("Payload must have a first element")
+                    .clone()
+            }
+            Err(err) => {
+                log::error!("Unable to process {:?}", err);
+
+                if err.is_io_error() {
+                    log::error!("IO broken pipe error, trying to acquire new connection");
+                    match redis_pool.get().await {
+                        Ok(redis_conn) => {
+                            log::info!(
+                                "Got new redis connection after broken pipe! Resuming polling"
+                            );
+                            redis_connection = redis_conn;
+                        }
+                        Err(err) => {
+                            log::error!(
+                                "Failed to get redis connection after broken pipe, will try again after {broken_pipe_sleep:?} secs, err: {:?}",
+                                err
+                            );
+                        }
+                    }
+
+                    tokio::time::sleep(broken_pipe_sleep).await;
+                    broken_pipe_sleep =
+                        std::cmp::min(broken_pipe_sleep * 2, std::time::Duration::from_secs(300));
+                }
+
+                continue;
+            }
+        };
+
+        let ingestion_message: BulkUploadIngestionMessage =
+            match serde_json::from_str(&serialized_message) {
+                Ok(message) => message,
+                Err(err) => {
+                    log::error!(
+                        "Failed to deserialize message, was not an IngestionMessage: {:?}",
+                        err
+                    );
+                    continue;
+                }
+            };
+
+        log::info!("Selecting dataset for ingestion message");
+        let dataset_result: Result<models::Dataset, ServiceError> =
+            get_dataset_by_id_query(ingestion_message.dataset_id, web_pool.clone()).await;
+
+        let dataset = match dataset_result {
+            Ok(dataset) => dataset,
+            Err(err) => {
+                let _ = readd_error_to_queue(
+                    ingestion_message,
+                    err.clone(),
+                    redis_pool.clone(),
+                    event_queue.clone(),
+                )
+                .await;
+                log::error!("Failed to get dataset; likely does not exist: {:?}", err);
+                continue;
+            }
+        };
+        let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration);
+
+        log::info!(
+            "Starting bulk upload of {} chunks for dataset_id: {:?}",
+            ingestion_message.ingestion_messages.len(),
+            ingestion_message.dataset_id
+        );
+        match bulk_upload_chunks(
+            ingestion_message.clone(),
+            dataset_config.clone(),
+            web_pool.clone(),
+            reqwest_client.clone(),
+        )
+        .await
+        {
+            Ok(chunk_ids) => {
+                log::info!("Uploaded {:} chunks", chunk_ids.len());
+
+                if dataset_config.PAGEFIND_ENABLED {
+                    let pagefind_worker_message = PagefindIndexWorkerMessage {
+                        dataset_id: ingestion_message.dataset_id,
+                        created_at: chrono::Utc::now().naive_utc(),
+                        attempt_number: 0,
+                    };
+
+                    let serialized_message = serde_json::to_string(&pagefind_worker_message)
+                        .map_err(|_| {
+                            ServiceError::InternalServerError(
+                                "Failed to serialize message".to_string(),
+                            )
+                        });
+
+                    let maybe_redis = redis_pool
+                        .get()
+                        .await
+                        .map_err(|err| ServiceError::BadRequest(err.to_string()));
+
+                    let response: Result<(), ServiceError> =
+                        match (serialized_message.clone(), maybe_redis) {
+                            (Ok(message), Ok(mut redis_conn)) => redis::cmd("lpush")
+                                .arg("pagefind-index-ingestion")
+                                .arg(&message)
+                                .query_async::<_, ()>(&mut *redis_conn)
+                                .await
+                                .map_err(|err| ServiceError::BadRequest(err.to_string()))
+                                .map(|_| ()),
+                            (Err(serial_error), Ok(_)) => Err(ServiceError::InternalServerError(
+                                format!("couldn't get serialized message {:?}", serial_error),
+                            )),
+                            (Ok(_), Err(redis_error)) => Err(ServiceError::InternalServerError(
+                                format!("couldn't get redis conn {:?}", redis_error),
+                            )),
+                            (Err(serial_error), Err(redis_error)) => {
+                                Err(ServiceError::InternalServerError(format!(
+                                "couldn't get serialize message and couldn't redis conn {:?} {:?}",
+                                serial_error, redis_error
+                            )))
+                            }
+                        };
+
+                    match response {
+                        Ok(_) => log::info!("Queue'd dataset for pagefind indexing"),
+                        Err(e) => log::error!("Failed to start pagefind indexing {:?}", e),
+                    }
+                }
+
+                event_queue
+                    .send(ClickHouseEvent::WorkerEvent(
+                        WorkerEvent::from_details(
+                            ingestion_message.dataset_id,
+                            models::EventType::ChunksUploaded { chunk_ids },
+                        )
+                        .into(),
+                    ))
+                    .await;
+
+                let _ = redis::cmd("LREM")
+                    .arg("processing")
+                    .arg(1)
+                    .arg(serialized_message)
+                    .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_connection)
+                    .await;
+            }
+            Err(err) => {
+                log::error!("Failed to upload chunks: {:?}", err);
+
+                let _ = readd_error_to_queue(
+                    ingestion_message,
+                    err,
+                    redis_pool.clone(),
+                    event_queue.clone(),
+                )
+                .await;
+            }
+        }
+    }
 }
 
 pub async fn bulk_upload_chunks(
@@ -265,7 +350,7 @@ pub async fn bulk_upload_chunks(
     dataset_config: DatasetConfiguration,
     web_pool: actix_web::web::Data<models::Pool>,
     reqwest_client: reqwest::Client,
-) -> Result<(), BroccoliError> {
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
     let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
     if unlimited == "false" && !dataset_config.QDRANT_ONLY {
         log::info!("Getting dataset, organization, and its plan+subscription information for dataset_id: {:?}", payload.dataset_id);
@@ -296,7 +381,7 @@ pub async fn bulk_upload_chunks(
                 .chunk_count as usize
         {
             log::info!("Chunk count exceeds plan limit");
-            return Err(BroccoliError::Job(
+            return Err(ServiceError::BadRequest(
                 "Chunk count exceeds plan limit".to_string(),
             ));
         }
@@ -494,7 +579,7 @@ pub async fn bulk_upload_chunks(
             }
         }
 
-        return Ok(());
+        return Ok(chunk_ids);
     }
 
     let qdrant_only = dataset_config.QDRANT_ONLY;
@@ -514,7 +599,7 @@ pub async fn bulk_upload_chunks(
 
     if inserted_chunk_metadatas.is_empty() {
         // All collisions
-        return Ok(());
+        return Ok(vec![]);
     }
 
     // Only embed the things we get returned from here, this reduces the number of times we embed data that are just duplicates
@@ -741,13 +826,8 @@ pub async fn bulk_upload_chunks(
         .collect();
 
     log::info!("Bulk upserting {} qdrant points", qdrant_points.len());
-    let create_point_result: Result<(), BroccoliError> =
-        bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone())
-            .await
-            .map_err(|err| {
-                log::error!("Failed to create qdrant points: {:?}", err);
-                BroccoliError::Job("Failed to create qdrant points".to_string())
-            });
+    let create_point_result: Result<(), ServiceError> =
+        bulk_upsert_qdrant_points_query(qdrant_points, dataset_config.clone()).await;
 
     if let Err(err) = create_point_result {
         if !upsert_by_tracking_id_being_used || !qdrant_only {
@@ -771,7 +851,7 @@ pub async fn bulk_upload_chunks(
         .await?;
     }
 
-    Ok(())
+    Ok(inserted_chunk_metadata_ids)
 }
 
 async fn upload_chunk(

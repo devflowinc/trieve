@@ -238,7 +238,7 @@ async fn webhook_response(
         };
 
         broccoli_queue
-            .publish("update_chunk_queue", None, &message, None)
+            .publish("update_chunk_queue", &message, None)
             .await?;
     }
 
