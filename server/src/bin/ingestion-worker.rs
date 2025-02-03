@@ -229,6 +229,7 @@ async fn ingestion_worker(
     ingestion_message: BulkUploadIngestionMessage,
     web_pool: actix_web::web::Data<models::Pool>,
 ) -> Result<(), BroccoliError> {
+    log::info!("Starting ingestion service thread");
     log::info!("Selecting dataset for ingestion message");
     let dataset_result: Result<models::Dataset, ServiceError> =
         get_dataset_by_id_query(ingestion_message.dataset_id, web_pool.clone()).await;
