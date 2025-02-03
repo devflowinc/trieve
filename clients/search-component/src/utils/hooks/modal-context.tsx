@@ -55,6 +55,11 @@ export interface PagefindOptions {
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
+  partnerSettings?: {
+    partnerCompanyName?: string;
+    partnerCompanyUrl?: string;
+    partnerCompanyFaviconUrl?: string;
+  };
   baseUrl?: string;
   onResultClick?: (chunk: Chunk) => void;
   theme?: "light" | "dark";
