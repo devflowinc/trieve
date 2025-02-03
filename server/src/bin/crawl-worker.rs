@@ -1,4 +1,5 @@
 use actix_web::web;
+use broccoli_queue::queue::BroccoliQueue;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use serde::{Deserialize, Serialize};
 use signal_hook::consts::SIGTERM;
@@ -602,7 +603,7 @@ async fn get_chunks_with_firecrawl(
 async fn crawl(
     crawl_request: CrawlRequest,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
+    broccoli_queue: BroccoliQueue,
 ) -> Result<ScrapeReport, ServiceError> {
     log::info!("Starting crawl for scrape_id: {}", crawl_request.id);
     let (page_count, chunks_created) = if let Some(ScrapeOptions::Shopify(_)) =
@@ -700,23 +701,14 @@ async fn crawl(
                 let (chunk_ingestion_message, chunk_metadatas) =
                     create_chunk_metadata(chunk.to_vec(), crawl_request.dataset_id).await?;
 
-                let mut redis_conn = redis_pool
-                    .get()
-                    .await
-                    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
                 if !chunk_metadatas.is_empty() {
-                    let serialized_message: String =
-                        serde_json::to_string(&chunk_ingestion_message).map_err(|_| {
-                            ServiceError::BadRequest(
-                                "Failed to Serialize BulkUploadMessage".to_string(),
-                            )
-                        })?;
-
-                    redis::cmd("lpush")
-                        .arg("ingestion")
-                        .arg(&serialized_message)
-                        .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+                    broccoli_queue
+                        .publish(
+                            "ingestion",
+                            Some(crawl_request.dataset_id.to_string()),
+                            &chunk_ingestion_message,
+                            None,
+                        )
                         .await
                         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
                 }
@@ -736,23 +728,14 @@ async fn crawl(
             let (chunk_ingestion_message, chunk_metadatas) =
                 create_chunk_metadata(batch.to_vec(), crawl_request.dataset_id).await?;
 
-            let mut redis_conn = redis_pool
-                .get()
-                .await
-                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
             if !chunk_metadatas.is_empty() {
-                let serialized_message: String = serde_json::to_string(&chunk_ingestion_message)
-                    .map_err(|_| {
-                        ServiceError::BadRequest(
-                            "Failed to Serialize BulkUploadMessage".to_string(),
-                        )
-                    })?;
-
-                redis::cmd("lpush")
-                    .arg("ingestion")
-                    .arg(&serialized_message)
-                    .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+                broccoli_queue
+                    .publish(
+                        "ingestion",
+                        Some(crawl_request.dataset_id.to_string()),
+                        &chunk_ingestion_message,
+                        None,
+                    )
                     .await
                     .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
             }
@@ -787,6 +770,7 @@ async fn scrape_worker(
     redis_pool: web::Data<RedisPool>,
     pool: web::Data<Pool>,
     event_queue: actix_web::web::Data<EventQueue>,
+    broccoli_queue: BroccoliQueue,
 ) {
     log::info!("Starting scrape worker service thread");
 
@@ -896,7 +880,7 @@ async fn scrape_worker(
             ))
             .await;
 
-        match crawl(crawl_request.clone(), pool.clone(), redis_pool.clone()).await {
+        match crawl(crawl_request.clone(), pool.clone(), broccoli_queue.clone()).await {
             Ok(scrape_report) => {
                 log::info!("Scrape job completed: {:?}", scrape_report);
 
@@ -1038,7 +1022,23 @@ fn main() {
                 EventQueue::default()
             };
             let web_event_queue = actix_web::web::Data::new(event_queue);
-            scrape_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
+
+            let broccoli_queue = BroccoliQueue::builder(redis_url)
+                .pool_connections(redis_connections.try_into().unwrap())
+                .failed_message_retry_strategy(Default::default())
+                .enable_fairness(true)
+                .build()
+                .await
+                .expect("Failed to create broccoli queue");
+
+            scrape_worker(
+                should_terminate,
+                web_redis_pool,
+                web_pool,
+                web_event_queue,
+                broccoli_queue,
+            )
+            .await
         });
 }
 

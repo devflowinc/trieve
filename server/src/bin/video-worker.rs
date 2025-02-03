@@ -3,12 +3,11 @@ use std::error::Error;
 use actix_web::web;
 use broccoli_queue::{error::BroccoliError, queue::BroccoliQueue};
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
-use redis::aio::MultiplexedConnection;
 use serde::{Deserialize, Serialize};
 use trieve_server::{
     data::models::{
-        ChunkGroup, DatasetAndOrgWithSubAndPlan, EventType, Pool, RedisPool, UnifiedId,
-        VideoCrawlMessage, WorkerEvent,
+        ChunkGroup, DatasetAndOrgWithSubAndPlan, EventType, Pool, UnifiedId, VideoCrawlMessage,
+        WorkerEvent,
     },
     establish_connection, get_env,
     handlers::chunk_handler::ChunkReqPayload,
@@ -79,18 +78,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .parse()
         .unwrap_or(2);
 
-    let redis_manager =
-        bb8_redis::RedisConnectionManager::new(redis_url).expect("Failed to connect to redis");
-
-    let redis_pool = bb8_redis::bb8::Pool::builder()
-        .max_size(redis_connections)
-        .connection_timeout(std::time::Duration::from_secs(2))
-        .build(redis_manager)
-        .await
-        .expect("Failed to create redis pool");
-
-    let web_redis_pool = actix_web::web::Data::new(redis_pool);
-
     let queue = BroccoliQueue::builder(redis_url)
         .pool_connections(redis_connections.try_into().unwrap())
         .failed_message_retry_strategy(Default::default())
@@ -98,16 +85,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
 
     queue
+        .clone()
         .process_messages("video_queue", None, move |msg| {
             let pool = web_pool.clone();
-            let redis_pool = web_redis_pool.clone();
+            let queue = queue.clone();
             let event_queue = event_queue.clone();
             async move {
                 video_worker(
                     msg.payload,
                     pool.clone(),
-                    redis_pool.clone(),
                     event_queue.clone(),
+                    queue.clone(),
                 )
                 .await
                 .map_err(|e| {
@@ -124,15 +112,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 async fn video_worker(
     message: VideoCrawlMessage,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
     event_queue: EventQueue,
+    broccoli_queue: BroccoliQueue,
 ) -> Result<(), BroccoliError> {
     let youtube_api_key = get_env!("YOUTUBE_API_KEY", "YOUTUBE_API_KEY is not set");
-
-    let redis_conn = redis_pool.get().await.map_err(|e| {
-        log::error!("Could not get redis connection {:?}", e);
-        BroccoliError::Job("Could not get redis connection".to_string())
-    })?;
 
     log::info!("Processing video worker for {}", message.channel_url);
 
@@ -245,8 +228,8 @@ async fn video_worker(
                     chunks,
                     video.id.video_id.clone(),
                     pool.clone(),
-                    redis_conn.clone(),
                     event_queue.clone(),
+                    broccoli_queue.clone(),
                 )
                 .await?;
             }
@@ -407,8 +390,8 @@ async fn send_chunks(
     chunks: Vec<ChunkReqPayload>,
     video_id: String,
     pool: web::Data<Pool>,
-    mut redis_conn: MultiplexedConnection,
     event_queue: EventQueue,
+    broccoli_queue: BroccoliQueue,
 ) -> Result<(), BroccoliError> {
     let chunk_count = get_row_count_for_organization_id_query(
         dataset_org_plan_sub.organization.organization.id,
@@ -437,10 +420,8 @@ async fn send_chunks(
         .map(|chunk_segment| chunk_segment.to_vec())
         .collect::<Vec<Vec<ChunkReqPayload>>>();
 
-    let mut serialized_messages: Vec<String> = vec![];
-
     for chunk_segment in chunk_segments {
-        let (ingestion_message, _) =
+        let (ingestion_message, chunk_metadatas) =
             create_chunk_metadata(chunk_segment, dataset_org_plan_sub.dataset.id)
                 .await
                 .map_err(|e| {
@@ -448,23 +429,22 @@ async fn send_chunks(
                     BroccoliError::Job("Could not create chunk metadata".to_string())
                 })?;
 
-        let serialized_message: String = serde_json::to_string(&ingestion_message)
-            .map_err(|_| BroccoliError::Job("Failed to serialize message".to_string()))?;
-
-        if serialized_message.is_empty() {
+        if chunk_metadatas.is_empty() {
             continue;
         }
 
-        serialized_messages.push(serialized_message);
-    }
-    // in the future, once all workers use broccoli_queue, we will not need to use redis directly
-    for serialized_message in serialized_messages {
-        redis::cmd("lpush")
-            .arg("ingestion")
-            .arg(&serialized_message)
-            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut redis_conn)
+        broccoli_queue
+            .publish(
+                "ingestion",
+                Some(dataset_org_plan_sub.dataset.id.to_string()),
+                &ingestion_message,
+                None,
+            )
             .await
-            .map_err(|err| BroccoliError::Job(err.to_string()))?;
+            .map_err(|e| {
+                log::error!("Could not publish message {:?}", e);
+                BroccoliError::Job("Could not publish message".to_string())
+            })?;
     }
 
     event_queue

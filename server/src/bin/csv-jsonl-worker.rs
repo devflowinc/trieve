@@ -1,6 +1,6 @@
+use broccoli_queue::queue::BroccoliQueue;
 use chrono::{DateTime, NaiveDateTime};
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
-use redis::aio::MultiplexedConnection;
 use signal_hook::consts::SIGTERM;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -107,7 +107,22 @@ fn main() {
             signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                 .expect("Failed to register shutdown hook");
 
-            file_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
+            let broccoli_queue = BroccoliQueue::builder(redis_url)
+                .pool_connections(redis_connections.try_into().unwrap())
+                .failed_message_retry_strategy(Default::default())
+                .enable_fairness(true)
+                .build()
+                .await
+                .expect("Failed to create broccoli queue");
+
+            file_worker(
+                should_terminate,
+                web_redis_pool,
+                web_pool,
+                web_event_queue,
+                broccoli_queue,
+            )
+            .await
         });
 }
 
@@ -116,6 +131,7 @@ async fn file_worker(
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
     event_queue: actix_web::web::Data<EventQueue>,
+    broccoli_queue: BroccoliQueue,
 ) {
     log::info!("Starting csv-jsonl worker service thread");
 
@@ -267,7 +283,7 @@ async fn file_worker(
         let _ = process_csv_jsonl_file(
             csv_jsonl_worker_message,
             web_pool.clone(),
-            redis_connection.clone(),
+            broccoli_queue.clone(),
         )
         .await;
     }
@@ -276,7 +292,7 @@ async fn file_worker(
 async fn process_csv_jsonl_file(
     csv_jsonl_worker_message: CsvJsonlWorkerMessage,
     web_pool: actix_web::web::Data<models::Pool>,
-    mut redis_conn: MultiplexedConnection,
+    broccoli_queue: BroccoliQueue,
 ) -> Result<Option<uuid::Uuid>, ServiceError> {
     // get_object_stream from s3
     let bucket = get_csvjsonl_aws_bucket().map_err(|err| {
@@ -449,24 +465,16 @@ async fn process_csv_jsonl_file(
                             .await?;
 
                         if !upsert_chunk_metadatas.is_empty() {
-                            let serialized_message: String = serde_json::to_string(
-                                &upsert_chunk_ingestion_message,
-                            )
-                            .map_err(|_| {
-                                ServiceError::BadRequest(
-                                    "Failed to Serialize BulkUploadMessage".to_string(),
-                                )
-                            })?;
-
                             log::info!(
                                 "Pushing chunk ingestion message to redis {:?}",
                                 upsert_chunk_metadatas.len()
                             );
-                            redis::cmd("lpush")
-                                .arg("ingestion")
-                                .arg(&serialized_message)
-                                .query_async::<redis::aio::MultiplexedConnection, ()>(
-                                    &mut redis_conn,
+                            broccoli_queue
+                                .publish(
+                                    "ingestion",
+                                    Some(csv_jsonl_worker_message.dataset_id.to_string()),
+                                    &upsert_chunk_ingestion_message,
+                                    None,
                                 )
                                 .await
                                 .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
@@ -489,19 +497,17 @@ async fn process_csv_jsonl_file(
         .await?;
 
         if !upsert_chunk_metadatas.is_empty() {
-            let serialized_message: String = serde_json::to_string(&upsert_chunk_ingestion_message)
-                .map_err(|_| {
-                    ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
-                })?;
-
             log::info!(
                 "Pushing chunk ingestion message to redis after while {:?}",
                 upsert_chunk_metadatas.len()
             );
-            redis::cmd("lpush")
-                .arg("ingestion")
-                .arg(&serialized_message)
-                .query_async::<redis::aio::MultiplexedConnection, ()>(&mut redis_conn)
+            broccoli_queue
+                .publish(
+                    "ingestion",
+                    Some(csv_jsonl_worker_message.dataset_id.to_string()),
+                    &upsert_chunk_ingestion_message,
+                    None,
+                )
                 .await
                 .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
         }

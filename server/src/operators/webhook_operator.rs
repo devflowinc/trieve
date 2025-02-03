@@ -1,10 +1,11 @@
 use actix_web::web;
 
 use crate::{
-    data::models::{DatasetConfiguration, Pool, RedisPool},
+    data::models::{DatasetConfiguration, Pool},
     errors::ServiceError,
     handlers::chunk_handler::ChunkReqPayload,
     operators::{chunk_operator::create_chunk_metadata, dataset_operator::get_dataset_by_id_query},
+    FairBroccoliQueue,
 };
 
 use super::chunk_operator::{delete_chunk_metadata_query, get_metadata_from_tracking_id_query};
@@ -43,27 +44,24 @@ pub async fn delete_content<T: Into<ChunkReqPayload>>(
 pub async fn publish_content<T: Into<ChunkReqPayload>>(
     dataset_id: uuid::Uuid,
     value: T,
-    redis_pool: web::Data<RedisPool>,
+    broccoli_queue: web::Data<FairBroccoliQueue>,
 ) -> Result<(), ServiceError> {
     let chunk: ChunkReqPayload = value.into();
 
     let (upsert_message, _) = create_chunk_metadata(vec![chunk.clone()], dataset_id).await?;
 
-    let mut redis_conn = redis_pool
-        .get()
+    broccoli_queue
+        .publish(
+            "ingestion",
+            Some(dataset_id.to_string()),
+            &upsert_message,
+            None,
+        )
         .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-    let serialized_message: String = serde_json::to_string(&upsert_message).map_err(|_| {
-        ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
-    })?;
-
-    redis::cmd("lpush")
-        .arg("ingestion")
-        .arg(&serialized_message)
-        .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        .map_err(|e| {
+            log::error!("Could not publish message {:?}", e);
+            ServiceError::InternalServerError(e.to_string())
+        })?;
 
     Ok(())
 }

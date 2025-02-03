@@ -1,6 +1,6 @@
 use base64::Engine;
+use broccoli_queue::queue::BroccoliQueue;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
-use redis::aio::MultiplexedConnection;
 use signal_hook::consts::SIGTERM;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -113,7 +113,22 @@ fn main() {
             signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
                 .expect("Failed to register shutdown hook");
 
-            file_worker(should_terminate, web_redis_pool, web_pool, web_event_queue).await
+            let broccoli_queue = BroccoliQueue::builder(redis_url)
+                .pool_connections(redis_connections.try_into().unwrap())
+                .failed_message_retry_strategy(Default::default())
+                .enable_fairness(true)
+                .build()
+                .await
+                .expect("Failed to create broccoli queue");
+
+            file_worker(
+                should_terminate,
+                web_redis_pool,
+                web_pool,
+                web_event_queue,
+                broccoli_queue,
+            )
+            .await
         });
 }
 
@@ -122,6 +137,7 @@ async fn file_worker(
     redis_pool: actix_web::web::Data<models::RedisPool>,
     web_pool: actix_web::web::Data<models::Pool>,
     event_queue: actix_web::web::Data<EventQueue>,
+    broccoli_queue: BroccoliQueue,
 ) {
     log::info!("Starting file worker service thread");
 
@@ -214,7 +230,7 @@ async fn file_worker(
             file_worker_message.clone(),
             web_pool.clone(),
             event_queue.clone(),
-            redis_connection.clone(),
+            broccoli_queue.clone(),
         )
         .await
         {
@@ -305,7 +321,7 @@ async fn upload_file(
     file_worker_message: FileWorkerMessage,
     web_pool: actix_web::web::Data<models::Pool>,
     event_queue: actix_web::web::Data<EventQueue>,
-    redis_conn: MultiplexedConnection,
+    broccoli_queue: BroccoliQueue,
 ) -> Result<Option<uuid::Uuid>, ServiceError> {
     let file_id = file_worker_message.file_id;
 
@@ -581,7 +597,7 @@ async fn upload_file(
                         group_id,
                         web_pool.clone(),
                         event_queue.clone(),
-                        redis_conn.clone(),
+                        broccoli_queue.clone(),
                     )
                     .await?;
                 }
@@ -689,7 +705,7 @@ async fn upload_file(
             None,
             web_pool.clone(),
             event_queue.clone(),
-            redis_conn.clone(),
+            broccoli_queue.clone(),
         )
         .await?;
         return Ok(Some(file_id));
@@ -739,7 +755,7 @@ async fn upload_file(
         group_id,
         web_pool.clone(),
         event_queue.clone(),
-        redis_conn,
+        broccoli_queue.clone(),
     )
     .await?;
 
