@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
 use crate::data::models::Pool;
-use crate::data::models::RedisPool;
 use crate::data::models::UnifiedId;
 use crate::middleware::auth_middleware::verify_member;
 use crate::operators::dataset_operator::get_dataset_and_organization_from_dataset_id_query;
 use crate::operators::user_operator::get_user_from_api_key_query;
 use crate::operators::webhook_operator::delete_content;
+use crate::FairBroccoliQueue;
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -105,7 +105,7 @@ pub struct WebhookQueryParams {
 pub async fn builder_io_webhook(
     payload: web::Json<WebhookRequest>,
     query: web::Query<WebhookQueryParams>,
-    redis_pool: web::Data<RedisPool>,
+    broccoli_queue: web::Data<FairBroccoliQueue>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     // Ensure that the trieve_key and trieve_dataset are valid
@@ -136,13 +136,15 @@ pub async fn builder_io_webhook(
     };
 
     match payload.operation {
-        Operation::Publish => publish_content(dataset_id, payload.new_value, redis_pool).await?,
+        Operation::Publish => {
+            publish_content(dataset_id, payload.new_value, broccoli_queue).await?
+        }
         Operation::Delete => delete_content(dataset_id, payload.new_value, pool).await?,
         Operation::Unpublish => delete_content(dataset_id, payload.new_value, pool).await?,
         Operation::Archive => delete_content(dataset_id, payload.new_value, pool).await?,
 
         Operation::ScheduledStart => {
-            publish_content(dataset_id, payload.new_value, redis_pool).await?
+            publish_content(dataset_id, payload.new_value, broccoli_queue).await?
         }
         Operation::ScheduledEnd => delete_content(dataset_id, payload.new_value, pool).await?,
     }

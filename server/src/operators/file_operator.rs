@@ -14,11 +14,11 @@ use crate::{
     errors::ServiceError,
 };
 use actix_web::web;
+use broccoli_queue::queue::BroccoliQueue;
 use diesel::dsl::sql;
 use diesel::prelude::*;
 use diesel::sql_types::BigInt;
 use diesel_async::RunQueryDsl;
-use redis::aio::MultiplexedConnection;
 use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
 use std::collections::HashMap;
@@ -269,7 +269,7 @@ pub async fn create_file_chunks(
     group_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
     event_queue: web::Data<EventQueue>,
-    mut redis_conn: MultiplexedConnection,
+    broccoli_queue: BroccoliQueue,
 ) -> Result<(), ServiceError> {
     let name = upload_file_data.file_name.clone();
 
@@ -369,31 +369,31 @@ pub async fn create_file_chunks(
         .map(|chunk_segment| chunk_segment.to_vec())
         .collect::<Vec<Vec<ChunkReqPayload>>>();
 
-    let mut serialized_messages: Vec<String> = vec![];
-
     for chunk_segment in chunk_segments {
-        let (ingestion_message, _) =
-            create_chunk_metadata(chunk_segment, dataset_org_plan_sub.dataset.id).await?;
+        let (ingestion_message, chunk_metadatas) =
+            create_chunk_metadata(chunk_segment, dataset_org_plan_sub.dataset.id)
+                .await
+                .map_err(|e| {
+                    log::error!("Could not create chunk metadata {:?}", e);
+                    ServiceError::BadRequest("Could not create chunk metadata".to_string())
+                })?;
 
-        let serialized_message: String =
-            serde_json::to_string(&ingestion_message).map_err(|_| {
-                ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
-            })?;
-
-        if serialized_message.is_empty() {
+        if chunk_metadatas.is_empty() {
             continue;
         }
 
-        serialized_messages.push(serialized_message);
-    }
-
-    for serialized_message in serialized_messages {
-        redis::cmd("lpush")
-            .arg("ingestion")
-            .arg(&serialized_message)
-            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut redis_conn)
+        broccoli_queue
+            .publish(
+                "ingestion",
+                Some(dataset_org_plan_sub.dataset.id.to_string()),
+                &ingestion_message,
+                None,
+            )
             .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+            .map_err(|e| {
+                log::error!("Could not publish message {:?}", e);
+                ServiceError::BadRequest("Could not publish message".to_string())
+            })?;
     }
 
     event_queue
