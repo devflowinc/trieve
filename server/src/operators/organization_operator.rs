@@ -474,7 +474,7 @@ pub async fn get_org_users_by_id_query(
             SlimUser::from_details(
                 user_orgs_orgs.0,
                 vec![user_orgs_orgs.1],
-                vec![user_orgs_orgs.2],
+                vec![user_orgs_orgs.2.with_complete_partner_config()],
             )
         })
         .collect_vec())
@@ -524,7 +524,7 @@ pub async fn get_arbitrary_org_owner_from_org_id(
     Ok(SlimUser::from_details(
         user_orgs_orgs.0,
         vec![user_orgs_orgs.1],
-        vec![user_orgs_orgs.2],
+        vec![user_orgs_orgs.2.with_complete_partner_config()],
     ))
 }
 
@@ -575,7 +575,7 @@ pub async fn get_arbitrary_org_owner_from_dataset_id(
     Ok(SlimUser::from_details(
         user_orgs_orgs.0,
         vec![user_orgs_orgs.1],
-        vec![user_orgs_orgs.2],
+        vec![user_orgs_orgs.2.with_complete_partner_config()],
     ))
 }
 
