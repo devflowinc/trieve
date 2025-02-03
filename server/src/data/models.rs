@@ -2443,7 +2443,7 @@ impl DatasetUsageCount {
         "created_at": "2021-01-01 00:00:00.000",
         "updated_at": "2021-01-01 00:00:00.000",
         "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
-        "client_configuration": {"key": "value"},
+        "server_configuration": {},
     },
     "dataset_usage": {
         "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -3459,6 +3459,52 @@ impl DatasetAndOrgWithSubAndPlan {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example=json!({
+    "COMPANY_NAME": "Trieve",
+    "FAVICON_URL": "https://cdn.trieve.ai/favicon.ico",
+    "DEMO_DOMAIN": "demos.trieve.ai",
+}))]
+#[allow(non_snake_case)]
+pub struct PartnerConfiguration {
+    pub COMPANY_NAME: String,
+    pub FAVICON_URL: String,
+    pub DEMO_DOMAIN: String,
+}
+
+impl PartnerConfiguration {
+    pub fn from_json(configuration_json: serde_json::Value) -> Self {
+        let default_config = json!({});
+
+        let configuration = configuration_json.as_object().unwrap_or(
+            default_config
+                .as_object()
+                .expect("Will always be valid object here"),
+        );
+
+        PartnerConfiguration {
+            COMPANY_NAME: configuration
+                .get("COMPANY_NAME")
+                .unwrap_or(&json!("Trieve".to_string()))
+                .as_str()
+                .map(|str| str.to_string())
+                .unwrap_or("Trieve".to_string()),
+            FAVICON_URL: configuration
+                .get("FAVICON_URL")
+                .unwrap_or(&json!("https://cdn.trieve.ai/favicon.ico"))
+                .as_str()
+                .map(|str| str.to_string())
+                .unwrap_or("https://cdn.trieve.ai/favicon.ico".to_string()),
+            DEMO_DOMAIN: configuration
+                .get("DEMO_DOMAIN")
+                .unwrap_or(&json!("demos.trieve.ai"))
+                .as_str()
+                .map(|str| str.to_string())
+                .unwrap_or("demos.trieve.ai".to_string()),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -3466,15 +3512,28 @@ impl DatasetAndOrgWithSubAndPlan {
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
     "registerable": true,
+    "partner_configuration": {
+        "COMPANY_NAME": "Trieve",
+        "FAVICON_URL": "https://cdn.trieve.ai/favicon.ico",
+        "DEMO_DOMAIN": "demos.trieve.ai",
+    }
 }))]
 #[diesel(table_name = organizations)]
 pub struct Organization {
+    /// Unique identifier of the dataset, auto-generated uuid created by Trieve
     pub id: uuid::Uuid,
+    /// Name of the organization
     pub name: String,
+    /// Timestamp of the creation of the dataset
     pub created_at: chrono::NaiveDateTime,
+    /// Timestamp of the last update of the dataset
     pub updated_at: chrono::NaiveDateTime,
+    /// Flag to indicate whether or not new users may join the organization. Default is true.
     pub registerable: Option<bool>,
+    /// Flag to indicate if the organization has been deleted. Deletes are handled async after the flag is set so as to avoid expensive search index compaction.
     pub deleted: i32,
+    /// Configuration of the organization for the Trieve partner program. Contact partnerships@trieve.ai for more details.
+    pub partner_configuration: serde_json::Value,
 }
 
 impl Organization {
@@ -3486,11 +3545,20 @@ impl Organization {
             updated_at: chrono::Utc::now().naive_local(),
             registerable: Some(true),
             deleted: 0,
+            partner_configuration: json!({}),
         }
     }
 
     pub fn from_org_with_plan_sub(org_plan_sub: OrganizationWithSubAndPlan) -> Self {
-        org_plan_sub.organization.clone()
+        org_plan_sub.organization.with_complete_partner_config()
+    }
+
+    pub fn with_complete_partner_config(&self) -> Self {
+        let mut cur = self.clone();
+        cur.partner_configuration =
+            serde_json::to_value(PartnerConfiguration::from_json(cur.partner_configuration))
+                .unwrap_or_default();
+        cur
     }
 }
 
@@ -3715,7 +3783,7 @@ impl OrganizationWithSubAndPlan {
         subscription: Option<StripeSubscription>,
     ) -> Self {
         OrganizationWithSubAndPlan {
-            organization: organization.clone(),
+            organization: organization.with_complete_partner_config(),
             plan,
             subscription,
         }
@@ -3723,7 +3791,7 @@ impl OrganizationWithSubAndPlan {
 
     pub fn with_defaults(&self) -> Self {
         OrganizationWithSubAndPlan {
-            organization: self.organization.clone(),
+            organization: self.organization.with_complete_partner_config(),
             plan: Some(self.plan.clone().unwrap_or_default()),
             subscription: self.subscription.clone(),
         }

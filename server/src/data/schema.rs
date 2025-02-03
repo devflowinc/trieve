@@ -211,6 +211,7 @@ diesel::table! {
         updated_at -> Timestamp,
         registerable -> Nullable<Bool>,
         deleted -> Int4,
+        partner_configuration -> Jsonb,
     }
 }
 
