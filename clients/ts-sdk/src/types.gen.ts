@@ -2047,11 +2047,33 @@ export type OpenGraphMetadata = {
 };
 
 export type Organization = {
+    /**
+     * Timestamp of the creation of the dataset
+     */
     created_at: string;
+    /**
+     * Flag to indicate if the organization has been deleted. Deletes are handled async after the flag is set so as to avoid expensive search index compaction.
+     */
     deleted: number;
+    /**
+     * Unique identifier of the dataset, auto-generated uuid created by Trieve
+     */
     id: string;
+    /**
+     * Name of the organization
+     */
     name: string;
+    /**
+     * Configuration of the organization for the Trieve partner program. Contact partnerships@trieve.ai for more details.
+     */
+    partner_configuration: unknown;
+    /**
+     * Flag to indicate whether or not new users may join the organization. Default is true.
+     */
     registerable?: (boolean) | null;
+    /**
+     * Timestamp of the last update of the dataset
+     */
     updated_at: string;
 };
 
@@ -2069,6 +2091,12 @@ export type OrganizationWithSubAndPlan = {
     organization: Organization;
     plan?: ((StripePlan) | null);
     subscription?: ((StripeSubscription) | null);
+};
+
+export type PartnerConfiguration = {
+    COMPANY_NAME: string;
+    DEMO_DOMAIN: string;
+    FAVICON_URL: string;
 };
 
 export type Pdf2MdOptions = {

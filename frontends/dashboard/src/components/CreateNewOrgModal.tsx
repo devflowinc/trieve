@@ -41,9 +41,9 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
       });
     },
     onSuccess: async (data) => {
-      userContext.setSelectedOrg(data.id);
       await userContext.login();
-      navigate("/org");
+      userContext.setSelectedOrg(data.id);
+      navigate(`/org?org=${data.id}`);
 
       createToast({
         title: "Success",

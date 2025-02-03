@@ -520,6 +520,7 @@ impl Modify for SecurityAddon {
             data::models::Organization,
             data::models::OrganizationWithSubAndPlan,
             data::models::OrganizationUsageCount,
+            data::models::PartnerConfiguration,
             data::models::Dataset,
             data::models::DatasetAndUsage,
             data::models::MmrOptions,

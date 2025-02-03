@@ -1,6 +1,17 @@
-import { Switch, createSignal, useContext, Match } from "solid-js";
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+import {
+  Switch,
+  createSignal,
+  useContext,
+  Match,
+  createEffect,
+} from "solid-js";
 import { UserContext } from "../../contexts/UserContext";
 import { createToast } from "../../components/ShowToasts";
+import { PartnerConfiguration } from "trieve-ts-sdk";
 
 const OrgSettingsForm = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -10,6 +21,15 @@ const OrgSettingsForm = () => {
   const [organizationName, setOrganizationName] = createSignal<string>(
     userContext.selectedOrg().name,
   );
+  const [partnerConfiguration, setPartnerConfiguration] =
+    createSignal<PartnerConfiguration>(
+      userContext.selectedOrg()
+        .partner_configuration as unknown as PartnerConfiguration,
+    );
+
+  createEffect(() => {
+    console.log(userContext.selectedOrg());
+  });
 
   const updateOrganization = () => {
     const newOrgName = organizationName();
@@ -21,8 +41,8 @@ const OrgSettingsForm = () => {
         "TR-Organization": userContext.selectedOrg().id,
       },
       body: JSON.stringify({
-        organization_id: userContext.selectedOrg().id,
         name: newOrgName,
+        partner_configuration: partnerConfiguration(),
       }),
     });
     void userContext.login();
@@ -42,7 +62,7 @@ const OrgSettingsForm = () => {
               id="organization-details-name"
               class="text-lg font-medium leading-6"
             >
-              Organization Settings
+              General
             </h2>
             <p class="text-sm text-neutral-600">
               Update your organization's information.
@@ -68,6 +88,66 @@ const OrgSettingsForm = () => {
             </div>
           </div>
         </div>
+
+        <div class="bg-white px-4 py-6 sm:p-6">
+          <div>
+            <h2
+              id="organization-details-name"
+              class="text-lg font-medium leading-6"
+            >
+              Partner Configuration
+            </h2>
+            <p class="text-sm text-neutral-600">
+              Set your organization's partner settings here.
+            </p>
+          </div>
+
+          <div class="mt-4 grid grid-cols-4 gap-6">
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="organization-name"
+                class="block text-sm font-medium leading-6"
+              >
+                Company name
+              </label>
+              <input
+                type="text"
+                name="company-name"
+                id="company-name"
+                class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                value={partnerConfiguration()?.COMPANY_NAME}
+                onInput={(e) =>
+                  setPartnerConfiguration({
+                    ...partnerConfiguration(),
+                    COMPANY_NAME: e.currentTarget.value,
+                  })
+                }
+              />
+            </div>
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="organization-name"
+                class="block text-sm font-medium leading-6"
+              >
+                Favicon URL
+              </label>
+              <input
+                type="text"
+                name="company-name"
+                id="company-name"
+                class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                value={partnerConfiguration()?.FAVICON_URL}
+                onInput={(e) =>
+                  setPartnerConfiguration({
+                    ...partnerConfiguration(),
+                    FAVICON_URL: e.currentTarget.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+        </div>
+
         <div class="border-t bg-neutral-50 px-4 py-3 text-right">
           <button
             type="submit"

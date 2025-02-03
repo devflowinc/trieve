@@ -107,6 +107,8 @@ pub async fn delete_organization(
 pub struct UpdateOrganizationReqPayload {
     /// The new name of the organization. If not provided, the name will not be updated.
     name: Option<String>,
+    /// New details for the partnership configuration. If not provided, the partnership configuration will not be updated.
+    partnership_config: Option<serde_json::Value>,
 }
 
 /// Update Organization
@@ -155,6 +157,9 @@ pub async fn update_organization(
         .map_err(|_| {
             ServiceError::BadRequest("Failed to sanitize organization name".to_string())
         })?,
+        organization_update_data
+            .partnership_config
+            .unwrap_or(old_organization.organization.partner_configuration),
         pool,
         redis_pool,
     )
