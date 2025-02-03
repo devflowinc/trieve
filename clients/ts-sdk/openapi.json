@@ -12481,11 +12481,15 @@
         "type": "object",
         "required": [
           "COMPANY_NAME",
+          "COMPANY_URL",
           "FAVICON_URL",
           "DEMO_DOMAIN"
         ],
         "properties": {
           "COMPANY_NAME": {
+            "type": "string"
+          },
+          "COMPANY_URL": {
             "type": "string"
           },
           "DEMO_DOMAIN": {
@@ -17088,6 +17092,10 @@
           "name": {
             "type": "string",
             "description": "The new name of the organization. If not provided, the name will not be updated.",
+            "nullable": true
+          },
+          "partner_configuration": {
+            "description": "New details for the partnership configuration. If not provided, the partnership configuration will not be updated.",
             "nullable": true
           }
         }

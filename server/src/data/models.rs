@@ -3468,6 +3468,7 @@ impl DatasetAndOrgWithSubAndPlan {
 #[allow(non_snake_case)]
 pub struct PartnerConfiguration {
     pub COMPANY_NAME: String,
+    pub COMPANY_URL: String,
     pub FAVICON_URL: String,
     pub DEMO_DOMAIN: String,
 }
@@ -3489,6 +3490,12 @@ impl PartnerConfiguration {
                 .as_str()
                 .map(|str| str.to_string())
                 .unwrap_or("Trieve".to_string()),
+            COMPANY_URL: configuration
+                .get("COMPANY_URL")
+                .unwrap_or(&json!("https://trieve.ai".to_string()))
+                .as_str()
+                .map(|str| str.to_string())
+                .unwrap_or("https://trieve.ai".to_string()),
             FAVICON_URL: configuration
                 .get("FAVICON_URL")
                 .unwrap_or(&json!("https://cdn.trieve.ai/favicon.ico"))
@@ -3502,6 +3509,12 @@ impl PartnerConfiguration {
                 .map(|str| str.to_string())
                 .unwrap_or("demos.trieve.ai".to_string()),
         }
+    }
+}
+
+impl From<serde_json::Value> for PartnerConfiguration {
+    fn from(configuration_json: serde_json::Value) -> Self {
+        PartnerConfiguration::from_json(configuration_json)
     }
 }
 

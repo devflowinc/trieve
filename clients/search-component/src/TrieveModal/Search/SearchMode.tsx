@@ -309,11 +309,19 @@ export const SearchMode = () => {
           <span className="spacer" />
           <a
             className="trieve-powered"
-            href="https://trieve.ai"
+            href={
+              props.partnerSettings?.partnerCompanyUrl ?? "https://trieve.ai"
+            }
             target="_blank"
           >
-            <img src="https://cdn.trieve.ai/trieve-logo.png" alt="logo" />
-            Powered by Trieve
+            <img
+              src={
+                props.partnerSettings?.partnerCompanyFaviconUrl ??
+                "https://cdn.trieve.ai/favicon.ico"
+              }
+              alt="logo"
+            />
+            Powered by {props.partnerSettings?.partnerCompanyName ?? "Trieve"}
           </a>
         </div>
       </div>

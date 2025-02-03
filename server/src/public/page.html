@@ -4,21 +4,9 @@
     <link rel="stylesheet" href="/static/output.css" />
     <link rel="stylesheet" href="{{ search_component_url | safe }}/index.css" />
     <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="https://cdn.trieve.ai/apple-touch-icon.png"
-    />
-    <link
       rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="https://cdn.trieve.ai/favicon-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="https://cdn.trieve.ai/favicon-16x16.png"
+      type="image/x-icon"
+      href="{{ partner_configuration.FAVICON_URL }}"
     />
     <link
       rel="stylesheet"
@@ -452,6 +440,11 @@
         let mode = "none";
 
         const params = {{ params | tojson }};
+        params.partnerSettings = {
+          "partnerCompanyName": "{{ partner_configuration.COMPANY_NAME }}",
+          "partnerCompanyUrl": "{{ partner_configuration.COMPANY_URL | safe }}",
+          "partnerCompanyFaviconUrl": "{{ partner_configuration.FAVICON_URL | safe }}",
+        }
         if (params.inline) {
           const inlineParams = {{ params | tojson }};
           const inlineRoot = document.querySelector("#inline-root");

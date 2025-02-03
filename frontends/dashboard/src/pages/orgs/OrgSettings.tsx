@@ -2,13 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-import {
-  Switch,
-  createSignal,
-  useContext,
-  Match,
-  createEffect,
-} from "solid-js";
+import { Switch, createSignal, useContext, Match } from "solid-js";
 import { UserContext } from "../../contexts/UserContext";
 import { createToast } from "../../components/ShowToasts";
 import { PartnerConfiguration } from "trieve-ts-sdk";
@@ -27,32 +21,29 @@ const OrgSettingsForm = () => {
         .partner_configuration as unknown as PartnerConfiguration,
     );
 
-  createEffect(() => {
-    console.log(userContext.selectedOrg());
-  });
-
-  const updateOrganization = () => {
-    const newOrgName = organizationName();
-    void fetch(`${apiHost}/organization`, {
-      credentials: "include",
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "TR-Organization": userContext.selectedOrg().id,
-      },
-      body: JSON.stringify({
-        name: newOrgName,
-        partner_configuration: partnerConfiguration(),
-      }),
-    });
-    void userContext.login();
-  };
-
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        updateOrganization();
+        void fetch(`${apiHost}/organization`, {
+          credentials: "include",
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "TR-Organization": userContext.selectedOrg().id,
+          },
+          body: JSON.stringify({
+            name: organizationName(),
+            partner_configuration: partnerConfiguration(),
+          }),
+        }).then(() => {
+          createToast({
+            title: "Success",
+            message: "Organization updated successfully!",
+            type: "success",
+          });
+          void userContext.login();
+        });
       }}
     >
       <div class="border border-[#e5e7eb] shadow sm:overflow-hidden sm:rounded-md">
@@ -124,6 +115,29 @@ const OrgSettingsForm = () => {
                 }
               />
             </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="organization-name"
+                class="block text-sm font-medium leading-6"
+              >
+                Company URL
+              </label>
+              <input
+                type="text"
+                name="company-name"
+                id="company-name"
+                class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                value={partnerConfiguration()?.COMPANY_URL}
+                onInput={(e) =>
+                  setPartnerConfiguration({
+                    ...partnerConfiguration(),
+                    COMPANY_URL: e.currentTarget.value,
+                  })
+                }
+              />
+            </div>
+
             <div class="col-span-4 sm:col-span-2">
               <label
                 for="organization-name"

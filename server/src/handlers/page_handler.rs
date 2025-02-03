@@ -9,7 +9,9 @@ use crate::{
     data::models::{DatasetConfiguration, Pool, SearchMethod, SortOptions, TypoOptions},
     errors::ServiceError,
     get_env,
-    operators::dataset_operator::get_dataset_by_id_query,
+    operators::{
+        dataset_operator::get_dataset_by_id_query, organization_operator::get_org_from_id_query,
+    },
 };
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use minijinja::context;
@@ -300,9 +302,10 @@ pub async fn public_page(
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_id = dataset_id.into_inner();
     let dataset: crate::data::models::Dataset = match uuid::Uuid::parse_str(&dataset_id) {
-        Ok(uuid) => get_dataset_by_id_query(uuid, pool).await?,
-        Err(_) => get_dataset_by_tracking_id_unsafe_query(dataset_id, pool).await?,
+        Ok(uuid) => get_dataset_by_id_query(uuid, pool.clone()).await?,
+        Err(_) => get_dataset_by_tracking_id_unsafe_query(dataset_id, pool.clone()).await?,
     };
+    let org_sub_plan = get_org_from_id_query(dataset.organization_id, pool).await?;
 
     let config = DatasetConfiguration::from_json(dataset.server_configuration);
 
@@ -366,6 +369,8 @@ pub async fn public_page(
             .clone()
             .unwrap_or_default();
 
+        let partner_configuration = org_sub_plan.organization.partner_configuration;
+
         let response_body = templ
             .render(context! {
                 logged_in,
@@ -375,6 +380,7 @@ pub async fn public_page(
                 has_hero_pattern => hero_pattern.is_some(),
                 body_style,
                 tabs,
+                partner_configuration,
                 params => PublicPageParameters {
                     dataset_id: Some(dataset.id),
                     base_url: Some(base_server_url.to_string()),

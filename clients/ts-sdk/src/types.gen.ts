@@ -2095,6 +2095,7 @@ export type OrganizationWithSubAndPlan = {
 
 export type PartnerConfiguration = {
     COMPANY_NAME: string;
+    COMPANY_URL: string;
     DEMO_DOMAIN: string;
     FAVICON_URL: string;
 };
@@ -3418,6 +3419,10 @@ export type UpdateOrganizationReqPayload = {
      * The new name of the organization. If not provided, the name will not be updated.
      */
     name?: (string) | null;
+    /**
+     * New details for the partnership configuration. If not provided, the partnership configuration will not be updated.
+     */
+    partner_configuration?: unknown;
 };
 
 export type UpdateTopicReqPayload = {

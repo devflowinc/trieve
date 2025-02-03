@@ -171,17 +171,20 @@ export const ChatMode = () => {
             {props.tags?.length ? <Tags /> : null}
             <div className="tags-spacer"></div>
             <a
-              className="trieve-powered text-right"
-              href="https://trieve.ai"
+              className="trieve-powered"
+              href={
+                props.partnerSettings?.partnerCompanyUrl ?? "https://trieve.ai"
+              }
               target="_blank"
-              rel="noopener noreferrer"
             >
               <img
-                src="https://cdn.trieve.ai/trieve-logo.png"
+                src={
+                  props.partnerSettings?.partnerCompanyFaviconUrl ??
+                  "https://cdn.trieve.ai/favicon.ico"
+                }
                 alt="logo"
-                className="inline-block mr-2"
               />
-              Powered by Trieve
+              Powered by {props.partnerSettings?.partnerCompanyName ?? "Trieve"}
             </a>
           </div>
         </div>
