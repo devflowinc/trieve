@@ -18,6 +18,7 @@ import { UploadImage } from "./UploadImage";
 import ImagePreview from "../ImagePreview";
 import { UploadAudio } from "./UploadAudio";
 import { ModeSwitch } from "../ModeSwitch";
+import { cn } from "../../utils/styles";
 
 export const SearchMode = () => {
   const {
@@ -45,7 +46,7 @@ export const SearchMode = () => {
 
   const getItemComponent = (
     result: ChunkWithHighlights | GroupChunk[],
-    index: number
+    index: number,
   ) => {
     const isChunk = isChunkWithHighlights(result);
 
@@ -119,7 +120,7 @@ export const SearchMode = () => {
   const resultsDisplay = useMemo(() => {
     if (results.length) {
       const comps = results.map((result, index) =>
-        getItemComponent(result, index)
+        getItemComponent(result, index),
       );
       return comps;
     } else {
@@ -208,7 +209,12 @@ export const SearchMode = () => {
         </div>
         <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
         {props.suggestedQueries && (!query || (query && !results.length)) && (
-          <div className={`suggested-queries-wrapper ${props.type}`}>
+          <div
+            className={cn(
+              `suggested-queries-wrapper tv-flex tv-gap-2 tv-items-center tv-flex-wrap tv-mb-2 ${props.type}`,
+              imageUrl && "tv-pt-2",
+            )}
+          >
             <button
               onClick={() => getQueries(new AbortController())}
               disabled={isLoadingSuggestedQueries}

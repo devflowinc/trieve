@@ -66,7 +66,7 @@ export const ChatMode = () => {
           `chat-outer-wrapper tv-relative tv-flex tv-flex-col tv-scroll-smooth !tv-mt-0`,
           props.inline &&
             "chat-outer-inline md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0 tv-mt-0 sm:!tv-mt-0",
-          !props.inline && "chat-outer-popup tv-min-h-[175px]"
+          !props.inline && "chat-outer-popup tv-min-h-[175px]",
         )}
         ref={modalRef}
       >
@@ -80,7 +80,7 @@ export const ChatMode = () => {
             className={cn(
               "chat-modal-wrapper tv-relative tv-px-4 tv-overflow-auto tv-flex tv-flex-col tv-gap-4",
               props.inline && "chat-modal-inline",
-              !props.inline && "chat-modal-popup"
+              !props.inline && "chat-modal-popup",
             )}
           >
             <AnimatePresence mode="wait">
