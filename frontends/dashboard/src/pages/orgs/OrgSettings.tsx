@@ -17,8 +17,7 @@ const OrgSettingsForm = () => {
   );
   const [partnerConfiguration, setPartnerConfiguration] =
     createSignal<PartnerConfiguration>(
-      userContext.selectedOrg()
-        .partner_configuration as unknown as PartnerConfiguration,
+      userContext.selectedOrg().partner_configuration as PartnerConfiguration,
     );
 
   return (
@@ -89,7 +88,8 @@ const OrgSettingsForm = () => {
               Partner Configuration
             </h2>
             <p class="text-sm text-neutral-600">
-              Set your organization's partner settings here.
+              Set your organization's partner settings here. Fields which are
+              empty will not be shown.
             </p>
           </div>
 
@@ -147,14 +147,146 @@ const OrgSettingsForm = () => {
               </label>
               <input
                 type="text"
-                name="company-name"
-                id="company-name"
+                name="favicon-url"
+                id="favicon-url"
                 class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
                 value={partnerConfiguration()?.FAVICON_URL}
                 onInput={(e) =>
                   setPartnerConfiguration({
                     ...partnerConfiguration(),
                     FAVICON_URL: e.currentTarget.value,
+                  })
+                }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="organization-name"
+                class="block text-sm font-medium leading-6"
+              >
+                Demo Domain
+              </label>
+              <input
+                type="text"
+                name="demo-domain"
+                id="demo-domain"
+                class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                value={partnerConfiguration()?.DEMO_DOMAIN}
+                onInput={(e) =>
+                  setPartnerConfiguration({
+                    ...partnerConfiguration(),
+                    DEMO_DOMAIN: e.currentTarget.value,
+                  })
+                }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="organization-name"
+                class="block text-sm font-medium leading-6"
+              >
+                Calendar Link
+              </label>
+              <input
+                type="text"
+                name="calendar-link"
+                id="calendar-link"
+                class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                value={partnerConfiguration()?.CALENDAR_LINK}
+                onInput={(e) =>
+                  setPartnerConfiguration({
+                    ...partnerConfiguration(),
+                    CALENDAR_LINK: e.currentTarget.value,
+                  })
+                }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="organization-name"
+                class="block text-sm font-medium leading-6"
+              >
+                Slack Link
+              </label>
+              <input
+                type="text"
+                name="slack-link"
+                id="slack-link"
+                class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                value={partnerConfiguration()?.SLACK_LINK}
+                onInput={(e) =>
+                  setPartnerConfiguration({
+                    ...partnerConfiguration(),
+                    SLACK_LINK: e.currentTarget.value,
+                  })
+                }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="organization-name"
+                class="block text-sm font-medium leading-6"
+              >
+                LinkedIn Link
+              </label>
+              <input
+                type="text"
+                name="linkedin-link"
+                id="linkedin-link"
+                class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                value={partnerConfiguration()?.LINKEDIN_LINK}
+                onInput={(e) =>
+                  setPartnerConfiguration({
+                    ...partnerConfiguration(),
+                    LINKEDIN_LINK: e.currentTarget.value,
+                  })
+                }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="organization-name"
+                class="block text-sm font-medium leading-6"
+              >
+                Email
+              </label>
+              <input
+                type="text"
+                name="company-email"
+                id="company-email"
+                class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                value={partnerConfiguration()?.EMAIL}
+                onInput={(e) =>
+                  setPartnerConfiguration({
+                    ...partnerConfiguration(),
+                    EMAIL: e.currentTarget.value,
+                  })
+                }
+              />
+            </div>
+
+            <div class="col-span-4 sm:col-span-2">
+              <label
+                for="organization-name"
+                class="block text-sm font-medium leading-6"
+              >
+                Phone
+              </label>
+              <input
+                type="text"
+                name="company-phone"
+                id="company-phone"
+                class="mt-0 block w-full rounded-md border-0 px-3 py-1.5 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-neutral-900 sm:text-sm sm:leading-6"
+                value={partnerConfiguration()?.PHONE}
+                onInput={(e) =>
+                  setPartnerConfiguration({
+                    ...partnerConfiguration(),
+                    PHONE: e.currentTarget.value,
                   })
                 }
               />
