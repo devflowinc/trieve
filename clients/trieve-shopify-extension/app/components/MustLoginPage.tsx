@@ -1,4 +1,4 @@
-import { Card, BlockStack, Text, Box, Button } from "@shopify/polaris";
+import { Card, BlockStack, Text, Box, Button, CalloutCard } from "@shopify/polaris";
 import { useRevalidator } from "@remix-run/react";
 import { useEffect } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
@@ -26,20 +26,17 @@ export const MustLoginPage = ({ authUrl }: { authUrl: string }) => {
   };
 
   return (
-    <Box padding="1000">
-      <Card background="bg-surface-caution">
-        <BlockStack gap="500">
-          <BlockStack gap="200">
-            <Text as="h2" variant="headingMd">
-              Login to Trieve
-            </Text>
-            <Text variant="bodyMd" as="p">
-              You must be logged in to use this page.
-            </Text>
-            <Button onClick={navigateToAuth}>Login With Trieve</Button>
-          </BlockStack>
-        </BlockStack>
-      </Card>
+    <Box paddingInline="3200" paddingBlockStart="2000">
+      <CalloutCard
+        title="Welcome To Trieve."
+        illustration="https://cdn.trieve.ai/android-chrome-512x512.png"
+        primaryAction={{
+          content: "Login",
+          onAction: navigateToAuth
+        }}
+      >
+        <p>To get started, login</p>
+      </CalloutCard>
     </Box>
   );
 };

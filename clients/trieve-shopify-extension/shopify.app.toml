@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "8765d78a52aa8c12ae2d235d9d41529c"
-application_url = "https://example-moms-occasionally-fall.trycloudflare.com"
+application_url = "https://greater-arrive-panama-mike.trycloudflare.com"
 embedded = true
 name = "trieve-search-extension"
 handle = "trieve-search-extension"
@@ -23,9 +23,9 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://example-moms-occasionally-fall.trycloudflare.com/auth/callback",
-  "https://example-moms-occasionally-fall.trycloudflare.com/auth/shopify/callback",
-  "https://example-moms-occasionally-fall.trycloudflare.com/api/auth/callback"
+  "https://greater-arrive-panama-mike.trycloudflare.com/auth/callback",
+  "https://greater-arrive-panama-mike.trycloudflare.com/auth/shopify/callback",
+  "https://greater-arrive-panama-mike.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
