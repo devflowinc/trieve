@@ -5,8 +5,6 @@
 #[macro_use]
 extern crate diesel;
 
-use std::ops::Deref;
-
 use crate::{
     errors::{custom_json_error_handler, ServiceError},
     handlers::{auth_handler::build_oidc_client, metrics_handler::Metrics},
