@@ -577,16 +577,6 @@ impl Modify for SecurityAddon {
 )]
 pub struct ApiDoc;
 
-pub struct FairBroccoliQueue(BroccoliQueue);
-
-impl Deref for FairBroccoliQueue {
-    type Target = BroccoliQueue;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 pub fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
 
@@ -740,10 +730,6 @@ pub fn main() -> std::io::Result<()> {
             std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create broccoli queue {:?}", e))
         })?;
 
-        let fair_broccoli_queue = BroccoliQueue::builder(redis_url).pool_connections(redis_connections.try_into().unwrap()).enable_fairness(true).build().await.map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create broccoli queue {:?}", e))
-        })?;
-
         let num_workers: usize = match std::env::var("NUM_WORKERS") {
             Ok(str_value) => {
                 str_value.parse().unwrap_or(4)
@@ -777,7 +763,6 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(metrics.clone()))
                 .app_data(detector.clone())
                 .app_data(web::Data::new(broccoli_queue.clone()))
-                .app_data(web::Data::new(FairBroccoliQueue(fair_broccoli_queue.clone())))
                 .wrap(from_fn(middleware::timeout_middleware::timeout_15secs))
                 .wrap(from_fn(middleware::metrics_middleware::error_logging_middleware))
                 .wrap(middleware::api_version::ApiVersionCheckFactory)

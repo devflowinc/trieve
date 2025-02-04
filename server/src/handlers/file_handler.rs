@@ -17,7 +17,6 @@ use crate::{
         },
         organization_operator::{get_file_size_sum_org, hash_function},
     },
-    FairBroccoliQueue,
 };
 use actix_web::{web, HttpResponse};
 use base64::{
@@ -25,6 +24,7 @@ use base64::{
     engine::{self, general_purpose},
     Engine as _,
 };
+use broccoli_queue::queue::BroccoliQueue;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -277,7 +277,7 @@ pub struct UploadHtmlPageReqPayload {
 )]
 pub async fn upload_html_page(
     data: web::Json<UploadHtmlPageReqPayload>,
-    broccoli_queue: web::Data<FairBroccoliQueue>,
+    broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let req_payload = data.into_inner();
 

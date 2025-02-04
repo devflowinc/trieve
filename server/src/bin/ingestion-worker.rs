@@ -1,6 +1,6 @@
 use broccoli_queue::brokers::broker::BrokerMessage;
 use broccoli_queue::error::BroccoliError;
-use broccoli_queue::queue::BroccoliQueue;
+use broccoli_queue::queue::{BroccoliQueue, ConsumeOptionsBuilder};
 use chrono::NaiveDateTime;
 use dateparser::DateTimeUtc;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
@@ -84,7 +84,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let queue = BroccoliQueue::builder(redis_url)
         .pool_connections(redis_connections.try_into().unwrap())
         .failed_message_retry_strategy(Default::default())
-        .enable_fairness(true)
         .build()
         .await?;
 
@@ -128,6 +127,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .process_messages_with_handlers(
             &queue_name,
             None,
+            Some(ConsumeOptionsBuilder::new().fairness(true).build()),
             move |msg| {
                 let pool = ingestion_web_pool.clone();
                 async move { ingestion_worker(msg.payload, pool.clone()).await }

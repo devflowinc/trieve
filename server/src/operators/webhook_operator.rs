@@ -1,11 +1,11 @@
 use actix_web::web;
+use broccoli_queue::queue::BroccoliQueue;
 
 use crate::{
     data::models::{DatasetConfiguration, Pool},
     errors::ServiceError,
     handlers::chunk_handler::ChunkReqPayload,
     operators::{chunk_operator::create_chunk_metadata, dataset_operator::get_dataset_by_id_query},
-    FairBroccoliQueue,
 };
 
 use super::chunk_operator::{delete_chunk_metadata_query, get_metadata_from_tracking_id_query};
@@ -44,7 +44,7 @@ pub async fn delete_content<T: Into<ChunkReqPayload>>(
 pub async fn publish_content<T: Into<ChunkReqPayload>>(
     dataset_id: uuid::Uuid,
     value: T,
-    broccoli_queue: web::Data<FairBroccoliQueue>,
+    broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<(), ServiceError> {
     let chunk: ChunkReqPayload = value.into();
 

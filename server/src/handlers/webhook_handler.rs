@@ -6,8 +6,8 @@ use crate::middleware::auth_middleware::verify_member;
 use crate::operators::dataset_operator::get_dataset_and_organization_from_dataset_id_query;
 use crate::operators::user_operator::get_user_from_api_key_query;
 use crate::operators::webhook_operator::delete_content;
-use crate::FairBroccoliQueue;
 use actix_web::{web, HttpResponse};
+use broccoli_queue::queue::BroccoliQueue;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use ureq::SerdeMap;
@@ -105,7 +105,7 @@ pub struct WebhookQueryParams {
 pub async fn builder_io_webhook(
     payload: web::Json<WebhookRequest>,
     query: web::Query<WebhookQueryParams>,
-    broccoli_queue: web::Data<FairBroccoliQueue>,
+    broccoli_queue: web::Data<BroccoliQueue>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     // Ensure that the trieve_key and trieve_dataset are valid

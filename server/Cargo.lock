@@ -834,9 +834,9 @@ dependencies = [
 
 [[package]]
 name = "broccoli_queue"
-version = "0.2.3"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d89fc43266bd4a9385ffef4dd4392432d4f16bc13449266bac957b9465786f60"
+checksum = "47fadd19debc91183df6395e25584929b3c3ea4c08f5cbffea69c359c3fc7d57"
 dependencies = [
  "async-trait",
  "bb8-redis 0.18.0",

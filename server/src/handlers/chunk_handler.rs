@@ -12,6 +12,7 @@ use crate::data::models::{
     UnifiedId, UpdateSpecificChunkMetadata,
 };
 use crate::errors::ServiceError;
+use crate::get_env;
 use crate::middleware::api_version::APIVersion;
 use crate::operators::chunk_operator::get_metadata_from_id_query;
 use crate::operators::clickhouse_operator::{get_latency_from_header, ClickHouseEvent, EventQueue};
@@ -28,7 +29,6 @@ use crate::operators::search_operator::{
     search_chunks_query, search_hybrid_chunks, ParsedQuery, ParsedQueryTypes,
 };
 use crate::operators::{chunk_operator::*, crawl_operator};
-use crate::{get_env, FairBroccoliQueue};
 use actix::Arbiter;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse};
@@ -312,7 +312,7 @@ pub async fn create_chunk(
     create_chunk_data: web::Json<CreateChunkReqPayloadEnum>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
-    fair_broccoli_queue: web::Data<FairBroccoliQueue>,
+    fair_broccoli_queue: web::Data<BroccoliQueue>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, actix_web::Error> {
     let chunks = match create_chunk_data.clone() {
