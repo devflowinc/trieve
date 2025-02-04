@@ -4,8 +4,10 @@
     class="mx-auto mt-10 sm:mt-12 lg:mt-14 py-4 px-4 sm:px-6 lg:max-w-7xl lg:px-8 w-full"
   >
     {% if params.singleProductOptions.productDescriptionHtml %}
-    <section class="lg:flex gap-4 lg:gap-x-8 lg:gap-y-10 xl:gap-x-16 py-2">
-      <div class="lg:w-1/2">
+    <section
+      class="lg:flex gap-4 lg:gap-x-8 lg:gap-y-10 xl:gap-x-16 py-2 w-full"
+    >
+      <div class="lg:max-w-1/2 w-full">
         <img
           src="{{ params.singleProductOptions.productPrimaryImageUrl }}"
           alt="View of product."
@@ -13,7 +15,7 @@
         />
       </div>
 
-      <div class="mx-auto mt-4 lg:mt-0 lg:w-1/2">
+      <div class="mx-auto mt-4 lg:mt-0 lg:max-w-1/2 w-full">
         <h1
           class="text-brand-color text-2xl font-bold tracking-tight sm:text-3xl"
         >
