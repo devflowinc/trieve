@@ -7,6 +7,7 @@ use crate::handlers::chunk_handler::ChunkReqPayload;
 use crate::handlers::chunk_handler::CrawlInterval;
 use crate::handlers::chunk_handler::FullTextBoost;
 use crate::handlers::chunk_handler::SemanticBoost;
+use crate::FairBroccoliQueue;
 use crate::{
     data::models::{CrawlRequest, CrawlRequestPG, Pool, ScrapeOptions},
     errors::ServiceError,
@@ -768,7 +769,7 @@ fn extract_all_headings(html: &str) -> String {
 pub async fn process_crawl_doc(
     dataset_id: uuid::Uuid,
     crawl_doc: Document,
-    redis_pool: web::Data<RedisPool>,
+    broccoli_queue: web::Data<FairBroccoliQueue>,
 ) -> Result<(), ServiceError> {
     if crawl_doc.metadata.status_code != Some(200) {
         log::error!("Error getting metadata for page: {:?}", crawl_doc.metadata);
@@ -894,23 +895,19 @@ pub async fn process_crawl_doc(
         let (chunk_ingestion_message, chunk_metadatas) =
             create_chunk_metadata(batch.to_vec(), dataset_id).await?;
 
-        let mut redis_conn = redis_pool
-            .get()
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
         if !chunk_metadatas.is_empty() {
-            let serialized_message: String = serde_json::to_string(&chunk_ingestion_message)
-                .map_err(|_| {
-                    ServiceError::BadRequest("Failed to Serialize BulkUploadMessage".to_string())
-                })?;
-
-            redis::cmd("lpush")
-                .arg("ingestion")
-                .arg(&serialized_message)
-                .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
+            broccoli_queue
+                .publish(
+                    "ingestion",
+                    Some(dataset_id.to_string()),
+                    &chunk_ingestion_message,
+                    None,
+                )
                 .await
-                .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+                .map_err(|e| {
+                    log::error!("Could not publish message {:?}", e);
+                    ServiceError::BadRequest("Could not publish message".to_string())
+                })?;
         }
     }
 
