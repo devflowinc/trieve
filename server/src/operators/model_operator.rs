@@ -5,6 +5,7 @@ use crate::{
     handlers::chunk_handler::{FullTextBoost, SemanticBoost},
 };
 use actix_web::web;
+use itertools::Itertools;
 use murmur3::murmur3_32;
 use openai_dive::v1::resources::embedding::EmbeddingInput;
 use serde::{Deserialize, Serialize};
@@ -876,6 +877,11 @@ pub async fn cross_encoder(
         return Ok(vec![]);
     }
 
+    let max_words_to_rerank = std::env::var("MAX_WORDS_CHUNK_HTML_TO_RERANK")
+        .unwrap_or("100".to_string())
+        .parse()
+        .unwrap_or(100);
+
     let mut results = results.clone();
 
     if results.len() <= 20 {
@@ -890,9 +896,12 @@ pub async fn cross_encoder(
                     )),
                 }?;
 
-                Ok(convert_html_to_text(
-                    &(chunk.chunk_html.unwrap_or_default()),
-                ))
+                Ok(
+                    convert_html_to_text(&(chunk.chunk_html.unwrap_or_default()))
+                        .split_whitespace()
+                        .take(max_words_to_rerank)
+                        .join(" "),
+                )
             })
             .collect::<Result<Vec<String>, ServiceError>>()?;
 
