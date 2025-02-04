@@ -313,6 +313,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .process_messages_with_handlers(
             "etl_queue",
             None,
+            None,
             move |msg: BrokerMessage<EtlJobMessage>| {
                 let pool = web_pool.clone();
                 let broccoli_queue = queue.clone();

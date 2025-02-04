@@ -7,7 +7,6 @@ use crate::handlers::chunk_handler::ChunkReqPayload;
 use crate::handlers::chunk_handler::CrawlInterval;
 use crate::handlers::chunk_handler::FullTextBoost;
 use crate::handlers::chunk_handler::SemanticBoost;
-use crate::FairBroccoliQueue;
 use crate::{
     data::models::{CrawlRequest, CrawlRequestPG, Pool, ScrapeOptions},
     errors::ServiceError,
@@ -769,7 +768,7 @@ fn extract_all_headings(html: &str) -> String {
 pub async fn process_crawl_doc(
     dataset_id: uuid::Uuid,
     crawl_doc: Document,
-    broccoli_queue: web::Data<FairBroccoliQueue>,
+    broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<(), ServiceError> {
     if crawl_doc.metadata.status_code != Some(200) {
         log::error!("Error getting metadata for page: {:?}", crawl_doc.metadata);

@@ -89,6 +89,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .process_messages_with_handlers(
             "update_chunk_queue",
             None,
+            None,
             {
                 move |msg| {
                     let pool = web_pool.clone();

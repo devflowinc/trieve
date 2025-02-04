@@ -86,7 +86,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     queue
         .clone()
-        .process_messages("video_queue", None, move |msg| {
+        .process_messages("video_queue", None, None, move |msg| {
             let pool = web_pool.clone();
             let queue = queue.clone();
             let event_queue = event_queue.clone();

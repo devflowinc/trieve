@@ -1026,7 +1026,6 @@ fn main() {
             let broccoli_queue = BroccoliQueue::builder(redis_url)
                 .pool_connections(redis_connections.try_into().unwrap())
                 .failed_message_retry_strategy(Default::default())
-                .enable_fairness(true)
                 .build()
                 .await
                 .expect("Failed to create broccoli queue");
