@@ -57,6 +57,22 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
         ?.find((d) => d.dataset.id === props.rag_data.dataset_id)?.dataset.name;
     });
 
+    const llm_output = createMemo(() => {
+      const response = props.rag_data.llm_response;
+      // chunks first
+      if (response.includes("}]||")) {
+        return (
+          props.rag_data.llm_response.split("}]||").slice(-1)[0] ??
+          props.rag_data.llm_response
+        );
+      } else if (response.includes("||[{")) {
+        return (
+          props.rag_data.llm_response.split("||[{")[0] ??
+          props.rag_data.llm_response
+        );
+      }
+    });
+
     return (
       <div class="flex flex-col gap-8">
         <div>
@@ -130,7 +146,7 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
         <Show when={props.rag_data.llm_response}>
           <Card title="LLM Response">
             <ul>
-              <li>{props.rag_data.llm_response}</li>
+              <li>{llm_output()}</li>
             </ul>
           </Card>
         </Show>
