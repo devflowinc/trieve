@@ -15,27 +15,33 @@ const ImagePreview = ({
     <>
       {isUploading ? (
         <div className="tv-relative tv-w-fit">
-          <div className={`tv-max-h-96 tv-max-w-32 ${active ? "tv-border tv-p-2" : ""}`}>
+          <div
+            className={`tv-max-h-96 tv-max-w-32 ${active ? "tv-border tv-p-2" : ""}`}
+          >
             <div className="tv-animate-spin tv-h-8 tv-w-8 tv-border-4 tv-border-blue-500 tv-rounded-full tv-border-t-transparent"></div>
           </div>
         </div>
-      ) : imageUrl ? (
-        <div className="tv-relative tv-w-fit">
-          {active && (
-            <button
-              onClick={() => {
-                setImageUrl("");
-              }}
-              className={`tv-flex tv-items-center tv-justify-center tv-absolute tv--right-3 tv--top-2 tv-rounded-full tv-bg-zinc-500`}
+      ) : (
+        imageUrl && (
+          <div className="tv-relative tv-w-fit">
+            {active && (
+              <button
+                onClick={() => {
+                  setImageUrl("");
+                }}
+                className={`tv-flex tv-items-center tv-justify-center tv-absolute tv--right-3 tv--top-2 tv-rounded-full tv-bg-zinc-500`}
+              >
+                <i className="fa-solid fa-close tv-p-1 tv-w-4 tv-h-4 tv-cursor-pointer tv-z-10"></i>
+              </button>
+            )}
+            <div
+              className={`tv-max-h-96 overflow-hidden tv-max-w-32 ${active ? "tv-border tv-p-2" : ""}`}
             >
-              <i className="fa-solid fa-close tv-p-1 tv-w-4 tv-h-4 tv-cursor-pointer tv-z-10"></i>
-            </button>
-          )}
-          <div className={`tv-max-h-96 tv-max-w-32 ${active ? "tv-border tv-p-2" : ""}`}>
-            <img src={imageUrl} alt="" />
+              <img src={imageUrl} className="tv-max-h-96 tv-max-w-32" alt="" />
+            </div>
           </div>
-        </div>
-      ) : null}
+        )
+      )}
     </>
   );
 };
