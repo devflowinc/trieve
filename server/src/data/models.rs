@@ -3471,6 +3471,11 @@ pub struct PartnerConfiguration {
     pub COMPANY_URL: String,
     pub FAVICON_URL: String,
     pub DEMO_DOMAIN: String,
+    pub CALENDAR_LINK: String,
+    pub SLACK_LINK: String,
+    pub LINKEDIN_LINK: String,
+    pub EMAIL: String,
+    pub PHONE: String,
 }
 
 impl PartnerConfiguration {
@@ -3508,6 +3513,36 @@ impl PartnerConfiguration {
                 .as_str()
                 .map(|str| str.to_string())
                 .unwrap_or("demos.trieve.ai".to_string()),
+            CALENDAR_LINK: configuration
+                .get("CALENDAR_LINK")
+                .unwrap_or(&json!("https://cal.com/nick.k"))
+                .as_str()
+                .map(|str| str.to_string())
+                .unwrap_or("https://cal.com/nick.k".to_string()),
+            EMAIL: configuration
+                .get("EMAIL")
+                .unwrap_or(&json!("humans@trieve.ai"))
+                .as_str()
+                .map(|str| str.to_string())
+                .unwrap_or("humans@trieve.ai".to_string()),
+            PHONE: configuration
+                .get("PHONE")
+                .unwrap_or(&json!("+16282224090"))
+                .as_str()
+                .map(|str| str.to_string())
+                .unwrap_or("+16282224090".to_string()),
+            SLACK_LINK: configuration
+                .get("SLACK_LINK")
+                .unwrap_or(&json!("https://join.slack.com/t/trievecommunityslack/shared_invite/zt-2v7zyxytf-zWLVgqI8avB5x5Br7INQgw"))
+                .as_str()
+                .map(|str| str.to_string())
+                .unwrap_or("https://join.slack.com/t/trievecommunityslack/shared_invite/zt-2v7zyxytf-zWLVgqI8avB5x5Br7INQgw".to_string()),
+            LINKEDIN_LINK: configuration
+                .get("LINKEDIN_LINK")
+                .unwrap_or(&json!("https://www.linkedin.com/company/trieveai"))
+                .as_str()
+                .map(|str| str.to_string())
+                .unwrap_or("https://www.linkedin.com/company/trieveai".to_string()),
         }
     }
 }

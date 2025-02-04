@@ -7056,8 +7056,7 @@
         "type": "object",
         "title": "batch",
         "required": [
-          "chunk_metadata",
-          "pos_in_queue"
+          "chunk_metadata"
         ],
         "properties": {
           "chunk_metadata": {
@@ -7065,11 +7064,6 @@
             "items": {
               "$ref": "#/components/schemas/ChunkMetadata"
             }
-          },
-          "pos_in_queue": {
-            "type": "integer",
-            "format": "int32",
-            "description": "The current position the last access item is in the queue"
           }
         },
         "example": {
@@ -12483,9 +12477,17 @@
           "COMPANY_NAME",
           "COMPANY_URL",
           "FAVICON_URL",
-          "DEMO_DOMAIN"
+          "DEMO_DOMAIN",
+          "CALENDAR_LINK",
+          "SLACK_LINK",
+          "LINKEDIN_LINK",
+          "EMAIL",
+          "PHONE"
         ],
         "properties": {
+          "CALENDAR_LINK": {
+            "type": "string"
+          },
           "COMPANY_NAME": {
             "type": "string"
           },
@@ -12495,7 +12497,19 @@
           "DEMO_DOMAIN": {
             "type": "string"
           },
+          "EMAIL": {
+            "type": "string"
+          },
           "FAVICON_URL": {
+            "type": "string"
+          },
+          "LINKEDIN_LINK": {
+            "type": "string"
+          },
+          "PHONE": {
+            "type": "string"
+          },
+          "SLACK_LINK": {
             "type": "string"
           }
         },
@@ -15837,17 +15851,11 @@
       "SingleQueuedChunkResponse": {
         "type": "object",
         "required": [
-          "chunk_metadata",
-          "pos_in_queue"
+          "chunk_metadata"
         ],
         "properties": {
           "chunk_metadata": {
             "$ref": "#/components/schemas/ChunkMetadata"
-          },
-          "pos_in_queue": {
-            "type": "integer",
-            "format": "int32",
-            "description": "The current position the last access item is in the queue"
           }
         },
         "example": {

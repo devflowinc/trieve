@@ -1058,10 +1058,6 @@ video {
     display: flex;
   }
 
-  .lg\:w-1\/2 {
-    width: 50%;
-  }
-
   .lg\:max-w-7xl {
     max-width: 80rem;
   }

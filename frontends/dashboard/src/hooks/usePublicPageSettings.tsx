@@ -1,6 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { createSignal, createEffect, useContext, createMemo } from "solid-js";
 import { createStore } from "solid-js/store";
-import { Dataset, PublicPageParameters } from "trieve-ts-sdk";
+import {
+  Dataset,
+  PartnerConfiguration,
+  PublicPageParameters,
+} from "trieve-ts-sdk";
 import { createQuery } from "@tanstack/solid-query";
 import { DatasetContext } from "../contexts/DatasetContext";
 import { UserContext } from "../contexts/UserContext";
@@ -214,7 +219,11 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
     const publicUrl = createMemo(() => {
       return `${apiHost.replace("/api.", "/demos.").slice(0, -4)}/demos/${
         dataset()?.dataset.tracking_id ?? datasetId()
-      }`;
+      }`.replace(
+        "demos.trieve.ai",
+        (selectedOrg()?.partner_configuration as PartnerConfiguration)
+          .DEMO_DOMAIN ?? "demos.trieve.ai",
+      );
     });
 
     return {

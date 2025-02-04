@@ -117,10 +117,6 @@ export type AutocompleteReqPayload = {
 
 export type BatchQueuedChunkResponse = {
     chunk_metadata: Array<ChunkMetadata>;
-    /**
-     * The current position the last access item is in the queue
-     */
-    pos_in_queue: number;
 };
 
 export type BulkDeleteChunkPayload = {
@@ -2094,10 +2090,15 @@ export type OrganizationWithSubAndPlan = {
 };
 
 export type PartnerConfiguration = {
+    CALENDAR_LINK: string;
     COMPANY_NAME: string;
     COMPANY_URL: string;
     DEMO_DOMAIN: string;
+    EMAIL: string;
     FAVICON_URL: string;
+    LINKEDIN_LINK: string;
+    PHONE: string;
+    SLACK_LINK: string;
 };
 
 export type Pdf2MdOptions = {
@@ -2995,10 +2996,6 @@ export type SingleProductOptions = {
 
 export type SingleQueuedChunkResponse = {
     chunk_metadata: ChunkMetadata;
-    /**
-     * The current position the last access item is in the queue
-     */
-    pos_in_queue: number;
 };
 
 export type Sitemap = {

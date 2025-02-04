@@ -42,29 +42,32 @@
       id="nav-links"
       class="flex flex-wrap items-center gap-3 sm:gap-4 justify-center sm:justify-right -mt-1 sm:mt-0"
     >
+      {% if partner_configuration.CALENDAR_LINK %}
       <a
         class="flex items-center gap-1"
         target="_blank"
-        href="https://cal.com/nick.k"
+        href="{{ partner_configuration.CALENDAR_LINK }}"
       >
         <i class="fa-regular fa-calendar mb-0.5"></i>
         <span> Talk to Sales </span>
       </a>
-      <a target="_blank" href="mailto:humans@trieve.ai">
+      {% endif %} {% if partner_configuration.EMAIL %}
+      <a target="_blank" href="mailto:{{ partner_configuration.EMAIL }}">
         <i class="fa-regular fa-envelope"></i>
       </a>
-      <a target="_blank" href="tel:+16282224090">
+      {% endif %} {% if partner_configuration.PHONE %}
+      <a target="_blank" href="tel:+{{ partner_configuration.PHONE }}">
         <i class="fa-solid fa-phone"></i>
       </a>
-      <a
-        target="_blank"
-        href="https://join.slack.com/t/trievecommunityslack/shared_invite/zt-2v7zyxytf-zWLVgqI8avB5x5Br7INQgw"
-      >
+      {% endif %} {% if partner_configuration.SLACK_LINK %}
+      <a target="_blank" href="{{ partner_configuration.SLACK_LINK }}">
         <i class="fa-brands fa-slack"></i>
       </a>
-      <a target="_blank" href="https://www.linkedin.com/company/trieveai">
+      {% endif %} {% if partner_configuration.LINKEDIN_LINK %}
+      <a target="_blank" href="{{ partner_configuration.LINKEDIN_LINK }}">
         <i class="fa-brands fa-linkedin-in"></i>
       </a>
+      {% endif %}
       <button id="tr-search-icon">
         <i class="fa-solid fa-magnifying-glass"></i>
       </button>
