@@ -199,8 +199,23 @@ pub async fn get_qdrant_ids_from_condition(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+pub fn get_all_matching_ids_from_field(condition: FieldCondition) -> Vec<String> {
+    let mut ids = vec![];
+    if let Some(match_any) = condition.match_any {
+        let match_anys = match_any.iter().map(|item| item.to_string());
 
+        ids.extend(match_anys);
+    }
+    if let Some(match_all) = condition.match_all {
+        let match_alls = match_all.iter().map(|item| item.to_string());
+
+        ids.extend(match_alls);
+    }
+
+    ids
+}
+
+#[allow(clippy::too_many_arguments)]
 pub async fn assemble_qdrant_filter(
     filters: Option<ChunkFilter>,
     quote_words: Option<Vec<String>>,
@@ -219,16 +234,53 @@ pub async fn assemble_qdrant_filter(
             for should_condition in should_filters {
                 match should_condition {
                     ConditionType::Field(cond) => {
-                        let should_condition =
-                            convert_group_tracking_ids_to_group_ids(cond, dataset_id, pool.clone())
-                                .await?;
+                        if cond.field == "ids" {
+                            let ids = get_all_matching_ids_from_field(cond);
 
-                        let qdrant_condition = should_condition
-                            .convert_to_qdrant_condition(dataset_id, pool.clone())
+                            filter.should.push(Condition::has_id(
+                                get_qdrant_ids_from_chunk_ids_query(
+                                    ids.into_iter()
+                                        .filter_map(|id| uuid::Uuid::parse_str(&id).ok())
+                                        .map(UnifiedId::TrieveUuid)
+                                        .collect(),
+                                    pool.clone(),
+                                )
+                                .await?
+                                .into_iter()
+                                .map(|id| id.to_string())
+                                .collect::<Vec<String>>(),
+                            ))
+                        } else if cond.field == "tracking_ids" {
+                            let tracking_ids = get_all_matching_ids_from_field(cond);
+
+                            filter.should.push(Condition::has_id(
+                                get_qdrant_ids_from_chunk_ids_query(
+                                    tracking_ids
+                                        .into_iter()
+                                        .map(UnifiedId::TrackingId)
+                                        .collect(),
+                                    pool.clone(),
+                                )
+                                .await?
+                                .into_iter()
+                                .map(|id| id.to_string())
+                                .collect::<Vec<String>>(),
+                            ))
+                        } else {
+                            let should_condition = convert_group_tracking_ids_to_group_ids(
+                                cond,
+                                dataset_id,
+                                pool.clone(),
+                            )
                             .await?;
 
-                        if let Some(condition) = qdrant_condition {
-                            filter.should.push(condition);
+                            let qdrant_condition = should_condition
+                                .convert_to_qdrant_condition(dataset_id, pool.clone())
+                                .await?;
+
+                            if let Some(condition) = qdrant_condition {
+                                filter.should.push(condition);
+                            }
                         }
                     }
                     ConditionType::HasChunkId(cond) => {
@@ -244,16 +296,53 @@ pub async fn assemble_qdrant_filter(
             for must_condition in must_filters {
                 match must_condition {
                     ConditionType::Field(cond) => {
-                        let must_condition =
-                            convert_group_tracking_ids_to_group_ids(cond, dataset_id, pool.clone())
-                                .await?;
+                        if cond.field == "ids" {
+                            let ids = get_all_matching_ids_from_field(cond);
 
-                        let qdrant_condition = must_condition
-                            .convert_to_qdrant_condition(dataset_id, pool.clone())
+                            filter.must.push(Condition::has_id(
+                                get_qdrant_ids_from_chunk_ids_query(
+                                    ids.into_iter()
+                                        .filter_map(|id| uuid::Uuid::parse_str(&id).ok())
+                                        .map(UnifiedId::TrieveUuid)
+                                        .collect(),
+                                    pool.clone(),
+                                )
+                                .await?
+                                .into_iter()
+                                .map(|id| id.to_string())
+                                .collect::<Vec<String>>(),
+                            ))
+                        } else if cond.field == "tracking_ids" {
+                            let tracking_ids = get_all_matching_ids_from_field(cond);
+
+                            filter.must.push(Condition::has_id(
+                                get_qdrant_ids_from_chunk_ids_query(
+                                    tracking_ids
+                                        .into_iter()
+                                        .map(UnifiedId::TrackingId)
+                                        .collect(),
+                                    pool.clone(),
+                                )
+                                .await?
+                                .into_iter()
+                                .map(|id| id.to_string())
+                                .collect::<Vec<String>>(),
+                            ))
+                        } else {
+                            let must_condition = convert_group_tracking_ids_to_group_ids(
+                                cond,
+                                dataset_id,
+                                pool.clone(),
+                            )
                             .await?;
 
-                        if let Some(condition) = qdrant_condition {
-                            filter.must.push(condition);
+                            let qdrant_condition = must_condition
+                                .convert_to_qdrant_condition(dataset_id, pool.clone())
+                                .await?;
+
+                            if let Some(condition) = qdrant_condition {
+                                filter.must.push(condition);
+                            }
                         }
                     }
                     ConditionType::HasChunkId(cond) => {
@@ -269,6 +358,12 @@ pub async fn assemble_qdrant_filter(
             for must_not_condition in must_not_filters {
                 match must_not_condition {
                     ConditionType::Field(cond) => {
+                        if cond.field == "ids" || cond.field == "tracking_ids" {
+                            return Err(ServiceError::BadRequest(
+                                "must_not filters do not work with id or tracking_id".to_string(),
+                            ));
+                        }
+
                         let must_not_condition =
                             convert_group_tracking_ids_to_group_ids(cond, dataset_id, pool.clone())
                                 .await?;
