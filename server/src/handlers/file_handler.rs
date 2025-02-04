@@ -17,6 +17,7 @@ use crate::{
         },
         organization_operator::{get_file_size_sum_org, hash_function},
     },
+    FairBroccoliQueue,
 };
 use actix_web::{web, HttpResponse};
 use base64::{
@@ -276,7 +277,7 @@ pub struct UploadHtmlPageReqPayload {
 )]
 pub async fn upload_html_page(
     data: web::Json<UploadHtmlPageReqPayload>,
-    redis_pool: web::Data<RedisPool>,
+    broccoli_queue: web::Data<FairBroccoliQueue>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let req_payload = data.into_inner();
 
@@ -331,7 +332,7 @@ pub async fn upload_html_page(
         return Err(ServiceError::BadRequest("Webhook secret does not match.".to_string()).into());
     }
 
-    process_crawl_doc(dataset_id, req_payload.data, redis_pool).await?;
+    process_crawl_doc(dataset_id, req_payload.data, broccoli_queue).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
