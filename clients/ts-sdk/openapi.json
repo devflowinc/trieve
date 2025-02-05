@@ -3491,77 +3491,6 @@
         ]
       }
     },
-    "/api/dataset/crawl_options/{dataset_id}": {
-      "get": {
-        "tags": [
-          "Dataset"
-        ],
-        "summary": "Get Dataset Crawl Options",
-        "description": "Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.",
-        "operationId": "get_dataset_crawl_options",
-        "parameters": [
-          {
-            "name": "TR-Dataset",
-            "in": "header",
-            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "description": "The id of the dataset you want to retrieve.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Crawl options retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GetCrawlOptionsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Service error relating to retrieving the crawl options",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseBody"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Dataset not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKey": [
-              "admin"
-            ]
-          }
-        ]
-      }
-    },
     "/api/dataset/events": {
       "post": {
         "tags": [
@@ -8710,6 +8639,63 @@
           "site_url": "https://example.com"
         }
       },
+      "CrawlRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "url",
+          "status",
+          "crawl_type",
+          "next_crawl_at",
+          "interval",
+          "crawl_options",
+          "scrape_id",
+          "dataset_id",
+          "created_at",
+          "attempt_number"
+        ],
+        "properties": {
+          "attempt_number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "crawl_options": {
+            "$ref": "#/components/schemas/CrawlOptions"
+          },
+          "crawl_type": {
+            "$ref": "#/components/schemas/CrawlType"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interval": {
+            "type": "string"
+          },
+          "next_crawl_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "scrape_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CrawlStatus"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
       "CrawlShopifyOptions": {
         "type": "object",
         "title": "CrawlShopifyOptions",
@@ -8975,14 +8961,6 @@
           "dataset_name"
         ],
         "properties": {
-          "crawl_options": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CrawlOptions"
-              }
-            ],
-            "nullable": true
-          },
           "dataset_name": {
             "type": "string",
             "description": "Name of the dataset."
@@ -11302,42 +11280,6 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
-          }
-        }
-      },
-      "GetCrawlOptionsResponse": {
-        "type": "object",
-        "properties": {
-          "crawl_options": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CrawlOptions"
-              }
-            ],
-            "nullable": true
-          }
-        },
-        "example": {
-          "crawl_options": {
-            "exclude_paths": [
-              "https://example.com/exclude"
-            ],
-            "exclude_tags": [
-              "#ad",
-              "#footer"
-            ],
-            "include_paths": [
-              "https://example.com/include"
-            ],
-            "include_tags": [
-              "h1",
-              "p",
-              "a",
-              ".main-content"
-            ],
-            "interval": "daily",
-            "limit": 1000,
-            "site_url": "https://example.com"
           }
         }
       },
@@ -16987,14 +16929,6 @@
       "UpdateDatasetReqPayload": {
         "type": "object",
         "properties": {
-          "crawl_options": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CrawlOptions"
-              }
-            ],
-            "nullable": true
-          },
           "dataset_id": {
             "type": "string",
             "format": "uuid",

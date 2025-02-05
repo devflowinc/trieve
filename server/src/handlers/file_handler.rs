@@ -331,6 +331,8 @@ pub async fn upload_html_page(
         return Err(ServiceError::BadRequest("Webhook secret does not match.".to_string()).into());
     }
 
+    println!("Processing HTML page for {:?}", req_payload.scrape_id);
+
     process_crawl_doc(dataset_id, req_payload.data, broccoli_queue).await?;
 
     Ok(HttpResponse::NoContent().finish())

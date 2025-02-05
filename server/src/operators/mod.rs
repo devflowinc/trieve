@@ -21,4 +21,5 @@ pub mod stripe_operator;
 pub mod topic_operator;
 pub mod typo_operator;
 pub mod user_operator;
+pub mod video_operator;
 pub mod webhook_operator;
