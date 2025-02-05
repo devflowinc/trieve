@@ -116,7 +116,7 @@ export const SingleQuery = (props: SingleQueryProps) => {
                 {(key) => (
                   <li class="text-sm">
                     <span class="font-medium">{key}: </span>
-                    {props.data.request_params[key] as string}{" "}
+                    {JSON.stringify(props.data.request_params[key])}{" "}
                   </li>
                 )}
               </For>
