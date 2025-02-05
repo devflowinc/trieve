@@ -42,7 +42,7 @@ export const ChatMessage = ({
       animate={{ height: "auto" }}
       exit={{ height: 0 }}
       transition={{
-        duration: 0.2,
+        duration: 0.1,
         ease: "easeInOut",
       }}
       key={idx}
@@ -128,7 +128,7 @@ export const Message = ({
             chunk.metadata.page_title) &&
           chunk.link &&
           chunk.image_urls?.length &&
-          chunk.num_value
+          chunk.num_value,
       );
       if (ecommerceChunks && message.queryId) {
         trackViews({
@@ -151,7 +151,7 @@ export const Message = ({
           chunk.metadata.page_title) &&
         chunk.link &&
         chunk.image_urls?.length &&
-        chunk.num_value
+        chunk.num_value,
     )
     .map((chunk) => ({
       chunk,
@@ -169,7 +169,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title
+          index && item.title,
     )
     .map((item, index) => {
       const { title, descriptionHtml } = guessTitleAndDesc(item);
@@ -206,7 +206,7 @@ export const Message = ({
                   ? title
                   : title.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      ""
+                      "",
                     ),
               }}
             />
@@ -225,7 +225,7 @@ export const Message = ({
                   ? descriptionHtml
                   : descriptionHtml.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      ""
+                      "",
                     ),
               }}
             />
@@ -250,7 +250,7 @@ export const Message = ({
           chunk.metadata.title ||
           chunk.metadata.page_title) &&
         chunk.link &&
-        chunk.metadata.yt_preview_src
+        chunk.metadata.yt_preview_src,
     )
     .map((chunk) => {
       return {
@@ -283,7 +283,7 @@ export const Message = ({
       const chunkHtmlHeadingsDiv = document.createElement("div");
       chunkHtmlHeadingsDiv.innerHTML = chunk.chunk_html || "";
       const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-        "h1, h2, h3, h4, h5, h6"
+        "h1, h2, h3, h4, h5, h6",
       );
       const $firstHeading =
         chunkHtmlHeadings[0] ?? document.createElement("h1");
@@ -309,7 +309,8 @@ export const Message = ({
     .filter((chunk) => chunk.link && !chunk.metadata.yt_preview_src)
     .filter(
       (item, index, array) =>
-        array.findIndex((arrayItem) => arrayItem.title === item.title) === index
+        array.findIndex((arrayItem) => arrayItem.title === item.title) ===
+        index,
     )
     .map((item, index) => (
       <a
@@ -381,9 +382,6 @@ export const Message = ({
                   <div className="additional-links">{docsItems}</div>
                 )
               : null}
-            {props.followupQuestions && messages.length == idx + 1 && (
-              <FollowupQueries />
-            )}
             {isDoneReading && messages.length == idx + 1 && (
               <div className="feedback-wrapper">
                 <span className="spacer"></span>
@@ -436,6 +434,9 @@ export const Message = ({
                   </button>
                 </div>
               </div>
+            )}
+            {props.followupQuestions && messages.length == idx + 1 && (
+              <FollowupQueries />
             )}
           </div>
         </div>

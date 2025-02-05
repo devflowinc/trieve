@@ -12,7 +12,7 @@ export const SuggestedQuestions = () => {
     useSuggestedQuestions();
 
   const { props } = useModalState();
-  const [parent] = useAutoAnimate();
+  const [parent] = useAutoAnimate({ duration: 100 });
 
   if (messages.length) {
     return null;

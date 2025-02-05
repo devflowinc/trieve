@@ -71,14 +71,15 @@ export const ChatMode = () => {
         ref={modalRef}
       >
         <div
-          className={`system-information-wrapper${
-            currentGroup ? " with-group" : ""
-          } ${!props.inline && messages.length > 1 ? "tv-pt-4" : ""}`}
+          className={cn(
+            `system-information-wrapper`,
+            currentGroup && "with-group",
+          )}
         >
           <div
             ref={rootRef}
             className={cn(
-              "chat-modal-wrapper tv-relative tv-px-4 tv-overflow-auto tv-flex tv-flex-col tv-gap-4",
+              "chat-modal-wrapper tv-py-2 tv-relative tv-px-4 tv-overflow-auto tv-flex tv-flex-col tv-gap-4",
               props.inline && "chat-modal-inline",
               !props.inline && "chat-modal-popup",
             )}
@@ -102,13 +103,15 @@ export const ChatMode = () => {
           messages.length ? " with-messages" : ""
         }${props.inline ? " tv-pr-2" : ""}`}
       >
-        <div className="inline:tv-ml-2 inline:tv-mb-1">
-          <ImagePreview
-            isUploading={uploadingImage}
-            imageUrl={imageUrl}
-            active
-          />
-        </div>
+        {(uploadingImage || imageUrl) && (
+          <div className="inline:tv-ml-2 inline:tv-mb-1">
+            <ImagePreview
+              isUploading={uploadingImage}
+              imageUrl={imageUrl}
+              active
+            />
+          </div>
+        )}
         {currentGroup && (
           <div
             className={`chat-group-disclaimer ${
