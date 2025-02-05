@@ -1305,7 +1305,7 @@ pub async fn stream_response(
                                             }
                                         }
                                         text.clone()
-                                    } else if !started.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| Some(true)).unwrap_or(true) {
+                                    } else if !completion_first && !started.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| Some(true)).unwrap_or(true) {
                                         let returned_chunks = score_chunks.iter().map(|score_chunk| {
                                             ChunkMetadataStringTagSetWithHighlightsScore::from(score_chunk.clone())
                                         }).collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
