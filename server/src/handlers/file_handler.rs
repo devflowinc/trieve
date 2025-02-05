@@ -139,10 +139,13 @@ pub async fn upload_file_handler(
         .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     // Disallow split_avg with pdf2md
-    if data.pdf2md_options.is_some() && data.split_avg.unwrap_or(false) {
-        return Err(
-            ServiceError::BadRequest("split_avg is not supported with pdf2md".to_string()).into(),
-        );
+    if let Some(Pdf2MdOptions { use_pdf2md_ocr, .. }) = data.pdf2md_options {
+        if use_pdf2md_ocr && data.split_avg.unwrap_or(false) {
+            return Err(ServiceError::BadRequest(
+                "split_avg is not supported with pdf2md".to_string(),
+            )
+            .into());
+        }
     }
 
     let file_size_sum_pool = pool.clone();

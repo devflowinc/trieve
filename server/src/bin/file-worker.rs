@@ -701,7 +701,7 @@ async fn upload_file(
             file_worker_message.upload_file_data.clone(),
             vec![chunk],
             dataset_org_plan_sub.clone(),
-            None,
+            group_id,
             web_pool.clone(),
             event_queue.clone(),
             broccoli_queue.clone(),
