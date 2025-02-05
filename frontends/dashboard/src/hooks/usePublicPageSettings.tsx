@@ -179,6 +179,7 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
                   analytics: true,
                   placeholder: "Search...",
                   defaultSearchMode: "chat",
+                  type: "ecommerce",
                 },
               },
             },
