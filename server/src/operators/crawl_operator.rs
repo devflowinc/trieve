@@ -1,8 +1,7 @@
 use crate::data::models::CrawlOptions;
 use crate::data::models::CrawlStatus;
+use crate::data::models::CrawlType;
 use crate::data::models::FirecrawlCrawlRequest;
-use crate::data::models::RedisPool;
-use crate::data::models::VideoCrawlMessage;
 use crate::handlers::chunk_handler::ChunkReqPayload;
 use crate::handlers::chunk_handler::CrawlInterval;
 use crate::handlers::chunk_handler::FullTextBoost;
@@ -47,7 +46,7 @@ pub enum Status {
     Cancelled,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Hash, Eq, PartialEq)]
 pub struct Document {
     pub markdown: Option<String>,
     pub extract: Option<String>,
@@ -59,7 +58,7 @@ pub struct Document {
     pub metadata: Metadata,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Hash, Eq, PartialEq)]
 pub struct Metadata {
     pub title: Option<String>,
     pub description: Option<String>,
@@ -122,7 +121,7 @@ pub struct Metadata {
     pub site_map: Option<Sitemap>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Hash, Eq, PartialEq)]
 pub struct Sitemap {
     pub changefreq: String,
 }
@@ -146,61 +145,54 @@ pub fn validate_crawl_options(crawl_options: &CrawlOptions) -> Result<CrawlOptio
 pub async fn create_crawl_query(
     crawl_options: CrawlOptions,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
     broccoli_queue: web::Data<BroccoliQueue>,
     dataset_id: uuid::Uuid,
-) -> Result<Option<uuid::Uuid>, ServiceError> {
+) -> Result<CrawlRequest, ServiceError> {
     validate_crawl_options(&crawl_options)?;
 
-    if crawl_options
-        .scrape_options
-        .as_ref()
-        .is_some_and(|f| matches!(f, &ScrapeOptions::Youtube(_)))
-    {
-        create_youtube_crawl_request(crawl_options, dataset_id, pool, broccoli_queue)
-            .await
-            .map_err(|err| ServiceError::BadRequest(format!("Could not crawl site: {}", err)))?;
-        Ok(None)
-    } else {
-        let webhook_url = format!(
-            "{}/api/file/html_page",
-            std::env::var("BASE_SERVER_URL").unwrap_or("https://api.trieve.ai".to_string())
-        );
-        let webhook_metadata = serde_json::json!({
-            "dataset_id": dataset_id,
-            "webhook_secret": hash_function(std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or("firecrawl".to_string()).as_str())
-        });
-        let mut crawl_options = crawl_options.clone();
-        crawl_options.webhook_url = Some(webhook_url);
-        crawl_options.webhook_metadata = Some(webhook_metadata);
+    let webhook_url = format!(
+        "{}/api/file/html_page",
+        std::env::var("BASE_SERVER_URL").unwrap_or("https://api.trieve.ai".to_string())
+    );
+    let webhook_metadata = serde_json::json!({
+        "dataset_id": dataset_id,
+        "webhook_secret": hash_function(std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or("firecrawl".to_string()).as_str())
+    });
+    let mut crawl_options = crawl_options.clone();
+    crawl_options.webhook_url = Some(webhook_url);
+    crawl_options.webhook_metadata = Some(webhook_metadata);
 
-        let scrape_id = if let Some(ScrapeOptions::Shopify(_)) = crawl_options.scrape_options {
-            uuid::Uuid::nil()
-        } else {
-            crawl_site(crawl_options.clone())
-                .await
-                .map_err(|err| ServiceError::BadRequest(format!("Could not crawl site: {}", err)))?
-        };
-        create_crawl_request(crawl_options, dataset_id, scrape_id, pool, redis_pool).await?;
-        Ok(Some(scrape_id))
-    }
+    let scrape_id = if let Some(ScrapeOptions::Shopify(_)) | Some(ScrapeOptions::Youtube(_)) =
+        crawl_options.scrape_options
+    {
+        uuid::Uuid::nil()
+    } else {
+        crawl_site(crawl_options.clone())
+            .await
+            .map_err(|err| ServiceError::BadRequest(format!("Could not crawl site: {}", err)))?
+    };
+
+    let crawl =
+        create_crawl_request(crawl_options, dataset_id, scrape_id, broccoli_queue, pool).await?;
+    Ok(crawl)
 }
 
-pub async fn get_crawl_request_by_dataset_id_query(
+pub async fn get_crawl_requests_by_dataset_id_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Option<CrawlRequest>, ServiceError> {
+) -> Result<Vec<CrawlRequest>, ServiceError> {
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
     let mut conn = pool
         .get()
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
-    let request: Option<CrawlRequestPG> = crawl_requests_table::crawl_requests
+    let request: Vec<CrawlRequestPG> = crawl_requests_table::crawl_requests
         .filter(crawl_requests_table::dataset_id.eq(dataset_id))
         .select((
             crawl_requests_table::id,
             crawl_requests_table::url,
             crawl_requests_table::status,
+            crawl_requests_table::crawl_type,
             crawl_requests_table::next_crawl_at,
             crawl_requests_table::interval,
             crawl_requests_table::crawl_options,
@@ -209,12 +201,11 @@ pub async fn get_crawl_request_by_dataset_id_query(
             crawl_requests_table::created_at,
         ))
         .order_by(crawl_requests_table::created_at.desc())
-        .first(&mut conn)
+        .load(&mut conn)
         .await
-        .optional()
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    Ok(request.map(|req| req.into()))
+    Ok(request.into_iter().map(|req| req.into()).collect())
 }
 
 pub async fn get_crawl_requests_to_rerun(
@@ -230,6 +221,7 @@ pub async fn get_crawl_requests_to_rerun(
             id,
             url,
             status,
+            crawl_type,
             next_crawl_at,
             interval,
             crawl_options,
@@ -248,9 +240,9 @@ pub async fn create_crawl_request(
     crawl_options: CrawlOptions,
     dataset_id: uuid::Uuid,
     scrape_id: uuid::Uuid,
+    broccoli_queue: web::Data<BroccoliQueue>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
-) -> Result<uuid::Uuid, ServiceError> {
+) -> Result<CrawlRequest, ServiceError> {
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
 
     let interval = match crawl_options.interval {
@@ -264,6 +256,11 @@ pub async fn create_crawl_request(
         id: uuid::Uuid::new_v4(),
         url: crawl_options.site_url.clone().unwrap_or_default(),
         status: CrawlStatus::Pending,
+        crawl_type: crawl_options
+            .scrape_options
+            .clone()
+            .map(|s| s.into())
+            .unwrap_or(CrawlType::Firecrawl),
         interval,
         next_crawl_at: chrono::Utc::now().naive_utc(),
         crawl_options,
@@ -285,76 +282,19 @@ pub async fn create_crawl_request(
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    let serialized_message =
-        serde_json::to_string(&CrawlRequest::from(new_crawl_request.clone())).unwrap();
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
-
-    redis::cmd("lpush")
-        .arg("scrape_queue")
-        .arg(&serialized_message)
-        .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-    Ok(new_crawl_request.scrape_id)
-}
-
-pub async fn create_youtube_crawl_request(
-    crawl_options: CrawlOptions,
-    dataset_id: uuid::Uuid,
-    pool: web::Data<Pool>,
-    broccoli_queue: web::Data<BroccoliQueue>,
-) -> Result<(), ServiceError> {
-    use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
-
-    let interval = match crawl_options.interval {
-        Some(CrawlInterval::Daily) => std::time::Duration::from_secs(60 * 60 * 24),
-        Some(CrawlInterval::Weekly) => std::time::Duration::from_secs(60 * 60 * 24 * 7),
-        Some(CrawlInterval::Monthly) => std::time::Duration::from_secs(60 * 60 * 24 * 30),
-        None => std::time::Duration::from_secs(60 * 60 * 24),
-    };
-
-    let new_crawl_request: CrawlRequestPG = CrawlRequest {
-        id: uuid::Uuid::new_v4(),
-        url: crawl_options.site_url.clone().unwrap_or_default(),
-        status: CrawlStatus::Pending,
-        interval,
-        next_crawl_at: chrono::Utc::now().naive_utc(),
-        crawl_options,
-        scrape_id: uuid::Uuid::default(),
-        dataset_id,
-        created_at: chrono::Utc::now().naive_utc(),
-        attempt_number: 0,
+    if new_crawl_request.crawl_type != CrawlType::Firecrawl.to_string() {
+        broccoli_queue
+            .publish("crawl_queue", None, &new_crawl_request, None)
+            .await
+            .map_err(|e| {
+                log::error!("Error publishing message to crawl_queue: {:?}", e);
+                ServiceError::InternalServerError(
+                    "Error publishing message to crawl_queue".to_string(),
+                )
+            })?;
     }
-    .into();
 
-    let mut conn = pool
-        .get()
-        .await
-        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
-
-    diesel::insert_into(crawl_requests_table::crawl_requests)
-        .values(&new_crawl_request)
-        .execute(&mut conn)
-        .await
-        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
-
-    let message = VideoCrawlMessage {
-        channel_url: new_crawl_request.url.clone(),
-        dataset_id,
-    };
-    broccoli_queue
-        .publish("video_queue", None, &message, None)
-        .await
-        .map_err(|e| {
-            log::error!("Error publishing message to video_queue: {:?}", e);
-            ServiceError::InternalServerError("Error publishing message to video_queue".to_string())
-        })?;
-
-    Ok(())
+    Ok(new_crawl_request.into())
 }
 
 pub async fn update_crawl_status(
@@ -400,13 +340,13 @@ pub async fn update_next_crawl_at(
     Ok(())
 }
 
-pub async fn update_crawl_settings_for_dataset(
+pub async fn update_crawl_query(
     crawl_options: CrawlOptions,
+    crawl_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
     broccoli_queue: web::Data<BroccoliQueue>,
-    redis_pool: web::Data<RedisPool>,
-) -> Result<(), ServiceError> {
+) -> Result<CrawlRequest, ServiceError> {
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
     let mut conn = pool
         .get()
@@ -418,6 +358,7 @@ pub async fn update_crawl_settings_for_dataset(
             crawl_requests_table::id,
             crawl_requests_table::url,
             crawl_requests_table::status,
+            crawl_requests_table::crawl_type,
             crawl_requests_table::next_crawl_at,
             crawl_requests_table::interval,
             crawl_requests_table::crawl_options,
@@ -430,40 +371,15 @@ pub async fn update_crawl_settings_for_dataset(
         .await
         .optional()?;
 
-    if let Some(ref url) = crawl_options.site_url {
-        diesel::update(
-            crawl_requests_table::crawl_requests
-                .filter(crawl_requests_table::dataset_id.eq(dataset_id)),
-        )
-        .set(crawl_requests_table::url.eq(url))
-        .execute(&mut conn)
-        .await
-        .map_err(|e| {
-            log::error!("Error updating url on crawl_requests: {:?}", e);
-            ServiceError::InternalServerError("Error updating url on crawl_requests".to_string())
-        })?;
-    }
-
-    if let Some(interval) = crawl_options.interval.clone() {
-        let interval = match interval {
-            CrawlInterval::Daily => std::time::Duration::from_secs(60 * 60 * 24),
-            CrawlInterval::Weekly => std::time::Duration::from_secs(60 * 60 * 24 * 7),
-            CrawlInterval::Monthly => std::time::Duration::from_secs(60 * 60 * 24 * 30),
-        };
-        diesel::update(
-            crawl_requests_table::crawl_requests
-                .filter(crawl_requests_table::dataset_id.eq(dataset_id)),
-        )
-        .set(crawl_requests_table::interval.eq(interval.as_secs() as i32))
-        .execute(&mut conn)
-        .await
-        .map_err(|e| {
-            log::error!("Error updating interval on crawl_requests: {:?}", e);
-            ServiceError::InternalServerError(
-                "Error updating interval on crawl_requests".to_string(),
-            )
-        })?;
-    }
+    diesel::delete(
+        crawl_requests_table::crawl_requests.filter(crawl_requests_table::scrape_id.eq(crawl_id)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Error deleting crawl request: {:?}", e);
+        ServiceError::InternalServerError("Error deleting crawl request".to_string())
+    })?;
 
     let merged_options = if let Some(prev_crawl_req) = prev_crawl_req {
         let previous_crawl_options: CrawlOptions =
@@ -474,34 +390,32 @@ pub async fn update_crawl_settings_for_dataset(
         crawl_options
     };
 
-    diesel::update(
-        crawl_requests_table::crawl_requests
-            .filter(crawl_requests_table::dataset_id.eq(dataset_id)),
-    )
-    .set(crawl_requests_table::crawl_options.eq(
-        serde_json::to_value(merged_options.clone()).map_err(|e| {
-            log::error!("Failed to serialize crawl options: {:?}", e);
-            ServiceError::BadRequest("Failed to serialize crawl options".to_string())
-        })?,
-    ))
-    .execute(&mut conn)
-    .await
-    .map_err(|e| {
-        log::error!("Error updating crawl options on crawl_requests: {:?}", e);
-        ServiceError::InternalServerError(
-            "Error updating crawl options on crawl_requests".to_string(),
-        )
-    })?;
-
-    create_crawl_query(
+    let crawl = create_crawl_query(
         merged_options.clone(),
         pool.clone(),
-        redis_pool.clone(),
         broccoli_queue.clone(),
         dataset_id,
     )
     .await?;
 
+    Ok(crawl)
+}
+
+pub async fn delete_crawl_query(
+    crawl_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    diesel::delete(
+        crawl_requests_table::crawl_requests.filter(crawl_requests_table::id.eq(crawl_id)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     Ok(())
 }
 
@@ -566,7 +480,7 @@ pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestRes
             ServiceError::InternalServerError("Error parsing response from firecrawl".to_string())
         })?;
 
-        if ingest_result.status != Status::Completed {
+        if ingest_result.status != Status::Completed && ingest_result.status != Status::Scraping {
             log::info!("Crawl status: {:?}", ingest_result.status);
             return Ok(ingest_result);
         }

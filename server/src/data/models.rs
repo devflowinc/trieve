@@ -8051,12 +8051,49 @@ impl From<String> for CrawlStatus {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Display)]
+pub enum CrawlType {
+    #[serde(rename = "firecrawl")]
+    Firecrawl,
+    /// OpenAPI crawl type
+    #[serde(rename = "openapi")]
+    OpenAPI,
+    /// Shopify crawl type
+    #[serde(rename = "shopify")]
+    Shopify,
+    /// Youtube crawl type
+    #[serde(rename = "youtube")]
+    Youtube,
+}
+
+impl From<String> for CrawlType {
+    fn from(crawl_type: String) -> Self {
+        match crawl_type.as_str() {
+            "openapi" => CrawlType::OpenAPI,
+            "shopify" => CrawlType::Shopify,
+            "youtube" => CrawlType::Youtube,
+            _ => CrawlType::OpenAPI,
+        }
+    }
+}
+
+impl From<ScrapeOptions> for CrawlType {
+    fn from(scrape_options: ScrapeOptions) -> Self {
+        match scrape_options {
+            ScrapeOptions::OpenApi(_) => CrawlType::OpenAPI,
+            ScrapeOptions::Shopify(_) => CrawlType::Shopify,
+            ScrapeOptions::Youtube(_) => CrawlType::Youtube,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
 #[diesel(table_name = crawl_requests)]
 pub struct CrawlRequestPG {
     pub id: uuid::Uuid,
     pub url: String,
     pub status: String,
+    pub crawl_type: String,
     pub next_crawl_at: chrono::NaiveDateTime,
     pub interval: i32,
     pub crawl_options: serde_json::Value,
@@ -8070,6 +8107,7 @@ pub struct CrawlRequest {
     pub id: uuid::Uuid,
     pub url: String,
     pub status: CrawlStatus,
+    pub crawl_type: CrawlType,
     pub next_crawl_at: chrono::NaiveDateTime,
     pub interval: std::time::Duration,
     pub crawl_options: CrawlOptions,
@@ -8085,6 +8123,7 @@ impl From<CrawlRequestPG> for CrawlRequest {
             id: crawl_request.id,
             url: crawl_request.url,
             status: crawl_request.status.into(),
+            crawl_type: crawl_request.crawl_type.into(),
             next_crawl_at: crawl_request.next_crawl_at,
             interval: std::time::Duration::from_secs(crawl_request.interval as u64),
             crawl_options: serde_json::from_value(crawl_request.crawl_options).unwrap(),
@@ -8102,6 +8141,7 @@ impl From<CrawlRequest> for CrawlRequestPG {
             id: crawl_request.id,
             url: crawl_request.url,
             status: crawl_request.status.to_string(),
+            crawl_type: crawl_request.crawl_type.to_string(),
             next_crawl_at: crawl_request.next_crawl_at,
             interval: crawl_request.interval.as_secs() as i32,
             crawl_options: serde_json::to_value(crawl_request.crawl_options).unwrap(),

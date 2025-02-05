@@ -1,6 +1,7 @@
 pub mod analytics_handler;
 pub mod auth_handler;
 pub mod chunk_handler;
+pub mod crawl_handler;
 pub mod dataset_handler;
 pub mod etl_handler;
 pub mod event_handler;

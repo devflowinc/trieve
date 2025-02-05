@@ -243,7 +243,6 @@ impl Modify for SecurityAddon {
         handlers::dataset_handler::delete_dataset_by_tracking_id,
         handlers::dataset_handler::get_dataset,
         handlers::dataset_handler::get_dataset_by_tracking_id,
-        handlers::dataset_handler::get_dataset_crawl_options,
         handlers::dataset_handler::get_usage_by_dataset_id,
         handlers::dataset_handler::get_datasets_from_organization,
         handlers::dataset_handler::create_pagefind_index_for_dataset,
@@ -322,7 +321,6 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::TagsWithCount,
             handlers::dataset_handler::GetAllTagsReqPayload,
             handlers::dataset_handler::GetAllTagsResponse,
-            handlers::dataset_handler::GetCrawlOptionsResponse,
             handlers::dataset_handler::Datasets,
             handlers::dataset_handler::GetPagefindIndexResponse,
             data::models::UserApiKey,
@@ -444,6 +442,7 @@ impl Modify for SecurityAddon {
             data::models::ApiKeyRespBody,
             data::models::UsageGraphPoint,
             data::models::SearchResultType,
+            data::models::CrawlRequest,
             data::models::RoleProxy,
             data::models::ClickhouseRagTypes,
             data::models::ClickhouseSearchTypes,
@@ -878,10 +877,6 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/usage/{dataset_id}")
                                         .route(web::get().to(handlers::dataset_handler::get_usage_by_dataset_id)),
-                                )
-                                .service(
-                                    web::resource("/crawl_options/{dataset_id}")
-                                        .route(web::get().to(handlers::dataset_handler::get_dataset_crawl_options)),
                                 )
                                 .service(
                                     web::resource("/get_all_tags")

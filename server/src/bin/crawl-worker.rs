@@ -1,20 +1,23 @@
 use actix_web::web;
-use broccoli_queue::queue::BroccoliQueue;
+use broccoli_queue::{error::BroccoliError, queue::BroccoliQueue};
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
 use serde::{Deserialize, Serialize};
 use signal_hook::consts::SIGTERM;
 use std::{
     collections::HashSet,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
+    error::Error,
+    sync::{atomic::AtomicBool, Arc},
 };
 use trieve_server::{
-    data::models::{self, WorkerEvent},
+    data::models::{self, ChunkGroup, UnifiedId, WorkerEvent},
     operators::{
+        chunk_operator::get_row_count_for_organization_id_query,
         clickhouse_operator::{ClickHouseEvent, EventQueue},
+        crawl_operator::IngestResult,
+        dataset_operator::get_dataset_and_organization_from_dataset_id_query,
+        group_operator::create_groups_query,
         organization_operator::hash_function,
+        video_operator::{get_channel_id, get_channel_video_ids, get_transcript},
     },
 };
 use trieve_server::{
@@ -72,7 +75,7 @@ struct ShopifyImage {
     src: String,
 }
 
-fn create_chunk_req_payload(
+fn create_shopify_chunk_req_payload(
     product: &ShopifyProduct,
     variant: &ShopifyVariant,
     base_url: &str,
@@ -212,76 +215,13 @@ fn create_chunk_req_payload(
     })
 }
 
-#[allow(clippy::print_stdout)]
-async fn get_chunks_with_firecrawl(
-    scrape_request: CrawlRequest,
+async fn parse_chunks_with_firecrawl(
+    scrape_request: &CrawlRequest,
+    ingest_result: IngestResult,
+    spec: Option<oas3::Spec>,
     pool: web::Data<Pool>,
-) -> Result<(Vec<ChunkReqPayload>, usize), ServiceError> {
-    let mut chunks = vec![];
-    let mut spec = None;
-
-    if let Some(ScrapeOptions::OpenApi(openapi_options)) =
-        scrape_request.crawl_options.scrape_options.clone()
-    {
-        let client = reqwest::Client::new();
-
-        let schema = match client
-            .get(openapi_options.openapi_schema_url.clone())
-            .send()
-            .await
-        {
-            Ok(response) => {
-                let schema = response.text().await.map_err(|e| {
-                    log::error!("Error getting schema: {:?}", e);
-                    ServiceError::InternalServerError("Error getting schema".to_string())
-                })?;
-
-                Some(schema.replace("18446744073709552000", "2147483647"))
-            }
-            Err(e) => {
-                log::error!("Error getting schema: {:?}", e);
-                None
-            }
-        };
-
-        if let Some(schema) = schema {
-            spec = match oas3::from_str(&schema) {
-                Ok(schema) => Some(schema),
-                Err(e) => {
-                    log::error!("Error deserializing schema: {:?}", e);
-                    None
-                }
-            };
-        }
-    }
-
-    let ingest_result;
-    loop {
-        let temp_result = get_crawl_from_firecrawl(scrape_request.scrape_id)
-            .await
-            .map_err(|e| {
-                log::error!("Error getting scrape request: {:?}", e);
-                ServiceError::InternalServerError("Error getting scrape request".to_string())
-            })?;
-        if temp_result.status == Status::Completed {
-            ingest_result = temp_result;
-            break;
-        } else if temp_result.status == Status::Scraping {
-            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-        } else if temp_result.status == Status::Failed {
-            update_crawl_status(scrape_request.id, CrawlStatus::Failed, pool.clone())
-                .await
-                .map_err(|e| {
-                    log::error!("Error updating crawl status: {:?}", e);
-                    ServiceError::InternalServerError("Error updating crawl status".to_string())
-                })?;
-
-            return Err(ServiceError::InternalServerError(
-                "Scrape failed".to_string(),
-            ));
-        }
-    }
-
+    broccoli_queue: web::Data<BroccoliQueue>,
+) -> Result<(usize, usize), ServiceError> {
     update_crawl_status(
         scrape_request.id,
         CrawlStatus::GotResponseBackFromFirecrawl,
@@ -303,6 +243,7 @@ async fn get_chunks_with_firecrawl(
     log::info!("Processing {} documents from scrape", data.len());
 
     let page_count = data.len();
+    let mut chunks = vec![];
 
     for page in data {
         let crawl_doc = match page {
@@ -596,159 +537,410 @@ async fn get_chunks_with_firecrawl(
         }
     }
 
-    Ok((chunks, page_count))
+    let chunks_len = chunks.len();
+    send_chunks(
+        UnifiedId::TrieveUuid(scrape_request.dataset_id),
+        chunks,
+        pool.clone(),
+        broccoli_queue.clone(),
+    )
+    .await?;
+    Ok((chunks_len, page_count))
+}
+
+#[allow(clippy::print_stdout)]
+async fn get_chunks_with_firecrawl(
+    scrape_request: CrawlRequest,
+    pool: web::Data<Pool>,
+    broccoli_queue: web::Data<BroccoliQueue>,
+) -> Result<(usize, usize), ServiceError> {
+    let mut chunks = vec![];
+    let mut spec = None;
+
+    if let Some(ScrapeOptions::OpenApi(openapi_options)) =
+        scrape_request.crawl_options.scrape_options.clone()
+    {
+        let client = reqwest::Client::new();
+
+        let schema = match client
+            .get(openapi_options.openapi_schema_url.clone())
+            .send()
+            .await
+        {
+            Ok(response) => {
+                let schema = response.text().await.map_err(|e| {
+                    log::error!("Error getting schema: {:?}", e);
+                    ServiceError::InternalServerError("Error getting schema".to_string())
+                })?;
+
+                Some(schema.replace("18446744073709552000", "2147483647"))
+            }
+            Err(e) => {
+                log::error!("Error getting schema: {:?}", e);
+                None
+            }
+        };
+
+        if let Some(schema) = schema {
+            spec = match oas3::from_str(&schema) {
+                Ok(schema) => Some(schema),
+                Err(e) => {
+                    log::error!("Error deserializing schema: {:?}", e);
+                    None
+                }
+            };
+        }
+    }
+
+    let ingest_result;
+    loop {
+        let temp_result = get_crawl_from_firecrawl(scrape_request.scrape_id)
+            .await
+            .map_err(|e| {
+                log::error!("Error getting scrape request: {:?}", e);
+                ServiceError::InternalServerError("Error getting scrape request".to_string())
+            })?;
+        if temp_result.status == Status::Completed {
+            ingest_result = temp_result;
+            break;
+        } else if temp_result.status == Status::Scraping {
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        } else if temp_result.status == Status::Failed {
+            update_crawl_status(scrape_request.id, CrawlStatus::Failed, pool.clone())
+                .await
+                .map_err(|e| {
+                    log::error!("Error updating crawl status: {:?}", e);
+                    ServiceError::InternalServerError("Error updating crawl status".to_string())
+                })?;
+
+            return Err(ServiceError::InternalServerError(
+                "Scrape failed".to_string(),
+            ));
+        }
+    }
+
+    let chunks_len = chunks.len();
+    send_chunks(
+        UnifiedId::TrieveUuid(scrape_request.dataset_id),
+        chunks,
+        pool.clone(),
+        broccoli_queue.clone(),
+    );
+
+    Ok((chunks_len, page_count))
+}
+
+async fn parse_shopify_chunks(
+    crawl_request: CrawlRequest,
+    pool: web::Data<Pool>,
+    broccoli_queue: web::Data<BroccoliQueue>,
+) -> Result<(usize, usize), ServiceError> {
+    let mut cur_page = 1;
+    let mut chunks_len = 0;
+
+    loop {
+        let mut chunks: Vec<ChunkReqPayload> = Vec::new();
+        let cleaned_url = crawl_request.url.trim_end_matches("/");
+        let url = format!("{}/products.json?page={}", cleaned_url, cur_page);
+
+        let response = ureq::AgentBuilder::new()
+            .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                ServiceError::InternalServerError("Failed to acquire tls connection".to_string())
+            })?))
+            .build()
+            .get(&url)
+            .call();
+
+        let response = match response {
+            Ok(_) => response,
+            Err(_) => {
+                let proxy_url = std::env::var("PROXY_URL").ok();
+
+                match proxy_url {
+                    Some(proxy_url) => ureq::AgentBuilder::new()
+                        .proxy(ureq::Proxy::new(proxy_url.as_str()).map_err(|_| {
+                            ServiceError::InternalServerError("Failed to acquire proxy".to_string())
+                        })?)
+                        .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                            ServiceError::InternalServerError(
+                                "Failed to acquire tls connection".to_string(),
+                            )
+                        })?))
+                        .build()
+                        .get(&url)
+                        .call(),
+                    None => ureq::AgentBuilder::new()
+                        .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                            ServiceError::InternalServerError(
+                                "Failed to acquire tls connection".to_string(),
+                            )
+                        })?))
+                        .build()
+                        .get(&url)
+                        .call(),
+                }
+            }
+        };
+
+        let response: ShopifyResponse = response
+            .map_err(|e| ServiceError::InternalServerError(format!("Failed to fetch: {}", e)))?
+            .into_json()
+            .map_err(|e| {
+                ServiceError::InternalServerError(format!("Failed to parse JSON: {}", e))
+            })?;
+
+        if response.products.is_empty() {
+            break;
+        }
+
+        for product in response.products {
+            if product.variants.len() == 1 {
+                chunks.push(create_shopify_chunk_req_payload(
+                    &product,
+                    &product.variants[0],
+                    cleaned_url,
+                    &crawl_request,
+                )?);
+            } else {
+                for variant in &product.variants {
+                    chunks.push(create_shopify_chunk_req_payload(
+                        &product,
+                        variant,
+                        cleaned_url,
+                        &crawl_request,
+                    )?);
+                }
+            }
+        }
+
+        cur_page += 1;
+        chunks_len += chunks.len();
+
+        send_chunks(
+            UnifiedId::TrieveUuid(crawl_request.dataset_id),
+            chunks,
+            pool.clone(),
+            broccoli_queue.clone(),
+        )
+        .await?;
+    }
+
+    Ok((chunks_len, cur_page))
+}
+
+async fn parse_youtube_chunks(
+    crawl_request: CrawlRequest,
+    pool: web::Data<Pool>,
+    broccoli_queue: web::Data<BroccoliQueue>,
+) -> Result<(usize, usize), ServiceError> {
+    let youtube_api_key = get_env!("YOUTUBE_API_KEY", "YOUTUBE_API_KEY is not set");
+
+    let channel_id = get_channel_id(youtube_api_key, crawl_request.url)
+        .await
+        .map_err(|e| {
+            log::error!("Could not get channel id {:?}", e);
+            ServiceError::InternalServerError("Could not get channel id".to_string())
+        })?;
+
+    let videos = get_channel_video_ids(youtube_api_key, &channel_id)
+        .await
+        .unwrap();
+
+    let videos_len = videos.len();
+    let mut chunks_len = 0;
+    log::info!("Got {} videos", videos.len());
+
+    for video in videos {
+        let mut chunks = Vec::new();
+        let chunk_group = ChunkGroup::from_details(
+            Some(video.snippet.title.clone()),
+            Some(video.snippet.description.clone()),
+            crawl_request.dataset_id,
+            None,
+            None,
+            None,
+        );
+
+        let chunk_group_option = create_groups_query(vec![chunk_group], true, pool.clone())
+            .await
+            .map_err(|e| {
+                log::error!("Could not create group {:?}", e);
+                ServiceError::InternalServerError("Could not create group".to_string())
+            })?
+            .pop();
+
+        let chunk_group = match chunk_group_option {
+            Some(group) => group,
+            None => {
+                return Err(ServiceError::InternalServerError(
+                    "Could not create group".to_string(),
+                ));
+            }
+        };
+
+        log::info!("Getting transcripts for video_id {}", video.id.video_id);
+        let transcripts = get_transcript(&video.id.video_id).await.map_err(|e| {
+            ServiceError::InternalServerError(format!(
+                "Failed to get transcript for video_id {}: {}",
+                video.id.video_id, e
+            ))
+        });
+
+        match transcripts {
+            Ok(transcripts) => {
+                for transcript in transcripts {
+                    let create_chunk_data = ChunkReqPayload {
+                        chunk_html: Some(transcript.text),
+                        semantic_content: None,
+                        link: Some(format!(
+                            "https://www.youtube.com/watch?v={}&t={}",
+                            video.id.video_id,
+                            transcript.start.as_secs()
+                        )),
+                        tag_set: None,
+                        metadata: Some(json!({
+                            "heading": video.snippet.title.clone(),
+                            "title": video.snippet.title.clone(),
+                            "url": format!("https://www.youtube.com/watch?v={}", video.id.video_id),
+                            "hierarchy": video.snippet.title.clone(),
+                            "description": video.snippet.description.clone(),
+                            "yt_preview_src": video.snippet.thumbnails.high.url.clone(),
+                        })),
+                        group_ids: Some(vec![chunk_group.id]),
+                        group_tracking_ids: None,
+                        location: None,
+                        tracking_id: None,
+                        upsert_by_tracking_id: None,
+                        time_stamp: Some(video.snippet.publish_time.clone()),
+                        weight: None,
+                        split_avg: None,
+                        convert_html_to_text: None,
+                        image_urls: Some(vec![video.snippet.thumbnails.high.url.clone()]),
+                        num_value: None,
+                        fulltext_boost: None,
+                        semantic_boost: None,
+                        high_priority: None,
+                    };
+
+                    chunks.push(create_chunk_data);
+                }
+
+                log::info!(
+                    "Sending {} chunks from transcript of video {}",
+                    chunks.len(),
+                    video.id.video_id
+                );
+
+                chunks_len += chunks.len();
+                send_chunks(
+                    UnifiedId::TrieveUuid(crawl_request.dataset_id),
+                    chunks,
+                    pool.clone(),
+                    broccoli_queue.clone(),
+                )
+                .await?;
+            }
+            Err(e) => {
+                log::error!("Failed to get transcript for video {}", e);
+            }
+        }
+    }
+
+    Ok((chunks_len, videos_len))
+}
+
+async fn send_chunks(
+    dataset_id: UnifiedId,
+    chunks: Vec<ChunkReqPayload>,
+    pool: web::Data<Pool>,
+    broccoli_queue: web::Data<BroccoliQueue>,
+) -> Result<(), ServiceError> {
+    let dataset_org_plan_sub =
+        get_dataset_and_organization_from_dataset_id_query(dataset_id, None, pool.clone())
+            .await
+            .map_err(|e| {
+                log::error!("Could not get dataset and organization {:?}", e);
+                ServiceError::InternalServerError(
+                    "Could not get dataset and organization".to_string(),
+                )
+            })?;
+
+    let chunk_count = get_row_count_for_organization_id_query(
+        dataset_org_plan_sub.organization.organization.id,
+        pool.clone(),
+    )
+    .await
+    .map_err(|e| {
+        log::error!("Could not get row count {:?}", e);
+        ServiceError::InternalServerError("Could not get row count".to_string())
+    })?;
+
+    if chunk_count + chunks.len()
+        > dataset_org_plan_sub
+            .organization
+            .plan
+            .unwrap_or_default()
+            .chunk_count as usize
+    {
+        return Err(ServiceError::InternalServerError(
+            "Chunk count exceeds plan limit".to_string(),
+        ));
+    }
+
+    let chunk_segments = chunks
+        .chunks(120)
+        .map(|chunk_segment| chunk_segment.to_vec())
+        .collect::<Vec<Vec<ChunkReqPayload>>>();
+
+    for chunk_segment in chunk_segments {
+        let (ingestion_message, chunk_metadatas) =
+            create_chunk_metadata(chunk_segment, dataset_org_plan_sub.dataset.id)
+                .await
+                .map_err(|e| {
+                    log::error!("Could not create chunk metadata {:?}", e);
+                    ServiceError::InternalServerError("Could not create chunk metadata".to_string())
+                })?;
+
+        if chunk_metadatas.is_empty() {
+            continue;
+        }
+
+        broccoli_queue
+            .publish(
+                "ingestion",
+                Some(dataset_org_plan_sub.dataset.id.to_string()),
+                &ingestion_message,
+                None,
+            )
+            .await
+            .map_err(|e| {
+                log::error!("Could not publish message {:?}", e);
+                ServiceError::InternalServerError("Could not publish message".to_string())
+            })?;
+    }
+
+    Ok(())
 }
 
 #[allow(clippy::print_stdout)]
 async fn crawl(
     crawl_request: CrawlRequest,
     pool: web::Data<Pool>,
-    broccoli_queue: BroccoliQueue,
+    broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<ScrapeReport, ServiceError> {
     log::info!("Starting crawl for scrape_id: {}", crawl_request.id);
-    let (page_count, chunks_created) = if let Some(ScrapeOptions::Shopify(_)) =
+    let (chunks_created, pages_scraped) = if let Some(ScrapeOptions::Shopify(_)) =
         crawl_request.crawl_options.scrape_options.clone()
     {
-        let mut cur_page = 1;
-        let mut chunk_count = 0;
-
-        loop {
-            let mut chunks: Vec<ChunkReqPayload> = Vec::new();
-            let cleaned_url = crawl_request.url.trim_end_matches("/");
-            let url = format!("{}/products.json?page={}", cleaned_url, cur_page);
-
-            let response = ureq::AgentBuilder::new()
-                .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
-                    ServiceError::InternalServerError(
-                        "Failed to acquire tls connection".to_string(),
-                    )
-                })?))
-                .build()
-                .get(&url)
-                .call();
-
-            let response = match response {
-                Ok(_) => response,
-                Err(_) => {
-                    let proxy_url = std::env::var("PROXY_URL").ok();
-
-                    match proxy_url {
-                        Some(proxy_url) => ureq::AgentBuilder::new()
-                            .proxy(ureq::Proxy::new(proxy_url.as_str()).map_err(|_| {
-                                ServiceError::InternalServerError(
-                                    "Failed to acquire proxy".to_string(),
-                                )
-                            })?)
-                            .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(
-                                |_| {
-                                    ServiceError::InternalServerError(
-                                        "Failed to acquire tls connection".to_string(),
-                                    )
-                                },
-                            )?))
-                            .build()
-                            .get(&url)
-                            .call(),
-                        None => ureq::AgentBuilder::new()
-                            .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(
-                                |_| {
-                                    ServiceError::InternalServerError(
-                                        "Failed to acquire tls connection".to_string(),
-                                    )
-                                },
-                            )?))
-                            .build()
-                            .get(&url)
-                            .call(),
-                    }
-                }
-            };
-
-            let response: ShopifyResponse = response
-                .map_err(|e| ServiceError::InternalServerError(format!("Failed to fetch: {}", e)))?
-                .into_json()
-                .map_err(|e| {
-                    ServiceError::InternalServerError(format!("Failed to parse JSON: {}", e))
-                })?;
-
-            if response.products.is_empty() {
-                break;
-            }
-
-            for product in response.products {
-                if product.variants.len() == 1 {
-                    chunks.push(create_chunk_req_payload(
-                        &product,
-                        &product.variants[0],
-                        cleaned_url,
-                        &crawl_request,
-                    )?);
-                } else {
-                    for variant in &product.variants {
-                        chunks.push(create_chunk_req_payload(
-                            &product,
-                            variant,
-                            cleaned_url,
-                            &crawl_request,
-                        )?);
-                    }
-                }
-            }
-
-            let chunks_to_upload = chunks.chunks(120);
-
-            for chunk in chunks_to_upload {
-                let (chunk_ingestion_message, chunk_metadatas) =
-                    create_chunk_metadata(chunk.to_vec(), crawl_request.dataset_id).await?;
-
-                if !chunk_metadatas.is_empty() {
-                    broccoli_queue
-                        .publish(
-                            "ingestion",
-                            Some(crawl_request.dataset_id.to_string()),
-                            &chunk_ingestion_message,
-                            None,
-                        )
-                        .await
-                        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-                }
-            }
-
-            chunk_count += chunks.len();
-            cur_page += 1;
-        }
-
-        (cur_page, chunk_count)
+        parse_shopify_chunks(crawl_request.clone(), pool.clone(), broccoli_queue.clone()).await?
+    } else if let Some(ScrapeOptions::Youtube(_)) =
+        crawl_request.crawl_options.scrape_options.clone()
+    {
+        parse_youtube_chunks(crawl_request.clone(), pool.clone(), broccoli_queue.clone()).await?
     } else {
-        let (chunks, page_count) =
-            get_chunks_with_firecrawl(crawl_request.clone(), pool.clone()).await?;
-        let chunks_to_upload = chunks.chunks(120);
-
-        for batch in chunks_to_upload {
-            let (chunk_ingestion_message, chunk_metadatas) =
-                create_chunk_metadata(batch.to_vec(), crawl_request.dataset_id).await?;
-
-            if !chunk_metadatas.is_empty() {
-                broccoli_queue
-                    .publish(
-                        "ingestion",
-                        Some(crawl_request.dataset_id.to_string()),
-                        &chunk_ingestion_message,
-                        None,
-                    )
-                    .await
-                    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-            }
-        }
-        (page_count, chunks.len())
+        get_chunks_with_firecrawl(crawl_request.clone(), pool.clone(), broccoli_queue.clone())
+            .await?
     };
-
-    update_crawl_status(
-        crawl_request.scrape_id,
-        CrawlStatus::Completed,
-        pool.clone(),
-    )
-    .await?;
 
     update_next_crawl_at(
         crawl_request.scrape_id,
@@ -759,191 +951,102 @@ async fn crawl(
 
     Ok(ScrapeReport {
         request_id: crawl_request.id,
-        pages_scraped: page_count,
+        pages_scraped,
         chunks_created,
     })
 }
 
 #[allow(clippy::print_stdout)]
 async fn scrape_worker(
-    should_terminate: Arc<AtomicBool>,
-    redis_pool: web::Data<RedisPool>,
+    crawl_request: CrawlRequest,
     pool: web::Data<Pool>,
     event_queue: actix_web::web::Data<EventQueue>,
-    broccoli_queue: BroccoliQueue,
-) {
+    broccoli_queue: web::Data<BroccoliQueue>,
+) -> Result<(), BroccoliError> {
     log::info!("Starting scrape worker service thread");
 
-    let mut redis_conn_sleep = std::time::Duration::from_secs(1);
-
-    #[allow(unused_assignments)]
-    let mut opt_redis_connection = None;
-
-    loop {
-        let borrowed_redis_connection = match redis_pool.get().await {
-            Ok(redis_connection) => Some(redis_connection),
-            Err(err) => {
-                log::error!("Failed to get redis connection outside of loop: {:?}", err);
-                None
-            }
-        };
-
-        if borrowed_redis_connection.is_some() {
-            opt_redis_connection = borrowed_redis_connection;
-            break;
+    match update_crawl_status(crawl_request.scrape_id, CrawlStatus::Pending, pool.clone()).await {
+        Ok(_) => {}
+        Err(err) => {
+            log::error!("Failed to update crawl status: {:?}", err);
         }
-
-        log::info!(
-            "Retrying to get redis connection out of loop after {:?} secs",
-            redis_conn_sleep
-        );
-        tokio::time::sleep(redis_conn_sleep).await;
-        redis_conn_sleep = std::cmp::min(redis_conn_sleep * 2, std::time::Duration::from_secs(300));
     }
 
-    let mut redis_connection =
-        opt_redis_connection.expect("Failed to get redis connection outside of loop");
+    event_queue
+        .send(ClickHouseEvent::WorkerEvent(
+            WorkerEvent::from_details(
+                crawl_request.dataset_id,
+                models::EventType::CrawlStarted {
+                    scrape_id: crawl_request.scrape_id,
+                    crawl_options: crawl_request.clone().crawl_options,
+                },
+            )
+            .into(),
+        ))
+        .await;
 
-    let mut broken_pipe_sleep = std::time::Duration::from_secs(10);
+    match crawl(crawl_request.clone(), pool.clone(), broccoli_queue.clone()).await {
+        Ok(scrape_report) => {
+            log::info!("Scrape job completed: {:?}", scrape_report);
 
-    loop {
-        if should_terminate.load(Ordering::Relaxed) {
-            log::info!("Shutting down");
-            break;
-        }
+            event_queue
+                .send(ClickHouseEvent::WorkerEvent(
+                    WorkerEvent::from_details(
+                        crawl_request.dataset_id,
+                        models::EventType::CrawlCompleted {
+                            scrape_id: scrape_report.request_id,
+                            pages_crawled: scrape_report.pages_scraped,
+                            chunks_created: scrape_report.chunks_created,
+                            crawl_options: crawl_request.crawl_options,
+                        },
+                    )
+                    .into(),
+                ))
+                .await;
 
-        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
-            .arg("scrape_queue")
-            .arg("scrape_processing")
-            .arg(1.0)
-            .query_async(&mut redis_connection.clone())
-            .await;
-
-        let serialized_message = if let Ok(payload) = payload_result {
-            broken_pipe_sleep = std::time::Duration::from_secs(10);
-
-            if payload.is_empty() {
-                continue;
-            }
-
-            payload
-                .first()
-                .expect("Payload must have a first element")
-                .clone()
-        } else {
-            log::error!("Unable to process {:?}", payload_result);
-
-            if payload_result.is_err_and(|err| err.is_io_error()) {
-                log::error!("IO broken pipe error, trying to acquire new connection");
-                match redis_pool.get().await {
-                    Ok(redis_conn) => {
-                        log::info!("Got new redis connection after broken pipe! Resuming polling");
-                        redis_connection = redis_conn;
-                    }
-                    Err(err) => {
-                        log::error!(
-                                "Failed to get redis connection after broken pipe, will try again after {broken_pipe_sleep:?} secs, err: {:?}",
-                                err
-                            );
-                    }
+            match update_crawl_status(
+                scrape_report.request_id,
+                CrawlStatus::Completed,
+                pool.clone(),
+            )
+            .await
+            {
+                Ok(_) => {}
+                Err(err) => {
+                    log::error!("Failed to update crawl status: {:?}", err);
                 }
-
-                tokio::time::sleep(broken_pipe_sleep).await;
-                broken_pipe_sleep =
-                    std::cmp::min(broken_pipe_sleep * 2, std::time::Duration::from_secs(300));
-            }
-
-            continue;
-        };
-        let crawl_request: CrawlRequest =
-            serde_json::from_str(&serialized_message).expect("Failed to parse file message");
-
-        match update_crawl_status(crawl_request.scrape_id, CrawlStatus::Pending, pool.clone()).await
-        {
-            Ok(_) => {}
-            Err(err) => {
-                log::error!("Failed to update crawl status: {:?}", err);
-                continue;
             }
         }
+        Err(err) => {
+            log::error!("Failed to scrape website: {:?}", err);
 
-        event_queue
-            .send(ClickHouseEvent::WorkerEvent(
-                WorkerEvent::from_details(
-                    crawl_request.dataset_id,
-                    models::EventType::CrawlStarted {
-                        scrape_id: crawl_request.scrape_id,
-                        crawl_options: crawl_request.clone().crawl_options,
-                    },
-                )
-                .into(),
-            ))
-            .await;
+            event_queue
+                .send(ClickHouseEvent::WorkerEvent(
+                    WorkerEvent::from_details(
+                        crawl_request.dataset_id,
+                        models::EventType::CrawlFailed {
+                            scrape_id: crawl_request.id,
+                            crawl_options: crawl_request.crawl_options.clone(),
+                            error: format!("{:?}", err),
+                        },
+                    )
+                    .into(),
+                ))
+                .await;
 
-        match crawl(crawl_request.clone(), pool.clone(), broccoli_queue.clone()).await {
-            Ok(scrape_report) => {
-                log::info!("Scrape job completed: {:?}", scrape_report);
-
-                event_queue
-                    .send(ClickHouseEvent::WorkerEvent(
-                        WorkerEvent::from_details(
-                            crawl_request.dataset_id,
-                            models::EventType::CrawlCompleted {
-                                scrape_id: scrape_report.request_id,
-                                pages_crawled: scrape_report.pages_scraped,
-                                chunks_created: scrape_report.chunks_created,
-                                crawl_options: crawl_request.crawl_options,
-                            },
-                        )
-                        .into(),
-                    ))
-                    .await;
-
-                match update_crawl_status(
-                    scrape_report.request_id,
-                    CrawlStatus::Completed,
-                    pool.clone(),
-                )
-                .await
-                {
-                    Ok(_) => {}
-                    Err(err) => {
-                        log::error!("Failed to update crawl status: {:?}", err);
-                        continue;
-                    }
+            match update_crawl_status(crawl_request.id, CrawlStatus::Failed, pool.clone()).await {
+                Ok(_) => {}
+                Err(err) => {
+                    log::error!("Failed to update crawl status: {:?}", err);
                 }
-
-                let _ = redis::cmd("LREM")
-                    .arg("scrape_processing")
-                    .arg(1)
-                    .arg(serialized_message)
-                    .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_connection)
-                    .await;
             }
-            Err(err) => {
-                log::error!("Failed to scrape website: {:?}", err);
-
-                event_queue
-                    .send(ClickHouseEvent::WorkerEvent(
-                        WorkerEvent::from_details(
-                            crawl_request.dataset_id,
-                            models::EventType::CrawlFailed {
-                                scrape_id: crawl_request.id,
-                                crawl_options: crawl_request.crawl_options.clone(),
-                                error: format!("{:?}", err),
-                            },
-                        )
-                        .into(),
-                    ))
-                    .await;
-
-                let _ = readd_error_to_queue(crawl_request, err, redis_pool.clone()).await;
-            }
-        };
-    }
+        }
+    };
+    Ok(())
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     dotenvy::dotenv().ok();
     env_logger::builder()
         .target(env_logger::Target::Stdout)
@@ -967,78 +1070,63 @@ fn main() {
 
     let web_pool = actix_web::web::Data::new(pool.clone());
 
-    tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .expect("Failed to create tokio runtime")
-        .block_on(async move {
-            let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
-            let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
-                .unwrap_or("2".to_string())
-                .parse()
-                .unwrap_or(2);
+    let redis_url = get_env!("REDIS_URL", "REDIS_URL is not set");
+    let redis_connections: u32 = std::env::var("REDIS_CONNECTIONS")
+        .unwrap_or("2".to_string())
+        .parse()
+        .unwrap_or(2);
 
-            let redis_manager = bb8_redis::RedisConnectionManager::new(redis_url)
-                .expect("Failed to connect to redis");
+    let should_terminate = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
+        .expect("Failed to register shutdown hook");
 
-            let redis_pool = bb8_redis::bb8::Pool::builder()
-                .max_size(redis_connections)
-                .connection_timeout(std::time::Duration::from_secs(2))
-                .build(redis_manager)
-                .await
-                .expect("Failed to create redis pool");
+    let event_queue = if std::env::var("USE_ANALYTICS")
+        .unwrap_or("false".to_string())
+        .parse()
+        .unwrap_or(false)
+    {
+        log::info!("Analytics enabled");
 
-            let web_redis_pool = actix_web::web::Data::new(redis_pool);
-
-            let should_terminate = Arc::new(AtomicBool::new(false));
-            signal_hook::flag::register(SIGTERM, Arc::clone(&should_terminate))
-                .expect("Failed to register shutdown hook");
-
-            let event_queue = if std::env::var("USE_ANALYTICS")
-                .unwrap_or("false".to_string())
-                .parse()
-                .unwrap_or(false)
-            {
-                log::info!("Analytics enabled");
-
-                let clickhouse_client = clickhouse::Client::default()
-                    .with_url(
-                        std::env::var("CLICKHOUSE_URL")
-                            .unwrap_or("http://localhost:8123".to_string()),
-                    )
-                    .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
-                    .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
-                    .with_database(
-                        std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()),
-                    )
-                    .with_option("async_insert", "1")
-                    .with_option("wait_for_async_insert", "0");
-
-                let mut event_queue = EventQueue::new(clickhouse_client.clone());
-                event_queue.start_service();
-                event_queue
-            } else {
-                log::info!("Analytics disabled");
-                EventQueue::default()
-            };
-            let web_event_queue = actix_web::web::Data::new(event_queue);
-
-            let broccoli_queue = BroccoliQueue::builder(redis_url)
-                .pool_connections(redis_connections.try_into().unwrap())
-                .failed_message_retry_strategy(Default::default())
-                .build()
-                .await
-                .expect("Failed to create broccoli queue");
-
-            scrape_worker(
-                should_terminate,
-                web_redis_pool,
-                web_pool,
-                web_event_queue,
-                broccoli_queue,
+        let clickhouse_client = clickhouse::Client::default()
+            .with_url(
+                std::env::var("CLICKHOUSE_URL").unwrap_or("http://localhost:8123".to_string()),
             )
-            .await
-        });
+            .with_user(std::env::var("CLICKHOUSE_USER").unwrap_or("default".to_string()))
+            .with_password(std::env::var("CLICKHOUSE_PASSWORD").unwrap_or("".to_string()))
+            .with_database(std::env::var("CLICKHOUSE_DATABASE").unwrap_or("default".to_string()))
+            .with_option("async_insert", "1")
+            .with_option("wait_for_async_insert", "0");
+
+        let mut event_queue = EventQueue::new(clickhouse_client.clone());
+        event_queue.start_service();
+        event_queue
+    } else {
+        log::info!("Analytics disabled");
+        EventQueue::default()
+    };
+    let web_event_queue = actix_web::web::Data::new(event_queue);
+
+    let broccoli_queue = BroccoliQueue::builder(redis_url)
+        .pool_connections(redis_connections.try_into().unwrap())
+        .failed_message_retry_strategy(Default::default())
+        .build()
+        .await
+        .expect("Failed to create broccoli queue");
+
+    let web_broccoli_queue = actix_web::web::Data::new(broccoli_queue.clone());
+
+    broccoli_queue
+        .process_messages("crawl_queue", None, None, move |msg| {
+            scrape_worker(
+                msg.payload,
+                web_pool.clone(),
+                web_event_queue.clone(),
+                web_broccoli_queue.clone(),
+            )
+        })
+        .await?;
+
+    Ok(())
 }
 
 pub async fn readd_error_to_queue(

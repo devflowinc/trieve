@@ -72,6 +72,7 @@ diesel::table! {
         dataset_id -> Uuid,
         created_at -> Timestamp,
         crawl_options -> Jsonb,
+        crawl_type -> Text,
     }
 }
 

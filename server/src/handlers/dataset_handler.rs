@@ -1,7 +1,7 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
-        CrawlOptions, Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
+        Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
         DatasetConfigurationDTO, DatasetDTO, OrganizationWithSubAndPlan,
         PagefindIndexWorkerMessage, Pool, RedisPool, StripePlan,
     },
@@ -9,10 +9,6 @@ use crate::{
     get_env,
     middleware::auth_middleware::{verify_admin, verify_owner},
     operators::{
-        crawl_operator::{
-            create_crawl_query, get_crawl_request_by_dataset_id_query,
-            update_crawl_settings_for_dataset, validate_crawl_options,
-        },
         dataset_operator::{
             clear_dataset_by_dataset_id_query, create_dataset_query, create_datasets_query,
             get_dataset_by_id_query, get_dataset_by_tracking_id_query, get_dataset_usage_query,
@@ -26,7 +22,6 @@ use crate::{
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
-use broccoli_queue::queue::BroccoliQueue;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::future::{ready, Ready};
@@ -110,8 +105,6 @@ pub struct CreateDatasetReqPayload {
     pub tracking_id: Option<String>,
     /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously setting this field. We recommend setting through creating a dataset at dashboard.trieve.ai and managing it's settings there.
     pub server_configuration: Option<DatasetConfigurationDTO>,
-    /// Optional site to crawl for the dataset. If provided, the dataset will be populated with the contents of the site.
-    pub crawl_options: Option<CrawlOptions>,
 }
 
 /// Create Dataset
@@ -137,8 +130,6 @@ pub struct CreateDatasetReqPayload {
 pub async fn create_dataset(
     data: web::Json<CreateDatasetReqPayload>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
-    broccoli_queue: web::Data<BroccoliQueue>,
     org_with_sub_and_plan: OrganizationWithSubAndPlan,
     user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
@@ -161,10 +152,6 @@ pub async fn create_dataset(
         }
     }
 
-    if let Some(crawl_options) = data.crawl_options.clone() {
-        validate_crawl_options(&crawl_options)?;
-    };
-
     let dataset = Dataset::from_details(
         data.dataset_name.clone(),
         org_id,
@@ -176,17 +163,6 @@ pub async fn create_dataset(
     );
 
     let d = create_dataset_query(dataset.clone(), pool.clone()).await?;
-
-    if let Some(crawl_options) = data.crawl_options.clone() {
-        create_crawl_query(
-            crawl_options.clone(),
-            pool.clone(),
-            redis_pool.clone(),
-            broccoli_queue.clone(),
-            dataset.id,
-        )
-        .await?;
-    };
 
     let dataset_created_event = DittoTrackRequest {
         event: "DATASET_CREATED".to_string(),
@@ -251,8 +227,6 @@ pub struct UpdateDatasetReqPayload {
     pub server_configuration: Option<DatasetConfigurationDTO>,
     /// Optional new tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. If not provided, the tracking ID will not be updated. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
     pub new_tracking_id: Option<String>,
-    /// Update crawler settings for the dataset. If provided, the dataset will be populated with the contents of the site.
-    pub crawl_options: Option<CrawlOptions>,
 }
 
 /// Update Dataset by ID or Tracking ID
@@ -279,8 +253,6 @@ pub struct UpdateDatasetReqPayload {
 pub async fn update_dataset(
     data: web::Json<UpdateDatasetReqPayload>,
     pool: web::Data<Pool>,
-    redis_pool: web::Data<RedisPool>,
-    broccoli_queue: web::Data<BroccoliQueue>,
     user: OwnerOnly,
     org_with_plan_and_sub: OrganizationWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
@@ -297,10 +269,6 @@ pub async fn update_dataset(
         return Err(ServiceError::BadRequest(
             "You must provide a dataset_id or tracking_id to update a dataset".to_string(),
         ));
-    };
-
-    if let Some(crawl_options) = data.crawl_options.clone() {
-        validate_crawl_options(&crawl_options)?;
     };
 
     if !verify_owner(&user, &curr_dataset.organization_id) {
@@ -321,71 +289,7 @@ pub async fn update_dataset(
     )
     .await?;
 
-    if let Some(crawl_options) = data.crawl_options.clone() {
-        update_crawl_settings_for_dataset(
-            crawl_options.clone(),
-            curr_dataset.id,
-            pool.clone(),
-            broccoli_queue.clone(),
-            redis_pool.clone(),
-        )
-        .await?;
-    };
-
     Ok(HttpResponse::Ok().json(d))
-}
-
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
-#[schema(example = json!({
-    "crawl_options": {
-        "site_url": "https://example.com",
-        "interval": "daily",
-        "limit": 1000,
-        "exclude_paths": ["https://example.com/exclude"],
-        "include_paths": ["https://example.com/include"],
-        "include_tags": ["h1", "p", "a", ".main-content"],
-        "exclude_tags": ["#ad", "#footer"],
-    }
-}))]
-pub struct GetCrawlOptionsResponse {
-    crawl_options: Option<CrawlOptions>,
-}
-
-/// Get Dataset Crawl Options
-/// Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
-#[utoipa::path(
-    get,
-    path = "/dataset/crawl_options/{dataset_id}",
-    context_path = "/api",
-    tag = "Dataset",
-    responses(
-        (status = 200, description = "Crawl options retrieved successfully", body = GetCrawlOptionsResponse),
-        (status = 400, description = "Service error relating to retrieving the crawl options", body = ErrorResponseBody),
-        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
-    ),
-    params(
-        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
-        ("dataset_id" = uuid, Path, description = "The id of the dataset you want to retrieve."),
-    ),
-    security(
-        ("ApiKey" = ["admin"]),
-    )
-)]
-pub async fn get_dataset_crawl_options(
-    pool: web::Data<Pool>,
-    dataset_id: web::Path<uuid::Uuid>,
-    user: AdminOnly,
-) -> Result<HttpResponse, ServiceError> {
-    let d = get_dataset_by_id_query(dataset_id.into_inner(), pool.clone()).await?;
-    let crawl_req = get_crawl_request_by_dataset_id_query(d.id, pool).await?;
-
-    if !verify_admin(&user, &d.organization_id) {
-        return Err(ServiceError::Forbidden);
-    }
-
-    Ok(HttpResponse::Ok().json(GetCrawlOptionsResponse {
-        crawl_options: crawl_req.map(|req| req.crawl_options),
-    }))
 }
 
 /// Delete Dataset
