@@ -430,7 +430,7 @@ export const DatasetOverview = () => {
                 />
               )}
             </Show>
-            <Show when={maxPageDiscovered() > 1}>
+            <Show when={maxPageDiscovered() >= 1}>
               <PaginationArrows
                 page={page}
                 setPage={setPage}
