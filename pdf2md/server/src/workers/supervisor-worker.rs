@@ -129,20 +129,19 @@ pub async fn chunk_pdf(
         .render(pdf2image::Pages::All, None)
         .map_err(|err| ServiceError::BadRequest(format!("Failed to render PDF file {:?}", err)))?
         .into_iter()
-        .skip(1)
-        .collect::<Vec<_>>();
+        .skip(1);
 
-    let num_pages = pages.len();
+    let num_pages = pdf.page_count();
 
     update_task_status(
         task.id,
-        FileTaskStatus::ProcessingFile(num_pages as u32),
+        FileTaskStatus::ProcessingFile(num_pages),
         &clickhouse_client,
     )
     .await?;
 
     // Process each chunk
-    for (i, page) in pages.into_iter().enumerate() {
+    for (i, page) in pages.enumerate() {
         let file_name = format!("{}page{}.jpeg", task.id, i + 1);
         let mut buffer = Vec::new();
         page.write_to(&mut Cursor::new(&mut buffer), image::ImageFormat::Jpeg)
