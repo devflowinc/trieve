@@ -145,9 +145,9 @@ export const SingleRecommendationQuery = (
                 {(key) => (
                   <li class="text-sm">
                     <span class="font-medium">{key}: </span>
-                    {
-                      props.recommendation_data.request_params[key] as string
-                    }{" "}
+                    {JSON.stringify(
+                      props.recommendation_data.request_params[key],
+                    )}{" "}
                   </li>
                 )}
               </For>
