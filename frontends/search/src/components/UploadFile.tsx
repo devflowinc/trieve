@@ -17,6 +17,7 @@ interface RequestBody {
   group_tracking_id?: string;
   metadata: any;
   time_stamp?: string;
+  split_avg: boolean;
   pdf2md_options?: {
     use_pdf2md_ocr: boolean;
     system_prompt?: string;
@@ -44,6 +45,7 @@ export const UploadFile = () => {
   const [targetSplitsPerChunk, setTargetSplitsPerChunk] = createSignal(20);
   const [rebalanceChunks, setRebalanceChunks] = createSignal(false);
   const [useGptChunking, setUseGptChunking] = createSignal(false);
+  const [enableSplitAvg, setEnableSplitAvg] = createSignal(false);
   const [useHeadingBasedChunking, setUseHeadingBasedChunking] =
     createSignal(false);
   const [groupTrackingId, setGroupTrackingId] = createSignal("");
@@ -152,6 +154,7 @@ export const UploadFile = () => {
         split_delimiters: splitDelimiters(),
         target_splits_per_chunk: targetSplitsPerChunk(),
         rebalance_chunks: rebalanceChunks(),
+        split_avg: enableSplitAvg(),
         pdf2md_options: {
           use_pdf2md_ocr: useGptChunking(),
           split_headings: useHeadingBasedChunking(),
@@ -363,6 +366,19 @@ export const UploadFile = () => {
               onInput={(e) =>
                 setUseHeadingBasedChunking(e.currentTarget.checked)
               }
+              class="h-4 w-4 rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
+            />
+            <div class="flex flex-row items-center space-x-2">
+              <div>Join as single chunk</div>
+              <Tooltip
+                body={<BsInfoCircle />}
+                tooltipText="If set to true, Trieve will create multiple embeddings for your chunk and average the resulting vectors as a single chunk."
+              />
+            </div>
+            <input
+              type="checkbox"
+              checked={enableSplitAvg()}
+              onInput={(e) => setEnableSplitAvg(e.currentTarget.checked)}
               class="h-4 w-4 rounded-md border border-gray-300 bg-neutral-100 px-4 py-1 dark:bg-neutral-700"
             />
             <div class="flex flex-col space-y-2">
