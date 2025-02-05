@@ -362,9 +362,9 @@ const PublicPageControls = () => {
             <div class="col-span-2 max-w-[250px]">
               <label>Search Type</label>
               <Select
-                display={(option) => (option ? option.label : "Docs")}
+                display={(option) => (option ? option.label : "Ecommerce")}
                 onSelected={(option) => {
-                  setExtraParams("type", option?.value ?? "docs");
+                  setExtraParams("type", option?.value ?? "ecommerce");
 
                   if (option?.value != "ecommerce") {
                     setExtraParams("inline", false);
