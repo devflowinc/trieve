@@ -70,6 +70,8 @@ export const SingleRAGQuery = (props: SingleRAGQueryProps) => {
           props.rag_data.llm_response.split("||[{")[0] ??
           props.rag_data.llm_response
         );
+      } else {
+        return props.rag_data.llm_response;
       }
     });
 

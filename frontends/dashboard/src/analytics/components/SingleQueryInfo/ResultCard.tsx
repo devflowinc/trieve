@@ -31,7 +31,20 @@ export const ResultCard = (props: ResultCardProps) => {
         if (parseResult.success) {
           return parseResult.data;
         } else {
-          console.error("Failed to parse metadata: ", parseResult.error);
+          console.error(
+            "Failed to parse metadata: ",
+            parseResult.error,
+            "parsing as group",
+          );
+          const groupParseResult = usefulMetadataSchema.safeParse(
+            props?.result?.metadata?.at(0)?.metadata?.at(0),
+          );
+
+          if (groupParseResult.success) {
+            return groupParseResult.data;
+          } else {
+            return null;
+          }
           return null;
         }
       }
