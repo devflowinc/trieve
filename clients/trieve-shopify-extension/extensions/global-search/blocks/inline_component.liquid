@@ -11,7 +11,11 @@
   import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
 
   const inlineRoot = document.querySelector(".trieve-inline-root");
-  console.log("root", inlineRoot,"please", "{{ block.settings.product.title }}", "{{ block.settings.product.id }}");
+
+  let sampleQuestions = `{{product.metafields.custom.trieve_sample_questions}}`.split('\n');
+  if (sampleQuestions[0] === "") {
+    sampleQuestions = undefined;
+  }
 
   const toBool = (value) => value === 'true';
   const getValue = (value, defaultValue) => {
@@ -38,6 +42,7 @@
     chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask Anything..."),
     suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
     followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
+    defaultAiQuestions: sampleQuestions,
     numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
     theme: getValue("{{ block.settings.theme }}", "light"),
     inlineHeader: "{{ block.settings.inline_header }} ",
