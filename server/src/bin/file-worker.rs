@@ -261,6 +261,13 @@ async fn file_worker(
                     "File was uploaded with specification to not create chunks for it: {:?}",
                     file_worker_message.file_id
                 );
+
+                let _ = redis::cmd("LREM")
+                    .arg("file_processing")
+                    .arg(1)
+                    .arg(serialized_message)
+                    .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_connection)
+                    .await;
             }
             Err(err) => {
                 log::error!("Failed to upload file: {:?}", err);
@@ -630,7 +637,7 @@ async fn upload_file(
         .to_string();
 
     let tika_client = reqwest::Client::new();
-
+    log::info!("Sending file to tika");
     let tika_response = tika_client
         .put(format!("{}/tika", tika_url))
         .header("Accept", "text/html")
@@ -641,6 +648,7 @@ async fn upload_file(
             log::error!("Could not send file to tika {:?}", err);
             ServiceError::BadRequest("Could not send file to tika".to_string())
         })?;
+    log::info!("Got response from tika");
 
     let tike_html_converted_file_bytes = tika_response
         .bytes()
