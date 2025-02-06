@@ -107,12 +107,16 @@ export type ModalProps = {
   }[];
   inline: boolean;
   zIndex?: number;
+  modalPosition?:
+  | "center"
+  | "left"
+  | "right";
   showFloatingButton?: boolean;
   floatingButtonPosition?:
-    | "top-left"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-right";
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
   floatingSearchIconPosition?: "left" | "right";
   showFloatingSearchIcon?: boolean;
   showFloatingInput?: boolean;
@@ -158,6 +162,10 @@ const defaultProps = {
   responsive: false,
   zIndex: 1000,
   debounceMs: 0,
+  modalPosition: "center" as
+    | "center"
+    | "left"
+    | "right",
   showFloatingButton: false,
   floatingButtonPosition: "bottom-right" as
     | "top-left"
@@ -214,7 +222,7 @@ const ModalContext = createContext<{
   setIsRecording: React.Dispatch<React.SetStateAction<boolean>>;
 }>({
   props: defaultProps,
-  trieveSDK: (() => {}) as unknown as TrieveSDK,
+  trieveSDK: (() => { }) as unknown as TrieveSDK,
   query: "",
   imageUrl: "",
   audioBase64: "",
@@ -225,25 +233,25 @@ const ModalContext = createContext<{
   inputRef: { current: null },
   modalRef: { current: null },
   mode: "search",
-  setMode: () => {},
-  setOpen: () => {},
-  setQuery: () => {},
-  setImageUrl: () => {},
-  setAudioBase64: () => {},
-  setUploadingImage: () => {},
-  setResults: () => {},
+  setMode: () => { },
+  setOpen: () => { },
+  setQuery: () => { },
+  setImageUrl: () => { },
+  setAudioBase64: () => { },
+  setUploadingImage: () => { },
+  setResults: () => { },
   requestID: "",
-  setRequestID: () => {},
-  setLoadingResults: () => {},
-  setCurrentTag: () => {},
+  setRequestID: () => { },
+  setLoadingResults: () => { },
+  setCurrentTag: () => { },
   currentTag: "all",
   currentGroup: null,
-  setCurrentGroup: () => {},
+  setCurrentGroup: () => { },
   tagCounts: [],
-  setContextProps: () => {},
+  setContextProps: () => { },
   pagefind: null,
   isRecording: false,
-  setIsRecording: () => {},
+  setIsRecording: () => { },
 });
 
 const ModalProvider = ({
@@ -425,7 +433,7 @@ const ModalProvider = ({
         import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
           // @vite-ignore
           setPagefind(pagefind);
-          pagefind.filters().then(() => {});
+          pagefind.filters().then(() => { });
         });
       });
     }
