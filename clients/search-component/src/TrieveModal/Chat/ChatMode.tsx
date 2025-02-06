@@ -10,6 +10,7 @@ import ImagePreview from "../ImagePreview";
 import { AnimatePresence } from "motion/react";
 import { cn } from "../../utils/styles";
 import { UploadAudio } from "../Search/UploadAudio";
+import { useChatHeight } from "../../utils/hooks/useChatHeight";
 
 export const ChatMode = () => {
   const {
@@ -35,6 +36,8 @@ export const ChatMode = () => {
 
   const chatInput = useRef<HTMLInputElement>(null);
 
+  const { minHeight, resetHeight } = useChatHeight(modalRef, 175);
+
   useEffect(() => {
     if (mode == "chat" && open) {
       chatInput.current?.focus();
@@ -52,9 +55,14 @@ export const ChatMode = () => {
             <p>{props.inlineHeader}</p>
           </div>
           <button
-            onClick={() =>
-              isDoneReading ? clearConversation() : stopGeneratingMessage()
-            }
+            onClick={() => {
+              if (isDoneReading) {
+                resetHeight();
+                clearConversation();
+              } else {
+                stopGeneratingMessage();
+              }
+            }}
             className="clear-button"
           >
             {isDoneReading ? "Clear" : "Stop"}
@@ -69,6 +77,7 @@ export const ChatMode = () => {
           !props.inline && "chat-outer-popup tv-min-h-[175px]",
         )}
         ref={modalRef}
+        style={{ minHeight: minHeight }}
       >
         <div
           className={cn(
