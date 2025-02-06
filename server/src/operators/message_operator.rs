@@ -1030,9 +1030,17 @@ pub async fn stream_response(
             .unwrap_or(Some(false))
             .unwrap_or(false)
         {
-            format!("{}||{}", response_text, filtered_chunks_stringified)
+            format!(
+                "{}||{}",
+                response_text,
+                filtered_chunks_stringified.replace("||", "")
+            )
         } else {
-            format!("{}||{}", filtered_chunks_stringified, response_text)
+            format!(
+                "{}||{}",
+                filtered_chunks_stringified.replace("||", ""),
+                response_text
+            )
         };
 
         let new_message = models::Message::from_details(
@@ -1274,7 +1282,7 @@ pub async fn stream_response(
                                         }
                                     })
                                     .collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
-                                Some(format!("||{}", serde_json::to_string(&filtered_chunks).unwrap_or_default()))
+                                Some(format!("||{}", serde_json::to_string(&filtered_chunks).unwrap_or_default().replace("||", "")))
                         } else {
                             Some("".to_string())
                         }
@@ -1301,7 +1309,7 @@ pub async fn stream_response(
                                                         None
                                                     }
                                                 }).collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
-                                                return Some(format!("{}||", serde_json::to_string(&filtered_chunks).unwrap_or_default()));
+                                                return Some(format!("{}||", serde_json::to_string(&filtered_chunks).unwrap_or_default().replace("||", "")));
                                             }
                                         }
                                         text.clone()
@@ -1309,7 +1317,7 @@ pub async fn stream_response(
                                         let returned_chunks = score_chunks.iter().map(|score_chunk| {
                                             ChunkMetadataStringTagSetWithHighlightsScore::from(score_chunk.clone())
                                         }).collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
-                                        return Some(format!("{}||", serde_json::to_string(&returned_chunks).unwrap_or_default()));
+                                        return Some(format!("{}||", serde_json::to_string(&returned_chunks).unwrap_or_default().replace("||", "")));
                                     } else {
                                         Some(text.clone())
                                     }
