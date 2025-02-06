@@ -149,7 +149,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         const lastUserQuestion = messages.at(-2);
         askQuestion(lastUserQuestion?.text, currentGroup ?? undefined, true);
       }
-    }, 4000);
+    }, 6000);
 
     return () => clearTimeout(timer);
   }, [isLoading, messages, currentGroup]);
