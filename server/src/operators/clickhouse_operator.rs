@@ -38,7 +38,10 @@ pub async fn send_to_clickhouse(
         return Ok(());
     }
 
-    let mut search_queries_inserter = String::from("INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES");
+    let mut search_queries_inserter = clickhouse_client.insert("search_queries").map_err(|e| {
+        log::error!("Error inserting search queries: {:?}", e);
+        ServiceError::InternalServerError(format!("Error inserting search queries: {:?}", e))
+    })?;
 
     let mut rag_queries_inserter = clickhouse_client.insert("rag_queries").map_err(|e| {
         log::error!("Error inserting rag queries: {:?}", e);
@@ -58,40 +61,14 @@ pub async fn send_to_clickhouse(
 
     for event in events {
         match event {
-            ClickHouseEvent::SearchQueryEvent(mut event) => {
-                event.results.iter_mut().for_each(|result| {
-                    *result = result
-                        .replace('\'', "''")
-                        .replace('?', "|q")
-                        .replace('\n', "")
-                });
-
-                search_queries_inserter.push_str(&format!(
-                    " ('{}', '{}', '{}', '{}', embed_p('{}'), '{}', '{}', ['{}'], '{}', now()),",
-                    event.id,
-                    event.search_type,
-                    event.query.replace('?', "|q"),
-                    event.request_params.replace('?', "|q"),
-                    event.query.replace('?', "|q"),
-                    event.latency,
-                    event.top_score,
-                    event.results.join("','"),
-                    event.dataset_id
-                ));
-
-                if search_queries_inserter.len() > 13000 {
-                    clickhouse_client
-                        .query(&search_queries_inserter[..search_queries_inserter.len() - 1])
-                        .execute()
-                        .await
-                        .map_err(|err| {
-                            log::error!("Error writing to ClickHouse search_queries: {:?}", err);
-                            ServiceError::InternalServerError(
-                                "Error writing to ClickHouse search_queries".to_string(),
-                            )
-                        })?;
-                    search_queries_inserter = String::from("INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES");
-                }
+            ClickHouseEvent::SearchQueryEvent(event) => {
+                search_queries_inserter.write(&event).await.map_err(|e| {
+                    log::error!("Error writing search query event: {:?}", e);
+                    ServiceError::InternalServerError(format!(
+                        "Error writing search query event: {:?}",
+                        e
+                    ))
+                })?;
             }
             ClickHouseEvent::RecommendationEvent(event) => {
                 recommendations_inserter.write(&event).await.map_err(|e| {
@@ -123,17 +100,10 @@ pub async fn send_to_clickhouse(
         }
     }
 
-    if search_queries_inserter != *"INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES" {
-        clickhouse_client
-            .query(&search_queries_inserter[..search_queries_inserter.len() - 1])
-            .execute()
-            .await
-            .map_err(|err| {
-                log::error!("Error writing to ClickHouse search_queries: {:?}", err);
-                ServiceError::InternalServerError("Error writing to ClickHouse search_queries".to_string())
-            })?;
-    }
-
+    search_queries_inserter.end().await.map_err(|e| {
+        log::error!("Error ending search queries inserter: {:?}", e);
+        ServiceError::InternalServerError(format!("Error ending search queries inserter: {:?}", e))
+    })?;
     rag_queries_inserter.end().await.map_err(|e| {
         log::error!("Error ending rag queries inserter: {:?}", e);
         ServiceError::InternalServerError(format!("Error ending rag queries inserter: {:?}", e))
