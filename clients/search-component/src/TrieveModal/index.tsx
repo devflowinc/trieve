@@ -249,7 +249,8 @@ const Modal = () => {
                 !fullscreenPdfState && props.type == "pdf" ? "60vh" : "none",
             }}
           >
-            {!props.inline &&
+            {props.allowSwitchingModes &&
+              !props.inline &&
               !fullscreenPdfState && <ChatModeSwitch />}
             <div
               className="search-container"

@@ -17,8 +17,7 @@ export const ChatModeSwitch = () => {
         }${props.inline ? "" : " mode-switch-popup"}${" " + props.type}`.trim()
       )}
     >
-      {props.allowSwitchingModes && 
-      <ModeSwitch />}
+      <ModeSwitch />
       <PopupChatCloseButton />
     </div>
   );
