@@ -10,7 +10,7 @@ def get_search_queries(
     client, dataset_id: uuid.UUID, limit=5000, offset=Optional[datetime.datetime]
 ):
     query = """
-        SELECT id, query, top_score, created_at, search_type, request_params, latency, results, is_duplicate, query_rating, dataset_id
+        SELECT id, query, top_score, created_at, search_type, request_params, latency, results, query_vector, is_duplicate, query_rating, dataset_id
         FROM default.search_queries 
         WHERE dataset_id = '{}' AND is_duplicate = 0 AND search_type != 'rag'
         ORDER BY created_at, length(query)
@@ -20,7 +20,7 @@ def get_search_queries(
     )
     if offset is not None:
         query = """
-        SELECT id, query, top_score, created_at, search_type, request_params, latency, results, is_duplicate, query_rating, dataset_id
+        SELECT id, query, top_score, created_at, search_type, request_params, latency, results, query_vector, is_duplicate, query_rating, dataset_id
         FROM default.search_queries 
         WHERE dataset_id = '{}'
             AND created_at >= '{}' AND search_type != 'rag'
@@ -156,6 +156,7 @@ def insert_duplicate_rows(client, rows):
                 "request_params",
                 "latency",
                 "results",
+                "query_vector",
                 "is_duplicate",
                 "query_rating",
                 "dataset_id",
