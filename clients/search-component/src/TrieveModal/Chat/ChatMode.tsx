@@ -71,7 +71,7 @@ export const ChatMode = () => {
       ) : null}
       <div
         className={cn(
-          `chat-outer-wrapper tv-relative tv-flex tv-flex-col tv-scroll-smooth !tv-mt-0`,
+          `chat-outer-wrapper chat-outer-wrapper-${props.modalPosition} tv-relative tv-flex tv-flex-col tv-scroll-smooth !tv-mt-0`,
           props.inline &&
             "chat-outer-inline md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0 tv-mt-0 sm:!tv-mt-0",
           !props.inline && "chat-outer-popup tv-min-h-[175px]",

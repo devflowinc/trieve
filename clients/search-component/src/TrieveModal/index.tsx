@@ -90,6 +90,10 @@ const Modal = () => {
       if (chatModalWrapper) {
         (chatModalWrapper as HTMLElement).style.maxHeight =
           props.type == "pdf" ? "49vh" : "58vh";
+
+        if (props.modalPosition == "left" || props.modalPosition == "right") {
+        (chatModalWrapper as HTMLElement).style.maxHeight = "66vh";
+        }
       }
     }
 
@@ -225,7 +229,7 @@ const Modal = () => {
       )}
       {(props.inline || open) && (
         <>
-          {!props.inline && (
+          {!props.inline && props.modalPosition == "center" && (
             <div
               onClick={() => {
                 setOpen(false);
@@ -241,7 +245,7 @@ const Modal = () => {
             }${
               props.inline
                 ? " trieve-inline-modal tv-trieve-inline-modal"
-                : " trieve-popup-modal"
+                : ` trieve-popup-modal trieve-modal-${props.modalPosition}`
             } ${props.type}`.trim()}
             style={{
               zIndex: props.zIndex ? props.zIndex + 1 : 1001,
@@ -249,8 +253,7 @@ const Modal = () => {
                 !fullscreenPdfState && props.type == "pdf" ? "60vh" : "none",
             }}
           >
-            {props.allowSwitchingModes &&
-              !props.inline &&
+            {!props.inline &&
               !fullscreenPdfState && <ChatModeSwitch />}
             <div
               className="search-container"
@@ -286,7 +289,7 @@ const Modal = () => {
           </div>
         </>
       )}
-      {props.showFloatingSearchIcon && <FloatingSearchIcon />}
+      {props.showFloatingSearchIcon && !props.open && <FloatingSearchIcon />}
       {props.showFloatingButton && <FloatingActionButton />}
       {props.showFloatingInput && <FloatingSearchInput />}
     </>
