@@ -114,7 +114,7 @@ export const Message = ({
   idx: number;
   message: Message;
 }) => {
-  const { rateChatCompletion, isDoneReading, messages } = useChatState();
+  const { rateChatCompletion, messages } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
   const { props, trieveSDK } = useModalState();
@@ -128,7 +128,7 @@ export const Message = ({
             chunk.metadata.page_title) &&
           chunk.link &&
           chunk.image_urls?.length &&
-          chunk.num_value,
+          chunk.num_value
       );
       if (ecommerceChunks && message.queryId) {
         trackViews({
@@ -151,7 +151,7 @@ export const Message = ({
           chunk.metadata.page_title) &&
         chunk.link &&
         chunk.image_urls?.length &&
-        chunk.num_value,
+        chunk.num_value
     )
     .map((chunk) => ({
       chunk,
@@ -169,7 +169,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title,
+          index && item.title
     )
     .map((item, index) => {
       const { title, descriptionHtml } = guessTitleAndDesc(item);
@@ -206,7 +206,7 @@ export const Message = ({
                   ? title
                   : title.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      "",
+                      ""
                     ),
               }}
             />
@@ -225,7 +225,7 @@ export const Message = ({
                   ? descriptionHtml
                   : descriptionHtml.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      "",
+                      ""
                     ),
               }}
             />
@@ -250,7 +250,7 @@ export const Message = ({
           chunk.metadata.title ||
           chunk.metadata.page_title) &&
         chunk.link &&
-        chunk.metadata.yt_preview_src,
+        chunk.metadata.yt_preview_src
     )
     .map((chunk) => {
       return {
@@ -283,7 +283,7 @@ export const Message = ({
       const chunkHtmlHeadingsDiv = document.createElement("div");
       chunkHtmlHeadingsDiv.innerHTML = chunk.chunk_html || "";
       const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-        "h1, h2, h3, h4, h5, h6",
+        "h1, h2, h3, h4, h5, h6"
       );
       const $firstHeading =
         chunkHtmlHeadings[0] ?? document.createElement("h1");
@@ -309,8 +309,7 @@ export const Message = ({
     .filter((chunk) => chunk.link && !chunk.metadata.yt_preview_src)
     .filter(
       (item, index, array) =>
-        array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-        index,
+        array.findIndex((arrayItem) => arrayItem.title === item.title) === index
     )
     .map((item, index) => (
       <a
@@ -382,59 +381,53 @@ export const Message = ({
                   <div className="additional-links">{docsItems}</div>
                 )
               : null}
-            {isDoneReading && messages.length == idx + 1 && (
-              <div className="feedback-wrapper">
-                <span className="spacer"></span>
-                <div className="feedback-icons">
-                  {copied ? (
-                    <span>
-                      <i className="fa-regular fa-circle-check"></i>
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        void navigator.clipboard
-                          .writeText(message.text)
-                          .then(() => {
-                            setCopied(true);
-                            setTimeout(() => setCopied(false), 500);
-                          });
-                      }}
-                    >
-                      <i className="fa-regular fa-copy"></i>
-                    </button>
-                  )}
+            <div className="feedback-wrapper">
+              <span className="spacer"></span>
+              <div className="feedback-icons">
+                {copied ? (
+                  <span>
+                    <i className="fa-regular fa-circle-check"></i>
+                  </span>
+                ) : (
                   <button
-                    className={
-                      positive != null && positive ? "icon-darken" : ""
-                    }
                     onClick={() => {
-                      rateChatCompletion(true, message.queryId);
-                      setPositive((prev) => {
-                        if (prev === true) return null;
-                        return true;
-                      });
+                      void navigator.clipboard
+                        .writeText(message.text)
+                        .then(() => {
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 500);
+                        });
                     }}
                   >
-                    <i className="fa-regular fa-thumbs-up"></i>
+                    <i className="fa-regular fa-copy"></i>
                   </button>
-                  <button
-                    className={
-                      positive != null && !positive ? "icon-darken" : ""
-                    }
-                    onClick={() => {
-                      rateChatCompletion(false, message.queryId);
-                      setPositive((prev) => {
-                        if (prev === false) return null;
-                        return false;
-                      });
-                    }}
-                  >
-                    <i className="fa-regular fa-thumbs-down"></i>
-                  </button>
-                </div>
+                )}
+                <button
+                  className={positive != null && positive ? "icon-darken" : ""}
+                  onClick={() => {
+                    rateChatCompletion(true, message.queryId);
+                    setPositive((prev) => {
+                      if (prev === true) return null;
+                      return true;
+                    });
+                  }}
+                >
+                  <i className="fa-regular fa-thumbs-up"></i>
+                </button>
+                <button
+                  className={positive != null && !positive ? "icon-darken" : ""}
+                  onClick={() => {
+                    rateChatCompletion(false, message.queryId);
+                    setPositive((prev) => {
+                      if (prev === false) return null;
+                      return false;
+                    });
+                  }}
+                >
+                  <i className="fa-regular fa-thumbs-down"></i>
+                </button>
               </div>
-            )}
+            </div>
             {props.followupQuestions && messages.length == idx + 1 && (
               <FollowupQueries />
             )}
