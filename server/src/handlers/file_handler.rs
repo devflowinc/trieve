@@ -131,13 +131,8 @@ pub async fn upload_file_handler(
     pool: web::Data<Pool>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    redis_pool: web::Data<RedisPool>,
+    broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
     // Disallow split_avg with pdf2md
     if let Some(Pdf2MdOptions { use_pdf2md_ocr, .. }) = data.pdf2md_options {
         if use_pdf2md_ocr && data.split_avg.unwrap_or(false) {
@@ -226,17 +221,18 @@ pub async fn upload_file_handler(
         attempt_number: 0,
     };
 
-    let serialized_message = serde_json::to_string(&message).map_err(|e| {
-        log::error!("Could not serialize message: {:?}", e);
-        ServiceError::BadRequest("Could not serialize message".to_string())
-    })?;
-
-    redis::cmd("lpush")
-        .arg("file_ingestion")
-        .arg(&serialized_message)
-        .query_async::<_, ()>(&mut *redis_conn)
+    broccoli_queue
+        .publish(
+            "file_ingestion",
+            Some(dataset_org_plan_sub.dataset.id.to_string()),
+            &message,
+            None,
+        )
         .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        .map_err(|e| {
+            log::error!("Could not publish message: {:?}", e);
+            ServiceError::BadRequest("Could not publish message".to_string())
+        })?;
 
     let result = UploadFileResponseBody {
         file_metadata: File::from_details(
