@@ -40,18 +40,23 @@ export const NewOrgModal = (props: NewOrgModalProps) => {
         title: "Error creating new organization",
       });
     },
-    onSuccess: async (data) => {
+    onSuccess: async (org) => {
       await userContext.login();
-      userContext.setSelectedOrg(data.id);
-      navigate(`/org?org=${data.id}`);
+      setTimeout(() => {
+        console.log("Navigating/selecting to org", org.id);
+        navigate(`/org?org=${org.id}`);
+        userContext.setSelectedOrg(org.id);
 
-      createToast({
-        title: "Success",
-        type: "success",
-        message: "Successfully created new organization",
-      });
+        createToast({
+          title: "Success",
+          type: "success",
+          message: "Successfully created new organization",
+        });
 
-      props.closeModal();
+        setName("");
+
+        props.closeModal();
+      }, 500);
     },
   }));
 
