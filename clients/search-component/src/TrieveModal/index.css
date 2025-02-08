@@ -316,6 +316,7 @@ body {
     }
 
     .chat-modal-wrapper {
+      scrollbar-gutter: stable;
       .feedback-wrapper {
         @apply tv-flex tv-justify-between tv-my-2;
 
