@@ -12,14 +12,13 @@ import { LoadingIcon, SparklesIcon } from "../icons";
 import { ChatPdfItem } from "../PdfView/ChatPdfItem";
 import { Carousel } from "./Carousel";
 import { FollowupQueries } from "./FollowupQueries";
-import ImagePreview from "../ImagePreview";
 import { sendCtrData, trackViews } from "../../utils/trieve";
 import { motion } from "motion/react";
 import { ScoreChunk } from "trieve-ts-sdk";
 import { guessTitleAndDesc } from "../../utils/estimation";
 import { AddToCartButton } from "../AddToCartButton";
 
-type Message = {
+export type Message = {
   queryId: string | null;
   type: string;
   text: string;
@@ -27,7 +26,7 @@ type Message = {
   additional: Chunk[] | null;
 };
 
-export const ChatMessage = ({
+export const RepsonseMessage = ({
   message,
   idx,
 }: {
@@ -35,7 +34,6 @@ export const ChatMessage = ({
   idx: number;
 }) => {
   const { props } = useModalState();
-
   return (
     <motion.div
       initial={{ height: 0 }}
@@ -47,62 +45,32 @@ export const ChatMessage = ({
       }}
       key={idx}
     >
-      {message.type === "user" && message.text === "Loading..." ? (
-        <div>
-          <div className={message.type}>
-            <div className="tv-flex tv-flex-col tv-space-y-1 tv-items-end">
-              <span className="tv-text-left tv-px-3 tv-py-1 tv-rounded-xl tv-text-zinc-50 tv-bg-zinc-800">
-                <LoadingIcon className="tv-w-8 tv-h-8 tv-p-0" />
-              </span>
-            </div>
-          </div>
-        </div>
-      ) : null}
-      {message.type == "user" && message.text !== "Loading..." ? (
-        <div className="user-message-container" key={idx}>
-          <div className={message.type}>
-            <div className="tv-flex tv-flex-col tv-space-y-1 tv-items-end">
-              {message.imageUrl && (
-                <ImagePreview isUploading={false} imageUrl={message.imageUrl} />
-              )}
-              {message.text != "" &&
-              message.text != props.defaultImageQuestion ? (
-                <span className={`user-text ${props.type}`}>
-                  {" "}
-                  {message.text}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className={props.inline ? "" : "message-wrapper"} key={idx}>
-          {!props.inline && (
-            <span className="ai-avatar assistant">
-              {props.brandLogoImgSrcUrl ? (
-                <img
-                  src={props.brandLogoImgSrcUrl}
-                  alt={props.brandName || "Brand logo"}
-                />
-              ) : (
-                <SparklesIcon strokeWidth={1.75} />
-              )}
-              <p
-                className="tag"
-                style={{
-                  backgroundColor: props.brandColor
-                    ? `${props.brandColor}18`
-                    : "#CB53EB18",
-                  color: props.brandColor ?? "#CB53EB",
-                }}
-              >
-                AI assistant
-              </p>
-            </span>
-          )}
-          <Message key={idx} message={message} idx={idx} />
-        </div>
-      )}
+      <div className={props.inline ? "" : "message-wrapper"} key={idx}>
+        {!props.inline && (
+          <span className="ai-avatar assistant">
+            {props.brandLogoImgSrcUrl ? (
+              <img
+                src={props.brandLogoImgSrcUrl}
+                alt={props.brandName || "Brand logo"}
+              />
+            ) : (
+              <SparklesIcon strokeWidth={1.75} />
+            )}
+            <p
+              className="tag"
+              style={{
+                backgroundColor: props.brandColor
+                  ? `${props.brandColor}18`
+                  : "#CB53EB18",
+                color: props.brandColor ?? "#CB53EB",
+              }}
+            >
+              AI assistant
+            </p>
+          </span>
+        )}
+        <Message key={idx} message={message} idx={idx} />
+      </div>
     </motion.div>
   );
 };
@@ -130,7 +98,7 @@ export const Message = ({
             chunk.metadata.page_title) &&
           chunk.link &&
           chunk.image_urls?.length &&
-          chunk.num_value
+          chunk.num_value,
       );
       if (ecommerceChunks && message.queryId) {
         trackViews({
@@ -153,7 +121,7 @@ export const Message = ({
           chunk.metadata.page_title) &&
         chunk.link &&
         chunk.image_urls?.length &&
-        chunk.num_value
+        chunk.num_value,
     )
     .map((chunk) => ({
       chunk,
@@ -171,7 +139,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title
+          index && item.title,
     )
     .map((item, index) => {
       const { title, descriptionHtml } = guessTitleAndDesc(item);
@@ -208,7 +176,7 @@ export const Message = ({
                   ? title
                   : title.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      ""
+                      "",
                     ),
               }}
             />
@@ -221,13 +189,13 @@ export const Message = ({
               ${item.price}
             </p>
             <p
-              className="ecom-item-description"
+              className="ecom-item-description tv-p-0 tv-line-clamp-3"
               dangerouslySetInnerHTML={{
                 __html: props.showResultHighlights
                   ? descriptionHtml
                   : descriptionHtml.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      ""
+                      "",
                     ),
               }}
             />
@@ -252,7 +220,7 @@ export const Message = ({
           chunk.metadata.title ||
           chunk.metadata.page_title) &&
         chunk.link &&
-        chunk.metadata.yt_preview_src
+        chunk.metadata.yt_preview_src,
     )
     .map((chunk) => {
       return {
@@ -266,7 +234,7 @@ export const Message = ({
     })
     .map((item, index) => (
       <a
-        className="source-anchor yt-anchor"
+        className="source-anchor yt-anchor tv-rounded tv-px-2 tv-text-xs tv-py-1 tv-bg-zinc-200/50 tv-text-zinc-950"
         key={index}
         href={item.link as string}
         target="_blank"
@@ -285,7 +253,7 @@ export const Message = ({
       const chunkHtmlHeadingsDiv = document.createElement("div");
       chunkHtmlHeadingsDiv.innerHTML = chunk.chunk_html || "";
       const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-        "h1, h2, h3, h4, h5, h6"
+        "h1, h2, h3, h4, h5, h6",
       );
       const $firstHeading =
         chunkHtmlHeadings[0] ?? document.createElement("h1");
@@ -311,7 +279,8 @@ export const Message = ({
     .filter((chunk) => chunk.link && !chunk.metadata.yt_preview_src)
     .filter(
       (item, index, array) =>
-        array.findIndex((arrayItem) => arrayItem.title === item.title) === index
+        array.findIndex((arrayItem) => arrayItem.title === item.title) ===
+        index,
     )
     .map((item, index) => (
       <a
@@ -331,26 +300,76 @@ export const Message = ({
       </a>
     ));
 
-  return (
-    <div className="super-message-wrapper">
-      {message.text === "Loading..." ? (
-        <div
-          className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
-        >
-          <LoadingIcon className="loading" />
-        </div>
-      ) : null}
+  if (message.text === "Loading...") {
+    return (
+      <div
+        className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
+      >
+        <LoadingIcon className="loading" />
+      </div>
+    );
+  }
 
-      {message.type === "system" && message.text !== "Loading..." ? (
-        <div
-          className={`system${props.type === "ecommerce" ? " ecommerce" : ""}`}
+  return (
+    <div className={`system${props.type === "ecommerce" ? " ecommerce" : ""}`}>
+      {message.additional && props.type === "ecommerce" && !props.inline && (
+        <div className="additional-image-links tv-gap-2 tv-mt-2 tv-mb-2 tv-flex tv-flex-row">
+          <Carousel>{ecommerceItems}</Carousel>
+        </div>
+      )}
+      {youtubeItems && youtubeItems.length > 0 && !props.inline && (
+        <div className="additional-image-links">
+          <Carousel>{youtubeItems}</Carousel>
+        </div>
+      )}
+      {pdfItems && pdfItems.length > 0 && (
+        <div className="tv-flex tv-gap-2 tv-overflow-x-scroll tv-max-w-full">
+          {pdfItems}
+        </div>
+      )}
+      {message.text.length > 0 ? (
+        <Markdown
+          className="code-markdown"
+          components={{
+            code: (props) => {
+              const { children } = props || {};
+              if (!children) return null;
+              return children?.toString();
+            },
+          }}
+          key={idx}
         >
-          {message.additional &&
-            props.type === "ecommerce" &&
-            (!props.inline || props.inlineCarousel) && (
-              <div className="additional-image-links">
-                <Carousel>{ecommerceItems}</Carousel>
+          {message.text.length > 0 ? message.text : "Loading..."}
+        </Markdown>
+      ) : (
+        <LoadingIcon className="loading" />
+      )}
+      <div>
+        {message.additional
+          ? props.type !== "ecommerce" && (
+              <div className="additional-links tv-flex tv-flex-wrap tv-gap-2 tv-mt-4">
+                {docsItems}
               </div>
+            )
+          : null}
+        <div className="tv-flex tv-justify-between tv-my-2">
+          <span className="spacer"></span>
+          <div className="tv-flex tv-space-x-2">
+            {copied ? (
+              <span>
+                <i className="fa-regular fa-circle-check"></i>
+              </span>
+            ) : (
+              <button
+                onClick={() => {
+                  void navigator.clipboard.writeText(message.text).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 500);
+                  });
+                }}
+              >
+                <i className="fa-regular fa-copy"></i>
+              </button>
             )}
           {youtubeItems &&
             youtubeItems.length > 0 &&
@@ -385,7 +404,6 @@ export const Message = ({
                   );
                 },
               }}
-              key={idx}
             >
               {message.text.length > 0
                 ? message.text.replace(urlWordRegex, "")
@@ -452,7 +470,10 @@ export const Message = ({
             )}
           </div>
         </div>
-      ) : null}
+        {props.followupQuestions && messages.length == idx + 1 && (
+          <FollowupQueries />
+        )}
+      </div>
     </div>
   );
 };

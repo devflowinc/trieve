@@ -30,10 +30,10 @@ export const OpenModalButton = ({ setOpen }: OpenModalButtonProps) => {
           id="open-trieve-modal"
           type="button"
           className={`${props.theme} ${
-            props.responsive ?? false ? "responsive" : ""
+            (props.responsive ?? false) ? "responsive" : ""
           }`}
         >
-          <div className={`${props.responsive ?? false ? "responsive" : ""}`}>
+          <div className={`${(props.responsive ?? false) ? "responsive" : ""}`}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -48,13 +48,15 @@ export const OpenModalButton = ({ setOpen }: OpenModalButtonProps) => {
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
-            <div className={`${props.responsive ?? false ? "responsive" : ""}`}>
+            <div
+              className={`${(props.responsive ?? false) ? "responsive" : ""}`}
+            >
               {props.placeholder}
             </div>
           </div>
           <span
             key={"open-button"}
-            className={`open ${props.responsive ?? false ? "responsive" : ""}`}
+            className={`open ${(props.responsive ?? false) ? "responsive" : ""}`}
           >
             {keyCombo.map((key) => (
               <div key={JSON.stringify(key)}>

@@ -1,8 +1,6 @@
 import React, { Suspense, useEffect, useMemo } from "react";
 import { DocsItem } from "./DocsItem";
-import { useSuggestedQueries } from "../../utils/hooks/useSuggestedQueries";
-import { useModalState } from "../../utils/hooks/modal-context";
-import { useChatState } from "../../utils/hooks/chat-context";
+import { ModalProps, useModalState } from "../../utils/hooks/modal-context";
 import {
   ChunkWithHighlights,
   GroupChunk,
@@ -12,12 +10,10 @@ import {
 import { ProductItem } from "./ProductItem";
 import { ProductGroupItem } from "./ProductGroupItem";
 import { PdfItem } from "./PdfItem";
-import { SparklesIcon } from "../icons";
-import { UploadImage } from "./UploadImage";
-import ImagePreview from "../ImagePreview";
-import { UploadAudio } from "./UploadAudio";
 import { ModeSwitch } from "../ModeSwitch";
 import { cn } from "../../utils/styles";
+import { SearchInput } from "./SearchInput";
+import { GoToChatPrompt } from "./GoToChatPrompt";
 
 export const SearchMode = () => {
   const {
@@ -25,27 +21,18 @@ export const SearchMode = () => {
     results,
     loadingResults,
     query,
-    setQuery,
     setOpen,
-    setLoadingResults,
     requestID,
     inputRef,
     open,
     mode,
-    uploadingImage,
     imageUrl,
     audioBase64,
-    isRecording,
   } = useModalState();
-
-  const { suggestedQueries, getQueries, isLoadingSuggestedQueries } =
-    useSuggestedQueries();
-
-  const { switchToChatAndAskQuestion } = useChatState();
 
   const getItemComponent = (
     result: ChunkWithHighlights | GroupChunk[],
-    index: number
+    index: number,
   ) => {
     const isChunk = isChunkWithHighlights(result);
 
@@ -119,7 +106,7 @@ export const SearchMode = () => {
   const resultsDisplay = useMemo(() => {
     if (results.length) {
       const comps = results.map((result, index) =>
-        getItemComponent(result, index)
+        getItemComponent(result, index),
       );
       return comps;
     } else {
@@ -127,209 +114,94 @@ export const SearchMode = () => {
     }
   }, [results]);
 
+  const hasQuery = imageUrl || query || audioBase64;
+
   return (
-    <Suspense fallback={<div className="suspense-fallback"></div>}>
+    <Suspense fallback={<div className="tv-hidden"></div>}>
       {!props.inline && (
-        <div
-          className={`mode-switch-wrapper tv-flex tv-items-center tv-px-2 tv-gap-2 tv-justify-end tv-mt-2 tv-font-medium ${mode}`}
-        >
+        <div className="mode-switch-wrapper tv-flex tv-items-center tv-px-2 tv-gap-2 tv-justify-end tv-mt-2 tv-font-medium ${mode}">
           <ModeSwitch />
           <div
             className={`tv-text-xs tv-rounded-md !tv-bg-transparent tv-flex !hover:bg-tv-zinc-200 tv-px-2 tv-justify-end tv-items-center tv-p-2 tv-gap-0.5 tv-cursor-pointer ${props.type}`}
             onClick={() => setOpen(false)}
           >
-            <svg
-              className="close-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-            <span>Close</span>
+            <CloseIcon />
           </div>
         </div>
       )}
-      <div className={`input-wrapper ${props.type} ${mode}`}>
-        <div className="input-flex group-focus:tv-border has-[:focus]:tv-border has-[:focus]:tv-border-[var(--tv-prop-brand-color)] tv-mb-2 sm:tv-text-sm sm:tv-leading-6 tv-py-1.5 tv-px-4 tv-items-center tv-flex tv-justify-between tv-w-full tv-rounded-lg tv-border-[1px]">
-          <input
-            ref={inputRef}
-            value={audioBase64 && query.length == 0 ? "Searching..." : query}
-            onChange={(e) => {
-              setLoadingResults(true);
-              setQuery(e.target.value);
-            }}
-            placeholder={
-              imageUrl.length > 0
-                ? "Using Image for Search"
-                : isRecording
-                  ? "Recording... Press stop icon to submit"
-                  : props.placeholder || "Search for anything"
-            }
-            className={`search-input focus:tv-ring-0 tv-ring-0 tv-grow tv-py-1.5 tv-pr-8 ${props.type} tv-outline-none tv-border-none`}
-            disabled={imageUrl.length > 0}
-          />
-          <div className="right-side tv-items-center tv-flex tv-gap-2.5 tv-text-base">
-            <UploadAudio />
-            <UploadImage />
-            {query ? (
-              <button onClick={() => setQuery("")}>
-                <svg
-                  className="clear-query-icon tv-w-[16px] tv-h-[16px]  tv-fill-current"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            ) : (
-              <div>
-                <i className="fa-solid fa-magnifying-glass tv-fill-current" />
-              </div>
-            )}
-          </div>
-        </div>
-        <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
-        {props.suggestedQueries && (!query || (query && !results.length)) && (
-          <div
-            className={cn(
-              `suggested-queries-wrapper tv-flex tv-gap-2 tv-items-center tv-flex-wrap tv-mb-2 ${props.type}`,
-              imageUrl && "tv-pt-2"
-            )}
-          >
-            <button
-              onClick={() => getQueries(new AbortController())}
-              disabled={isLoadingSuggestedQueries}
-              className="suggested-query"
-              title="Refresh suggested queries"
-            >
-              <i className="fa-solid fa-arrow-rotate-right"></i>
-            </button>
-            <p>Suggested Queries: </p>
-            {!suggestedQueries.length && (
-              <p className="suggested-query empty-state-loading">
-                Loading query suggestions...
-              </p>
-            )}
-            {suggestedQueries.map((q) => {
-              q = q.replace(/^-|\*$/g, "");
-              q = q.trim();
-              return (
-                <button
-                  onClick={() => setQuery(q)}
-                  key={q}
-                  className={`suggested-query${
-                    isLoadingSuggestedQueries ? " loading" : ""
-                  }`}
-                >
-                  {q}
-                </button>
-              );
-            })}
-          </div>
+      <SearchInput />
+      {resultsLength && props.chat && imageUrl.length == 0 ? (
+        <GoToChatPrompt />
+      ) : null}
+      <ul
+        className={cn(
+          `trieve-elements-${props.type} tv-grow`,
+          props.type === "ecommerce" &&
+            "tv-grid tv-grid-cols-2 sm:tv-grid-cols-3 md:tv-grid-cols-4 lg:tv-grid-cols-5 tv-gap-2 tv-mt-0.5 tv-py-2 tv-max-w-7xl tv-mx-auto tv-pr-0.5",
         )}
-      </div>
-
-      <ul className={`trieve-elements-${props.type}`}>
-        {resultsLength && props.chat && imageUrl.length == 0 ? (
-          <li className="start-chat-li" key="chat">
-            <button
-              id="trieve-search-item-0"
-              className="item start-chat"
-              onClick={() => switchToChatAndAskQuestion(query)}
-            >
-              <div
-                style={{
-                  paddingLeft: props.type === "ecommerce" ? "1rem" : "",
-                }}
-              >
-                <SparklesIcon />
-                <div>
-                  <h4>
-                    {props.type == "docs"
-                      ? "Can you tell me about "
-                      : "Can you help me find "}
-                    <span>{query}</span>
-                  </h4>
-                  <p className="description">Use AI to discover items</p>
-                </div>
-              </div>
-              <i className="fa-solid fa-chevron-right"></i>
-            </button>
-          </li>
-        ) : null}
-
+      >
         {props.type === "pdf" ? (
-          <div className="pdf-results">{resultsDisplay}</div>
+          <div className="tv-grid tv-grid-cols-2">{resultsDisplay}</div>
         ) : (
           resultsDisplay
         )}
-
-        {(imageUrl || query || audioBase64) &&
-        !resultsLength &&
-        !loadingResults ? (
-          <div className="no-results">
-            <p className="no-results-text">No results found</p>
-            {props.problemLink && (
-              <p>
-                Believe this query should return results?{" "}
-                <a
-                  className="no-results-help-link"
-                  href={`${props.problemLink}No results found for query: ${
-                    query.length > 0 ? query : ""
-                  } on ${props.brandName}`}
-                  target="_blank"
-                >
-                  Contact us
-                </a>
-              </p>
-            )}
-          </div>
-        ) : (imageUrl || query || audioBase64) &&
-          !resultsLength &&
-          loadingResults ? (
-          <p className={`no-results-loading ${props.type}`}>Searching...</p>
-        ) : null}
       </ul>
-      <div className={`trieve-footer search ${props.type}`}>
-        <div className="bottom-row">
-          <span className="spacer" />
+
+      {hasQuery && !resultsLength && !loadingResults && (
+        <NoResults props={props} query={query} />
+      )}
+      {hasQuery && !resultsLength && loadingResults && (
+        <div className="tv-text-sm tv-animate-pulse tv-text-center tv-my-8 tv-flex tv-flex-col tv-gap-2 tv-col-span-full">
+          <p className="">Searching...</p>
+        </div>
+      )}
+    </Suspense>
+  );
+};
+
+const NoResults = ({ props, query }: { props: ModalProps; query: string }) => {
+  return (
+    <div className="tv-text-sm tv-text-center tv-my-8 tv-flex tv-flex-col tv-gap-2 tv-col-span-full">
+      <p className="no-results-text">No results found</p>
+      {props.problemLink && (
+        <p>
+          Believe this query should return results?{" "}
           <a
-            className="trieve-powered"
-            href={
-              props.partnerSettings?.partnerCompanyUrl ?? "https://trieve.ai"
-            }
+            className="no-results-help-link"
+            href={`${props.problemLink}No results found for query: ${
+              query.length > 0 ? query : ""
+            } on ${props.brandName}`}
             target="_blank"
           >
-            <img
-              src={
-                props.partnerSettings?.partnerCompanyFaviconUrl ??
-                "https://cdn.trieve.ai/favicon.ico"
-              }
-              alt="logo"
-            />
-            Powered by {props.partnerSettings?.partnerCompanyName ?? "Trieve"}
+            Contact us
           </a>
-        </div>
-      </div>
-    </Suspense>
+        </p>
+      )}
+    </div>
+  );
+};
+
+const CloseIcon = () => {
+  return (
+    <>
+      <svg
+        className="close-icon"
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+      <span>Close</span>
+    </>
   );
 };
 
