@@ -166,8 +166,6 @@ async fn file_worker(
     event_queue: actix_web::web::Data<EventQueue>,
     broccoli_queue: BroccoliQueue,
 ) -> Result<(), BroccoliError> {
-    log::info!("Starting file worker service thread");
-
     upload_file(
         message.clone(),
         web_pool.clone(),
@@ -222,6 +220,11 @@ async fn upload_file(
     event_queue: actix_web::web::Data<EventQueue>,
     broccoli_queue: BroccoliQueue,
 ) -> Result<(), BroccoliError> {
+    log::info!(
+        "Processing file for dataset_id {}",
+        file_worker_message.dataset_id
+    );
+
     let file_id = file_worker_message.file_id;
 
     let bucket = get_aws_bucket()?;
@@ -250,6 +253,7 @@ async fn upload_file(
         .as_ref()
         .is_some_and(|options| options.split_headings.unwrap_or(false))
     {
+        log::info!("Creating group for file");
         let chunk_group = ChunkGroup::from_details(
             Some(file_worker_message.upload_file_data.file_name.clone()),
             file_worker_message.upload_file_data.description.clone(),
