@@ -6,6 +6,8 @@ import {
   Switch,
   Match,
   Show,
+  createEffect,
+  onCleanup,
 } from "solid-js";
 import {
   Dialog,
@@ -129,6 +131,22 @@ export const NewDatasetModal = (props: NewDatasetModalProps) => {
       });
     }
   };
+
+  createEffect(() => {
+    if (props.isOpen()) {
+      const keydownListener = (e: KeyboardEvent) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.stopPropagation();
+          void createDataset();
+        }
+      };
+      window.addEventListener("keydown", keydownListener);
+      onCleanup(() => {
+        window.removeEventListener("keydown", keydownListener);
+      });
+    }
+  });
 
   return (
     <Transition appear show={props.isOpen()}>
