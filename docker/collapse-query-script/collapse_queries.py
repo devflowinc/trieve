@@ -13,7 +13,7 @@ def get_search_queries(
         SELECT id, query, top_score, created_at, search_type, request_params, latency, results, query_vector, is_duplicate, query_rating, dataset_id
         FROM default.search_queries 
         WHERE dataset_id = '{}' AND is_duplicate = 0 AND search_type != 'rag'
-        ORDER BY created_at
+        ORDER BY created_at, length(query)
         LIMIT {}
         """.format(
         str(dataset_id), limit
@@ -24,7 +24,7 @@ def get_search_queries(
         FROM default.search_queries 
         WHERE dataset_id = '{}'
             AND created_at >= '{}' AND search_type != 'rag'
-        ORDER BY created_at
+        ORDER BY created_at, length(query)
         LIMIT {}
         """.format(
             str(dataset_id),
@@ -32,7 +32,7 @@ def get_search_queries(
             limit,
         )
     vector_result = client.query(query, query_formats={"Date*": "int"})
-    return sorted(vector_result.result_rows, key=lambda x: len(x[1]))
+    return vector_result.result_rows
 
 
 def get_datasets(client):

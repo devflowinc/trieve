@@ -8,7 +8,7 @@ import {
   getCoreRowModel,
   Table,
 } from "@tanstack/solid-table";
-import { CrawlRequest } from "trieve-ts-sdk";
+import { $OpenApiTs, CrawlRequest } from "trieve-ts-sdk";
 import { parseCustomDateString } from "../analytics/utils/formatDate";
 import { DatasetContext } from "../contexts/DatasetContext";
 import {
@@ -92,12 +92,13 @@ export const CrawlingHistory = () => {
       },
     ],
     queryFn: () => {
-      return trieve.fetch("/api/crawl/dataset", "post", {
-        data: {
-          page: pages.page(),
+      return trieve.fetch<"eject">(
+        `/api/crawl?limit=10&page=${pages.page() ?? 1}` as keyof $OpenApiTs,
+        "get",
+        {
+          datasetId: datasetContext.datasetId(),
         },
-        datasetId: datasetContext.datasetId(),
-      });
+      ) as Promise<CrawlRequest[]>;
     },
     refetchInterval: 5000,
   }));
@@ -131,12 +132,15 @@ export const CrawlingHistory = () => {
         },
       ],
       queryFn: async () => {
-        const results = await trieve.fetch("/api/crawl/dataset", "post", {
-          data: {
-            page: pages.page() + 1,
+        const results = (await trieve.fetch<"eject">(
+          `/api/crawl?limit=10&page=${
+            (pages.page() ?? 1) + 1
+          }` as keyof $OpenApiTs,
+          "get",
+          {
+            datasetId: datasetContext.datasetId(),
           },
-          datasetId: datasetContext.datasetId(),
-        });
+        )) as CrawlRequest[];
 
         if (results.length === 0) {
           pages.setMaxPageDiscovered(pages.page());
@@ -148,7 +152,6 @@ export const CrawlingHistory = () => {
 
   return (
     <div>
-      <div class="pb-1 text-lg">All Crawls</div>
       <div class="rounded-md bg-white">
         <Show when={crawlTableQuery.data}>
           <Card>
