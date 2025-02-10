@@ -3234,6 +3234,80 @@
       }
     },
     "/api/crawl": {
+      "get": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Get all crawl requests for a dataset",
+        "description": "This endpoint is used to get all crawl requests for a dataset.",
+        "operationId": "get_crawl_requests_for_dataset",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page number to retrieve",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The number of items to retrieve per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Crawl requests retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CrawlRequest"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to retrieving the crawl requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      },
       "post": {
         "tags": [
           "Dataset"
@@ -3355,7 +3429,7 @@
         ]
       }
     },
-    "/api/crawl/:crawl_id": {
+    "/api/crawl/{crawl_id}": {
       "delete": {
         "tags": [
           "Dataset"
@@ -3391,71 +3465,6 @@
           },
           "400": {
             "description": "Service error relating to deleting the dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKey": [
-              "admin"
-            ]
-          }
-        ]
-      }
-    },
-    "/api/crawl/dataset": {
-      "post": {
-        "tags": [
-          "Dataset"
-        ],
-        "summary": "Get all crawl requests for a dataset",
-        "description": "This endpoint is used to get all crawl requests for a dataset.",
-        "operationId": "get_crawl_requests_for_dataset",
-        "parameters": [
-          {
-            "name": "TR-Dataset",
-            "in": "header",
-            "description": "The dataset id to use for the request",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "JSON request payload to get all crawl requests",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GetCrawlRequestsReqPayload"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Crawl requests retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CrawlRequest"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Service error relating to retrieving the crawl requests",
             "content": {
               "application/json": {
                 "schema": {

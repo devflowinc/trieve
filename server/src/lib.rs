@@ -863,10 +863,7 @@ pub fn main() -> std::io::Result<()> {
                                     web::resource("")
                                             .route(web::post().to(handlers::crawl_handler::create_crawl))
                                             .route(web::put().to(handlers::crawl_handler::update_crawl_request))
-                                )
-                                .service(
-                                    web::resource("/dataset")
-                                        .route(web::post().to(handlers::crawl_handler::get_crawl_requests_for_dataset))
+                                            .route(web::get().to(handlers::crawl_handler::get_crawl_requests_for_dataset))
                                 )
                                 .service(
                                     web::resource("/:crawl_id")

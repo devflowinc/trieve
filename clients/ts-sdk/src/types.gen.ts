@@ -4272,6 +4272,23 @@ export type GetChunksByTrackingIdsData = {
 
 export type GetChunksByTrackingIdsResponse = (Array<ChunkReturnTypes>);
 
+export type GetCrawlRequestsForDatasetData = {
+    /**
+     * The number of items to retrieve per page
+     */
+    limit?: (number) | null;
+    /**
+     * The page number to retrieve
+     */
+    page?: (number) | null;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type GetCrawlRequestsForDatasetResponse = (Array<CrawlRequest>);
+
 export type CreateCrawlData = {
     /**
      * JSON request payload to create a new crawl
@@ -4310,19 +4327,6 @@ export type DeleteCrawlRequestData = {
 };
 
 export type DeleteCrawlRequestResponse = (void);
-
-export type GetCrawlRequestsForDatasetData = {
-    /**
-     * JSON request payload to get all crawl requests
-     */
-    requestBody: GetCrawlRequestsReqPayload;
-    /**
-     * The dataset id to use for the request
-     */
-    trDataset: string;
-};
-
-export type GetCrawlRequestsForDatasetResponse = (Array<CrawlRequest>);
 
 export type CreateDatasetData = {
     /**
@@ -5789,6 +5793,19 @@ export type $OpenApiTs = {
         };
     };
     '/api/crawl': {
+        get: {
+            req: GetCrawlRequestsForDatasetData;
+            res: {
+                /**
+                 * Crawl requests retrieved successfully
+                 */
+                200: Array<CrawlRequest>;
+                /**
+                 * Service error relating to retrieving the crawl requests
+                 */
+                400: ErrorResponseBody;
+            };
+        };
         post: {
             req: CreateCrawlData;
             res: {
@@ -5816,7 +5833,7 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/api/crawl/:crawl_id': {
+    '/api/crawl/{crawl_id}': {
         delete: {
             req: DeleteCrawlRequestData;
             res: {
@@ -5826,21 +5843,6 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to deleting the dataset
-                 */
-                400: ErrorResponseBody;
-            };
-        };
-    };
-    '/api/crawl/dataset': {
-        post: {
-            req: GetCrawlRequestsForDatasetData;
-            res: {
-                /**
-                 * Crawl requests retrieved successfully
-                 */
-                200: Array<CrawlRequest>;
-                /**
-                 * Service error relating to retrieving the crawl requests
                  */
                 400: ErrorResponseBody;
             };

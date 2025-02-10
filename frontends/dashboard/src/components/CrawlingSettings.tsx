@@ -196,7 +196,10 @@ export const CrawlingSettings = () => {
         <AiOutlineInfoCircle class="mr-1" />
         <span class="block sm:inline">
           You can run crawls for multiple sites by submitting multiple crawl
-          requests.
+          requests. See your active crawls in the{" "}
+          <a class="underline" href={`/dataset/${datasetId()}/crawl/history`}>
+            Crawl History
+          </a>{" "}
         </span>
       </div>
       <RealCrawlingSettings
