@@ -281,6 +281,7 @@ pub struct UploadHtmlPageReqPayload {
 pub async fn upload_html_page(
     data: web::Json<UploadHtmlPageReqPayload>,
     broccoli_queue: web::Data<BroccoliQueue>,
+    pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let req_payload = data.into_inner();
 
@@ -335,9 +336,14 @@ pub async fn upload_html_page(
         return Err(ServiceError::BadRequest("Webhook secret does not match.".to_string()).into());
     }
 
-    println!("Processing HTML page for {:?}", req_payload.scrape_id);
-
-    process_crawl_doc(dataset_id, req_payload.data, broccoli_queue).await?;
+    process_crawl_doc(
+        dataset_id,
+        req_payload.scrape_id,
+        req_payload.data,
+        broccoli_queue,
+        pool,
+    )
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }

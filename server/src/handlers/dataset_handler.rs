@@ -1,9 +1,9 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
-        Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        DatasetConfigurationDTO, DatasetDTO, OrganizationWithSubAndPlan,
-        PagefindIndexWorkerMessage, Pool, RedisPool, StripePlan,
+        Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, DatasetConfigurationDTO,
+        DatasetDTO, OrganizationWithSubAndPlan, PagefindIndexWorkerMessage, Pool, RedisPool,
+        StripePlan,
     },
     errors::ServiceError,
     get_env,

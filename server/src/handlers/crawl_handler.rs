@@ -1,5 +1,7 @@
 use actix_web::{web, HttpResponse};
 use broccoli_queue::queue::BroccoliQueue;
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::{
     data::models::{CrawlOptions, DatasetAndOrgWithSubAndPlan, Pool},
@@ -12,6 +14,7 @@ use crate::{
 
 use super::auth_handler::AdminOnly;
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateCrawlReqPayload {
     /// The crawl options to use for the crawl
     pub crawl_options: CrawlOptions,
@@ -57,6 +60,7 @@ pub async fn create_crawl(
     Ok(HttpResponse::Ok().json(crawl))
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct UpdateCrawlReqPayload {
     /// Crawl ID to update
     pub crawl_id: uuid::Uuid,
@@ -105,51 +109,53 @@ pub async fn update_crawl_request(
     Ok(HttpResponse::Ok().json(crawl))
 }
 
-pub struct DeleteCrawlReqPayload {
-    /// Crawl ID to delete
-    pub crawl_id: uuid::Uuid,
-}
-
 /// Delete a crawl request
 ///
 /// This endpoint is used to delete an existing crawl request for a dataset. The request payload should contain the crawl id to delete.
 #[utoipa::path(
     delete,
-    path = "/crawl",
+    path = "/crawl/:crawl_id",
     context_path = "/api",
     tag = "Dataset",
-    request_body(content = DeleteCrawlReqPayload, description = "JSON request payload to delete a crawl", content_type = "application/json"),
     responses(
         (status = 204, description = "Crawl deleted successfully"),
         (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
     ),
     params(
         ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id to use for the request"),
+        ("crawl_id" = uuid::Uuid, Path, description = "The id of the crawl to delete"),
     ),
     security(
         ("ApiKey" = ["admin"]),
     )
 )]
 pub async fn delete_crawl_request(
-    data: web::Json<DeleteCrawlReqPayload>,
+    data: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
     _user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let data = data.into_inner();
+    let crawl_id = data.into_inner();
 
-    delete_crawl_query(data.crawl_id, pool.clone()).await?;
+    delete_crawl_query(crawl_id, pool.clone()).await?;
 
     Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct GetCrawlRequestsReqPayload {
+    pub page: Option<i64>,
+    pub limit: Option<i64>,
 }
 
 /// Get all crawl requests for a dataset
 ///
 /// This endpoint is used to get all crawl requests for a dataset.
 #[utoipa::path(
-    get,
-    path = "/crawl",
+    post,
+    path = "/crawl/dataset",
     context_path = "/api",
     tag = "Dataset",
+    request_body(content = GetCrawlRequestsReqPayload, description = "JSON request payload to get all crawl requests", content_type = "application/json"),
     responses(
         (status = 200, description = "Crawl requests retrieved successfully", body = Vec<CrawlRequest>),
         (status = 400, description = "Service error relating to retrieving the crawl requests", body = ErrorResponseBody),
@@ -161,14 +167,18 @@ pub async fn delete_crawl_request(
         ("ApiKey" = ["admin"]),
     )
 )]
-pub async fn get_crawl_requests(
+pub async fn get_crawl_requests_for_dataset(
+    params: web::Json<GetCrawlRequestsReqPayload>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let crawl_requests =
-        get_crawl_requests_by_dataset_id_query(dataset_org_plan_sub.dataset.id, pool.clone())
-            .await?;
+    let crawl_requests = get_crawl_requests_by_dataset_id_query(
+        params.clone(),
+        dataset_org_plan_sub.dataset.id,
+        pool.clone(),
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().json(crawl_requests))
 }

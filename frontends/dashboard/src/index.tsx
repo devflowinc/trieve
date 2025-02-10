@@ -31,13 +31,15 @@ import { RAGAnalyticsPage } from "./analytics/pages/tablePages/RAGAnalyticsPage.
 import { ApiContext, trieve } from "./api/trieve.ts";
 import { SingleRAGQueryPage } from "./analytics/pages/SingleRAGQueryPage.tsx";
 import { DataExplorerTabs } from "./analytics/layouts/DataExplorerTabs.tsx";
-import { CrawlingSettings } from "./pages/dataset/CrawlingSettings.tsx";
+import { CrawlingSettings } from "./components/CrawlingSettings.tsx";
 import { BatchTransform } from "./pages/dataset/BatchTransform.tsx";
 import { RecommendationsTablePage } from "./analytics/pages/tablePages/RecommendationsTablePage.tsx";
 import { SingleRecommendationQueryPage } from "./analytics/pages/SingleRecommendationQueryPage.tsx";
 import { EventsTablePage } from "./analytics/pages/tablePages/EventsTablePage.tsx";
 import { SingleEventQueryPage } from "./analytics/pages/SingleEventQueryPage.tsx";
 import { PublicPageSettingsPage } from "./pages/dataset/PublicPageSettings.tsx";
+import { CrawlOptionsTabs } from "./analytics/layouts/CrawlOptionsTabs.tsx";
+import { CrawlingHistory } from "./components/CrawlingHistory.tsx";
 
 if (!DEV) {
   Sentry.init({
@@ -150,8 +152,12 @@ const routes: RouteDefinition[] = [
                 component: DangerZoneForm,
               },
               {
-                path: "/crawling",
-                component: CrawlingSettings,
+                path: "/crawl",
+                component: CrawlOptionsTabs,
+                children: [
+                  { path: "/create", component: CrawlingSettings },
+                  { path: "/history", component: CrawlingHistory },
+                ],
               },
               {
                 path: "/public-page",

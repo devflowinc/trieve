@@ -2,6 +2,7 @@
 import { createSignal, createEffect, useContext, createMemo } from "solid-js";
 import { createStore } from "solid-js/store";
 import {
+  CrawlOptions,
   Dataset,
   PartnerConfiguration,
   PublicPageParameters,
@@ -57,14 +58,15 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
     const crawlSettingsQuery = createQuery(() => ({
       queryKey: ["crawl-settings", datasetId()],
       queryFn: async () => {
-        const result = await trieve.fetch(
-          "/api/dataset/crawl_options/{dataset_id}",
-          "get",
+        const result: { crawl_options: CrawlOptions }[] = await trieve.fetch(
+          "/api/crawl/dataset",
+          "post",
           {
+            data: { limit: 1 },
             datasetId: datasetId(),
           },
         );
-        return result.crawl_options ?? null;
+        return result.length > 0 ? result[0].crawl_options : null;
       },
     }));
 

@@ -229,6 +229,10 @@ impl Modify for SecurityAddon {
         handlers::file_handler::create_presigned_url_for_csv_jsonl,
         handlers::file_handler::upload_html_page,
         handlers::event_handler::get_events,
+        handlers::crawl_handler::create_crawl,
+        handlers::crawl_handler::update_crawl_request,
+        handlers::crawl_handler::get_crawl_requests_for_dataset,
+        handlers::crawl_handler::delete_crawl_request,
         handlers::organization_handler::create_organization,
         handlers::organization_handler::get_organization,
         handlers::organization_handler::update_organization,
@@ -324,6 +328,11 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::Datasets,
             handlers::dataset_handler::GetPagefindIndexResponse,
             data::models::UserApiKey,
+            data::models::CrawlStatus,
+            data::models::CrawlType,
+            handlers::crawl_handler::GetCrawlRequestsReqPayload,
+            handlers::crawl_handler::CreateCrawlReqPayload,
+            handlers::crawl_handler::UpdateCrawlReqPayload,
             handlers::group_handler::RecommendGroupsReqPayload,
             handlers::group_handler::RecommendGroupsResponse,
             handlers::group_handler::SearchWithinGroupReqPayload,
@@ -846,6 +855,22 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/scroll")
                                         .route(web::post().to(handlers::chunk_handler::scroll_dataset_chunks))
+                                )
+                        )
+                        .service(
+                            web::scope("/crawl")
+                                .service(
+                                    web::resource("")
+                                            .route(web::post().to(handlers::crawl_handler::create_crawl))
+                                            .route(web::put().to(handlers::crawl_handler::update_crawl_request))
+                                )
+                                .service(
+                                    web::resource("/dataset")
+                                        .route(web::post().to(handlers::crawl_handler::get_crawl_requests_for_dataset))
+                                )
+                                .service(
+                                    web::resource("/:crawl_id")
+                                        .route(web::delete().to(handlers::crawl_handler::delete_crawl_request))
                                 )
                         )
                         .service(
