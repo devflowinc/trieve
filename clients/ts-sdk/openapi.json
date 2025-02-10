@@ -3233,6 +3233,247 @@
         ]
       }
     },
+    "/api/crawl": {
+      "post": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Create a new crawl request",
+        "description": "This endpoint is used to create a new crawl request for a dataset. The request payload should contain the crawl options to use for the crawl.",
+        "operationId": "create_crawl",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to create a new crawl",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCrawlReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Crawl created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrawlRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to creating the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Update a crawl request",
+        "description": "This endpoint is used to update an existing crawl request for a dataset. The request payload should contain the crawl id and the crawl options to update for the crawl.",
+        "operationId": "update_crawl_request",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to update a crawl",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCrawlReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Crawl updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrawlRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to updating the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/crawl/:crawl_id": {
+      "delete": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Delete a crawl request",
+        "description": "This endpoint is used to delete an existing crawl request for a dataset. The request payload should contain the crawl id to delete.",
+        "operationId": "delete_crawl_request",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "crawl_id",
+            "in": "path",
+            "description": "The id of the crawl to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Crawl deleted successfully"
+          },
+          "400": {
+            "description": "Service error relating to deleting the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/crawl/dataset": {
+      "post": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Get all crawl requests for a dataset",
+        "description": "This endpoint is used to get all crawl requests for a dataset.",
+        "operationId": "get_crawl_requests_for_dataset",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to get all crawl requests",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetCrawlRequestsReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Crawl requests retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CrawlRequest"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to retrieving the crawl requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/dataset": {
       "post": {
         "tags": [
@@ -8715,6 +8956,50 @@
           }
         }
       },
+      "CrawlStatus": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "Pending"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "Processing"
+            ],
+            "properties": {
+              "Processing": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "string",
+            "enum": [
+              "Completed"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "Failed"
+            ]
+          }
+        ]
+      },
+      "CrawlType": {
+        "type": "string",
+        "enum": [
+          "firecrawl",
+          "openapi",
+          "shopify",
+          "youtube"
+        ]
+      },
       "CrawlYoutubeOptions": {
         "type": "object",
         "title": "CrawlYoutubeOptions",
@@ -8934,6 +9219,17 @@
             "$ref": "#/components/schemas/CreateBatchChunkReqPayload"
           }
         ]
+      },
+      "CreateCrawlReqPayload": {
+        "type": "object",
+        "required": [
+          "crawl_options"
+        ],
+        "properties": {
+          "crawl_options": {
+            "$ref": "#/components/schemas/CrawlOptions"
+          }
+        }
       },
       "CreateDatasetBatchReqPayload": {
         "type": "object",
@@ -11280,6 +11576,21 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "GetCrawlRequestsReqPayload": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
           }
         }
       },
@@ -16924,6 +17235,23 @@
           },
           "time_stamp": "2021-01-01 00:00:00.000",
           "weight": 0.5
+        }
+      },
+      "UpdateCrawlReqPayload": {
+        "type": "object",
+        "required": [
+          "crawl_id",
+          "crawl_options"
+        ],
+        "properties": {
+          "crawl_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Crawl ID to update"
+          },
+          "crawl_options": {
+            "$ref": "#/components/schemas/CrawlOptions"
+          }
         }
       },
       "UpdateDatasetReqPayload": {

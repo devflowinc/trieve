@@ -215,6 +215,7 @@ fn create_shopify_chunk_req_payload(
     })
 }
 
+#[allow(clippy::print_stdout)]
 async fn parse_chunks_with_firecrawl(
     scrape_request: &CrawlRequest,
     ingest_result: IngestResult,
@@ -222,30 +223,31 @@ async fn parse_chunks_with_firecrawl(
     pool: web::Data<Pool>,
     broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<(usize, usize), ServiceError> {
-    update_crawl_status(
-        scrape_request.id,
-        CrawlStatus::GotResponseBackFromFirecrawl,
-        pool.clone(),
-    )
-    .await
-    .map_err(|e| {
-        log::error!("Error updating crawl status: {:?}", e);
-        ServiceError::InternalServerError("Error updating crawl status".to_string())
-    })?;
+    let data = ingest_result.data.unwrap_or_default();
+
+    let page_count = data.len();
 
     log::info!(
         "Got response back from firecrawl for scrape_id: {}",
         scrape_request.id
     );
 
-    let data = ingest_result.data.unwrap_or_default();
-
     log::info!("Processing {} documents from scrape", data.len());
 
-    let page_count = data.len();
     let mut chunks = vec![];
 
-    for page in data {
+    for (page_num, page) in data.into_iter().enumerate() {
+        update_crawl_status(
+            scrape_request.id,
+            CrawlStatus::Processing(page_num as u32),
+            pool.clone(),
+        )
+        .await
+        .map_err(|e| {
+            log::error!("Error updating crawl status: {:?}", e);
+            ServiceError::InternalServerError("Error updating crawl status".to_string())
+        })?;
+
         let crawl_doc = match page {
             Some(page) => page,
             None => continue,
@@ -545,16 +547,15 @@ async fn parse_chunks_with_firecrawl(
         broccoli_queue.clone(),
     )
     .await?;
+
     Ok((chunks_len, page_count))
 }
 
-#[allow(clippy::print_stdout)]
 async fn get_chunks_with_firecrawl(
     scrape_request: CrawlRequest,
     pool: web::Data<Pool>,
     broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<(usize, usize), ServiceError> {
-    let mut chunks = vec![];
     let mut spec = None;
 
     if let Some(ScrapeOptions::OpenApi(openapi_options)) =
@@ -619,15 +620,14 @@ async fn get_chunks_with_firecrawl(
         }
     }
 
-    let chunks_len = chunks.len();
-    send_chunks(
-        UnifiedId::TrieveUuid(scrape_request.dataset_id),
-        chunks,
+    parse_chunks_with_firecrawl(
+        &scrape_request,
+        ingest_result,
+        spec,
         pool.clone(),
         broccoli_queue.clone(),
-    );
-
-    Ok((chunks_len, page_count))
+    )
+    .await
 }
 
 async fn parse_shopify_chunks(
@@ -716,6 +716,17 @@ async fn parse_shopify_chunks(
         cur_page += 1;
         chunks_len += chunks.len();
 
+        update_crawl_status(
+            crawl_request.id,
+            CrawlStatus::Processing(cur_page as u32),
+            pool.clone(),
+        )
+        .await
+        .map_err(|e| {
+            log::error!("Error updating crawl status: {:?}", e);
+            ServiceError::InternalServerError("Error updating crawl status".to_string())
+        })?;
+
         send_chunks(
             UnifiedId::TrieveUuid(crawl_request.dataset_id),
             chunks,
@@ -750,7 +761,7 @@ async fn parse_youtube_chunks(
     let mut chunks_len = 0;
     log::info!("Got {} videos", videos.len());
 
-    for video in videos {
+    for (video_num, video) in videos.into_iter().enumerate() {
         let mut chunks = Vec::new();
         let chunk_group = ChunkGroup::from_details(
             Some(video.snippet.title.clone()),
@@ -832,6 +843,18 @@ async fn parse_youtube_chunks(
                 );
 
                 chunks_len += chunks.len();
+
+                update_crawl_status(
+                    crawl_request.id,
+                    CrawlStatus::Processing(video_num as u32),
+                    pool.clone(),
+                )
+                .await
+                .map_err(|e| {
+                    log::error!("Error updating crawl status: {:?}", e);
+                    ServiceError::InternalServerError("Error updating crawl status".to_string())
+                })?;
+
                 send_chunks(
                     UnifiedId::TrieveUuid(crawl_request.dataset_id),
                     chunks,
@@ -965,7 +988,7 @@ async fn scrape_worker(
 ) -> Result<(), BroccoliError> {
     log::info!("Starting scrape worker service thread");
 
-    match update_crawl_status(crawl_request.scrape_id, CrawlStatus::Pending, pool.clone()).await {
+    match update_crawl_status(crawl_request.id, CrawlStatus::Pending, pool.clone()).await {
         Ok(_) => {}
         Err(err) => {
             log::error!("Failed to update crawl status: {:?}", err);

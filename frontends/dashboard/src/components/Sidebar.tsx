@@ -195,7 +195,7 @@ export const DashboardSidebar = () => {
             <Link
               isExternal={false}
               icon={AiOutlineCamera}
-              href={`/dataset/${datasetId()}/crawling`}
+              href={`/dataset/${datasetId()}/crawl/create`}
               label="Crawling Options"
             />
             <Link

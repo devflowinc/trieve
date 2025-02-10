@@ -6,6 +6,7 @@ use crate::handlers::chunk_handler::ChunkReqPayload;
 use crate::handlers::chunk_handler::CrawlInterval;
 use crate::handlers::chunk_handler::FullTextBoost;
 use crate::handlers::chunk_handler::SemanticBoost;
+use crate::handlers::crawl_handler::GetCrawlRequestsReqPayload;
 use crate::{
     data::models::{CrawlRequest, CrawlRequestPG, Pool, ScrapeOptions},
     errors::ServiceError,
@@ -178,6 +179,7 @@ pub async fn create_crawl_query(
 }
 
 pub async fn get_crawl_requests_by_dataset_id_query(
+    options: GetCrawlRequestsReqPayload,
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<Vec<CrawlRequest>, ServiceError> {
@@ -201,6 +203,8 @@ pub async fn get_crawl_requests_by_dataset_id_query(
             crawl_requests_table::created_at,
         ))
         .order_by(crawl_requests_table::created_at.desc())
+        .limit(options.limit.unwrap_or(10))
+        .offset((options.page.unwrap_or(0) - 1) * options.limit.unwrap_or(10))
         .load(&mut conn)
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
@@ -262,7 +266,7 @@ pub async fn create_crawl_request(
             .map(|s| s.into())
             .unwrap_or(CrawlType::Firecrawl),
         interval,
-        next_crawl_at: chrono::Utc::now().naive_utc(),
+        next_crawl_at: chrono::Utc::now().naive_utc() + interval,
         crawl_options,
         scrape_id,
         dataset_id,
@@ -310,7 +314,7 @@ pub async fn update_crawl_status(
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     diesel::update(
-        crawl_requests_table::crawl_requests.filter(crawl_requests_table::scrape_id.eq(crawl_id)),
+        crawl_requests_table::crawl_requests.filter(crawl_requests_table::id.eq(crawl_id)),
     )
     .set(crawl_requests_table::status.eq(status.to_string()))
     .execute(&mut conn)
@@ -439,6 +443,35 @@ pub async fn update_scrape_id(
     .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     Ok(updated_request.into())
+}
+
+pub async fn get_crawl_by_scrape_id_query(
+    scrape_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<CrawlRequest, ServiceError> {
+    use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let request: CrawlRequestPG = crawl_requests_table::crawl_requests
+        .select((
+            crawl_requests_table::id,
+            crawl_requests_table::url,
+            crawl_requests_table::status,
+            crawl_requests_table::crawl_type,
+            crawl_requests_table::next_crawl_at,
+            crawl_requests_table::interval,
+            crawl_requests_table::crawl_options,
+            crawl_requests_table::scrape_id,
+            crawl_requests_table::dataset_id,
+            crawl_requests_table::created_at,
+        ))
+        .filter(crawl_requests_table::scrape_id.eq(scrape_id))
+        .first(&mut conn)
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    Ok(request.into())
 }
 
 pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestResult, ServiceError> {
@@ -681,8 +714,10 @@ fn extract_all_headings(html: &str) -> String {
 
 pub async fn process_crawl_doc(
     dataset_id: uuid::Uuid,
+    scrape_id: uuid::Uuid,
     crawl_doc: Document,
     broccoli_queue: web::Data<BroccoliQueue>,
+    pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     if crawl_doc.metadata.status_code != Some(200) {
         log::error!("Error getting metadata for page: {:?}", crawl_doc.metadata);
@@ -690,6 +725,29 @@ pub async fn process_crawl_doc(
             "Error getting metadata for page".to_string(),
         ));
     }
+
+    let prev_crawl = get_crawl_by_scrape_id_query(scrape_id, pool.clone())
+        .await
+        .map_err(|e| {
+            log::error!("Error getting crawl request: {:?}", e);
+            ServiceError::InternalServerError("Error getting crawl request".to_string())
+        })?;
+
+    let last_page_num = match prev_crawl.status {
+        CrawlStatus::Processing(page_num) => page_num,
+        _ => 0,
+    };
+
+    update_crawl_status(
+        prev_crawl.id,
+        CrawlStatus::Processing(last_page_num + 1),
+        pool.clone(),
+    )
+    .await
+    .map_err(|e| {
+        log::error!("Error updating crawl status: {:?}", e);
+        ServiceError::InternalServerError("Error updating crawl status".to_string())
+    })?;
 
     let page_link = crawl_doc
         .metadata
@@ -802,7 +860,6 @@ pub async fn process_crawl_doc(
         chunks.push(chunk);
     }
 
-    log::info!("Uploading {} chunks for page: {}", chunks.len(), page_link);
     let chunks_to_upload = chunks.chunks(120);
     for batch in chunks_to_upload {
         let (chunk_ingestion_message, chunk_metadatas) =

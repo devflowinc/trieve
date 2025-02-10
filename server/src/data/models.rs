@@ -54,7 +54,7 @@ use qdrant_client::qdrant::value::Kind;
 use qdrant_client::qdrant::{GeoBoundingBox, GeoLineString, GeoPoint, GeoPolygon, GeoRadius};
 use qdrant_client::{prelude::Payload, qdrant, qdrant::RetrievedPoint};
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::io::Write;
@@ -8030,23 +8030,45 @@ pub struct VideoCrawlMessage {
     pub dataset_id: uuid::Uuid,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, AsExpression, Display)]
+#[derive(Debug, Deserialize, Clone, ToSchema, AsExpression, Display)]
 #[diesel(sql_type = Text)]
 pub enum CrawlStatus {
+    #[display(fmt = "Pending")]
     Pending,
-    GotResponseBackFromFirecrawl,
+    #[display(fmt = "Processed {} pages", _0)]
+    Processing(u32),
+    #[display(fmt = "Completed")]
     Completed,
+    #[display(fmt = "Failed")]
     Failed,
 }
 
+impl Serialize for CrawlStatus {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Use the Display implementation to get the formatted string
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
 impl From<String> for CrawlStatus {
-    fn from(status: String) -> Self {
-        match status.as_str() {
-            "pending" => CrawlStatus::Pending,
-            "got_response_back_from_firecrawl" => CrawlStatus::GotResponseBackFromFirecrawl,
-            "completed" => CrawlStatus::Completed,
-            "failed" => CrawlStatus::Failed,
-            _ => CrawlStatus::Pending,
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "Pending" => CrawlStatus::Pending,
+            "Completed" => CrawlStatus::Completed,
+            "Failed" => CrawlStatus::Failed,
+            _ if s.starts_with("Processed") => {
+                let pages: u32 = s
+                    .split_whitespace()
+                    .nth(1)
+                    .unwrap_or("0")
+                    .parse()
+                    .unwrap_or(0);
+                CrawlStatus::Processing(pages)
+            }
+            _ => CrawlStatus::Failed,
         }
     }
 }
@@ -8072,7 +8094,8 @@ impl From<String> for CrawlType {
             "openapi" => CrawlType::OpenAPI,
             "shopify" => CrawlType::Shopify,
             "youtube" => CrawlType::Youtube,
-            _ => CrawlType::OpenAPI,
+            "firecrawl" => CrawlType::Firecrawl,
+            _ => CrawlType::Firecrawl,
         }
     }
 }

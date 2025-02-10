@@ -637,6 +637,20 @@ export type CrawlOptions = {
     webhook_url?: (string) | null;
 };
 
+export type CrawlRequest = {
+    attempt_number: number;
+    crawl_options: CrawlOptions;
+    crawl_type: CrawlType;
+    created_at: string;
+    dataset_id: string;
+    id: string;
+    interval: string;
+    next_crawl_at: string;
+    scrape_id: string;
+    status: CrawlStatus;
+    url: string;
+};
+
 /**
  * Options for Crawling Shopify
  */
@@ -647,6 +661,12 @@ export type CrawlShopifyOptions = {
     group_variants?: (boolean) | null;
     tag_regexes?: Array<(string)> | null;
 };
+
+export type CrawlStatus = 'Pending' | {
+    Processing: number;
+} | 'Completed' | 'Failed';
+
+export type CrawlType = 'firecrawl' | 'openapi' | 'shopify' | 'youtube';
 
 /**
  * Options for Crawling Youtube
@@ -708,6 +728,10 @@ export type CreateChunkGroupResponseEnum = ChunkGroup | ChunkGroups;
 
 export type CreateChunkReqPayloadEnum = ChunkReqPayload | CreateBatchChunkReqPayload;
 
+export type CreateCrawlReqPayload = {
+    crawl_options: CrawlOptions;
+};
+
 export type CreateDatasetBatchReqPayload = {
     /**
      * List of datasets to create
@@ -720,7 +744,6 @@ export type CreateDatasetBatchReqPayload = {
 };
 
 export type CreateDatasetReqPayload = {
-    crawl_options?: ((CrawlOptions) | null);
     /**
      * Name of the dataset.
      */
@@ -1695,8 +1718,9 @@ export type GetChunksInGroupsResponseBody = {
     total_pages: number;
 };
 
-export type GetCrawlOptionsResponse = {
-    crawl_options?: ((CrawlOptions) | null);
+export type GetCrawlRequestsReqPayload = {
+    limit?: (number) | null;
+    page?: (number) | null;
 };
 
 export type GetDatasetsPagination = {
@@ -3367,8 +3391,15 @@ export type UpdateChunkReqPayload = {
     weight?: (number) | null;
 };
 
+export type UpdateCrawlReqPayload = {
+    /**
+     * Crawl ID to update
+     */
+    crawl_id: string;
+    crawl_options: CrawlOptions;
+};
+
 export type UpdateDatasetReqPayload = {
-    crawl_options?: ((CrawlOptions) | null);
     /**
      * The id of the dataset you want to update.
      */
@@ -4241,6 +4272,58 @@ export type GetChunksByTrackingIdsData = {
 
 export type GetChunksByTrackingIdsResponse = (Array<ChunkReturnTypes>);
 
+export type CreateCrawlData = {
+    /**
+     * JSON request payload to create a new crawl
+     */
+    requestBody: CreateCrawlReqPayload;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type CreateCrawlResponse = (CrawlRequest);
+
+export type UpdateCrawlRequestData = {
+    /**
+     * JSON request payload to update a crawl
+     */
+    requestBody: UpdateCrawlReqPayload;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type UpdateCrawlRequestResponse = (CrawlRequest);
+
+export type DeleteCrawlRequestData = {
+    /**
+     * The id of the crawl to delete
+     */
+    crawlId: string;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type DeleteCrawlRequestResponse = (void);
+
+export type GetCrawlRequestsForDatasetData = {
+    /**
+     * JSON request payload to get all crawl requests
+     */
+    requestBody: GetCrawlRequestsReqPayload;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type GetCrawlRequestsForDatasetResponse = (Array<CrawlRequest>);
+
 export type CreateDatasetData = {
     /**
      * JSON request payload to create a new dataset
@@ -4292,19 +4375,6 @@ export type ClearDatasetData = {
 };
 
 export type ClearDatasetResponse = (void);
-
-export type GetDatasetCrawlOptionsData = {
-    /**
-     * The id of the dataset you want to retrieve.
-     */
-    datasetId: string;
-    /**
-     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
-     */
-    trDataset: string;
-};
-
-export type GetDatasetCrawlOptionsResponse = (GetCrawlOptionsResponse);
 
 export type GetEventsData2 = {
     /**
@@ -5718,6 +5788,64 @@ export type $OpenApiTs = {
             };
         };
     };
+    '/api/crawl': {
+        post: {
+            req: CreateCrawlData;
+            res: {
+                /**
+                 * Crawl created successfully
+                 */
+                200: CrawlRequest;
+                /**
+                 * Service error relating to creating the dataset
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+        put: {
+            req: UpdateCrawlRequestData;
+            res: {
+                /**
+                 * Crawl updated successfully
+                 */
+                200: CrawlRequest;
+                /**
+                 * Service error relating to updating the dataset
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/crawl/:crawl_id': {
+        delete: {
+            req: DeleteCrawlRequestData;
+            res: {
+                /**
+                 * Crawl deleted successfully
+                 */
+                204: void;
+                /**
+                 * Service error relating to deleting the dataset
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/crawl/dataset': {
+        post: {
+            req: GetCrawlRequestsForDatasetData;
+            res: {
+                /**
+                 * Crawl requests retrieved successfully
+                 */
+                200: Array<CrawlRequest>;
+                /**
+                 * Service error relating to retrieving the crawl requests
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
     '/api/dataset': {
         post: {
             req: CreateDatasetData;
@@ -5775,25 +5903,6 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to deleting the dataset
-                 */
-                400: ErrorResponseBody;
-                /**
-                 * Dataset not found
-                 */
-                404: ErrorResponseBody;
-            };
-        };
-    };
-    '/api/dataset/crawl_options/{dataset_id}': {
-        get: {
-            req: GetDatasetCrawlOptionsData;
-            res: {
-                /**
-                 * Crawl options retrieved successfully
-                 */
-                200: GetCrawlOptionsResponse;
-                /**
-                 * Service error relating to retrieving the crawl options
                  */
                 400: ErrorResponseBody;
                 /**

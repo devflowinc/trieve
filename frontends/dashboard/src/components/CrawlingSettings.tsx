@@ -1,20 +1,21 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { createMutation, createQuery } from "@tanstack/solid-query";
+import { createMutation } from "@tanstack/solid-query";
 import { Show, useContext, createMemo } from "solid-js";
-import { DatasetContext } from "../../contexts/DatasetContext";
-import { useTrieve } from "../../hooks/useTrieve";
+import { DatasetContext } from "../contexts/DatasetContext";
+import { useTrieve } from "../hooks/useTrieve";
 import { CrawlInterval, CrawlOptions, ScrapeOptions } from "trieve-ts-sdk";
 import { createStore } from "solid-js/store";
 import { MultiStringInput, Select, Tooltip } from "shared/ui";
-import { toTitleCase } from "../../analytics/utils/titleCase";
-import { Spacer } from "../../components/Spacer";
-import { UserContext } from "../../contexts/UserContext";
-import { createToast } from "../../components/ShowToasts";
-import { ErrorMsg, ValidateErrors, ValidateFn } from "../../utils/validation";
+import { toTitleCase } from "../analytics/utils/titleCase";
+import { Spacer } from "./Spacer";
+import { createToast } from "./ShowToasts";
+import { ErrorMsg, ValidateErrors, ValidateFn } from "../utils/validation";
 import { cn } from "shared/utils";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
+import { useBetterNav } from "../analytics/utils/useBetterNav";
+import { AiOutlineInfoCircle } from "solid-icons/ai";
 
 export const defaultCrawlOptions: CrawlOptions = {
   boost_titles: true,
@@ -148,33 +149,17 @@ export const flattenCrawlOptions = (
 
 export const CrawlingSettings = () => {
   const datasetId = useContext(DatasetContext).datasetId;
-  const userContext = useContext(UserContext);
   const trieve = useTrieve();
+  const navigate = useBetterNav();
 
-  const crawlSettingsQuery = createQuery(() => ({
-    queryKey: ["crawl-settings", datasetId()],
-    queryFn: async () => {
-      const result = await trieve.fetch(
-        "/api/dataset/crawl_options/{dataset_id}",
-        "get",
-        {
-          datasetId: datasetId(),
-        },
-      );
-
-      return result.crawl_options ?? null;
-    },
-  }));
-
-  const updateDatasetMutation = createMutation(() => ({
+  const createCrawlMutation = createMutation(() => ({
     mutationKey: ["crawl-settings-update", datasetId()],
     mutationFn: async (options: CrawlOptions) => {
-      await trieve.fetch("/api/dataset", "put", {
+      await trieve.fetch("/api/crawl", "post", {
         data: {
           crawl_options: options,
-          dataset_id: datasetId(),
         },
-        organizationId: userContext.selectedOrg().id,
+        datasetId: datasetId(),
       });
     },
     onSuccess() {
@@ -184,7 +169,9 @@ export const CrawlingSettings = () => {
         message: "Successfully updated crawl options",
       });
 
-      void crawlSettingsQuery.refetch();
+      navigate(
+        window.location.pathname.split("/").slice(0, -1).join("/") + "/history",
+      );
     },
     onError(e) {
       createToast({
@@ -197,20 +184,29 @@ export const CrawlingSettings = () => {
   }));
 
   const onSave = (options: CrawlOptions) => {
-    console.log("options", options);
-    updateDatasetMutation.mutate(options);
+    createCrawlMutation.mutate(options);
   };
 
   return (
-    <Show when={crawlSettingsQuery.isSuccess}>
+    <>
+      <div
+        class="relative mb-2 flex items-center rounded border border-blue-500 bg-blue-100 px-4 py-3 text-blue-700"
+        role="alert"
+      >
+        <AiOutlineInfoCircle class="mr-1" />
+        <span class="block sm:inline">
+          You can run crawls for multiple sites by submitting multiple crawl
+          requests.
+        </span>
+      </div>
       <RealCrawlingSettings
         onSave={onSave}
-        mode={crawlSettingsQuery.data ? "edit" : "create"}
+        mode={"create"}
         initialCrawlingSettings={flattenCrawlOptions(
-          crawlSettingsQuery.data || defaultCrawlOptions,
+          createCrawlMutation.data || defaultCrawlOptions,
         )}
       />
-    </Show>
+    </>
   );
 };
 
@@ -698,7 +694,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
       <Spacer h={18} />
       <div class="mt-5 flex justify-start">
         <button class="self-start rounded-md bg-magenta-400 px-5 py-2 text-white">
-          Save
+          Start new crawl
         </button>
       </div>
     </form>
