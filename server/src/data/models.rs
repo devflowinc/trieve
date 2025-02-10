@@ -8073,7 +8073,7 @@ impl From<String> for CrawlStatus {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Display)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Display, PartialEq)]
 pub enum CrawlType {
     #[serde(rename = "firecrawl")]
     Firecrawl,
@@ -8164,7 +8164,7 @@ impl From<CrawlRequest> for CrawlRequestPG {
             id: crawl_request.id,
             url: crawl_request.url,
             status: crawl_request.status.to_string(),
-            crawl_type: crawl_request.crawl_type.to_string(),
+            crawl_type: crawl_request.crawl_type.to_string().to_lowercase(),
             next_crawl_at: crawl_request.next_crawl_at,
             interval: crawl_request.interval.as_secs() as i32,
             crawl_options: serde_json::to_value(crawl_request.crawl_options).unwrap(),

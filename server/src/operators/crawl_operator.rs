@@ -256,7 +256,7 @@ pub async fn create_crawl_request(
         None => std::time::Duration::from_secs(60 * 60 * 24),
     };
 
-    let new_crawl_request: CrawlRequestPG = CrawlRequest {
+    let new_crawl_request = CrawlRequest {
         id: uuid::Uuid::new_v4(),
         url: crawl_options.site_url.clone().unwrap_or_default(),
         status: CrawlStatus::Pending,
@@ -272,8 +272,9 @@ pub async fn create_crawl_request(
         dataset_id,
         created_at: chrono::Utc::now().naive_utc(),
         attempt_number: 0,
-    }
-    .into();
+    };
+
+    let pg_crawl_request: CrawlRequestPG = new_crawl_request.clone().into();
 
     let mut conn = pool
         .get()
@@ -281,12 +282,12 @@ pub async fn create_crawl_request(
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     diesel::insert_into(crawl_requests_table::crawl_requests)
-        .values(&new_crawl_request)
+        .values(&pg_crawl_request)
         .execute(&mut conn)
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    if new_crawl_request.crawl_type != CrawlType::Firecrawl.to_string() {
+    if new_crawl_request.crawl_type != CrawlType::Firecrawl {
         broccoli_queue
             .publish("crawl_queue", None, &new_crawl_request, None)
             .await
@@ -298,7 +299,7 @@ pub async fn create_crawl_request(
             })?;
     }
 
-    Ok(new_crawl_request.into())
+    Ok(new_crawl_request)
 }
 
 pub async fn update_crawl_status(
