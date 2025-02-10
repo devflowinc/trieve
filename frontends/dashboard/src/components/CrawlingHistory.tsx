@@ -59,6 +59,9 @@ const columns: SortableColumnDef<CrawlRequest>[] = [
     id: "crawl_type",
     header: "Crawl Type",
     cell(props) {
+      if (props.getValue<string>() === "firecrawl") {
+        return "Website";
+      }
       return (
         props.getValue<string>().charAt(0).toUpperCase() +
         props.getValue<string>().slice(1)
