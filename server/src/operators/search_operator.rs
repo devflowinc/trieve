@@ -2515,6 +2515,8 @@ pub async fn search_hybrid_chunks(
     )
     .await?;
 
+    timer.add("fetched points from qdrant");
+
     let result_chunks = retrieve_chunks_from_point_ids(
         search_chunk_query_results.clone(),
         Some(timer),
@@ -2523,8 +2525,6 @@ pub async fn search_hybrid_chunks(
         pool.clone(),
     )
     .await?;
-
-    timer.add("fetched metadata from postgres");
 
     let mut reranked_chunks = {
         let mut reranked_chunks = {
