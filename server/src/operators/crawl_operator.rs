@@ -204,7 +204,7 @@ pub async fn get_crawl_requests_by_dataset_id_query(
         ))
         .order_by(crawl_requests_table::created_at.desc())
         .limit(options.limit.unwrap_or(10))
-        .offset((options.page.unwrap_or(0) - 1) * options.limit.unwrap_or(10))
+        .offset((options.page.unwrap_or(1) - 1) * options.limit.unwrap_or(10))
         .load(&mut conn)
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
