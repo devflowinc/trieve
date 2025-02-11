@@ -2446,6 +2446,8 @@ pub async fn search_hybrid_chunks(
         .map(|options| options.fulltext_boost)
         .unwrap_or(None);
 
+    timer.add("start sparse and dense embeddings");
+
     let dense_query_vector_future = get_dense_vector(
         parsed_query.query.clone(),
         semantic_boost,
