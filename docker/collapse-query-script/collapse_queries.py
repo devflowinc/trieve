@@ -202,11 +202,6 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
 
-    finally:
-        # Optionally, you can force a merge to ensure all duplicates are removed
-        client.command("OPTIMIZE TABLE default.search_queries FINAL")
-        client.command("OPTIMIZE TABLE default.last_collapsed_dataset FINAL")
-
 
 if __name__ == "__main__":
     main()
