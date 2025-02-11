@@ -19,7 +19,7 @@ import {
 } from "../utils/apiTypes";
 import { BiRegularChevronDown, BiRegularChevronUp } from "solid-icons/bi";
 import sanitizeHtml from "sanitize-html";
-import { FiEye } from "solid-icons/fi";
+import { FiChevronDown, FiChevronUp, FiEye } from "solid-icons/fi";
 import BookmarkPopover from "./BookmarkPopover";
 import { FiEdit, FiTrash } from "solid-icons/fi";
 import { formatDate, sanitzerOptions } from "./ScoreChunk";
@@ -75,6 +75,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
   const [showMetadata, setShowMetadata] = createSignal(false);
   const [expandMetadata, setExpandMetadata] = createSignal(false);
   const [imageLinks, setImageLinks] = createSignal<string[] | null>(null);
+  const [showImages, setShowImages] = createSignal(true);
 
   const $currentDataset = datasetAndUserContext.currentDataset;
 
@@ -232,23 +233,21 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                 <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                   ID:{" "}
                 </span>
-                <span class="line-clamp-1 break-all">{props.chunk.id}</span>
+                <span class="break-all">{props.chunk.id}</span>
               </div>
               <Show when={props.chunk.tracking_id}>
                 <div class="flex space-x-2">
                   <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                     Tracking ID:{" "}
                   </span>
-                  <span class="line-clamp-1 break-all">
-                    {props.chunk.tracking_id}
-                  </span>
+                  <span class="break-all">{props.chunk.tracking_id}</span>
                 </div>
               </Show>
               <Show
                 when={props.chunk.tag_set && props.chunk.tag_set.length > 0}
               >
                 <div class="flex space-x-2">
-                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                  <span class="text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
                     Tag Set:{" "}
                   </span>
                   <span class="line-clamp-1 break-all">
@@ -258,22 +257,20 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
               </Show>
               <Show when={props.chunk.time_stamp}>
                 <div class="flex space-x-2">
-                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                  <span class="text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
                     Time Stamp:{" "}
                   </span>
-                  <span class="line-clamp-1 break-all">
+                  <span class="break-all">
                     {formatDate(new Date(props.chunk.time_stamp ?? ""))}
                   </span>
                 </div>
               </Show>
               <Show when={props.chunk.num_value}>
                 <div class="flex gap-x-2">
-                  <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                  <span class="text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
                     Num Value:{" "}
                   </span>
-                  <span class="line-clamp-1 break-all">
-                    {props.chunk.num_value}
-                  </span>
+                  <span class="break-all">{props.chunk.num_value}</span>
                 </div>
               </Show>
               <Show
@@ -293,9 +290,32 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
                 </div>
               </Show>
               <Show when={imageLinks() != null}>
-                <For each={imageLinks() ?? []}>
-                  {(link) => <img class="w-40" src={link ?? ""} alt={link} />}
-                </For>
+                <button
+                  class="mt-2 flex w-fit items-center space-x-1 rounded-md border bg-neutral-200/50 px-2 py-1 font-semibold text-magenta-500 hover:bg-neutral-200/90 dark:bg-neutral-700/60 dark:text-magenta-400"
+                  onClick={() => setShowImages((prev) => !prev)}
+                >
+                  <Switch>
+                    <Match when={showImages()}>
+                      Collapse Images <FiChevronUp class="h-5 w-5" />
+                    </Match>
+                    <Match when={!showImages()}>
+                      Expand Images <FiChevronDown class="h-5 w-5" />
+                    </Match>
+                  </Switch>
+                </button>
+                <Show when={showImages()}>
+                  <div class="my-2 flex space-x-2 overflow-x-auto rounded-md pl-2">
+                    <For each={imageLinks() ?? []}>
+                      {(link) => (
+                        <img
+                          class="w-40 rounded-md"
+                          src={link ?? ""}
+                          alt={link}
+                        />
+                      )}
+                    </For>
+                  </div>
+                </Show>
               </Show>
               <Show when={Object.keys(props.chunk.metadata ?? {}).length > 0}>
                 <button

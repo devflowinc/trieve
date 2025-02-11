@@ -793,7 +793,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                           <Show when={groupResult.group.tag_set?.length}>
                             <div class="flex w-full flex-row justify-between">
                               <div class="flex space-x-2">
-                                <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                                <span class="text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
                                   Tag Set:{" "}
                                 </span>
                                 <span class="line-clamp-1 break-all">

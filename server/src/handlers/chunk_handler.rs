@@ -2368,18 +2368,22 @@ pub async fn get_recommended_chunks(
                 .map(|recommend_qdrant_result| recommend_qdrant_result.score)
                 .unwrap_or(0.0);
 
-            ChunkMetadataWithScore::from((chunk_metadata.metadata(), score))
+            ScoreChunk {
+                chunk: chunk_metadata.into(),
+                highlights: None,
+                score,
+            }
         })
-        .collect::<Vec<ChunkMetadataWithScore>>();
+        .collect::<Vec<ScoreChunk>>();
 
-    let recommended_chunk_metadatas_with_score = recommended_chunk_metadatas_with_score
+    let recommended_score_chunks = recommended_chunk_metadatas_with_score
         .into_iter()
         .sorted_by(|a, b| {
             b.score
                 .partial_cmp(&a.score)
                 .unwrap_or(std::cmp::Ordering::Equal)
         })
-        .collect::<Vec<ChunkMetadataWithScore>>();
+        .collect::<Vec<ScoreChunk>>();
 
     timer.add("fetched metadata from point_ids");
 
@@ -2401,11 +2405,11 @@ pub async fn get_recommended_chunks(
             positive_tracking_ids: positive_tracking_ids.unwrap_or_default(),
             negative_tracking_ids: negative_tracking_ids.unwrap_or_default(),
             request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
-            top_score: recommended_chunk_metadatas_with_score
+            top_score: recommended_score_chunks
                 .first()
                 .map(|x| x.score)
                 .unwrap_or(0.0),
-            results: recommended_chunk_metadatas_with_score
+            results: recommended_score_chunks
                 .iter()
                 .map(|x| serde_json::to_string(x).unwrap_or_default())
                 .collect(),
@@ -2421,7 +2425,7 @@ pub async fn get_recommended_chunks(
     timer.add("send_to_clickhouse");
 
     if data.slim_chunks.unwrap_or(false) {
-        let res = recommended_chunk_metadatas_with_score
+        let res = recommended_score_chunks
             .into_iter()
             .map(|chunk| chunk.into())
             .collect::<Vec<SlimChunkMetadataWithScore>>();
@@ -2432,10 +2436,7 @@ pub async fn get_recommended_chunks(
     if api_version == APIVersion::V2 {
         let new_payload = RecommendChunksResponseBody {
             id: recommendation_id,
-            chunks: recommended_chunk_metadatas_with_score
-                .into_iter()
-                .map(|chunk| chunk.into())
-                .collect::<Vec<ScoreChunk>>(),
+            chunks: recommended_score_chunks,
         };
 
         return Ok(HttpResponse::Ok()
@@ -2445,7 +2446,7 @@ pub async fn get_recommended_chunks(
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
-        .json(recommended_chunk_metadatas_with_score))
+        .json(recommended_score_chunks))
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
