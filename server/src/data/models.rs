@@ -1336,6 +1336,57 @@ impl From<ChunkMetadataWithScore> for SlimChunkMetadataWithScore {
     }
 }
 
+impl From<ScoreChunk> for SlimChunkMetadataWithScore {
+    fn from(chunk: ScoreChunk) -> Self {
+        match chunk.chunk {
+            NewChunkMetadataTypes::Metadata(metadata) => SlimChunkMetadataWithScore {
+                id: metadata.id,
+                link: metadata.link,
+                qdrant_point_id: metadata.qdrant_point_id,
+                created_at: metadata.created_at,
+                updated_at: metadata.updated_at,
+                tag_set: metadata.tag_set.map(|tags| {
+                    tags.into_iter()
+                        .map(|tag| tag.unwrap_or_default())
+                        .filter(|tag| !tag.is_empty())
+                        .join(",")
+                }),
+                metadata: metadata.metadata,
+                tracking_id: metadata.tracking_id,
+                time_stamp: metadata.time_stamp,
+                weight: metadata.weight,
+                score: chunk.score,
+            },
+            NewChunkMetadataTypes::ID(slim_metadata) => SlimChunkMetadataWithScore {
+                id: slim_metadata.id,
+                link: slim_metadata.link,
+                qdrant_point_id: slim_metadata.qdrant_point_id,
+                created_at: slim_metadata.created_at,
+                updated_at: slim_metadata.updated_at,
+                tag_set: slim_metadata.tag_set.map(|tags| tags.into_iter().join(",")),
+                metadata: slim_metadata.metadata,
+                tracking_id: slim_metadata.tracking_id,
+                time_stamp: slim_metadata.time_stamp,
+                weight: slim_metadata.weight,
+                score: chunk.score,
+            },
+            NewChunkMetadataTypes::Content(content_metadata) => SlimChunkMetadataWithScore {
+                id: content_metadata.id,
+                link: None,
+                qdrant_point_id: content_metadata.qdrant_point_id,
+                created_at: chrono::Utc::now().naive_local(),
+                updated_at: chrono::Utc::now().naive_local(),
+                tag_set: None,
+                metadata: None,
+                tracking_id: content_metadata.tracking_id,
+                time_stamp: content_metadata.time_stamp,
+                weight: content_metadata.weight,
+                score: chunk.score,
+            },
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Queryable, ToSchema)]
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",

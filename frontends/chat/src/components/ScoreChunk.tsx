@@ -239,7 +239,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           </Show>
           <Show when={props.chunk.tag_set}>
             <div class="flex space-x-2">
-              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+              <span class="text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
                 Tag Set:{" "}
               </span>
               <span class="line-clamp-1 break-all">{props.chunk.tag_set}</span>
@@ -247,7 +247,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           </Show>
           <Show when={props.chunk.time_stamp}>
             <div class="flex space-x-2">
-              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+              <span class="text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
                 Time Stamp:{" "}
               </span>
               <span class="line-clamp-1 break-all">
@@ -257,7 +257,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
           </Show>
           <Show when={props.chunk.num_value}>
             <div class="flex gap-x-2">
-              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+              <span class="text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
                 Num Value:{" "}
               </span>
               <span class="line-clamp-1 break-all">

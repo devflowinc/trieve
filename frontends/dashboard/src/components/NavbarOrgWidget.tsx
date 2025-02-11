@@ -40,7 +40,7 @@ export const NavbarOrgWidget = () => {
               <FiChevronDown />
             </PopoverButton>
             <Show when={isOpen()}>
-              <PopoverPanel class="absolute right-0 top-full z-10 mt-2 w-48 rounded-md border border-neutral-200 bg-white p-1 shadow-md">
+              <PopoverPanel class="absolute right-0 top-full z-[100] mt-2 w-48 rounded-md border border-neutral-200 bg-white p-1 shadow-md">
                 <div class="flex flex-col gap-2">
                   <PopoutLink
                     label="Switch Organization"
