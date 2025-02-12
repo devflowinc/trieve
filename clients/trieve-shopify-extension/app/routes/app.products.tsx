@@ -18,8 +18,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         bodyHtml
         handle
         tags
+        catagory {
+          name
+        }
         variants(first: 20) {
           nodes {
+            id
             displayName
             price
             title
