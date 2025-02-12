@@ -1391,7 +1391,7 @@ body {
       &.trieve-modal-right {
         left: unset;
 
-        @apply tv-top-[10%] tv-right-10 tv-max-w-[700px] tv-translate-x-[0%] tv-px-4 tv-h-[75vh] tv-border; 
+        @apply tv-top-[10%] tv-right-[7px] tv-max-w-[685px] tv-translate-x-[0%] tv-px-4 tv-h-[75vh] tv-border; 
       }
     }
   }
