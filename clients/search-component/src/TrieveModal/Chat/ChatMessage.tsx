@@ -345,12 +345,12 @@ export const Message = ({
         >
           {message.additional &&
             props.type === "ecommerce" &&
-            !props.inline && (
+            (!props.inline || props.inlineCarousel) && (
               <div className="additional-image-links">
                 <Carousel>{ecommerceItems}</Carousel>
               </div>
             )}
-          {youtubeItems && youtubeItems.length > 0 && !props.inline && (
+          {youtubeItems && youtubeItems.length > 0 && (!props.inline || props.inlineCarousel) && (
             <div className="additional-image-links">
               <Carousel>{youtubeItems}</Carousel>
             </div>
