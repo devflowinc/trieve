@@ -165,6 +165,28 @@ const Modal = () => {
     }
   }, []);
 
+  const openModalListener: EventListener = useCallback(() => {
+    try {
+      const defaultMode = props.defaultSearchMode || "search";
+      if (props.inline) return;
+
+      if (defaultMode === "chat") {
+        startTransition(() => {
+          setMode("chat");
+          cancelGroupChat();
+          setOpen(true);
+        });
+      } else {
+        startTransition(() => {
+          setOpen(true);
+          setMode("search");
+        });
+      }
+    } catch (e) {
+      console.log("error on event listener for opening modal", e);
+    }
+  }, []);
+
   useEffect(() => {
     const script = document.createElement("script");
     script.src =
@@ -179,10 +201,20 @@ const Modal = () => {
     );
     window.addEventListener("trieve-open-with-text", openWithTextListener);
 
+    window.addEventListener(
+      "trieve-open-modal",
+      openModalListener
+    );
+
     return () => {
       window.removeEventListener(
         "trieve-start-chat-with-group",
         chatWithGroupListener
+      );
+
+      window.addEventListener(
+        "trieve-open-modal",
+        openModalListener
       );
 
       window.removeEventListener("trieve-open-with-text", openWithTextListener);
