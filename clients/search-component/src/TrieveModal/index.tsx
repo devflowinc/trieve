@@ -91,7 +91,7 @@ const Modal = () => {
         (chatModalWrapper as HTMLElement).style.maxHeight =
           props.type == "pdf" ? "49vh" : "58vh";
 
-        if (props.modalPosition == "left" || props.modalPosition == "right") {
+        if (props.modalPosition == "right") {
         (chatModalWrapper as HTMLElement).style.maxHeight = "66vh";
         }
       }

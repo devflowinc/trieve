@@ -1,9 +1,13 @@
-import React, { useState, startTransition } from "react";
+import React, { useState, startTransition, useMemo } from "react";
 import { useModalState } from "../utils/hooks/modal-context";
 
 export const FloatingSearchIcon = () => {
   const [isHovered, setIsHovered] = useState(false);
-  const { props, setOpen, setMode } = useModalState();
+  const { props, setOpen, setMode, open } = useModalState();
+
+  const isVisible = useMemo(() => {
+    return !open
+  }, [open]);
 
   const setButtonPosition = (position: string) => {
     if (position === "right") {
@@ -25,11 +29,12 @@ export const FloatingSearchIcon = () => {
     }
   };
 
+  if (!isVisible) return null
+
   return (
     <div
-      className={`floating-search-btn-container${
-        props.theme == "dark" ? " dark" : ""
-      }`}
+      className={`floating-search-btn-container${props.theme == "dark" ? " dark" : ""
+        }`}
       style={{
         ...setButtonPosition(props.floatingSearchIconPosition || "right"),
       }}
