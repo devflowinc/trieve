@@ -109,7 +109,6 @@ export type ModalProps = {
   zIndex?: number;
   modalPosition?:
   | "center"
-  | "left"
   | "right";
   showFloatingButton?: boolean;
   floatingButtonPosition?:
@@ -164,7 +163,6 @@ const defaultProps = {
   debounceMs: 0,
   modalPosition: "center" as
     | "center"
-    | "left"
     | "right",
   showFloatingButton: false,
   floatingButtonPosition: "bottom-right" as
