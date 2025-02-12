@@ -99,7 +99,8 @@ export default function Index() {
                       <List>
                         {datasets.map((dataset: any) => (
                           <List.Item key={dataset.dataset.id}>
-                            <Link to={`/app/dataset/${dataset.dataset.id}`}>
+                            <Link
+                              to={`/app/dataset/${dataset.dataset.id}/products`}>
                               <PolarisLink>{dataset.dataset.name}</PolarisLink>
                             </Link>
                           </List.Item>

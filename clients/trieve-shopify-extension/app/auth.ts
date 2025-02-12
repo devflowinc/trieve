@@ -1,6 +1,6 @@
 import { LoaderFunctionArgs, json } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
-import { TrieveKey } from "./trieveTypes";
+import { TrieveKey } from "./types";
 
 export const validateTrieveAuth = async ({
   request,

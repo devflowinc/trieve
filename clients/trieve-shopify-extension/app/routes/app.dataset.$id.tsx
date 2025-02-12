@@ -6,7 +6,7 @@ import {
   DatasetCrawlSettings,
   defaultCrawlOptions,
 } from "app/components/CrawlSettings";
-import { CrawlOptions } from "app/trieveTypes";
+import { CrawlOptions } from "app/types";
 
 export const loader = async (args: LoaderFunctionArgs) => {
   if (!args.params.id) {
@@ -25,7 +25,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   );
 
   const scrapingOptionsResponse = await fetch(
-    `https://api.trieve.ai/api/dataset/crawl_options/${args.params.id}`,
+    `https://api.trieve.ai/api/crawl`,
     {
       headers: {
         Authorization: `Bearer ${trieveKey.key}`,
