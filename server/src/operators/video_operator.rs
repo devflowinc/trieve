@@ -53,9 +53,18 @@ pub struct ChannelItem {
 
 pub async fn get_channel_id(api_key: &str, channel_url: String) -> Result<String, Box<dyn Error>> {
     if channel_url.contains("channel") {
-        return Ok(channel_url.split("/").last().unwrap().to_string());
+        return Ok(channel_url
+            .split("/")
+            .filter(|x| x.is_empty())
+            .last()
+            .unwrap()
+            .to_string());
     }
-    let handle_name = channel_url.split("/").last().unwrap();
+    let handle_name = channel_url
+        .split("/")
+        .filter(|x| x.is_empty())
+        .last()
+        .unwrap();
     let url = format!(
         "https://www.googleapis.com/youtube/v3/channels?key={}&forHandle={}&part=id",
         api_key, handle_name
