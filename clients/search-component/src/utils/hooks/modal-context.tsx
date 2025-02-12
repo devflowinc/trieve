@@ -106,6 +106,7 @@ export type ModalProps = {
     removeListeners?: boolean;
   }[];
   inline: boolean;
+  inlineCarousel: boolean;
   zIndex?: number;
   modalPosition?:
   | "center"
@@ -176,6 +177,7 @@ const defaultProps = {
   disableFloatingSearchIconClick: false,
   showFloatingInput: false,
   inline: false,
+  inlineCarousel: false,
   inlineHeader: "AI Assistant by Trieve",
   groupTrackingId: undefined,
   cleanGroupName: undefined,

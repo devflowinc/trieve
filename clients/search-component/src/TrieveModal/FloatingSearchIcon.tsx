@@ -29,14 +29,13 @@ export const FloatingSearchIcon = () => {
     }
   };
 
-  if (!isVisible) return null
-
   return (
     <div
       className={`floating-search-btn-container${props.theme == "dark" ? " dark" : ""
         }`}
       style={{
         ...setButtonPosition(props.floatingSearchIconPosition || "right"),
+        display: isVisible ? "block" : "none"
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
