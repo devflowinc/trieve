@@ -694,22 +694,13 @@ async fn parse_shopify_chunks(
         }
 
         for product in response.products {
-            if product.variants.len() == 1 {
+            for variant in &product.variants {
                 chunks.push(create_shopify_chunk_req_payload(
                     &product,
-                    &product.variants[0],
+                    variant,
                     cleaned_url,
                     &crawl_request,
                 )?);
-            } else {
-                for variant in &product.variants {
-                    chunks.push(create_shopify_chunk_req_payload(
-                        &product,
-                        variant,
-                        cleaned_url,
-                        &crawl_request,
-                    )?);
-                }
             }
         }
 

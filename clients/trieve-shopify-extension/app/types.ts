@@ -95,3 +95,62 @@ export type CrawlOptions = {
    */
   webhook_url?: string | null;
 };
+
+export type Product = {
+  id: string;
+  title: string;
+  productType: string;
+  bodyHtml: string;
+  handle: string;
+  tags: string[];
+  category: {
+    name: string;
+  };
+  variants: {
+    nodes: {
+      id: string;
+      displayName: string;
+      price: string;
+      title: string;
+    }[];
+  };
+  media: {
+    nodes: {
+      preview: {
+        image: {
+          url: string;
+        };
+      };
+    }[];
+  };
+};
+
+export type ProductsResponse = {
+  products: {
+    nodes: Product[];
+    pageInfo: {
+      hasNextPage: boolean;
+      endCursor: string;
+    };
+  };
+};
+
+export interface ChunkReqPayload {
+  chunk_html?: string;
+  link?: string;
+  tag_set?: string[];
+  num_value?: number;
+  metadata?: any;
+  tracking_id?: string;
+  group_tracking_ids?: string[];
+  image_urls?: string[];
+  fulltext_boost?: {
+    phrase: string;
+    boost_factor: number;
+  };
+  semantic_boost?: {
+    phrase: string;
+    distance_factor: number;
+  };
+  convert_html_to_text?: boolean;
+}

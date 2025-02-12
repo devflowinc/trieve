@@ -15,7 +15,7 @@ import {
   CrawlOptions,
   ScrapeOptions,
   TrieveKey,
-} from "app/trieveTypes";
+} from "app/types";
 import { useEffect, useState } from "react";
 
 export const defaultCrawlOptions: CrawlOptions = {
