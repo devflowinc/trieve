@@ -181,6 +181,7 @@ impl Modify for SecurityAddon {
         handlers::message_handler::regenerate_message,
         handlers::message_handler::regenerate_message_patch,
         handlers::message_handler::get_suggested_queries,
+        handlers::message_handler::get_tool_function_params,
         handlers::chunk_handler::create_chunk,
         handlers::chunk_handler::update_chunk,
         handlers::chunk_handler::delete_chunk,
@@ -286,6 +287,11 @@ impl Modify for SecurityAddon {
             handlers::message_handler::EditMessageReqPayload,
             handlers::message_handler::SuggestedQueriesReqPayload,
             handlers::message_handler::SuggestedQueriesResponse,
+            handlers::message_handler::ToolFunctionParameterType,
+            handlers::message_handler::ToolFunctionParameter,
+            handlers::message_handler::ToolFunction,
+            handlers::message_handler::GetToolFunctionParamsReqPayload,
+            handlers::message_handler::GetToolFunctionParamsRespBody,
             handlers::chunk_handler::FullTextBoost,
             handlers::chunk_handler::ChunkReqPayload,
             handlers::chunk_handler::CreateChunkReqPayloadEnum,
@@ -997,6 +1003,10 @@ pub fn main() -> std::io::Result<()> {
                                     web::delete()
                                         .to(handlers::message_handler::regenerate_message),
                                 ),
+                        )
+                        .service(
+                            web::resource("/message/get_tool_function_params")
+                                .route(web::post().to(handlers::message_handler::get_tool_function_params))
                         )
                         .service(
                             web::resource("/message/{message_id}")

@@ -8,6 +8,7 @@ import {
   EditMessageReqPayload,
   GetAllTopicMessagesData,
   GetMessageByIdData,
+  GetToolFunctionParamsReqPayload,
   RegenerateMessageReqPayload,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
@@ -28,7 +29,7 @@ export async function createMessage(
   this: TrieveSDK,
   data: CreateMessageReqPayload,
   signal?: AbortSignal,
-  parseHeaders?: (headers: Record<string, string>) => void,
+  parseHeaders?: (headers: Record<string, string>) => void
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -71,7 +72,7 @@ export async function createMessageReader(
   this: TrieveSDK,
   data: CreateMessageReqPayload,
   signal?: AbortSignal,
-  parseHeaders?: (headers: Record<string, string>) => void,
+  parseHeaders?: (headers: Record<string, string>) => void
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -88,7 +89,7 @@ export async function createMessageReader(
       Authorization: `Bearer ${this.trieve.apiKey}`,
     },
     body: JSON.stringify(data),
-    signal
+    signal,
   });
 
   if (parseHeaders) {
@@ -96,7 +97,6 @@ export async function createMessageReader(
   }
 
   const reader = response.body?.getReader();
-
 
   if (!reader) {
     throw new Error("Failed to get reader from response body");
@@ -121,7 +121,7 @@ export async function createMessageReaderWithQueryId(
   this: TrieveSDK,
   data: CreateMessageReqPayload,
   signal?: AbortSignal,
-  parseHeaders?: (headers: Record<string, string>) => void,
+  parseHeaders?: (headers: Record<string, string>) => void
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -453,6 +453,27 @@ export async function getMessageById(
     "get",
     {
       ...data,
+      datasetId: this.datasetId,
+    },
+    signal
+  );
+}
+
+export async function getToolCallFunctionParams(
+  /** @hidden */
+  this: TrieveSDK,
+  data: GetToolFunctionParamsReqPayload,
+  signal?: AbortSignal
+) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
+  return await this.trieve.fetch(
+    "/api/message/get_tool_function_params",
+    "post",
+    {
+      data,
       datasetId: this.datasetId,
     },
     signal
