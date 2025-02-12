@@ -41,10 +41,12 @@ export const FloatingSearchIcon = () => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => {
-        startTransition(() => {
-          setOpen(true);
-          setMode(props.defaultSearchMode || "search");
-        });
+        if (!props.disableFloatingSearchIconClick) {
+          startTransition(() => {
+            setOpen(true);
+            setMode(props.defaultSearchMode || "search");
+          });
+        }
       }}
     >
       <div className="floating-search-btn">

@@ -118,6 +118,7 @@ export type ModalProps = {
   | "bottom-right";
   floatingSearchIconPosition?: "left" | "right";
   showFloatingSearchIcon?: boolean;
+  disableFloatingSearchIconClick?: boolean;
   showFloatingInput?: boolean;
   inlineHeader?: string;
   groupTrackingId?: string;
@@ -172,6 +173,7 @@ const defaultProps = {
     | "bottom-right",
   floatingSearchIconPosition: "right" as "left" | "right",
   showFloatingSearchIcon: false,
+  disableFloatingSearchIconClick: false,
   showFloatingInput: false,
   inline: false,
   inlineHeader: "AI Assistant by Trieve",
