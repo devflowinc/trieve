@@ -381,7 +381,7 @@ body {
           display: none;
         }
 
-        .carousel-item {
+        .tv-carousel-item {
           flex: 0 0 auto;
           padding: 0 0.15rem;
           scroll-snap-align: start;
@@ -416,11 +416,11 @@ body {
           @apply tv-hidden md:tv-block;
         }
 
-        .carousel-item-hidden {
+        .tv-carousel-item-hidden {
           visibility: hidden;
         }
 
-        .carousel-item-visibile {
+        .tv-carousel-item-visibile {
           visibility: visible;
         }
 
@@ -505,7 +505,7 @@ body {
           @apply tv-pb-0.5;
         }
 
-        a:not(.carousel-item):not(.carousel-item *):not(.additional-links *) {
+        a:not(.tv-carousel-item):not(.tv-carousel-item *):not(.additional-links *) {
           text-decoration: underline;
           color: var(--tv-prop-brand-color);
         }
@@ -1201,7 +1201,7 @@ body {
           }
         }
 
-        .carousel-item {
+        .tv-carousel-item {
           color: var(--tv-zinc-100);
           background-color: var(--tv-zinc-800);
           border-color: var(--tv-zinc-800);

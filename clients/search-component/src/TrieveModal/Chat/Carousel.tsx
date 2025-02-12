@@ -114,7 +114,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
       >
         {productItems.map((child, index) => (
           <motion.li
-            className={`carousel-item tv-flex-shrink-0 tv-list-none tv-rounded-lg tv-overflow-hidden tv-bg-white tv-shadow-sm tv-border-2`}
+            className={`tv-carousel-item tv-flex-shrink-0 tv-list-none tv-rounded-lg tv-overflow-hidden tv-bg-white tv-shadow-sm tv-border-2`}
             key={index}
             style={{
               width: `min(calc((100% / ${itemsPerPage}) - 1rem), calc(90% - 1rem))`,
