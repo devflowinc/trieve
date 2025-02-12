@@ -35,9 +35,7 @@ const colHelp = createColumnHelper<DatasetAndUsage>();
 const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
 export const DatasetOverview = () => {
-  const userContext = useContext(UserContext) as {
-    selectedOrg: () => { id: string };
-  };
+  const userContext = useContext(UserContext);
   const navigate = useNavigate();
 
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
@@ -182,6 +180,14 @@ export const DatasetOverview = () => {
       });
   };
 
+  const currentUserRole = createMemo(() => {
+    return (
+      userContext.user().user_orgs.find((val) => {
+        return val.organization_id === userContext.selectedOrg().id;
+      })?.role ?? 0
+    );
+  });
+
   const table = createMemo(() => {
     const curUsage = usage();
 
@@ -241,26 +247,28 @@ export const DatasetOverview = () => {
           const datasetId = info.row.original.dataset.id;
 
           return (
-            <div class="justify-left flex content-center gap-2">
-              <button
-                class="flex items-center gap-1 text-lg text-red-500 opacity-70 hover:text-red-800"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void deleteDataset(datasetId);
-                }}
-              >
-                <AiOutlineDelete />
-              </button>
-              <button
-                class="flex items-center gap-1 text-lg opacity-70 hover:text-fuchsia-500"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void clearDataset(datasetId);
-                }}
-              >
-                <AiOutlineClear />
-              </button>
-            </div>
+            <Show when={currentUserRole() === 2}>
+              <div class="justify-left flex content-center gap-2">
+                <button
+                  class="flex items-center gap-1 text-lg text-red-500 opacity-70 hover:text-red-800"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void deleteDataset(datasetId);
+                  }}
+                >
+                  <AiOutlineDelete />
+                </button>
+                <button
+                  class="flex items-center gap-1 text-lg opacity-70 hover:text-fuchsia-500"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void clearDataset(datasetId);
+                  }}
+                >
+                  <AiOutlineClear />
+                </button>
+              </div>
+            </Show>
           );
         },
       }),

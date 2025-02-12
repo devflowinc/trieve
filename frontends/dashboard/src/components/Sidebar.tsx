@@ -55,6 +55,14 @@ export const DashboardSidebar = () => {
     return datasets || [];
   });
 
+  const currentUserRole = createMemo(() => {
+    return (
+      userContext.user().user_orgs.find((val) => {
+        return val.organization_id === userContext.selectedOrg().id;
+      })?.role ?? 0
+    );
+  });
+
   const Link = (props: {
     href: string;
     label: JSX.Element;
@@ -222,12 +230,14 @@ export const DashboardSidebar = () => {
               href={`/dataset/${datasetId()}/options`}
               label="Dataset Options"
             />
-            <Link
-              isExternal={false}
-              icon={FiTrash}
-              href={`/dataset/${datasetId()}/manage`}
-              label="Manage Dataset"
-            />
+            <Show when={currentUserRole() === 2}>
+              <Link
+                isExternal={false}
+                icon={FiTrash}
+                href={`/dataset/${datasetId()}/manage`}
+                label="Manage Dataset"
+              />
+            </Show>
           </div>
         </div>
       </div>

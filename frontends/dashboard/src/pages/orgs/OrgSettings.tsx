@@ -2,10 +2,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-import { Switch, createSignal, useContext, Match } from "solid-js";
+import { Switch, createSignal, useContext, Match, createMemo } from "solid-js";
 import { UserContext } from "../../contexts/UserContext";
 import { createToast } from "../../components/ShowToasts";
 import { PartnerConfiguration } from "trieve-ts-sdk";
+import { BiRegularInfoCircle } from "solid-icons/bi";
 
 const OrgSettingsForm = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -433,19 +434,47 @@ const OrgDangerZoneForm = () => {
 };
 
 export const OrgSettings = () => {
+  const userContext = useContext(UserContext);
+
+  const currentUserRole = createMemo(() => {
+    return (
+      userContext.user().user_orgs.find((val) => {
+        return val.organization_id === userContext.selectedOrg().id;
+      })?.role ?? 0
+    );
+  });
+
   return (
-    <div class="h-full pb-4">
-      <div class="space-y-6 sm:px-6 lg:grid lg:grid-cols-2 lg:px-0">
-        <section
-          class="lg:col-span-2"
-          aria-labelledby="organization-details-name"
-        >
-          <OrgSettingsForm />
-        </section>
-        <section class="lg:col-span-2" aria-labelledby="user-details-name">
-          <OrgDangerZoneForm />
-        </section>
-      </div>
-    </div>
+    <>
+      <Switch>
+        <Match when={currentUserRole() !== 2}>
+          <div class="flex space-x-4 rounded-md border border-blue-600/20 bg-blue-50 px-4 py-4">
+            <BiRegularInfoCircle class="h-5 w-5 text-blue-400" />
+            <p class="text-sm text-blue-700">
+              Only organization owners can edit settings. If you need to make a
+              change, please contact the owner of the organization.
+            </p>
+          </div>
+        </Match>
+        <Match when={currentUserRole() === 2}>
+          <div class="h-full pb-4">
+            <div class="space-y-6 sm:px-6 lg:grid lg:grid-cols-2 lg:px-0">
+              <section
+                class="lg:col-span-2"
+                aria-labelledby="organization-details-name"
+              >
+                <OrgSettingsForm />
+              </section>
+              <section
+                class="lg:col-span-2"
+                aria-labelledby="user-details-name"
+              >
+                <OrgDangerZoneForm />
+              </section>
+            </div>
+          </div>
+        </Match>
+      </Switch>
+    </>
   );
 };
