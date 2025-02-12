@@ -778,28 +778,30 @@ const PublicPageControls = () => {
                     Tags
                   </label>
                   <Tooltip
-                    tooltipText="Default tag filters for the search component. Each field has a `tag, label, iconClassName` separated by commas. Only tag is required."
+                    tooltipText="Default tag filters for the search component. Each field has a `tag, label, iconClassName, description` separated by commas. Only tag is required."
                     body={
                       <FaRegularCircleQuestion class="h-3 w-3 text-black" />
                     }
                   />
                 </div>
                 <MultiStringInput
-                  placeholder={`documentation,docs,fa-solid fa-info`}
+                  placeholder={`documentation,docs,fa-solid fa-info, general inspecific information about the product`}
                   value={
                     extraParams.tags?.map((tag) => {
-                      return `${tag.tag},${tag.label},${tag.iconClassName}`;
+                      return `${tag.tag},${tag.label},${tag.iconClassName},${tag.description}`;
                     }) ?? []
                   }
                   onChange={(e) => {
                     setExtraParams(
                       "tags",
                       e.map((tag) => {
-                        const [tagStr, label, iconClassName] = tag.split(",");
+                        const [tagStr, label, iconClassName, description] =
+                          tag.split(",");
                         return {
                           tag: tagStr,
                           label,
                           iconClassName,
+                          description,
                         };
                       }),
                     );

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useRef, useState } from "react";
 import { useModalState } from "./modal-context";
 import { Chunk } from "../types";
@@ -10,6 +11,7 @@ import {
   ChunkFilter,
   ChunkGroup,
   RoleProxy,
+  ToolFunctionParameter,
 } from "trieve-ts-sdk";
 import { defaultHighlightOptions } from "../highlight";
 
@@ -106,7 +108,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([]);
   };
 
-  const { currentTag, currentGroup, props } = useModalState();
+  const { selectedTags, currentGroup, props } = useModalState();
 
   useEffect(() => {
     if (props.groupTrackingId) {
@@ -126,12 +128,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (currentTag) {
-      clearConversation();
-    }
-  }, [currentTag]);
-
-  useEffect(() => {
     if (mode == "chat" && audioBase64 && audioBase64 != "") {
       askQuestion(" ");
     }
@@ -149,7 +145,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         const lastUserQuestion = messages.at(-2);
         askQuestion(lastUserQuestion?.text, currentGroup ?? undefined, true);
       }
-    }, 6000);
+    }, 7000);
 
     return () => clearTimeout(timer);
   }, [isLoading, messages, currentGroup]);
@@ -282,6 +278,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     group?: ChunkGroup;
   }) => {
     setIsLoading(true);
+    let curAudioBase64 = audioBase64;
+    let questionProp = question;
     const curGroup = group || currentGroup;
     let transcribedQuery: string | null = null;
 
@@ -307,13 +305,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               chunk_ids: groupChunks.map((c) => c.id),
               image_urls: imageUrl ? [imageUrl] : [],
               audio_input:
-                audioBase64 && audioBase64?.length > 0
-                  ? audioBase64
+                curAudioBase64 && curAudioBase64?.length > 0
+                  ? curAudioBase64
                   : undefined,
               prev_messages: [
                 ...messages.slice(0, -1).map((m) => mapMessageType(m)),
                 {
-                  content: question || currentQuestion,
+                  content: questionProp || currentQuestion,
                   role: "user",
                 },
               ],
@@ -322,7 +320,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             },
             chatMessageAbortController.current.signal,
             (headers: Record<string, string>) => {
-              if (headers["x-tr-query"] && audioBase64) {
+              if (headers["x-tr-query"] && curAudioBase64) {
                 transcribedQuery = headers["x-tr-query"];
               }
             }
@@ -337,8 +335,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      if (transcribedQuery && audioBase64) {
+      if (transcribedQuery && curAudioBase64) {
         setAudioBase64("");
+        curAudioBase64 = undefined;
         setMessages((m) => {
           return [
             ...m.slice(0, -1),
@@ -366,9 +365,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         should: null,
       };
 
-      if (currentTag !== "all") {
+      if (selectedTags.length > 0) {
         filters.must = [];
-        filters.must?.push({ field: "tag_set", match_any: [currentTag] });
+        filters.must?.push({
+          field: "tag_set",
+          match_any: selectedTags.map((t) => t.tag),
+        });
       }
 
       if (props.chatFilters) {
@@ -388,6 +390,100 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      if ((props.tags?.length ?? 0) > 0) {
+        let filterParamsRetries = 0;
+        while (filterParamsRetries < 3) {
+          filterParamsRetries++;
+          const abortController = new AbortController();
+          setTimeout(() => {
+            abortController.abort();
+          }, 4000);
+
+          try {
+            const filterParamsResp = await trieveSDK.getToolCallFunctionParams(
+              {
+                user_message_text:
+                  questionProp || currentQuestion
+                    ? `Get filters for the following message: \n\n${questionProp || currentQuestion}`
+                    : null,
+                image_url: imageUrl ? imageUrl : null,
+                audio_input: curAudioBase64 ? curAudioBase64 : null,
+                tool_function: {
+                  name: "get_filters",
+                  description:
+                    "Decide on which filters to apply to available catalog being used within the knowledge base to respond. Always get filters.",
+                  parameters:
+                    props.tags?.map((tag) => {
+                      return {
+                        name: tag.label,
+                        parameter_type: "boolean",
+                        description: tag.description ?? "",
+                      } as ToolFunctionParameter;
+                    }) ?? [],
+                },
+              },
+              abortController.signal,
+              (headers: Record<string, string>) => {
+                if (headers["x-tr-query"] && curAudioBase64) {
+                  transcribedQuery = headers["x-tr-query"];
+                }
+              }
+            );
+
+            if (transcribedQuery && curAudioBase64) {
+              questionProp = transcribedQuery;
+              setAudioBase64("");
+              curAudioBase64 = undefined;
+              setMessages((m) => {
+                return [
+                  ...m.slice(0, -1),
+                  {
+                    type: "user",
+                    text: transcribedQuery ?? "",
+                    additional: null,
+                    queryId: null,
+                    imageUrl: imageUrl ? imageUrl : null,
+                  },
+                  {
+                    type: "system",
+                    text: "Loading...",
+                    additional: null,
+                    queryId: null,
+                  },
+                ];
+              });
+            }
+
+            const match_any_tags = [];
+            for (const key of Object.keys(filterParamsResp.parameters ?? {})) {
+              const filterParam = (filterParamsResp.parameters as any)[
+                key as keyof typeof filterParamsResp.parameters
+              ];
+              if (typeof filterParam === "boolean" && filterParam) {
+                const tag = props.tags?.find((t) => t.label === key)?.tag;
+                if (tag) {
+                  match_any_tags.push(tag);
+                }
+              }
+            }
+
+            if (match_any_tags.length > 0) {
+              if (!filters.must) {
+                filters.must = [];
+              }
+              filters.must.push({
+                field: "tag_set",
+                match_any: match_any_tags,
+              });
+            }
+
+            break;
+          } catch (e) {
+            console.error("error getting getToolCallFunctionParams", e);
+          }
+        }
+      }
+
       if (
         filters.must == null &&
         filters.must_not == null &&
@@ -396,7 +492,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         filters = null;
       }
 
-      let retries = 0;
+      let messageReaderRetries = 0;
       let {
         reader,
         queryId,
@@ -405,15 +501,15 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         queryId: string | null;
       } = { reader: null, queryId: null };
 
-      while (retries < 3) {
+      while (messageReaderRetries < 3) {
         try {
           const result = await trieveSDK.createMessageReaderWithQueryId(
             {
               topic_id: id || currentTopic,
-              new_message_content: question || currentQuestion,
+              new_message_content: questionProp || currentQuestion,
               audio_input:
-                audioBase64 && audioBase64?.length > 0
-                  ? audioBase64
+                curAudioBase64 && curAudioBase64?.length > 0
+                  ? curAudioBase64
                   : undefined,
               image_urls: imageUrl ? [imageUrl] : [],
               llm_options: {
@@ -433,7 +529,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             },
             chatMessageAbortController.current.signal,
             (headers: Record<string, string>) => {
-              if (headers["x-tr-query"] && audioBase64) {
+              if (headers["x-tr-query"] && curAudioBase64) {
                 transcribedQuery = headers["x-tr-query"];
               }
             }
@@ -443,12 +539,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           break;
         } catch (e) {
           console.error("error getting createMessageReaderWithQueryId", e);
-          retries++;
+          messageReaderRetries++;
         }
       }
 
-      if (transcribedQuery && audioBase64) {
+      if (transcribedQuery && curAudioBase64) {
         setAudioBase64("");
+        curAudioBase64 = undefined;
         setMessages((m) => [
           ...m.slice(0, -1),
           {
@@ -516,6 +613,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     group?: ChunkGroup,
     retry?: boolean
   ) => {
+    const questionProp = question;
     setIsDoneReading(false);
     setCurrentQuestion("");
 
@@ -551,7 +649,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           ...m,
           {
             type: "user",
-            text: question || currentQuestion,
+            text: questionProp || currentQuestion,
             additional: null,
             queryId: null,
             imageUrl: imageUrl ? imageUrl : null,
@@ -574,9 +672,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     scrollToBottomOfChatModalWrapper();
 
     if (!currentTopic && !currentGroup && !group) {
-      await createTopic({ question: question || currentQuestion });
+      await createTopic({ question: questionProp || currentQuestion });
     } else {
-      await createQuestion({ question: question || currentQuestion, group });
+      await createQuestion({
+        question: questionProp || currentQuestion,
+        group,
+      });
     }
     if (!audioBase64) {
       if (!retry) {

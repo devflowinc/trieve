@@ -52,6 +52,15 @@ export interface PagefindOptions {
   cdnBaseUrl?: string;
 }
 
+export interface TagProp {
+  tag: string;
+  label?: string;
+  selected?: boolean;
+  iconClassName?: string;
+  icon?: () => JSX.Element;
+  description?: string;
+}
+
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
@@ -81,13 +90,7 @@ export type ModalProps = {
   brandColor?: string;
   brandFontFamily?: string;
   openKeyCombination?: { key?: string; label?: string; ctrl?: boolean }[];
-  tags?: {
-    tag: string;
-    label?: string;
-    selected?: boolean;
-    iconClassName?: string;
-    icon?: () => JSX.Element;
-  }[];
+  tags?: TagProp[];
   defaultSearchMode?: SearchModes;
   usePagefind?: boolean;
   type?: ModalTypes;
@@ -214,8 +217,8 @@ const ModalContext = createContext<{
   setMode: React.Dispatch<React.SetStateAction<SearchModes>>;
   modalRef: React.RefObject<HTMLDivElement>;
   setContextProps: (props: ModalProps) => void;
-  currentTag: string;
-  setCurrentTag: React.Dispatch<React.SetStateAction<string>>;
+  selectedTags: TagProp[];
+  setSelectedTags: React.Dispatch<React.SetStateAction<TagProp[] | undefined>>;
   currentGroup: ChunkGroup | null;
   setCurrentGroup: React.Dispatch<React.SetStateAction<ChunkGroup | null>>;
   tagCounts: CountChunkQueryResponseBody[];
@@ -245,8 +248,8 @@ const ModalContext = createContext<{
   requestID: "",
   setRequestID: () => {},
   setLoadingResults: () => {},
-  setCurrentTag: () => {},
-  currentTag: "all",
+  selectedTags: [],
+  setSelectedTags: () => {},
   currentGroup: null,
   setCurrentGroup: () => {},
   tagCounts: [],
@@ -282,8 +285,8 @@ const ModalProvider = ({
   const [mode, setMode] = useState(props.defaultSearchMode || "search");
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
-  const [currentTag, setCurrentTag] = useState(
-    props.tags?.find((t) => t.selected)?.tag || "all"
+  const [selectedTags, setSelectedTags] = useState(
+    props.tags?.filter((t) => t.selected)
   );
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
 
@@ -312,7 +315,7 @@ const ModalProvider = ({
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
-          ...(currentTag !== "all" && { tag: currentTag }),
+          ...(selectedTags?.map((t) => t.tag) ?? []),
           type: props.type,
         });
 
@@ -337,7 +340,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          currentTag !== "all" ? currentTag : undefined
+          selectedTags?.map((t) => t.tag)
         );
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
@@ -354,7 +357,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          currentTag !== "all" ? currentTag : undefined
+          selectedTags?.map((t) => t.tag)
         );
         setResults(results);
       } else {
@@ -365,7 +368,7 @@ const ModalProvider = ({
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
-          ...(currentTag !== "all" && { tag: currentTag }),
+          tags: selectedTags?.map((t) => t.tag),
           type: props.type,
         });
         if (results.transcribedQuery && audioBase64) {
@@ -481,7 +484,7 @@ const ModalProvider = ({
       clearTimeout(timeout);
       abortController.abort();
     };
-  }, [query, imageUrl, audioBase64, currentTag, mode]);
+  }, [query, imageUrl, audioBase64, selectedTags, mode]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -526,8 +529,8 @@ const ModalProvider = ({
         mode,
         setMode,
         modalRef,
-        currentTag,
-        setCurrentTag,
+        selectedTags: selectedTags ?? [],
+        setSelectedTags,
         currentGroup,
         setCurrentGroup,
         tagCounts,

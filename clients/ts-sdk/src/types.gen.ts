@@ -1772,6 +1772,10 @@ export type GetPagefindIndexResponse = {
  */
 export type GetToolFunctionParamsReqPayload = {
     /**
+     * The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.
+     */
+    audio_input?: (string) | null;
+    /**
      * Image URL to attach to the message to generate the parameters for the tool function.
      */
     image_url?: (string) | null;
@@ -1783,7 +1787,7 @@ export type GetToolFunctionParamsReqPayload = {
     /**
      * Text of the user's message to the assistant which will be used to generate the parameters for the tool function.
      */
-    user_message_text: string;
+    user_message_text?: (string) | null;
 };
 
 /**
@@ -2300,6 +2304,7 @@ export type PublicPageTabMessage = {
 };
 
 export type PublicPageTag = {
+    description?: (string) | null;
     iconClassName?: (string) | null;
     label?: (string) | null;
     selected?: (boolean) | null;

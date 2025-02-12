@@ -463,7 +463,8 @@ export async function getToolCallFunctionParams(
   /** @hidden */
   this: TrieveSDK,
   data: GetToolFunctionParamsReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  parseHeaders?: (headers: Record<string, string>) => void
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -476,6 +477,7 @@ export async function getToolCallFunctionParams(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
+    parseHeaders
   );
 }

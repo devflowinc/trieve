@@ -2,7 +2,6 @@ import React, { Suspense, useEffect, useRef } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { ChatMessage } from "./ChatMessage";
-import { Tags } from "../Tags";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { SuggestedQuestions } from "./SuggestedQuestions";
 import { UploadImage } from "../Search/UploadImage";
@@ -74,7 +73,7 @@ export const ChatMode = () => {
           `chat-outer-wrapper chat-outer-wrapper-${props.modalPosition} tv-relative tv-flex tv-flex-col tv-scroll-smooth !tv-mt-0`,
           props.inline &&
             "chat-outer-inline md:tv-mt-0 lg:tv-mt-0 2xl:tv-mt-0 tv-mt-0 sm:!tv-mt-0",
-          !props.inline && "chat-outer-popup tv-min-h-[175px]",
+          !props.inline && "chat-outer-popup tv-min-h-[175px]"
         )}
         ref={modalRef}
         style={{ minHeight: minHeight }}
@@ -82,7 +81,7 @@ export const ChatMode = () => {
         <div
           className={cn(
             `system-information-wrapper`,
-            currentGroup && "with-group",
+            currentGroup && "with-group"
           )}
         >
           <div
@@ -90,7 +89,7 @@ export const ChatMode = () => {
             className={cn(
               "chat-modal-wrapper tv-py-2 tv-relative tv-px-4 tv-overflow-auto tv-flex tv-flex-col tv-gap-4",
               props.inline && "chat-modal-inline",
-              !props.inline && "chat-modal-popup",
+              !props.inline && "chat-modal-popup"
             )}
           >
             <AnimatePresence mode="wait">
@@ -180,7 +179,6 @@ export const ChatMode = () => {
         </div>
         <div className={`trieve-footer chat ${props.type}`}>
           <div className="tags-row">
-            {props.tags?.length ? <Tags /> : null}
             <div className="tags-spacer"></div>
             <a
               className="trieve-powered"
