@@ -2,7 +2,6 @@ import React, { Suspense, useEffect, useMemo } from "react";
 import { DocsItem } from "./DocsItem";
 import { useSuggestedQueries } from "../../utils/hooks/useSuggestedQueries";
 import { useModalState } from "../../utils/hooks/modal-context";
-import { Tags } from "../Tags";
 import { useChatState } from "../../utils/hooks/chat-context";
 import {
   ChunkWithHighlights,
@@ -46,7 +45,7 @@ export const SearchMode = () => {
 
   const getItemComponent = (
     result: ChunkWithHighlights | GroupChunk[],
-    index: number,
+    index: number
   ) => {
     const isChunk = isChunkWithHighlights(result);
 
@@ -120,7 +119,7 @@ export const SearchMode = () => {
   const resultsDisplay = useMemo(() => {
     if (results.length) {
       const comps = results.map((result, index) =>
-        getItemComponent(result, index),
+        getItemComponent(result, index)
       );
       return comps;
     } else {
@@ -212,7 +211,7 @@ export const SearchMode = () => {
           <div
             className={cn(
               `suggested-queries-wrapper tv-flex tv-gap-2 tv-items-center tv-flex-wrap tv-mb-2 ${props.type}`,
-              imageUrl && "tv-pt-2",
+              imageUrl && "tv-pt-2"
             )}
           >
             <button
@@ -311,7 +310,6 @@ export const SearchMode = () => {
       </ul>
       <div className={`trieve-footer search ${props.type}`}>
         <div className="bottom-row">
-          <Tags />
           <span className="spacer" />
           <a
             className="trieve-powered"

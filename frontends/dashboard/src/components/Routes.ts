@@ -43,6 +43,7 @@ export const ApiRoutes = {
     "GET /api/chunk_group/{group_id}",
     "POST /api/file",
     "GET /api/file/{file_id}",
+    "POST /api/message/get_tool_function_params",
   ],
   "api/analytics/*": [
     "POST /api/analytics/rag",
@@ -115,6 +116,7 @@ export const ApiRoutes = {
     "PUT /api/message",
     "DELETE /api/message",
     "PATCH /api/message",
+    "POST /api/message/get_tool_function_params",
   ],
   "api/messages/*": ["GET /api/messages/{messages_topic_id}"],
   "api/organization/*": [

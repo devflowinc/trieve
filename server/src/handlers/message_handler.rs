@@ -1205,9 +1205,11 @@ pub struct ToolFunction {
 }))]
 pub struct GetToolFunctionParamsReqPayload {
     /// Text of the user's message to the assistant which will be used to generate the parameters for the tool function.
-    pub user_message_text: String,
+    pub user_message_text: Option<String>,
     /// Image URL to attach to the message to generate the parameters for the tool function.
     pub image_url: Option<String>,
+    /// The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.
+    pub audio_input: Option<String>,
     /// Function to get the parameters for.
     pub tool_function: ToolFunction,
     /// Model name to use for the completion. If not specified, this defaults to the dataset's model.
@@ -1280,10 +1282,21 @@ pub async fn get_tool_function_params(
         .into()
     };
 
+    let message_content = if let Some(ref audio_input) = data.audio_input {
+        get_text_from_audio(audio_input).await?
+    } else {
+        data.user_message_text
+            .clone()
+            .ok_or(ServiceError::BadRequest(
+                "No message content provided. Must provide either a audio or text input"
+                    .to_string(),
+            ))?
+    };
+
     let mut message_content_parts =
         vec![ChatMessageContentPart::Text(ChatMessageTextContentPart {
             r#type: "text".to_string(),
-            text: data.user_message_text.clone(),
+            text: message_content.clone(),
         })];
     if let Some(image_url) = data.image_url.clone() {
         message_content_parts.insert(
@@ -1373,12 +1386,25 @@ pub async fn get_tool_function_params(
         _ => None,
     };
 
-    Ok(HttpResponse::Ok().json(GetToolFunctionParamsRespBody {
+    let resp_body = GetToolFunctionParamsRespBody {
         parameters: tool_call.and_then(|tool_call| {
             match serde_json::from_str(&tool_call.function.arguments) {
                 Ok(parameters) => Some(parameters),
                 Err(_) => None,
             }
         }),
-    }))
+    };
+
+    if data.audio_input.is_some() {
+        return Ok(HttpResponse::Ok()
+            .insert_header((
+                "X-TR-Query",
+                message_content
+                    .to_string()
+                    .replace(|c: char| c.is_ascii_control(), ""),
+            ))
+            .json(resp_body));
+    }
+
+    Ok(HttpResponse::Ok().json(resp_body))
 }

@@ -11782,10 +11782,14 @@
         "type": "object",
         "description": "Request payload for getting the parameters of a tool function",
         "required": [
-          "user_message_text",
           "tool_function"
         ],
         "properties": {
+          "audio_input": {
+            "type": "string",
+            "description": "The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.",
+            "nullable": true
+          },
           "image_url": {
             "type": "string",
             "description": "Image URL to attach to the message to generate the parameters for the tool function.",
@@ -11801,7 +11805,8 @@
           },
           "user_message_text": {
             "type": "string",
-            "description": "Text of the user's message to the assistant which will be used to generate the parameters for the tool function."
+            "description": "Text of the user's message to the assistant which will be used to generate the parameters for the tool function.",
+            "nullable": true
           }
         },
         "example": {
@@ -13425,6 +13430,10 @@
           "tag"
         ],
         "properties": {
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
           "iconClassName": {
             "type": "string",
             "nullable": true

@@ -34,7 +34,7 @@ export const searchWithTrieve = async ({
     search_type: "fulltext",
   },
   abortController,
-  tag,
+  tags,
   type,
 }: {
   trieve: TrieveSDK;
@@ -43,7 +43,7 @@ export const searchWithTrieve = async ({
   audioBase64?: string;
   searchOptions: Props["searchOptions"];
   abortController?: AbortController;
-  tag?: string;
+  tags?: string[];
   type?: ModalTypes;
 }) => {
   const scoreThreshold =
@@ -80,9 +80,9 @@ export const searchWithTrieve = async ({
         extend_results: true,
         score_threshold: scoreThreshold,
         page_size: searchOptions.page_size ?? 15,
-        ...(tag && {
+        ...(tags?.length && {
           filters: {
-            must: [{ field: "tag_set", match_any: [tag] }],
+            must: [{ field: "tag_set", match_any: tags }],
           },
         }),
         typo_options: {
@@ -109,9 +109,9 @@ export const searchWithTrieve = async ({
         },
         score_threshold: scoreThreshold,
         page_size: searchOptions.page_size ?? 15,
-        ...(tag && {
+        ...(tags?.length && {
           filters: {
-            must: [{ field: "tag_set", match_any: [tag] }],
+            must: [{ field: "tag_set", match_any: tags }],
           },
         }),
         typo_options: {
@@ -157,7 +157,7 @@ export const groupSearchWithTrieve = async ({
     search_type: "fulltext",
   },
   abortController,
-  tag,
+  tags,
   type,
 }: {
   trieve: TrieveSDK;
@@ -166,7 +166,7 @@ export const groupSearchWithTrieve = async ({
   audioBase64?: string;
   searchOptions: Props["searchOptions"];
   abortController?: AbortController;
-  tag?: string;
+  tags?: string[];
   type?: ModalTypes;
 }) => {
   const scoreThreshold =
@@ -199,9 +199,9 @@ export const groupSearchWithTrieve = async ({
       },
       score_threshold: scoreThreshold,
       page_size: searchOptions.page_size ?? 15,
-      ...(tag && {
+      ...(tags?.length && {
         filters: {
-          must: [{ field: "tag_set", match_any: [tag] }],
+          must: [{ field: "tag_set", match_any: tags }],
         },
       }),
       group_size: 1,
@@ -428,13 +428,13 @@ export const searchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
   datasetId: string,
-  tag?: string
+  tags?: string[]
 ) => {
   const response = await pagefind.search(
     query,
-    tag && {
+    tags && {
       filters: {
-        tag_set: tag,
+        tag_set: tags,
       },
     }
   );
@@ -478,13 +478,13 @@ export const groupSearchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
   datasetId: string,
-  tag?: string
+  tags?: string[]
 ): Promise<GroupSearchResults> => {
   const response = await pagefind.search(
     query,
-    tag && {
+    tags && {
       filters: {
-        tag_set: tag,
+        tag_set: tags,
       },
     }
   );

@@ -165,6 +165,7 @@ pub struct PublicPageTag {
     label: Option<String>,
     selected: Option<bool>,
     icon_class_name: Option<String>,
+    description: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]

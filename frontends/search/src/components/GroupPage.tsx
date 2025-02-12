@@ -645,6 +645,16 @@ export const GroupPage = (props: GroupPageProps) => {
               <span class="line-clamp-1 break-all">{groupInfo()?.name}</span>
             </div>
           </Show>
+          <Show when={groupInfo()?.tracking_id}>
+            <div class="flex space-x-2">
+              <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                Tracking ID:{" "}
+              </span>
+              <span class="line-clamp-1 break-all">
+                {groupInfo()?.tracking_id}
+              </span>
+            </div>
+          </Show>
           <Show when={groupInfo()?.tag_set?.length}>
             <div class="flex space-x-2">
               <span class="font-semibold text-neutral-800 dark:text-neutral-200">
