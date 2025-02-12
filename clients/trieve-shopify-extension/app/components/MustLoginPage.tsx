@@ -1,5 +1,5 @@
 import { Card, BlockStack, Text, Box, Button, CalloutCard } from "@shopify/polaris";
-import { useRevalidator } from "@remix-run/react";
+import { Link, useRevalidator } from "@remix-run/react";
 import { useEffect } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 
@@ -36,6 +36,9 @@ export const MustLoginPage = ({ authUrl }: { authUrl: string }) => {
         }}
       >
         <p>To get started, login</p>
+        <Link to="/app/products">
+          View Products for testing
+        </Link>
       </CalloutCard>
     </Box>
   );
