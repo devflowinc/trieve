@@ -112,6 +112,7 @@ export type Product = {
       displayName: string;
       price: string;
       title: string;
+      inventoryQuantity: number;
     }[];
   };
   media: {
@@ -153,4 +154,5 @@ export interface ChunkReqPayload {
     distance_factor: number;
   };
   convert_html_to_text?: boolean;
+  upsert_by_tracking_id?: boolean;
 }
