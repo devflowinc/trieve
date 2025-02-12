@@ -105,7 +105,7 @@ const MainLayout = (props: LayoutProps) => {
   const [contextOptions, setContextOptions] =
     createSignal<ContextOptions | null>(null);
   const [onlyIncludeDocsUsed, setOnlyIncludeDocsUsed] =
-    createSignal<boolean>(true);
+    createSignal<boolean>(false);
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
