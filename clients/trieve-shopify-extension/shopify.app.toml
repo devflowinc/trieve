@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "8765d78a52aa8c12ae2d235d9d41529c"
-application_url = "https://deer-measurements-media-officials.trycloudflare.com"
+application_url = "https://not-helped-beds-extended.trycloudflare.com"
 embedded = true
 name = "trieve-search-extension"
 handle = "trieve-search-extension"
@@ -23,9 +23,9 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://deer-measurements-media-officials.trycloudflare.com/auth/callback",
-  "https://deer-measurements-media-officials.trycloudflare.com/auth/shopify/callback",
-  "https://deer-measurements-media-officials.trycloudflare.com/api/auth/callback"
+  "https://not-helped-beds-extended.trycloudflare.com/auth/callback",
+  "https://not-helped-beds-extended.trycloudflare.com/auth/shopify/callback",
+  "https://not-helped-beds-extended.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

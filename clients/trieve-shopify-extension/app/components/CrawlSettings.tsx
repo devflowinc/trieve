@@ -1,3 +1,4 @@
+import { useSubmit } from "@remix-run/react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import {
   BlockStack,
@@ -10,6 +11,7 @@ import {
   Text,
   TextField,
 } from "@shopify/polaris";
+import { sendChunks } from "app/processors/getProducts";
 import {
   CrawlInterval,
   CrawlOptions,
@@ -46,19 +48,20 @@ export const DatasetCrawlSettings = ({
   const [unsavedCrawlOptions, setUnsavedCrawlOptions] =
     useState(initalCrawlOptions);
   const shopify = useAppBridge();
+  const submit = useSubmit();
 
   useEffect(() => {
     // Quickly set the nonnegotiable options for shopify to work
     if (unsavedCrawlOptions.scrape_options?.type !== "shopify") {
       setUnsavedCrawlOptions({
         ...unsavedCrawlOptions,
+        boost_titles: true,
         scrape_options: {
           ...unsavedCrawlOptions.scrape_options,
           type: "shopify",
-          group_variants: false,
+          group_variants: true,
           tag_regexes: [],
         },
-        site_url: "",
       });
     }
     if (!unsavedCrawlOptions.interval) {
@@ -70,24 +73,14 @@ export const DatasetCrawlSettings = ({
   }, [initalCrawlOptions]);
 
   const onSave = async () => {
-    const response = await fetch(`https://api.trieve.ai/api/dataset`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${trieveKey.key}`,
-        "TR-Organization": trieveKey.organizationId,
-        "Content-Type": "application/json",
+    submit(
+      { crawl_options: JSON.stringify(unsavedCrawlOptions) },
+      {
+        method: "POST",
       },
-      body: JSON.stringify({
-        crawl_options: unsavedCrawlOptions,
-        dataset_id: datasetId,
-      }),
-    });
+    );
 
-    if (!response.ok) {
-      shopify.toast.show("Error saving crawl options", { isError: true });
-    } else {
-      shopify.toast.show("Saved crawl options");
-    }
+    shopify.toast.show("Started crawl!");
   };
 
   return (
@@ -98,20 +91,6 @@ export const DatasetCrawlSettings = ({
         </Text>
 
         <FormLayout>
-          <TextField
-            autoComplete=""
-            label="URL to crawl"
-            placeholder="https://www.example.shop"
-            value={unsavedCrawlOptions.site_url || undefined}
-            onChange={(e) => {
-              setUnsavedCrawlOptions({
-                ...unsavedCrawlOptions,
-                site_url: e,
-              });
-            }}
-            helpText="The URL of the site to start the crawl from"
-            error={false}
-          />
           <Select
             value={unsavedCrawlOptions.interval || "daily"}
             options={["daily", "weekly", "monthly"] as CrawlInterval[]}
@@ -143,6 +122,25 @@ export const DatasetCrawlSettings = ({
             }}
           />
 
+          <Checkbox
+            label="Boost titles"
+            checked={
+              (unsavedCrawlOptions.scrape_options?.type === "shopify" &&
+                unsavedCrawlOptions.boost_titles) ||
+              false
+            }
+            onChange={(e) => {
+              setUnsavedCrawlOptions({
+                ...unsavedCrawlOptions,
+                boost_titles: e,
+                scrape_options: {
+                  ...unsavedCrawlOptions.scrape_options,
+                  type: "shopify",
+                },
+              });
+            }}
+          />
+
           <TextField
             autoComplete="off"
             label="Important Product Tags (Comma Seperated)"
@@ -166,9 +164,7 @@ export const DatasetCrawlSettings = ({
         </FormLayout>
 
         <InlineStack align="end">
-          <Button disabled={!unsavedCrawlOptions.site_url} onClick={onSave}>
-            Save
-          </Button>
+          <Button onClick={onSave}>Save</Button>
         </InlineStack>
       </BlockStack>
     </Card>

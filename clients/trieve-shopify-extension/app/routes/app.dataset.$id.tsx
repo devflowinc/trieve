@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { data, LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 import { Page, Text, Link as PolLink, Box } from "@shopify/polaris";
 import { validateTrieveAuth } from "app/auth";
@@ -6,9 +6,12 @@ import {
   DatasetCrawlSettings,
   defaultCrawlOptions,
 } from "app/components/CrawlSettings";
+import { sendChunks } from "app/processors/getProducts";
+import { authenticate } from "app/shopify.server";
 import { CrawlOptions } from "app/types";
 
 export const loader = async (args: LoaderFunctionArgs) => {
+  let { admin, session } = await authenticate.admin(args.request);
   if (!args.params.id) {
     throw new Response("No dataset id provided", { status: 400 });
   }
@@ -46,7 +49,22 @@ export const loader = async (args: LoaderFunctionArgs) => {
       crawl_options: CrawlOptions | null;
     },
     trieveKey,
+    admin,
+    session,
   };
+};
+
+export const action = async (data: LoaderFunctionArgs) => {
+  const { admin, session } = await authenticate.admin(data.request);
+  const trieveKey = await validateTrieveAuth(data);
+  const crawlOptions: CrawlOptions =
+    (JSON.parse(
+      (await data.request.formData()).get("crawl_options") as string,
+    ) as CrawlOptions) ?? defaultCrawlOptions;
+  const datasetId = data.params.id;
+
+  await sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions);
+  return null;
 };
 
 export default function Dataset() {
