@@ -571,6 +571,7 @@ impl Modify for SecurityAddon {
         (name = "Dataset", description = "Dataset endpoint. Datasets belong to organizations and hold configuration information for both client and server. Datasets contain chunks and chunk groups."),
         (name = "Chunk", description = "Chunk endpoint. Think of chunks as individual searchable units of information. The majority of your integration will likely be with the Chunk endpoint."),
         (name = "Chunk Group", description = "Chunk groups endpoint. Think of a chunk_group as a bookmark folder within the dataset."),
+        (name = "Crawl", description = "Crawl endpoint. Used to create and manage crawls for datasets."),
         (name = "File", description = "File endpoint. When files are uploaded, they are stored in S3 and broken up into chunks with text extraction from Apache Tika. You can upload files of pretty much any type up to 1GB in size. See chunking algorithm details at `docs.trieve.ai` for more information on how chunking works. Improved default chunking is on our roadmap."),
         (name = "Events", description = "Notifications endpoint. Files are uploaded asynchronously and events are sent to the user when the upload is complete."),
         (name = "Topic", description = "Topic chat endpoint. Think of topics as the storage system for gen-ai chat memory. Gen AI messages belong to topics."),

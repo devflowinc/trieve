@@ -27,7 +27,7 @@ pub struct CreateCrawlReqPayload {
     post,
     path = "/crawl",
     context_path = "/api",
-    tag = "Dataset",
+    tag = "Crawl",
     request_body(content = CreateCrawlReqPayload, description = "JSON request payload to create a new crawl", content_type = "application/json"),
     responses(
         (status = 200, description = "Crawl created successfully", body = CrawlRequest),
@@ -75,7 +75,7 @@ pub struct UpdateCrawlReqPayload {
     put,
     path = "/crawl",
     context_path = "/api",
-    tag = "Dataset",
+    tag = "Crawl",
     request_body(content = UpdateCrawlReqPayload, description = "JSON request payload to update a crawl", content_type = "application/json"),
     responses(
         (status = 200, description = "Crawl updated successfully", body = CrawlRequest),
@@ -116,7 +116,7 @@ pub async fn update_crawl_request(
     delete,
     path = "/crawl/{crawl_id}",
     context_path = "/api",
-    tag = "Dataset",
+    tag = "Crawl",
     responses(
         (status = 204, description = "Crawl deleted successfully"),
         (status = 400, description = "Service error relating to deleting the dataset", body = ErrorResponseBody),
@@ -154,7 +154,7 @@ pub struct GetCrawlRequestsReqPayload {
     get,
     path = "/crawl",
     context_path = "/api",
-    tag = "Dataset",
+    tag = "Crawl",
     responses(
         (status = 200, description = "Crawl requests retrieved successfully", body = Vec<CrawlRequest>),
         (status = 400, description = "Service error relating to retrieving the crawl requests", body = ErrorResponseBody),
