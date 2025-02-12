@@ -2,18 +2,18 @@ import { TrieveSDK } from "../sdk";
 
 export const GROUP_EXAMPLE_ID = "460e5ee8-98bc-4fed-b4ec-68f4d6453e5f";
 export const GROUP_EXAMPLE_TRACKING_ID = "1234";
-export const TRIEVE = new TrieveSDK({
-  apiKey: "tr-mKHF9sstPHQHcCbh6Qk6Uw54hx7uwDGU",
-  datasetId: "6cba9148-9cbb-417a-a955-93ea749ef27c",
-  organizationId: "de73679c-707f-4fc2-853e-994c910d944c",
-});
-
 // export const TRIEVE = new TrieveSDK({
-//   baseUrl: "http://localhost:8090",
-//   organizationId: "61593129-7394-49ec-a3c7-c59faa7a7c5d",
-//   datasetId: "f83f08ef-c05d-421c-baf1-4f1509ea069b",
-//   apiKey: "tr-hTtHCq4gOfwMGzluCSxZBtfS4ktmmqiq",
+//   apiKey: "tr-mKHF9sstPHQHcCbh6Qk6Uw54hx7uwDGU",
+//   datasetId: "6cba9148-9cbb-417a-a955-93ea749ef27c",
+//   organizationId: "de73679c-707f-4fc2-853e-994c910d944c",
 // });
+
+export const TRIEVE = new TrieveSDK({
+  baseUrl: "http://localhost:8090",
+  organizationId: "310e51a2-4bb4-4317-9661-b5ef3ca85713",
+  datasetId: "bd76db92-b18c-4fbe-9059-830e3ba2106d",
+  apiKey: "admin",
+});
 
 export const EXAMPLE_TOPIC_ID = "f85984e1-7818-4971-b300-2f462fe1a5a2";
 export const EXAMPLE_MESSAGE_ID = "48d0d2ef-3bfa-4124-8625-3c625ffa45a6";

@@ -1767,6 +1767,35 @@ export type GetPagefindIndexResponse = {
     url: string;
 };
 
+/**
+ * Request payload for getting the parameters of a tool function
+ */
+export type GetToolFunctionParamsReqPayload = {
+    /**
+     * Image URL to attach to the message to generate the parameters for the tool function.
+     */
+    image_url?: (string) | null;
+    /**
+     * Model name to use for the completion. If not specified, this defaults to the dataset's model.
+     */
+    model?: (string) | null;
+    tool_function: ToolFunction;
+    /**
+     * Text of the user's message to the assistant which will be used to generate the parameters for the tool function.
+     */
+    user_message_text: string;
+};
+
+/**
+ * Response body for getting the parameters of a tool function
+ */
+export type GetToolFunctionParamsRespBody = {
+    /**
+     * Parameters for the tool function.
+     */
+    parameters?: unknown;
+};
+
 export type GetTopDatasetsRequestBody = {
     date_range?: ((DateRange) | null);
     type: TopDatasetsRequestTypes;
@@ -3202,6 +3231,44 @@ export type TagsWithCount = {
      */
     tag: string;
 };
+
+/**
+ * Function for a LLM tool call
+ */
+export type ToolFunction = {
+    /**
+     * Description of the function.
+     */
+    description: string;
+    /**
+     * Name of the function.
+     */
+    name: string;
+    /**
+     * Parameters of the function.
+     */
+    parameters: Array<ToolFunctionParameter>;
+};
+
+/**
+ * Function parameter for a LLM tool call
+ */
+export type ToolFunctionParameter = {
+    /**
+     * The description of the tag.
+     */
+    description: string;
+    /**
+     * Name of the parameter.
+     */
+    name: string;
+    parameter_type: ToolFunctionParameterType;
+};
+
+/**
+ * Type of a given parameter for a LLM tool call
+ */
+export type ToolFunctionParameterType = 'number' | 'boolean';
 
 export type TopDatasetsRequestTypes = 'search' | 'rag' | 'recommendation';
 
@@ -4718,6 +4785,19 @@ export type RegenerateMessagePatchData = {
 };
 
 export type RegenerateMessagePatchResponse = (string);
+
+export type GetToolFunctionParamsData = {
+    /**
+     * JSON request payload to get the parameters for a tool function
+     */
+    requestBody: GetToolFunctionParamsReqPayload;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetToolFunctionParamsResponse = (GetToolFunctionParamsRespBody);
 
 export type GetMessageByIdData = {
     /**
@@ -6312,6 +6392,21 @@ export type $OpenApiTs = {
                 200: string;
                 /**
                  * Service error relating to getting a chat completion
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/message/get_tool_function_params': {
+        post: {
+            req: GetToolFunctionParamsData;
+            res: {
+                /**
+                 * A JSON object containing the parameters for the tool function
+                 */
+                200: GetToolFunctionParamsRespBody;
+                /**
+                 * Service error relating to to updating chunk, likely due to conflicting tracking_id
                  */
                 400: ErrorResponseBody;
             };
