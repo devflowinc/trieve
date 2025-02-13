@@ -58,7 +58,7 @@ export const ChatInput = ({ showShadow }: { showShadow?: boolean }) => {
       <div
         className={`input-wrapper tv-relative tv-top-0 tv-z-10 tv-flex tv-flex-col tv-rounded-lg chat${
           props.type == "ecommerce" ? "" : " " + props.type
-        }${props.inline ? " tv-mx-2" : ""}`}
+        }`}
         style={{
           boxShadow: showShadow
             ? "0 -10px 10px -10px rgb(0 0 0 / 0.1), 0 -15px 40px -15px rgb(0 0 0 / 0.1)"

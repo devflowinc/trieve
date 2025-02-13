@@ -311,7 +311,7 @@ export const Message = ({
   }
 
   return (
-    <div className={`system${props.type === "ecommerce" ? " ecommerce" : ""}`}>
+    <div className={`system ${props.type === "ecommerce" ? " ecommerce" : ""}`}>
       {message.additional && props.type === "ecommerce" && !props.inline && (
         <div className="additional-image-links tv-gap-2 tv-mt-2 tv-mb-2 tv-flex tv-flex-row">
           <Carousel>{ecommerceItems}</Carousel>
@@ -469,14 +469,8 @@ export const Message = ({
                   </button>
                 </div>
               </div>
-              {props.followupQuestions && messages.length == idx + 1 && (
-                <FollowupQueries />
-              )}
             </div>
           </div>
-          {props.followupQuestions && messages.length == idx + 1 && (
-            <FollowupQueries />
-          )}
         </div>
       </div>
     </div>

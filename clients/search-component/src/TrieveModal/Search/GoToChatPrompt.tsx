@@ -7,7 +7,7 @@ export const GoToChatPrompt = () => {
   const { props, query } = useModalState();
   return (
     <li
-      className="start-chat-li tv-col-span-2 sm:tv-col-span-3 md:tv-col-span-4 lg:tv-col-span-5"
+      className="start-chat-li tv-mt-2 tv-col-span-2 sm:tv-col-span-3 md:tv-col-span-4 lg:tv-col-span-5"
       key="chat"
     >
       <button

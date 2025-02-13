@@ -91,10 +91,10 @@ export const PdfItem = (props: Props) => {
           });
         }
       }}
-      className="pdf-item"
+      className="tv-rounded-md tv-p-2 hover:tv-bg-neutral-100"
     >
       {presigned && (
-        <div className="tv-max-w-[400px]">
+        <div className="">
           <PdfSpotlight
             height={180}
             padding={{
@@ -108,6 +108,7 @@ export const PdfItem = (props: Props) => {
               boxShadow:
                 "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
             }}
+            wrapStyle={{ width: "100%" }}
             onFoundResult={(r) => setHasFoundMatch(r)}
             page={props.item.chunk.metadata.page_num}
             searchFor={toHighlight}
