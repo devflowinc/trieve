@@ -8,7 +8,7 @@ const {
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ["selector", ".dark &"],
-  content: ["src/**/*.tsx"],
+  content: ["src/**/*.{tsx,ts}"],
   plugins: [
     plugin(function ({ addVariant }) {
       addVariant("inline", () => {
@@ -30,7 +30,7 @@ export default {
         ],
         {
           rootStyles: true,
-        }
+        },
       ),
     }),
   ],
