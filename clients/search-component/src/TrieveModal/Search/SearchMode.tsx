@@ -117,18 +117,19 @@ export const SearchMode = () => {
   return (
     <>
       <SearchInput />
-      {resultsLength && props.chat && imageUrl.length == 0 ? (
-        <GoToChatPrompt />
-      ) : null}
       <ul
         className={cn(
           `trieve-elements-${props.type} tv-grow`,
           props.type === "ecommerce" &&
-            "tv-grid tv-grid-cols-2 sm:tv-grid-cols-3 md:tv-grid-cols-4 lg:tv-grid-cols-5 tv-gap-2 tv-mt-0.5 tv-py-2 tv-max-w-7xl tv-mx-auto tv-pr-0.5",
+            "tv-grid tv-grid-cols-2 sm:tv-grid-cols-3 md:tv-grid-cols-4 lg:tv-grid-cols-5 tv-gap-2 tv-mt-0.5 tv-py-2 tv-pr-0.5",
+          "tv-overflow-y-auto",
         )}
       >
+        {resultsLength && props.chat && imageUrl.length == 0 ? (
+          <GoToChatPrompt />
+        ) : null}
         {props.type === "pdf" ? (
-          <div className="tv-grid tv-grid-cols-2">{resultsDisplay}</div>
+          <div className="tv-grid md:tv-grid-cols-3">{resultsDisplay}</div>
         ) : (
           resultsDisplay
         )}

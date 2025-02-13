@@ -9,13 +9,18 @@ const popupClass = cva(
     "tv-top-[calc(40%-30vh)]",
     "tv-left-[50%] tv-shadow-2xl tv-fixed -tv-translate-x-[50%]",
     "tv-w-[90vw]",
+    "tv-px-4",
   ],
   {
     variants: {
       type: {
-        ecommerce: ["tv-px-4", "!tv-top-[0px]"],
+        ecommerce: ["!tv-top-[0px]"],
         docs: [],
-        pdf: [],
+        pdf: ["tv-max-h-[70vh]"],
+      },
+      mode: {
+        search: [],
+        chat: [],
       },
     },
   },
@@ -26,6 +31,7 @@ const inlineClass = cva(
     "tv-max-h-[40vh]",
     "sm:tv-max-w-[800px]",
     "!tv-min-w-full tv-max-w-sm tv-w-full",
+    "tv-px-2",
   ],
   {
     variants: {
@@ -42,11 +48,11 @@ const inlineClass = cva(
 );
 
 export const useSizing = () => {
-  const { props } = useModalState();
+  const { props, mode } = useModalState();
 
   if (props.inline) {
     return inlineClass({ type: props.type });
   } else {
-    return popupClass({ type: props.type });
+    return popupClass({ type: props.type, mode: mode as "search" | "chat" });
   }
 };
