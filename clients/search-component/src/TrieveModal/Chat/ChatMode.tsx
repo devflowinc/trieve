@@ -10,6 +10,7 @@ import { AnimatePresence } from "motion/react";
 import { cn } from "../../utils/styles";
 import { UploadAudio } from "../Search/UploadAudio";
 import { useChatHeight } from "../../utils/hooks/useChatHeight";
+import { AIInitialMessage } from "./AIInitalMessage";
 
 export const ChatMode = () => {
   const {
@@ -92,6 +93,7 @@ export const ChatMode = () => {
               !props.inline && "chat-modal-popup"
             )}
           >
+            <AIInitialMessage />
             <AnimatePresence mode="wait">
               <SuggestedQuestions />
               {messages.map((message, i) => (
