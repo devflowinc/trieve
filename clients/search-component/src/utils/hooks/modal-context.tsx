@@ -133,6 +133,7 @@ export type ModalProps = {
   onAddToCart?: (chunk: Chunk) => Promise<void> | void;
   getCartQuantity?: (trackingId: string) => Promise<number> | number;
   showResultHighlights?: boolean;
+  initialAiMessage?: string;
 };
 
 const defaultProps = {
@@ -189,6 +190,7 @@ const defaultProps = {
     "This is an image of a product that I want you to show similar recomendations for.",
   onAddToCart: undefined,
   showResultHighlights: true,
+  initialAiMessage: undefined,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
