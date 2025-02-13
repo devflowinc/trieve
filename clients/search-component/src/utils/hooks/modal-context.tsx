@@ -134,6 +134,7 @@ export type ModalProps = {
   getCartQuantity?: (trackingId: string) => Promise<number> | number;
   showResultHighlights?: boolean;
   initialAiMessage?: string;
+  ignoreEventListeners?: boolean;
 };
 
 const defaultProps = {
@@ -191,6 +192,7 @@ const defaultProps = {
   onAddToCart: undefined,
   showResultHighlights: true,
   initialAiMessage: undefined,
+  ignoreEventListeners: false,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
