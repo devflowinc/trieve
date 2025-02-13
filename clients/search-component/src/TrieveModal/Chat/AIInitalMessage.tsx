@@ -5,7 +5,6 @@ import { SparklesIcon } from "../icons";
 
 export const AIInitialMessage = () => {
   const { props } = useModalState();
-  console.log(props.initialAiMessage);
   if (!props.initialAiMessage) return null;
 
   return (
