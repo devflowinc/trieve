@@ -5,6 +5,7 @@ import {
   TrieveKey,
   ProductsResponse,
 } from "app/types";
+import { M } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
 
 function createChunkFromProduct(
   product: Product,
@@ -43,10 +44,7 @@ function createChunkFromProduct(
       : `<h1>${productTitle} - ${variantTitle}</h1>${productBodyHtml}`;
 
   // Handle tag regexes
-  if (
-    crawlOptions.scrape_options?.type == "shopify" &&
-    crawlOptions.scrape_options?.tag_regexes
-  ) {
+  if (crawlOptions.scrape_options?.tag_regexes) {
     const tagMatches = new Set<string>();
 
     crawlOptions.scrape_options.tag_regexes.forEach((pattern) => {
@@ -68,14 +66,21 @@ function createChunkFromProduct(
     }
   }
 
-  const groupVariants =
-    (crawlOptions.scrape_options?.type == "shopify" &&
-      crawlOptions.scrape_options?.group_variants) ??
-    true;
+  const groupVariants = crawlOptions.scrape_options?.group_variants ?? true;
 
   const semanticBoostPhrase = groupVariants ? variantTitle : productTitle;
   const fulltextBoostPhrase = groupVariants ? variantTitle : productTitle;
-
+  const tags = product.tags;
+  if (crawlOptions.include_metafields) {
+    product.variants.nodes.forEach((v) => {
+      let values: string[] = JSON.parse(
+        v.metafields.nodes.find((m) =>
+          crawlOptions.include_metafields?.includes(m.key),
+        )?.value ?? "[]",
+      );
+      tags.push(...values);
+    });
+  }
   const metadata = {
     body_html: product.bodyHtml,
     handle: product.handle,
@@ -177,6 +182,12 @@ export const sendChunks = async (
                 price
                 title
                 inventoryQuantity
+                metafields(first: 20) {
+                  nodes {
+                    key
+                    value
+                  }
+                }
               }
             }
             media(first: 20) {
