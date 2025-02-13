@@ -36,17 +36,9 @@ export const ChatMode = () => {
           <SuggestedQuestions />
           {messages.map((message, i) => {
             if (message.type === "user") {
-              return (
-                <UserMessage key={message.text + i} message={message} idx={i} />
-              );
+              return <UserMessage key={i} message={message} idx={i} />;
             } else {
-              return (
-                <RepsonseMessage
-                  key={message.text + i}
-                  message={message}
-                  idx={i}
-                />
-              );
+              return <RepsonseMessage key={i} message={message} idx={i} />;
             }
           })}
           <div
