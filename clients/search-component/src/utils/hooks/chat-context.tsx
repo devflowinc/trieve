@@ -404,7 +404,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               {
                 user_message_text:
                   questionProp || currentQuestion
-                    ? `Get filters for the following message: \n\n${questionProp || currentQuestion}`
+                    ? `Get filters from the following messages: ${messages.slice(0, -1).filter((message) => { return message.type == "user" }).map((message) => `\n\n${message.text}`)} \n\n ${questionProp || currentQuestion}`
                     : null,
                 image_url: imageUrl ? imageUrl : null,
                 audio_input: curAudioBase64 ? curAudioBase64 : null,
