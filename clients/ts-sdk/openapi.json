@@ -3236,7 +3236,7 @@
     "/api/crawl": {
       "get": {
         "tags": [
-          "Dataset"
+          "Crawl"
         ],
         "summary": "Get all crawl requests for a dataset",
         "description": "This endpoint is used to get all crawl requests for a dataset.",
@@ -3310,7 +3310,7 @@
       },
       "post": {
         "tags": [
-          "Dataset"
+          "Crawl"
         ],
         "summary": "Create a new crawl request",
         "description": "This endpoint is used to create a new crawl request for a dataset. The request payload should contain the crawl options to use for the crawl.",
@@ -3370,7 +3370,7 @@
       },
       "put": {
         "tags": [
-          "Dataset"
+          "Crawl"
         ],
         "summary": "Update a crawl request",
         "description": "This endpoint is used to update an existing crawl request for a dataset. The request payload should contain the crawl id and the crawl options to update for the crawl.",
@@ -3432,7 +3432,7 @@
     "/api/crawl/{crawl_id}": {
       "delete": {
         "tags": [
-          "Dataset"
+          "Crawl"
         ],
         "summary": "Delete a crawl request",
         "description": "This endpoint is used to delete an existing crawl request for a dataset. The request payload should contain the crawl id to delete.",
@@ -18000,6 +18000,10 @@
     {
       "name": "Chunk Group",
       "description": "Chunk groups endpoint. Think of a chunk_group as a bookmark folder within the dataset."
+    },
+    {
+      "name": "Crawl",
+      "description": "Crawl endpoint. Used to create and manage crawls for datasets."
     },
     {
       "name": "File",

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { createSignal, createEffect, useContext, createMemo } from "solid-js";
 import { createStore } from "solid-js/store";
@@ -184,6 +185,7 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
                   placeholder: "Search...",
                   defaultSearchMode: "chat",
                   type: "ecommerce",
+                  openLinksInNewTab: true,
                 },
               },
             },
