@@ -371,108 +371,113 @@ export const Message = ({
                 <i className="fa-regular fa-copy"></i>
               </button>
             )}
-          {youtubeItems &&
-            youtubeItems.length > 0 &&
-            (!props.inline || props.inlineCarousel) && (
-              <div className="additional-image-links">
-                <Carousel>{youtubeItems}</Carousel>
-              </div>
+            {youtubeItems &&
+              youtubeItems.length > 0 &&
+              (!props.inline || props.inlineCarousel) && (
+                <div className="additional-image-links">
+                  <Carousel>{youtubeItems}</Carousel>
+                </div>
+              )}
+            {pdfItems && pdfItems.length > 0 && (
+              <div className="pdf-chat-items">{pdfItems}</div>
             )}
-          {pdfItems && pdfItems.length > 0 && (
-            <div className="pdf-chat-items">{pdfItems}</div>
-          )}
-          {message.text.length > 0 ? (
-            <Markdown
-              className="code-markdown"
-              components={{
-                code: (codeProps) => {
-                  const { children } = codeProps || {};
-                  if (!children) return null;
-                  return children?.toString();
-                },
-                a: (anchorProps) => {
-                  const { children, href, title } = anchorProps || {};
-                  if (!children) return null;
-                  return (
-                    <a
-                      href={href}
-                      target={props.openLinksInNewTab ? "_blank" : ""}
-                      title={title}
+            {message.text.length > 0 ? (
+              <Markdown
+                className="code-markdown"
+                components={{
+                  code: (codeProps) => {
+                    const { children } = codeProps || {};
+                    if (!children) return null;
+                    return children?.toString();
+                  },
+                  a: (anchorProps) => {
+                    const { children, href, title } = anchorProps || {};
+                    if (!children) return null;
+                    return (
+                      <a
+                        href={href}
+                        target={props.openLinksInNewTab ? "_blank" : ""}
+                        title={title}
+                      >
+                        {children?.toString()}
+                      </a>
+                    );
+                  },
+                }}
+              >
+                {message.text.length > 0
+                  ? message.text.replace(urlWordRegex, "")
+                  : "Loading..."}
+              </Markdown>
+            ) : (
+              <LoadingIcon className="loading" />
+            )}
+            <div>
+              {message.additional
+                ? props.type !== "ecommerce" && (
+                    <div className="additional-links">{docsItems}</div>
+                  )
+                : null}
+              <div className="feedback-wrapper">
+                <span className="spacer"></span>
+                <div className="feedback-icons">
+                  {copied ? (
+                    <span>
+                      <i className="fa-regular fa-circle-check"></i>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        void navigator.clipboard
+                          .writeText(message.text)
+                          .then(() => {
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 500);
+                          });
+                      }}
                     >
-                      {children?.toString()}
-                    </a>
-                  );
-                },
-              }}
-            >
-              {message.text.length > 0
-                ? message.text.replace(urlWordRegex, "")
-                : "Loading..."}
-            </Markdown>
-          ) : (
-            <LoadingIcon className="loading" />
-          )}
-          <div>
-            {message.additional
-              ? props.type !== "ecommerce" && (
-                  <div className="additional-links">{docsItems}</div>
-                )
-              : null}
-            <div className="feedback-wrapper">
-              <span className="spacer"></span>
-              <div className="feedback-icons">
-                {copied ? (
-                  <span>
-                    <i className="fa-regular fa-circle-check"></i>
-                  </span>
-                ) : (
+                      <i className="fa-regular fa-copy"></i>
+                    </button>
+                  )}
                   <button
+                    className={
+                      positive != null && positive ? "icon-darken" : ""
+                    }
                     onClick={() => {
-                      void navigator.clipboard
-                        .writeText(message.text)
-                        .then(() => {
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 500);
-                        });
+                      rateChatCompletion(true, message.queryId);
+                      setPositive((prev) => {
+                        if (prev === true) return null;
+                        return true;
+                      });
                     }}
                   >
-                    <i className="fa-regular fa-copy"></i>
+                    <i className="fa-regular fa-thumbs-up"></i>
                   </button>
-                )}
-                <button
-                  className={positive != null && positive ? "icon-darken" : ""}
-                  onClick={() => {
-                    rateChatCompletion(true, message.queryId);
-                    setPositive((prev) => {
-                      if (prev === true) return null;
-                      return true;
-                    });
-                  }}
-                >
-                  <i className="fa-regular fa-thumbs-up"></i>
-                </button>
-                <button
-                  className={positive != null && !positive ? "icon-darken" : ""}
-                  onClick={() => {
-                    rateChatCompletion(false, message.queryId);
-                    setPositive((prev) => {
-                      if (prev === false) return null;
-                      return false;
-                    });
-                  }}
-                >
-                  <i className="fa-regular fa-thumbs-down"></i>
-                </button>
+                  <button
+                    className={
+                      positive != null && !positive ? "icon-darken" : ""
+                    }
+                    onClick={() => {
+                      rateChatCompletion(false, message.queryId);
+                      setPositive((prev) => {
+                        if (prev === false) return null;
+                        return false;
+                      });
+                    }}
+                  >
+                    <i className="fa-regular fa-thumbs-down"></i>
+                  </button>
+                </div>
               </div>
+              {props.followupQuestions && messages.length == idx + 1 && (
+                <FollowupQueries />
+              )}
             </div>
-            {props.followupQuestions && messages.length == idx + 1 && (
-              <FollowupQueries />
-            )}
           </div>
+          {props.followupQuestions && messages.length == idx + 1 && (
+            <FollowupQueries />
+          )}
         </div>
-        {props.followupQuestions && messages.length == idx + 1 && (
-          <FollowupQueries />
-        )}
       </div>
     </div>
   );
