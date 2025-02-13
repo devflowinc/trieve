@@ -88,6 +88,9 @@ declare module "solid-js" {
 | searchOptions              | [AutocompleteReqPayload](https://ts-sdk.trieve.ai/types/types_gen.AutocompleteReqPayload.html) | `{ search_type: "fulltext" }`                                         |     
 | openKeyCombination         | { key?: string; label?: string; ctrl?: boolean }[]                                             | [{ ctrl: true }, { key: "k", label: "K" }]                            |     
 | tags                       | { tag: string; label?: string; selected? boolean; iconClassName?: string }[]                   | [{tag: "docs", label: "dev docs", iconClassName: "fa-solid fa-info"}] |     
+| inline                     | boolean                                                                                        | true                                                                  |
+| inlineHeader               | string                                                                                         | ""                                                                    |
+| initialAiMessage           | string                                                                                         | ""                                                                    |
 | ButtonEl                   | JSX.ElementType                                                                                | null                                                                  |     
 | suggestedQueries           | boolean                                                                                        | true                                                                  |     
 | defaultSearchQueries       | string[]                                                                                       | []                                                                    |     
@@ -105,7 +108,7 @@ declare module "solid-js" {
 | showFloatingInput          | boolean                                                                                        | false                                                                 |      
 | buttonTriggers             | [{ selector: <"query-selector">, mode: "chat"|"search" }]                                      | []                                                                    |      
 | hideopenButton             | boolean                                                                                        | false                                                                 |
-| showResultHighlights             | boolean                                                                                        | true                                                                 |
+| showResultHighlights       | boolean                                                                                        | true                                                                  |
 
 
 ### Search Results
