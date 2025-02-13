@@ -1049,25 +1049,6 @@ body {
       @apply tv-text-sm tv-opacity-80 tv-flex tv-gap-2;
     }
   }
-
-  #trieve-search-modal.ecommerce {
-    @apply tv-max-w-[90rem] tv-w-[95vw] tv-px-4 tv-rounded-lg;
-
-    &:not(.trieve-popup-modal) {
-      @apply tv-top-1 tv-px-0 tv-pt-0 tv-max-w-full;
-    }
-
-    &.trieve-popup-modal {
-      &.trieve-modal-center {
-        @apply tv-top-1 tv-max-w-[90rem] tv-px-4;
-      }
-      &.trieve-modal-right {
-        left: unset;
-
-        @apply tv-top-[10%] tv-right-[7px] tv-max-w-[685px] tv-translate-x-[0%] tv-px-4 tv-h-[75vh] tv-border; 
-      }
-    }
-  }
 }
 
 body {
