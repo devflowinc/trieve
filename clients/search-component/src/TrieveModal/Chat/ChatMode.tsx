@@ -15,6 +15,7 @@ export const ChatMode = () => {
   const { modalRef } = useModalState();
   const { messages } = useChatState();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { minHeight, resetHeight } = useChatHeight(modalRef, 175);
 
   const [ref, { entry, rootRef }] = useIntersectionObserver();
@@ -28,7 +29,6 @@ export const ChatMode = () => {
         className={cn(
           "chat-modal-wrapper tv-flex-grow tv-py-2 tv-px-2 tv-relative tv-overflow-auto tv-flex tv-flex-col tv-gap-4",
         )}
-        style={{ minHeight: minHeight }}
       >
         <AnimatePresence mode="wait">
           <SuggestedQuestions />
