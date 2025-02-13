@@ -22,7 +22,7 @@ export const SearchInput = () => {
 
   return (
     <div className={`input-wrapper ${props.type} tv-pt-2 ${mode}`}>
-      <div className="input-flex group-focus:tv-border has-[:focus]:tv-border has-[:focus]:tv-border-[var(--tv-prop-brand-color)] tv-mb-2 sm:tv-text-sm sm:tv-leading-6 tv-py-1.5 tv-px-4 tv-items-center tv-flex tv-justify-between tv-w-full tv-rounded-lg tv-border-[1px]">
+      <div className="input-flex group-focus:tv-border has-[:focus]:tv-border has-[:focus]:tv-border-[var(--tv-prop-brand-color)] sm:tv-text-sm sm:tv-leading-6 tv-py-1.5 tv-px-4 tv-items-center tv-flex tv-justify-between tv-w-full tv-rounded-lg tv-border-[1px]">
         <input
           ref={inputRef}
           value={audioBase64 && query.length == 0 ? "Searching..." : query}
