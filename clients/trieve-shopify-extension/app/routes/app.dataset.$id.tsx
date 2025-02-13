@@ -84,7 +84,6 @@ export default function Dataset() {
         <DatasetCrawlSettings
           datasetId={dataset.id}
           trieveKey={trieveKey}
-          hadCrawlEnabled={!!crawlOptions.crawl_options?.site_url}
           initalCrawlOptions={crawlOptions.crawl_options || defaultCrawlOptions}
         />
       </Box>
