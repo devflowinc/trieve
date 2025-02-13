@@ -150,10 +150,6 @@ body {
       .bottom-row {
         @apply tv-flex tv-items-center 2xl:tv-px-0 tv-w-full tv-mx-auto tv-max-w-7xl;
 
-        .spacer {
-          @apply tv-flex-1;
-        }
-
         button {
           @apply tv-px-2 tv-text-sm tv-py-1 tv-rounded-md;
           color: var(--tv-zinc-700);
@@ -452,7 +448,6 @@ body {
     }
 
     .message-wrapper {
-      @apply tv-col-span-2 tv-pr-4 sm:tv-grid sm:tv-grid-cols-[48px,1fr] tv-gap-2;
       border-color: var(--tv-zinc-200);
     }
 
