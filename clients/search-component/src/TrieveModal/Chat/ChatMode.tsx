@@ -12,7 +12,7 @@ import { InlineChatHeader } from "./InlineChatHeader";
 import { ChatInput } from "./ChatInput";
 
 export const ChatMode = () => {
-  const { props, modalRef } = useModalState();
+  const { modalRef } = useModalState();
   const { messages } = useChatState();
 
   const { minHeight, resetHeight } = useChatHeight(modalRef, 175);
@@ -27,8 +27,6 @@ export const ChatMode = () => {
         ref={rootRef}
         className={cn(
           "chat-modal-wrapper tv-flex-grow tv-py-2 tv-px-2 tv-relative tv-overflow-auto tv-flex tv-flex-col tv-gap-4",
-          props.inline && "chat-modal-inline",
-          !props.inline && "chat-modal-popup",
         )}
         style={{ minHeight: minHeight }}
       >
