@@ -70,6 +70,7 @@
     "@r2wc/react-to-web-component": "^2.0.3",
     "@thumbmarkjs/thumbmarkjs": "^0.16.1",
     "clsx": "^2.1.1",
+    "cva": "npm:class-variance-authority",
     "jotai": "^2.11.0",
     "motion": "^11.17.0",
     "react-intersection-observer-hook": "^3.0.1",
