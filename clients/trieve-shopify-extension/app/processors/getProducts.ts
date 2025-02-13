@@ -90,6 +90,7 @@ function createChunkFromProduct(
     })),
     tags: product.tags,
     title: product.title,
+    total_inventory: product.totalInventory,
     variants: product.variants.nodes.map((v) => ({
       id: parseInt(v.id.split("/").pop() || "0"),
       price: v.price,
@@ -175,6 +176,7 @@ export const sendChunks = async (
             category {
               name
             }
+            totalInventory
             variants(first: 20) {
               nodes {
                 id
