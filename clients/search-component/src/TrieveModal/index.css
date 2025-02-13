@@ -451,14 +451,10 @@ body {
       }
     }
 
-      .message-wrapper {
-        @apply tv-col-span-2 tv-pr-4;
-        border-color: var(--tv-zinc-200);
-      }
-
-      .message-wrapper {
-        @apply sm:tv-grid sm:tv-grid-cols-[48px,1fr] tv-gap-2;
-      }
+    .message-wrapper {
+      @apply tv-col-span-2 tv-pr-4 sm:tv-grid sm:tv-grid-cols-[48px,1fr] tv-gap-2;
+      border-color: var(--tv-zinc-200);
+    }
 
       .ai-avatar {
         @apply sm:tv-w-12 sm:tv-h-12 tv-rounded-full tv-flex tv-items-center tv-space-x-2;
@@ -1039,9 +1035,6 @@ body {
       }
     }
 
-    .pdf-item {
-      @apply tv-rounded-md tv-p-2 hover:tv-bg-neutral-100;
-    }
     .pdf-result-page {
       @apply tv-text-sm tv-opacity-70 tv-flex tv-gap-2;
     }
