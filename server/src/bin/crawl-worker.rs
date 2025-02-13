@@ -106,18 +106,18 @@ fn create_shopify_chunk_req_payload(
         variant.id
     );
 
-    let mut chunk_html = if variant.title == Some("Default Title".to_string()) {
+    let mut chunk_html = if variant_title == *"Default Title" {
         format!(
             "<h1>{}</h1>{}",
-            product.title.clone().unwrap_or_default(),
-            product.body_html.clone().unwrap_or_default()
+            product_title.clone(),
+            product_body_html.clone(),
         )
     } else {
         format!(
             "<h1>{} - {}</h1>{}",
-            product.title.clone().unwrap_or_default(),
-            variant.title.clone().unwrap_or_default(),
-            product.body_html.clone().unwrap_or_default()
+            product_title.clone(),
+            variant_title.clone(),
+            product_body_html.clone(),
         )
     };
 
@@ -166,15 +166,15 @@ fn create_shopify_chunk_req_payload(
     };
 
     let semantic_boost_phrase = if group_variants {
-        variant.title.clone().unwrap_or_default()
+        variant_title.clone()
     } else {
-        product.title.clone().unwrap_or_default()
+        product_title.clone()
     };
 
     let fulltext_boost_phrase = if group_variants {
-        variant.title.clone().unwrap_or_default()
+        variant_title.clone()
     } else {
-        product.title.clone().unwrap_or_default()
+        product_title.clone()
     };
 
     Ok(ChunkReqPayload {

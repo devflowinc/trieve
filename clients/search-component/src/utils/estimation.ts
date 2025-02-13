@@ -27,8 +27,8 @@ export const guessTitleAndDesc = (
   });
   const cleanFirstHeading = $firstHeading?.innerHTML;
   const title = `${
-    cleanFirstHeading ||
     item.chunk.metadata?.title ||
+    cleanFirstHeading ||
     item.chunk.metadata?.page_title ||
     item.chunk.metadata?.name
   }`;
