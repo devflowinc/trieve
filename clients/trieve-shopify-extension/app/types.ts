@@ -55,6 +55,7 @@ export type Product = {
   category: {
     name: string;
   };
+  totalInventory: number;
   variants: {
     nodes: {
       id: string;
