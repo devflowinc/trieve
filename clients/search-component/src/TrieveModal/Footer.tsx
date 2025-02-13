@@ -1,6 +1,5 @@
 import { useModalState } from "../utils/hooks/modal-context";
 import React from "react";
-import { Tags } from "./Tags";
 import { cn } from "../utils/styles";
 
 export const Footer = () => {
@@ -13,7 +12,6 @@ export const Footer = () => {
       )}
     >
       <div className="tags-row">
-        {props.tags?.length ? <Tags /> : null}
         <div className="tags-spacer" />
         <a
           className="trieve-powered"
