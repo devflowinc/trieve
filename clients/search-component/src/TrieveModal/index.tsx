@@ -195,29 +195,33 @@ const Modal = () => {
 
     document.head.appendChild(script);
 
-    window.addEventListener(
-      "trieve-start-chat-with-group",
-      chatWithGroupListener
-    );
-    window.addEventListener("trieve-open-with-text", openWithTextListener);
-
-    window.addEventListener(
-      "trieve-open-modal",
-      openModalListener
-    );
-
-    return () => {
-      window.removeEventListener(
+    if (!props.ignoreEventListeners) {
+      window.addEventListener(
         "trieve-start-chat-with-group",
         chatWithGroupListener
       );
+      window.addEventListener("trieve-open-with-text", openWithTextListener);
 
       window.addEventListener(
         "trieve-open-modal",
         openModalListener
       );
+    }
 
-      window.removeEventListener("trieve-open-with-text", openWithTextListener);
+    return () => {
+      if (!props.ignoreEventListeners) {
+        window.removeEventListener(
+          "trieve-start-chat-with-group",
+          chatWithGroupListener
+        );
+
+        window.addEventListener(
+          "trieve-open-modal",
+          openModalListener
+        );
+
+        window.removeEventListener("trieve-open-with-text", openWithTextListener);
+      }
     };
   }, []);
 
