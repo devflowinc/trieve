@@ -135,17 +135,23 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const lastMessage = messages.at(-1);
-    const timer = setTimeout(() => {
-      if (isLoading && lastMessage?.text === "Loading...") {
-        console.log(
-          "Timeout reached, stopping message generation and retrying"
-        );
+    const curImageUrl = imageUrl;
+    const timer = setTimeout(
+      () => {
+        if (isLoading && lastMessage?.text === "Loading...") {
+          console.log(
+            "Timeout reached, stopping message generation and retrying, image: ",
+            curImageUrl
+          );
 
-        stopGeneratingMessage();
-        const lastUserQuestion = messages.at(-2);
-        askQuestion(lastUserQuestion?.text, currentGroup ?? undefined, true);
-      }
-    }, 7000);
+          stopGeneratingMessage();
+          const lastUserQuestion = messages.at(-2);
+          setImageUrl(curImageUrl);
+          askQuestion(lastUserQuestion?.text, currentGroup ?? undefined, true);
+        }
+      },
+      curImageUrl ? 20000 : 10000
+    );
 
     return () => clearTimeout(timer);
   }, [isLoading, messages, currentGroup]);
@@ -395,16 +401,26 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         while (filterParamsRetries < 3) {
           filterParamsRetries++;
           const abortController = new AbortController();
-          setTimeout(() => {
-            abortController.abort();
-          }, 4000);
+          setTimeout(
+            () => {
+              abortController.abort();
+            },
+            imageUrl ? 8000 : 4000
+          );
 
           try {
             const filterParamsResp = await trieveSDK.getToolCallFunctionParams(
               {
                 user_message_text:
                   questionProp || currentQuestion
-                    ? `Get filters from the following messages: ${messages.slice(0, -1).filter((message) => { return message.type == "user" }).map((message) => `\n\n${message.text}`)} \n\n ${questionProp || currentQuestion}`
+                    ? `Get filters from the following messages: ${messages
+                        .slice(0, -1)
+                        .filter((message) => {
+                          return message.type == "user";
+                        })
+                        .map(
+                          (message) => `\n\n${message.text}`
+                        )} \n\n ${questionProp || currentQuestion}`
                     : null,
                 image_url: imageUrl ? imageUrl : null,
                 audio_input: curAudioBase64 ? curAudioBase64 : null,
