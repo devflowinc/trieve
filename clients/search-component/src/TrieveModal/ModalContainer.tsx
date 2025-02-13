@@ -19,6 +19,7 @@ export const ModalContainer = () => {
       <div
         id="trieve-search-modal"
         className={cn(
+          componentClass,
           "tv-scroll-smooth tv-resize tv-rounded-lg focus:tv-outline-none tv-overflow-hidden tv-text-base tv-text-zinc-950 tv-bg-white",
           `${mode === "chat" ? "chat-modal-mobile" : ""}${
             props.theme === "dark" ? " dark tv-dark" : ""
@@ -31,7 +32,6 @@ export const ModalContainer = () => {
           props.inline && "tv-border-2",
 
           "tv-flex tv-flex-col tv-items-stretch",
-          componentClass,
         )}
         style={{
           zIndex: props.zIndex ? props.zIndex + 1 : 1001,
