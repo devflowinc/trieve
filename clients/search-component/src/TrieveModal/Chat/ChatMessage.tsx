@@ -114,6 +114,8 @@ export const Message = ({
   idx: number;
   message: Message;
 }) => {
+  const urlWordRegex = /\shttp\S+\s*/g;
+
   const { rateChatCompletion, messages } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
@@ -350,11 +352,13 @@ export const Message = ({
                 <Carousel>{ecommerceItems}</Carousel>
               </div>
             )}
-          {youtubeItems && youtubeItems.length > 0 && (!props.inline || props.inlineCarousel) && (
-            <div className="additional-image-links">
-              <Carousel>{youtubeItems}</Carousel>
-            </div>
-          )}
+          {youtubeItems &&
+            youtubeItems.length > 0 &&
+            (!props.inline || props.inlineCarousel) && (
+              <div className="additional-image-links">
+                <Carousel>{youtubeItems}</Carousel>
+              </div>
+            )}
           {pdfItems && pdfItems.length > 0 && (
             <div className="pdf-chat-items">{pdfItems}</div>
           )}
@@ -362,15 +366,30 @@ export const Message = ({
             <Markdown
               className="code-markdown"
               components={{
-                code: (props) => {
-                  const { children } = props || {};
+                code: (codeProps) => {
+                  const { children } = codeProps || {};
                   if (!children) return null;
                   return children?.toString();
+                },
+                a: (anchorProps) => {
+                  const { children, href, title } = anchorProps || {};
+                  if (!children) return null;
+                  return (
+                    <a
+                      href={href}
+                      target={props.openLinksInNewTab ? "_blank" : ""}
+                      title={title}
+                    >
+                      {children?.toString()}
+                    </a>
+                  );
                 },
               }}
               key={idx}
             >
-              {message.text.length > 0 ? message.text : "Loading..."}
+              {message.text.length > 0
+                ? message.text.replace(urlWordRegex, "")
+                : "Loading..."}
             </Markdown>
           ) : (
             <LoadingIcon className="loading" />
