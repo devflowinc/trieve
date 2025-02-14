@@ -385,6 +385,7 @@ pub async fn create_file_chunks(
         .map(|chunk_segment| chunk_segment.to_vec())
         .collect::<Vec<Vec<ChunkReqPayload>>>();
 
+    log::info!("Queuing chunks for creation");
     for chunk_segment in chunk_segments {
         let (ingestion_message, chunk_metadatas) =
             create_chunk_metadata(chunk_segment, dataset_org_plan_sub.dataset.id)
@@ -393,11 +394,6 @@ pub async fn create_file_chunks(
                     log::error!("Could not create chunk metadata {:?}", e);
                     ServiceError::BadRequest("Could not create chunk metadata".to_string())
                 })?;
-
-        log::info!(
-            "Successfully queued creation for {} chunks",
-            chunk_metadatas.len()
-        );
 
         if chunk_metadatas.is_empty() {
             continue;

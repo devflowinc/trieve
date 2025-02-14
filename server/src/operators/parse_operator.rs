@@ -89,26 +89,30 @@ pub fn coarse_doc_chunker(
     rebalance_chunks: bool,
     target_splits_per_chunk: usize,
 ) -> Vec<String> {
-    let document_without_newlines = document.replace('\n', " ");
-    let dom = Html::parse_fragment(&document_without_newlines);
+    log::info!("Starting to parse fragment");
+    let dom = Html::parse_fragment(&document);
+    log::info!("Coarse doc chunker parsed HTML for the document");
     let clean_text = dom.root_element().text().collect::<String>();
+    log::info!("Coarse doc chunker extracted text from HTML");
 
     let pattern = match split_pattern {
         Some(pattern) => pattern,
         None => Regex::new(r"[.!?\n]+").expect("Invalid regex"),
     };
 
-    let mut splits: Vec<&str> = pattern.split_inclusive(&clean_text).collect();
+    let mut splits = pattern.split_inclusive(&clean_text);
+    let mut splits_count = pattern.split_inclusive(&clean_text).count();
+    log::info!("Coarse doc chunker created {} splits", splits_count);
 
     let mut groups: Vec<String> = vec![];
-
-    if splits.len() < target_splits_per_chunk {
+    if splits_count < target_splits_per_chunk {
         groups.push(splits.join(""));
+        log::info!("Document is too small to chunk. Returning the entire document as a single chunk after removing any large outliers.");
         return coarse_remove_large_chunks(groups);
     }
 
-    let mut remainder = (splits.len() % target_splits_per_chunk) as f32;
-    let group_count = ((splits.len() / target_splits_per_chunk) as f32).floor();
+    let mut remainder = (splits_count % target_splits_per_chunk) as f32;
+    let group_count = ((splits_count / target_splits_per_chunk) as f32).floor();
     let remainder_per_group = (remainder / group_count).ceil();
 
     if rebalance_chunks {
@@ -116,31 +120,26 @@ pub fn coarse_doc_chunker(
             let group_size = cmp::min(
                 target_splits_per_chunk
                     + cmp::min(remainder as usize, remainder_per_group as usize),
-                splits.len(),
+                splits_count,
             );
-            let group = splits
-                .iter()
-                .take(group_size)
-                .copied()
-                .collect::<Vec<&str>>()
-                .join("");
+            let group = splits.by_ref().take(group_size).join("");
+
             groups.push(group);
-            splits.drain(0..group_size);
+            splits_count -= group_size;
             remainder -= remainder_per_group;
         }
     }
 
-    while !splits.is_empty() {
-        let drain_amt = cmp::min(target_splits_per_chunk, splits.len());
+    while splits_count > 0 {
+        let drain_amt = cmp::min(target_splits_per_chunk, splits_count);
 
         let group = splits
-            .iter()
-            .take(target_splits_per_chunk)
-            .copied()
+            .by_ref()
+            .take(drain_amt)
             .collect::<Vec<&str>>()
             .join("");
         groups.push(group);
-        splits.drain(0..drain_amt);
+        splits_count -= drain_amt;
     }
 
     coarse_remove_large_chunks(groups)
