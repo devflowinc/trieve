@@ -719,7 +719,7 @@ body {
         @apply tv-mb-8 sm:tv-mb-2;
       }
 
-      p {
+      p:not(.tv-inline-header) {
         @apply tv-mb-6 sm:tv-mb-4;
       }
       .content {
@@ -1196,7 +1196,7 @@ body {
         }
 
         .additional-links {
-          @apply tv-flex tv-flex-wrap tv-gap-2 tv-mt-4;
+          @apply tv-flex tv-flex-wrap tv-gap-2 tv-mt-2 tv-py-2;;
 
           a {
             color: var(--tv-zinc-200);

@@ -114,7 +114,7 @@ export const Message = ({
   idx: number;
   message: Message;
 }) => {
-  const urlWordRegex = /\shttp\S+\s*/g;
+  const urlWordRegex = /(?:^|\s)http\S+\s*/g;
 
   const { rateChatCompletion, messages } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
