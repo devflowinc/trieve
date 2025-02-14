@@ -614,6 +614,7 @@ async fn upload_file(
     let Ok(chunk_htmls) =
         preprocess_file_to_chunks(html_content, file_worker_message.upload_file_data.clone())
     else {
+        log::error!("Could not parse file into chunks {:?}", file_name);
         return Err(BroccoliError::Job("Could not parse file".to_string()));
     };
 
