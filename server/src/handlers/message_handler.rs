@@ -946,7 +946,7 @@ pub async fn get_suggested_queries(
             format!(
                 "Doc {}: {}",
                 idx + 1,
-                convert_html_to_text(&(chunk.chunk_html.clone().unwrap_or_default()))
+                convert_html_to_text(&(chunk.chunk_html.clone().unwrap_or_default())).split_whitespace().take(100).join(" ")
             )
         })
         .collect::<Vec<String>>()
