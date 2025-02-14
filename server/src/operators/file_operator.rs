@@ -181,6 +181,7 @@ pub fn preprocess_file_to_chunks(
     upload_file_data: UploadFileReqPayload,
 ) -> Result<Vec<String>, ServiceError> {
     let file_text = convert_html_to_text(&html_content);
+    log::info!("Successfully converted HTML to text");
 
     let split_regex: Option<Regex> = upload_file_data
         .split_delimiters
@@ -200,6 +201,11 @@ pub fn preprocess_file_to_chunks(
         split_regex,
         rebalance_chunks,
         target_splits_per_chunk,
+    );
+
+    log::info!(
+        "Successfully chunked file into {} chunks",
+        chunk_htmls.len()
     );
 
     Ok(chunk_htmls)
@@ -356,9 +362,19 @@ pub async fn create_file_chunks(
         > dataset_org_plan_sub
             .organization
             .plan
+            .clone()
             .unwrap_or_default()
             .chunk_count as usize
     {
+        log::error!(
+            "Chunk count {} exceeds plan limit {}",
+            chunk_count + chunks.len(),
+            dataset_org_plan_sub
+                .organization
+                .plan
+                .unwrap_or_default()
+                .chunk_count
+        );
         return Err(ServiceError::BadRequest(
             "Chunk count exceeds plan limit".to_string(),
         ));
@@ -377,6 +393,11 @@ pub async fn create_file_chunks(
                     log::error!("Could not create chunk metadata {:?}", e);
                     ServiceError::BadRequest("Could not create chunk metadata".to_string())
                 })?;
+
+        log::info!(
+            "Successfully queued creation for {} chunks",
+            chunk_metadatas.len()
+        );
 
         if chunk_metadatas.is_empty() {
             continue;

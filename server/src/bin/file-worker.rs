@@ -557,6 +557,8 @@ async fn upload_file(
         ));
     }
 
+    log::info!("Successfully converted file bytes to html string");
+
     let dataset_org_plan_sub = get_dataset_and_organization_from_dataset_id_query(
         models::UnifiedId::TrieveUuid(file_worker_message.dataset_id),
         None,

@@ -68,7 +68,7 @@ pub async fn post_invitation(
     user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let invitation_data = invitation_data.into_inner();
-    let email = invitation_data.email;
+    let email = invitation_data.email.trim().to_string();
     if !email_regex().is_match(&email) {
         return Err(ServiceError::BadRequest("Invalid email".to_string()));
     }
