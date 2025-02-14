@@ -16,5 +16,15 @@ services:
     ports:
       - "7432:5432"
 
+  shopify-plugin:
+    image: trieve/shopify-plugin
+    build:
+      context: .
+    ports:
+      - "3080:3000"
+    environment:
+      - TRIEVE_AUTH_URL=${TRIEVE_AUTH_URL}
+      - DATABASE_URL=${DATABASE_URL}
+
 volumes:
   pgdata:
