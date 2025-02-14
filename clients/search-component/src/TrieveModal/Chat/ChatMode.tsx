@@ -88,7 +88,7 @@ export const ChatMode = () => {
           <div
             ref={rootRef}
             className={cn(
-              "chat-modal-wrapper tv-py-2 tv-relative tv-px-4 tv-overflow-auto tv-flex tv-flex-col tv-gap-4",
+              "chat-modal-wrapper tv-pt-4 tv-pb-2 tv-relative tv-px-4 tv-overflow-auto tv-flex tv-flex-col tv-gap-4",
               props.inline && "chat-modal-inline",
               !props.inline && "chat-modal-popup"
             )}
