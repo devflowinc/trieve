@@ -5,7 +5,6 @@ import { RepsonseMessage } from "./ResponseMessage";
 import { useIntersectionObserver } from "react-intersection-observer-hook";
 import { SuggestedQuestions } from "./SuggestedQuestions";
 import { AnimatePresence } from "motion/react";
-import { cn } from "../../utils/styles";
 import { useChatHeight } from "../../utils/hooks/useChatHeight";
 import { UserMessage } from "./UserMessage";
 import { InlineChatHeader } from "./InlineChatHeader";
@@ -26,9 +25,7 @@ export const ChatMode = () => {
       <InlineChatHeader resetHeight={resetHeight} />
       <div
         ref={rootRef}
-        className={cn(
-          "chat-modal-wrapper tv-flex-grow tv-py-2 tv-px-2 tv-relative tv-overflow-auto tv-flex tv-flex-col tv-gap-4",
-        )}
+        className="chat-modal-wrapper tv-flex-grow tv-pt-3 tv-pb-2 tv-px-2 tv-relative tv-overflow-auto tv-flex tv-flex-col tv-gap-4"
       >
         <AnimatePresence mode="wait">
           <SuggestedQuestions />
