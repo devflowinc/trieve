@@ -1,7 +1,7 @@
 use super::chunk_operator::{create_chunk_metadata, get_row_count_for_organization_id_query};
 use super::clickhouse_operator::{ClickHouseEvent, EventQueue};
 use super::group_operator::{create_group_from_file_query, create_groups_query};
-use super::parse_operator::{build_chunking_regex, coarse_doc_chunker, convert_html_to_text};
+use super::parse_operator::{build_chunking_regex, coarse_doc_chunker};
 use crate::data::models::ChunkGroup;
 use crate::data::models::FileDTO;
 use crate::data::models::{Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, EventType};
@@ -180,9 +180,6 @@ pub fn preprocess_file_to_chunks(
     html_content: String,
     upload_file_data: UploadFileReqPayload,
 ) -> Result<Vec<String>, ServiceError> {
-    let file_text = convert_html_to_text(&html_content);
-    log::info!("Successfully converted HTML to text");
-
     let split_regex: Option<Regex> = upload_file_data
         .split_delimiters
         .map(|delimiters| {
@@ -197,7 +194,7 @@ pub fn preprocess_file_to_chunks(
     let target_splits_per_chunk = upload_file_data.target_splits_per_chunk.unwrap_or(20);
 
     let chunk_htmls = coarse_doc_chunker(
-        file_text,
+        html_content,
         split_regex,
         rebalance_chunks,
         target_splits_per_chunk,
