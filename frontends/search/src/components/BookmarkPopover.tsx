@@ -6,6 +6,7 @@ import {
   createEffect,
   createSignal,
   useContext,
+  createMemo,
 } from "solid-js";
 import {
   Menu,
@@ -22,10 +23,15 @@ import {
   type ChunkMetadata,
 } from "../utils/apiTypes";
 import InputRowsForm from "./Atoms/InputRowsForm";
-import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
+import {
+  BiRegularChevronLeft,
+  BiRegularChevronRight,
+  BiRegularX,
+} from "solid-icons/bi";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { AiOutlineGroup } from "solid-icons/ai";
 import { Tooltip } from "shared/ui";
+import createFuzzySearch from "@nozbe/microfuzz";
 
 export interface BookmarkPopoverProps {
   chunkMetadata: ChunkMetadata;
@@ -53,6 +59,15 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const [localChunkGroups, setLocalChunkGroups] = createSignal<ChunkGroupDTO[]>(
     [],
   );
+  const [searchQuery, setSearchQuery] = createSignal("");
+  const [searchResults, setSearchResults] = createSignal<ChunkGroupDTO[]>([]);
+
+  const totalPages = createMemo(() => {
+    if (searchQuery()) {
+      return Math.max(1, Math.ceil(searchResults().length / 10));
+    }
+    return props.totalGroupPages == 0 ? 1 : props.totalGroupPages;
+  });
 
   createEffect(() => {
     const groupsToAdd: ChunkGroupDTO[] = [];
@@ -112,6 +127,22 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     const curGroupPage = localGroupPage();
     refetchBookmarks(curGroupPage);
     setRefetchingBookmarks(false);
+  });
+
+  createEffect(() => {
+    const groups = localChunkGroups();
+    if (searchQuery() === "") {
+      setSearchResults(groups);
+    } else {
+      const fuzzy = createFuzzySearch(groups, {
+        getText: (item: ChunkGroupDTO) => {
+          return [item.name];
+        },
+      });
+      const results = fuzzy(searchQuery() ?? "");
+      setSearchResults(results.map((result) => result.item));
+      setLocalGroupPage(1);
+    }
   });
 
   const refetchGroups = (
@@ -280,9 +311,41 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                 <div class="mb-3 w-full px-4 text-center text-lg font-bold">
                   Manage Groups For This Chunk
                 </div>
+                <div class="px-4">
+                  <div class="flex flex-row items-center justify-center gap-1">
+                    <input
+                      placeholder="Search groups..."
+                      class="mb-2 flex w-full items-center justify-between rounded bg-neutral-100 p-2 text-sm text-black outline-none transition-all duration-300 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
+                      onInput={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        setSearchQuery(target.value);
+                      }}
+                      value={searchQuery()}
+                    />
+                    <Show when={searchQuery()}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSearchQuery("");
+                        }}
+                      >
+                        <BiRegularX class="mb-2 h-5 w-5 fill-current" />
+                      </button>
+                    </Show>
+                  </div>
+                </div>
                 <MenuItem as="button" aria-label="Empty" />
                 <div class="max-w-screen mx-1 max-h-[20vh] transform justify-end space-y-2 overflow-y-auto rounded px-4 scrollbar-thin scrollbar-track-neutral-200 scrollbar-thumb-neutral-600 scrollbar-track-rounded-md scrollbar-thumb-rounded-md dark:scrollbar-track-neutral-700 dark:scrollbar-thumb-neutral-400">
-                  <For each={localChunkGroups()}>
+                  <For
+                    each={
+                      searchQuery()
+                        ? searchResults().slice(
+                            (localGroupPage() - 1) * 10,
+                            localGroupPage() * 10,
+                          )
+                        : localChunkGroups()
+                    }
+                  >
                     {(group, idx) => {
                       return (
                         <>
@@ -348,8 +411,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                     <div />
                     <div class="flex items-center">
                       <div class="text-sm text-neutral-400">
-                        {localGroupPage()} /{" "}
-                        {props.totalGroupPages == 0 ? 1 : props.totalGroupPages}
+                        {localGroupPage()} / {totalPages()}
                       </div>
                       <button
                         class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
@@ -363,12 +425,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
                       </button>
                       <button
                         class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
-                        disabled={
-                          localGroupPage() ==
-                          (props.totalGroupPages == 0
-                            ? 1
-                            : props.totalGroupPages)
-                        }
+                        disabled={localGroupPage() == totalPages()}
                         onClick={() => {
                           setState(true);
                           setLocalGroupPage((prev) => prev + 1);
