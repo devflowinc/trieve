@@ -30,6 +30,9 @@ export const CreateNewDocChunkForm = () => {
   const [trackingID, setTrackingID] = createSignal<string | undefined>(
     undefined,
   );
+  const [groupTrackingIDs, setGroupTrackingIDs] = createSignal<
+    string | undefined
+  >(undefined);
   const [tagSet, setTagSet] = createSignal<string | undefined>(undefined);
   const [weight, setWeight] = createSignal<number | undefined>(undefined);
   const [locationLat, setLocationLat] = createSignal<number | undefined>(
@@ -87,6 +90,7 @@ export const CreateNewDocChunkForm = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requestBody: any = {
       chunk_html: chunkHTMLContentValue,
+      group_tracking_ids: groupTrackingIDs()?.split(","),
       link: docChunkLink(),
       tag_set: tagSet()?.split(","),
       weight: weight(),
@@ -189,6 +193,19 @@ export const CreateNewDocChunkForm = () => {
               "w-full bg-neutral-100 border border-gray-300 rounded-md px-4 py-1 dark:bg-neutral-700":
                 true,
               "border border-red-500": errorFields().includes("docChunkLink"),
+            }}
+          />
+          <div>Group Tracking ID</div>
+          <input
+            type="text"
+            placeholder="optional - a comma seperated string list to add a chunk to a specified group."
+            value={groupTrackingIDs() ?? ""}
+            onInput={(e) => setGroupTrackingIDs(e.target.value)}
+            classList={{
+              "w-full bg-neutral-100 border border-gray-300 rounded-md px-4 py-1 dark:bg-neutral-700":
+                true,
+              "border border-red-500":
+                errorFields().includes("groupTrackingID"),
             }}
           />
           <div>Tracking ID</div>
