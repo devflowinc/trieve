@@ -12,14 +12,13 @@ import { LoadingIcon, SparklesIcon } from "../icons";
 import { ChatPdfItem } from "../PdfView/ChatPdfItem";
 import { Carousel } from "./Carousel";
 import { FollowupQueries } from "./FollowupQueries";
-import ImagePreview from "../ImagePreview";
 import { sendCtrData, trackViews } from "../../utils/trieve";
 import { motion } from "motion/react";
 import { ScoreChunk } from "trieve-ts-sdk";
 import { guessTitleAndDesc } from "../../utils/estimation";
 import { AddToCartButton } from "../AddToCartButton";
 
-type Message = {
+export type Message = {
   queryId: string | null;
   type: string;
   text: string;
@@ -27,7 +26,7 @@ type Message = {
   additional: Chunk[] | null;
 };
 
-export const ChatMessage = ({
+export const RepsonseMessage = ({
   message,
   idx,
 }: {
@@ -35,7 +34,6 @@ export const ChatMessage = ({
   idx: number;
 }) => {
   const { props } = useModalState();
-
   return (
     <motion.div
       initial={{ height: 0 }}
@@ -47,62 +45,39 @@ export const ChatMessage = ({
       }}
       key={idx}
     >
-      {message.type === "user" && message.text === "Loading..." ? (
-        <div>
-          <div className={message.type}>
-            <div className="tv-flex tv-flex-col tv-space-y-1 tv-items-end">
-              <span className="tv-text-left tv-px-3 tv-py-1 tv-rounded-xl tv-text-zinc-50 tv-bg-zinc-800">
-                <LoadingIcon className="tv-w-8 tv-h-8 tv-p-0" />
-              </span>
-            </div>
-          </div>
-        </div>
-      ) : null}
-      {message.type == "user" && message.text !== "Loading..." ? (
-        <div className="user-message-container" key={idx}>
-          <div className={message.type}>
-            <div className="tv-flex tv-flex-col tv-space-y-1 tv-items-end">
-              {message.imageUrl && (
-                <ImagePreview isUploading={false} imageUrl={message.imageUrl} />
-              )}
-              {message.text != "" &&
-              message.text != props.defaultImageQuestion ? (
-                <span className={`user-text ${props.type}`}>
-                  {" "}
-                  {message.text}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className={props.inline ? "" : "message-wrapper"} key={idx}>
-          {!props.inline && (
-            <span className="ai-avatar assistant">
-              {props.brandLogoImgSrcUrl ? (
-                <img
-                  src={props.brandLogoImgSrcUrl}
-                  alt={props.brandName || "Brand logo"}
-                />
-              ) : (
-                <SparklesIcon strokeWidth={1.75} />
-              )}
-              <p
-                className="tag"
-                style={{
-                  backgroundColor: props.brandColor
-                    ? `${props.brandColor}18`
-                    : "#CB53EB18",
-                  color: props.brandColor ?? "#CB53EB",
-                }}
-              >
-                AI assistant
-              </p>
-            </span>
-          )}
-          <Message key={idx} message={message} idx={idx} />
-        </div>
-      )}
+      <div
+        className={
+          props.inline
+            ? ""
+            : "tv-col-span-2 tv-pr-4 sm:tv-grid sm:tv-grid-cols-[48px,1fr] tv-gap-2"
+        }
+        key={idx}
+      >
+        {!props.inline && (
+          <span className="ai-avatar assistant">
+            {props.brandLogoImgSrcUrl ? (
+              <img
+                src={props.brandLogoImgSrcUrl}
+                alt={props.brandName || "Brand logo"}
+              />
+            ) : (
+              <SparklesIcon strokeWidth={1.75} />
+            )}
+            <p
+              className="tag"
+              style={{
+                backgroundColor: props.brandColor
+                  ? `${props.brandColor}18`
+                  : "#CB53EB18",
+                color: props.brandColor ?? "#CB53EB",
+              }}
+            >
+              AI assistant
+            </p>
+          </span>
+        )}
+        <Message key={idx} message={message} idx={idx} />
+      </div>
     </motion.div>
   );
 };
@@ -130,7 +105,7 @@ export const Message = ({
             chunk.metadata.page_title) &&
           chunk.link &&
           chunk.image_urls?.length &&
-          chunk.num_value
+          chunk.num_value,
       );
       if (ecommerceChunks && message.queryId) {
         trackViews({
@@ -153,7 +128,7 @@ export const Message = ({
           chunk.metadata.page_title) &&
         chunk.link &&
         chunk.image_urls?.length &&
-        chunk.num_value
+        chunk.num_value,
     )
     .map((chunk) => ({
       chunk,
@@ -171,7 +146,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title
+          index && item.title,
     )
     .map((item, index) => {
       const { title, descriptionHtml } = guessTitleAndDesc(item);
@@ -208,7 +183,7 @@ export const Message = ({
                   ? title
                   : title.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      ""
+                      "",
                     ),
               }}
             />
@@ -227,7 +202,7 @@ export const Message = ({
                   ? descriptionHtml
                   : descriptionHtml.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      ""
+                      "",
                     ),
               }}
             />
@@ -252,7 +227,7 @@ export const Message = ({
           chunk.metadata.title ||
           chunk.metadata.page_title) &&
         chunk.link &&
-        chunk.metadata.yt_preview_src
+        chunk.metadata.yt_preview_src,
     )
     .map((chunk) => {
       return {
@@ -285,7 +260,7 @@ export const Message = ({
       const chunkHtmlHeadingsDiv = document.createElement("div");
       chunkHtmlHeadingsDiv.innerHTML = chunk.chunk_html || "";
       const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-        "h1, h2, h3, h4, h5, h6"
+        "h1, h2, h3, h4, h5, h6",
       );
       const $firstHeading =
         chunkHtmlHeadings[0] ?? document.createElement("h1");
@@ -311,7 +286,8 @@ export const Message = ({
     .filter((chunk) => chunk.link && !chunk.metadata.yt_preview_src)
     .filter(
       (item, index, array) =>
-        array.findIndex((arrayItem) => arrayItem.title === item.title) === index
+        array.findIndex((arrayItem) => arrayItem.title === item.title) ===
+        index,
     )
     .map((item, index) => (
       <a
@@ -332,7 +308,7 @@ export const Message = ({
     ));
 
   return (
-    <div className="super-message-wrapper">
+    <div className="super-message-wrapper tv-overflow-hidden">
       {message.text === "Loading..." ? (
         <div
           className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
@@ -360,7 +336,9 @@ export const Message = ({
               </div>
             )}
           {pdfItems && pdfItems.length > 0 && (
-            <div className="pdf-chat-items">{pdfItems}</div>
+            <div className="tv-flex tv-w-full tv-overflow-x-auto">
+              {pdfItems}
+            </div>
           )}
           {message.text.length > 0 ? (
             <Markdown
@@ -400,9 +378,9 @@ export const Message = ({
                   <div className="additional-links">{docsItems}</div>
                 )
               : null}
-            <div className="feedback-wrapper">
-              <span className="spacer"></span>
-              <div className="feedback-icons">
+            <div className="feedback-wrapper tv-gap-2 w-full tv-flex">
+              <span className="spacer tv-grow"></span>
+              <div className="feedback-icons tv-flex tv-gap-2">
                 {copied ? (
                   <span>
                     <i className="fa-regular fa-circle-check"></i>
