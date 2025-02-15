@@ -20,9 +20,7 @@ export const InlineChatHeader = ({
   }
   return (
     <div className="tv-flex tv-bg-zinc-200 tv-justify-between -tv-mx-4 tv-px-4 tv-py-4 tv-rounded-t-lg tv-border-b-2">
-      <div>
-        <p>{props.inlineHeader}</p>
-      </div>
+      <p className="tv-inline-message">{props.inlineHeader}</p>
       <button
         onClick={() => {
           if (isDoneReading) {
