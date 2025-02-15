@@ -509,7 +509,7 @@ body {
       }
     }
 
-    p {
+    p:not(.tv-inline-message) {
       @apply tv-mb-6 sm:tv-mb-4;
     }
     .content {
