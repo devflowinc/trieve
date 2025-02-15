@@ -10,14 +10,20 @@ import {
   Show,
   createEffect,
   createSignal,
+  createMemo,
   useContext,
 } from "solid-js";
-import { BiRegularChevronLeft, BiRegularChevronRight } from "solid-icons/bi";
+import {
+  BiRegularChevronLeft,
+  BiRegularChevronRight,
+  BiRegularX,
+} from "solid-icons/bi";
 import { getLocalTime } from "./ChunkMetadataDisplay";
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { useDatasetServerConfig } from "../hooks/useDatasetServerConfig";
 import { downloadFile } from "../utils/downloadFile";
 import { FaSolidDownload } from "solid-icons/fa";
+import createFuzzySearch from "@nozbe/microfuzz";
 
 export interface GroupUserPageViewProps {
   setOnDelete: Setter<(delete_chunks: boolean) => void>;
@@ -36,6 +42,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   const $dataset = datasetAndUserContext.currentDataset;
   const $user = datasetAndUserContext.user;
   const [groups, setGroups] = createSignal<ChunkGroupDTO[]>([]);
+  const [allGroups, setAllGroups] = createSignal<ChunkGroupDTO[]>([]);
   const [groupCounts, setGroupCounts] = createSignal<
     GetChunkGroupCountResponse[]
   >([]);
@@ -43,6 +50,10 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   const [groupPageCount, setGroupPageCount] = createSignal(1);
   const [deleting, setDeleting] = createSignal(false);
   const [loading, setLoading] = createSignal(true);
+  const [searchQuery, setSearchQuery] = createSignal("");
+  const [searchResults, setSearchResults] = createSignal<ChunkGroupDTO[]>([]);
+
+  const groupsList = createMemo(() => allGroups());
 
   const serverConfig = useDatasetServerConfig();
 
@@ -95,11 +106,57 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   });
 
   createEffect(() => {
+    const currentDataset = $dataset?.();
+    if (!currentDataset) return;
+
+    const fetchAllGroups = async () => {
+      const allGroupsArray: ChunkGroupDTO[] = [];
+      let currentPage = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await fetch(
+          `${apiHost}/dataset/groups/${currentDataset.dataset.id}/${currentPage}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "X-API-version": "2.0",
+              "TR-Dataset": currentDataset.dataset.id,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (response.ok) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const data = await response.json();
+          if (isChunkGroupPageDTO(data)) {
+            allGroupsArray.push(...data.groups);
+            hasMore = currentPage < data.total_pages;
+            currentPage++;
+          } else {
+            hasMore = false;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      setAllGroups(allGroupsArray);
+    };
+
+    void fetchAllGroups();
+  });
+
+  createEffect(() => {
     const userId = $user?.()?.id;
     if (userId === undefined) return;
 
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
+
+    if (searchQuery()) return;
 
     setLoading(true);
 
@@ -128,6 +185,25 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
         setLoading(false);
       }
     });
+  });
+
+  createEffect(() => {
+    const groupListOrEmpty = groupsList() ?? [];
+    if (searchQuery() === "") {
+      setSearchResults(groups());
+    } else {
+      const fuzzy = createFuzzySearch(groupListOrEmpty, {
+        getText: (item: ChunkGroupDTO) => {
+          return [item.name];
+        },
+      });
+
+      const results = fuzzy(searchQuery() ?? "");
+      setSearchResults(results.map((result) => result.item));
+
+      setGroupPage(1);
+      setGroupPageCount(Math.ceil(results.length / 10));
+    }
   });
 
   const deleteGroup = (group: ChunkGroupDTO) => {
@@ -180,21 +256,49 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
 
   return (
     <>
-      <Show when={loading()}>
-        <div class="animate-pulse text-center text-2xl font-bold">
-          Loading...
-        </div>
-      </Show>
-      <Show when={!loading() && groups().length == 0}>
-        <div class="text-center text-2xl font-bold">
-          No groups found for this dataset
-        </div>
-      </Show>
-      <Show when={!loading() && groups().length > 0}>
-        <div class="w-full">
-          <div class="w-full text-center text-2xl font-bold">
+      <div class="w-full">
+        <div class="flex flex-row space-x-80">
+          <div class="w-full text-right text-2xl font-bold">
             {$dataset?.()?.dataset.name}'s Groups
           </div>
+          <div class="flex flex-row items-center justify-center gap-1">
+            <input
+              placeholder="Search groups..."
+              class="mb-2 flex w-max items-center justify-between rounded bg-neutral-100 p-3 px-3 text-sm text-black outline-none transition-all duration-300 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
+              onInput={(e) => {
+                const target = e.target as HTMLInputElement;
+                setSearchQuery(target.value);
+              }}
+              value={searchQuery()}
+            />
+            <Show when={searchQuery()}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSearchQuery("");
+                }}
+              >
+                <BiRegularX class="mb-2 h-5 w-5 fill-current" />
+              </button>
+            </Show>
+          </div>
+        </div>
+
+        <Show when={loading()}>
+          <div class="animate-pulse text-center text-2xl font-bold">
+            Loading...
+          </div>
+        </Show>
+
+        <Show when={!loading() && searchResults().length === 0}>
+          <div class="my-10 flex flex-row items-center justify-center text-center text-2xl font-bold">
+            {searchQuery()
+              ? "No matching groups found"
+              : "No groups found for this dataset"}
+          </div>
+        </Show>
+
+        <Show when={!loading() && searchResults().length > 0}>
           <div class="mt-2 inline-block min-w-full py-2 align-middle">
             <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
               <thead>
@@ -228,7 +332,16 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
-                <For each={groups()}>
+                <For
+                  each={
+                    searchQuery()
+                      ? searchResults().slice(
+                          (groupPage() - 1) * 10,
+                          groupPage() * 10,
+                        )
+                      : groups()
+                  }
+                >
                   {(group) => (
                     <tr>
                       <td class="cursor-pointer whitespace-nowrap text-wrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
@@ -315,8 +428,8 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
               </button>
             </div>
           </div>
-        </div>
-      </Show>
+        </Show>
+      </div>
     </>
   );
 };
