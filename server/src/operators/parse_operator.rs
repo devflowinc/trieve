@@ -100,8 +100,14 @@ pub fn coarse_doc_chunker(
         None => Regex::new(r"[.!?\n]+").expect("Invalid regex"),
     };
 
-    let mut splits = pattern.split_inclusive(&clean_text);
-    let mut splits_count = pattern.split_inclusive(&clean_text).count();
+    let mut splits = pattern
+        .split_inclusive(&clean_text)
+        .filter(|split| split.len() > 2);
+    let mut splits_count = pattern
+        .split_inclusive(&clean_text)
+        .filter(|split| split.len() > 2)
+        .count();
+
     log::info!("Coarse doc chunker created {} splits", splits_count);
 
     let mut groups: Vec<String> = vec![];
