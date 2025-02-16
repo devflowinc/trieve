@@ -671,6 +671,22 @@ export interface HeadQueryResponse {
   queries: HeadQuery[];
 }
 
+export interface SearchMetricsResponse {
+  total_queries: number;
+  search_rps: number;
+  avg_latency: number;
+  p99: number;
+  p95: number;
+  p50: number;
+  percent_thumbs_up: number;
+  percent_thumbs_down: number;
+}
+
+export interface RagQueryRatingResponse {
+  percent_thumbs_up: number;
+  percent_thumbs_down: number;
+}
+
 export interface SearchQueryResponse {
   queries: SearchQueryEvent[];
 }

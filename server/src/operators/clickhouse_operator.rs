@@ -38,7 +38,7 @@ pub async fn send_to_clickhouse(
         return Ok(());
     }
 
-    let mut search_queries_inserter = String::from("INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES");
+    let mut search_queries_inserter = String::from("INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at, query_rating) VALUES");
 
     let mut rag_queries_inserter = clickhouse_client.insert("rag_queries").map_err(|e| {
         log::error!("Error inserting rag queries: {:?}", e);
@@ -67,7 +67,7 @@ pub async fn send_to_clickhouse(
                 });
 
                 search_queries_inserter.push_str(&format!(
-                    " ('{}', '{}', '{}', '{}', embed_p('{}'), '{}', '{}', ['{}'], '{}', now()),",
+                    " ('{}', '{}', '{}', '{}', embed_p('{}'), '{}', '{}', ['{}'], '{}', now(), ''),",
                     event.id,
                     event.search_type,
                     event.query.replace('?', "|q"),
@@ -90,7 +90,7 @@ pub async fn send_to_clickhouse(
                                 "Error writing to ClickHouse search_queries".to_string(),
                             )
                         })?;
-                    search_queries_inserter = String::from("INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES");
+                    search_queries_inserter = String::from("INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at, query_rating) VALUES");
                 }
             }
             ClickHouseEvent::RecommendationEvent(event) => {
@@ -123,7 +123,7 @@ pub async fn send_to_clickhouse(
         }
     }
 
-    if search_queries_inserter != *"INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at) VALUES" {
+    if search_queries_inserter != *"INSERT INTO search_queries (id, search_type, query, request_params, query_vector, latency, top_score, results, dataset_id, created_at, query_rating) VALUES" {
         clickhouse_client
             .query(&search_queries_inserter[..search_queries_inserter.len() - 1])
             .execute()
