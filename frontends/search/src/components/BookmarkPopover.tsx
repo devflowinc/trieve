@@ -31,7 +31,6 @@ import {
 import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { AiOutlineGroup } from "solid-icons/ai";
 import { Tooltip } from "shared/ui";
-import createFuzzySearch from "@nozbe/microfuzz";
 
 export interface BookmarkPopoverProps {
   chunkMetadata: ChunkMetadata;
@@ -59,8 +58,11 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const [localChunkGroups, setLocalChunkGroups] = createSignal<ChunkGroupDTO[]>(
     [],
   );
+  const [allGroups, setAllGroups] = createSignal<ChunkGroupDTO[]>([]);
   const [searchQuery, setSearchQuery] = createSignal("");
   const [searchResults, setSearchResults] = createSignal<ChunkGroupDTO[]>([]);
+
+  const groupsList = createMemo(() => allGroups());
 
   const totalPages = createMemo(() => {
     if (searchQuery()) {
@@ -86,6 +88,64 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
 
     setBookmarks(props.bookmarks);
     setLocalChunkGroups([...groupsToAdd, ...props.chunkGroups]);
+  });
+
+  createEffect(() => {
+    const currentDataset = $dataset?.();
+    if (!currentDataset) return;
+
+    const fetchAllGroups = async () => {
+      const allGroupsArray: ChunkGroupDTO[] = [];
+      let currentPage = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await fetch(
+          `${apiHost}/dataset/groups/${currentDataset.dataset.id}/${currentPage}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "X-API-version": "2.0",
+              "TR-Dataset": currentDataset.dataset.id,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (response.ok) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const data = await response.json();
+          if (isChunkGroupPageDTO(data)) {
+            allGroupsArray.push(...data.groups);
+            hasMore = currentPage < data.total_pages;
+            currentPage++;
+          } else {
+            hasMore = false;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      setAllGroups(allGroupsArray);
+    };
+
+    void fetchAllGroups();
+  });
+
+  createEffect(() => {
+    const groupListOrEmpty = groupsList() ?? [];
+    if (searchQuery() === "") {
+      setSearchResults(localChunkGroups());
+    } else {
+      const query = searchQuery().toLowerCase();
+      const results = groupListOrEmpty.filter((item) =>
+        item.name.toLowerCase().includes(query),
+      );
+      setSearchResults(results);
+      setLocalGroupPage(1);
+    }
   });
 
   createEffect((prevPage) => {
@@ -127,22 +187,6 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
     const curGroupPage = localGroupPage();
     refetchBookmarks(curGroupPage);
     setRefetchingBookmarks(false);
-  });
-
-  createEffect(() => {
-    const groups = localChunkGroups();
-    if (searchQuery() === "") {
-      setSearchResults(groups);
-    } else {
-      const fuzzy = createFuzzySearch(groups, {
-        getText: (item: ChunkGroupDTO) => {
-          return [item.name];
-        },
-      });
-      const results = fuzzy(searchQuery() ?? "");
-      setSearchResults(results.map((result) => result.item));
-      setLocalGroupPage(1);
-    }
   });
 
   const refetchGroups = (

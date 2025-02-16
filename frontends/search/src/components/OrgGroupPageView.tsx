@@ -23,7 +23,6 @@ import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { useDatasetServerConfig } from "../hooks/useDatasetServerConfig";
 import { downloadFile } from "../utils/downloadFile";
 import { FaSolidDownload } from "solid-icons/fa";
-import createFuzzySearch from "@nozbe/microfuzz";
 
 export interface GroupUserPageViewProps {
   setOnDelete: Setter<(delete_chunks: boolean) => void>;
@@ -192,15 +191,11 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     if (searchQuery() === "") {
       setSearchResults(groups());
     } else {
-      const fuzzy = createFuzzySearch(groupListOrEmpty, {
-        getText: (item: ChunkGroupDTO) => {
-          return [item.name];
-        },
-      });
-
-      const results = fuzzy(searchQuery() ?? "");
-      setSearchResults(results.map((result) => result.item));
-
+      const query = searchQuery().toLowerCase();
+      const results = groupListOrEmpty.filter((item) =>
+        item.name.toLowerCase().includes(query),
+      );
+      setSearchResults(results);
       setGroupPage(1);
       setGroupPageCount(Math.ceil(results.length / 10));
     }
