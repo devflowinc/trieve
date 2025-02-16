@@ -966,7 +966,8 @@ export type DatasetAnalytics = {
     p50: number;
     p95: number;
     p99: number;
-    search_rps: number;
+    percent_thumbs_down: number;
+    percent_thumbs_up: number;
     total_queries: number;
 };
 
@@ -2359,6 +2360,9 @@ export type RAGAnalytics = {
 } | {
     request_id: string;
     type: 'rag_query_details';
+} | {
+    filter?: ((RAGAnalyticsFilter) | null);
+    type: 'rag_query_ratings';
 };
 
 export type type3 = 'rag_queries';
@@ -2368,7 +2372,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at' | 'latency';
 
@@ -2394,6 +2398,11 @@ export type RagQueryEvent = {
     top_score: number;
     user_id: string;
     user_message: string;
+};
+
+export type RagQueryRatingsResponse = {
+    percent_thumbs_down: number;
+    percent_thumbs_up: number;
 };
 
 export type RagQueryResponse = {
