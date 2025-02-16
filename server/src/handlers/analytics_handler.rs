@@ -390,6 +390,15 @@ pub async fn get_rag_analytics(
             .await?;
             RAGAnalyticsResponse::RAGQueryDetails(Box::new(rag_query))
         }
+        RAGAnalytics::RAGQueryRatings { filter } => {
+            let rag_query_ratings = get_rag_query_ratings_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::RAGQueryRatings(rag_query_ratings)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))
