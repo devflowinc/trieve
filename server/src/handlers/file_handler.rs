@@ -60,7 +60,7 @@ pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
     "use_pdf2md_ocr": false
 }))]
 pub struct UploadFileReqPayload {
-    /// Base64 encoded file. This is the standard base64url encoding.
+    /// Base64 encoded file. This is specifically the base64url encoding.
     pub base64_file: String,
     /// Name of the file being uploaded, including the extension.
     pub file_name: String,
@@ -108,7 +108,7 @@ pub struct UploadFileResponseBody {
 
 /// Upload File
 ///
-/// Upload a file to S3 bucket attached to your dataset. You can select between a naive chunking strategy where the text is extracted with Apache Tika and split into segments with a target number of segments per chunk OR you can use a vision LLM to convert the file to markdown and create chunks per page. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.
+/// Upload a file to S3 bucket attached to your dataset. You can select between a naive chunking strategy where the text is extracted with Apache Tika and split into segments with a target number of segments per chunk OR you can use a vision LLM to convert the file to markdown and create chunks per page. You must specifically use a base64url encoding. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.
 #[utoipa::path(
     post,
     path = "/file",
