@@ -5,7 +5,8 @@ const popupClass = cva(
   [
     "tv-max-h-[40vh]",
     "tv-min-w-[100vw]",
-    "sm:tv-max-w-[800px]",
+    "md:tv-min-w-[90vw]",
+    "md:tv-max-w-[800px]",
     "tv-top-[calc(40%-30vh)]",
     "tv-shadow-2xl tv-fixed",
     "tv-w-[90vw]",
