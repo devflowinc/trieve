@@ -1,17 +1,16 @@
+import { ExtendedCrawlOptions } from "app/components/CrawlSettings";
 import {
   Product,
-  CrawlOptions,
-  ChunkReqPayload,
   TrieveKey,
   ProductsResponse,
 } from "app/types";
-import { M } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
+import { ChunkReqPayload } from "trieve-ts-sdk";
 
 function createChunkFromProduct(
   product: Product,
   variant: Product["variants"]["nodes"][0],
   baseUrl: string,
-  crawlOptions: CrawlOptions = {},
+  crawlOptions: ExtendedCrawlOptions,
 ): ChunkReqPayload {
   // Extract image URLs
   const imageUrls = product.media.nodes.map((media) => media.preview.image.url);
@@ -153,7 +152,7 @@ export const sendChunks = async (
   key: TrieveKey,
   admin: any,
   session: any,
-  crawlOptions: CrawlOptions,
+  crawlOptions: ExtendedCrawlOptions,
 ) => {
   let next_page = null;
   let started = false;
@@ -224,7 +223,9 @@ export const sendChunks = async (
         ),
     );
 
-    sendChunksToTrieve(dataChunks, key, datasetId ?? "");
+    for (const batch of chunk_to_size(dataChunks, 120)) {
+      sendChunksToTrieve(batch, key, datasetId ?? "");
+    }
 
     next_page = data.products.pageInfo.hasNextPage
       ? data.products.pageInfo.endCursor
@@ -233,3 +234,13 @@ export const sendChunks = async (
 
   return chunks;
 };
+
+function chunk_to_size<T>(arr: T[], size: number): T[][] {
+    if (size <= 0) throw new Error('Chunk size must be greater than 0');
+    
+    const result: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+        result.push(arr.slice(i, i + size));
+    }
+    return result;
+}

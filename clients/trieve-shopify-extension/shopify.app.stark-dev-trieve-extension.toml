@@ -1,0 +1,28 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "ad09426456b93ddc34996cfd0ba2db0b"
+application_url = "https://replacing-rocks-tee-functionality.trycloudflare.com"
+embedded = true
+name = "stark-dev-trieve-extension"
+handle = "stark-dev-trieve-extension"
+
+[build]
+include_config_on_deploy = true
+dev_store_url = "trieveai.myshopify.com"
+
+[webhooks]
+api_version = "2025-01"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [
+  "https://replacing-rocks-tee-functionality.trycloudflare.com/auth/callback",
+  "https://replacing-rocks-tee-functionality.trycloudflare.com/auth/shopify/callback",
+  "https://replacing-rocks-tee-functionality.trycloudflare.com/api/auth/callback"
+]
+
+[pos]
+embedded = false

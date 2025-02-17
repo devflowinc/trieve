@@ -1,0 +1,32 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "b1a1421d8714b17ed34760bd176fb016"
+application_url = "https://shopify.trieve.ai"
+embedded = true
+name = "trieve-search-extension-stable"
+handle = "trieve-search-extension-prod"
+
+[build]
+include_config_on_deploy = true
+dev_store_url = "trieveai.myshopify.com"
+
+[webhooks]
+api_version = "2025-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [ "https://shopify.trieve.ai/api/auth" ]
+
+[pos]
+embedded = false

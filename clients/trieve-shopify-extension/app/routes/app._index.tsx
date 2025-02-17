@@ -12,9 +12,10 @@ import {
   Link as PolarisLink,
   Card,
   BlockStack,
-  List,
   SkeletonBodyText,
-  Box,
+  Select,
+  Button,
+  InlineStack,
 } from "@shopify/polaris";
 import { validateTrieveAuth } from "app/auth";
 
@@ -50,7 +51,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   return key;
 };
 
-function PageLayout({ children }: { children: React.ReactNode }) {
+export function HydrateFallback() {
   return (
     <Page>
       <BlockStack gap="500">
@@ -62,7 +63,7 @@ function PageLayout({ children }: { children: React.ReactNode }) {
                   <Text as="h2" variant="headingMd">
                     Select Dataset
                   </Text>
-                  {children}
+                  <SkeletonBodyText lines={8} />
                 </BlockStack>
               </Card>
             </BlockStack>
@@ -73,16 +74,11 @@ function PageLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function HydrateFallback() {
-  return (
-    <PageLayout>
-      <SkeletonBodyText lines={8} />
-    </PageLayout>
-  );
-}
-
 export default function Index() {
   const datasets = useLoaderData<typeof clientLoader>();
+
+  let chosenDataset = datasets[0].dataset;
+
   return (
     <Page>
       <BlockStack gap="500">
@@ -90,28 +86,17 @@ export default function Index() {
           <Layout.Section variant="oneHalf">
             <BlockStack gap="500">
               <Card>
-                <BlockStack gap="200">
+                <InlineStack gap="200" align="space-between">
                   <Text as="h2" variant="headingMd">
-                    Select Dataset
+                    Indexed Dataset: {chosenDataset.name}
                   </Text>
-                  <Box>
-                    {datasets.length > 0 ? (
-                      <List>
-                        {datasets.map((dataset: any) => (
-                          <List.Item key={dataset.dataset.id}>
-                            <Link to={`/app/dataset/${dataset.dataset.id}`}>
-                              <PolarisLink>{dataset.dataset.name}</PolarisLink>
-                            </Link>
-                          </List.Item>
-                        ))}
-                      </List>
-                    ) : (
-                      <Text as="p" variant="bodyMd">
-                        No datasets available.
-                      </Text>
-                    )}
-                  </Box>
-                </BlockStack>
+
+                  <Link to="/app/dataset">
+                    <Button>
+                      Edit settings
+                    </Button>
+                  </Link>
+                </InlineStack>
               </Card>
             </BlockStack>
           </Layout.Section>
