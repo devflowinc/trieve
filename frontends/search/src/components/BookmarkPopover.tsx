@@ -77,6 +77,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
       b.slim_groups.forEach((c) => {
         groupsToAdd.push({
           id: c.id,
+          tracking_id: "",
           dataset_id: c.dataset_id,
           name: c.name,
           description: "",
@@ -226,6 +227,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
               chunkBookmark.slim_groups.forEach((group) => {
                 const chunkGroup: ChunkGroupDTO = {
                   id: group.id,
+                  tracking_id: group.tracking_id,
                   dataset_id: group.dataset_id,
                   name: group.name,
                   description: "",
@@ -289,6 +291,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
             chunkBookmark.slim_groups.forEach((group) => {
               const chunkGroup: ChunkGroupDTO = {
                 id: group.id,
+                tracking_id: group.tracking_id,
                 dataset_id: group.dataset_id,
                 name: group.name,
                 description: "",
