@@ -270,6 +270,7 @@ export const isUserDTOWithScore = (user: unknown): user is UserDTOWithScore => {
 
 export interface ChunkGroupDTO {
   id: string;
+  tracking_id: string;
   dataset_id: string;
   name: string;
   description: string;

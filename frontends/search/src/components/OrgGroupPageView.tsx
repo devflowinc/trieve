@@ -23,6 +23,7 @@ import { DatasetAndUserContext } from "./Contexts/DatasetAndUserContext";
 import { useDatasetServerConfig } from "../hooks/useDatasetServerConfig";
 import { downloadFile } from "../utils/downloadFile";
 import { FaSolidDownload } from "solid-icons/fa";
+import { useNavigate } from "@solidjs/router";
 
 export interface GroupUserPageViewProps {
   setOnDelete: Setter<(delete_chunks: boolean) => void>;
@@ -37,6 +38,8 @@ export type GetChunkGroupCountResponse = {
 export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as string;
   const datasetAndUserContext = useContext(DatasetAndUserContext);
+  const serverConfig = useDatasetServerConfig();
+  const navigate = useNavigate();
 
   const $dataset = datasetAndUserContext.currentDataset;
   const $user = datasetAndUserContext.user;
@@ -53,8 +56,6 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   const [searchResults, setSearchResults] = createSignal<ChunkGroupDTO[]>([]);
 
   const groupsList = createMemo(() => allGroups());
-
-  const serverConfig = useDatasetServerConfig();
 
   createEffect(() => {
     const currentDataset = $dataset?.();
@@ -192,8 +193,12 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
       setSearchResults(groups());
     } else {
       const query = searchQuery().toLowerCase();
-      const results = groupListOrEmpty.filter((item) =>
-        item.name.toLowerCase().includes(query),
+      const results = groupListOrEmpty.filter(
+        (item) =>
+          item.id.toLowerCase().includes(query) ||
+          item.tracking_id?.toLowerCase().includes(query) ||
+          item.name.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query),
       );
       setSearchResults(results);
       setGroupPage(1);
@@ -252,31 +257,29 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   return (
     <>
       <div class="w-full">
-        <div class="flex flex-row space-x-80">
-          <div class="w-full text-right text-2xl font-bold">
-            {$dataset?.()?.dataset.name}'s Groups
-          </div>
-          <div class="flex flex-row items-center justify-center gap-1">
-            <input
-              placeholder="Search groups..."
-              class="mb-2 flex w-max items-center justify-between rounded bg-neutral-100 p-3 px-3 text-sm text-black outline-none transition-all duration-300 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
-              onInput={(e) => {
-                const target = e.target as HTMLInputElement;
-                setSearchQuery(target.value);
+        <div class="w-full text-center text-2xl font-bold">
+          {$dataset?.()?.dataset.name}'s Groups
+        </div>
+        <div class="flex flex-row items-center justify-end gap-1">
+          <input
+            placeholder="Search groups..."
+            class="mb-2 flex w-max items-center justify-between rounded bg-neutral-100 p-3 px-3 text-sm text-black outline-none transition-all duration-300 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:text-white dark:focus:text-white"
+            onInput={(e) => {
+              const target = e.target as HTMLInputElement;
+              setSearchQuery(target.value);
+            }}
+            value={searchQuery()}
+          />
+          <Show when={searchQuery()}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSearchQuery("");
               }}
-              value={searchQuery()}
-            />
-            <Show when={searchQuery()}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSearchQuery("");
-                }}
-              >
-                <BiRegularX class="mb-2 h-5 w-5 fill-current" />
-              </button>
-            </Show>
-          </div>
+            >
+              <BiRegularX class="mb-2 h-5 w-5 fill-current" />
+            </button>
+          </Show>
         </div>
 
         <Show when={loading()}>
@@ -298,6 +301,18 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
             <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
               <thead>
                 <tr>
+                  <th
+                    scope="col"
+                    class="py-3.5 pl-4 pr-3 text-left text-base font-semibold dark:text-white sm:pl-[18px]"
+                  >
+                    Id
+                  </th>
+                  <th
+                    scope="col"
+                    class="py-3.5 pl-4 pr-3 text-left text-base font-semibold dark:text-white sm:pl-[18px]"
+                  >
+                    Tracking ID
+                  </th>
                   <th
                     scope="col"
                     class="py-3.5 pl-4 pr-3 text-left text-base font-semibold dark:text-white sm:pl-[18px]"
@@ -338,15 +353,23 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                   }
                 >
                   {(group) => (
-                    <tr>
+                    <tr
+                      class="cursor-pointer hover:bg-gray-100 dark:hover:bg-shark-700"
+                      onClick={() => {
+                        navigate(
+                          `/group/${group.id}?dataset=${$dataset?.()?.dataset
+                            .id}`,
+                        );
+                      }}
+                    >
                       <td class="cursor-pointer whitespace-nowrap text-wrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
-                        <a
-                          class="w-full underline"
-                          href={`/group/${group.id}?dataset=${$dataset?.()
-                            ?.dataset.id}`}
-                        >
-                          {group.name}
-                        </a>
+                        {group.id}
+                      </td>
+                      <td class="cursor-pointer whitespace-nowrap text-wrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
+                        {group.tracking_id ?? ""}
+                      </td>
+                      <td class="cursor-pointer whitespace-nowrap text-wrap py-4 pl-4 pr-3 text-sm font-semibold text-gray-900 dark:text-white">
+                        {group.name}
                       </td>
                       <td class="whitespace-nowrap text-wrap px-3 py-4 text-sm text-gray-900 dark:text-gray-300">
                         {
