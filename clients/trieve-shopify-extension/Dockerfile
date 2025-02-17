@@ -1,5 +1,5 @@
 FROM node:18-alpine
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl curl
 
 EXPOSE 3000
 
@@ -18,4 +18,8 @@ COPY . .
 
 RUN npm run build
 
+# RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b257/subtrace-linux-amd64 \
+#     && chmod +x ./subtrace-linux-amd64
+
+# CMD ["./subtrace-linux-amd64", "run", "-tls=true", "--", "npm", "run", "docker-start"]
 CMD ["npm", "run", "docker-start"]

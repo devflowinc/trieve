@@ -36,9 +36,6 @@ export const MustLoginPage = ({ authUrl }: { authUrl: string }) => {
         }}
       >
         <p>To get started, login</p>
-        <Link to="/app/products">
-          View Products for testing
-        </Link>
       </CalloutCard>
     </Box>
   );

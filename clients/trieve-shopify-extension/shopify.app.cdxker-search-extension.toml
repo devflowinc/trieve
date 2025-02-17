@@ -1,10 +1,10 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "8765d78a52aa8c12ae2d235d9d41529c"
-application_url = "https://ii-sean-concentration-frankfurt.trycloudflare.com"
+client_id = "6d9ffd6335a93c6424551710a1936362"
+application_url = "https://salvation-beam-costa-enhance.trycloudflare.com"
 embedded = true
-name = "trieve-search-extension"
-handle = "trieve-search-extension"
+name = "cdxker-search-extension"
+handle = "cdxker-search-extension"
 
 [webhooks]
 api_version = "2025-01"
@@ -23,9 +23,9 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://ii-sean-concentration-frankfurt.trycloudflare.com/auth/callback",
-  "https://ii-sean-concentration-frankfurt.trycloudflare.com/auth/shopify/callback",
-  "https://ii-sean-concentration-frankfurt.trycloudflare.com/api/auth/callback"
+  "https://salvation-beam-costa-enhance.trycloudflare.com/auth/callback",
+  "https://salvation-beam-costa-enhance.trycloudflare.com/auth/shopify/callback",
+  "https://salvation-beam-costa-enhance.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
@@ -33,4 +33,3 @@ embedded = false
 
 [build]
 automatically_update_urls_on_dev = true
-dev_store_url = "trieveai.myshopify.com"
