@@ -4,7 +4,7 @@ import { useModalState } from "./modal-context";
 const popupClass = cva(
   [
     "tv-max-h-[40vh]",
-    "tv-min-w-[100vw]",
+    "tv-min-w-[calc(100vw-32px)]",
     "md:tv-min-w-[90vw]",
     "md:tv-max-w-[800px]",
     "tv-top-[calc(40%-30vh)]",
@@ -16,8 +16,8 @@ const popupClass = cva(
     variants: {
       type: {
         ecommerce: ["!tv-top-[0px]"],
-        docs: ["tv-max-h-[80vh]"],
-        pdf: ["tv-max-h-[70vh]"],
+        docs: [],
+        pdf: [],
       },
       mode: {
         search: [],
@@ -28,14 +28,6 @@ const popupClass = cva(
         right: ["tv-right-[0px]"],
       },
     },
-    compoundVariants: [
-      {
-        mode: "chat",
-        type: "docs",
-        className: "!tv-max-h-[80vh]",
-      },
-    ],
-
     defaultVariants: {
       modalPosition: "center",
     },
