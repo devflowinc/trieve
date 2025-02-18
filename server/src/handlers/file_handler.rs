@@ -60,7 +60,7 @@ pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
     "use_pdf2md_ocr": false
 }))]
 pub struct UploadFileReqPayload {
-    /// Base64 encoded file. This is specifically the base64url encoding.
+    /// Base64 encoded file.
     pub base64_file: String,
     /// Name of the file being uploaded, including the extension.
     pub file_name: String,
@@ -173,9 +173,17 @@ pub async fn upload_file_handler(
     }
     let base64_engine = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
-    let decoded_file_data = base64_engine
-        .decode(upload_file_data.base64_file.clone())
-        .map_err(|_e| ServiceError::BadRequest("Could not decode base64 file".to_string()))?;
+    let decoded_file_data = base64_engine.decode(upload_file_data.base64_file.clone());
+
+    let decoded_file_data = match decoded_file_data {
+        Ok(data) => data,
+        Err(e) => base64::prelude::BASE64_STANDARD
+            .decode(upload_file_data.base64_file.as_bytes())
+            .map_err(|_e| {
+                log::error!("Could not decode base64 file: {:?}", e);
+                ServiceError::BadRequest("Could not decode base64 file".to_string())
+            })?,
+    };
 
     let file_id = uuid::Uuid::new_v4();
 
