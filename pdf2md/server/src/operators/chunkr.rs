@@ -30,6 +30,9 @@ pub async fn create_chunkr_task(
             "file": file_base64,
             "pipeline": "Azure",
             "high_resolution": true,
+            "chunk_processing": {
+                "ignore_headers_and_footers": false,
+            },
         }))
         .send()
         .await
