@@ -1,4 +1,5 @@
-import { useSubmit } from "@remix-run/react";
+import { LoaderFunctionArgs } from "@remix-run/node";
+import { useFetcher, useSubmit } from "@remix-run/react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import {
   BlockStack,
@@ -11,27 +12,33 @@ import {
   Text,
   TextField,
 } from "@shopify/polaris";
-import { CrawlInterval, CrawlOptions, TrieveKey } from "app/types";
+import { validateTrieveAuth } from "app/auth";
 import { useEffect, useState } from "react";
+import { CrawlInterval, CrawlOptions, Dataset, DatasetAndUsage } from "trieve-ts-sdk";
 
-export const defaultCrawlOptions: CrawlOptions = {
+export type ExtendedCrawlOptions = CrawlOptions & {
+  include_metafields?: string[]
+};
+
+export const defaultCrawlOptions: ExtendedCrawlOptions = {
   boost_titles: true,
   interval: "daily",
   limit: 1000,
   scrape_options: {
+    type: "shopify",
     group_variants: false,
     tag_regexes: [],
   },
 };
 
-export const DatasetCrawlSettings = ({
+export const DatasetSettings = ({
   initalCrawlOptions,
-  trieveKey,
-  datasetId,
+  datasets,
+  currentDatasetUsage
 }: {
-  initalCrawlOptions: CrawlOptions;
-  trieveKey: TrieveKey;
-  datasetId: string;
+  initalCrawlOptions: ExtendedCrawlOptions;
+  datasets: DatasetAndUsage[];
+  currentDatasetUsage: DatasetAndUsage;
 }) => {
   const [unsavedCrawlOptions, setUnsavedCrawlOptions] =
     useState(initalCrawlOptions);
@@ -40,7 +47,6 @@ export const DatasetCrawlSettings = ({
 
   useEffect(() => {
     // Quickly set the nonnegotiable options for shopify to work
-
     setUnsavedCrawlOptions({
       ...unsavedCrawlOptions,
       boost_titles: true,
@@ -48,6 +54,7 @@ export const DatasetCrawlSettings = ({
         ...unsavedCrawlOptions.scrape_options,
         group_variants: true,
         tag_regexes: [],
+        type: "shopify"
       },
     });
 
@@ -70,89 +77,122 @@ export const DatasetCrawlSettings = ({
     shopify.toast.show("Started crawl!");
   };
 
+  const updateDefaultDataset = async (datasetId: string) => {
+    const dataset = datasets.find((d) => d.dataset.id == datasetId);
+    shopify.toast.show(`TODO need to update Dataset changed to ${dataset?.dataset.name}`);
+    // TODO unfinished
+  };
+
+  if (unsavedCrawlOptions.scrape_options?.type != "shopify") {
+    // Should be unreachable, this helps to remove all type errors
+    return null;
+  }
+
   return (
-    <Card>
-      <BlockStack gap="200">
-        <Text variant="headingMd" as="h2">
-          Crawl Settings
-        </Text>
+    <BlockStack gap="200">
+      {datasets.length > 1 &&
+        <Card>
+          <Text variant="headingLg" as="h1">
+            Index Settings
+          </Text>
 
-        <FormLayout>
           <Select
-            value={unsavedCrawlOptions.interval || "daily"}
-            options={["daily", "weekly", "monthly"] as CrawlInterval[]}
-            onChange={(option: CrawlInterval) => {
-              setUnsavedCrawlOptions({
-                ...unsavedCrawlOptions,
-                interval: option,
-              });
+            label="Dataset Index"
+            onChange={(dataset) => {
+              updateDefaultDataset(dataset);
             }}
-            label="Crawl Interval"
+            value={currentDatasetUsage.dataset.id}
+            options={datasets.map((dataset) => {
+              return { label: dataset.dataset.name, value: dataset.dataset.id }
+            })}
           />
+        </Card>}
 
-          <Checkbox
-            label="Group Product Variants"
-            checked={
-              unsavedCrawlOptions.scrape_options?.group_variants || false
-            }
-            onChange={(e) => {
-              setUnsavedCrawlOptions({
-                ...unsavedCrawlOptions,
-                scrape_options: {
-                  ...unsavedCrawlOptions.scrape_options,
-                  group_variants: e,
-                },
-              });
-            }}
-          />
+      <Card>
+        <BlockStack gap="200">
+          <Text variant="headingLg" as="h1">
+            Crawl Settings
+          </Text>
 
-          <Checkbox
-            label="Boost titles"
-            checked={unsavedCrawlOptions.boost_titles || false}
-            onChange={(e) => {
-              setUnsavedCrawlOptions({
-                ...unsavedCrawlOptions,
-                boost_titles: e,
-              });
-            }}
-          />
+          <FormLayout>
+            <Select
+              value={unsavedCrawlOptions.interval || "daily"}
+              options={["daily", "weekly", "monthly"] as CrawlInterval[]}
+              onChange={(option: CrawlInterval) => {
+                setUnsavedCrawlOptions({
+                  ...unsavedCrawlOptions,
+                  interval: option,
+                });
+              }}
+              label="Crawl Interval"
+            />
 
-          <TextField
-            autoComplete="off"
-            label="Important Product Tags (Comma Seperated)"
-            helpText="Regex pattern of tags to use from the Shopify API, e.g. 'Men' to include 'Men' if it exists in a product tag."
-            value={
-              unsavedCrawlOptions.scrape_options?.tag_regexes?.join(",") || ""
-            }
-            onChange={(e) => {
-              setUnsavedCrawlOptions({
-                ...unsavedCrawlOptions,
-                scrape_options: {
-                  ...unsavedCrawlOptions.scrape_options,
-                  tag_regexes: e.split(",").map((s) => s.trim()),
-                },
-              });
-            }}
-          />
+            <Checkbox
+              label="Group Product Variants"
+              checked={
+                unsavedCrawlOptions.scrape_options?.group_variants || false
+              }
+              onChange={(e) => {
+                setUnsavedCrawlOptions({
+                  ...unsavedCrawlOptions,
+                  scrape_options: {
+                    ...unsavedCrawlOptions.scrape_options,
+                    group_variants: e,
+                    type: "shopify"
+                  },
+                });
+              }}
+            />
 
-          <TextField
-            autoComplete="off"
-            label="Metadata fields to include (Comma Seperated)"
-            helpText="Metafields to include in the response, e.g. 'color' to include the color metafield."
-            value={unsavedCrawlOptions.include_metafields?.join(",") || ""}
-            onChange={(e) => {
-              setUnsavedCrawlOptions({
-                ...unsavedCrawlOptions,
-                include_metafields: e.split(",").map((s) => s.trim()),
-              });
-            }}
-          />
-        </FormLayout>
+            <Checkbox
+              label="Boost titles"
+              checked={unsavedCrawlOptions.boost_titles || false}
+              onChange={(e) => {
+                setUnsavedCrawlOptions({
+                  ...unsavedCrawlOptions,
+                  boost_titles: e,
+                });
+              }}
+            />
 
-        <InlineStack align="end">
-          <Button onClick={onSave}>Save</Button>
-        </InlineStack>
-      </BlockStack>
-    </Card>
+            <TextField
+              autoComplete="off"
+              label="Important Product Tags (Comma Seperated)"
+              helpText="Regex pattern of tags to use from the Shopify API, e.g. 'Men' to include 'Men' if it exists in a product tag."
+              value={
+                unsavedCrawlOptions.scrape_options?.tag_regexes?.join(",") || ""
+              }
+              onChange={(e) => {
+                setUnsavedCrawlOptions({
+                  ...unsavedCrawlOptions,
+                  scrape_options: {
+                    ...unsavedCrawlOptions.scrape_options,
+                    tag_regexes: e.split(",").map((s) => s.trim()),
+                    type: "shopify"
+                  },
+                });
+              }}
+            />
+
+            <TextField
+              autoComplete="off"
+              label="Metadata fields to include (Comma Seperated)"
+              helpText="Metafields to include in the response, e.g. 'color' to include the color metafield."
+              value={unsavedCrawlOptions.include_metafields?.join(",") || ""}
+              onChange={(e) => {
+                setUnsavedCrawlOptions({
+                  ...unsavedCrawlOptions,
+                  include_metafields: e.split(",").map((s) => s.trim()),
+                });
+              }}
+            />
+          </FormLayout>
+
+          <InlineStack align="end">
+            <Button onClick={onSave}>Save</Button>
+          </InlineStack>
+        </BlockStack>
+      </Card>
+    </BlockStack>
   );
 };

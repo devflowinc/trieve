@@ -35,6 +35,7 @@ model ApiKey {
   id        String   @id @default(uuid())
   userId    String
   organizationId String @default("")
+  currentDatasetId String? @db.Uuid
   key       String
   createdAt DateTime @default(now())
 }
