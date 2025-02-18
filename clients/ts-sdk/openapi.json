@@ -9825,11 +9825,12 @@
         "title": "SearchMetricsResponse",
         "required": [
           "total_queries",
-          "search_rps",
           "avg_latency",
           "p99",
           "p95",
-          "p50"
+          "p50",
+          "percent_thumbs_up",
+          "percent_thumbs_down"
         ],
         "properties": {
           "avg_latency": {
@@ -9848,13 +9849,17 @@
             "type": "number",
             "format": "double"
           },
-          "search_rps": {
+          "percent_thumbs_down": {
+            "type": "number",
+            "format": "double"
+          },
+          "percent_thumbs_up": {
             "type": "number",
             "format": "double"
           },
           "total_queries": {
             "type": "integer",
-            "format": "int32"
+            "format": "int64"
           }
         }
       },
@@ -13695,6 +13700,29 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "RAGQueryRatings",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "rag_query_ratings"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -13735,6 +13763,9 @@
           },
           {
             "$ref": "#/components/schemas/RagQueryEvent"
+          },
+          {
+            "$ref": "#/components/schemas/RagQueryRatingsResponse"
           }
         ]
       },
@@ -13846,6 +13877,24 @@
           },
           "user_message": {
             "type": "string"
+          }
+        }
+      },
+      "RagQueryRatingsResponse": {
+        "type": "object",
+        "title": "RagQueryRatingsResponse",
+        "required": [
+          "percent_thumbs_up",
+          "percent_thumbs_down"
+        ],
+        "properties": {
+          "percent_thumbs_down": {
+            "type": "number",
+            "format": "double"
+          },
+          "percent_thumbs_up": {
+            "type": "number",
+            "format": "double"
           }
         }
       },

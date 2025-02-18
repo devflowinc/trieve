@@ -5932,12 +5932,13 @@ impl RecommendationAnalyticsFilter {
 #[derive(Debug, Row, ToSchema, Serialize, Deserialize)]
 #[schema(title = "SearchMetricsResponse")]
 pub struct DatasetAnalytics {
-    pub total_queries: i32,
-    pub search_rps: f64,
+    pub total_queries: i64,
     pub avg_latency: f64,
     pub p99: f64,
     pub p95: f64,
     pub p50: f64,
+    pub percent_thumbs_up: f64,
+    pub percent_thumbs_down: f64,
 }
 
 #[derive(Debug, ToSchema, Row, Serialize, Deserialize)]
@@ -6812,6 +6813,9 @@ pub enum RAGAnalytics {
     #[schema(title = "QueryDetails")]
     #[serde(rename = "rag_query_details")]
     RAGQueryDetails { request_id: uuid::Uuid },
+    #[schema(title = "RAGQueryRatings")]
+    #[serde(rename = "rag_query_ratings")]
+    RAGQueryRatings { filter: Option<RAGAnalyticsFilter> },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -6898,6 +6902,13 @@ pub struct RAGUsageGraphResponse {
     pub usage_points: Vec<UsageGraphPoint>,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
+#[schema(title = "RagQueryRatingsResponse")]
+pub struct RagQueryRatingsResponse {
+    pub percent_thumbs_up: f64,
+    pub percent_thumbs_down: f64,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]
 pub enum SearchAnalyticsResponse {
@@ -6934,6 +6945,8 @@ pub enum RAGAnalyticsResponse {
     RAGUsageGraph(RAGUsageGraphResponse),
     #[schema(title = "RAGQueryDetails")]
     RAGQueryDetails(Box<RagQueryEvent>),
+    #[schema(title = "RAGQueryRatings")]
+    RAGQueryRatings(RagQueryRatingsResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

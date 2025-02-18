@@ -4,8 +4,8 @@ use crate::{
         EventData, EventDataClickhouse, GetEventsResponseBody, Granularity, HeadQueries, Pool,
         PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
         RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
-        RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
-        RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
+        RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
+        RecommendationEvent, RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
         RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
         RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
         SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
@@ -170,24 +170,16 @@ pub async fn get_search_metrics_query(
 ) -> Result<DatasetAnalytics, ServiceError> {
     let mut query_string = String::from(
         "SELECT 
-            total_queries,
-            total_queries / dateDiff('second', min_created_at, max_created_at) AS search_rps,
-            avg_latency,
-            p99,
-            p95,
-            p50
-        FROM (
-            SELECT 
-                count(*) as total_queries,
-                min(created_at) as min_created_at,
-                max(created_at) as max_created_at,
-                avg(latency) as avg_latency,
-                quantile(0.99)(latency) as p99,
-                quantile(0.95)(latency) as p95,
-                quantile(0.5)(latency) as p50
-            FROM search_queries
-            WHERE dataset_id = ?
-        ) subquery",
+            count(*) as total_queries,
+            avg(latency) as avg_latency,
+            quantile(0.99)(latency) as p99,
+            quantile(0.95)(latency) as p95,
+            quantile(0.5)(latency) as p50,
+            round(100 * countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') >= 1) / count(*), 2) as percent_thumbs_up,
+            round(100 * countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') <= 0) / count(*), 2) as percent_thumbs_down
+        FROM search_queries
+        WHERE dataset_id = ?            
+         ",
     );
 
     if let Some(filter) = filter {
@@ -1629,4 +1621,35 @@ pub async fn get_all_events_query(
     let events: Vec<EventData> = clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
 
     Ok(GetEventsResponseBody { events })
+}
+
+pub async fn get_rag_query_ratings_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RAGAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<RagQueryRatingsResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            round(100 * countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') >= 1) / count(*), 2) as percent_thumbs_up,
+            round(100 * countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') <= 0) / count(*), 2) as percent_thumbs_down
+        FROM 
+            rag_queries
+        WHERE dataset_id = ?",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    let response = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_one::<RagQueryRatingsResponse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    Ok(response)
 }
