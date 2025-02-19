@@ -3,25 +3,30 @@ import { useModalState } from "./modal-context";
 
 const popupClass = cva(
   [
-    "tv-max-h-[40vh]",
-    "tv-min-w-[calc(100vw-32px)]",
-    "md:tv-min-w-[90vw]",
-    "md:tv-max-w-[800px]",
-    "tv-top-[calc(40%-30vh)]",
+    "tv-max-h-[calc(100vh-32px)]",
+    "tv-overflow-x-auto",
+    "mobile-only:tv-min-w-[calc(100vw-32px)]", // mobile
+    "mobile-only:tv-max-w-[calc(100vw-32px)]", // mobile
+    "tv-top-[16px]", // mobile
     "tv-shadow-2xl tv-fixed",
-    "tv-w-[90vw]",
     "tv-px-4",
+    "md:tv-top-[32px]",
+    "md:tv-min-w-auto",
+    "md:tv-w-[90vw]",
+    "md:!tv-min-w-auto",
+    "md:!tv-max-w-[1440px]",
+    "md:!tv-max-h-[calc(100vh-64px)]",
   ],
   {
     variants: {
       type: {
-        ecommerce: ["!tv-top-[0px]"],
+        ecommerce: [],
         docs: [],
         pdf: [],
       },
       mode: {
         search: [],
-        chat: ["!tv-max-h-[80vh]"],
+        chat: [],
       },
       modalPosition: {
         center: ["tv-left-[50%]", "-tv-translate-x-[50%]"],
