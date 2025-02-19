@@ -10,7 +10,6 @@ const popupClass = cva(
     "tv-top-[16px]", // mobile
     "tv-shadow-2xl tv-fixed",
     "tv-px-4",
-    "md:tv-top-[32px]",
     "md:tv-min-w-auto",
     "md:tv-w-[90vw]",
     "md:!tv-min-w-auto",
