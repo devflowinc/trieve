@@ -4,13 +4,10 @@ import { useModalState } from "./modal-context";
 import { Chunk } from "../types";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
-import { cached } from "../cache";
-import { getAllChunksForGroup, trackViews } from "../trieve";
+import { trackViews } from "../trieve";
 import {
-  ChatMessageProxy,
   ChunkFilter,
   ChunkGroup,
-  RoleProxy,
   ToolFunctionParameter,
 } from "trieve-ts-sdk";
 import { defaultHighlightOptions } from "../highlight";
@@ -31,13 +28,6 @@ type Messages = {
   text: string;
   additional: Chunk[] | null;
 }[];
-
-const mapMessageType = (message: Messages[0]): ChatMessageProxy => {
-  return {
-    content: message.text,
-    role: message.type as RoleProxy,
-  } satisfies ChatMessageProxy;
-};
 
 const ChatContext = createContext<{
   askQuestion: (question?: string, group?: ChunkGroup) => Promise<void>;
@@ -184,17 +174,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         let jsonData: string = "";
 
         if (textInStream.includes("||")) {
-          if (currentGroup) {
-            [text, jsonData] = textInStream.split("||");
-          } else {
             [jsonData, text] = textInStream.split("||");
-          }
-        } else {
-          if (currentGroup) {
-            text = textInStream;
-          } else {
-            continue;
-          }
         }
 
         let json;
@@ -290,297 +270,235 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     let transcribedQuery: string | null = null;
 
     // Use group search
-    if (curGroup) {
-      // Should already be preloaded when group selected to chat with
-      const groupChunks = await cached(() => {
-        return getAllChunksForGroup(curGroup.id, trieveSDK);
-      }, `chunk-ids-${curGroup.id}`);
+    let filters: ChunkFilter | null = {
+      must: null,
+      must_not: null,
+      should: null,
+    };
 
-      let {
-        reader,
-        queryId,
-      }: {
-        reader: ReadableStreamDefaultReader<Uint8Array> | null;
-        queryId: string | null;
-      } = { reader: null, queryId: null };
-      let retries = 0;
-      while (retries < 3) {
-        try {
-          const result = await trieveSDK.ragOnChunkReaderWithQueryId(
-            {
-              chunk_ids: groupChunks.map((c) => c.id),
-              image_urls: imageUrl ? [imageUrl] : [],
-              audio_input:
-                curAudioBase64 && curAudioBase64?.length > 0
-                  ? curAudioBase64
-                  : undefined,
-              prev_messages: [
-                ...messages.slice(0, -1).map((m) => mapMessageType(m)),
-                {
-                  content: questionProp || currentQuestion,
-                  role: "user",
-                },
-              ],
-              stream_response: true,
-              highlight_results: props.type === "pdf",
-            },
-            chatMessageAbortController.current.signal,
-            (headers: Record<string, string>) => {
-              if (headers["x-tr-query"] && curAudioBase64) {
-                transcribedQuery = headers["x-tr-query"];
-              }
-            }
-          );
-
-          reader = result.reader;
-          queryId = result.queryId;
-          break;
-        } catch (e) {
-          console.error("error getting ragOnChunkReaderWithQueryId", e);
-          retries++;
-        }
-      }
-
-      if (transcribedQuery && curAudioBase64) {
-        setAudioBase64("");
-        curAudioBase64 = undefined;
-        setMessages((m) => {
-          return [
-            ...m.slice(0, -1),
-            {
-              type: "user",
-              text: transcribedQuery ?? "",
-              additional: null,
-              queryId: null,
-              imageUrl: imageUrl ? imageUrl : null,
-            },
-            {
-              type: "system",
-              text: "Loading...",
-              additional: null,
-              queryId: null,
-            },
-          ];
-        });
-      }
-      if (reader) handleReader(reader, queryId);
-    } else {
-      let filters: ChunkFilter | null = {
-        must: null,
-        must_not: null,
-        should: null,
-      };
-
-      if (selectedTags.length > 0) {
-        filters.must = [];
-        filters.must?.push({
-          field: "tag_set",
-          match_any: selectedTags.map((t) => t.tag),
-        });
-      }
-
-      if (props.chatFilters) {
-        if (props.chatFilters.must) {
-          if (!filters.must) {
-            filters.must = [];
-          }
-          filters.must?.push(...props.chatFilters.must);
-        }
-        if (props.chatFilters.must_not) {
-          filters.must_not = [];
-          filters.must_not?.push(...props.chatFilters.must_not);
-        }
-        if (props.chatFilters.should) {
-          filters.should = [];
-          filters.should?.push(...props.chatFilters.should);
-        }
-      }
-
-      if ((props.tags?.length ?? 0) > 0) {
-        let filterParamsRetries = 0;
-        while (filterParamsRetries < 3) {
-          filterParamsRetries++;
-          const abortController = new AbortController();
-          setTimeout(
-            () => {
-              abortController.abort();
-            },
-            imageUrl ? 8000 : 4000
-          );
-
-          try {
-            const filterParamsResp = await trieveSDK.getToolCallFunctionParams(
-              {
-                user_message_text:
-                  questionProp || currentQuestion
-                    ? `Get filters from the following messages: ${messages
-                        .slice(0, -1)
-                        .filter((message) => {
-                          return message.type == "user";
-                        })
-                        .map(
-                          (message) => `\n\n${message.text}`
-                        )} \n\n ${questionProp || currentQuestion}`
-                    : null,
-                image_url: imageUrl ? imageUrl : null,
-                audio_input: curAudioBase64 ? curAudioBase64 : null,
-                tool_function: {
-                  name: "get_filters",
-                  description:
-                    "Decide on which filters to apply to available catalog being used within the knowledge base to respond. Always get filters.",
-                  parameters:
-                    props.tags?.map((tag) => {
-                      return {
-                        name: tag.label,
-                        parameter_type: "boolean",
-                        description: tag.description ?? "",
-                      } as ToolFunctionParameter;
-                    }) ?? [],
-                },
-              },
-              abortController.signal,
-              (headers: Record<string, string>) => {
-                if (headers["x-tr-query"] && curAudioBase64) {
-                  transcribedQuery = headers["x-tr-query"];
-                }
-              }
-            );
-
-            if (transcribedQuery && curAudioBase64) {
-              questionProp = transcribedQuery;
-              setAudioBase64("");
-              curAudioBase64 = undefined;
-              setMessages((m) => {
-                return [
-                  ...m.slice(0, -1),
-                  {
-                    type: "user",
-                    text: transcribedQuery ?? "",
-                    additional: null,
-                    queryId: null,
-                    imageUrl: imageUrl ? imageUrl : null,
-                  },
-                  {
-                    type: "system",
-                    text: "Loading...",
-                    additional: null,
-                    queryId: null,
-                  },
-                ];
-              });
-            }
-
-            const match_any_tags = [];
-            for (const key of Object.keys(filterParamsResp.parameters ?? {})) {
-              const filterParam = (filterParamsResp.parameters as any)[
-                key as keyof typeof filterParamsResp.parameters
-              ];
-              if (typeof filterParam === "boolean" && filterParam) {
-                const tag = props.tags?.find((t) => t.label === key)?.tag;
-                if (tag) {
-                  match_any_tags.push(tag);
-                }
-              }
-            }
-
-            if (match_any_tags.length > 0) {
-              if (!filters.must) {
-                filters.must = [];
-              }
-              filters.must.push({
-                field: "tag_set",
-                match_any: match_any_tags,
-              });
-            }
-
-            break;
-          } catch (e) {
-            console.error("error getting getToolCallFunctionParams", e);
-          }
-        }
-      }
-
-      if (
-        filters.must == null &&
-        filters.must_not == null &&
-        filters.should == null
-      ) {
-        filters = null;
-      }
-
-      let messageReaderRetries = 0;
-      let {
-        reader,
-        queryId,
-      }: {
-        reader: ReadableStreamDefaultReader<Uint8Array> | null;
-        queryId: string | null;
-      } = { reader: null, queryId: null };
-
-      while (messageReaderRetries < 3) {
-        try {
-          const result = await trieveSDK.createMessageReaderWithQueryId(
-            {
-              topic_id: id || currentTopic,
-              new_message_content: questionProp || currentQuestion,
-              audio_input:
-                curAudioBase64 && curAudioBase64?.length > 0
-                  ? curAudioBase64
-                  : undefined,
-              image_urls: imageUrl ? [imageUrl] : [],
-              llm_options: {
-                completion_first: false,
-              },
-              page_size: props.searchOptions?.page_size ?? 8,
-              score_threshold: props.searchOptions?.score_threshold || null,
-              use_group_search: props.useGroupSearch,
-              filters: filters,
-              highlight_options: {
-                ...defaultHighlightOptions,
-                highlight_delimiters: ["?", ",", ".", "!", "\n"],
-                highlight_window: props.type === "ecommerce" ? 5 : 10,
-                highlight_results: true,
-              },
-              only_include_docs_used: true,
-            },
-            chatMessageAbortController.current.signal,
-            (headers: Record<string, string>) => {
-              if (headers["x-tr-query"] && curAudioBase64) {
-                transcribedQuery = headers["x-tr-query"];
-              }
-            }
-          );
-          reader = result.reader;
-          queryId = result.queryId;
-          break;
-        } catch (e) {
-          console.error("error getting createMessageReaderWithQueryId", e);
-          messageReaderRetries++;
-        }
-      }
-
-      if (transcribedQuery && curAudioBase64) {
-        setAudioBase64("");
-        curAudioBase64 = undefined;
-        setMessages((m) => [
-          ...m.slice(0, -1),
-          {
-            type: "user",
-            text: transcribedQuery ?? "",
-            additional: null,
-            queryId: null,
-            imageUrl: imageUrl ? imageUrl : null,
-          },
-          {
-            type: "system",
-            text: "Loading...",
-            additional: null,
-            queryId: null,
-          },
-        ]);
-      }
-      if (reader) handleReader(reader, queryId);
+    if (selectedTags.length > 0) {
+      filters.must = [];
+      filters.must?.push({
+        field: "tag_set",
+        match_any: selectedTags.map((t) => t.tag),
+      });
     }
+
+    if (curGroup) {
+      if (!filters.should) {
+        filters.should = [];
+      }
+      filters.should?.push({
+        field: "group_ids",
+        match_all: [curGroup.id]
+      });
+    }
+
+    if (props.chatFilters) {
+      if (props.chatFilters.must) {
+        if (!filters.must) {
+          filters.must = [];
+        }
+        filters.must?.push(...props.chatFilters.must);
+      }
+      if (props.chatFilters.must_not) {
+        if (!filters.must_not) {
+          filters.must_not = [];
+        }
+        filters.must_not?.push(...props.chatFilters.must_not);
+      }
+      if (props.chatFilters.should) {
+        if (!filters.should) {
+          filters.should = [];
+        }
+        filters.should?.push(...props.chatFilters.should);
+      }
+    }
+
+    if ((props.tags?.length ?? 0) > 0) {
+      let filterParamsRetries = 0;
+      while (filterParamsRetries < 3) {
+        filterParamsRetries++;
+        const abortController = new AbortController();
+        setTimeout(
+          () => {
+            abortController.abort();
+          },
+          imageUrl ? 8000 : 4000
+        );
+
+        try {
+          const filterParamsResp = await trieveSDK.getToolCallFunctionParams(
+            {
+              user_message_text:
+                questionProp || currentQuestion
+                  ? `Get filters from the following messages: ${messages
+                    .slice(0, -1)
+                    .filter((message) => {
+                      return message.type == "user";
+                    })
+                    .map(
+                      (message) => `\n\n${message.text}`
+                    )} \n\n ${questionProp || currentQuestion}`
+                  : null,
+              image_url: imageUrl ? imageUrl : null,
+              audio_input: curAudioBase64 ? curAudioBase64 : null,
+              tool_function: {
+                name: "get_filters",
+                description:
+                  "Decide on which filters to apply to available catalog being used within the knowledge base to respond. Always get filters.",
+                parameters:
+                  props.tags?.map((tag) => {
+                    return {
+                      name: tag.label,
+                      parameter_type: "boolean",
+                      description: tag.description ?? "",
+                    } as ToolFunctionParameter;
+                  }) ?? [],
+              },
+            },
+            abortController.signal,
+            (headers: Record<string, string>) => {
+              if (headers["x-tr-query"] && curAudioBase64) {
+                transcribedQuery = headers["x-tr-query"];
+              }
+            }
+          );
+
+          if (transcribedQuery && curAudioBase64) {
+            questionProp = transcribedQuery;
+            setAudioBase64("");
+            curAudioBase64 = undefined;
+            setMessages((m) => {
+              return [
+                ...m.slice(0, -1),
+                {
+                  type: "user",
+                  text: transcribedQuery ?? "",
+                  additional: null,
+                  queryId: null,
+                  imageUrl: imageUrl ? imageUrl : null,
+                },
+                {
+                  type: "system",
+                  text: "Loading...",
+                  additional: null,
+                  queryId: null,
+                },
+              ];
+            });
+          }
+
+          const match_any_tags = [];
+          for (const key of Object.keys(filterParamsResp.parameters ?? {})) {
+            const filterParam = (filterParamsResp.parameters as any)[
+              key as keyof typeof filterParamsResp.parameters
+            ];
+            if (typeof filterParam === "boolean" && filterParam) {
+              const tag = props.tags?.find((t) => t.label === key)?.tag;
+              if (tag) {
+                match_any_tags.push(tag);
+              }
+            }
+          }
+
+          if (match_any_tags.length > 0) {
+            if (!filters.must) {
+              filters.must = [];
+            }
+            filters.must.push({
+              field: "tag_set",
+              match_any: match_any_tags,
+            });
+          }
+
+          break;
+        } catch (e) {
+          console.error("error getting getToolCallFunctionParams", e);
+        }
+      }
+    }
+
+    if (
+      filters.must == null &&
+      filters.must_not == null &&
+      filters.should == null
+    ) {
+      filters = null;
+    }
+
+    let messageReaderRetries = 0;
+    let {
+      reader,
+      queryId,
+    }: {
+      reader: ReadableStreamDefaultReader<Uint8Array> | null;
+      queryId: string | null;
+    } = { reader: null, queryId: null };
+
+    while (messageReaderRetries < 3) {
+      try {
+        const result = await trieveSDK.createMessageReaderWithQueryId(
+          {
+            topic_id: id || currentTopic,
+            new_message_content: questionProp || currentQuestion,
+            audio_input:
+              curAudioBase64 && curAudioBase64?.length > 0
+                ? curAudioBase64
+                : undefined,
+            image_urls: imageUrl ? [imageUrl] : [],
+            llm_options: {
+              completion_first: false,
+            },
+            page_size: props.searchOptions?.page_size ?? 8,
+            score_threshold: props.searchOptions?.score_threshold || null,
+            use_group_search: props.useGroupSearch,
+            filters: filters,
+            highlight_options: {
+              ...defaultHighlightOptions,
+              highlight_delimiters: ["?", ",", ".", "!", "\n"],
+              highlight_window: props.type === "ecommerce" ? 5 : 10,
+              highlight_results: true,
+            },
+            only_include_docs_used: true,
+          },
+          chatMessageAbortController.current.signal,
+          (headers: Record<string, string>) => {
+            if (headers["x-tr-query"] && curAudioBase64) {
+              transcribedQuery = headers["x-tr-query"];
+            }
+          }
+        );
+        reader = result.reader;
+        queryId = result.queryId;
+        break;
+      } catch (e) {
+        console.error("error getting createMessageReaderWithQueryId", e);
+        messageReaderRetries++;
+      }
+    }
+
+    if (transcribedQuery && curAudioBase64) {
+      setAudioBase64("");
+      curAudioBase64 = undefined;
+      setMessages((m) => [
+        ...m.slice(0, -1),
+        {
+          type: "user",
+          text: transcribedQuery ?? "",
+          additional: null,
+          queryId: null,
+          imageUrl: imageUrl ? imageUrl : null,
+        },
+        {
+          type: "system",
+          text: "Loading...",
+          additional: null,
+          queryId: null,
+        },
+      ]);
+    }
+    if (reader) handleReader(reader, queryId);
 
     if (imageUrl) {
       setImageUrl("");
@@ -597,12 +515,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     clearConversation();
     setCurrentGroup(group);
     setMode("chat");
-    // preload the chunk ids
-    cached(() => {
-      return getAllChunksForGroup(group.id, trieveSDK);
-    }, `chunk-ids-${group.id}`).catch((e) => {
-      console.error(e);
-    });
   };
 
   const stopGeneratingMessage = (retry?: boolean) => {
@@ -687,7 +599,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
     scrollToBottomOfChatModalWrapper();
 
-    if (!currentTopic && !currentGroup && !group) {
+    if (!currentTopic) {
       await createTopic({ question: questionProp || currentQuestion });
     } else {
       await createQuestion({

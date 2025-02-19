@@ -395,35 +395,6 @@ export const getSuggestedQuestions = async ({
 
 export type SimpleChunk = ChunkMetadata | ChunkMetadataStringTagSet;
 
-export const getAllChunksForGroup = async (
-  groupId: string,
-  trieve: TrieveSDK
-): Promise<SimpleChunk[]> => {
-  let moreToFind = true;
-  let page = 1;
-  const chunks = [];
-  while (moreToFind) {
-    const results = await trieve.trieve.fetch(
-      "/api/chunk_group/{group_id}/{page}",
-      "get",
-      {
-        datasetId: trieve.datasetId as string,
-        groupId,
-        page,
-      }
-    );
-    if (results.chunks.length === 0) {
-      moreToFind = false;
-      break;
-    }
-    for (const chunk of results.chunks) {
-      chunks.push(chunk);
-    }
-    page += 1;
-  }
-  return chunks;
-};
-
 export const searchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
