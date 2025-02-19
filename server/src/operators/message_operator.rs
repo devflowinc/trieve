@@ -134,9 +134,11 @@ pub async fn create_messages_query(
 }
 
 const STRUCTURE_SYSTEM_PROMPT: &str = r#"
-Respond before you start generating with the documents that you plan to use to generate your response.
+Before you start generating respond with the documents that you plan to use to generate your response, YOU MUST INCLUDE AT LEAST 1.
 YOU MUST DO THIS BEFORE YOU CONTINUE TO GENERATE A RESPONSE.
+After responding with the documents, YOU MUST RESPOND TO THE USERS PROMPT.
 
+```
 Example:
 User: 
 Here's my prompt: what about for spreadsheets \n\n Use the following retrieved documents to respond briefly and accurately: {"doc": 1, "text": "chunk text..", "link": "chunk link.." }\n\n{"doc": 2, "text": "chunk text..", "link": "chunk link.." }... etc
@@ -144,6 +146,9 @@ Here's my prompt: what about for spreadsheets \n\n Use the following retrieved d
 Assistant:
 documents: [1,2]
 ...continue with model response
+```
+
+After you have done these things now follow:
 "#;
 
 pub async fn create_generic_system_message(
@@ -158,7 +163,7 @@ pub async fn create_generic_system_message(
             .await?;
 
     let system_prompt = if only_include_used_docs.unwrap_or(false) {
-        format!("{}\n\n{}", system_prompt, STRUCTURE_SYSTEM_PROMPT)
+        format!("{}\n\n{}", STRUCTURE_SYSTEM_PROMPT, system_prompt)
     } else {
         system_prompt
     };
@@ -1261,7 +1266,9 @@ pub async fn stream_response(
     } else {
         Arc::new(Mutex::new((0..score_chunks.len() as u32).collect()))
     };
-    let started = AtomicBool::new(false);
+    let started_parsing_completion = AtomicBool::new(false);
+    let mut bail_on_parsing = AtomicBool::new(false);
+
     let completion_stream = stream
         .take_until(tokio::time::sleep(std::time::Duration::from_secs(chat_completion_timeout)))
         .map(move |response| -> Result<Bytes, actix_web::Error> {
@@ -1299,7 +1306,22 @@ pub async fn stream_response(
                                 if create_message_req_payload
                                     .only_include_docs_used
                                     .unwrap_or(false) {
-                                        let (text, docs) = parse_streaming_completetion(text, state.clone(), documents.clone());
+                                        let bailed_on_iter = bail_on_parsing.get_mut();
+                                        let (text, docs) = if !*bailed_on_iter {
+                                            let (parsed_text, docs, bail) = parse_streaming_completetion(text, state.clone(), documents.clone());
+                                            if bail {
+                                                log::info!("Bailing {:?} {:?}", &text, &parsed_text);
+                                                *bailed_on_iter = true;
+                                                documents.lock().unwrap().extend(0..score_chunks.len() as u32);
+                                                (Some(text.clone()), Some((0..score_chunks.len() as u32).collect()))
+                                            } else {
+                                                (parsed_text, docs)
+                                            }
+                                        } else {
+                                            log::info!("Already bailed");
+                                            (Some(text.clone()), None)
+                                        };
+
                                         if let Some(docs) = docs {
                                             if !completion_first {
                                                 let filtered_chunks = score_chunks.iter().enumerate().filter_map(|(idx, score_chunk)| {
@@ -1309,11 +1331,16 @@ pub async fn stream_response(
                                                         None
                                                     }
                                                 }).collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
-                                                return Some(format!("{}||", serde_json::to_string(&filtered_chunks).unwrap_or_default().replace("||", "")));
+                                                if *bailed_on_iter {
+                                                    return Some(format!("{}||{}", serde_json::to_string(&filtered_chunks).unwrap_or_default().replace("||", ""), text.unwrap_or("".to_string())));
+                                                } else {
+                                                    return Some(format!("{}||", serde_json::to_string(&filtered_chunks).unwrap_or_default().replace("||", "")));
+                                                }
                                             }
                                         }
+                                        log::info!("Returning {:?}", text.clone());
                                         text.clone()
-                                    } else if !completion_first && !started.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| Some(true)).unwrap_or(true) {
+                                    } else if !completion_first && !started_parsing_completion.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| Some(true)).unwrap_or(true) {
                                         let returned_chunks = score_chunks.iter().map(|score_chunk| {
                                             ChunkMetadataStringTagSetWithHighlightsScore::from(score_chunk.clone())
                                         }).collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
