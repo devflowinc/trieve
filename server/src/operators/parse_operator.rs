@@ -183,31 +183,32 @@ pub fn parse_streaming_completetion(
     response: &str,
     state: Arc<AtomicU16>,
     documents: Arc<Mutex<Vec<u32>>>,
-) -> (Option<String>, Option<Vec<u32>>) {
+) -> (Option<String>, Option<Vec<u32>>, bool) {
     const STATE_INITIAL: u16 = 0;
     const STATE_COLLECTING: u16 = 1;
     const STATE_COMPLETE: u16 = 2;
 
     match state.load(Ordering::Relaxed) {
-        STATE_COMPLETE => (Some(response.into()), None),
+        STATE_COMPLETE => (Some(response.into()), None, false),
         STATE_INITIAL if response.bytes().any(|b| matches!(b, b'd' | b'D')) => {
             state.store(STATE_COLLECTING, Ordering::Relaxed);
-            (None, None)
+            (None, None, false)
         }
         STATE_COLLECTING => {
             if response.as_bytes().contains(&b']') {
                 state.store(STATE_COMPLETE, Ordering::Relaxed);
-                (None, Some(documents.lock().unwrap().clone()))
+                (None, Some(documents.lock().unwrap().clone()), false)
             } else if response.bytes().all(|b| b.is_ascii_digit()) {
                 if let Ok(num) = response.parse::<u32>() {
                     documents.lock().unwrap().push(num - 1);
                 }
-                (None, None)
+                (None, None, false)
             } else {
-                (None, None)
+                (None, None, false)
             }
         }
-        _ => (None, None),
+        _ if response.trim().chars().all(|c| !c.is_alphanumeric()) => (None, None, false),
+        _ => (None, None, true),
     }
 }
 
