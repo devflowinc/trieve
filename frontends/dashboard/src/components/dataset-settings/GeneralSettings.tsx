@@ -149,11 +149,11 @@ export const GeneralServerSettings = (props: {
                   for="rerankerApiKey"
                   class="block text-sm font-medium leading-6"
                 >
-                  Cohere API Key (for reranker)
+                  API Key (for either the AIMon reranker or the Cohere reranker)
                 </label>
                 <Tooltip
                   body={<AiOutlineInfoCircle />}
-                  tooltipText="Sets the API key for the Cohere reranker if you choose to use it."
+                  tooltipText="Sets the API key for either the AIMon reranker or the Cohere reranker, whichever is selected."
                 />
               </div>
               <input
