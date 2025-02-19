@@ -141,6 +141,10 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
         } else {
           hasMore = false;
         }
+
+        if (hasMore) {
+          await new Promise((resolve) => setTimeout(resolve, 750));
+        }
       }
 
       setAllGroups(allGroupsArray);
