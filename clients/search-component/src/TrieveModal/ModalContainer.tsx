@@ -18,7 +18,7 @@ export const ModalContainer = () => {
     <div
       id="trieve-search-modal"
       className={cn(
-        "tv-scroll-smooth tv-resize tv-rounded-lg focus:tv-outline-none tv-overflow-hidden tv-text-base tv-text-zinc-950 tv-bg-white",
+        "tv-scroll-smooth tv-rounded-lg focus:tv-outline-none tv-overflow-hidden tv-text-base tv-text-zinc-950 tv-bg-white",
         `${mode === "chat" ? "chat-modal-mobile" : ""}${
           props.theme === "dark" ? " dark tv-dark" : ""
         }${

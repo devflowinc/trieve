@@ -15,6 +15,7 @@ export default {
         // Actually selects any child of .tv-trieve-inline-model
         return `.trieve-inline-modal &`;
       });
+      addVariant("mobile-only", "@media screen and (max-width: 768px)");
     }),
     require("@tailwindcss/forms")({
       strategy: "class",
