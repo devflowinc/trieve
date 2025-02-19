@@ -127,6 +127,10 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
         } else {
           hasMore = false;
         }
+
+        if (hasMore) {
+          await new Promise((resolve) => setTimeout(resolve, 750));
+        }
       }
 
       setAllGroups(allGroupsArray);
