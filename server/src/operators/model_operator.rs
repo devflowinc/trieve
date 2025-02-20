@@ -409,6 +409,7 @@ pub async fn get_dense_vectors(
                     .header("Authorization", &format!("Bearer {}", &embedding_api_key.clone()))
                     .header("api-key", &embedding_api_key.clone())
                     .header("Content-Type", "application/json")
+                    .timeout(std::time::Duration::from_secs(90))
                     .json(&parameters)
                     .send()
                     .await
@@ -636,6 +637,7 @@ pub async fn get_sparse_vectors(
                             get_env!("OPENAI_API_KEY", "OPENAI_API should be set")
                         ),
                     )
+                    .timeout(std::time::Duration::from_secs(90))
                     .json(&sparse_embed_req)
                     .send()
                     .await
