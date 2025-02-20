@@ -6,7 +6,7 @@ import { useChatState } from "./chat-context";
 
 export const useFollowupQuestions = () => {
   const { trieveSDK, currentGroup, props } = useModalState();
-  const { messages } = useChatState();
+  const { messages, isDoneReading } = useChatState();
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
     SuggestedQueriesResponse["queries"]
@@ -21,6 +21,11 @@ export const useFollowupQuestions = () => {
         })
         .slice(-1)[0] ?? messages.slice(-1)[0];
 
+    if (!prevMessage) {
+      setIsLoading(false);
+      return;
+    }
+
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
       query: prevMessage.text,
@@ -33,12 +38,16 @@ export const useFollowupQuestions = () => {
     setSuggestedQuestions(
       queries.queries.map((q) => {
         return q.replace(/^[\d.-]+\s*/, "").trim();
-      })
+      }),
     );
     setIsLoading(false);
   };
 
   useEffect(() => {
+    if (!isDoneReading) {
+      return;
+    }
+    setSuggestedQuestions([]);
     setIsLoading(true);
     const abortController = new AbortController();
 
@@ -50,11 +59,10 @@ export const useFollowupQuestions = () => {
       clearTimeout(timeoutId);
       abortController.abort("fetch aborted");
     };
-  }, []);
+  }, [messages, isDoneReading]);
 
   return {
     suggestedQuestions,
-    getQuestions: getFollowUpQuestions,
     isLoadingSuggestedQueries: isLoading,
   };
 };

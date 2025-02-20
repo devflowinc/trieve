@@ -11,6 +11,7 @@ export const FollowupQueries = () => {
 
   return (
     <div>
+      followup-mounted
       {isDoneReading && (
         <div className="followup-questions">
           {suggestedQuestions?.map((q) => (
