@@ -5,11 +5,7 @@ import { Chunk } from "../types";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
 import { trackViews } from "../trieve";
-import {
-  ChunkFilter,
-  ChunkGroup,
-  ToolFunctionParameter,
-} from "trieve-ts-sdk";
+import { ChunkFilter, ChunkGroup, ToolFunctionParameter } from "trieve-ts-sdk";
 import { defaultHighlightOptions } from "../highlight";
 
 const scrollToBottomOfChatModalWrapper = () => {
@@ -123,29 +119,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   }, [audioBase64, mode]);
 
-  useEffect(() => {
-    const lastMessage = messages.at(-1);
-    const curImageUrl = imageUrl;
-    const timer = setTimeout(
-      () => {
-        if (isLoading && lastMessage?.text === "Loading...") {
-          console.log(
-            "Timeout reached, stopping message generation and retrying, image: ",
-            curImageUrl
-          );
-
-          stopGeneratingMessage();
-          const lastUserQuestion = messages.at(-2);
-          setImageUrl(curImageUrl);
-          askQuestion(lastUserQuestion?.text, currentGroup ?? undefined, true);
-        }
-      },
-      curImageUrl ? 20000 : 10000
-    );
-
-    return () => clearTimeout(timer);
-  }, [isLoading, messages, currentGroup]);
-
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
     queryId: string | null
@@ -174,7 +147,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         let jsonData: string = "";
 
         if (textInStream.includes("||")) {
-            [jsonData, text] = textInStream.split("||");
+          [jsonData, text] = textInStream.split("||");
         }
 
         let json;
@@ -290,7 +263,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       }
       filters.should?.push({
         field: "group_ids",
-        match_all: [curGroup.id]
+        match_all: [curGroup.id],
       });
     }
 
@@ -315,16 +288,22 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    if ((props.tags?.length ?? 0) > 0) {
+    let stoppedGeneratingMessage = false;
+
+    if (!curGroup && (props.tags?.length ?? 0) > 0) {
       let filterParamsRetries = 0;
       while (filterParamsRetries < 3) {
         filterParamsRetries++;
-        const abortController = new AbortController();
-        setTimeout(
+        chatMessageAbortController.current = new AbortController();
+        const toolCallTimeout = setTimeout(
           () => {
-            abortController.abort();
+            console.error(
+              "getToolCallFunctionParams timeout on retry: ",
+              filterParamsRetries
+            );
+            chatMessageAbortController.current.abort();
           },
-          imageUrl ? 8000 : 4000
+          imageUrl || curAudioBase64 ? 20000 : 10000
         );
 
         try {
@@ -333,13 +312,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               user_message_text:
                 questionProp || currentQuestion
                   ? `Get filters from the following messages: ${messages
-                    .slice(0, -1)
-                    .filter((message) => {
-                      return message.type == "user";
-                    })
-                    .map(
-                      (message) => `\n\n${message.text}`
-                    )} \n\n ${questionProp || currentQuestion}`
+                      .slice(0, -1)
+                      .filter((message) => {
+                        return message.type == "user";
+                      })
+                      .map(
+                        (message) => `\n\n${message.text}`
+                      )} \n\n ${questionProp || currentQuestion}`
                   : null,
               image_url: imageUrl ? imageUrl : null,
               audio_input: curAudioBase64 ? curAudioBase64 : null,
@@ -357,7 +336,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                   }) ?? [],
               },
             },
-            abortController.signal,
+            chatMessageAbortController.current.signal,
             (headers: Record<string, string>) => {
               if (headers["x-tr-query"] && curAudioBase64) {
                 transcribedQuery = headers["x-tr-query"];
@@ -371,7 +350,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             curAudioBase64 = undefined;
             setMessages((m) => {
               return [
-                ...m.slice(0, -1),
+                ...m.slice(0, -2),
                 {
                   type: "user",
                   text: transcribedQuery ?? "",
@@ -412,9 +391,16 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             });
           }
 
+          clearTimeout(toolCallTimeout);
+
           break;
         } catch (e) {
           console.error("error getting getToolCallFunctionParams", e);
+          clearTimeout(toolCallTimeout);
+          if (e && typeof e == "string" && e === "Stopped generating message") {
+            stoppedGeneratingMessage = true;
+            break;
+          }
         }
       }
     }
@@ -436,7 +422,20 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       queryId: string | null;
     } = { reader: null, queryId: null };
 
-    while (messageReaderRetries < 3) {
+    while (!stoppedGeneratingMessage && messageReaderRetries < 5) {
+      messageReaderRetries++;
+      chatMessageAbortController.current = new AbortController();
+      const createMessageTimeout = setTimeout(
+        () => {
+          console.error(
+            "createMessageReaderWithQueryId timeout on retry: ",
+            messageReaderRetries
+          );
+          chatMessageAbortController.current.abort();
+        },
+        imageUrl || curAudioBase64 ? 20000 : 10000
+      );
+
       try {
         const result = await trieveSDK.createMessageReaderWithQueryId(
           {
@@ -471,10 +470,17 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         );
         reader = result.reader;
         queryId = result.queryId;
+
+        clearTimeout(createMessageTimeout);
+
         break;
       } catch (e) {
         console.error("error getting createMessageReaderWithQueryId", e);
-        messageReaderRetries++;
+        clearTimeout(createMessageTimeout);
+        if (e && typeof e == "string" && e === "Stopped generating message") {
+          stoppedGeneratingMessage = true;
+          break;
+        }
       }
     }
 
@@ -482,7 +488,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       setAudioBase64("");
       curAudioBase64 = undefined;
       setMessages((m) => [
-        ...m.slice(0, -1),
+        ...m.slice(0, -2),
         {
           type: "user",
           text: transcribedQuery ?? "",
@@ -498,6 +504,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         },
       ]);
     }
+
     if (reader) handleReader(reader, queryId);
 
     if (imageUrl) {
@@ -517,13 +524,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setMode("chat");
   };
 
-  const stopGeneratingMessage = (retry?: boolean) => {
-    chatMessageAbortController.current.abort();
+  const stopGeneratingMessage = () => {
+    chatMessageAbortController.current.abort("Stopped generating message");
     chatMessageAbortController.current = new AbortController();
     setIsDoneReading(true);
     setIsLoading(false);
 
-    if (!retry && messages.at(-1)?.text === "Loading...") {
+    if (messages.at(-1)?.text === "Loading...") {
       setMessages((messages) => [
         ...messages.slice(0, -1),
         messages[messages.length - 1],
@@ -567,6 +574,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       chatWithGroup(group);
       setCurrentGroup(group);
     }
+
     if (!audioBase64) {
       if (question == undefined || question == null || question == "") {
         question = props.defaultImageQuestion;
@@ -582,12 +590,25 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             queryId: null,
             imageUrl: imageUrl ? imageUrl : null,
           },
+          {
+            type: "system",
+            text: "Loading...",
+            additional: null,
+            queryId: null,
+          },
         ]);
       }
     } else {
       if (!retry) {
         setMessages((m) => [
           ...m,
+          {
+            type: "user",
+            text: "Loading...",
+            additional: null,
+            queryId: null,
+            imageUrl: imageUrl ? imageUrl : null,
+          },
           {
             type: "system",
             text: "Loading...",
@@ -606,19 +627,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         question: questionProp || currentQuestion,
         group,
       });
-    }
-    if (!audioBase64) {
-      if (!retry) {
-        setMessages((m) => [
-          ...m,
-          {
-            type: "system",
-            text: "Loading...",
-            additional: null,
-            queryId: null,
-          },
-        ]);
-      }
     }
   };
 

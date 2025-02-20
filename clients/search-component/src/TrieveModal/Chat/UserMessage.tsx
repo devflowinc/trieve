@@ -3,6 +3,7 @@ import React from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import ImagePreview from "../ImagePreview";
 import { motion } from "motion/react";
+import { LoadingIcon } from "../icons";
 
 export const UserMessage = ({
   message,
@@ -30,7 +31,13 @@ export const UserMessage = ({
             {message.imageUrl && (
               <ImagePreview isUploading={false} imageUrl={message.imageUrl} />
             )}
+            {message.text === "Loading..." ? (
+              <span className={`user-text ${props.type}`}>
+                <LoadingIcon className="loading" />
+              </span>
+            ) : null}
             {message.text != "" &&
+            message.text != "Loading..." &&
             message.text != props.defaultImageQuestion ? (
               <span className={`user-text ${props.type}`}> {message.text}</span>
             ) : null}

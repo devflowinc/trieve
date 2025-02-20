@@ -175,6 +175,7 @@ export const Message = ({
             alt={item.title}
             className="ecommerce-featured-image-chat"
           />
+          <div className="tv-guarantee-block tv-flex-1"></div>
           <div className="ecomm-details">
             <p
               className="ecomm-item-title"
