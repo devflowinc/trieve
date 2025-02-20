@@ -22,6 +22,10 @@ body {
     @apply tv-w-4 tv-h-4 tv-fill-current;
   }
 
+  #trieve-search-modal-overlay {
+    display: block;
+  }
+
   #trieve-search-modal {
     font-family: var(--tv-prop-brand-font-family);
 
