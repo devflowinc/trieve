@@ -3,7 +3,7 @@ import { useModalState } from "./modal-context";
 
 const popupClass = cva(
   [
-    "tv-max-h-[calc(100vh-32px)]",
+    "tv-max-h-[calc(100vh-48px)]",
     "tv-overflow-x-auto",
     "mobile-only:tv-min-w-[calc(100vw-32px)]", // mobile
     "mobile-only:tv-max-w-[calc(100vw-32px)]", // mobile
@@ -35,7 +35,7 @@ const popupClass = cva(
     defaultVariants: {
       modalPosition: "center",
     },
-  },
+  }
 );
 
 const inlineClass = cva(
@@ -56,7 +56,7 @@ const inlineClass = cva(
         pdf: [],
       },
     },
-  },
+  }
 );
 
 export const useSizing = () => {

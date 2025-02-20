@@ -4593,7 +4593,7 @@
           "File"
         ],
         "summary": "Upload File",
-        "description": "Upload a file to S3 bucket attached to your dataset. You can select between a naive chunking strategy where the text is extracted with Apache Tika and split into segments with a target number of segments per chunk OR you can use a vision LLM to convert the file to markdown and create chunks per page. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.",
+        "description": "Upload a file to S3 bucket attached to your dataset. You can select between a naive chunking strategy where the text is extracted with Apache Tika and split into segments with a target number of segments per chunk OR you can use a vision LLM to convert the file to markdown and create chunks per page. You must specifically use a base64url encoding. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.",
         "operationId": "upload_file_handler",
         "parameters": [
           {
@@ -17636,7 +17636,7 @@
         "properties": {
           "base64_file": {
             "type": "string",
-            "description": "Base64 encoded file. This is the standard base64url encoding."
+            "description": "Base64 encoded file."
           },
           "create_chunks": {
             "type": "boolean",
