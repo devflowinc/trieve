@@ -111,9 +111,6 @@ export type ModalProps = {
   inline: boolean;
   inlineCarousel: boolean;
   zIndex?: number;
-  modalPosition?:
-  | "center"
-  | "right";
   showFloatingButton?: boolean;
   floatingButtonPosition?:
   | "top-left"
@@ -135,6 +132,7 @@ export type ModalProps = {
   showResultHighlights?: boolean;
   initialAiMessage?: string;
   ignoreEventListeners?: boolean;
+  hideOverlay?: boolean;
 };
 
 const defaultProps = {
@@ -168,9 +166,6 @@ const defaultProps = {
   responsive: false,
   zIndex: 1000,
   debounceMs: 0,
-  modalPosition: "center" as
-    | "center"
-    | "right",
   showFloatingButton: false,
   floatingButtonPosition: "bottom-right" as
     | "top-left"
@@ -193,6 +188,7 @@ const defaultProps = {
   showResultHighlights: true,
   initialAiMessage: undefined,
   ignoreEventListeners: false,
+  hideOverlay: false,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{

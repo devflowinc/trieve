@@ -37,7 +37,10 @@ export default function Home() {
     import.meta.env.VITE_DEFAULT_AI_QUESTIONS ??
     "What is Trieve?,How to perform autocomplete search?,How do I install the TS SDK?"
   ).split(",");
+  const inlineCarousel = import.meta.env.VITE_INLINE_CAROUSEL == "true";
+
   const [theme, setTheme] = useState<"light" | "dark">("light");
+
   return (
     <>
       <div
@@ -154,6 +157,7 @@ export default function Home() {
           floatingSearchIconPosition={floatingSearchIconPosition}
           showFloatingButton={showFloatingButton}
           showFloatingSearchIcon={showFloatingSearchIcon}
+          inlineCarousel={inlineCarousel}
           showFloatingInput={showFloatingInput}
           inline={false}
         />
