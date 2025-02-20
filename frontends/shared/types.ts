@@ -307,14 +307,14 @@ export const availableRerankerModels = [
     url: null,
   },
   {
+    id: "aimon-rerank",
+    name: "AIMon Reranker (with AIMon API key)",
+    url: "https://pbe-api.aimon.ai/v2/detect",
+  },
+  {
     id: "rerank-v3.5",
     name: "Cohere rerank-v3.5 (with Cohere API key)",
     url: "https://api.cohere.com/v2",
-  },
-  {
-    id: "aimon-rerank",
-    name: "AIMon Rerank (with AIMon API key)",
-    url: "https://pbe-api.aimon.ai/v2/detect",
   },
 ];
 
