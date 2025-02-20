@@ -12,6 +12,7 @@ import { LoadingIcon, SparklesIcon } from "../icons";
 import { ChatPdfItem } from "../PdfView/ChatPdfItem";
 import { Carousel } from "./Carousel";
 import { sendCtrData, trackViews } from "../../utils/trieve";
+import { motion } from "motion/react";
 import { ScoreChunk } from "trieve-ts-sdk";
 import { guessTitleAndDesc } from "../../utils/estimation";
 import { AddToCartButton } from "../AddToCartButton";
@@ -33,7 +34,16 @@ export const ResponseMessage = ({
 }) => {
   const { props } = useModalState();
   return (
-    <div key={idx}>
+    <motion.div
+      initial={{ height: 0 }}
+      animate={{ height: "auto" }}
+      exit={{ height: 0 }}
+      transition={{
+        duration: 0.1,
+        ease: "easeInOut",
+      }}
+      key={idx}
+    >
       <div
         className={
           props.inline
@@ -67,7 +77,7 @@ export const ResponseMessage = ({
         )}
         <Message key={idx} message={message} idx={idx} />
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -80,7 +90,7 @@ export const Message = ({
 }) => {
   const urlWordRegex = /(?:^|\s)http\S+\s*/g;
 
-  const { rateChatCompletion, messages } = useChatState();
+  const { rateChatCompletion } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
   const { props, trieveSDK } = useModalState();
