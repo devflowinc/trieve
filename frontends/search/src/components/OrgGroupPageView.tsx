@@ -24,6 +24,7 @@ import { useDatasetServerConfig } from "../hooks/useDatasetServerConfig";
 import { downloadFile } from "../utils/downloadFile";
 import { FaSolidDownload } from "solid-icons/fa";
 import { useNavigate } from "@solidjs/router";
+import { createToast } from "./ShowToasts";
 
 export interface GroupUserPageViewProps {
   setOnDelete: Setter<(delete_chunks: boolean) => void>;
@@ -76,7 +77,6 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
       if (response.ok) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const data = await response.json();
-        console.log("data", data);
         if (
           data !== null &&
           typeof data === "object" &&
@@ -87,7 +87,6 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           typeof data.group_id === "string"
         ) {
-          console.log("Invalid response", data);
           return {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             group_id: data.group_id,
@@ -100,7 +99,6 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
 
     void Promise.all(all_counts).then((counts) => {
       const filteredGroupCounts = counts.filter((c) => c !== undefined);
-      console.log("setGroupCounts", filteredGroupCounts);
       setGroupCounts(filteredGroupCounts);
     });
   });
@@ -233,10 +231,14 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
         ).then((response) => {
           if (response.ok) {
             setDeleting(false);
-            if (!delete_chunks)
-              setGroups((prev) => {
-                return prev.filter((c) => c.id != group.id);
-              });
+            setGroups((prev) => {
+              return prev.filter((c) => c.id != group.id);
+            });
+
+            createToast({
+              type: "success",
+              message: `Group ${group.id} successfully`,
+            });
           }
           if (response.status == 403) {
             setDeleting(false);
@@ -389,7 +391,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                             .toLocaleTimeString()
                             .replace(/:\d+\s/, " ")}
                       </td>
-                      <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                      <td class="relative z-10 whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                         <div class="flex items-center gap-3">
                           <Show
                             when={
@@ -400,7 +402,9 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                             <button
                               title="Download uploaded file"
                               class="h-fit text-neutral-400 dark:text-neutral-300"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
                                 handleDownloadFile(group);
                               }}
                             >
@@ -412,7 +416,11 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                               "h-fit text-red-700 dark:text-red-400": true,
                               "animate-pulse": deleting(),
                             }}
-                            onClick={() => deleteGroup(group)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              deleteGroup(group);
+                            }}
                           >
                             <FiTrash class="h-5 w-5" />
                           </button>
