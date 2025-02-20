@@ -89,6 +89,7 @@ function createChunkFromProduct(
     })),
     tags: product.tags,
     title: product.title,
+    variant_inventory: groupVariants ? variant.inventoryQuantity : product.totalInventory,
     total_inventory: product.totalInventory,
     variants: product.variants.nodes.map((v) => ({
       id: parseInt(v.id.split("/").pop() || "0"),
