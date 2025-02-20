@@ -3549,7 +3549,7 @@ export type UpdateUserOrgRoleReqPayload = {
 
 export type UploadFileReqPayload = {
     /**
-     * Base64 encoded file. This is the standard base64url encoding.
+     * Base64 encoded file.
      */
     base64_file: string;
     /**
