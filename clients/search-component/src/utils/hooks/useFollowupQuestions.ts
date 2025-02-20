@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { SuggestedQueriesResponse } from "trieve-ts-sdk";
+import { useEffect, useMemo, useState } from "react";
 import { getSuggestedQuestions } from "../trieve";
 import { useModalState } from "./modal-context";
 import { useChatState } from "./chat-context";
@@ -9,8 +8,8 @@ export const useFollowupQuestions = () => {
   const { messages, isDoneReading } = useChatState();
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
-    SuggestedQueriesResponse["queries"]
-  >([]);
+    Record<string, string[]>
+  >({});
 
   const getFollowUpQuestions = async () => {
     setIsLoading(true);
@@ -35,11 +34,12 @@ export const useFollowupQuestions = () => {
         : currentGroup?.tracking_id,
       props,
     });
-    setSuggestedQuestions(
-      queries.queries.map((q) => {
+    setSuggestedQuestions((prev) => ({
+      ...prev,
+      [prevMessage.text]: queries.queries.map((q) => {
         return q.replace(/^[\d.-]+\s*/, "").trim();
       }),
-    );
+    }));
     setIsLoading(false);
   };
 
@@ -47,7 +47,6 @@ export const useFollowupQuestions = () => {
     if (!isDoneReading) {
       return;
     }
-    setSuggestedQuestions([]);
     setIsLoading(true);
     const abortController = new AbortController();
 
@@ -61,8 +60,25 @@ export const useFollowupQuestions = () => {
     };
   }, [messages, isDoneReading]);
 
+  const filteredSuggestedQuestions = useMemo(() => {
+    const prevMessage =
+      messages
+        .filter((msg) => {
+          return msg.type == "user";
+        })
+        .slice(-1)[0] ?? messages.slice(-1)[0];
+
+    if (!prevMessage) {
+      return [];
+    }
+
+    return prevMessage.text in suggestedQuestions
+      ? suggestedQuestions[prevMessage.text]
+      : [];
+  }, [messages, suggestedQuestions]);
+
   return {
-    suggestedQuestions,
+    suggestedQuestions: filteredSuggestedQuestions,
     isLoadingSuggestedQueries: isLoading,
   };
 };
