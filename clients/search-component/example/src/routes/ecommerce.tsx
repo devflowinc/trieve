@@ -39,6 +39,7 @@ export default function ECommerce() {
   const inline = import.meta.env.VITE_INLINE == "true";
   const showResultHighlights =
     import.meta.env.VITE_SHOW_RESULT_HIGHLIGHTS == "true";
+  const inlineCarousel = import.meta.env.VITE_INLINE_CAROUSEL == "true";
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
@@ -108,6 +109,7 @@ export default function ECommerce() {
               debounceMs={10}
               floatingSearchIconPosition={floatingSearchIconPosition}
               showFloatingSearchIcon={showFloatingSearchIcon}
+              inlineCarousel={inlineCarousel}
               showFloatingInput={showFloatingInput}
               inline={inline}
               showResultHighlights={showResultHighlights}

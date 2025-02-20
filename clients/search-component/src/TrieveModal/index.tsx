@@ -218,22 +218,20 @@ const Modal = () => {
           }}
         />
       )}
-      {(props.inline || open) && (
-        <>
-          {!props.inline && props.modalPosition == "center" && (
-            <div
-              onClick={() => {
-                setOpen(false);
-              }}
-              id="trieve-search-modal-overlay"
-              className="tv-bg-black/60 tv-w-screen tv-fixed tv-inset-0 tv-h-screen tv-animate-overlayShow tv-backdrop-blur-sm tv-block"
-              style={{ zIndex: props.zIndex ?? 1000 }}
-            ></div>
-          )}
-          <ModalContainer />
-        </>
-      )}
-      {props.showFloatingSearchIcon && !props.open && <FloatingSearchIcon />}
+      <>
+        {!props.inline && !props.hideOverlay && open && (
+          <div
+            onClick={() => {
+              setOpen(false);
+            }}
+            id="trieve-search-modal-overlay"
+            className="tv-bg-black/60 tv-w-screen tv-fixed tv-inset-0 tv-h-screen tv-animate-overlayShow tv-backdrop-blur-sm tv-block"
+            style={{ zIndex: props.zIndex ?? 1000 }}
+          ></div>
+        )}
+        <ModalContainer />
+      </>
+      {props.showFloatingSearchIcon && <FloatingSearchIcon />}
       {props.showFloatingButton && <FloatingActionButton />}
       {props.showFloatingInput && <FloatingSearchInput />}
     </>
