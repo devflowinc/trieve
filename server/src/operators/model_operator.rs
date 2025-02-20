@@ -895,6 +895,29 @@ pub struct CohereScorePair {
     pub relevance_score: f32,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct AIMonRequestBody {
+    task_definition: String,
+    context: Vec<String>,
+    user_query: String,
+    config: AIMonConfig,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct AIMonConfig {
+    retrieval_relevance: AIMonRetrievalRelevance,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct AIMonRetrievalRelevance {
+    detector_name: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct AIMonResponseBody {
+    retrieval_relevance: Option<Vec<Vec<f64>>>,
+}
+
 pub async fn cross_encoder(
     query: String,
     page_size: u64,
@@ -905,6 +928,7 @@ pub async fn cross_encoder(
         "RERANKER_SERVER_ORIGIN",
         "RERANKER_SERVER_ORIGIN must be set"
     );
+
     let server_origin: String = dataset_config.RERANKER_BASE_URL.clone();
 
     let embedding_server_call = format!("{}/rerank", server_origin);
@@ -913,74 +937,118 @@ pub async fn cross_encoder(
         return Ok(vec![]);
     }
 
-    let max_words_to_rerank = std::env::var("MAX_WORDS_CHUNK_HTML_TO_RERANK")
-        .unwrap_or("100".to_string())
+    // Compute max words to rerank.
+    let max_words_to_rerank: usize = std::env::var("MAX_WORDS_CHUNK_HTML_TO_RERANK")
+        .unwrap_or_else(|_| "100".to_string())
         .parse()
         .unwrap_or(100);
+
+    // Build common_request_docs only once.
+    let common_request_docs = results
+        .clone()
+        .into_iter()
+        .map(|x| {
+            let chunk = match x.metadata.get(0).cloned() {
+                Some(ChunkMetadataTypes::Metadata(metadata)) => Ok(metadata),
+                _ => Err(ServiceError::BadRequest(
+                    "ChunkMetadataStringTagSet not found for chunk in results".to_string(),
+                )),
+            }?;
+            Ok(convert_html_to_text(&chunk.chunk_html.unwrap_or_default())
+                .split_whitespace()
+                .take(max_words_to_rerank)
+                .join(" "))
+        })
+        .collect::<Result<Vec<String>, ServiceError>>()?;
 
     let mut results = results.clone();
 
     if results.len() <= 20 {
-        let request_docs = results
-            .clone()
-            .into_iter()
-            .map(|x| {
-                let chunk = match x.metadata[0].clone() {
-                    ChunkMetadataTypes::Metadata(metadata) => Ok(metadata.clone()),
-                    _ => Err(ServiceError::BadRequest(
-                        "ChunkMetadtaStringTagSet not found for chunk in results".to_string(),
-                    )),
-                }?;
-
-                Ok(
-                    convert_html_to_text(&(chunk.chunk_html.unwrap_or_default()))
-                        .split_whitespace()
-                        .take(max_words_to_rerank)
-                        .join(" "),
-                )
-            })
-            .collect::<Result<Vec<String>, ServiceError>>()?;
-
         let reranker_api_key = dataset_config.RERANKER_API_KEY.clone();
         if server_origin != default_server_origin {
-            // Assume cohere
             let reranker_model_name = dataset_config.RERANKER_MODEL_NAME.clone();
-            let resp = ureq::AgentBuilder::new()
-                .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
-                    ServiceError::InternalServerError(
-                        "Failed to acquire tls connection".to_string(),
+            if reranker_model_name == "aimon-rerank" {
+                let aimon_url = server_origin;
+                let aimon_body = vec![AIMonRequestBody {
+                    task_definition: "Your task is to grade the relevance of context document(s) against a specified user query.".to_string(),
+                    context: common_request_docs.clone(),
+                    user_query: query.clone(),
+                    config: AIMonConfig {
+                        retrieval_relevance: AIMonRetrievalRelevance {
+                            detector_name: "rr".to_string(),
+                        },
+                    },
+                }];
+
+                let resp = ureq::post(&aimon_url)
+                    .set(
+                        "Authorization",
+                        &format!("Bearer {}", reranker_api_key.clone()),
                     )
-                })?))
-                .timeout(std::time::Duration::from_secs(5))
-                .build()
-                .post(&embedding_server_call)
-                .set("Content-Type", "application/json")
-                .set(
-                    "Authorization",
-                    &format!("Bearer {}", reranker_api_key.clone()),
-                )
-                .send_json(CohereRerankCall {
-                    model: reranker_model_name.clone(),
-                    query: query.clone(),
-                    documents: request_docs,
-                })
-                .map_err(|err| {
-                    ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
-                })?
-                .into_json::<CohereRerankResponse>()
-                .map_err(|_e| {
-                    log::error!(
-                        "Failed parsing response from custom embedding server {:?}",
-                        _e
-                    );
-                    ServiceError::BadRequest(
-                        "Failed parsing response from custom embedding server".to_string(),
-                    )
+                    .set("Content-Type", "application/json")
+                    .send_json(serde_json::to_value(aimon_body).unwrap())
+                    .map_err(|err| {
+                        ServiceError::BadRequest(format!(
+                            "Failed making call to AIMon reranker: {:?}",
+                            err
+                        ))
+                    })?;
+
+                let aimon_response: Vec<AIMonResponseBody> = resp.into_json().map_err(|err| {
+                    ServiceError::BadRequest(format!("Failed parsing AIMon response: {:?}", err))
                 })?;
 
-            resp.results.into_iter().for_each(|pair| {
-                results.index_mut(pair.index).score = pair.relevance_score as f64;
-            });
+                // Assume the first element’s first inner vector holds the scores.
+                if let Some(relevance) = aimon_response
+                    .get(0)
+                    .and_then(|r| r.retrieval_relevance.as_ref())
+                {
+                    if let Some(scores) = relevance.get(0) {
+                        for (i, score) in scores.iter().enumerate() {
+                            if let Some(result) = results.get_mut(i) {
+                                result.score = *score;
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Assume cohere
+                let resp = ureq::AgentBuilder::new()
+                    .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+                        ServiceError::InternalServerError(
+                            "Failed to acquire tls connection".to_string(),
+                        )
+                    })?))
+                    .build()
+                    .post(&embedding_server_call)
+                    .set("Content-Type", "application/json")
+                    .set(
+                        "Authorization",
+                        &format!("Bearer {}", reranker_api_key.clone()),
+                    )
+                    .send_json(CohereRerankCall {
+                        model: reranker_model_name.clone(),
+                        query: query.clone(),
+                        documents: common_request_docs.clone(),
+                    })
+                    .map_err(|err| {
+                        ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+                    })?
+                    .into_json::<CohereRerankResponse>()
+                    .map_err(|_e| {
+                        log::error!(
+                            "Failed parsing response from custom embedding server {:?}",
+                            _e
+                        );
+                        ServiceError::BadRequest(
+                            "Failed parsing response from custom embedding server".to_string(),
+                        )
+                    })?;
+
+                resp.results.into_iter().for_each(|pair| {
+                    results.index_mut(pair.index).score = pair.relevance_score as f64;
+                });
+            }
         } else {
             let resp = ureq::AgentBuilder::new()
                 .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
@@ -998,7 +1066,7 @@ pub async fn cross_encoder(
                 )
                 .send_json(CrossEncoderData {
                     query: query.clone(),
-                    texts: request_docs,
+                    texts: common_request_docs.clone(),
                     truncate: true,
                 })
                 .map_err(|err| {
