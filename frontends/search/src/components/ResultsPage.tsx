@@ -790,7 +790,12 @@ const ResultsPage = (props: ResultsPageProps) => {
                               </div>
                             </div>
                           </Show>
-                          <Show when={groupResult.group.tag_set?.length}>
+                          <Show
+                            when={
+                              groupResult.group.tag_set?.filter((tag) => tag)
+                                .length
+                            }
+                          >
                             <div class="flex w-full flex-row justify-between">
                               <div class="flex space-x-2">
                                 <span class="text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">

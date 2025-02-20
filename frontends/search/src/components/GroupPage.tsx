@@ -655,7 +655,7 @@ export const GroupPage = (props: GroupPageProps) => {
               </span>
             </div>
           </Show>
-          <Show when={groupInfo()?.tag_set?.length}>
+          <Show when={groupInfo()?.tag_set?.filter((tag) => tag).length}>
             <div class="flex space-x-2">
               <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                 Tag Set:{" "}
