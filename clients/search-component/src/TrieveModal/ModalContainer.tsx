@@ -36,6 +36,25 @@ export const ModalContainer = () => {
         zIndex: (props.zIndex ?? 1000) + 1,
         display: open || props.inline ? "flex" : "none",
       }}
+      onMouseEnter={() => {
+        const scrollY = window.scrollY;
+        document.documentElement.style.setProperty(
+          "--scroll-y",
+          `${scrollY}px`
+        );
+        if (document.body.scrollHeight > window.innerHeight) {
+          document.body.style.overflowY = "scroll";
+        }
+        document.body.style.width = "100%";
+        document.body.style.position = "fixed";
+        document.body.style.top = `-${scrollY}px`;
+      }}
+      onMouseLeave={() => {
+        const scrollY = parseInt(document.body.style.top || "0") * -1;
+        document.body.style.position = "";
+        document.body.style.top = "";
+        window.scrollTo(0, scrollY);
+      }}
     >
       {!props.inline && !fullscreenPdfState && <ChatModeSwitch />}
       <Suspense>
