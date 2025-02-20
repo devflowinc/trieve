@@ -237,7 +237,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
               </span>
             </div>
           </Show>
-          <Show when={props.chunk.tag_set}>
+          <Show when={props.chunk.tag_set?.filter((tag) => tag).length}>
             <div class="flex space-x-2">
               <span class="text-nowrap font-semibold text-neutral-800 dark:text-neutral-200">
                 Tag Set:{" "}
