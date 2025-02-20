@@ -11,9 +11,7 @@ import {
 import { LoadingIcon, SparklesIcon } from "../icons";
 import { ChatPdfItem } from "../PdfView/ChatPdfItem";
 import { Carousel } from "./Carousel";
-import { FollowupQueries } from "./FollowupQueries";
 import { sendCtrData, trackViews } from "../../utils/trieve";
-import { motion } from "motion/react";
 import { ScoreChunk } from "trieve-ts-sdk";
 import { guessTitleAndDesc } from "../../utils/estimation";
 import { AddToCartButton } from "../AddToCartButton";
@@ -26,7 +24,7 @@ export type Message = {
   additional: Chunk[] | null;
 };
 
-export const RepsonseMessage = ({
+export const ResponseMessage = ({
   message,
   idx,
 }: {
@@ -35,16 +33,7 @@ export const RepsonseMessage = ({
 }) => {
   const { props } = useModalState();
   return (
-    <motion.div
-      initial={{ height: 0 }}
-      animate={{ height: "auto" }}
-      exit={{ height: 0 }}
-      transition={{
-        duration: 0.1,
-        ease: "easeInOut",
-      }}
-      key={idx}
-    >
+    <div key={idx}>
       <div
         className={
           props.inline
@@ -78,7 +67,7 @@ export const RepsonseMessage = ({
         )}
         <Message key={idx} message={message} idx={idx} />
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -426,9 +415,6 @@ export const Message = ({
                 </button>
               </div>
             </div>
-            {props.followupQuestions && messages.length == idx + 1 && (
-              <FollowupQueries />
-            )}
           </div>
         </div>
       ) : null}
