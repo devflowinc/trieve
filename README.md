@@ -123,7 +123,7 @@ cargo install cargo-watch
 cp .env.analytics ./frontends/analytics/.env
 cp .env.chat ./frontends/chat/.env
 cp .env.search ./frontends/search/.env
-cp .env.server ./server/.env
+cp .env.example ./server/.env
 cp .env.dashboard ./frontends/dashboard/.env
 ```
 
