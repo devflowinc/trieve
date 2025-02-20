@@ -2,7 +2,6 @@ import React from "react";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { useFollowupQuestions } from "../../utils/hooks/useFollowupQuestions";
 import { SparklesIcon } from "../icons";
-import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 export const FollowupQueries = () => {
   const { isDoneReading, askQuestion } = useChatState();
@@ -10,12 +9,10 @@ export const FollowupQueries = () => {
   const { suggestedQuestions, isLoadingSuggestedQueries } =
     useFollowupQuestions();
 
-  const [parent] = useAutoAnimate();
-
   return (
-    <div ref={parent}>
+    <div>
       {isDoneReading && (
-        <div ref={parent} className="followup-questions">
+        <div className="followup-questions">
           {suggestedQuestions?.map((q) => (
             <button
               onClick={() => {
