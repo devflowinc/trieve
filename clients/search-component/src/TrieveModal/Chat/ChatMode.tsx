@@ -22,14 +22,14 @@ export const ChatMode = () => {
 
   return (
     <Suspense>
-      <InlineChatHeader />
+      <InlineChatHeader resetHeight={resetHeight} />
       <div
         ref={modalRef}
         className="chat-modal-wrapper tv-justify-items-stretch tv-flex-grow tv-pt-3 tv-pb-2 tv-px-2 tv-relative tv-overflow-auto tv-flex"
       >
         <ChatRuler minHeight={minHeight} />
         <div
-          className="tv-flex-col tv-h-full tv-outline tv-outline-green-500 tv-grow tv-flex tv-gap-4"
+          className="tv-flex-col tv-h-full tv-grow tv-flex tv-gap-4"
           ref={actualChatRef}
         >
           <SuggestedQuestions /> {/* Only shows with zero messages */}
@@ -43,7 +43,7 @@ export const ChatMode = () => {
           <FollowupQueries />
           <div
             ref={ref}
-            className="tv-z-50 tv-opacity-0 tv-mx-4 tv-w-4 tv-min-h-1 tv-h-1"
+            className="tv-z-50 tv-mx-4 tv-w-4 tv-min-h-1 tv-h-1"
           ></div>
         </div>
       </div>
@@ -59,13 +59,7 @@ const ChatRuler = ({ minHeight }: { minHeight: number }) => {
       style={{
         minHeight,
       }}
-      className="tv-outline tv-outline-purple-500 tv-mr-2"
-    >
-      <div className="tv-w-8 tv-h-8 tv-bg-red-500"></div>
-      <div className="tv-w-8 tv-h-8 tv-bg-blue-500"></div>
-      <div className="tv-w-8 tv-h-8 tv-bg-red-500"></div>
-      <div className="tv-w-8 tv-h-8 tv-bg-blue-500"></div>
-    </div>
+    ></div>
   );
 };
 

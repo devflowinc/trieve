@@ -2,6 +2,7 @@ import { Message } from "./ResponseMessage";
 import React from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import ImagePreview from "../ImagePreview";
+import { motion } from "motion/react";
 import { LoadingIcon } from "../icons";
 
 export const UserMessage = ({
@@ -14,7 +15,16 @@ export const UserMessage = ({
   const { props } = useModalState();
 
   return (
-    <div key={idx}>
+    <motion.div
+      initial={{ height: 0 }}
+      animate={{ height: "auto" }}
+      exit={{ height: 0 }}
+      transition={{
+        duration: 0.1,
+        ease: "easeInOut",
+      }}
+      key={idx}
+    >
       <div className="user-message-container" key={idx}>
         <div className={message.type}>
           <div className="tv-flex tv-flex-col tv-space-y-1 tv-items-end">
@@ -34,6 +44,6 @@ export const UserMessage = ({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

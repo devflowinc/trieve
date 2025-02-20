@@ -32,7 +32,7 @@ export const ModalContainer = () => {
         props.inline && "tv-border-2",
 
         "tv-flex tv-flex-col tv-items-stretch",
-        componentClass
+        componentClass,
       )}
       style={{
         zIndex: props.zIndex ? props.zIndex + 1 : 1001,
