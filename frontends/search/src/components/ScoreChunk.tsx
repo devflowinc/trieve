@@ -66,6 +66,7 @@ export interface ScoreChunkProps {
   showExpand?: boolean;
   defaultShowMetadata?: boolean;
   setChunkGroups?: Setter<ChunkGroupDTO[]>;
+  allGroupsList: ChunkGroupDTO[];
   counter?: string;
   order?: string;
   setSelectedIds: Setter<string[]>;
@@ -317,6 +318,7 @@ const ScoreChunk = (props: ScoreChunkProps) => {
                 {(chunkGroups) => (
                   <BookmarkPopover
                     totalGroupPages={props.totalGroupPages ?? 0}
+                    allGroupsList={props.allGroupsList}
                     chunkGroups={chunkGroups()}
                     chunkMetadata={props.chunk}
                     setLoginModal={props.setShowModal}

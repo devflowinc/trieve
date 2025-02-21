@@ -51,6 +51,7 @@ export interface ChunkMetadataDisplayProps {
   score?: number;
   chunkGroups: ChunkGroupDTO[];
   bookmarks: ChunkBookmarksDTO[];
+  allGroupsList: ChunkGroupDTO[];
   setShowConfirmModal: Setter<boolean>;
   fetchChunkGroups: () => void;
   setChunkGroups: Setter<ChunkGroupDTO[]>;
@@ -205,6 +206,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
 
               <BookmarkPopover
                 totalGroupPages={props.totalGroupPages}
+                allGroupsList={props.allGroupsList}
                 chunkGroups={props.chunkGroups}
                 chunkMetadata={props.chunk}
                 bookmarks={props.bookmarks.filter(
