@@ -123,6 +123,14 @@ const Modal = () => {
     }
   }, []);
 
+  const closeModalListener: EventListener = useCallback(() => {
+    try {
+      setOpen(false);
+    } catch (e) {
+      console.log("error on event listener for closing modal", e);
+    }
+  }, []);
+
   const openModalListener: EventListener = useCallback(() => {
     try {
       const defaultMode = props.defaultSearchMode || "search";
@@ -161,6 +169,8 @@ const Modal = () => {
       window.addEventListener("trieve-open-with-text", openWithTextListener);
 
       window.addEventListener("trieve-open-modal", openModalListener);
+
+      window.addEventListener("trieve-close-modal", closeModalListener);
     }
 
     return () => {
@@ -176,6 +186,8 @@ const Modal = () => {
           "trieve-open-with-text",
           openWithTextListener
         );
+
+        window.addEventListener("trieve-close-modal", closeModalListener);
       }
     };
   }, []);
