@@ -618,6 +618,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         ]);
       }
     }
+
     scrollToBottomOfChatModalWrapper();
 
     if (!currentTopic) {
