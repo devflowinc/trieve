@@ -349,7 +349,7 @@ body {
     }
 
     .system {
-      @apply tv-mt-2 sm:tv-mt-2 tv-mb-2 tv-items-center tv-overflow-ellipsis tv-max-w-[100vw];
+      @apply tv-mt-2 sm:tv-mt-2 tv-mb-2 tv-items-center tv-overflow-ellipsis;
 
       p {
         @apply tv-pb-0.5;
@@ -392,8 +392,6 @@ body {
     }
 
     .system.ecommerce {
-      @apply tv-max-w-[100vw];
-
       hr {
         @apply tv-mb-4;
       }

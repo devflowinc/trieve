@@ -25,7 +25,7 @@ export const ChatMode = () => {
       <InlineChatHeader resetHeight={resetHeight} />
       <div
         ref={modalRef}
-        className="chat-modal-wrapper tv-justify-items-stretch tv-flex-grow tv-pt-3 tv-pb-2 tv-px-2 tv-relative tv-overflow-auto tv-flex"
+        className="chat-modal-wrapper tv-justify-items-stretch tv-flex-grow tv-pt-3 tv-pb-2 tv-px-2 tv-relative tv-overflow-y-auto tv-flex"
       >
         <ChatRuler minHeight={minHeight} />
         <div

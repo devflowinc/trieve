@@ -48,7 +48,7 @@ export const ResponseMessage = ({
         className={
           props.inline
             ? ""
-            : "tv-col-span-2 tv-pr-4 sm:tv-grid sm:tv-grid-cols-[48px,1fr] tv-gap-2"
+            : "sm:tv-col-span-2 tv-pr-4 tv-grid tv-grid-cols-[1fr] sm:tv-grid-cols-[48px,1fr] tv-gap-2"
         }
         key={idx}
       >
@@ -104,7 +104,7 @@ export const Message = ({
             chunk.metadata.page_title) &&
           chunk.link &&
           chunk.image_urls?.length &&
-          chunk.num_value,
+          chunk.num_value
       );
       if (ecommerceChunks && message.queryId) {
         trackViews({
@@ -127,7 +127,7 @@ export const Message = ({
           chunk.metadata.page_title) &&
         chunk.link &&
         chunk.image_urls?.length &&
-        chunk.num_value,
+        chunk.num_value
     )
     .map((chunk) => ({
       chunk,
@@ -145,7 +145,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title,
+          index && item.title
     )
     .map((item, index) => {
       const { title, descriptionHtml } = guessTitleAndDesc(item);
@@ -183,7 +183,7 @@ export const Message = ({
                   ? title
                   : title.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      "",
+                      ""
                     ),
               }}
             />
@@ -202,7 +202,7 @@ export const Message = ({
                   ? descriptionHtml
                   : descriptionHtml.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      "",
+                      ""
                     ),
               }}
             />
@@ -227,7 +227,7 @@ export const Message = ({
           chunk.metadata.title ||
           chunk.metadata.page_title) &&
         chunk.link &&
-        chunk.metadata.yt_preview_src,
+        chunk.metadata.yt_preview_src
     )
     .map((chunk) => {
       return {
@@ -260,7 +260,7 @@ export const Message = ({
       const chunkHtmlHeadingsDiv = document.createElement("div");
       chunkHtmlHeadingsDiv.innerHTML = chunk.chunk_html || "";
       const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-        "h1, h2, h3, h4, h5, h6",
+        "h1, h2, h3, h4, h5, h6"
       );
       const $firstHeading =
         chunkHtmlHeadings[0] ?? document.createElement("h1");
@@ -286,8 +286,7 @@ export const Message = ({
     .filter((chunk) => chunk.link && !chunk.metadata.yt_preview_src)
     .filter(
       (item, index, array) =>
-        array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-        index,
+        array.findIndex((arrayItem) => arrayItem.title === item.title) === index
     )
     .map((item, index) => (
       <a
