@@ -1338,7 +1338,6 @@ pub async fn stream_response(
                                                 }
                                             }
                                         }
-                                        log::info!("Returning {:?}", text.clone());
                                         text.clone()
                                     } else if !completion_first && !started_parsing_completion.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| Some(true)).unwrap_or(true) {
                                         let returned_chunks = score_chunks.iter().map(|score_chunk| {
