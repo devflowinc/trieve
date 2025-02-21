@@ -113,6 +113,7 @@ pub async fn get_dense_vector(
             .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
                 ServiceError::InternalServerError("Failed to acquire tls connection".to_string())
             })?))
+            .timeout(std::time::Duration::from_secs(5))
             .build()
             .post(&format!(
                 "{}/embeddings?api-version=2023-05-15",
@@ -917,6 +918,7 @@ pub async fn cross_encoder(
                         "Failed to acquire tls connection".to_string(),
                     )
                 })?))
+                .timeout(std::time::Duration::from_secs(5))
                 .build()
                 .post(&embedding_server_call)
                 .set("Content-Type", "application/json")
@@ -953,6 +955,7 @@ pub async fn cross_encoder(
                         "Failed to acquire tls connection".to_string(),
                     )
                 })?))
+                .timeout(std::time::Duration::from_secs(5))
                 .build()
                 .post(&embedding_server_call)
                 .set("Content-Type", "application/json")
