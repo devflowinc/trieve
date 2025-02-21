@@ -180,8 +180,22 @@ pub fn preprocess_file_to_chunks(
     html_content: String,
     upload_file_data: UploadFileReqPayload,
 ) -> Result<Vec<String>, ServiceError> {
-    let split_regex: Option<Regex> = upload_file_data
-        .split_delimiters
+    let split_delims = if let Some(split_delims) = upload_file_data.split_delimiters {
+        let filtered_delimeters: Vec<String> = split_delims
+            .into_iter()
+            .filter(|delim| !delim.is_empty())
+            .collect::<Vec<String>>();
+
+        if filtered_delimeters.is_empty() {
+            None
+        } else {
+            Some(filtered_delimeters)
+        }
+    } else {
+        None
+    };
+
+    let split_regex: Option<Regex> = split_delims
         .map(|delimiters| {
             build_chunking_regex(delimiters).map_err(|e| {
                 log::error!("Could not parse chunking delimiters {:?}", e);
