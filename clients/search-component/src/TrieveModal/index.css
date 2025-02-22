@@ -1174,9 +1174,24 @@ body {
   }
 
   .floating-action-button {
-    @apply tv-fixed tv-flex tv-flex-row tv-w-24 tv-h-10 tv-gap-2 tv-justify-center tv-items-center tv-text-sm tv-cursor-pointer tv-text-white tv-rounded-full tv-z-[999] tv-border-0;
-    background-color: var(--tv-prop-brand-color);
+    @apply tv-fixed tv-flex tv-flex-row tv-gap-2 tv-justify-center tv-items-center tv-cursor-pointer tv-rounded-full tv-border-0 tv-shadow-sm tv-bg-zinc-50 tv-px-4 tv-py-2.5;
     font-family: var(--tv-prop-brand-font-family);
+
+    &.dark {
+      @apply tv-bg-zinc-900 tv-text-white;
+
+      &:hover {
+        @apply tv-bg-zinc-800;
+      }
+    }
+
+    &:hover {
+      @apply tv-bg-zinc-100 tv-transform tv-transition-transform tv-duration-200 hover:tv-scale-110;
+    }
+
+    img {
+      @apply tv-h-6 tv-w-6;
+    }
   }
 
   .floating-search-icon {
