@@ -7,7 +7,9 @@ import { TrieveMaintenanceAlert } from "../../components/TrieveMaintenanceAlert"
 export const OrganizationHomepage = () => {
   return (
     <div class="pb-8">
-      <TrieveMaintenanceAlert />
+      {import.meta.env.VITE_MAINTENANCE_ON == "true" && (
+        <TrieveMaintenanceAlert />
+      )}
       <div class="h-1" />
       <OrgUpdateAlert />
       <div class="h-1" />
