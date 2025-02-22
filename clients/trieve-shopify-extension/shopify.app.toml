@@ -2,7 +2,7 @@
 
 
 client_id = "8765d78a52aa8c12ae2d235d9d41529c"
-application_url = "https://ent-homes-deluxe-rides.trycloudflare.com"
+application_url = "https://course-designers-celtic-shuttle.trycloudflare.com"
 embedded = true
 name = "trieve-search-extension"
 handle = "trieve-search-extension"
@@ -36,9 +36,9 @@ scopes = "write_products,read_products"
 
 [auth]
 redirect_urls = [
-  "https://control-danger-martial-scanning.trycloudflare.com/auth/callback",
-  "https://control-danger-martial-scanning.trycloudflare.com/auth/shopify/callback",
-  "https://control-danger-martial-scanning.trycloudflare.com/api/auth/callback",
+  "https://course-designers-celtic-shuttle.trycloudflare.com/auth/callback",
+  "https://course-designers-celtic-shuttle.trycloudflare.com/auth/shopify/callback",
+  "https://course-designers-celtic-shuttle.trycloudflare.com/api/auth/callback",
 ]
 
 [pos]

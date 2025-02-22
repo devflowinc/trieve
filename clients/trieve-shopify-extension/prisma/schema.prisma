@@ -39,4 +39,17 @@ model ApiKey {
   shop      String @default("")
   key       String
   createdAt DateTime @default(now())
+
+  @@unique([userId, shop], name: "userId_shop")
+}
+
+model CrawlSettings {
+  id        String   @id @default(uuid())
+  datasetId String? @db.Uuid
+  shop      String @default("")
+  crawlSettings Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([datasetId, shop], name: "datasetId_shop")
 }
