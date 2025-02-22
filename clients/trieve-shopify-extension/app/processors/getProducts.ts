@@ -142,7 +142,8 @@ function createChunkFromProduct(
 export function createChunkFromProductWebhook(
   product: ProductWebhook,
   variant: ProductWebhook["variants"][0],
-  baseUrl: string
+  baseUrl: string,
+  crawlOptions: ExtendedCrawlOptions
 ): ChunkReqPayload {
   // Extract image URLs
   const imageUrls = product.media.map((media) => media.preview.image.url);
@@ -151,6 +152,19 @@ export function createChunkFromProductWebhook(
   let productTitle = product.title || "";
   let variantTitle = variant.title || "";
   let productBodyHtml = product.body_html || "";
+
+  if (crawlOptions.heading_remove_strings) {
+    crawlOptions.heading_remove_strings.forEach((removeString) => {
+      productTitle = productTitle.replace(removeString, "");
+      variantTitle = variantTitle.replace(removeString, "");
+    });
+  }
+
+  if (crawlOptions.body_remove_strings) {
+    crawlOptions.body_remove_strings.forEach((removeString) => {
+      productBodyHtml = productBodyHtml.replace(removeString, "");
+    });
+  }
 
   // Create product link
   const link = `${baseUrl}/products/${product.handle}?variant=${variant.id}`;
@@ -161,11 +175,10 @@ export function createChunkFromProductWebhook(
       ? `<h1>${productTitle}</h1>${productBodyHtml}`
       : `<h1>${productTitle} - ${variantTitle}</h1>${productBodyHtml}`;
 
-  const groupVariants = true;
+  const groupVariants = crawlOptions.scrape_options?.group_variants ?? true;
 
   const semanticBoostPhrase = groupVariants ? variantTitle : productTitle;
   const fulltextBoostPhrase = groupVariants ? variantTitle : productTitle;
-  const tags = product.tags;
 
   const metadata = {
     body_html: product.body_html,
@@ -207,6 +220,52 @@ export function createChunkFromProductWebhook(
     convert_html_to_text: true,
     upsert_by_tracking_id: true,
   };
+}
+
+export async function sendChunksFromWebhook(
+  product: ProductWebhook,
+  key: TrieveKey,
+  datasetId: string,
+  admin: any,
+  session: any,
+  crawlOptions: ExtendedCrawlOptions
+) {
+  const dataChunks = product.variants.map(async (variant) => {
+    let response = await admin?.graphql(`
+      #graphql
+      query{
+          productVariant(id: "${variant.admin_graphql_api_id}") {
+            metafields(first: 20) {
+              nodes {
+                key
+                value
+              }
+            }
+          }
+        }
+    `);
+    let data = (await response?.json()) as {
+      data: {
+        productVariant: {
+          metafields: { nodes: { key: string; value: string }[] };
+        };
+      };
+    };
+
+    variant.metafields = data?.data.productVariant.metafields.nodes;
+    return createChunkFromProductWebhook(
+      product,
+      variant,
+      `https://${session?.shop}`,
+      crawlOptions
+    );
+  });
+
+  let dataChunksResolved = await Promise.all(dataChunks);
+
+  for (const batch of chunk_to_size(dataChunksResolved, 120)) {
+    sendChunksToTrieve(batch, key, datasetId ?? "");
+  }
 }
 
 export async function sendChunksToTrieve(
