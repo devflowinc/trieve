@@ -5,12 +5,14 @@ import { ProductWebhook, TrieveKey } from "app/types";
 import {
   chunk_to_size,
   createChunkFromProductWebhook,
+  sendChunksFromWebhook,
   sendChunksToTrieve,
 } from "app/processors/getProducts";
 import { ChunkReqPayload } from "trieve-ts-sdk";
+import { ExtendedCrawlOptions } from "app/components/CrawlSettings";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { payload, session, topic, shop } =
+  const { admin, payload, session, topic, shop } =
     await authenticate.webhook(request);
   console.log(`Received ${topic} webhook for ${shop}`);
 
@@ -33,13 +35,26 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     userId: apiKey.userId,
   };
 
-  const dataChunks: ChunkReqPayload[] = current.variants.map((variant) =>
-    createChunkFromProductWebhook(current, variant, `https://${session?.shop}`),
-  );
+  let crawlSettings = await db.crawlSettings.findFirst({
+    where: {
+      datasetId: trieveKey.currentDatasetId ?? "",
+      shop: shop,
+    },
+  });
 
-  for (const batch of chunk_to_size(dataChunks, 120)) {
-    sendChunksToTrieve(batch, trieveKey, trieveKey.currentDatasetId ?? "");
+  if (!crawlSettings) {
+    console.error(`No crawl settings found for ${shop}`);
+    return new Response();
   }
+
+  sendChunksFromWebhook(
+    current,
+    trieveKey,
+    trieveKey.currentDatasetId ?? "",
+    admin,
+    session,
+    crawlSettings.crawlSettings as ExtendedCrawlOptions,
+  );
 
   return new Response();
 };

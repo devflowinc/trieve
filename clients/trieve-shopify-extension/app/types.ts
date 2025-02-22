@@ -56,6 +56,7 @@ export type ProductWebhook = {
   };
   total_inventory: number;
   variants: {
+    admin_graphql_api_id: string;
     id: string;
     display_name: string;
     price: string;
