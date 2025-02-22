@@ -302,7 +302,8 @@ export const Message = ({
         ) : (
           <></>
         )}
-        {item.title}
+        {item.title}{" "}
+        <i className="fa-solid fa-up-right-from-square tv-pl-1"></i>
       </a>
     ));
 
