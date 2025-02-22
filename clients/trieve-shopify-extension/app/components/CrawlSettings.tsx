@@ -97,9 +97,7 @@ export const DatasetSettings = ({
     shop: string,
   ) => {
     const dataset = datasets.find((d) => d.dataset.id == datasetId);
-    shopify.toast.show(
-      `TODO need to update Dataset changed to ${dataset?.dataset.name}`,
-    );
+    shopify.toast.show(`Indexed Dataset changed to ${dataset?.dataset.name}`);
 
     prisma.apiKey.update({
       data: {
