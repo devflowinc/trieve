@@ -1,12 +1,17 @@
 import { ExtendedCrawlOptions } from "app/components/CrawlSettings";
-import { Product, TrieveKey, ProductsResponse } from "app/types";
+import {
+  Product,
+  TrieveKey,
+  ProductsResponse,
+  ProductWebhook,
+} from "app/types";
 import { ChunkReqPayload } from "trieve-ts-sdk";
 
 function createChunkFromProduct(
   product: Product,
   variant: Product["variants"]["nodes"][0],
   baseUrl: string,
-  crawlOptions: ExtendedCrawlOptions,
+  crawlOptions: ExtendedCrawlOptions
 ): ChunkReqPayload {
   // Extract image URLs
   const imageUrls = product.media.nodes.map((media) => media.preview.image.url);
@@ -71,8 +76,8 @@ function createChunkFromProduct(
     product.variants.nodes.forEach((v) => {
       let values: string[] = JSON.parse(
         v.metafields.nodes.find((m) =>
-          crawlOptions.include_metafields?.includes(m.key),
-        )?.value ?? "[]",
+          crawlOptions.include_metafields?.includes(m.key)
+        )?.value ?? "[]"
       );
       tags.push(...values);
     });
@@ -133,10 +138,81 @@ function createChunkFromProduct(
   };
 }
 
-async function sendChunksToTrieve(
+//TODO: save crawl options to DB and use here
+export function createChunkFromProductWebhook(
+  product: ProductWebhook,
+  variant: ProductWebhook["variants"][0],
+  baseUrl: string
+): ChunkReqPayload {
+  // Extract image URLs
+  const imageUrls = product.media.map((media) => media.preview.image.url);
+
+  // Handle text cleaning
+  let productTitle = product.title || "";
+  let variantTitle = variant.title || "";
+  let productBodyHtml = product.body_html || "";
+
+  // Create product link
+  const link = `${baseUrl}/products/${product.handle}?variant=${variant.id}`;
+
+  // Generate chunk HTML
+  let chunkHtml =
+    variant.title === "Default Title"
+      ? `<h1>${productTitle}</h1>${productBodyHtml}`
+      : `<h1>${productTitle} - ${variantTitle}</h1>${productBodyHtml}`;
+
+  const groupVariants = true;
+
+  const semanticBoostPhrase = groupVariants ? variantTitle : productTitle;
+  const fulltextBoostPhrase = groupVariants ? variantTitle : productTitle;
+  const tags = product.tags;
+
+  const metadata = {
+    body_html: product.body_html,
+    handle: product.handle,
+    id: product.id,
+    images: imageUrls,
+    tags: product.tags,
+    title: product.title,
+    variant_inventory: groupVariants
+      ? variant.inventory_quantity
+      : product.total_inventory,
+    total_inventory: product.total_inventory,
+    variants: product.variants.map((v) => ({
+      id: v.id,
+      price: v.price,
+      product_id: product.id,
+      title: v.title,
+      inventory_quantity: v.inventory_quantity,
+    })),
+  };
+
+  return {
+    chunk_html: chunkHtml,
+    link,
+    tag_set: product.tags,
+    num_value: parseFloat(variant.price),
+    metadata,
+    tracking_id: groupVariants ? variant.id : product.id,
+    group_tracking_ids: groupVariants ? [product.id] : undefined,
+    image_urls: imageUrls,
+    fulltext_boost: {
+      phrase: fulltextBoostPhrase,
+      boost_factor: 1.3,
+    },
+    semantic_boost: {
+      phrase: semanticBoostPhrase,
+      distance_factor: 0.3,
+    },
+    convert_html_to_text: true,
+    upsert_by_tracking_id: true,
+  };
+}
+
+export async function sendChunksToTrieve(
   chunks: ChunkReqPayload[],
   key: TrieveKey,
-  datasetId: string,
+  datasetId: string
 ) {
   await fetch(`https://api.trieve.ai/api/chunk`, {
     method: "POST",
@@ -146,6 +222,24 @@ async function sendChunksToTrieve(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(chunks),
+  }).catch((e) => {
+    console.error(`Error sending chunks to Trieve: ${e}`);
+  });
+}
+
+export async function deleteChunkFromTrieve(
+  id: string,
+  key: TrieveKey,
+  datasetId: string
+) {
+  await fetch(`https://api.trieve.ai/api/chunk/tracking_id/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${key.key}`,
+      "TR-Dataset": datasetId ?? "",
+    },
+  }).catch((e) => {
+    console.error(`Error sending chunks to Trieve: ${e}`);
   });
 }
 
@@ -154,7 +248,7 @@ export const sendChunks = async (
   key: TrieveKey,
   admin: any,
   session: any,
-  crawlOptions: ExtendedCrawlOptions,
+  crawlOptions: ExtendedCrawlOptions
 ) => {
   let next_page = null;
   let started = false;
@@ -208,7 +302,7 @@ export const sendChunks = async (
             endCursor
           }
         }
-      }`,
+      }`
     );
 
     const { data } = (await response.json()) as { data: ProductsResponse };
@@ -220,9 +314,9 @@ export const sendChunks = async (
             product,
             variant,
             `https://${session.shop}`,
-            crawlOptions,
-          ),
-        ),
+            crawlOptions
+          )
+        )
     );
 
     for (const batch of chunk_to_size(dataChunks, 120)) {
@@ -237,7 +331,7 @@ export const sendChunks = async (
   return chunks;
 };
 
-function chunk_to_size<T>(arr: T[], size: number): T[][] {
+export function chunk_to_size<T>(arr: T[], size: number): T[][] {
   if (size <= 0) throw new Error("Chunk size must be greater than 0");
 
   const result: T[][] = [];
