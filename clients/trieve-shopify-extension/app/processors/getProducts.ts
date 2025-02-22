@@ -138,7 +138,6 @@ function createChunkFromProduct(
   };
 }
 
-//TODO: save crawl options to DB and use here
 export function createChunkFromProductWebhook(
   product: ProductWebhook,
   variant: ProductWebhook["variants"][0],
@@ -175,10 +174,44 @@ export function createChunkFromProductWebhook(
       ? `<h1>${productTitle}</h1>${productBodyHtml}`
       : `<h1>${productTitle} - ${variantTitle}</h1>${productBodyHtml}`;
 
+  if (crawlOptions.scrape_options?.tag_regexes) {
+    const tagMatches = new Set<string>();
+
+    crawlOptions.scrape_options.tag_regexes.forEach((pattern) => {
+      try {
+        const regex = new RegExp(pattern);
+        product.tags.forEach((tag) => {
+          if (regex.test(tag)) {
+            tagMatches.add(`<span>${pattern}</span>`);
+          }
+        });
+      } catch (e) {
+        console.warn(`Invalid regex pattern: ${pattern}`);
+      }
+    });
+
+    if (tagMatches.size > 0) {
+      const tagsString = Array.from(tagMatches).join("");
+      chunkHtml = `<div>${chunkHtml}</div>\n\n<div>${tagsString}</div>`;
+    }
+  }
+
   const groupVariants = crawlOptions.scrape_options?.group_variants ?? true;
 
   const semanticBoostPhrase = groupVariants ? variantTitle : productTitle;
   const fulltextBoostPhrase = groupVariants ? variantTitle : productTitle;
+
+  const tags = product.tags;
+  if (crawlOptions.include_metafields) {
+    product.variants.forEach((v) => {
+      let values: string[] = JSON.parse(
+        v.metafields.find((m) =>
+          crawlOptions.include_metafields?.includes(m.key),
+        )?.value ?? "[]",
+      );
+      tags.push(...values);
+    });
+  }
 
   const metadata = {
     body_html: product.body_html,
@@ -203,7 +236,7 @@ export function createChunkFromProductWebhook(
   return {
     chunk_html: chunkHtml,
     link,
-    tag_set: product.tags,
+    tag_set: tags,
     num_value: parseFloat(variant.price),
     metadata,
     tracking_id: groupVariants ? variant.id : product.id,
