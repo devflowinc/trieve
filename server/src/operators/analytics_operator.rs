@@ -410,7 +410,7 @@ pub async fn get_query_counts_query(
     let mut query_string = String::from(
         "SELECT 
             search_type,
-            JSONExtractString(request_params, 'search_type') as search_method,
+            JSONExtractString(request_params, 'search_type') as search_method, 
             COUNT(*) as search_count
         FROM 
             search_queries
