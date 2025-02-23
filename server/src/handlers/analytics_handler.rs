@@ -100,16 +100,14 @@ pub struct RateQueryRequest {
 pub async fn set_search_query_rating(
     data: web::Json<RateQueryRequest>,
     _user: AdminOnly,
-    clickhouse_client: web::Data<clickhouse::Client>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    event_queue: web::Data<EventQueue>,
+    _dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let data = data.into_inner();
-    set_search_query_rating_query(
-        data,
-        dataset_org_plan_sub.dataset.id,
-        clickhouse_client.get_ref(),
-    )
-    .await?;
+
+    event_queue
+        .send(ClickHouseEvent::SearchQueryRatingEvent(data))
+        .await;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -138,16 +136,14 @@ pub async fn set_search_query_rating(
 pub async fn set_rag_query_rating(
     data: web::Json<RateQueryRequest>,
     _user: AdminOnly,
-    clickhouse_client: web::Data<clickhouse::Client>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    event_queue: web::Data<EventQueue>,
+    _dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let data = data.into_inner();
-    set_rag_query_rating_query(
-        data,
-        dataset_org_plan_sub.dataset.id,
-        clickhouse_client.get_ref(),
-    )
-    .await?;
+
+    event_queue
+        .send(ClickHouseEvent::RagQueryRatingEvent(data))
+        .await;
 
     Ok(HttpResponse::NoContent().finish())
 }
@@ -521,14 +517,16 @@ pub struct CTRDataRequestBody {
 pub async fn send_ctr_data(
     _user: AdminOnly,
     data: web::Json<CTRDataRequestBody>,
-    clickhouse_client: web::Data<clickhouse::Client>,
+    event_queue: web::Data<EventQueue>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let event_data =
         EventTypes::from(data.into_inner()).to_event_data(dataset_org_plan_sub.dataset.id);
 
     if let EventDataTypes::EventDataClickhouse(event_data) = event_data {
-        send_event_data_query(event_data, clickhouse_client.get_ref()).await?;
+        event_queue
+            .send(ClickHouseEvent::AnalyticsEvent(event_data))
+            .await;
     }
 
     Ok(HttpResponse::NoContent().finish())
@@ -558,7 +556,6 @@ pub async fn send_ctr_data(
 pub async fn send_event_data(
     _user: AdminOnly,
     data: web::Json<EventTypes>,
-    clickhouse_client: web::Data<clickhouse::Client>,
     event_queue: web::Data<EventQueue>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
@@ -568,7 +565,9 @@ pub async fn send_event_data(
 
     match event_data {
         EventDataTypes::EventDataClickhouse(event_data) => {
-            send_event_data_query(event_data, clickhouse_client.get_ref()).await?;
+            event_queue
+                .send(ClickHouseEvent::AnalyticsEvent(event_data))
+                .await;
         }
         EventDataTypes::SearchQueryEventClickhouse(event_data) => {
             event_queue

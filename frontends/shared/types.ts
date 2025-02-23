@@ -461,7 +461,7 @@ export interface AnalyticsFilter {
   search_type?:
     | "search"
     | "autocomplete"
-    | "rag"
+    | "rag_chunks"
     | "search_over_groups"
     | "search_within_groups";
 }

@@ -6142,7 +6142,7 @@ pub struct EventData {
     pub updated_at: String,
 }
 
-#[derive(Debug, ToSchema, Serialize, Deserialize, Row)]
+#[derive(Debug, ToSchema, Serialize, Deserialize, Row, Clone)]
 #[schema(example = json!({
     "event_type": "view",
     "event_name": "Viewed Home Page",
