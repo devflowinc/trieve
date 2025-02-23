@@ -400,7 +400,6 @@ export const Message = ({
                   </button>
                 )}
                 <button
-                  className={positive != null && positive ? "icon-darken" : ""}
                   onClick={() => {
                     rateChatCompletion(true, message.queryId);
                     setPositive((prev) => {
@@ -409,10 +408,22 @@ export const Message = ({
                     });
                   }}
                 >
-                  <i className="fa-regular fa-thumbs-up"></i>
+                  <div
+                    style={{
+                      display: positive ? "block" : "none",
+                    }}
+                  >
+                    <i className="fa-solid fa-thumbs-up"></i>
+                  </div>
+                  <div
+                    style={{
+                      display: !positive ? "block" : "none",
+                    }}
+                  >
+                    <i className="fa-regular fa-thumbs-up"></i>
+                  </div>
                 </button>
                 <button
-                  className={positive != null && !positive ? "icon-darken" : ""}
                   onClick={() => {
                     rateChatCompletion(false, message.queryId);
                     setPositive((prev) => {
@@ -421,7 +432,20 @@ export const Message = ({
                     });
                   }}
                 >
-                  <i className="fa-regular fa-thumbs-down"></i>
+                  <div
+                    style={{
+                      display: positive != null && !positive ? "block" : "none",
+                    }}
+                  >
+                    <i className="fa-solid fa-thumbs-down"></i>
+                  </div>
+                  <div
+                    style={{
+                      display: positive == null || positive ? "block" : "none",
+                    }}
+                  >
+                    <i className="fa-regular fa-thumbs-down"></i>
+                  </div>
                 </button>
               </div>
             </div>
