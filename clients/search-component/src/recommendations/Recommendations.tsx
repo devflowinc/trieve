@@ -36,9 +36,13 @@ const outerClass = cva(["tv-flex", "tv-gap-2"], {
       horizontal: "tv-flex-row",
       vertical: "tv-flex-col",
     },
+    overflowScroll: {
+      true: "tv-overflow-auto",
+    },
   },
   defaultVariants: {
     orientation: "horizontal",
+    overflowScroll: true,
   },
 });
 
@@ -53,9 +57,6 @@ const itemClass = cva(
       orientation: {
         horizontal: "tv-flex-row",
         vertical: "tv-flex-col tv-max-w-[200px] tv-items-center",
-      },
-      overflowScroll: {
-        true: "tv-overflow-auto",
       },
       padding: {
         sm: "tv-p-2",
@@ -89,7 +90,6 @@ const itemClass = cva(
     ],
 
     defaultVariants: {
-      overflowScroll: true,
       orientation: "horizontal",
       mode: "light",
       rounded: "none",
