@@ -1280,6 +1280,14 @@ impl ChunkMetadataTypes {
         }
     }
 
+    pub fn dataset_id(&self) -> Option<uuid::Uuid> {
+        match self {
+            ChunkMetadataTypes::Metadata(metadata) => Some(metadata.dataset_id),
+            ChunkMetadataTypes::ID(slim_metadata) => Some(slim_metadata.dataset_id),
+            ChunkMetadataTypes::Content(_) => None,
+        }
+    }
+
     pub fn qdrant_point_id(&self) -> uuid::Uuid {
         match self {
             ChunkMetadataTypes::Metadata(metadata) => metadata.qdrant_point_id,
