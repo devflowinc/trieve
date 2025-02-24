@@ -40,7 +40,7 @@ export default function ECommerce() {
             </li>
           </ul>
         </div>
-        <div className="max-w-72">
+        <div className="w-full">
           <TrieveModalSearch
             displayModal={false}
             datasetId={datasetId}

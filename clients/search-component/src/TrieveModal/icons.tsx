@@ -209,9 +209,9 @@ export const ShoppingCart = () => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <circle cx="8" cy="21" r="1" />
       <circle cx="19" cy="21" r="1" />
@@ -228,9 +228,9 @@ export const CheckIcon = () => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   >
     <path d="M20 6 9 17l-5-5" />
   </svg>
@@ -280,13 +280,13 @@ export const ChevronDownIcon = (props: SVGAttributes<SVGElement>) => (
   </svg>
 );
 
-export const CheckboxIcon = (props: SVGAttributes<SVGElement>) => (
+export const XIcon = (props: SVGAttributes<SVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
     fill="currentColor"
     {...props}
   >
-    <path d="M20.285 6.712a1 1 0 0 0-1.414 0L9 15.585l-4.285-4.285a1 1 0 1 0-1.414 1.414l5 5a1 1 0 0 0 1.414 0l10-10a1 1 0 0 0 0-1.414z" />
+    <path d="M18.36 6.64a1.5 1.5 0 0 1 0 2.12L13.12 12l5.24 5.24a1.5 1.5 0 0 1-2.12 2.12L11 14.12l-5.24 5.24a1.5 1.5 0 0 1-2.12-2.12L8.88 12l-5.24-5.24a1.5 1.5 0 0 1 2.12-2.12L11 9.88l5.24-5.24a1.5 1.5 0 0 1 2.12-.01z" />
   </svg>
 );

@@ -16,7 +16,11 @@ import { FloatingActionButton } from "./FloatingActionButton";
 import { FloatingSearchIcon } from "./FloatingSearchIcon";
 import { FloatingSearchInput } from "./FloatingSearchInput";
 import { ModalContainer } from "./ModalContainer";
-import { Accordion, FilterButton } from "./Accordion";
+import {
+  Accordion,
+  ActiveFilterPills,
+  FilterButton,
+} from "./FilterSidebarComponents";
 
 const FilterPanel = () => {
   const { props } = useModalState();
@@ -24,24 +28,27 @@ const FilterPanel = () => {
 
   return (
     <div className="trieve-filter-panel">
-      {props.filterSidebarProps.sections.map((section) => (
-        <Accordion
-          sectionKey={section.key}
-          title={section.title}
-          key={section.key}
-        >
-          {section.options.map((option) => (
-            <FilterButton
-              sectionKey={section.key}
-              label={option.label ?? ""}
-              description={option.description}
-              type={section.selectionType}
-              filterKey={option.tag}
-              key={option.tag}
-            />
-          ))}
-        </Accordion>
-      ))}
+      <ActiveFilterPills />
+      <div className="trieve-filter-bar">
+        {props.filterSidebarProps.sections.map((section) => (
+          <Accordion
+            sectionKey={section.key}
+            title={section.title}
+            key={section.key}
+          >
+            {section.options.map((option) => (
+              <FilterButton
+                sectionKey={section.key}
+                label={option.label ?? ""}
+                description={option.description}
+                type={section.selectionType}
+                filterKey={option.tag}
+                key={option.tag}
+              />
+            ))}
+          </Accordion>
+        ))}
+      </div>
     </div>
   );
 };
