@@ -1,7 +1,72 @@
 import React, { useMemo } from "react";
 import { useState } from "react";
-import { CheckboxIcon, ChevronDownIcon, ChevronUpicon } from "./icons";
+import { CheckIcon, ChevronDownIcon, ChevronUpicon, XIcon } from "./icons";
 import { useModalState } from "../utils/hooks/modal-context";
+
+export const ActiveFilterPills = () => {
+  const { selectedSidebarFilters, setSelectedSidebarFilters } = useModalState();
+
+  const activeFilters: {
+    sectionKey: string;
+    tags: string[];
+  }[] = useMemo(() => {
+    const filters = Object.entries(selectedSidebarFilters).map(
+      ([sectionKey, tags]) => ({
+        sectionKey,
+        tags,
+      })
+    );
+    return filters;
+  }, [selectedSidebarFilters]);
+
+  const numberOfSelectedFilters = useMemo(() => {
+    let count = 0;
+    for (const { sectionKey } of activeFilters) {
+      if (sectionKey in selectedSidebarFilters) {
+        count += selectedSidebarFilters[sectionKey].length;
+      }
+    }
+    return count;
+  }, [selectedSidebarFilters]);
+
+  return (
+    <div
+      className="trieve-active-filter-pills-container"
+      data-number-selected-filters={numberOfSelectedFilters}
+    >
+      <div className="trieve-all-active-filters">
+        {activeFilters.map(({ sectionKey, tags }) =>
+          tags.map((tag) => (
+            <button
+              className="trieve-active-filter-pill"
+              key={tag}
+              onClick={() => {
+                setSelectedSidebarFilters((prev) => ({
+                  ...prev,
+                  [sectionKey]: prev[sectionKey].filter((t) => t !== tag),
+                }));
+              }}
+            >
+              <span>{tag}</span>
+              <i className="trieve-active-filter-pill-remove-icon">
+                <XIcon />
+              </i>
+            </button>
+          ))
+        )}
+      </div>
+      <button
+        className="trieve-clear-filters-button"
+        data-number-selected-filters={numberOfSelectedFilters}
+        onClick={() => {
+          setSelectedSidebarFilters({});
+        }}
+      >
+        Clear all
+      </button>
+    </div>
+  );
+};
 
 export interface AccordionProps {
   sectionKey: string;
@@ -136,7 +201,7 @@ export const FilterButton = ({
       >
         <div className="trieve-circle" />
         <i className="trieve-checkbox-icon">
-          <CheckboxIcon />
+          <CheckIcon />
         </i>
       </div>
       <label className="trieve-filter-button-label" title={description}>
