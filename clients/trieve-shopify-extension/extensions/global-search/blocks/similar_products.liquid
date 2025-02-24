@@ -1,0 +1,69 @@
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/trieve-search-component@0.4.24/dist/index.css"
+/>
+
+<div class="trieve-recommendations">
+</div>
+
+<script type="module">
+  import {renderRecommendationsToDiv} from 'https://unpkg.com/trieve-search-component@0.4.24/dist/vanilla/index.js';
+
+  const inlineRoot = document.querySelector(".trieve-recommendations");
+  console.log("root", inlineRoot,"please", "{{ block.settings.product.title }}", "{{ block.settings.product.id }}");
+
+  const toBool = (value) => value === 'true';
+  const getValue = (value, defaultValue) => {
+    if (value === null || value === undefined || value === '') {
+      return defaultValue;
+    }
+    return value;
+  };
+
+  renderRecommendationsToDiv(inlineRoot, {
+    apiKey: getValue("{{ block.settings.api_key }}", ""),
+    datasetId: getValue("{{ block.settings.dataset_id }}", ""),
+    baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
+    productId: {{ block.settings.product.id }},
+    overflowScroll:true,
+    title: getValue("{{ block.settings.label }}", "Similar Producs")
+  });
+
+</script>
+
+
+{% comment %}
+  see more about the schema section here. https://shopify.dev/docs/storefronts/themes/architecture/sections/section-schema#schema
+
+  If the input is not valid json, it will not work
+{% endcomment %}
+{% schema %}
+{
+  "name": "Trieve Related Products",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "base_url",
+      "label": "Base URL",
+      "default": "https://api.trieve.ai"
+    },
+    {
+      "type": "text",
+      "id": "api_key",
+      "label": "Trieve API Key"
+    },
+    {
+      "type": "text",
+      "id": "dataset_id",
+      "label": "Dataset ID"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Header"
+    }
+  ]
+}
+{% endschema %}
+
