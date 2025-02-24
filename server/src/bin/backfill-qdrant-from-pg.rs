@@ -61,7 +61,15 @@ async fn main() -> Result<(), ServiceError> {
         .await
         .expect("Failed to build broccoli queue");
 
-    let mut offset = Some(uuid::Uuid::nil());
+    let start_offset = std::env::var("START_OFFSET")
+        .map(|offset_str| uuid::Uuid::parse_str(&offset_str).ok().unwrap())
+        .unwrap_or(uuid::Uuid::nil());
+
+    let stop_offset = std::env::var("END_OFFSET")
+        .map(|offset_str| uuid::Uuid::parse_str(&offset_str).ok().unwrap())
+        .unwrap_or(uuid::Uuid::max());
+
+    let mut offset = Some(start_offset);
 
     while let Some(cur_offset) = offset {
         use trieve_server::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
@@ -99,6 +107,12 @@ async fn main() -> Result<(), ServiceError> {
         if qdrant_dataset_id_pairs.len() < (postgres_fetch_points_count as usize) {
             println!("setting offset to None");
             offset = None;
+        }
+
+        if let Some(new_offset) = offset {
+            if new_offset > stop_offset {
+                offset = None;
+            }
         }
 
         let groups_ids_to_chunk_ids = chunk_group_bookmarks_columns::chunk_group_bookmarks
