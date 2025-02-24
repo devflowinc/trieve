@@ -71,6 +71,10 @@ async fn main() -> Result<(), ServiceError> {
 
     let mut offset = Some(start_offset);
 
+    let dataset_id = std::env::var("dataset_id")
+        .map(|dataset_str| uuid::Uuid::parse_str(&dataset_str).ok().unwrap())
+        .unwrap_or(uuid::Uuid::max());
+
     while let Some(cur_offset) = offset {
         use trieve_server::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
         use trieve_server::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
@@ -89,6 +93,7 @@ async fn main() -> Result<(), ServiceError> {
                 chunk_metadata_columns::qdrant_point_id,
                 chunk_metadata_columns::dataset_id,
             ))
+            .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
             .filter(chunk_metadata_columns::id.ge(cur_offset))
             .order_by(chunk_metadata_columns::id)
             .limit(postgres_fetch_points_count)
