@@ -18,7 +18,7 @@
 }
 
 body {
-  .close-icon {
+  .trieve-close-icon {
     @apply tv-w-4 tv-h-4 tv-fill-current;
   }
 
@@ -1248,6 +1248,136 @@ body {
 
     button {
       @apply tv-flex tv-justify-center tv-items-center tv-gap-4 tv-text-sm;
+    }
+  }
+
+  .trieve-filter-panel {
+    @apply tv-p-2;
+  }
+
+  .trieve-accordion-container {
+    @apply tv-p-2 tv-transition-all tv-duration-300 tv-ease-in-out;
+
+    .trieve-accordion-header {
+      @apply tv-flex tv-items-center tv-gap-1 tv-cursor-pointer tv-w-full tv-justify-between;
+
+      &[data-open="true"] {
+        .trieve-accordion-title {
+          @apply tv-font-medium;
+        }
+      }
+
+      &:hover {
+        .trieve-accordion-title {
+          @apply tv-underline;
+        }
+      }
+
+      .trieve-accordion-details {
+        @apply tv-flex tv-items-center tv-gap-1;
+
+        .trieve-accordion-number {
+          @apply tv-rounded-full tv-text-white tv-w-4 tv-h-4 tv-text-center tv-text-xs;
+          background-color: var(--tv-prop-brand-color);
+
+          &[data-value="0"] {
+            display: none;
+          }
+        }
+
+        .trieve-accordion-icon-container {
+          @apply tv-w-6 tv-h-6;
+        }
+      }
+    }
+
+    .trieve-accordion-content-container {
+      @apply tv-mt-2;
+      max-height: 0;
+      overflow: hidden;
+      transform-origin: top;
+      transform: scaleY(0);
+      transition:
+        max-height 0.2s ease-out,
+        transform 0.2s ease-out;
+
+      &[data-open="true"] {
+        transform: scaleY(1);
+        max-height: 100%;
+      }
+
+      hr {
+        @apply tv-mt-2;
+      }
+
+      .trieve-accordion-content {
+        @apply tv-gap-2 tv-flex tv-flex-col;
+      }
+    }
+  }
+
+  .trieve-filter-button-container {
+    @apply tv-flex tv-items-center tv-gap-2 tv-cursor-pointer;
+
+    .trieve-single-button {
+      @apply tv-rounded-full tv-cursor-pointer tv-w-6 tv-h-6 tv-relative tv-flex tv-justify-center tv-items-center;
+      background-color: var(--tv-zinc-200);
+
+      &[data-active="true"] {
+        background-color: var(--tv-prop-brand-color);
+
+        .trieve-circle {
+          background-color: var(--tv-zinc-50);
+        }
+      }
+
+      &:hover:not([data-active="true"]) {
+        background-color: var(--tv-zinc-300);
+      }
+
+      .trieve-circle {
+        @apply tv-rounded-full;
+        background-color: var(--tv-zinc-200);
+        width: 40%;
+        height: 40%;
+      }
+
+      .trieve-checkbox-icon {
+        display: none;
+      }
+    }
+
+    .trieve-multiple-button {
+      @apply tv-rounded-md tv-cursor-pointer tv-w-6 tv-h-6;
+      background-color: var(--tv-zinc-200);
+
+      &[data-active="true"] {
+        background-color: var(--tv-prop-brand-color);
+
+        .trieve-checkbox-icon {
+          display: block;
+          color: var(--tv-zinc-50);
+          width: 100%;
+          height: 100%;
+          fill: currentColor;
+        }
+      }
+
+      &:hover:not([data-active="true"]) {
+        background-color: var(--tv-zinc-300);
+      }
+
+      .trieve-checkbox-icon {
+        display: none;
+      }
+
+      .trieve-circle {
+        display: none;
+      }
+    }
+
+    label {
+      @apply tv-cursor-pointer tv-text-sm;
     }
   }
 }

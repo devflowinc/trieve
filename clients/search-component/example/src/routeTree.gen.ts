@@ -14,6 +14,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as RecsImport } from './routes/recs'
+import { Route as SearchpageImport } from './routes/searchpage'
 import { Route as EcommerceImport } from './routes/ecommerce'
 
 // Create Virtual Routes
@@ -24,6 +25,8 @@ const IndexLazyImport = createFileRoute('/')()
 
 const RecsRoute = RecsImport.update({
   path: '/recs',
+const SearchpageRoute = SearchpageImport.update({
+  path: '/searchpage',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -60,6 +63,12 @@ declare module '@tanstack/react-router' {
       path: '/recs'
       fullPath: '/recs'
       preLoaderRoute: typeof RecsImport
+    },
+    '/searchpage': {
+      id: '/searchpage'
+      path: '/searchpage'
+      fullPath: '/searchpage'
+      preLoaderRoute: typeof SearchpageImport
       parentRoute: typeof rootRoute
     }
   }
@@ -71,12 +80,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
   '/ecommerce': typeof EcommerceRoute
   '/recs': typeof RecsRoute
+  '/searchpage': typeof SearchpageRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexLazyRoute
   '/ecommerce': typeof EcommerceRoute
   '/recs': typeof RecsRoute
+  '/searchpage': typeof SearchpageRoute
 }
 
 export interface FileRoutesById {
@@ -84,27 +95,43 @@ export interface FileRoutesById {
   '/': typeof IndexLazyRoute
   '/ecommerce': typeof EcommerceRoute
   '/recs': typeof RecsRoute
+  '/searchpage': typeof SearchpageRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
+<<<<<<< HEAD
   fullPaths: '/' | '/ecommerce' | '/recs'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/ecommerce' | '/recs'
   id: '__root__' | '/' | '/ecommerce' | '/recs'
+=======
+  fullPaths: '/' | '/ecommerce' | '/searchpage'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/ecommerce' | '/searchpage'
+  id: '__root__' | '/' | '/ecommerce' | '/searchpage'
+>>>>>>> f3c79456f (feat(component): add filter sidebar functionality)
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
   EcommerceRoute: typeof EcommerceRoute
+<<<<<<< HEAD
   RecsRoute: typeof RecsRoute
+=======
+  SearchpageRoute: typeof SearchpageRoute
+>>>>>>> f3c79456f (feat(component): add filter sidebar functionality)
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
   EcommerceRoute: EcommerceRoute,
+<<<<<<< HEAD
   RecsRoute: RecsRoute,
+=======
+  SearchpageRoute: SearchpageRoute,
+>>>>>>> f3c79456f (feat(component): add filter sidebar functionality)
 }
 
 export const routeTree = rootRoute
@@ -121,7 +148,11 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/ecommerce",
+<<<<<<< HEAD
         "/recs"
+=======
+        "/searchpage"
+>>>>>>> f3c79456f (feat(component): add filter sidebar functionality)
       ]
     },
     "/": {
@@ -130,8 +161,13 @@ export const routeTree = rootRoute
     "/ecommerce": {
       "filePath": "ecommerce.tsx"
     },
+<<<<<<< HEAD
     "/recs": {
       "filePath": "recs.tsx"
+=======
+    "/searchpage": {
+      "filePath": "searchpage.tsx"
+>>>>>>> f3c79456f (feat(component): add filter sidebar functionality)
     }
   }
 }

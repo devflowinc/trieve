@@ -32,7 +32,7 @@ export const InlineChatHeader = ({
       style={{ display: props.inline && messages.length ? "flex" : "none" }}
     >
       <svg
-        className="close-icon"
+        className="trieve-close-icon"
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
