@@ -1,19 +1,42 @@
 import { useEffect, useState } from "react";
 import { RecommendationsConfig } from "./Recommendations";
-import {
-  ChunkMetadata,
-  GetRecommendedChunksData,
-  RecommendChunksResponseBody,
-  ScoreChunk,
-  SlimChunkMetadataWithArrayTagSet,
-} from "trieve-ts-sdk";
+import { GetRecommendedGroupsData } from "trieve-ts-sdk";
+
+export type RecommendationsChunk = {
+  score: number;
+  chunk: {
+    id: string;
+    link: string;
+    created_at: string;
+    chunk_html: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    metadata: Record<string, any>;
+    image_urls: string[];
+  };
+};
+
+type GroupAndChunkPair = {
+  group: {
+    name: string;
+    description: string;
+    id: string;
+    tracking_id: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    metadata: Record<string, any>;
+  };
+  chunks: RecommendationsChunk[];
+};
+
+type RecommendationsResponse = {
+  results: GroupAndChunkPair[];
+};
 
 export const useRecommendations = (config: RecommendationsConfig) => {
   const [status, setStatus] = useState<"loading" | "error" | "success">(
     "loading",
   );
 
-  const [results, setResults] = useState<ChunkMetadata[]>([]);
+  const [results, setResults] = useState<RecommendationsChunk[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,17 +44,21 @@ export const useRecommendations = (config: RecommendationsConfig) => {
 
     const getData = async () => {
       try {
-        const response = await fetch(config.baseUrl + "/api/chunk/recommend", {
-          method: "POST",
-          body: JSON.stringify({
-            positive_tracking_ids: [config.productId],
-          } satisfies GetRecommendedChunksData["requestBody"]),
-          headers: {
-            "TR-Dataset": config.datasetId,
-            Authorization: config.apiKey,
-            "Content-Type": "application/json",
+        const response = await fetch(
+          config.baseUrl + "/api/chunk_group/recommend",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              positive_group_tracking_ids: [config.productId],
+              limit: config.maxResults,
+            } satisfies GetRecommendedGroupsData["requestBody"]),
+            headers: {
+              "TR-Dataset": config.datasetId,
+              Authorization: config.apiKey,
+              "Content-Type": "application/json",
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           setStatus("error");
@@ -48,11 +75,9 @@ export const useRecommendations = (config: RecommendationsConfig) => {
           return;
         }
 
-        const data = (await response.json()) as {
-          chunks: { chunk: ChunkMetadata }[];
-        };
+        const data = (await response.json()) as RecommendationsResponse;
         console.log(data);
-        setResults(data.chunks.map((c) => c.chunk));
+        setResults(data.results.map((c) => c.chunks.at(0)!));
         setStatus("success");
       } catch {
         setStatus("error");

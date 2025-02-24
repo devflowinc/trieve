@@ -12,10 +12,15 @@ function RouteComponent() {
   return (
     <div className="grid">
       <Recommendations
-        productId="50294006579481"
+        theme={{
+          padding: "sm",
+          mode: "light",
+        }}
+        productId="9097273442585"
         apiKey={apiKey}
         baseUrl={baseUrl}
         datasetId={datasetId}
+        title="Similar Items"
       />
     </div>
   );
