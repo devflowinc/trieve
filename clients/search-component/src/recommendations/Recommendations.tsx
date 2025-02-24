@@ -27,6 +27,7 @@ export interface RecommendationsConfig {
   maxResults?: number;
   title?: string;
   orientation?: "horizontal" | "vertical";
+  cssRelease?: string;
 }
 
 const outerClass = cva(["tv-flex", "tv-gap-2"], {
