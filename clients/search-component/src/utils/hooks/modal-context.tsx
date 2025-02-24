@@ -1,3 +1,4 @@
+ 
 import React, {
   createContext,
   useCallback,
@@ -61,6 +62,19 @@ export interface TagProp {
   description?: string;
 }
 
+export interface FilterSidebarSections {
+  key: string;
+  title: string;
+  selectionType: "single" | "multiple";
+  filterType: "match_any" | "match_all";
+  options: TagProp[];
+}
+
+export interface FilterSidebarProps {
+  sections: FilterSidebarSections[];
+  display?: boolean;
+}
+
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
@@ -108,8 +122,8 @@ export type ModalProps = {
     mode: SearchModes;
     removeListeners?: boolean;
   }[];
-  inline: boolean;
-  inlineCarousel: boolean;
+  inline?: boolean;
+  inlineCarousel?: boolean;
   zIndex?: number;
   showFloatingButton?: boolean;
   floatingButtonPosition?:
@@ -133,9 +147,14 @@ export type ModalProps = {
   initialAiMessage?: string;
   ignoreEventListeners?: boolean;
   hideOverlay?: boolean;
+<<<<<<< HEAD
   hidePrice?: boolean;
   hideChunkHtml?: boolean;
   componentName?: string;
+=======
+  displayModal?: boolean;
+  filterSidebarProps?: FilterSidebarProps;
+>>>>>>> f3c79456f (feat(component): add filter sidebar functionality)
 };
 
 const defaultProps = {
@@ -195,6 +214,11 @@ const defaultProps = {
   hidePrice: false,
   hideChunkHtml: false,
   componentName: "Trieve Search Component",
+  displayModal: true,
+  filterSidebarProps: {
+    sections: [],
+    display: false,
+  } as FilterSidebarProps,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
@@ -231,6 +255,11 @@ const ModalContext = createContext<{
   pagefind?: PagefindApi;
   isRecording: boolean;
   setIsRecording: React.Dispatch<React.SetStateAction<boolean>>;
+  // sidebar filter specific state
+  selectedSidebarFilters: Record<string, string[]>; // hashmap where key is the section key and value are the selected labels
+  setSelectedSidebarFilters: React.Dispatch<
+    React.SetStateAction<Record<string, string[]>>
+  >;
 }>({
   props: defaultProps,
   trieveSDK: (() => {}) as unknown as TrieveSDK,
@@ -263,6 +292,9 @@ const ModalContext = createContext<{
   pagefind: null,
   isRecording: false,
   setIsRecording: () => {},
+  // sidebar filter specific state
+  selectedSidebarFilters: {},
+  setSelectedSidebarFilters: () => {},
 });
 
 const ModalProvider = ({
@@ -295,8 +327,10 @@ const ModalProvider = ({
     props.tags?.filter((t) => t.selected)
   );
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
-
   const [currentGroup, setCurrentGroup] = useState<ChunkGroup | null>(null);
+  const [selectedSidebarFilters, setSelectedSidebarFilters] = useState<
+    Record<string, string[]>
+  >({});
 
   const trieve = new TrieveSDK({
     baseUrl: props.baseUrl,
@@ -542,6 +576,8 @@ const ModalProvider = ({
         tagCounts,
         isRecording,
         setIsRecording,
+        selectedSidebarFilters,
+        setSelectedSidebarFilters,
       }}
     >
       {children}
