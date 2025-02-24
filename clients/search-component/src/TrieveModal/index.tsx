@@ -16,6 +16,35 @@ import { FloatingActionButton } from "./FloatingActionButton";
 import { FloatingSearchIcon } from "./FloatingSearchIcon";
 import { FloatingSearchInput } from "./FloatingSearchInput";
 import { ModalContainer } from "./ModalContainer";
+import { Accordion, FilterButton } from "./Accordion";
+
+const FilterPanel = () => {
+  const { props } = useModalState();
+  if (!props.filterSidebarProps?.display) return null;
+
+  return (
+    <div className="trieve-filter-panel">
+      {props.filterSidebarProps.sections.map((section) => (
+        <Accordion
+          sectionKey={section.key}
+          title={section.title}
+          key={section.key}
+        >
+          {section.options.map((option) => (
+            <FilterButton
+              sectionKey={section.key}
+              label={option.label ?? ""}
+              description={option.description}
+              type={section.selectionType}
+              filterKey={option.tag}
+              key={option.tag}
+            />
+          ))}
+        </Accordion>
+      ))}
+    </div>
+  );
+};
 
 const Modal = () => {
   useKeyboardNavigation();
@@ -192,32 +221,6 @@ const Modal = () => {
     };
   }, []);
 
-  useEffect(() => {
-    document.documentElement.style.setProperty(
-      "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB"
-    );
-
-    if (props.theme === "dark") {
-      document.documentElement.style.setProperty(
-        "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)"
-      );
-    } else {
-      document.documentElement.style.setProperty(
-        "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)"
-      );
-    }
-
-    document.documentElement.style.setProperty(
-      "--tv-prop-brand-font-family",
-      props.brandFontFamily ??
-        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
-    );
-  }, [props.brandColor, props.brandFontFamily]);
-
   return (
     <>
       {!props.inline && !props.hideOpenButton && (
@@ -259,10 +262,37 @@ export const initTrieveModalSearch = (props: ModalProps) => {
 };
 
 export const TrieveModalSearch = (props: ModalProps) => {
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--tv-prop-brand-color",
+      props.brandColor ?? "#CB53EB"
+    );
+
+    if (props.theme === "dark") {
+      document.documentElement.style.setProperty(
+        "--tv-prop-scrollbar-thumb-color",
+        "var(--tv-zinc-700)"
+      );
+    } else {
+      document.documentElement.style.setProperty(
+        "--tv-prop-scrollbar-thumb-color",
+        "var(--tv-zinc-300)"
+      );
+    }
+
+    document.documentElement.style.setProperty(
+      "--tv-prop-brand-font-family",
+      props.brandFontFamily ??
+        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
+    );
+  }, [props.brandColor, props.brandFontFamily]);
+
   return (
     <ModalProvider onLoadProps={props}>
       <ChatProvider>
-        <Modal />
+        {props.displayModal != false && <Modal />}
+        {props.filterSidebarProps?.display && <FilterPanel />}
       </ChatProvider>
     </ModalProvider>
   );

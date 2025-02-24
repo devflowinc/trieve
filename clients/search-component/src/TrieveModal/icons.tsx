@@ -257,3 +257,36 @@ export const StopSquareIcon = (props: SVGAttributes<SVGElement>) => (
     <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM192 160l128 0c17.7 0 32 14.3 32 32l0 128c0 17.7-14.3 32-32 32l-128 0c-17.7 0-32-14.3-32-32l0-128c0-17.7 14.3-32 32-32z" />
   </svg>
 );
+
+export const ChevronUpicon = (props: SVGAttributes<SVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    {...props}
+  >
+    <path d="M7.41 15.59L12 11l4.59 4.59L18 15l-6-6-6 6z" />
+  </svg>
+);
+
+export const ChevronDownIcon = (props: SVGAttributes<SVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    {...props}
+  >
+    <path d="M7.41 8.59L12 13l4.59-4.59L18 9l-6 6-6-6z" />
+  </svg>
+);
+
+export const CheckboxIcon = (props: SVGAttributes<SVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    {...props}
+  >
+    <path d="M20.285 6.712a1 1 0 0 0-1.414 0L9 15.585l-4.285-4.285a1 1 0 1 0-1.414 1.414l5 5a1 1 0 0 0 1.414 0l10-10a1 1 0 0 0 0-1.414z" />
+  </svg>
+);

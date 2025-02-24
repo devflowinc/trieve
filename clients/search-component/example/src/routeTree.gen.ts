@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as SearchpageImport } from './routes/searchpage'
 import { Route as EcommerceImport } from './routes/ecommerce'
 
 // Create Virtual Routes
@@ -20,6 +21,11 @@ import { Route as EcommerceImport } from './routes/ecommerce'
 const IndexLazyImport = createFileRoute('/')()
 
 // Create/Update Routes
+
+const SearchpageRoute = SearchpageImport.update({
+  path: '/searchpage',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const EcommerceRoute = EcommerceImport.update({
   path: '/ecommerce',
@@ -49,6 +55,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EcommerceImport
       parentRoute: typeof rootRoute
     }
+    '/searchpage': {
+      id: '/searchpage'
+      path: '/searchpage'
+      fullPath: '/searchpage'
+      preLoaderRoute: typeof SearchpageImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -57,36 +70,41 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
   '/ecommerce': typeof EcommerceRoute
+  '/searchpage': typeof SearchpageRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexLazyRoute
   '/ecommerce': typeof EcommerceRoute
+  '/searchpage': typeof SearchpageRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexLazyRoute
   '/ecommerce': typeof EcommerceRoute
+  '/searchpage': typeof SearchpageRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ecommerce'
+  fullPaths: '/' | '/ecommerce' | '/searchpage'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ecommerce'
-  id: '__root__' | '/' | '/ecommerce'
+  to: '/' | '/ecommerce' | '/searchpage'
+  id: '__root__' | '/' | '/ecommerce' | '/searchpage'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
   EcommerceRoute: typeof EcommerceRoute
+  SearchpageRoute: typeof SearchpageRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
   EcommerceRoute: EcommerceRoute,
+  SearchpageRoute: SearchpageRoute,
 }
 
 export const routeTree = rootRoute
@@ -102,7 +120,8 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/ecommerce"
+        "/ecommerce",
+        "/searchpage"
       ]
     },
     "/": {
@@ -110,6 +129,9 @@ export const routeTree = rootRoute
     },
     "/ecommerce": {
       "filePath": "ecommerce.tsx"
+    },
+    "/searchpage": {
+      "filePath": "searchpage.tsx"
     }
   }
 }
