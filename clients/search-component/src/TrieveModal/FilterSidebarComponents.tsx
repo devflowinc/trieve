@@ -1,7 +1,20 @@
-import React, { useMemo } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, useMemo } from "react";
 import { useState } from "react";
-import { CheckIcon, ChevronDownIcon, ChevronUpicon, XIcon } from "./icons";
-import { useModalState } from "../utils/hooks/modal-context";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpicon,
+  PhotoIcon,
+  XIcon,
+} from "./icons";
+import {
+  InferenceFiltersFormProps,
+  useModalState,
+} from "../utils/hooks/modal-context";
+import { toBase64 } from "./Search/UploadImage";
+import { getPresignedUrl, uploadFile } from "../utils/trieve";
+import { ToolFunctionParameter } from "trieve-ts-sdk";
 
 export const ActiveFilterPills = () => {
   const { selectedSidebarFilters, setSelectedSidebarFilters } = useModalState();
@@ -208,5 +221,192 @@ export const FilterButton = ({
         {label}
       </label>
     </button>
+  );
+};
+
+export interface InferenceFilterFormStep {
+  title: string;
+  description: string;
+  type: "image" | "text" | "tags";
+  placeholder: string;
+  filterSidebarSectionKey?: string;
+  prompt?: string;
+}
+
+export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
+  const { trieveSDK, props, setSelectedSidebarFilters } = useModalState();
+  const [images, setImages] = useState<Record<string, File>>({});
+  const [texts, setTexts] = useState<Record<string, string>>({});
+  const [loadingStates, setLoadingStates] = useState<Record<string, string>>(
+    {}
+  );
+
+  useEffect(() => {
+    const toolCallAbortController = new AbortController();
+
+    for (let i = 1; i < steps.length; i++) {
+      const correspondingFilter =
+        props.searchPageProps?.filterSidebarProps?.sections.find(
+          (section) => section.key === steps[i].filterSidebarSectionKey
+        );
+      if (!correspondingFilter?.options) {
+        continue;
+      }
+
+      const prevStep = steps[i - 1];
+      if (prevStep.type === "image") {
+        if (!images[prevStep.title]) {
+          continue;
+        }
+        (async () => {
+          setLoadingStates((prev) => ({
+            ...prev,
+            [steps[i].title]: "Uploading image...",
+          }));
+          const imageFile = images[prevStep.title];
+          const data = await toBase64(imageFile);
+          const base64File = data
+            .split(",")[1]
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=+$/, "");
+          const fileId = await uploadFile(
+            trieveSDK,
+            imageFile.name,
+            base64File
+          );
+          const imageUrl = await getPresignedUrl(trieveSDK, fileId);
+
+          setLoadingStates((prev) => ({
+            ...prev,
+            [steps[i].title]: "Detecting materials present in the image...",
+          }));
+          const filterParamsResp = await trieveSDK.getToolCallFunctionParams(
+            {
+              user_message_text: steps[i].prompt ?? "",
+              image_url: imageUrl ? imageUrl : null,
+              tool_function: {
+                name: "get_materials_present_in_image",
+                description:
+                  "Decide on which materials are present in the image.",
+                parameters:
+                  correspondingFilter.options?.map((tag) => {
+                    return {
+                      name: tag.label,
+                      parameter_type: "boolean",
+                      description: tag.description ?? "",
+                    } as ToolFunctionParameter;
+                  }) ?? [],
+              },
+            },
+            toolCallAbortController.signal
+          );
+          const match_any_tags: string[] = [];
+          for (const key of Object.keys(filterParamsResp.parameters ?? {})) {
+            const filterParam = (filterParamsResp.parameters as any)[
+              key as keyof typeof filterParamsResp.parameters
+            ];
+            if (typeof filterParam === "boolean" && filterParam) {
+              const tag = props.tags?.find((t) => t.label === key)?.tag;
+              if (tag) {
+                match_any_tags.push(tag);
+              }
+            }
+          }
+          setSelectedSidebarFilters((prev) => ({
+            ...prev,
+            [steps[i].filterSidebarSectionKey ?? ""]: match_any_tags,
+          }));
+
+          setLoadingStates((prev) => ({
+            ...prev,
+            [steps[i].title]: "idle",
+          }));
+        })();
+      }
+    }
+
+    return () => {
+      toolCallAbortController.abort();
+    };
+  }, [images, texts]);
+
+  return (
+    <div className="trieve-inference-filters-form">
+      {steps.map((step, index) => (
+        <div className="trieve-inference-filters-step-container" key={index}>
+          <div className="trieve-inference-filters-step-header">
+            <div className="trieve-inference-filters-step-number">
+              <span>{index + 1}</span>
+            </div>
+            <h2 className="trieve-inference-filters-step-title">
+              {step.title}
+            </h2>
+          </div>
+          <p className="trieve-inference-filters-step-description">
+            {step.description}
+          </p>
+          <div
+            className="trieve-inference-filters-step-input-container"
+            data-loading-state={loadingStates[step.title] ?? "idle"}
+          >
+            <div
+              className="trieve-image-input-container"
+              data-input-field-type={step.type}
+              data-image-selected={images[step.title] ? "true" : "false"}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const files = e.dataTransfer.files;
+                setImages((prev) => ({
+                  ...prev,
+                  [step.title]: files[0],
+                }));
+              }}
+              onClick={() => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = "image/*";
+                input.multiple = true;
+                input.onchange = (e) => {
+                  const files = (e.target as HTMLInputElement).files;
+                  if (files) {
+                    setImages((prev) => ({
+                      ...prev,
+                      [step.title]: files[0],
+                    }));
+                  }
+                };
+                input.click();
+              }}
+            >
+              <i
+                className="trieve-image-input-icon"
+                data-image-selected={images[step.title] ? "true" : "false"}
+              >
+                <PhotoIcon />
+              </i>
+              <img
+                className="trieve-image-input-preview"
+                src={
+                  images[step.title]
+                    ? URL.createObjectURL(images[step.title])
+                    : ""
+                }
+                alt=""
+                data-image-selected={images[step.title] ? "true" : "false"}
+              />
+              <p className="trieve-image-input-placeholder">
+                {step.placeholder}
+              </p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 };

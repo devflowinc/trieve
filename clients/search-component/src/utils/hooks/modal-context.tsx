@@ -1,4 +1,3 @@
- 
 import React, {
   createContext,
   useCallback,
@@ -24,6 +23,7 @@ import {
   searchWithTrieve,
   getPagefindIndex,
 } from "../trieve";
+import { InferenceFilterFormStep } from "../../TrieveModal/FilterSidebarComponents";
 
 export const ALL_TAG = {
   tag: "all",
@@ -72,6 +72,15 @@ export interface FilterSidebarSections {
 
 export interface FilterSidebarProps {
   sections: FilterSidebarSections[];
+}
+
+export interface InferenceFiltersFormProps {
+  steps: InferenceFilterFormStep[];
+}
+
+export interface SearchPageProps {
+  filterSidebarProps?: FilterSidebarProps;
+  inferenceFiltersFormProps?: InferenceFiltersFormProps;
   display?: boolean;
 }
 
@@ -148,7 +157,7 @@ export type ModalProps = {
   ignoreEventListeners?: boolean;
   hideOverlay?: boolean;
   displayModal?: boolean;
-  filterSidebarProps?: FilterSidebarProps;
+  searchPageProps?: SearchPageProps;
 };
 
 const defaultProps = {
@@ -206,10 +215,11 @@ const defaultProps = {
   ignoreEventListeners: false,
   hideOverlay: false,
   displayModal: true,
-  filterSidebarProps: {
-    sections: [],
-    display: false,
-  } as FilterSidebarProps,
+  searchPageProps: {
+    filterSidebarProps: {
+      sections: [],
+    } as FilterSidebarProps,
+  } as SearchPageProps,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
