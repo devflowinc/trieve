@@ -13,7 +13,16 @@
 
   const available = {{product.available}};
 
-  const toBool = (value) => value === 'true';
+  const toBool = (value) => {
+    if (typeof value === 'string') {
+      return value === 'true';
+    } else if (typeof value === 'boolean') {
+      return value;
+    } else {
+      return false;
+    }
+  }
+
   const getValue = (value, defaultValue) => {
     if (value === null || value === undefined || value === '') {
       return defaultValue;
@@ -37,7 +46,10 @@
     itemStyles: getValue("{{ block.settings.theme_item_styles }}", ""),
   };
 
-  if (!available || toBool(getValue("{{ block.settings.always_show }}", false))) {
+  const onlyShowIfNotAvailable = toBool(getValue("{{ block.settings.only_show_if_not_available }}", false));
+  const shouldShow = onlyShowIfNotAvailable ? !available : true;
+
+  if (shouldShow) {
     renderRecommendationsToDiv(inlineRoot, {
       apiKey: getValue("{{ block.settings.api_key }}", ""),
       datasetId: getValue("{{ block.settings.dataset_id }}", ""),
@@ -92,10 +104,10 @@
     },
     {
       "type": "checkbox",
-      "id": "always_show",
-      "label": "Always Show",
+      "id": "only_show_if_not_available",
+      "label": "Only Show If Not Available",
       "default": false,
-      "info": "Show the component regardless of product availability"
+      "info": "Only show the recommendations when the product is not available"
     },
     {
       "type": "number",
