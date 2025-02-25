@@ -175,8 +175,8 @@ pub async fn get_search_metrics_query(
             quantile(0.99)(latency) as p99,
             quantile(0.95)(latency) as p95,
             quantile(0.5)(latency) as p50,
-            round(100 * countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') >= 1) / count(*), 2) as percent_thumbs_up,
-            round(100 * countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') <= 0) / count(*), 2) as percent_thumbs_down
+            round(100 * countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') >= 1) / count(*), 2) as total_positive_ratings,
+            round(100 * countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') <= 0) / count(*), 2) as total_negative_ratings
         FROM search_queries
         WHERE dataset_id = ?            
          ",
@@ -1629,9 +1629,9 @@ pub async fn get_rag_query_ratings_query(
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RagQueryRatingsResponse, ServiceError> {
     let mut query_string = String::from(
-        "SELECT 
-            round(countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') >= 1), 2) as percent_thumbs_up,
-            round(countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') <= 0), 2) as percent_thumbs_down
+        "SELECT
+            round(countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') >= 1), 2) as total_positive_ratings,
+            round(countIf(JSONExtract(query_rating, 'rating', 'Nullable(Float64)') <= 0), 2) as total_negative_ratings
         FROM rag_queries
         WHERE dataset_id = ?",
     );
@@ -1640,7 +1640,7 @@ pub async fn get_rag_query_ratings_query(
         query_string = filter.add_to_query(query_string);
     }
 
-    let mut response = clickhouse_client
+    let response = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
         .fetch_one::<RagQueryRatingsResponse>()
@@ -1649,10 +1649,6 @@ pub async fn get_rag_query_ratings_query(
             log::error!("Error fetching query: {:?}", e);
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
-
-    let total_votes = response.percent_thumbs_up + response.percent_thumbs_down;
-    response.percent_thumbs_up = 100.0 * (response.percent_thumbs_up / total_votes);
-    response.percent_thumbs_down = 100.0 * (response.percent_thumbs_down / total_votes);
 
     Ok(response)
 }
