@@ -133,6 +133,8 @@ export type ModalProps = {
   initialAiMessage?: string;
   ignoreEventListeners?: boolean;
   hideOverlay?: boolean;
+  hidePrice?: boolean;
+  hideChunkHtml?: boolean;
 };
 
 const defaultProps = {
@@ -189,6 +191,8 @@ const defaultProps = {
   initialAiMessage: undefined,
   ignoreEventListeners: false,
   hideOverlay: false,
+  hidePrice: false,
+  hideChunkHtml: false,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
