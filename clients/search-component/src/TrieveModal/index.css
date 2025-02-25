@@ -199,8 +199,12 @@ body {
     }
 
     .additional-links {
+      @apply tv-mt-4 tv-flex tv-flex-wrap tv-gap-2;
+
       a.source-anchor {
         @apply tv-px-2 tv-py-1 tv-rounded tv-text-sm;
+
+        background-color: var(--tv-zinc-100);
 
         &.yt-anchor {
           @apply tv-max-w-44 tv-text-center tv-pt-3;
