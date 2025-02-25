@@ -5940,13 +5940,20 @@ impl RecommendationAnalyticsFilter {
 #[derive(Debug, Row, ToSchema, Serialize, Deserialize)]
 #[schema(title = "SearchMetricsResponse")]
 pub struct DatasetAnalytics {
+    /// Total number of search queries
     pub total_queries: i64,
+    /// Average latency of search queries
     pub avg_latency: f64,
+    /// 99th percentile latency of search queries
     pub p99: f64,
+    /// 95th percentile latency of search queries
     pub p95: f64,
+    /// 50th percentile latency of search queries
     pub p50: f64,
-    pub percent_thumbs_up: f64,
-    pub percent_thumbs_down: f64,
+    /// Total number of searches with a positive rating
+    pub total_positive_ratings: f64,
+    /// Total number of searches with a negative rating
+    pub total_negative_ratings: f64,
 }
 
 #[derive(Debug, ToSchema, Row, Serialize, Deserialize)]
@@ -6913,8 +6920,10 @@ pub struct RAGUsageGraphResponse {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
 #[schema(title = "RagQueryRatingsResponse")]
 pub struct RagQueryRatingsResponse {
-    pub percent_thumbs_up: f64,
-    pub percent_thumbs_down: f64,
+    /// Total number of positive RAG ratings
+    pub total_positive_ratings: i64,
+    /// Total number of negative RAG ratings
+    pub total_negative_ratings: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

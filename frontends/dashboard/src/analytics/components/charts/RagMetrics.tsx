@@ -44,7 +44,7 @@ export const RagMetrics = () => {
                     {toTitleCase(key.split("_").join(" "))}
                   </div>
                   <div class="text-lg font-semibold">
-                    {((value as number | null) ?? 0).toFixed(2)}
+                    {(value as number | null) ?? 0}
                   </div>
                 </div>
               )}
