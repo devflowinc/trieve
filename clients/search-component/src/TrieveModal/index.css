@@ -1261,10 +1261,10 @@ body {
     }
 
     .trieve-filter-bar-section {
-      @apply tv-flex tv-flex-col tv-p-2;
+      @apply tv-flex tv-flex-col tv-p-2 tv-max-w-72 tv-w-full tv-min-h-full;
 
       .trieve-filter-sidebar {
-        @apply tv-p-2 tv-max-w-72 tv-border-r tv-w-full;
+        @apply tv-p-2 tv-border-r tv-min-h-full;
       }
     }
   }
@@ -1446,6 +1446,22 @@ body {
     .trieve-inference-filters-step-container {
       @apply tv-flex tv-flex-col tv-p-2;
 
+      &[data-prev-complete="false"] {
+        .trieve-inference-filters-step-header {
+          .trieve-inference-filters-step-number {
+            background-color: var(--tv-zinc-400);
+          }
+
+          .trieve-inference-filters-step-title {
+            color: var(--tv-zinc-400);
+          }
+
+          .trieve-inference-filters-step-description {
+            color: var(--tv-zinc-400);
+          }
+        }
+      }
+
       .trieve-inference-filters-step-header {
         @apply tv-flex tv-items-center tv-gap-2;
 
@@ -1513,6 +1529,22 @@ body {
           .trieve-image-input-placeholder {
             @apply tv-text-sm tv-mt-6 tv-max-w-[75%] tv-text-center;
           }
+        }
+      }
+
+      .trieve-inference-filters-step-loading-container {
+        @apply tv-flex tv-flex-col tv-items-center tv-justify-center tv-h-32;
+
+        &[data-loading-state="idle"] {
+          display: none;
+        }
+
+        svg {
+          @apply tv-w-12;
+        }
+
+        .trieve-loading-text {
+          @apply tv-animate-pulse;
         }
       }
     }
