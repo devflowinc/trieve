@@ -47,46 +47,54 @@ export default function ECommerce() {
             apiKey={apiKey}
             baseUrl={baseUrl}
             brandColor="#000"
-            filterSidebarProps={{
-              sections: [
-                {
-                  key: "categories",
-                  title: "Categories",
-                  options: [
-                    { label: "All", tag: "all" },
-                    { label: "Clothing", tag: "clothing" },
-                    { label: "Shoes", tag: "shoes" },
-                    { label: "Accessories", tag: "accessories" },
-                  ],
-                  selectionType: "single",
-                  filterType: "match_any",
-                },
-                {
-                  key: "brands",
-                  title: "Brands",
-                  options: [
-                    { label: "All", tag: "all" },
-                    { label: "Nike", tag: "nike" },
-                    { label: "Adidas", tag: "adidas" },
-                    { label: "Puma", tag: "puma" },
-                    { label: "Reebok", tag: "reebok" },
-                  ],
-                  selectionType: "multiple",
-                  filterType: "match_any",
-                },
-                {
-                  key: "price",
-                  title: "Price Range",
-                  options: [
-                    { label: "$0 - $50", tag: "0-50" },
-                    { label: "$50 - $100", tag: "50-100" },
-                    { label: "$100 - $150", tag: "100-150" },
-                    { label: "$150+", tag: "150+" },
-                  ],
-                  selectionType: "single",
-                  filterType: "match_any",
-                },
-              ],
+            searchPageProps={{
+              filterSidebarProps: {
+                sections: [
+                  {
+                    key: "categories",
+                    title: "Categories",
+                    options: [
+                      { label: "Carpets", tag: "carpets" },
+                      { label: "Flooring", tag: "flooring" },
+                      { label: "Paint", tag: "paint" },
+                      { label: "Countertops", tag: "countertop" },
+                    ],
+                    selectionType: "single",
+                    filterType: "match_any",
+                  },
+                  {
+                    key: "brands",
+                    title: "Material",
+                    options: [
+                      { label: "Nylon", tag: "nylon" },
+                      { label: "Quartz", tag: "quartz" },
+                      { label: "Hardwood", tag: "hardwood" },
+                      { label: "Laminate", tag: "laminate" },
+                    ],
+                    selectionType: "multiple",
+                    filterType: "match_any",
+                  },
+                ],
+              },
+              inferenceFiltersFormProps: {
+                steps: [
+                  {
+                    title: "Room Image",
+                    description:
+                      "Upload an image of the space you want to renovate or materials you like and we will recommend products that match your style.",
+                    type: "image",
+                    placeholder: "Click or drag to upload (Max 5MB)",
+                  },
+                  {
+                    title: "Category Selection",
+                    description:
+                      "Select the materials you are interested in replacing.",
+                    type: "tags",
+                    placeholder: "Select categories",
+                    filterSidebarSectionKey: "categories",
+                  },
+                ],
+              },
               display: true,
             }}
           />

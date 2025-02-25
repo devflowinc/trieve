@@ -20,34 +20,50 @@ import {
   Accordion,
   ActiveFilterPills,
   FilterButton,
+  InferenceFiltersForm,
 } from "./FilterSidebarComponents";
 
 const FilterPanel = () => {
   const { props } = useModalState();
-  if (!props.filterSidebarProps?.display) return null;
+  if (!props.searchPageProps?.display) return null;
 
   return (
-    <div className="trieve-filter-panel">
-      <ActiveFilterPills />
-      <div className="trieve-filter-bar">
-        {props.filterSidebarProps.sections.map((section) => (
-          <Accordion
-            sectionKey={section.key}
-            title={section.title}
-            key={section.key}
-          >
-            {section.options.map((option) => (
-              <FilterButton
-                sectionKey={section.key}
-                label={option.label ?? ""}
-                description={option.description}
-                type={section.selectionType}
-                filterKey={option.tag}
-                key={option.tag}
-              />
-            ))}
-          </Accordion>
-        ))}
+    <div className="trieve-search-page">
+      <div className="trieve-search-subheader-w-full">
+        <ActiveFilterPills />
+      </div>
+      <div className="trieve-search-page-main-section">
+        <div className="trieve-filter-bar-section">
+          <div className="trieve-filter-sidebar">
+            {props.searchPageProps?.filterSidebarProps?.sections.map(
+              (section) => (
+                <Accordion
+                  sectionKey={section.key}
+                  title={section.title}
+                  key={section.key}
+                >
+                  {section.options.map((option) => (
+                    <FilterButton
+                      sectionKey={section.key}
+                      label={option.label ?? ""}
+                      description={option.description}
+                      type={section.selectionType}
+                      filterKey={option.tag}
+                      key={option.tag}
+                    />
+                  ))}
+                </Accordion>
+              )
+            )}
+          </div>
+        </div>
+        <div className="trieve-filter-main-section">
+          <InferenceFiltersForm
+            steps={
+              props.searchPageProps?.inferenceFiltersFormProps?.steps ?? []
+            }
+          />
+        </div>
       </div>
     </div>
   );
@@ -299,7 +315,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
     <ModalProvider onLoadProps={props}>
       <ChatProvider>
         {props.displayModal != false && <Modal />}
-        {props.filterSidebarProps?.display && <FilterPanel />}
+        {props.searchPageProps?.display && <FilterPanel />}
       </ChatProvider>
     </ModalProvider>
   );
