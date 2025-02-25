@@ -354,11 +354,12 @@ body {
       fill: var(--text-color);
     }
 
-    .system {
+    .system,
+    .code-markdown {
       @apply tv-mt-2 sm:tv-mt-2 tv-mb-2 tv-items-center tv-overflow-ellipsis;
 
       p {
-        @apply tv-pb-0.5;
+        @apply tv-pb-2;
       }
 
       a:not(.tv-carousel-item):not(.tv-carousel-item *):not(
@@ -1252,6 +1253,10 @@ body {
   }
 
   .trieve-search-page {
+    &[data-display="false"] {
+      display: none;
+    }
+
     .trieve-search-subheader-w-full {
       @apply tv-w-full;
     }
@@ -1440,8 +1445,12 @@ body {
     }
   }
 
+  .trieve-filter-main-section {
+    @apply tv-w-full;
+  }
+
   .trieve-inference-filters-form {
-    @apply tv-flex tv-flex-col tv-gap-2 tv-p-2 tv-mt-2;
+    @apply tv-flex tv-flex-col tv-gap-2 tv-p-2 tv-mt-2 tv-w-full;
 
     .trieve-inference-filters-step-container {
       @apply tv-flex tv-flex-col tv-p-2;
@@ -1506,7 +1515,7 @@ body {
           }
 
           .trieve-image-input-icon {
-            @apply tv-w-12 tv-h-10;
+            @apply tv-w-52 tv-h-48;
 
             &[data-image-selected="true"] {
               display: none;
@@ -1518,7 +1527,7 @@ body {
           }
 
           .trieve-image-input-preview {
-            @apply tv-max-h-12;
+            @apply tv-max-h-48;
             display: none;
 
             &[data-image-selected="true"] {
@@ -1528,6 +1537,54 @@ body {
 
           .trieve-image-input-placeholder {
             @apply tv-text-sm tv-mt-6 tv-max-w-[75%] tv-text-center;
+          }
+        }
+
+        .trieve-inference-filters-step-tags {
+          @apply tv-flex tv-flex-wrap tv-gap-2 tv-mt-4;
+
+          button.trieve-inference-filters-step-tag {
+            @apply tv-flex tv-items-center tv-gap-x-1 tv-py-1 tv-px-2 tv-rounded-lg tv-cursor-pointer tv-bg-zinc-100;
+
+            &[data-active="true"] {
+              background-color: var(--tv-prop-brand-color);
+              color: var(--tv-zinc-50);
+
+              .trieve-checkbox-icon {
+                display: block;
+              }
+            }
+
+            &:hover:not([data-active="true"]) {
+              background-color: var(--tv-zinc-200);
+              color: var(--tv-prop-brand-color);
+
+              .trieve-checkbox-icon {
+                display: block;
+              }
+            }
+
+            .trieve-checkbox-icon {
+              display: none;
+            }
+          }
+        }
+
+        .trieve-inference-filters-search-modal-container {
+          display: none;
+
+          &[data-input-field-type="search_modal"] {
+            display: block;
+          }
+
+          &[data-prev-complete="false"] {
+            .trieve-inference-filters-search-modal {
+              display: none;
+            }
+          }
+
+          .trieve-inference-filters-search-modal {
+            display: block;
           }
         }
       }

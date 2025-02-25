@@ -23,12 +23,15 @@ import {
   InferenceFiltersForm,
 } from "./FilterSidebarComponents";
 
-const FilterPanel = () => {
+const SearchPage = () => {
   const { props } = useModalState();
   if (!props.searchPageProps?.display) return null;
 
   return (
-    <div className="trieve-search-page">
+    <div
+      className="trieve-search-page"
+      data-display={props.searchPageProps?.display ? "true" : "false"}
+    >
       <div className="trieve-search-subheader-w-full">
         <ActiveFilterPills />
       </div>
@@ -267,7 +270,7 @@ const Modal = () => {
             style={{ zIndex: props.zIndex ?? 1000 }}
           ></div>
         )}
-        <ModalContainer />
+        {(props.displayModal ?? true) && <ModalContainer />}
       </>
       {props.showFloatingSearchIcon && <FloatingSearchIcon />}
       {props.showFloatingButton && <FloatingActionButton />}
@@ -314,8 +317,8 @@ export const TrieveModalSearch = (props: ModalProps) => {
   return (
     <ModalProvider onLoadProps={props}>
       <ChatProvider>
-        {props.displayModal != false && <Modal />}
-        {props.searchPageProps?.display && <FilterPanel />}
+        <Modal />
+        <SearchPage />
       </ChatProvider>
     </ModalProvider>
   );
