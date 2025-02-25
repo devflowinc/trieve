@@ -2,6 +2,14 @@ import React, { ChangeEvent, useEffect, useRef } from "react";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { getPresignedUrl, uploadFile } from "../../utils/trieve";
 
+export const toBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+  });
+
 export const UploadImage = () => {
   const fileInputRef = useRef(null);
   const [file, setFile] = React.useState<File | null>(null);
@@ -20,14 +28,6 @@ export const UploadImage = () => {
     }
   };
 
-  const toBase64 = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-    });
-
   useEffect(() => {
     const internalFile = file;
     setFile(null);
@@ -45,7 +45,7 @@ export const UploadImage = () => {
         const fileId = await uploadFile(
           trieveSDK,
           internalFile.name,
-          base64File,
+          base64File
         );
         const imageUrl = await getPresignedUrl(trieveSDK, fileId);
         setImageUrl(imageUrl);

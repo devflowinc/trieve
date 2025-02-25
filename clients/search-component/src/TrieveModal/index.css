@@ -1251,11 +1251,21 @@ body {
     }
   }
 
-  .trieve-filter-panel {
-    @apply tv-flex tv-flex-col tv-p-2;
+  .trieve-search-page {
+    .trieve-search-subheader-w-full {
+      @apply tv-w-full;
+    }
 
-    .trieve-filter-bar {
-      @apply tv-p-2 tv-max-w-72 tv-border-r;
+    .trieve-search-page-main-section {
+      @apply tv-flex;
+    }
+
+    .trieve-filter-bar-section {
+      @apply tv-flex tv-flex-col tv-p-2;
+
+      .trieve-filter-sidebar {
+        @apply tv-p-2 tv-max-w-72 tv-border-r tv-w-full;
+      }
     }
   }
 
@@ -1427,6 +1437,84 @@ body {
 
     label {
       @apply tv-cursor-pointer tv-text-sm;
+    }
+  }
+
+  .trieve-inference-filters-form {
+    @apply tv-flex tv-flex-col tv-gap-2 tv-p-2 tv-mt-2;
+
+    .trieve-inference-filters-step-container {
+      @apply tv-flex tv-flex-col tv-p-2;
+
+      .trieve-inference-filters-step-header {
+        @apply tv-flex tv-items-center tv-gap-2;
+
+        .trieve-inference-filters-step-number {
+          @apply tv-rounded-full tv-text-white tv-w-5 tv-h-5 tv-text-center tv-text-sm;
+          background-color: var(--tv-prop-brand-color);
+        }
+
+        .trieve-inference-filters-step-title {
+          @apply tv-text-lg tv-font-medium;
+        }
+      }
+
+      .trieve-inference-filters-step-description {
+        @apply tv-text-sm tv-mt-0.5 tv-text-gray-500;
+      }
+
+      .trieve-inference-filters-step-input-container {
+        display: none;
+
+        &[data-loading-state="idle"] {
+          display: block;
+        }
+
+        .trieve-image-input-container {
+          @apply tv-border-dashed tv-border-2 tv-rounded-lg tv-px-2 tv-py-4 tv-mt-4 tv-flex-col tv-items-center tv-justify-center tv-cursor-pointer;
+
+          display: none;
+
+          &[data-input-field-type="image"] {
+            display: flex;
+          }
+
+          &:hover {
+            border-color: var(--tv-prop-brand-color);
+
+            .trieve-image-input-icon {
+              svg {
+                color: var(--tv-prop-brand-color);
+              }
+            }
+          }
+
+          .trieve-image-input-icon {
+            @apply tv-w-12 tv-h-10;
+
+            &[data-image-selected="true"] {
+              display: none;
+            }
+
+            svg {
+              color: var(--tv-zinc-400);
+            }
+          }
+
+          .trieve-image-input-preview {
+            @apply tv-max-h-12;
+            display: none;
+
+            &[data-image-selected="true"] {
+              display: block;
+            }
+          }
+
+          .trieve-image-input-placeholder {
+            @apply tv-text-sm tv-mt-6 tv-max-w-[75%] tv-text-center;
+          }
+        }
+      }
     }
   }
 }
