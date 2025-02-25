@@ -7,6 +7,78 @@ export const Route = createFileRoute("/searchpage")({
   component: ECommerce,
 });
 
+// Carpet
+
+// Carpet Tiles
+
+// Rugs
+
+// Engineered & Composite
+
+// Laminate
+
+// Porcelain Panel
+
+// Solid Surface
+
+// Cotton
+
+// Faux Leather & Vinyl
+
+// Leather
+
+// Linen
+
+// Sheer
+
+// Synthetic
+
+// Velvet
+
+// Wool
+
+// Carpet
+
+// Engineered Hardwood
+
+// Flooring Tiles
+
+// Luxury Vinyl Tile
+
+// Cabinet
+
+// Decorative
+
+// Interior
+
+// Laminate
+
+// Plastic & Synthetics
+
+// Wood & Wood Alternatives
+
+// Ceramic
+
+// Glass
+
+// Mosaic
+
+// Pearl & Seashell
+
+// Porcelain
+
+// Stone
+
+// Natural
+
+// Paper
+
+// Synthetic
+
+// Vinyl
+
+// Roman Shades
+
 export default function ECommerce() {
   const baseUrl = import.meta.env.VITE_API_BASE_URL;
   const datasetId = import.meta.env.VITE_DATASET_ID;
@@ -97,9 +169,9 @@ export default function ECommerce() {
                     title: "View Recommended Materials",
                     description:
                       "Our AI will recommend materials based on your image and which materials you are replacing.",
-                    type: "tags",
+                    type: "search_results",
                     prompt:
-                      "I am looking to replace the following materials from the image I shared, please describe what those materials should be in terms of color, luminance, and style:\n\n",
+                      "Write 1 sentence describing the ideal replacements in terms of color, luminance, and style of ONLY the following materials:\n\n",
                   },
                 ],
               },
