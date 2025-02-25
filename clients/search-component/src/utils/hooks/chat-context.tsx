@@ -449,6 +449,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             llm_options: {
               completion_first: false,
             },
+            concat_user_messages_query: true,
             page_size: props.searchOptions?.page_size ?? 8,
             score_threshold: props.searchOptions?.score_threshold || null,
             use_group_search: props.useGroupSearch,

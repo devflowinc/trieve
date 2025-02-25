@@ -187,25 +187,27 @@ export const Message = ({
                     ),
               }}
             />
-            <p
-              className="ecomm-item-price"
-              style={{
-                color: props.brandColor ?? "#CB53EB",
-              }}
-            >
-              ${item.price}
-            </p>
-            <p
-              className="ecom-item-description"
-              dangerouslySetInnerHTML={{
-                __html: props.showResultHighlights
-                  ? descriptionHtml
-                  : descriptionHtml.replace(
-                      /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      ""
-                    ),
-              }}
-            />
+            {!props.hidePrice &&
+              <p
+                className="ecomm-item-price"
+                style={{
+                  color: props.brandColor ?? "#CB53EB",
+                }}
+              >
+                ${item.price}
+              </p>}
+            {!props.hideChunkHtml &&
+              <p
+                className="ecom-item-description"
+                dangerouslySetInnerHTML={{
+                  __html: props.showResultHighlights
+                    ? descriptionHtml
+                    : descriptionHtml.replace(
+                        /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                        ""
+                      ),
+                }}
+              />}
           </div>
           <div className="tv-w-full mt-auto tv-justify-self-end">
             <AddToCartButton item={item} />
