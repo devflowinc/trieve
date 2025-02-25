@@ -79,7 +79,7 @@ export default function ECommerce() {
               inferenceFiltersFormProps: {
                 steps: [
                   {
-                    title: "Room Image",
+                    title: "Upload Image",
                     description:
                       "Upload an image of the space you want to renovate or materials you like and we will recommend products that match your style.",
                     type: "image",
