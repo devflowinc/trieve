@@ -235,9 +235,17 @@ export interface InferenceFilterFormStep {
 }
 
 export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
-  const { trieveSDK, props, setSelectedSidebarFilters } = useModalState();
+  const {
+    trieveSDK,
+    props,
+    setSelectedSidebarFilters,
+    selectedSidebarFilters,
+  } = useModalState();
   const [images, setImages] = useState<Record<string, File>>({});
   const [loadingStates, setLoadingStates] = useState<Record<string, string>>(
+    {}
+  );
+  const [filterOptions, setFilterOptions] = useState<Record<string, string[]>>(
     {}
   );
 
@@ -307,16 +315,22 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               key as keyof typeof filterParamsResp.parameters
             ];
             if (typeof filterParam === "boolean" && filterParam) {
-              const tag = props.tags?.find((t) => t.label === key)?.tag;
+              const tag = correspondingFilter.options?.find(
+                (t) => t.label === key
+              )?.tag;
               if (tag) {
                 match_any_tags.push(tag);
               }
             }
           }
-          setSelectedSidebarFilters((prev) => ({
-            ...prev,
-            [steps[i].filterSidebarSectionKey ?? ""]: match_any_tags,
-          }));
+          setFilterOptions((prev) => {
+            const newFilterOptions = {
+              ...prev,
+              [steps[i].filterSidebarSectionKey ?? ""]: match_any_tags,
+            };
+
+            return newFilterOptions;
+          });
 
           setLoadingStates((prev) => ({
             ...prev,
@@ -412,6 +426,51 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               <p className="trieve-image-input-placeholder">
                 {step.placeholder}
               </p>
+            </div>
+
+            <div className="trieve-inference-filters-step-tags">
+              {filterOptions[step.filterSidebarSectionKey ?? ""]?.map((tag) => (
+                <button
+                  className="trieve-inference-filters-step-tag"
+                  key={tag}
+                  data-active={
+                    Object.keys(selectedSidebarFilters ?? {}).includes(
+                      step.filterSidebarSectionKey ?? ""
+                    ) &&
+                    selectedSidebarFilters[
+                      step.filterSidebarSectionKey ?? ""
+                    ]?.includes(tag)
+                      ? "true"
+                      : "false"
+                  }
+                  onClick={() => {
+                    setSelectedSidebarFilters((prev) => {
+                      const selectedTags =
+                        prev[step.filterSidebarSectionKey ?? ""];
+                      if (selectedTags?.includes(tag)) {
+                        return {
+                          ...prev,
+                          [step.filterSidebarSectionKey ?? ""]:
+                            selectedTags.filter((t) => t !== tag),
+                        };
+                      }
+
+                      return {
+                        ...prev,
+                        [step.filterSidebarSectionKey ?? ""]: [
+                          ...(prev[step.filterSidebarSectionKey ?? ""] ?? []),
+                          tag,
+                        ],
+                      };
+                    });
+                  }}
+                >
+                  <span>{tag}</span>
+                  <i className="trieve-checkbox-icon">
+                    <CheckIcon />
+                  </i>
+                </button>
+              ))}
             </div>
           </div>
           <div
