@@ -72,7 +72,6 @@ export const UploadAudio = () => {
   return (
     <div>
       <div
-        aria-role="button"
         className={cn(
           "tv-rounded tv-z-20 tv-cursor-pointer",
           mode === "chat" && "tv-right-[60px] tv-top-[17px] tv-absolute",

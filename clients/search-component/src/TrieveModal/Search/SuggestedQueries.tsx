@@ -13,7 +13,7 @@ export const SuggestedQueries = () => {
     <div
       className={cn(
         `suggested-queries-wrapper tv-flex tv-mt-2 tv-gap-2 tv-items-center tv-flex-wrap tv-mb-2 ${props.type}`,
-        imageUrl && "tv-pt-2",
+        imageUrl && "tv-pt-2"
       )}
     >
       <button
@@ -24,6 +24,9 @@ export const SuggestedQueries = () => {
       >
         <i className="fa-solid fa-arrow-rotate-right"></i>
       </button>
+      {suggestedQueries.length === 0 && (
+        <div className="suggested-query loading">Loading...</div>
+      )}
       {suggestedQueries.map((q) => {
         q = q.replace(/^-|\*$/g, "");
         q = q.trim();

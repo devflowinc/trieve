@@ -46,7 +46,12 @@ export default function ECommerce() {
             datasetId={datasetId}
             apiKey={apiKey}
             baseUrl={baseUrl}
-            brandColor="#000"
+            inline={true}
+            defaultSearchMode="chat"
+            allowSwitchingModes={false}
+            brandColor="#a33eb5"
+            type="ecommerce"
+            inlineCarousel={true}
             searchPageProps={{
               filterSidebarProps: {
                 sections: [
@@ -54,22 +59,48 @@ export default function ECommerce() {
                     key: "categories",
                     title: "Categories",
                     options: [
-                      { label: "Carpets", tag: "carpets" },
-                      { label: "Flooring", tag: "flooring" },
-                      { label: "Paint", tag: "paint" },
-                      { label: "Countertops", tag: "countertop" },
-                    ],
-                    selectionType: "single",
-                    filterType: "match_any",
-                  },
-                  {
-                    key: "brands",
-                    title: "Material",
-                    options: [
-                      { label: "Nylon", tag: "nylon" },
-                      { label: "Quartz", tag: "quartz" },
-                      { label: "Hardwood", tag: "hardwood" },
-                      { label: "Laminate", tag: "laminate" },
+                      {
+                        label: "Indoor Wall",
+                        tag: "Indoor Wall",
+                        description:
+                          "Set this to true anytime the image seems to include walls.",
+                      },
+                      {
+                        label: "Flooring",
+                        tag: "Flooring",
+                        description:
+                          "Set this to true anytime the image seems to include floors.",
+                      },
+                      {
+                        label: "Countertops",
+                        tag: "Countertops",
+                        description:
+                          "Set this to true anytime the image seems to include countertops.",
+                      },
+                      {
+                        label: "Cabinets",
+                        tag: "Cabinets",
+                        description:
+                          "Set this to true anytime the image seems to include cabinets.",
+                      },
+                      {
+                        label: "Hardware",
+                        tag: "Hardware",
+                        description:
+                          "Set this to true anytime the image seems to include or like it could include hardware like cabinet handles or knobs.",
+                      },
+                      {
+                        label: "Sinks",
+                        tag: "Sinks",
+                        description:
+                          "Set this to true anytime the image seems to include sinks.",
+                      },
+                      {
+                        label: "Rugs",
+                        tag: "Rugs",
+                        description:
+                          "Set this to true anytime the image seems to include or like it could include a rug.",
+                      },
                     ],
                     selectionType: "multiple",
                     filterType: "match_any",
@@ -92,6 +123,14 @@ export default function ECommerce() {
                     type: "tags",
                     placeholder: "Select categories",
                     filterSidebarSectionKey: "categories",
+                  },
+                  {
+                    title: "View Recommended Materials",
+                    description:
+                      "Our AI will recommend materials based on your image and which materials you are replacing.",
+                    type: "search_modal",
+                    prompt:
+                      "Write 1 sentence describing the ideal replacements in terms of color, luminance, and style of ONLY the following materials:\n\n",
                   },
                 ],
               },

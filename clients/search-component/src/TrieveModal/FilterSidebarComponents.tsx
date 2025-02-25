@@ -16,6 +16,9 @@ import {
 import { toBase64 } from "./Search/UploadImage";
 import { getPresignedUrl, uploadFile } from "../utils/trieve";
 import { ToolFunctionParameter } from "trieve-ts-sdk";
+import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
+import { ModalContainer } from "./ModalContainer";
+import { useChatState } from "../utils/hooks/chat-context";
 
 export const ActiveFilterPills = () => {
   const { selectedSidebarFilters, setSelectedSidebarFilters } = useModalState();
@@ -225,19 +228,37 @@ export const FilterButton = ({
   );
 };
 
+export interface SearchQueryState {
+  query: string;
+  loading: boolean;
+}
+
 export interface InferenceFilterFormStep {
   title: string;
   description: string;
-  type: "image" | "text" | "tags";
-  placeholder: string;
+  type: "image" | "tags" | "search_modal";
+  placeholder?: string;
   filterSidebarSectionKey?: string;
   prompt?: string;
 }
 
 export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
-  const { trieveSDK, props, setSelectedSidebarFilters } = useModalState();
+  const {
+    trieveSDK,
+    props,
+    setSelectedSidebarFilters,
+    selectedSidebarFilters,
+  } = useModalState();
+  const { askQuestion, clearConversation } = useChatState();
   const [images, setImages] = useState<Record<string, File>>({});
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const [searchQueries, setSearchQueries] = useState<
+    Record<string, SearchQueryState>
+  >({});
   const [loadingStates, setLoadingStates] = useState<Record<string, string>>(
+    {}
+  );
+  const [filterOptions, setFilterOptions] = useState<Record<string, string[]>>(
     {}
   );
 
@@ -259,6 +280,12 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
           continue;
         }
         (async () => {
+          setSelectedSidebarFilters((prev) => {
+            return {
+              ...prev,
+              [steps[i].filterSidebarSectionKey ?? ""]: [],
+            };
+          });
           setLoadingStates((prev) => ({
             ...prev,
             [steps[i].title]: "Uploading image...",
@@ -276,6 +303,10 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             base64File
           );
           const imageUrl = await getPresignedUrl(trieveSDK, fileId);
+          setImageUrls((prev) => ({
+            ...prev,
+            [prevStep.title]: imageUrl,
+          }));
 
           setLoadingStates((prev) => ({
             ...prev,
@@ -307,16 +338,22 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               key as keyof typeof filterParamsResp.parameters
             ];
             if (typeof filterParam === "boolean" && filterParam) {
-              const tag = props.tags?.find((t) => t.label === key)?.tag;
+              const tag = correspondingFilter.options?.find(
+                (t) => t.label === key
+              )?.tag;
               if (tag) {
                 match_any_tags.push(tag);
               }
             }
           }
-          setSelectedSidebarFilters((prev) => ({
-            ...prev,
-            [steps[i].filterSidebarSectionKey ?? ""]: match_any_tags,
-          }));
+          setFilterOptions((prev) => {
+            const newFilterOptions = {
+              ...prev,
+              [steps[i].filterSidebarSectionKey ?? ""]: match_any_tags,
+            };
+
+            return newFilterOptions;
+          });
 
           setLoadingStates((prev) => ({
             ...prev,
@@ -331,6 +368,94 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     };
   }, [images]);
 
+  useEffect(() => {
+    const firstMessageInferenceAbortController = new AbortController();
+    for (let i = 1; i < steps.length; i++) {
+      if (steps[i].type === "search_modal") {
+        const prevFilter = steps[i - 1].filterSidebarSectionKey;
+        const selectedTags = selectedSidebarFilters[prevFilter ?? ""];
+        if (!selectedTags?.length) {
+          continue;
+        }
+
+        (async () => {
+          setLoadingStates((prev) => ({
+            ...prev,
+            [steps[i].title]: "Figuring out what will look good...",
+          }));
+          setSearchQueries((prev) => ({
+            ...prev,
+            [steps[i].title]: {
+              query: "",
+              loading: true,
+            },
+          }));
+          clearConversation();
+
+          const fingerprint = await getFingerprint();
+          const replacementMaterialDescriptionReader =
+            await trieveSDK.ragOnChunkReader(
+              {
+                chunk_ids: [],
+                image_urls: Object.values(imageUrls).filter((url) => url),
+                prev_messages: [
+                  {
+                    content: `${steps[i].prompt ?? ""} ${selectedTags.join(", ")}`,
+                    role: "user",
+                  },
+                ],
+                prompt: "",
+                stream_response: true,
+                user_id: fingerprint.toString(),
+              },
+              firstMessageInferenceAbortController.signal
+            );
+          setLoadingStates((prev) => ({
+            ...prev,
+            [steps[i].title]: "Generating search query...",
+          }));
+
+          let done = false;
+          let textInStream = "";
+          while (!done) {
+            const { value, done: doneReading } =
+              await replacementMaterialDescriptionReader.read();
+            if (doneReading) {
+              done = doneReading;
+              setLoadingStates((prev) => ({
+                ...prev,
+                [steps[i].title]: "idle",
+              }));
+              askQuestion(textInStream);
+              setSearchQueries((prev) => ({
+                ...prev,
+                [steps[i].title]: {
+                  query: textInStream,
+                  loading: false,
+                },
+              }));
+            } else if (value) {
+              const decoder = new TextDecoder();
+              const newText = decoder.decode(value);
+              textInStream += newText;
+              setSearchQueries((prev) => ({
+                ...prev,
+                [steps[i].title]: {
+                  query: textInStream,
+                  loading: false,
+                },
+              }));
+            }
+          }
+        })();
+      }
+    }
+
+    return () => {
+      firstMessageInferenceAbortController.abort();
+    };
+  }, [selectedSidebarFilters]);
+
   return (
     <div className="trieve-inference-filters-form">
       {steps.map((step, index) => (
@@ -338,7 +463,13 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
           className="trieve-inference-filters-step-container"
           key={index}
           data-prev-complete={
-            index == 0 || images[steps[index - 1].title] ? "true" : "false"
+            index == 0 ||
+            images[steps[index - 1].title] ||
+            selectedSidebarFilters[
+              steps[index - 1].filterSidebarSectionKey ?? ""
+            ]?.length
+              ? "true"
+              : "false"
           }
         >
           <div className="trieve-inference-filters-step-header">
@@ -412,6 +543,70 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               <p className="trieve-image-input-placeholder">
                 {step.placeholder}
               </p>
+            </div>
+
+            <div
+              className="trieve-inference-filters-step-tags"
+              data-input-field-type={step.type}
+            >
+              {filterOptions[step.filterSidebarSectionKey ?? ""]?.map((tag) => (
+                <button
+                  className="trieve-inference-filters-step-tag"
+                  key={tag}
+                  data-active={
+                    Object.keys(selectedSidebarFilters ?? {}).includes(
+                      step.filterSidebarSectionKey ?? ""
+                    ) &&
+                    selectedSidebarFilters[
+                      step.filterSidebarSectionKey ?? ""
+                    ]?.includes(tag)
+                      ? "true"
+                      : "false"
+                  }
+                  onClick={() => {
+                    setSelectedSidebarFilters((prev) => {
+                      const selectedTags =
+                        prev[step.filterSidebarSectionKey ?? ""];
+                      if (selectedTags?.includes(tag)) {
+                        return {
+                          ...prev,
+                          [step.filterSidebarSectionKey ?? ""]:
+                            selectedTags.filter((t) => t !== tag),
+                        };
+                      }
+
+                      return {
+                        ...prev,
+                        [step.filterSidebarSectionKey ?? ""]: [
+                          ...(prev[step.filterSidebarSectionKey ?? ""] ?? []),
+                          tag,
+                        ],
+                      };
+                    });
+                  }}
+                >
+                  <span>{tag}</span>
+                  <i className="trieve-checkbox-icon">
+                    <CheckIcon />
+                  </i>
+                </button>
+              ))}
+            </div>
+
+            <div
+              className="trieve-inference-filters-search-modal-container"
+              data-prev-complete={
+                index == 0 ||
+                (searchQueries[steps[index].title]?.query &&
+                  !searchQueries[steps[index].title]?.loading)
+                  ? "true"
+                  : "false"
+              }
+              data-input-field-type={step.type}
+            >
+              <div className="trieve-inference-filters-search-modal">
+                <ModalContainer />
+              </div>
             </div>
           </div>
           <div
