@@ -59,7 +59,7 @@ export default function ECommerce() {
                       { label: "Paint", tag: "paint" },
                       { label: "Countertops", tag: "countertop" },
                     ],
-                    selectionType: "single",
+                    selectionType: "multiple",
                     filterType: "match_any",
                   },
                   {
@@ -92,6 +92,14 @@ export default function ECommerce() {
                     type: "tags",
                     placeholder: "Select categories",
                     filterSidebarSectionKey: "categories",
+                  },
+                  {
+                    title: "View Recommended Materials",
+                    description:
+                      "Our AI will recommend materials based on your image and which materials you are replacing.",
+                    type: "tags",
+                    prompt:
+                      "I am looking to replace the following materials from the image I shared, please describe what those materials should be in terms of color, luminance, and style:\n\n",
                   },
                 ],
               },

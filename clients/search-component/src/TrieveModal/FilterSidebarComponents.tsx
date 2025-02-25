@@ -228,8 +228,8 @@ export const FilterButton = ({
 export interface InferenceFilterFormStep {
   title: string;
   description: string;
-  type: "image" | "text" | "tags";
-  placeholder: string;
+  type: "image" | "tags" | "component";
+  placeholder?: string;
   filterSidebarSectionKey?: string;
   prompt?: string;
 }
@@ -267,6 +267,12 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
           continue;
         }
         (async () => {
+          setSelectedSidebarFilters((prev) => {
+            return {
+              ...prev,
+              [steps[i].filterSidebarSectionKey ?? ""]: [],
+            };
+          });
           setLoadingStates((prev) => ({
             ...prev,
             [steps[i].title]: "Uploading image...",
@@ -352,7 +358,13 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
           className="trieve-inference-filters-step-container"
           key={index}
           data-prev-complete={
-            index == 0 || images[steps[index - 1].title] ? "true" : "false"
+            index == 0 ||
+            images[steps[index - 1].title] ||
+            selectedSidebarFilters[
+              steps[index - 1].filterSidebarSectionKey ?? ""
+            ]?.length
+              ? "true"
+              : "false"
           }
         >
           <div className="trieve-inference-filters-step-header">
