@@ -5,6 +5,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ChevronUpicon,
+  LoadingIcon,
   PhotoIcon,
   XIcon,
 } from "./icons";
@@ -236,7 +237,6 @@ export interface InferenceFilterFormStep {
 export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
   const { trieveSDK, props, setSelectedSidebarFilters } = useModalState();
   const [images, setImages] = useState<Record<string, File>>({});
-  const [texts, setTexts] = useState<Record<string, string>>({});
   const [loadingStates, setLoadingStates] = useState<Record<string, string>>(
     {}
   );
@@ -288,7 +288,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               tool_function: {
                 name: "get_materials_present_in_image",
                 description:
-                  "Decide on which materials are present in the image.",
+                  "Decide on which materials are present in the image. Err on the side of caution and include materials that you are only somewhat sure are present.",
                 parameters:
                   correspondingFilter.options?.map((tag) => {
                     return {
@@ -329,14 +329,23 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     return () => {
       toolCallAbortController.abort();
     };
-  }, [images, texts]);
+  }, [images]);
 
   return (
     <div className="trieve-inference-filters-form">
       {steps.map((step, index) => (
-        <div className="trieve-inference-filters-step-container" key={index}>
+        <div
+          className="trieve-inference-filters-step-container"
+          key={index}
+          data-prev-complete={
+            index == 0 || images[steps[index - 1].title] ? "true" : "false"
+          }
+        >
           <div className="trieve-inference-filters-step-header">
-            <div className="trieve-inference-filters-step-number">
+            <div
+              className="trieve-inference-filters-step-number"
+              data-completed={images[step.title] ? "true" : "false"}
+            >
               <span>{index + 1}</span>
             </div>
             <h2 className="trieve-inference-filters-step-title">
@@ -404,6 +413,13 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 {step.placeholder}
               </p>
             </div>
+          </div>
+          <div
+            className="trieve-inference-filters-step-loading-container"
+            data-loading-state={loadingStates[step.title] ?? "idle"}
+          >
+            <LoadingIcon className="loading" />
+            <p className="trieve-loading-text">{loadingStates[step.title]}</p>
           </div>
         </div>
       ))}
