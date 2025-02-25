@@ -5069,7 +5069,6 @@ impl FieldCondition {
 pub struct SearchQueryRating {
     pub rating: i32,
     pub note: Option<String>,
-    pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Display)]

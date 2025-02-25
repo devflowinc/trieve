@@ -113,10 +113,10 @@ export type ModalProps = {
   zIndex?: number;
   showFloatingButton?: boolean;
   floatingButtonPosition?:
-    | "top-left"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-right";
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
   floatingSearchIconPosition?: "left" | "right";
   showFloatingSearchIcon?: boolean;
   disableFloatingSearchIconClick?: boolean;
@@ -133,7 +133,6 @@ export type ModalProps = {
   initialAiMessage?: string;
   ignoreEventListeners?: boolean;
   hideOverlay?: boolean;
-  componentName?: string;
 };
 
 const defaultProps = {
@@ -190,7 +189,6 @@ const defaultProps = {
   initialAiMessage: undefined,
   ignoreEventListeners: false,
   hideOverlay: false,
-  componentName: "Trieve Search Component",
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
@@ -288,7 +286,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [selectedTags, setSelectedTags] = useState(
-    props.tags?.filter((t) => t.selected),
+    props.tags?.filter((t) => t.selected)
   );
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
 
@@ -342,7 +340,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          selectedTags?.map((t) => t.tag),
+          selectedTags?.map((t) => t.tag)
         );
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
@@ -359,7 +357,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          selectedTags?.map((t) => t.tag),
+          selectedTags?.map((t) => t.tag)
         );
         setResults(results);
       } else {
@@ -399,7 +397,7 @@ const ModalProvider = ({
         const filterCounts = await countChunksWithPagefind(
           pagefind,
           query,
-          props.tags,
+          props.tags
         );
         setTagCounts(filterCounts);
       } else {
@@ -411,8 +409,8 @@ const ModalProvider = ({
                 trieve: trieve,
                 abortController,
                 ...(tag.tag !== "all" && { tag: tag.tag }),
-              }),
-            ),
+              })
+            )
           );
           setTagCounts(numberOfRecords);
         } catch (e) {
@@ -463,7 +461,7 @@ const ModalProvider = ({
         setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
       }
     },
-    [open, props.allowSwitchingModes],
+    [open, props.allowSwitchingModes]
   );
 
   useEffect(() => {
@@ -538,7 +536,8 @@ const ModalProvider = ({
         tagCounts,
         isRecording,
         setIsRecording,
-      }}>
+      }}
+    >
       {children}
     </ModalContext.Provider>
   );

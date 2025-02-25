@@ -145,7 +145,6 @@ pub async fn send_to_clickhouse(
                 let rating = SearchQueryRating {
                     rating: event.rating,
                     note: event.note.clone(),
-                    metadata: event.metadata.clone(),
                 };
 
                 rag_event.query_rating = serde_json::to_string(&rating).unwrap();
@@ -171,7 +170,6 @@ pub async fn send_to_clickhouse(
                 let rating = SearchQueryRating {
                     rating: event.rating,
                     note: event.note.clone(),
-                    metadata: event.metadata.clone(),
                 };
 
                 if search_event.is_none() {

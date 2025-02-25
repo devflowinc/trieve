@@ -74,7 +74,6 @@ pub struct RateQueryRequest {
     pub query_id: uuid::Uuid,
     pub rating: i32,
     pub note: Option<String>,
-    pub metadata: Option<serde_json::Value>,
 }
 
 /// Rate Search
