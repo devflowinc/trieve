@@ -11,6 +11,8 @@
 
   const inlineRoot = document.querySelector(".trieve-recommendations");
 
+  const available = {{product.available}};
+
   const toBool = (value) => value === 'true';
   const getValue = (value, defaultValue) => {
     if (value === null || value === undefined || value === '') {
@@ -35,17 +37,19 @@
     itemStyles: getValue("{{ block.settings.theme_item_styles }}", ""),
   };
 
-  renderRecommendationsToDiv(inlineRoot, {
-    apiKey: getValue("{{ block.settings.api_key }}", ""),
-    datasetId: getValue("{{ block.settings.dataset_id }}", ""),
-    baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
-    productId: getValue("{{ product.id }}", ""),
-    overflowScroll: toBool(getValue("{{ block.settings.overflow_scroll }}", true)),
-    maxResults: Number(getValue("{{ block.settings.max_results }}", 5)),
-    title: getValue("{{ block.settings.title }}", null),
-    orientation: getValue("{{ block.settings.orientation }}", "horizontal"),
-    theme: theme,
-  });
+  if (!available || toBool(getValue("{{ block.settings.always_show }}", false))) {
+    renderRecommendationsToDiv(inlineRoot, {
+      apiKey: getValue("{{ block.settings.api_key }}", ""),
+      datasetId: getValue("{{ block.settings.dataset_id }}", ""),
+      baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
+      productId: getValue("{{ product.id }}", ""),
+      overflowScroll: toBool(getValue("{{ block.settings.overflow_scroll }}", true)),
+      maxResults: Number(getValue("{{ block.settings.max_results }}", 5)),
+      title: getValue("{{ block.settings.title }}", null),
+      orientation: getValue("{{ block.settings.orientation }}", "horizontal"),
+      theme: theme,
+    });
+  }
 
 </script>
 
@@ -85,6 +89,13 @@
         {"label": "Vertical", "value": "vertical"}
       ],
       "default": "horizontal"
+    },
+    {
+      "type": "checkbox",
+      "id": "always_show",
+      "label": "Always Show",
+      "default": false,
+      "info": "Show the component regardless of product availability"
     },
     {
       "type": "number",
