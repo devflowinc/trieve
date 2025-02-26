@@ -44,41 +44,82 @@ export const useRecommendations = (config: RecommendationsConfig) => {
 
     const getData = async () => {
       try {
-        const response = await fetch(
-          config.baseUrl + "/api/chunk_group/recommend",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              positive_group_tracking_ids: [config.productId],
-              limit: config.maxResults,
-            } satisfies GetRecommendedGroupsData["requestBody"]),
-            headers: {
-              "TR-Dataset": config.datasetId,
-              Authorization: config.apiKey,
-              "Content-Type": "application/json",
+        if (config.useGroupSearch ?? true) {
+          const response = await fetch(
+            config.baseUrl + "/api/chunk_group/recommend",
+            {
+              method: "POST",
+              body: JSON.stringify({
+                positive_group_tracking_ids: [config.productId],
+                limit: config.maxResults,
+                filters: config.filter,
+              } satisfies GetRecommendedGroupsData["requestBody"]),
+              headers: {
+                "TR-Dataset": config.datasetId,
+                Authorization: config.apiKey,
+                "Content-Type": "application/json",
+              },
             },
-          },
-        );
+          );
 
-        if (!response.ok) {
-          setStatus("error");
+          if (!response.ok) {
+            setStatus("error");
 
-          try {
-            const error = (await response.json()) as {
-              message: string;
-            };
-            setError(error.message);
-          } catch {
-            setError("Something went wrong");
+            try {
+              const error = (await response.json()) as {
+                message: string;
+              };
+              setError(error.message);
+            } catch {
+              setError("Something went wrong");
+            }
+
+            return;
           }
 
-          return;
-        }
+          const data = (await response.json()) as RecommendationsResponse;
+          console.log(data);
+          setResults(data.results.map((c) => c.chunks.at(0)!));
+          setStatus("success");
+        } else {
+          const response = await fetch(
+            config.baseUrl + "/api/chunk/recommend",
+            {
+              method: "POST",
+              body: JSON.stringify({
+                positive_tracking_ids: [config.productId],
+                limit: config.maxResults,
+                filters: config.filter,
+              }),
+              headers: {
+                "TR-Dataset": config.datasetId,
+                Authorization: config.apiKey,
+                "Content-Type": "application/json",
+              },
+            },
+          );
 
-        const data = (await response.json()) as RecommendationsResponse;
-        console.log(data);
-        setResults(data.results.map((c) => c.chunks.at(0)!));
-        setStatus("success");
+          if (!response.ok) {
+            setStatus("error");
+
+            try {
+              const error = (await response.json()) as {
+                message: string;
+              };
+              setError(error.message);
+            } catch {
+              setError("Something went wrong");
+            }
+
+            return;
+          }
+
+          const data = (await response.json()) as {
+            chunks: RecommendationsChunk[];
+          };
+          setResults(data.chunks);
+          setStatus("success");
+        }
       } catch {
         setStatus("error");
         setError("Something went wrong");

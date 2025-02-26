@@ -4,6 +4,7 @@ import {
   useRecommendations,
 } from "./use-recommendations";
 import { cva } from "cva";
+import { ChunkFilter } from "trieve-ts-sdk";
 export interface Theme {
   mode?: "light" | "dark";
   rounded?: "sm" | "md" | "lg" | "none";
@@ -28,6 +29,8 @@ export interface RecommendationsConfig {
   title?: string;
   orientation?: "horizontal" | "vertical";
   cssRelease?: string;
+  filter?: ChunkFilter;
+  useGroupSearch?: boolean;
 }
 
 const outerClass = cva(["tv-flex", "tv-gap-2"], {
@@ -135,8 +138,7 @@ export const Recommendations = (config: RecommendationsConfig) => {
           })}
           style={{
             fontFamily: config.theme?.font || "inherit",
-          }}
-        >
+          }}>
           {config.title}
         </div>
       )}
@@ -151,8 +153,7 @@ export const Recommendations = (config: RecommendationsConfig) => {
         style={{
           fontFamily: config.theme?.font || "inherit",
           ...config.theme?.containerStyles,
-        }}
-      >
+        }}>
         {results?.map((r) => (
           <RecommendationsItem key={r.chunk.id} item={r} config={config} />
         ))}
@@ -192,8 +193,7 @@ const RecommendationsItem = ({
       style={{
         border: config.theme?.border ? `1px solid ${config.theme?.border}` : "",
         ...config.theme?.itemStyles,
-      }}
-    >
+      }}>
       <img
         className={imageClass({
           ...config.theme,

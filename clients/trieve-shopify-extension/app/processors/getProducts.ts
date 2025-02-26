@@ -1,9 +1,5 @@
 import { ExtendedCrawlOptions } from "app/components/CrawlSettings";
-import {
-  Product,
-  TrieveKey,
-  ProductsResponse,
-} from "app/types";
+import { Product, TrieveKey, ProductsResponse } from "app/types";
 import { ChunkReqPayload } from "trieve-ts-sdk";
 
 function createChunkFromProduct(
@@ -82,6 +78,7 @@ function createChunkFromProduct(
   }
   const metadata = {
     body_html: product.bodyHtml,
+    variantName: variantTitle,
     handle: product.handle,
     id: parseInt(product.id.split("/").pop() || "0"),
     images: product.media.nodes.map((media) => ({
@@ -89,7 +86,9 @@ function createChunkFromProduct(
     })),
     tags: product.tags,
     title: product.title,
-    variant_inventory: groupVariants ? variant.inventoryQuantity : product.totalInventory,
+    variant_inventory: groupVariants
+      ? variant.inventoryQuantity
+      : product.totalInventory,
     total_inventory: product.totalInventory,
     variants: product.variants.nodes.map((v) => ({
       id: parseInt(v.id.split("/").pop() || "0"),
@@ -237,11 +236,11 @@ export const sendChunks = async (
 };
 
 function chunk_to_size<T>(arr: T[], size: number): T[][] {
-    if (size <= 0) throw new Error('Chunk size must be greater than 0');
-    
-    const result: T[][] = [];
-    for (let i = 0; i < arr.length; i += size) {
-        result.push(arr.slice(i, i + size));
-    }
-    return result;
+  if (size <= 0) throw new Error("Chunk size must be greater than 0");
+
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
 }

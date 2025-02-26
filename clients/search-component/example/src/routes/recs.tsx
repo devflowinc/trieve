@@ -16,7 +16,16 @@ function RouteComponent() {
           padding: "sm",
           mode: "light",
         }}
-        productId="9097273442585"
+        productId="44895730368689"
+        useGroupSearch={false}
+        filter={{
+          must: [
+            {
+              field: "tag_set",
+              match_all: ["gender_mens"],
+            },
+          ],
+        }}
         apiKey={apiKey}
         baseUrl={baseUrl}
         datasetId={datasetId}
