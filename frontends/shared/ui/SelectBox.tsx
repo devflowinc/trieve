@@ -71,7 +71,7 @@ export const Select = <T,>(props: SelectProps<T>) => {
       <Listbox
         class={cn(
           `bg-neutral-200/70 min-w-[100px] relative border rounded border-neutral-300`,
-          props.class,
+          props.class
         )}
         value={props.selected}
         defaultOpen={false}

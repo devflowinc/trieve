@@ -1,10 +1,9 @@
 import { AnalyticsParams, RequiredAnalyticsFilter } from "shared/types";
 import { SetStoreFunction } from "solid-js/store";
-import { DateRangePicker, Select } from "shared/ui";
+import { DateRangePicker, Select, RangePicker } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
 import { subDays, subHours } from "date-fns";
 import { cn } from "shared/utils";
-import { getQueryRatingFilter } from "./RAGFilterBar";
 
 const ALL_SEARCH_METHODS: (RequiredAnalyticsFilter["search_method"] | "all")[] =
   ["all", "hybrid", "fulltext", "semantic"];
@@ -92,24 +91,15 @@ export const FilterBar = (props: FilterBarProps) => {
           />
         </div>
         <div>
-          <Select
+          <RangePicker
             label={<div class="text-sm text-neutral-600">Query Rating</div>}
             class="min-w-[200px] !bg-white"
-            display={(s) => (s ? toTitleCase(s) : "All")}
-            selected={
-              props.filters.filter.query_rating === undefined
-                ? "neutral"
-                : props.filters.filter.query_rating.gte
-                  ? "thumbs_up"
-                  : "thumbs_down"
-            }
-            onSelected={(e) =>
+            onChange={(e) =>
               props.setFilters("filter", {
                 ...props.filters.filter,
-                query_rating: getQueryRatingFilter(e),
+                query_rating: e,
               })
             }
-            options={["thumbs_up", "thumbs_down", "neutral"]}
           />
         </div>
       </div>

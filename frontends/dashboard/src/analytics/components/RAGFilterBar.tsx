@@ -1,6 +1,6 @@
 import { RAGAnalyticsFilter, RequiredRAGAnalyticsFilter } from "shared/types";
 import { SetStoreFunction } from "solid-js/store";
-import { DateRangePicker, Select } from "shared/ui";
+import { DateRangePicker, RangePicker, Select } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
 import { subDays, subHours } from "date-fns";
 import { cn } from "shared/utils";
@@ -77,22 +77,10 @@ export const RAGFilterBar = (props: FilterBarProps) => {
           />
         </div>
         <div>
-          <Select
+          <RangePicker
             label={<div class="text-sm text-neutral-600">Query Rating</div>}
             class="min-w-[200px] !bg-white"
-            display={(s) => (s ? toTitleCase(s) : "All")}
-            selected={
-              props.filters.query_rating === undefined
-                ? "neutral"
-                : props.filters.query_rating.gte
-                  ? "thumbs_up"
-                  : "thumbs_down"
-            }
-            onSelected={(e) => {
-              props.setFilters("query_rating", undefined);
-              props.setFilters("query_rating", getQueryRatingFilter(e));
-            }}
-            options={["thumbs_up", "thumbs_down", "neutral"]}
+            onChange={(e) => props.setFilters("query_rating", e)}
           />
         </div>
       </div>

@@ -8,3 +8,4 @@ export * from "./JSONMetadata";
 export * from "./Pagination";
 export * from "./TanStackTable";
 export * from "./MultiStringInput";
+export * from "./RangePicker";
