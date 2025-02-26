@@ -250,8 +250,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     };
 
     if (selectedTags.length > 0) {
-      filters.must = [];
-      filters.must?.push({
+      filters.should = [];
+      filters.should?.push({
         field: "tag_set",
         match_any: selectedTags.map((t) => t.tag),
       });
