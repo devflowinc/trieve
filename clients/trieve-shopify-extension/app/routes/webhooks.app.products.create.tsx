@@ -1,15 +1,9 @@
-import { data, type ActionFunctionArgs } from "@remix-run/node";
+import { type ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { ProductWebhook, TrieveKey } from "app/types";
-import {
-  chunk_to_size,
-  createChunkFromProductWebhook,
-  sendChunksFromWebhook,
-  sendChunksToTrieve,
-} from "app/processors/getProducts";
-import { ChunkReqPayload } from "trieve-ts-sdk";
-import { ExtendedCrawlOptions } from "app/components/CrawlSettings";
+import { sendChunksFromWebhook } from "app/processors/getProducts";
+import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, payload, session, topic, shop } =
@@ -53,7 +47,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     trieveKey.currentDatasetId ?? "",
     admin,
     session,
-    crawlSettings.crawlSettings as ExtendedCrawlOptions,
+    crawlSettings.crawlSettings as ExtendedCrawlOptions
   );
 
   return new Response();

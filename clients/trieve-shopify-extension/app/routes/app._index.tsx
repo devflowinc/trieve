@@ -1,28 +1,21 @@
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import {
-  ClientLoaderFunctionArgs,
-  json,
-  Link,
-  useLoaderData,
-} from "@remix-run/react";
-import {
-  Page,
-  Layout,
-  Text,
-  Link as PolarisLink,
-  Card,
-  BlockStack,
-  SkeletonBodyText,
-  Select,
-  Button,
-  InlineStack,
-} from "@shopify/polaris";
+import { LoaderFunctionArgs } from "@remix-run/node";
+import { Link, useLoaderData } from "@remix-run/react";
+import { Page, Text, Link as PolLink, Box } from "@shopify/polaris";
 import { initTrieveSdk, validateTrieveAuth } from "app/auth";
+import {
+  defaultCrawlOptions,
+  DatasetSettings as DatasetSettings,
+  ExtendedCrawlOptions,
+  DatasetConfig,
+  defaultServerEnvsConfiguration,
+} from "app/components/DatasetSettings";
+import { sendChunks } from "app/processors/getProducts";
 import { authenticate } from "app/shopify.server";
+import { request } from "http";
+import { CrawlRequest, type Dataset } from "trieve-ts-sdk";
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const { session, sessionToken } = await authenticate.admin(args.request);
-  const key = await validateTrieveAuth(args);
   const trieve = await initTrieveSdk(args);
 
   if (!trieve.organizationId) {
@@ -33,14 +26,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
   let datasetId = trieve.datasetId;
 
-  const datasets = await trieve.getDatasetsFromOrganization(
-    trieve.organizationId,
-  );
-
-  let shopDataset = datasets.find(
-    (d) => d.dataset.id == trieve.datasetId,
-  )?.dataset;
-
+  let shopDataset = await trieve.getDatasetById(datasetId ?? "");
   if (!datasetId && trieve.organizationId) {
     if (!shopDataset) {
       shopDataset = await trieve.createDataset({
@@ -54,7 +40,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
         where: {
           userId_shop: {
             userId: sessionToken.sub as string,
-            shop: `https://${session.shop}`,
+            shop: session.shop,
           },
         },
       });
@@ -62,59 +48,95 @@ export const loader = async (args: LoaderFunctionArgs) => {
     datasetId = shopDataset?.id;
   }
 
+  if (!datasetId) {
+    throw new Response("Error choosing default dataset, need to create one", {
+      status: 500,
+    });
+  }
+
+  trieve.datasetId = datasetId;
+  const scrapingOptions = (await trieve.trieve.fetch("/api/crawl", "get", {
+    datasetId: datasetId,
+  })) as unknown as CrawlRequest[];
+
   return {
-    datasets,
+    request: args.request,
     shopDataset,
+    crawlOptions: scrapingOptions[0],
   };
 };
 
-export function HydrateFallback() {
+export const action = async (data: LoaderFunctionArgs) => {
+  const { admin, session } = await authenticate.admin(data.request);
+  const trieveKey = await validateTrieveAuth(data);
+  const trieve = await initTrieveSdk(data);
+  let formData = await data.request.formData();
+  switch (formData.get("type")) {
+    case "crawl":
+      const crawlOptions: ExtendedCrawlOptions =
+        (JSON.parse(
+          formData.get("crawl_options") as string
+        ) as ExtendedCrawlOptions) ?? defaultCrawlOptions;
+      const crawlDatasetId = formData.get("dataset_id") as string;
+
+      await prisma.crawlSettings.upsert({
+        create: {
+          datasetId: crawlDatasetId,
+          shop: session.shop,
+          crawlSettings: crawlOptions,
+        },
+        update: {
+          crawlSettings: crawlOptions,
+        },
+        where: {
+          datasetId_shop: {
+            datasetId: crawlDatasetId,
+            shop: session.shop,
+          },
+        },
+      });
+
+      sendChunks(
+        crawlDatasetId ?? "",
+        trieveKey,
+        admin,
+        session,
+        crawlOptions
+      ).catch(console.error);
+      break;
+    case "dataset":
+      const datasetSettings: DatasetConfig =
+        (JSON.parse(
+          formData.get("dataset_settings") as string
+        ) as DatasetConfig) ?? defaultServerEnvsConfiguration;
+      const settingsDatasetId = formData.get("dataset_id") as string;
+      await trieve.updateDataset({
+        dataset_id: settingsDatasetId,
+        server_configuration: datasetSettings,
+      });
+
+    default:
+      break;
+  }
+  return null;
+};
+
+export default function Dataset() {
+  const { request, shopDataset, crawlOptions } = useLoaderData<typeof loader>();
+
   return (
     <Page>
-      <BlockStack gap="500">
-        <Layout>
-          <Layout.Section variant="oneHalf">
-            <BlockStack gap="500">
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Select Dataset
-                  </Text>
-                  <SkeletonBodyText lines={8} />
-                </BlockStack>
-              </Card>
-            </BlockStack>
-          </Layout.Section>
-        </Layout>
-      </BlockStack>
-    </Page>
-  );
-}
-
-export default function Index() {
-  const { datasets, shopDataset } = useLoaderData<typeof loader>();
-
-  return (
-    <Page>
-      <BlockStack gap="500">
-        <Layout>
-          <Layout.Section variant="oneHalf">
-            <BlockStack gap="500">
-              <Card>
-                <InlineStack gap="200" align="space-between">
-                  <Text as="h2" variant="headingMd">
-                    Indexed Dataset: {shopDataset?.name}
-                  </Text>
-
-                  <Link to="/app/dataset">
-                    <Button>Edit settings</Button>
-                  </Link>
-                </InlineStack>
-              </Card>
-            </BlockStack>
-          </Layout.Section>
-        </Layout>
-      </BlockStack>
+      <Text variant="headingXl" as="h2">
+        {shopDataset?.name}
+      </Text>
+      <Box paddingBlockStart="400">
+        <DatasetSettings
+          initalCrawlOptions={
+            crawlOptions?.crawl_options || defaultCrawlOptions
+          }
+          shopDataset={shopDataset as Dataset}
+        />
+      </Box>
     </Page>
   );
 }
