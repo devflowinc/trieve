@@ -375,8 +375,15 @@ export const getSuggestedQuestions = async ({
   let context: string;
   if (groupTrackingId && modalProps?.cleanGroupName) {
     context = `The user is specifically and exclusively interested in the ${modalProps.cleanGroupName}. Suggest short questions limited to 3-6 words based on the reference content.`;
-  } else if (prevUserMessages && is_followup) {
-    context = `The previous messages were ${JSON.stringify(prevUserMessages)}. The AI presented ${JSON.stringify(chunks)}. You are the user asking follow up questions to the AI. Keep your query recommendations short, limited to 3-6 words.`;
+  } else if (prevUserMessages && is_followup && chunks) {
+    const cleanedChunks = chunks.map((chunk) => {
+      return {
+        chunk_html: chunk.chunk_html,
+        title: chunk.metadata.heading || chunk.metadata.title || chunk.metadata.page_title,
+        price: chunk.num_value
+      }
+    });
+    context = `The previous messages were ${JSON.stringify(prevUserMessages)}. The AI presented ${JSON.stringify(cleanedChunks)}. You are the user asking follow up questions to the AI. Keep your query recommendations short, limited to 3-6 words.`;
   } else if (query) {
     context = `The user's previous query was "${query}", all suggestions should look like that.`;
   } else {
