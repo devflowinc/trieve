@@ -13,12 +13,19 @@ export const useFollowupQuestions = () => {
 
   const getFollowUpQuestions = async () => {
     setIsLoading(true);
-    const prevMessage =
+    const prevUserMessages =
       messages
         .filter((msg) => {
           return msg.type == "user";
-        })
-        .slice(-1)[0] ?? messages.slice(-1)[0];
+        }) ?? messages;
+
+    const prevChunks =
+      messages
+        .filter((msg) => {
+          return msg.type == "system";
+        }).slice(-1)[0].additional ?? messages.slice(-1)[0].additional;
+
+    const prevMessage = prevUserMessages.slice(-1)[0];
 
     if (!prevMessage) {
       setIsLoading(false);
@@ -32,6 +39,9 @@ export const useFollowupQuestions = () => {
       groupTrackingId: props.inline
         ? (props.groupTrackingId ?? currentGroup?.tracking_id)
         : currentGroup?.tracking_id,
+      is_followup: true,
+      prevUserMessages: prevUserMessages.map((message) => message.text),
+      chunks: prevChunks,
       props,
     });
     setSuggestedQuestions((prev) => ({

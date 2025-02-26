@@ -18,7 +18,7 @@ const scrollToBottomOfChatModalWrapper = () => {
   }
 };
 
-type Messages = {
+export type Messages = {
   queryId: string | null;
   type: string;
   text: string;
