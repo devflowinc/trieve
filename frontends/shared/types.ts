@@ -455,6 +455,13 @@ export interface DateRangeFilter {
   lte?: Date;
 }
 
+export interface QueryRatingFilter {
+  gt?: number;
+  lt?: number;
+  gte?: number;
+  lte?: number;
+}
+
 export interface AnalyticsFilter {
   date_range: DateRangeFilter;
   search_method?: "fulltext" | "hybrid" | "semantic";
@@ -464,6 +471,7 @@ export interface AnalyticsFilter {
     | "rag_chunks"
     | "search_over_groups"
     | "search_within_groups";
+  query_rating?: QueryRatingFilter;
 }
 
 export interface RequiredAnalyticsFilter {
@@ -603,6 +611,7 @@ export interface RequiredRAGAnalyticsFilter {
 export interface RAGAnalyticsFilter {
   rag_type?: "chosen_chunks" | "all_chunks";
   date_range?: DateRangeFilter;
+  query_rating?: QueryRatingFilter;
 }
 
 export interface EventAnalyticsFilter {

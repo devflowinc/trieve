@@ -198,7 +198,11 @@ export const RecommendationsTablePage = () => {
     <div>
       <div class="pb-1 text-lg">All Recommendation Queries</div>
       <div class="mb-4 rounded-md bg-white">
-        <Show when={recommendationTableQuery.data}>
+        <Show
+          when={
+            recommendationTableQuery.data || recommendationTableQuery.isLoading
+          }
+        >
           <Card>
             <RecommendationsFilterBar
               noPadding
