@@ -1,4 +1,4 @@
-import { ExtendedCrawlOptions } from "app/components/CrawlSettings";
+import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
 import {
   Product,
   TrieveKey,
@@ -206,8 +206,8 @@ export function createChunkFromProductWebhook(
     product.variants.forEach((v) => {
       let values: string[] = JSON.parse(
         v.metafields.find((m) =>
-          crawlOptions.include_metafields?.includes(m.key),
-        )?.value ?? "[]",
+          crawlOptions.include_metafields?.includes(m.key)
+        )?.value ?? "[]"
       );
       tags.push(...values);
     });
