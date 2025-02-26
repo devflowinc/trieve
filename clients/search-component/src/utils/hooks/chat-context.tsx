@@ -382,10 +382,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (match_any_tags.length > 0) {
-            if (!filters.must) {
-              filters.must = [];
+            if (!filters.should) {
+              filters.should = [];
             }
-            filters.must.push({
+            filters.should.push({
               field: "tag_set",
               match_any: match_any_tags,
             });
