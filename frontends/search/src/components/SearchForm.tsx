@@ -1851,7 +1851,7 @@ const SearchForm = (props: {
                 />
               </div>
             </Show>
-            {/* New Task Definition textbox in the dashboard for AIMon reranker*/}
+            {/* New Task Definition textbox in the dashboard for AIMon reranker
             <Show
               when={
                 rerankTypes().find(
@@ -1878,7 +1878,7 @@ const SearchForm = (props: {
                   }}
                 />
               </div>
-            </Show>
+            </Show> */}
           </div>
         </form>
       </div>
