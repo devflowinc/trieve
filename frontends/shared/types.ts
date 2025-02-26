@@ -157,7 +157,7 @@ export interface SetUserApiKeyResponse {
 }
 
 export const isComboboxValues = (
-  values: unknown,
+  values: unknown
 ): values is ComboboxSection[] => {
   if (!Array.isArray(values)) {
     return false;
@@ -455,7 +455,7 @@ export interface DateRangeFilter {
   lte?: Date;
 }
 
-export interface QueryRatingFilter {
+export interface RangeFilter {
   gt?: number;
   lt?: number;
   gte?: number;
@@ -471,7 +471,7 @@ export interface AnalyticsFilter {
     | "rag_chunks"
     | "search_over_groups"
     | "search_within_groups";
-  query_rating?: QueryRatingFilter;
+  query_rating?: RangeFilter;
 }
 
 export interface RequiredAnalyticsFilter {
@@ -533,7 +533,7 @@ export interface ScoreChunkDTO {
 }
 
 export function isGroupScoreChunkDTO(
-  data: unknown,
+  data: unknown
 ): data is GroupScoreChunkDTO {
   if (typeof data !== "object" || data === null) {
     return false;
@@ -611,7 +611,7 @@ export interface RequiredRAGAnalyticsFilter {
 export interface RAGAnalyticsFilter {
   rag_type?: "chosen_chunks" | "all_chunks";
   date_range?: DateRangeFilter;
-  query_rating?: QueryRatingFilter;
+  query_rating?: RangeFilter;
 }
 
 export interface EventAnalyticsFilter {
