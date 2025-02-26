@@ -2360,6 +2360,13 @@ export type QueryCountResponse = {
     total_queries: Array<SearchTypeCount>;
 };
 
+export type QueryRatingRange = {
+    gt?: (string) | null;
+    gte?: (string) | null;
+    lt?: (string) | null;
+    lte?: (string) | null;
+};
+
 /**
  * Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.
  */
@@ -2390,6 +2397,7 @@ export type type3 = 'rag_queries';
 
 export type RAGAnalyticsFilter = {
     date_range?: ((DateRange) | null);
+    query_rating?: ((QueryRatingRange) | null);
     rag_type?: ((RagTypes) | null);
 };
 
@@ -2781,6 +2789,7 @@ export type type6 = 'latency_graph';
 
 export type SearchAnalyticsFilter = {
     date_range?: ((DateRange) | null);
+    query_rating?: ((QueryRatingRange) | null);
     search_method?: ((SearchMethod) | null);
     search_type?: ((SearchType) | null);
 };

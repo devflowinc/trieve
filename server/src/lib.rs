@@ -566,6 +566,7 @@ impl Modify for SecurityAddon {
             data::models::Invitation,
             data::models::CrawlYoutubeOptions,
             data::models::RagQueryRatingsResponse,
+            data::models::QueryRatingRange,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
         )

@@ -13577,6 +13577,33 @@
           }
         }
       },
+      "QueryRatingRange": {
+        "type": "object",
+        "properties": {
+          "gt": {
+            "type": "string",
+            "nullable": true
+          },
+          "gte": {
+            "type": "string",
+            "nullable": true
+          },
+          "lt": {
+            "type": "string",
+            "nullable": true
+          },
+          "lte": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "example": {
+          "gt": "2021-01-01 00:00:00.000",
+          "gte": "2021-01-01 00:00:00.000",
+          "lt": "2021-01-01 00:00:00.000",
+          "lte": "2021-01-01 00:00:00.000"
+        }
+      },
       "QueryTypes": {
         "oneOf": [
           {
@@ -13747,6 +13774,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/DateRange"
+              }
+            ],
+            "nullable": true
+          },
+          "query_rating": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QueryRatingRange"
               }
             ],
             "nullable": true
@@ -15305,6 +15340,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/DateRange"
+              }
+            ],
+            "nullable": true
+          },
+          "query_rating": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QueryRatingRange"
               }
             ],
             "nullable": true

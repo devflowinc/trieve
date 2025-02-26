@@ -9,7 +9,10 @@ use std::sync::{Arc, Mutex};
 #[cfg(not(feature = "hallucination-detection"))]
 use crate::data::models::DummyHallucinationScore;
 use crate::data::models::{
-    self, escape_quotes, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataStringTagSetWithHighlightsScore, ChunkMetadataTypes, Dataset, DatasetConfiguration, LLMOptions, MultiQuery, QdrantChunkMetadata, QueryTypes, RagQueryEventClickhouse, RedisPool, ScoreChunk, SearchMethod, SearchModalities, SuggestType
+    self, escape_quotes, ChunkMetadata, ChunkMetadataStringTagSet,
+    ChunkMetadataStringTagSetWithHighlightsScore, ChunkMetadataTypes, Dataset,
+    DatasetConfiguration, LLMOptions, MultiQuery, QdrantChunkMetadata, QueryTypes,
+    RagQueryEventClickhouse, RedisPool, ScoreChunk, SearchMethod, SearchModalities, SuggestType,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;

@@ -4,6 +4,7 @@ import { DateRangePicker, Select } from "shared/ui";
 import { toTitleCase } from "../utils/titleCase";
 import { subDays, subHours } from "date-fns";
 import { cn } from "shared/utils";
+import { getQueryRatingFilter } from "./RAGFilterBar";
 
 const ALL_SEARCH_METHODS: (RequiredAnalyticsFilter["search_method"] | "all")[] =
   ["all", "hybrid", "fulltext", "semantic"];
@@ -88,6 +89,27 @@ export const FilterBar = (props: FilterBarProps) => {
               })
             }
             options={ALL_SEARCH_TYPES}
+          />
+        </div>
+        <div>
+          <Select
+            label={<div class="text-sm text-neutral-600">Query Rating</div>}
+            class="min-w-[200px] !bg-white"
+            display={(s) => (s ? toTitleCase(s) : "All")}
+            selected={
+              props.filters.filter.query_rating === undefined
+                ? "neutral"
+                : props.filters.filter.query_rating.gte
+                  ? "thumbs_up"
+                  : "thumbs_down"
+            }
+            onSelected={(e) =>
+              props.setFilters("filter", {
+                ...props.filters.filter,
+                query_rating: getQueryRatingFilter(e),
+              })
+            }
+            options={["thumbs_up", "thumbs_down", "neutral"]}
           />
         </div>
       </div>

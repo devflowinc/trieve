@@ -113,7 +113,7 @@ export const SearchTable = () => {
     <div>
       <div class="pb-1 text-lg">All Searches</div>
       <div class="mb-4 rounded-md bg-white">
-        <Show when={searchTableQuery.data}>
+        <Show when={searchTableQuery.data || searchTableQuery.isLoading}>
           <Card>
             <FilterBar noPadding filters={filters} setFilters={setFilters} />
             <div class="mt-4 overflow-x-auto">

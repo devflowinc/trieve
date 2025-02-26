@@ -21,6 +21,20 @@ export const timeFrameOptions: RequiredRAGAnalyticsFilter["granularity"][] = [
   "second",
 ];
 
+export const getQueryRatingFilter = (option?: string) => {
+  if (option === "neutral" || option === undefined) {
+    return undefined;
+  } else if (option === "thumbs_up") {
+    return {
+      gte: 1,
+    };
+  } else if (option === "thumbs_down") {
+    return {
+      lt: 1,
+    };
+  }
+};
+
 export type DateRangeOption = {
   date: Date;
   label: string;
@@ -60,6 +74,25 @@ export const RAGFilterBar = (props: FilterBarProps) => {
               props.setFilters("rag_type", e === "all_chunks" ? undefined : e)
             }
             options={ALL_RAG_TYPES}
+          />
+        </div>
+        <div>
+          <Select
+            label={<div class="text-sm text-neutral-600">Query Rating</div>}
+            class="min-w-[200px] !bg-white"
+            display={(s) => (s ? toTitleCase(s) : "All")}
+            selected={
+              props.filters.query_rating === undefined
+                ? "neutral"
+                : props.filters.query_rating.gte
+                  ? "thumbs_up"
+                  : "thumbs_down"
+            }
+            onSelected={(e) => {
+              props.setFilters("query_rating", undefined);
+              props.setFilters("query_rating", getQueryRatingFilter(e));
+            }}
+            options={["thumbs_up", "thumbs_down", "neutral"]}
           />
         </div>
       </div>

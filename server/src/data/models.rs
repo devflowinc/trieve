@@ -5756,11 +5756,30 @@ impl From<CountSearchMethod> for SearchMethod {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[schema(example = json!({
+    "gte": 1,
+    "lte": 1,
+    "gt": 1,
+    "lt": 1
+}))]
+pub struct QueryRatingRange {
+    // gte is the lower bound of the range. This is inclusive.
+    pub gte: Option<u32>,
+    // lte is the upper bound of the range. This is inclusive.
+    pub lte: Option<u32>,
+    // gt is the lower bound of the range. This is exclusive.
+    pub gt: Option<u32>,
+    // lt is the upper bound of the range. This is exclusive.
+    pub lt: Option<u32>,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct SearchAnalyticsFilter {
     pub date_range: Option<DateRange>,
     pub search_method: Option<SearchMethod>,
     pub search_type: Option<SearchType>,
+    pub query_rating: Option<QueryRatingRange>,
 }
 
 impl SearchAnalyticsFilter {
@@ -5788,6 +5807,33 @@ impl SearchAnalyticsFilter {
                 " AND JSONExtractString(request_params, 'search_type') = '{}'",
                 search_method
             ));
+        }
+
+        if let Some(query_rating) = &self.query_rating {
+            if let Some(gt) = &query_rating.gt {
+                query_string.push_str(&format!(
+                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') > {}",
+                    gt
+                ));
+            }
+            if let Some(lt) = &query_rating.lt {
+                query_string.push_str(&format!(
+                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') < {}",
+                    lt
+                ));
+            }
+            if let Some(gte) = &query_rating.gte {
+                query_string.push_str(&format!(
+                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') >= {}",
+                    gte
+                ));
+            }
+            if let Some(lte) = &query_rating.lte {
+                query_string.push_str(&format!(
+                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') <= {}",
+                    lte
+                ));
+            }
         }
 
         query_string
@@ -5843,6 +5889,7 @@ pub enum RagTypes {
 pub struct RAGAnalyticsFilter {
     pub date_range: Option<DateRange>,
     pub rag_type: Option<RagTypes>,
+    pub query_rating: Option<QueryRatingRange>,
 }
 
 impl RAGAnalyticsFilter {
@@ -5864,6 +5911,33 @@ impl RAGAnalyticsFilter {
 
         if let Some(rag_type) = &self.rag_type {
             query_string.push_str(&format!(" AND rag_type = '{}'", rag_type));
+        }
+
+        if let Some(query_rating) = &self.query_rating {
+            if let Some(gt) = &query_rating.gt {
+                query_string.push_str(&format!(
+                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') > {}",
+                    gt
+                ));
+            }
+            if let Some(lt) = &query_rating.lt {
+                query_string.push_str(&format!(
+                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') < {}",
+                    lt
+                ));
+            }
+            if let Some(gte) = &query_rating.gte {
+                query_string.push_str(&format!(
+                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') >= {}",
+                    gte
+                ));
+            }
+            if let Some(lte) = &query_rating.lte {
+                query_string.push_str(&format!(
+                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') <= {}",
+                    lte
+                ));
+            }
         }
 
         query_string

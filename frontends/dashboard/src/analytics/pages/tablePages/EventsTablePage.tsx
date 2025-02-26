@@ -110,7 +110,7 @@ export const EventsTablePage = () => {
     <div>
       <div class="mt-4 pb-1 text-lg">All User Events</div>
       <div class="rounded-md bg-white">
-        <Show when={eventsTableQuery.data}>
+        <Show when={eventsTableQuery.data || eventsTableQuery.isLoading}>
           <Card>
             <EventFilterBar
               noPadding
