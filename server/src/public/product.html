@@ -241,6 +241,9 @@
   };
 
   const replaceLoadingStateProducts = (results) => {
+    if (!Array.isArray(results)) {
+      return;
+    }
     const recDivs = [];
     for (const result of results) {
       const groupTrackingId = result.group.tracking_id;
@@ -326,29 +329,34 @@
     });
   };
 
-  const recommendations = await fetch(
-    `${window.paramsData.baseUrl}/api/chunk_group/group_oriented_search`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + window.paramsData.apiKey,
-        "TR-Dataset": window.paramsData.datasetId,
-      },
-      body: JSON.stringify({
-        query: window.paramsData.singleProductOptions.recSearchQuery,
-        use_quote_negated_terms: true,
-        search_type: "semantic",
-        group_size: 1,
-        page_size: 15,
-      }),
-      credentials: "omit",
+  try {
+    if (window.paramsData.singleProductOptions.recSearchQuery) {
+      const recommendations = await fetch(
+        `${window.paramsData.baseUrl}/api/chunk_group/group_oriented_search`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + window.paramsData.apiKey,
+            "TR-Dataset": window.paramsData.datasetId,
+          },
+          body: JSON.stringify({
+            query: window.paramsData.singleProductOptions.recSearchQuery,
+            use_quote_negated_terms: true,
+            search_type: "semantic",
+            group_size: 1,
+            page_size: 15,
+          }),
+          credentials: "omit",
+        }
+      );
+      const recommendationsData = await recommendations.json();
+      replaceLoadingStateProducts(recommendationsData.results);
+      setRecProductEventListeners();
     }
-  );
-  const recommendationsData = await recommendations.json();
-
-  replaceLoadingStateProducts(recommendationsData.results);
-  setRecProductEventListeners();
+  } catch (e) {
+    console.error("Error setting up recommendations on demo page", e);
+  }
 </script>
 <script type="module">
   const getGroupByTrackingIdResp = await fetch(
