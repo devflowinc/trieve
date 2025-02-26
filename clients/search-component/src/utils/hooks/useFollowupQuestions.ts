@@ -14,18 +14,18 @@ export const useFollowupQuestions = () => {
   const getFollowUpQuestions = async () => {
     setIsLoading(true);
     const prevUserMessages =
-      messages
-        .filter((msg) => {
-          return msg.type == "user";
-        }) ?? messages;
+      messages.filter((msg) => {
+        return msg.type == "user";
+      }) ?? messages;
 
     const prevChunks =
       messages
-        .filter((msg) => {
+        ?.filter((msg) => {
           return msg.type == "system";
-        }).slice(-1)[0].additional ?? messages.slice(-1)[0].additional;
+        })
+        .slice(-1)[0]?.additional ?? messages?.slice(-1)[0]?.additional;
 
-    const prevMessage = prevUserMessages.slice(-1)[0];
+    const prevMessage = prevUserMessages?.slice(-1)[0];
 
     if (!prevMessage) {
       setIsLoading(false);
