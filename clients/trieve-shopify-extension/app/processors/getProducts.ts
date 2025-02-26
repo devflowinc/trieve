@@ -66,6 +66,7 @@ function createChunkFromProduct(
   const semanticBoostPhrase = groupVariants ? variantTitle : productTitle;
   const fulltextBoostPhrase = groupVariants ? variantTitle : productTitle;
   const tags = product.tags;
+
   if (crawlOptions.include_metafields) {
     product.variants.nodes.forEach((v) => {
       let values: string[] = JSON.parse(
@@ -76,6 +77,7 @@ function createChunkFromProduct(
       tags.push(...values);
     });
   }
+  tags.push(...variantTitle.split(" / "));
   const metadata = {
     body_html: product.bodyHtml,
     variantName: variantTitle,
@@ -102,7 +104,7 @@ function createChunkFromProduct(
   return {
     chunk_html: chunkHtml,
     link,
-    tag_set: product.tags,
+    tag_set: tags,
     num_value: parseFloat(variant.price),
     metadata,
     tracking_id: groupVariants
