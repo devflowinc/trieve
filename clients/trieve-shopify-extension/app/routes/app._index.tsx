@@ -1,6 +1,14 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import { Page, Text, Link as PolLink, Box } from "@shopify/polaris";
+import {
+  Page,
+  Text,
+  Link as PolLink,
+  Box,
+  Button,
+  InlineGrid,
+  InlineStack,
+} from "@shopify/polaris";
 import { initTrieveSdk, validateTrieveAuth } from "app/auth";
 import {
   defaultCrawlOptions,
@@ -122,8 +130,10 @@ export const loader = async (args: LoaderFunctionArgs) => {
     datasetId: datasetId,
   })) as unknown as CrawlRequest[];
 
+  const appEmbedDeepLink = `https://${session.shop}/admin/themes/current/editor?context=apps&template=index&activateAppId=${process.env.SHOPIFY_GLOBAL_COMPONENT_ID}/global_component`;
+
   return {
-    request: args.request,
+    appEmbedDeepLink,
     shopDataset,
     crawlOptions: scrapingOptions[0],
   };
@@ -190,13 +200,23 @@ export const action = async (data: LoaderFunctionArgs) => {
 };
 
 export default function Dataset() {
-  const { request, shopDataset, crawlOptions } = useLoaderData<typeof loader>();
+  const { appEmbedDeepLink, shopDataset, crawlOptions } =
+    useLoaderData<typeof loader>();
 
   return (
     <Page>
-      <Text variant="headingXl" as="h2">
-        {shopDataset?.name}
-      </Text>
+      <InlineStack align="space-between">
+        <Text variant="headingXl" as="h2">
+          {shopDataset?.name}
+        </Text>
+        <Button
+          external
+          onClick={() => window.open(appEmbedDeepLink)}
+          size="slim"
+        >
+          Add to theme
+        </Button>
+      </InlineStack>
       <Box paddingBlockStart="400">
         <DatasetSettings
           initalCrawlOptions={
