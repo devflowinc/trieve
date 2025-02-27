@@ -18,15 +18,17 @@ import {
   Icon,
 } from "@shopify/polaris";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
+import {
+  QueryClient,
+  QueryClientProvider,
+  HydrationBoundary,
+} from "@tanstack/react-query";
 import { TrieveProvider } from "app/context/trieveContext";
 import { authenticate } from "app/shopify.server";
+import { useDehydratedState } from "app/serverQuery";
 import { StrongTrieveKey } from "app/types";
-import { useCallback, useMemo, Suspense } from "react";
-import {
-  Dataset,
-  Organization,
-  OrganizationWithSubAndPlan,
-} from "trieve-ts-sdk";
+import { Dataset, OrganizationWithSubAndPlan } from "trieve-ts-sdk";
+import { useCallback, useMemo, useState, Suspense } from "react";
 
 // Validates that user has a connected dataset, if not redirects to /app/setup and then right back
 export const loader = async (args: LoaderFunctionArgs) => {
@@ -40,7 +42,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
   const dataset = await trieve.getDatasetByTrackingId(session.shop);
   const organization = await trieve.getOrganizationById(
-    dataset.organization_id
+    dataset.organization_id,
   );
 
   return {
@@ -76,7 +78,7 @@ export default function Dashboard() {
         navigate("/app/search"); // Navigate to search
       }
     },
-    [navigate]
+    [navigate],
   );
 
   const tabs = [
@@ -103,7 +105,19 @@ export default function Dashboard() {
   // Get current tab title for page title
   const currentTabName =
     tabs[selected]?.id.charAt(0).toUpperCase() + tabs[selected]?.id.slice(1);
-
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            // With SSR, we usually want to set some default staleTime
+            // above 0 to avoid refetching immediately on the client
+            staleTime: 60 * 1000,
+          },
+        },
+      }),
+  );
+  const dehydratedState = useDehydratedState();
   return (
     <Frame>
       <Page fullWidth title={`Hi ${organization.organization.name} 👋`}>
@@ -121,16 +135,20 @@ export default function Dashboard() {
                 organization={organization as OrganizationWithSubAndPlan}
                 trieveKey={key}
               >
-                <div style={{ minHeight: "300px" }}>
-                  <Outlet />
-                </div>
+                <QueryClientProvider client={queryClient}>
+                  <HydrationBoundary state={dehydratedState}>
+                    <div style={{ minHeight: "300px" }}>
+                      <Outlet />
+                    </div>
+                  </HydrationBoundary>
+                </QueryClientProvider>
               </TrieveProvider>
             </Suspense>
           </Layout.Section>
         </Layout>
+        <PrefetchPageLinks page="/app/settings" />
+        <PrefetchPageLinks page="/app/search" />
       </Page>
-      <PrefetchPageLinks page="/app/settings" />
-      <PrefetchPageLinks page="/app/search" />
     </Frame>
   );
 }
