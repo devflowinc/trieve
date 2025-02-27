@@ -375,6 +375,7 @@ export const getSuggestedQuestions = async ({
   let context: string;
   if (groupTrackingId && modalProps?.cleanGroupName) {
     context = `The user is specifically and exclusively interested in the ${modalProps.cleanGroupName}. Suggest short questions limited to 3-6 words based on the reference content.`;
+    is_followup = false;
   } else if (prevUserMessages && is_followup && chunks) {
     const cleanedChunks = chunks.map((chunk) => {
       return {
