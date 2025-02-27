@@ -51,6 +51,11 @@ export const EditUserModal = (props: InviteUserModalProps) => {
       createEffect(() => {
         if (res.ok) {
           props.closeModal();
+          createToast({
+            title: "Success",
+            type: "success",
+            message: "User invited or role updated successfully!",
+          });
         } else {
           void res.json().then((data) => {
             createToast({

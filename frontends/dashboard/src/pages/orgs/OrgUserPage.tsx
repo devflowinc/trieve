@@ -318,7 +318,9 @@ export const OrgUserPage = () => {
         editingUser={editingUser()}
         closeModal={() => {
           setEditingUser(null);
-          void userQuery.refetch();
+          setTimeout(() => {
+            void userQuery.refetch();
+          }, 250);
         }}
       />
     </div>
