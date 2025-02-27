@@ -4097,6 +4097,11 @@ impl ApiKeyRequestParams {
             context_options: payload.context_options,
             no_result_message: self.no_result_message.or(payload.no_result_message),
             only_include_docs_used: payload.only_include_docs_used,
+            use_quote_negated_terms: self
+                .use_quote_negated_terms
+                .or(payload.use_quote_negated_terms),
+            remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
+            typo_options: self.typo_options.or(payload.typo_options),
         }
     }
 
@@ -7912,6 +7917,9 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub only_include_docs_used: Option<bool>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
+            use_quote_negated_terms: Option<bool>,
+            remove_stop_words: Option<bool>,
+            typo_options: Option<TypoOptions>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -7946,6 +7954,9 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             context_options,
             no_result_message: helper.no_result_message,
             only_include_docs_used: helper.only_include_docs_used,
+            use_quote_negated_terms: helper.use_quote_negated_terms,
+            remove_stop_words: helper.remove_stop_words,
+            typo_options: helper.typo_options,
         })
     }
 }
@@ -7974,6 +7985,9 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub only_include_docs_used: Option<bool>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
+            pub use_quote_negated_terms: Option<bool>,
+            pub remove_stop_words: Option<bool>,
+            pub typo_options: Option<TypoOptions>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -8005,6 +8019,9 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             context_options,
             no_result_message: helper.no_result_message,
             only_include_docs_used: helper.only_include_docs_used,
+            use_quote_negated_terms: helper.use_quote_negated_terms,
+            remove_stop_words: helper.remove_stop_words,
+            typo_options: helper.typo_options,
         })
     }
 }
@@ -8037,6 +8054,9 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub only_include_docs_used: Option<bool>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
+            pub use_quote_negated_terms: Option<bool>,
+            pub remove_stop_words: Option<bool>,
+            pub typo_options: Option<TypoOptions>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -8072,6 +8092,9 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             context_options,
             no_result_message: helper.no_result_message,
             only_include_docs_used: helper.only_include_docs_used,
+            use_quote_negated_terms: helper.use_quote_negated_terms,
+            remove_stop_words: helper.remove_stop_words,
+            typo_options: helper.typo_options,
         })
     }
 }
