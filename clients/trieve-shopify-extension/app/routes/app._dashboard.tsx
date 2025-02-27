@@ -7,16 +7,7 @@ import {
   useLocation,
   useNavigate,
 } from "@remix-run/react";
-import {
-  Page,
-  Tabs,
-  Text,
-  Card,
-  Layout,
-  SkeletonBodyText,
-  Frame,
-  Icon,
-} from "@shopify/polaris";
+import { Page, Tabs, Layout, SkeletonBodyText, Frame } from "@shopify/polaris";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
 import {
   QueryClient,
@@ -118,6 +109,7 @@ export default function Dashboard() {
       }),
   );
   const dehydratedState = useDehydratedState();
+
   return (
     <Frame>
       <Page fullWidth title={`Hi ${organization.organization.name} 👋`}>
@@ -146,9 +138,9 @@ export default function Dashboard() {
             </Suspense>
           </Layout.Section>
         </Layout>
-        <PrefetchPageLinks page="/app/settings" />
-        <PrefetchPageLinks page="/app/search" />
       </Page>
+      <PrefetchPageLinks page="/app/settings" />
+      <PrefetchPageLinks page="/app/search" />
     </Frame>
   );
 }
