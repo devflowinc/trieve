@@ -23,8 +23,8 @@
 
   renderToDiv(inlineRoot, {
     inline: true,
-    apiKey: getValue("{{ block.settings.api_key }}", ""),
-    datasetId: getValue("{{ block.settings.dataset_id }}", ""),
+    apiKey: getValue("{{ app.metafields.trieve.api_key }}", ""),
+    datasetId: getValue("{{ app.metafields.trieve.dataset_id }}", ""),
     baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
     type: "ecommerce",
     useGroupSearch: true,
@@ -67,16 +67,6 @@
       "id": "base_url",
       "label": "Base URL",
       "default": "https://api.trieve.ai"
-    },
-    {
-      "type": "text",
-      "id": "api_key",
-      "label": "Trieve API Key"
-    },
-    {
-      "type": "text",
-      "id": "dataset_id",
-      "label": "Dataset ID"
     },
     {
       "type": "select",

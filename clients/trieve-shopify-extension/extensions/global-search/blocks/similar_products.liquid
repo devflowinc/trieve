@@ -51,8 +51,8 @@
 
   if (shouldShow) {
     renderRecommendationsToDiv(inlineRoot, {
-      apiKey: getValue("{{ block.settings.api_key }}", ""),
-      datasetId: getValue("{{ block.settings.dataset_id }}", ""),
+      apiKey: getValue("{{ app.metafields.trieve.api_key }}", ""),
+      datasetId: getValue("{{ app.metafields.trieve.dataset_id }}", ""),
       baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
       productId: getValue("{{ product.id }}", ""),
       overflowScroll: toBool(getValue("{{ block.settings.overflow_scroll }}", true)),
@@ -81,16 +81,6 @@
       "id": "base_url",
       "label": "Base URL",
       "default": "https://api.trieve.ai"
-    },
-    {
-      "type": "text",
-      "id": "api_key",
-      "label": "Trieve API Key"
-    },
-    {
-      "type": "text",
-      "id": "dataset_id",
-      "label": "Dataset ID"
     },
     {
       "type": "select",
