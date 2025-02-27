@@ -21,7 +21,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const trieveKey: TrieveKey = {
-    createdAt: new Date(apiKey.createdAt).toISOString(),
     id: apiKey.id,
     key: apiKey.key,
     organizationId: apiKey.organizationId,

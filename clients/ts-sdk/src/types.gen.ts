@@ -2361,10 +2361,10 @@ export type QueryCountResponse = {
 };
 
 export type QueryRatingRange = {
-    gt?: (string) | null;
-    gte?: (string) | null;
-    lt?: (string) | null;
-    lte?: (string) | null;
+    gt?: (number) | null;
+    gte?: (number) | null;
+    lt?: (number) | null;
+    lte?: (number) | null;
 };
 
 /**

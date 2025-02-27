@@ -8,7 +8,8 @@ import * as eventsMethods from "./events/index";
 import * as datasetsMethods from "./datasets/index";
 import * as userMethods from "./user/index";
 import * as organizationMethods from "./organization/index";
-import * as crawlMethods from "./crawl/index.ts"
+import * as crawlMethods from "./crawl/index.ts";
+import * as stripeMethods from "./stripe/index";
 
 export default {
   ...chunkMethods,
@@ -21,5 +22,6 @@ export default {
   ...datasetsMethods,
   ...userMethods,
   ...organizationMethods,
-  ...crawlMethods
+  ...crawlMethods,
+  ...stripeMethods,
 };

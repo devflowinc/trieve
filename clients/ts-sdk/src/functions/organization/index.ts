@@ -5,17 +5,21 @@
  */
 
 import { TrieveSDK } from "../../sdk";
-import { CreateApiKeyReqPayload, CreateApiKeyResponse } from "../../types.gen";
+import {
+  CreateApiKeyReqPayload,
+  CreateApiKeyResponse,
+  OrganizationWithSubAndPlan,
+} from "../../types.gen";
 
 export async function createOrganizationApiKey(
   /** @hidden */
   this: TrieveSDK,
   props: CreateApiKeyReqPayload,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<CreateApiKeyResponse> {
   if (!this.organizationId) {
     throw new Error(
-      "Organization ID is required to create Organization API key",
+      "Organization ID is required to create Organization API key"
     );
   }
 
@@ -26,7 +30,7 @@ export async function createOrganizationApiKey(
       data: props,
       organizationId: this.organizationId,
     },
-    signal,
+    signal
   );
 }
 
@@ -34,11 +38,11 @@ export async function deleteOrganizationApiKey(
   /** @hidden */
   this: TrieveSDK,
   apiKeyId: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<void> {
   if (!this.organizationId) {
     throw new Error(
-      "Organization ID is required to delete Organization API key",
+      "Organization ID is required to delete Organization API key"
     );
   }
   return this.trieve.fetch(
@@ -48,6 +52,22 @@ export async function deleteOrganizationApiKey(
       apiKeyId,
       organizationId: this.organizationId,
     },
-    signal,
+    signal
+  );
+}
+
+export async function getOrganizationById(
+  /** @hidden */
+  this: TrieveSDK,
+  organizationId: string,
+  signal?: AbortSignal
+): Promise<OrganizationWithSubAndPlan> {
+  return this.trieve.fetch(
+    `/api/organization/{organization_id}`,
+    "get",
+    {
+      organizationId,
+    },
+    signal
   );
 }

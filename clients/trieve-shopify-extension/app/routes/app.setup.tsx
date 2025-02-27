@@ -14,7 +14,7 @@ const startCrawl = async (
   datasetId: string,
   session: { shop: string },
   trieveKey: TrieveKey,
-  admin: any,
+  admin: any
 ) => {
   await prisma.crawlSettings.upsert({
     create: {
@@ -34,7 +34,7 @@ const startCrawl = async (
   });
 
   sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions).catch(
-    console.error,
+    console.error
   );
 };
 
@@ -76,28 +76,28 @@ const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
             key: "dataset_id",
             value: trieveKey.currentDatasetId,
             type: "single_line_text_field",
-            ownerId: appId,
+            ownerId: appId.data.currentAppInstallation.id,
           },
           {
             namespace: "trieve",
             key: "api_key",
             value: trieveKey.key,
             type: "single_line_text_field",
-            ownerId: appId,
+            ownerId: appId.data.currentAppInstallation.id,
           },
         ],
       },
-    },
+    }
   );
 };
 
 export const loader = async (args: LoaderFunctionArgs) => {
   // You've been redirected here from app._dashboard.tsx because your trieve <-> shopify connection doesn't have a database
   const { admin, session, sessionToken } = await authenticate.admin(
-    args.request,
+    args.request
   );
 
-  const key = await prisma.apiKey.findFirst({
+  let key = await prisma.apiKey.findFirst({
     where: {
       userId: (sessionToken.sub as string) ?? "",
     },
@@ -123,7 +123,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   let datasetId = trieve.datasetId;
 
   let shopDataset = await trieve
-    .getDatasetByTrackingId(datasetId ?? "")
+    .getDatasetByTrackingId(session.shop ?? "")
     .catch(() => {
       return null;
     });
@@ -135,7 +135,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
         tracking_id: session.shop,
       });
 
-      await prisma.apiKey.update({
+      key = await prisma.apiKey.update({
         data: {
           currentDatasetId: shopDataset.id,
         },
@@ -148,16 +148,16 @@ export const loader = async (args: LoaderFunctionArgs) => {
       });
     }
 
-    datasetId = shopDataset?.id;
     setAppMetafields(admin, key);
-    startCrawl(defaultCrawlOptions, datasetId, session, key, admin);
   }
-
+  datasetId = shopDataset?.id;
   if (!datasetId) {
     throw new Response("Error choosing default dataset, need to create one", {
       status: 500,
     });
   }
+
+  startCrawl(defaultCrawlOptions, datasetId, session, key, admin);
 
   trieve.datasetId = datasetId;
 

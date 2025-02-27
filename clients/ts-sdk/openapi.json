@@ -13581,27 +13581,35 @@
         "type": "object",
         "properties": {
           "gt": {
-            "type": "string",
-            "nullable": true
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
           },
           "gte": {
-            "type": "string",
-            "nullable": true
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
           },
           "lt": {
-            "type": "string",
-            "nullable": true
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
           },
           "lte": {
-            "type": "string",
-            "nullable": true
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
           }
         },
         "example": {
-          "gt": "2021-01-01 00:00:00.000",
-          "gte": "2021-01-01 00:00:00.000",
-          "lt": "2021-01-01 00:00:00.000",
-          "lte": "2021-01-01 00:00:00.000"
+          "gt": 1,
+          "gte": 1,
+          "lt": 1,
+          "lte": 1
         }
       },
       "QueryTypes": {

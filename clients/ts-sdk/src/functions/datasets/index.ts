@@ -34,7 +34,7 @@ export async function createDataset(
   /** @hidden */
   this: TrieveSDK,
   props: CreateDatasetReqPayload,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<Dataset> {
   if (!this.organizationId) {
     throw new Error("Organization ID is required to create a dataset");
@@ -47,7 +47,7 @@ export async function createDataset(
       data: props,
       organizationId: this.organizationId,
     },
-    signal,
+    signal
   ) as Promise<Dataset>;
 }
 
@@ -66,7 +66,7 @@ export async function updateDataset(
   /** @hidden */
   this: TrieveSDK,
   props: UpdateDatasetReqPayload,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<Dataset> {
   if (!this.organizationId) {
     throw new Error("Organization ID is required to update a dataset");
@@ -79,7 +79,7 @@ export async function updateDataset(
       data: props,
       organizationId: this.organizationId,
     },
-    signal,
+    signal
   ) as Promise<Dataset>;
 }
 
@@ -100,7 +100,7 @@ export async function batchCreateDatasets(
   /** @hidden */
   this: TrieveSDK,
   props: CreateDatasetBatchReqPayload,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<Dataset[]> {
   if (!this.organizationId) {
     throw new Error("Organization ID is required to create a dataset");
@@ -113,7 +113,7 @@ export async function batchCreateDatasets(
       data: props,
       organizationId: this.organizationId,
     },
-    signal,
+    signal
   ) as Promise<Dataset[]>;
 }
 
@@ -128,7 +128,7 @@ export async function clearDataset(
   /** @hidden */
   this: TrieveSDK,
   datasetId: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<void> {
   return this.trieve.fetch(
     "/api/dataset/clear/{dataset_id}",
@@ -136,7 +136,7 @@ export async function clearDataset(
     {
       datasetId,
     },
-    signal,
+    signal
   ) as Promise<void>;
 }
 
@@ -145,7 +145,7 @@ export async function getDatasetEvents(
   this: TrieveSDK,
   props: GetEventsData,
   datasetId: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<EventReturn> {
   return this.trieve.fetch(
     "/api/dataset/events",
@@ -154,7 +154,7 @@ export async function getDatasetEvents(
       datasetId,
       data: props,
     },
-    signal,
+    signal
   ) as Promise<EventReturn>;
 }
 
@@ -163,7 +163,7 @@ export async function getDatasetFiles(
   this: TrieveSDK,
   datasetId: string,
   page: number,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<FileData> {
   return this.trieve.fetch(
     "/api/dataset/files/{dataset_id}/{page}",
@@ -172,7 +172,7 @@ export async function getDatasetFiles(
       datasetId,
       page,
     },
-    signal,
+    signal
   ) as Promise<FileData>;
 }
 
@@ -181,7 +181,7 @@ export async function getAllDatasetTags(
   this: TrieveSDK,
   props: GetAllTagsReqPayload,
   datasetId: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<GetAllTagsResponse> {
   return this.trieve.fetch(
     "/api/dataset/get_all_tags",
@@ -190,7 +190,7 @@ export async function getAllDatasetTags(
       data: props,
       datasetId,
     },
-    signal,
+    signal
   ) as Promise<GetAllTagsResponse>;
 }
 
@@ -200,7 +200,7 @@ export async function getDatasetsFromOrganization(
   organizationId: string,
   limit?: number,
   offset?: number,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<DatasetAndUsage[]> {
   return this.trieve.fetch(
     "/api/dataset/organization/{organization_id}",
@@ -210,7 +210,7 @@ export async function getDatasetsFromOrganization(
       limit,
       offset,
     },
-    signal,
+    signal
   ) as Promise<DatasetAndUsage[]>;
 }
 
@@ -218,11 +218,11 @@ export async function getDatasetByTrackingId(
   /** @hidden */
   this: TrieveSDK,
   trackingId: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<Dataset> {
   if (!this.organizationId) {
     throw new Error(
-      "Organization ID is required to get a dataset by tracking ID",
+      "Organization ID is required to get a dataset by tracking ID"
     );
   }
 
@@ -233,7 +233,7 @@ export async function getDatasetByTrackingId(
       organizationId: this.organizationId,
       trackingId,
     },
-    signal,
+    signal
   ) as Promise<Dataset>;
 }
 
@@ -241,7 +241,7 @@ export async function getDatasetUsageById(
   /** @hidden */
   this: TrieveSDK,
   datasetId: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<DatasetUsageCount> {
   return this.trieve.fetch(
     "/api/dataset/usage/{dataset_id}",
@@ -249,7 +249,7 @@ export async function getDatasetUsageById(
     {
       datasetId,
     },
-    signal,
+    signal
   ) as Promise<DatasetUsageCount>;
 }
 
@@ -257,7 +257,7 @@ export async function getDatasetById(
   /** @hidden */
   this: TrieveSDK,
   datasetId: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<Dataset> {
   return this.trieve.fetch(
     "/api/dataset/{dataset_id}",
@@ -265,7 +265,7 @@ export async function getDatasetById(
     {
       datasetId,
     },
-    signal,
+    signal
   ) as Promise<Dataset>;
 }
 
@@ -273,7 +273,7 @@ export async function deleteDataset(
   /** @hidden */
   this: TrieveSDK,
   datasetId: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<void> {
   return this.trieve.fetch(
     "/api/dataset/{dataset_id}",
@@ -281,7 +281,7 @@ export async function deleteDataset(
     {
       datasetId,
     },
-    signal,
+    signal
   ) as Promise<void>;
 }
 
@@ -300,4 +300,3 @@ export async function getPagefindUrl(
     signal
   ) as Promise<GetPagefindIndexResponse>;
 }
-
