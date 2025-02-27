@@ -26,7 +26,6 @@
     "@prisma/client": "^5.11.0",
     "@remix-run/dev": "^2.7.1",
     "@remix-run/fs-routes": "^2.15.0",
-    "trieve-ts-sdk": "*",
     "@remix-run/node": "^2.7.1",
     "@remix-run/react": "^2.7.1",
     "@remix-run/serve": "^2.7.1",
@@ -39,6 +38,7 @@
     "prisma": "^5.11.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "trieve-ts-sdk": "*",
     "vite-tsconfig-paths": "^5.0.1"
   },
   "devDependencies": {

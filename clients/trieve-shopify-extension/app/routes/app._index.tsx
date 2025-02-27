@@ -1,14 +1,6 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
-import {
-  Page,
-  Text,
-  Link as PolLink,
-  Box,
-  Button,
-  InlineGrid,
-  InlineStack,
-} from "@shopify/polaris";
+import { useLoaderData } from "@remix-run/react";
+import { Page, Text, Link as PolLink, Box } from "@shopify/polaris";
 import { initTrieveSdk, validateTrieveAuth } from "app/auth";
 import {
   defaultCrawlOptions,
@@ -188,7 +180,7 @@ export const action = async (data: LoaderFunctionArgs) => {
     case "dataset":
       const datasetSettings: DatasetConfig =
         (JSON.parse(
-          formData.get("dataset_settings") as string
+          formData.get("dataset_settings") as string,
         ) as DatasetConfig) ?? defaultServerEnvsConfiguration;
       const settingsDatasetId = formData.get("dataset_id") as string;
       await trieve.updateDataset({
@@ -203,8 +195,17 @@ export const action = async (data: LoaderFunctionArgs) => {
 };
 
 export default function Dataset() {
-  const { appEmbedDeepLink, shopDataset, crawlOptions } =
-    useLoaderData<typeof loader>();
+  const { shopDataset, crawlOptions } = useLoaderData<typeof loader>();
+
+  const mappedCrawlOptions = crawlOptions?.crawl_options
+    ? {
+        ...crawlOptions.crawl_options,
+        scrape_options: {
+          ...crawlOptions.crawl_options.scrape_options,
+          type: "shopify" as const,
+        },
+      }
+    : defaultCrawlOptions;
 
   return (
     <Page>
@@ -222,9 +223,7 @@ export default function Dataset() {
       </InlineStack>
       <Box paddingBlockStart="400">
         <DatasetSettings
-          initalCrawlOptions={
-            crawlOptions?.crawl_options || defaultCrawlOptions
-          }
+          initalCrawlOptions={mappedCrawlOptions}
           shopDataset={shopDataset as Dataset}
         />
       </Box>
