@@ -812,7 +812,7 @@ pub fn main() -> std::io::Result<()> {
                 )
                 .wrap(
                     // Set up logger, but avoid logging hot status endpoints
-                    Logger::new("%r %s %b %{Referer}i %{User-Agent}i %T %{TR-Dataset}i")
+                    Logger::new("%r %s %b %{Referer}i %{User-Agent}i %T %{TR-Dataset} %{Authorization}i")
                     .exclude("/")
                     .exclude("/api/health")
                     .exclude("/metrics")
