@@ -29,7 +29,7 @@ export default function ECommerce() {
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
   const defaultTags: any[] = JSON.parse(
-    import.meta.env.VITE_DEFAULT_TAGS ?? "[]",
+    import.meta.env.VITE_DEFAULT_TAGS ?? "[]"
   );
   const defaultSearchMode =
     import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "search";
@@ -115,6 +115,18 @@ export default function ECommerce() {
               showFloatingInput={showFloatingInput}
               inline={inline}
               showResultHighlights={showResultHighlights}
+              recommendOptions={{
+                queryToTriggerRecommendations: "What if this is out of stock?",
+                productId: "42002562449585",
+                filter: {
+                  must: [
+                    {
+                      field: "tag_set",
+                      match_all: ["skiing_boots"],
+                    },
+                  ],
+                },
+              }}
             />
           </>
         ) : (
