@@ -70,7 +70,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Messages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
-    new AbortController(),
+    new AbortController()
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
 
@@ -121,7 +121,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     setIsLoading(true);
     setIsDoneReading(false);
@@ -166,7 +166,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 chunk.metadata.page_title) &&
               chunk.link &&
               chunk.image_urls?.length &&
-              chunk.num_value,
+              chunk.num_value
           );
           if (ecommerceChunks && queryId) {
             trackViews({
@@ -242,6 +242,21 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     const curGroup = group || currentGroup;
     let transcribedQuery: string | null = null;
 
+    // This only works w/ shopify rn
+    if (
+      props.recommendOptions &&
+      props.recommendOptions?.queryToTriggerRecommendations == questionProp
+    ) {
+      const item = await trieveSDK.getChunkByTrackingId({
+        trackingId: props.recommendOptions.productId,
+      });
+      const metadata = item?.metadata as {
+        title: string;
+        variantName: string;
+      };
+      questionProp = `Show me more like ${metadata.title} - ${metadata.variantName}`;
+    }
+
     // Use group search
     let filters: ChunkFilter | null = {
       must: null,
@@ -288,6 +303,30 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    if (
+      props.recommendOptions?.filter &&
+      props.recommendOptions?.queryToTriggerRecommendations == question
+    ) {
+      if (props.recommendOptions?.filter.must) {
+        if (!filters.must) {
+          filters.must = [];
+        }
+        filters.must?.push(...props.recommendOptions.filter.must);
+      }
+      if (props.recommendOptions?.filter.must_not) {
+        if (!filters.must_not) {
+          filters.must_not = [];
+        }
+        filters.must_not?.push(...props.recommendOptions.filter.must_not);
+      }
+      if (props.recommendOptions?.filter.should) {
+        if (!filters.should) {
+          filters.should = [];
+        }
+        filters.should?.push(...props.recommendOptions.filter.should);
+      }
+    }
+
     let stoppedGeneratingMessage = false;
 
     if (!curGroup && (props.tags?.length ?? 0) > 0) {
@@ -299,11 +338,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           () => {
             console.error(
               "getToolCallFunctionParams timeout on retry: ",
-              filterParamsRetries,
+              filterParamsRetries
             );
             chatMessageAbortController.current.abort();
           },
-          imageUrl || curAudioBase64 ? 20000 : 10000,
+          imageUrl || curAudioBase64 ? 20000 : 10000
         );
 
         try {
@@ -317,7 +356,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                         return message.type == "user";
                       })
                       .map(
-                        (message) => `\n\n${message.text}`,
+                        (message) => `\n\n${message.text}`
                       )} \n\n ${questionProp || currentQuestion}`
                   : null,
               image_url: imageUrl ? imageUrl : null,
@@ -341,7 +380,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               if (headers["x-tr-query"] && curAudioBase64) {
                 transcribedQuery = headers["x-tr-query"];
               }
-            },
+            }
           );
 
           if (transcribedQuery && curAudioBase64) {
@@ -429,11 +468,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         () => {
           console.error(
             "createMessageReaderWithQueryId timeout on retry: ",
-            messageReaderRetries,
+            messageReaderRetries
           );
           chatMessageAbortController.current.abort();
         },
-        imageUrl || curAudioBase64 ? 20000 : 10000,
+        imageUrl || curAudioBase64 ? 20000 : 10000
       );
 
       try {
@@ -468,7 +507,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             if (headers["x-tr-query"] && curAudioBase64) {
               transcribedQuery = headers["x-tr-query"];
             }
-          },
+          }
         );
         reader = result.reader;
         queryId = result.queryId;
@@ -548,7 +587,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const askQuestion = async (
     question?: string,
     group?: ChunkGroup,
-    retry?: boolean,
+    retry?: boolean
   ) => {
     const questionProp = question;
     setIsDoneReading(false);
@@ -639,7 +678,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const rateChatCompletion = async (
     isPositive: boolean,
-    queryId: string | null,
+    queryId: string | null
   ) => {
     if (queryId) {
       trieveSDK.rateRagQuery({
@@ -667,7 +706,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         stopGeneratingMessage,
         isDoneReading,
         rateChatCompletion,
-      }}>
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );

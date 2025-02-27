@@ -161,6 +161,11 @@ export type ModalProps = {
   componentName?: string;
   displayModal?: boolean;
   searchPageProps?: SearchPageProps;
+  recommendOptions?: {
+    queryToTriggerRecommendations: string;
+    productId: string;
+    filter?: ChunkFilter;
+  };
 };
 
 const defaultProps = {

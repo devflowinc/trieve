@@ -6,6 +6,7 @@ import { DatasetConfig } from "./LegacySettingsWrapper";
 export const LLMSettings = (props: {
   serverConfig: Accessor<DatasetConfig>;
   setServerConfig: (config: (prev: DatasetConfig) => DatasetConfig) => void;
+  saveConfig?: () => void;
 }) => {
   return (
     <form class="flex flex-col gap-3">
@@ -86,21 +87,40 @@ export const LLMSettings = (props: {
                     tooltipText="LLM API Key cannot be viewed after you set it"
                   />
                 </label>
-                <input
-                  type="text"
-                  name="llmAPIURL"
-                  id="llmAPIURL"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                  value={props.serverConfig().LLM_API_KEY ?? ""}
-                  onInput={(e) =>
-                    props.setServerConfig((prev) => {
-                      return {
-                        ...prev,
-                        LLM_API_KEY: e.currentTarget.value,
-                      };
-                    })
-                  }
-                />
+                <div class="flex items-center gap-2">
+                  <input
+                    type="text"
+                    name="llmAPIURL"
+                    id="llmAPIURL"
+                    class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                    value={props.serverConfig().LLM_API_KEY ?? ""}
+                    onInput={(e) =>
+                      props.setServerConfig((prev) => {
+                        return {
+                          ...prev,
+                          LLM_API_KEY: e.currentTarget.value,
+                        };
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    class="rounded-md bg-magenta-400 px-3 py-2 text-sm text-white"
+                    onClick={() => {
+                      props.setServerConfig((prev) => {
+                        return {
+                          ...prev,
+                          LLM_API_KEY: "",
+                        };
+                      });
+                      if (props.saveConfig) {
+                        props.saveConfig();
+                      }
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
 
               <div class="col-span-4 sm:col-span-2">
