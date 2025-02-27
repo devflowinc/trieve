@@ -62,7 +62,7 @@ pub async fn get_channel_id(api_key: &str, channel_url: String) -> Result<String
     }
     let handle_name = channel_url
         .split("/")
-        .filter(|x| x.is_empty())
+        .filter(|x| !x.is_empty())
         .last()
         .unwrap();
     let url = format!(

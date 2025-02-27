@@ -29,5 +29,5 @@ extensions/*/dist
 .shopify/*
 .shopify.lock
 
-shopify.app.densumes-search-extension.toml
+shopify.app.densumes-trieve-extension.toml
 shopify.app.cdxker-search-extension.toml
