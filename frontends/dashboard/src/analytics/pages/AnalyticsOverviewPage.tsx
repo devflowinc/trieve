@@ -10,14 +10,14 @@ import { DateRangePicker } from "shared/ui";
 import { Granularity } from "trieve-ts-sdk";
 import { SearchMetrics } from "../components/charts/SearchMetrics";
 import { RagMetrics } from "../components/charts/RagMetrics";
+import { subMonths } from "date-fns";
 
 export const AnalyticsOverviewPage = () => {
-  const [rpsDateRange, setRpsDateRange] = createSignal<DateRangeFilter>({
-    gt: subHours(new Date(), 1),
+  const [rtpDateRange, setRtpDateRange] = createSignal<DateRangeFilter>({
+    gt: subMonths(new Date(), 1),
   });
 
-  const [rpsGranularity, setRpsGranularity] =
-    createSignal<Granularity>("minute");
+  const [rtpGranularity, setRtpGranularity] = createSignal<Granularity>("day");
 
   const [headQueriesDate, setHeadQueriesDate] = createSignal<DateRangeFilter>({
     gt: subHours(new Date(), 1),
@@ -39,13 +39,13 @@ export const AnalyticsOverviewPage = () => {
           <RagMetrics />
         </Card>
         <Card
-          title="Requests Per Second"
+          title="Requests Per Time Period"
           controller={
             <DateRangePicker
-              onChange={(e) => setRpsDateRange(e)}
-              value={rpsDateRange()}
+              onChange={(e) => setRtpDateRange(e)}
+              value={rtpDateRange()}
               initialSelectedPresetId={3}
-              onGranularitySuggestion={(e) => setRpsGranularity(e)}
+              onGranularitySuggestion={(e) => setRtpGranularity(e)}
             />
           }
           class="flex flex-col justify-between px-4"
@@ -53,8 +53,8 @@ export const AnalyticsOverviewPage = () => {
         >
           <SearchUsageGraph
             params={{
-              filter: { date_range: rpsDateRange() },
-              granularity: rpsGranularity(),
+              filter: { date_range: rtpDateRange() },
+              granularity: rtpGranularity(),
             }}
           />
         </Card>
