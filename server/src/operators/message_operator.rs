@@ -737,17 +737,7 @@ pub async fn stream_response(
 
     let base_url = dataset_config.LLM_BASE_URL.clone();
 
-    let llm_api_key = if !dataset_config.LLM_API_KEY.is_empty() {
-        dataset_config.LLM_API_KEY.clone()
-    } else if base_url.contains("openai.com") {
-        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
-    } else {
-        get_env!(
-            "LLM_API_KEY",
-            "LLM_API_KEY for openrouter or self-hosted should be set"
-        )
-        .into()
-    };
+    let llm_api_key = get_llm_api_key(&dataset_config);
 
     let client = Client {
         headers: None,
@@ -1426,7 +1416,7 @@ pub async fn get_topic_string(
     };
 
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
-    let base_url = dataset_config.LLM_BASE_URL;
+    let base_url = dataset_config.LLM_BASE_URL.clone();
 
     let base_url = if base_url.is_empty() {
         "https://openrouter.ai/api/v1".into()
@@ -1434,17 +1424,7 @@ pub async fn get_topic_string(
         base_url
     };
 
-    let llm_api_key = if !dataset_config.LLM_API_KEY.is_empty() {
-        dataset_config.LLM_API_KEY.clone()
-    } else if base_url.contains("openai.com") {
-        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
-    } else {
-        get_env!(
-            "LLM_API_KEY",
-            "LLM_API_KEY for openrouter or self-hosted should be set"
-        )
-        .into()
-    };
+    let llm_api_key = get_llm_api_key(&dataset_config);
 
     let client = Client {
         headers: None,
@@ -1493,7 +1473,7 @@ pub async fn get_text_from_image(
     dataset: &Dataset,
 ) -> Result<String, ServiceError> {
     let dataset_config = DatasetConfiguration::from_json(dataset.server_configuration.clone());
-    let base_url = dataset_config.LLM_BASE_URL;
+    let base_url = dataset_config.LLM_BASE_URL.clone();
 
     let base_url = if base_url.is_empty() {
         "https://openrouter.ai/api/v1".into()
@@ -1501,17 +1481,7 @@ pub async fn get_text_from_image(
         base_url
     };
 
-    let llm_api_key = if !dataset_config.LLM_API_KEY.is_empty() {
-        dataset_config.LLM_API_KEY.clone()
-    } else if base_url.contains("openai.com") {
-        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
-    } else {
-        get_env!(
-            "LLM_API_KEY",
-            "LLM_API_KEY for openrouter or self-hosted should be set"
-        )
-        .into()
-    };
+    let llm_api_key = get_llm_api_key(&dataset_config);
 
     let client = Client {
         headers: None,
@@ -1636,6 +1606,22 @@ pub async fn get_text_from_audio(audio_base64: &str) -> Result<String, ServiceEr
     Ok(text.replace("\n", ""))
 }
 
+fn get_llm_api_key(dataset_config: &DatasetConfiguration) -> String {
+    if !dataset_config.LLM_API_KEY.is_empty() {
+        dataset_config.LLM_API_KEY.clone()
+    } else if dataset_config.LLM_BASE_URL.contains("openai.com") {
+        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
+    } else if dataset_config.LLM_BASE_URL.contains("groq.com") {
+        get_env!("GROQ_API_KEY", "GROQ_API_KEY for groq should be set").into()
+    } else {
+        get_env!(
+            "LLM_API_KEY",
+            "LLM_API_KEY for openrouter or self-hosted should be set"
+        )
+        .into()
+    }
+}
+
 pub async fn suggested_followp_questions(
     payload: SuggestedQueriesReqPayload,
     dataset_config: DatasetConfiguration,
@@ -1649,17 +1635,7 @@ pub async fn suggested_followp_questions(
         base_url
     };
 
-    let llm_api_key = if !dataset_config.LLM_API_KEY.is_empty() {
-        dataset_config.LLM_API_KEY.clone()
-    } else if base_url.contains("openai.com") {
-        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
-    } else {
-        get_env!(
-            "LLM_API_KEY",
-            "LLM_API_KEY for openrouter or self-hosted should be set"
-        )
-        .into()
-    };
+    let llm_api_key = get_llm_api_key(&dataset_config);
 
     let followup = if payload.is_followup.unwrap_or(false) {
         " followup"
@@ -1780,17 +1756,7 @@ pub async fn suggested_new_queries(
         base_url
     };
 
-    let llm_api_key = if !dataset_config.LLM_API_KEY.is_empty() {
-        dataset_config.LLM_API_KEY.clone()
-    } else if base_url.contains("openai.com") {
-        get_env!("OPENAI_API_KEY", "OPENAI_API_KEY for openai should be set").into()
-    } else {
-        get_env!(
-            "LLM_API_KEY",
-            "LLM_API_KEY for openrouter or self-hosted should be set"
-        )
-        .into()
-    };
+    let llm_api_key = get_llm_api_key(&dataset_config);
     let search_type = payload.search_type.clone().unwrap_or(SearchMethod::Hybrid);
     let filters = payload.filters.clone();
 
