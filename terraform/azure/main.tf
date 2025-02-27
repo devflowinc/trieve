@@ -43,14 +43,13 @@ resource "azurerm_kubernetes_cluster_node_pool" "gpu_nodes" {
   name                  = "gpu"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.k8s.id
   vm_size               = "Standard_NC4as_T4_v3"
-  node_count            = 1
-
+  node_count            = 4
 }
 
 resource "azurerm_kubernetes_cluster_node_pool" "qdrant_nodes" {
   name                  = "qdrant"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.k8s.id
-  vm_size               = "Standard_B4s_v2"
+  vm_size               = "Standard_D4s_v5"
   node_count            = 3
 
   node_taints = [

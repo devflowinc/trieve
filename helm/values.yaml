@@ -6,6 +6,12 @@ containers:
   ingest:
     tag: latest
     resources: {}
+  update_worker:
+    tag: latest
+    resources: {}
+  batch_etl_worker:
+    tag: latest
+    resources: {}
   file_worker:
     tag: latest
     resources: {}
@@ -90,7 +96,10 @@ config:
     replicationFactor: 2
     shardCount: 12
     vectorSizes:
+      - 768
+      - 1536
       - 1024
+      - 3072
   analytics:
     enabled: true
     clickhouseDB: "default"

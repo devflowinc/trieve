@@ -76,7 +76,9 @@ config:
     shardCount: 12
     vectorSizes:
       - 768
+      - 1536
       - 1024
+      - 3072
   analytics:
     enabled: true
     clickhouseDB: default
