@@ -28,15 +28,23 @@ yarn install
 
 ### Local Development
 
-Using yarn:
+Local development is powered by [the Shopify CLI](https://shopify.dev/docs/apps/tools/cli). It logs into your partners account, connects to an app, provides environment variables, updates remote config, creates a tunnel and provides commands to generate extensions.
+
+1) Create a shopify config `.toml`
+
+```shell
+yarn shopify app config link
+```
+
+Name your shopify app creating it as a new app.
+
+2) Run local development server.
 
 ```shell
 yarn dev
 ```
 
-Press P to open the URL to your app. Once you click install, you can start development.
-
-Local development is powered by [the Shopify CLI](https://shopify.dev/docs/apps/tools/cli). It logs into your partners account, connects to an app, provides environment variables, updates remote config, creates a tunnel and provides commands to generate extensions.
+3) Press P to open the URL to your app. Once you click install, you can start development!
 
 #### Main project structure
 
