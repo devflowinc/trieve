@@ -32,16 +32,6 @@ export const validateTrieveAuth = async <S extends boolean = true>(
   } as S extends true ? StrongTrieveKey : TrieveKey;
 };
 
-export const validateTrieveDataset = async (
-  request: LoaderFunctionArgs["request"],
-): Promise<TrieveKey> => {
-  const result = await validateTrieveAuth(request);
-  if (!result.currentDatasetId) {
-    throw json({ message: "No dataset selected" }, 401);
-  }
-  return result;
-};
-
 export const sdkFromKey = (key: TrieveKey): TrieveSDK => {
   const trieve = new TrieveSDK({
     baseUrl: "https://api.trieve.ai",
