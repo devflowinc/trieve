@@ -11,7 +11,7 @@ function createChunkFromProduct(
   product: Product,
   variant: Product["variants"]["nodes"][0],
   baseUrl: string,
-  crawlOptions: ExtendedCrawlOptions
+  crawlOptions: ExtendedCrawlOptions,
 ): ChunkReqPayload {
   // Extract image URLs
   const imageUrls = product.media.nodes.map((media) => media.preview.image.url);
@@ -76,8 +76,8 @@ function createChunkFromProduct(
     product.variants.nodes.forEach((v) => {
       let values: string[] = JSON.parse(
         v.metafields.nodes.find((m) =>
-          crawlOptions.include_metafields?.includes(m.key)
-        )?.value ?? "[]"
+          crawlOptions.include_metafields?.includes(m.key),
+        )?.value ?? "[]",
       );
       tags.push(...values);
     });
@@ -135,14 +135,14 @@ function createChunkFromProduct(
         : undefined,
     convert_html_to_text: true,
     upsert_by_tracking_id: true,
-  };
+  } satisfies ChunkReqPayload;
 }
 
 export function createChunkFromProductWebhook(
   product: ProductWebhook,
   variant: ProductWebhook["variants"][0],
   baseUrl: string,
-  crawlOptions: ExtendedCrawlOptions
+  crawlOptions: ExtendedCrawlOptions,
 ): ChunkReqPayload {
   // Extract image URLs
   const imageUrls = product.media.map((media) => media.preview.image.url);
@@ -206,8 +206,8 @@ export function createChunkFromProductWebhook(
     product.variants.forEach((v) => {
       let values: string[] = JSON.parse(
         v.metafields.find((m) =>
-          crawlOptions.include_metafields?.includes(m.key)
-        )?.value ?? "[]"
+          crawlOptions.include_metafields?.includes(m.key),
+        )?.value ?? "[]",
       );
       tags.push(...values);
     });
@@ -261,11 +261,11 @@ export async function sendChunksFromWebhook(
   datasetId: string,
   admin: any,
   session: any,
-  crawlOptions: ExtendedCrawlOptions
+  crawlOptions: ExtendedCrawlOptions,
 ) {
   const dataChunks = product.variants.map(async (variant) => {
-    let response = await admin?.graphql(`
-      #graphql
+    let response = await admin?.graphql(
+      `#graphql
       query{
           productVariant(id: "${variant.admin_graphql_api_id}") {
             metafields(first: 20) {
@@ -276,7 +276,8 @@ export async function sendChunksFromWebhook(
             }
           }
         }
-    `);
+    `,
+    );
     let data = (await response?.json()) as {
       data: {
         productVariant: {
@@ -290,7 +291,7 @@ export async function sendChunksFromWebhook(
       product,
       variant,
       `https://${session?.shop}`,
-      crawlOptions
+      crawlOptions,
     );
   });
 
@@ -304,7 +305,7 @@ export async function sendChunksFromWebhook(
 export async function sendChunksToTrieve(
   chunks: ChunkReqPayload[],
   key: TrieveKey,
-  datasetId: string
+  datasetId: string,
 ) {
   await fetch(`https://api.trieve.ai/api/chunk`, {
     method: "POST",
@@ -322,7 +323,7 @@ export async function sendChunksToTrieve(
 export async function deleteChunkFromTrieve(
   id: string,
   key: TrieveKey,
-  datasetId: string
+  datasetId: string,
 ) {
   await fetch(`https://api.trieve.ai/api/chunk/tracking_id/${id}`, {
     method: "DELETE",
@@ -340,7 +341,7 @@ export const sendChunks = async (
   key: TrieveKey,
   admin: any,
   session: any,
-  crawlOptions: ExtendedCrawlOptions
+  crawlOptions: ExtendedCrawlOptions,
 ) => {
   let next_page = null;
   let started = false;
@@ -394,7 +395,7 @@ export const sendChunks = async (
             endCursor
           }
         }
-      }`
+      }`,
     );
 
     const { data } = (await response.json()) as { data: ProductsResponse };
@@ -406,9 +407,9 @@ export const sendChunks = async (
             product,
             variant,
             `https://${session.shop}`,
-            crawlOptions
-          )
-        )
+            crawlOptions,
+          ),
+        ),
     );
 
     for (const batch of chunk_to_size(dataChunks, 120)) {

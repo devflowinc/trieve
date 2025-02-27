@@ -11,12 +11,7 @@ import {
   TextField,
 } from "@shopify/polaris";
 import { useEffect, useState } from "react";
-import {
-  CrawlOptions,
-  Dataset,
-  DatasetConfigurationDTO,
-  TrieveSDK,
-} from "trieve-ts-sdk";
+import { CrawlOptions, Dataset, DatasetConfigurationDTO } from "trieve-ts-sdk";
 
 export type ExtendedCrawlOptions = Omit<CrawlOptions, "webhook_metadata"> & {
   include_metafields?: string[];
@@ -83,7 +78,7 @@ export const DatasetSettings = ({
   const shopify = useAppBridge();
   const submit = useSubmit();
   const [datasetSettings, setDatasetSettings] = useState<DatasetConfig>(
-    shopDataset.server_configuration ?? ({} as DatasetConfig)
+    shopDataset.server_configuration ?? ({} as DatasetConfig),
   );
 
   useEffect(() => {
@@ -116,7 +111,7 @@ export const DatasetSettings = ({
       },
       {
         method: "POST",
-      }
+      },
     );
 
     shopify.toast.show("Started crawl!");
@@ -131,7 +126,7 @@ export const DatasetSettings = ({
       },
       {
         method: "POST",
-      }
+      },
     );
 
     shopify.toast.show("Saved LLM settings!");
