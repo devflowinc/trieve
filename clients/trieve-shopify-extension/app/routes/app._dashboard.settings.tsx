@@ -39,13 +39,11 @@ export default function Dataset() {
     : defaultCrawlOptions;
 
   return (
-    <Page>
-      <Box paddingBlockStart="400">
-        <DatasetSettings
-          initalCrawlOptions={mappedCrawlOptions}
-          shopDataset={shopDataset as Dataset}
-        />
-      </Box>
-    </Page>
+    <Box paddingBlockStart="400">
+      <DatasetSettings
+        initalCrawlOptions={mappedCrawlOptions}
+        shopDataset={shopDataset as Dataset}
+      />
+    </Box>
   );
 }
