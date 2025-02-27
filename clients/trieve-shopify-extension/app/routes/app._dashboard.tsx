@@ -1,6 +1,7 @@
 import { LoaderFunctionArgs, redirect } from "@remix-run/node";
 import {
   Outlet,
+  PrefetchPageLinks,
   useLoaderData,
   useLocation,
   useNavigate,
@@ -90,6 +91,7 @@ export default function Dashboard() {
           <Outlet />
         </TrieveProvider>
       </Tabs>
+      <PrefetchPageLinks page="/app/settings" />
     </Page>
   );
 }
