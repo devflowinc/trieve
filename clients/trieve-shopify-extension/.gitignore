@@ -28,3 +28,6 @@ extensions/*/dist
 # Ignore shopify files created during app dev
 .shopify/*
 .shopify.lock
+
+shopify.app.densumes-search-extension.toml
+shopify.app.cdxker-search-extension.toml

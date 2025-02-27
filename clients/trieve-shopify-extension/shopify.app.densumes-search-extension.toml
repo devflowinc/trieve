@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "52cbea85686eb5f45d857586c2c9da8d"
-application_url = "https://platform-reduction-forty-studies.trycloudflare.com"
+application_url = "https://teeth-cultures-packing-deep.trycloudflare.com"
 embedded = true
 name = "densumes-search-extension"
 handle = "densumes-search-extension"
@@ -20,9 +20,9 @@ scopes = "read_products,write_products"
 
 [auth]
 redirect_urls = [
-  "https://platform-reduction-forty-studies.trycloudflare.com/auth/callback",
-  "https://platform-reduction-forty-studies.trycloudflare.com/auth/shopify/callback",
-  "https://platform-reduction-forty-studies.trycloudflare.com/api/auth/callback"
+  "https://teeth-cultures-packing-deep.trycloudflare.com/auth/callback",
+  "https://teeth-cultures-packing-deep.trycloudflare.com/auth/shopify/callback",
+  "https://teeth-cultures-packing-deep.trycloudflare.com/api/auth/callback",
 ]
 
 [pos]
