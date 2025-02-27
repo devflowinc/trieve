@@ -12,8 +12,7 @@ import {
 import { sendChunks } from "app/processors/getProducts";
 import { authenticate } from "app/shopify.server";
 import { TrieveKey } from "app/types";
-import { request } from "http";
-import { CrawlRequest, type Dataset } from "trieve-ts-sdk";
+import { type Dataset } from "trieve-ts-sdk";
 
 const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
   const response = await admin.graphql(`
@@ -70,7 +69,7 @@ const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const { admin, session, sessionToken } = await authenticate.admin(
-    args.request
+    args.request,
   );
   const trieve = await initTrieveSdk(args);
 
@@ -121,9 +120,9 @@ export const loader = async (args: LoaderFunctionArgs) => {
   }
 
   trieve.datasetId = datasetId;
-  const scrapingOptions = (await trieve.trieve.fetch("/api/crawl", "get", {
+  const scrapingOptions = await trieve.trieve.fetch("/api/crawl", "get", {
     datasetId: datasetId,
-  })) as unknown as CrawlRequest[];
+  });
 
   const appEmbedDeepLink = `https://${session.shop}/admin/themes/current/editor?context=apps&template=index&activateAppId=${process.env.SHOPIFY_GLOBAL_COMPONENT_ID}/global_component`;
 
@@ -139,7 +138,7 @@ const startCrawl = async (
   datasetId: string,
   session: { shop: string },
   trieveKey: TrieveKey,
-  admin: any
+  admin: any,
 ) => {
   await prisma.crawlSettings.upsert({
     create: {
@@ -159,7 +158,7 @@ const startCrawl = async (
   });
 
   sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions).catch(
-    console.error
+    console.error,
   );
 };
 
@@ -171,7 +170,7 @@ export const action = async (data: LoaderFunctionArgs) => {
   switch (formData.get("type")) {
     case "crawl":
       const crawlOptions: ExtendedCrawlOptions = JSON.parse(
-        formData.get("crawl_options") as string
+        formData.get("crawl_options") as string,
       );
       const datasetId = formData.get("dataset_id") as string;
 
