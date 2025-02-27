@@ -90,9 +90,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
   let datasetId = trieve.datasetId;
 
-  let shopDataset = await trieve.getDatasetById(datasetId ?? "").catch(() => {
-    return null;
-  });
+  let shopDataset = await trieve
+    .getDatasetByTrackingId(session.shop)
+    .catch(() => {
+      return null;
+    });
+
   if ((!datasetId || !shopDataset) && trieve.organizationId) {
     if (!shopDataset) {
       shopDataset = await trieve.createDataset({
