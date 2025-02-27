@@ -40,6 +40,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "TR-Organization": userContext.selectedOrg().id,
       },
       body: JSON.stringify({
         organization_id: userContext.selectedOrg().id,
