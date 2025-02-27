@@ -15,6 +15,59 @@ import { TrieveKey } from "app/types";
 import { request } from "http";
 import { CrawlRequest, type Dataset } from "trieve-ts-sdk";
 
+const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
+  const response = await admin.graphql(`
+      #graphql
+      query {
+        currentAppInstallation {
+          id
+        }
+      }
+      `);
+
+  const appId = (await response.json()) as {
+    data: { currentAppInstallation: { id: string } };
+  };
+  await admin.graphql(
+    `
+    #graphql
+    mutation CreateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafieldsSetInput) {
+          metafields {
+            id
+            namespace
+            key
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `,
+    {
+      variables: {
+        metafieldsSetInput: [
+          {
+            namespace: "trieve",
+            key: "dataset_id",
+            value: trieveKey.currentDatasetId,
+            type: "single_line_text_field",
+            ownerId: appId,
+          },
+          {
+            namespace: "trieve",
+            key: "api_key",
+            value: trieveKey.key,
+            type: "single_line_text_field",
+            ownerId: appId,
+          },
+        ],
+      },
+    }
+  );
+};
+
 export const loader = async (args: LoaderFunctionArgs) => {
   const { admin, session, sessionToken } = await authenticate.admin(
     args.request
@@ -36,6 +89,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     if (!shopDataset) {
       shopDataset = await trieve.createDataset({
         dataset_name: session.shop,
+        tracking_id: session.shop,
       });
 
       await prisma.apiKey.update({
@@ -50,8 +104,10 @@ export const loader = async (args: LoaderFunctionArgs) => {
         },
       });
     }
+
     datasetId = shopDataset?.id;
     const trieveKey = await validateTrieveAuth(args);
+    setAppMetafields(admin, trieveKey);
     startCrawl(defaultCrawlOptions, datasetId, session, trieveKey, admin);
   }
 
