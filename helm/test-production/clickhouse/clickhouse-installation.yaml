@@ -30,8 +30,6 @@ spec:
                 - name: log-storage-vc
                   mountPath: /var/log/clickhouse-server
               env:
-                - name: EMBEDDING_SERVER_URL
-                  value: http://embedding-m3.default.svc.cluster.local
                 - name: CLICKHOUSE_ADMIN_PASSWORD
                   value: clickhouse
 

@@ -107,7 +107,9 @@ config:
     shardCount: 12
     vectorSizes:
       - 768
+      - 1536
       - 1024
+      - 3072
   analytics:
     enabled: true
     clickhouseDB: default
@@ -167,15 +169,15 @@ embeddings:
     model: naver/efficient-splade-VI-BT-large-doc
     revision: main
     args: ["--pooling", "splade"]
-  # - name: splade-query
-  #   model: naver/efficient-splade-VI-BT-large-query
-  #   revision: main
-  #   args: ["--pooling", "splade"]
-  # - name: m3
-  #   model: BAAI/bge-m3
-  #   revision: main
-  #   args: []
-  # - name: reranker
-  #   model: BAAI/bge-reranker-large
-  #   revision: refs/pr/4
-  #   args: []
+  - name: splade-query
+    model: naver/efficient-splade-VI-BT-large-query
+    revision: main
+    args: ["--pooling", "splade"]
+  - name: m3
+    model: BAAI/bge-m3
+    revision: main
+    args: []
+  - name: reranker
+    model: BAAI/bge-reranker-large
+    revision: refs/pr/4
+    args: []

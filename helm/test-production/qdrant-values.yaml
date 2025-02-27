@@ -12,6 +12,5 @@ podDisruptionBudget:
   enabled: false
   maxUnavailable: 1
 apiKey: "qdrant-api-key"
-limits:
-  cpu: 1
+requests:
   memory: 10Gi
