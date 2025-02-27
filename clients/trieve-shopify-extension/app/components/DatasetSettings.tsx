@@ -31,7 +31,7 @@ export const defaultCrawlOptions: ExtendedCrawlOptions = {
   limit: 1000,
   scrape_options: {
     type: "shopify",
-    group_variants: false,
+    group_variants: true,
     tag_regexes: [],
   },
 };
