@@ -16,7 +16,7 @@ import {
 } from "@tanstack/react-query";
 import { TrieveProvider } from "app/context/trieveContext";
 import { authenticate } from "app/shopify.server";
-import { useDehydratedState } from "app/serverQuery";
+import { useDehydratedState } from "app/dehydrate";
 import { StrongTrieveKey } from "app/types";
 import { Dataset, OrganizationWithSubAndPlan } from "trieve-ts-sdk";
 import { useCallback, useMemo, useState, Suspense } from "react";

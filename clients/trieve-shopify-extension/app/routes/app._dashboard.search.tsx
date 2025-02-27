@@ -11,6 +11,10 @@ export const loader = createServerLoader(async ({ trieve, queryClient }) => {
   await queryClient.prefetchQuery(
     searchUsageQuery(trieve, defaultSearchAnalyticsFilter, "day"),
   );
+  await queryClient.prefetchQuery({
+    queryKey: ["test"],
+    queryFn: async () => "fromserver",
+  });
 });
 
 export default function Dataset() {
