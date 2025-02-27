@@ -25,24 +25,10 @@ export const action = async ({ request }: LoaderFunctionArgs) => {
   const idToken = formData.get("idToken")!;
   const orgId = formData.get("orgId")!;
 
-  const decoded = jwt.verify(
-    idToken.toString(),
-    process.env.SHOPIFY_API_SECRET!,
-    {
-      algorithms: ["HS256"],
-      clockTolerance: 10,
-    },
-  ) as JwtPayload;
+  const decoded = jwt.decode(idToken.toString()) as JwtPayload;
 
   const now = Math.floor(Date.now() / 1000);
 
-  if (decoded.exp && decoded.exp < now) {
-    throw new Error("Token expired");
-  }
-
-  if (decoded.nbf && decoded.nbf > now) {
-    throw new Error("Token not yet valid");
-  }
   if (type === "insert") {
     const key = await prisma.apiKey.create({
       data: {
@@ -115,7 +101,7 @@ export default function App() {
             idToken: params.get("token"),
             type: "insert",
           },
-          { method: "POST" },
+          { method: "POST" }
         );
       });
     });
@@ -131,25 +117,28 @@ export default function App() {
         />
         <span className="text-2xl font-semibold">Trieve</span>
       </div>
-      <div className="rounded-md border border-neutral-300 bg-white p-4 md:min-w-[500px]">
-        <div className="flex justify-between">
-          <div className="text-lg font-medium">Select An Organization</div>
+      {orgs.length > 0 && (
+        <div className="rounded-md border border-neutral-300 bg-white p-4 md:min-w-[500px]">
+          <div className="flex justify-between">
+            <div className="text-lg font-medium">Select An Organization</div>
+          </div>
+          <div className="flex flex-col py-2">
+            {orgs?.map((org) => (
+              <button
+                onClick={() => {
+                  generateApiKey(org.id);
+                }}
+                className="flex cursor-pointer items-center justify-between rounded-md border-b border-b-neutral-200 p-2 last:border-b-transparent hover:bg-neutral-100"
+              >
+                <div className="flex w-full items-center justify-between">
+                  <div className="text-sm font-medium">{org.name}</div>
+                  <div className="text-xs text-neutral-500">{org.id}</div>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-col py-2">
-          {orgs?.map((org) => (
-            <button
-              onClick={() => {
-                generateApiKey(org.id);
-              }}
-              className="flex cursor-pointer items-center justify-between rounded-md border-b border-b-neutral-200 p-2 last:border-b-transparent hover:bg-neutral-100">
-              <div className="flex w-full items-center justify-between">
-                <div className="text-sm font-medium">{org.name}</div>
-                <div className="text-xs text-neutral-500">{org.id}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

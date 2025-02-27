@@ -69,6 +69,9 @@ export const LLMSettings = (props: {
                   <option value="https://openrouter.ai/api/v1">
                     https://openrouter.ai/api/v1
                   </option>
+                  <option value="https://api.groq.com/openai/v1">
+                    https://api.groq.com/openai/v1
+                  </option>
                 </select>
               </div>
 

@@ -11,11 +11,14 @@ import {
 } from "app/components/DatasetSettings";
 import { sendChunks } from "app/processors/getProducts";
 import { authenticate } from "app/shopify.server";
+import { TrieveKey } from "app/types";
 import { request } from "http";
 import { CrawlRequest, type Dataset } from "trieve-ts-sdk";
 
 export const loader = async (args: LoaderFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(args.request);
+  const { admin, session, sessionToken } = await authenticate.admin(
+    args.request
+  );
   const trieve = await initTrieveSdk(args);
 
   if (!trieve.organizationId) {
@@ -26,8 +29,10 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
   let datasetId = trieve.datasetId;
 
-  let shopDataset = await trieve.getDatasetById(datasetId ?? "");
-  if (!datasetId && trieve.organizationId) {
+  let shopDataset = await trieve.getDatasetById(datasetId ?? "").catch(() => {
+    return null;
+  });
+  if ((!datasetId || !shopDataset) && trieve.organizationId) {
     if (!shopDataset) {
       shopDataset = await trieve.createDataset({
         dataset_name: session.shop,
@@ -40,12 +45,14 @@ export const loader = async (args: LoaderFunctionArgs) => {
         where: {
           userId_shop: {
             userId: sessionToken.sub as string,
-            shop: session.shop,
+            shop: `https://${session.shop}`,
           },
         },
       });
     }
     datasetId = shopDataset?.id;
+    const trieveKey = await validateTrieveAuth(args);
+    startCrawl(defaultCrawlOptions, datasetId, session, trieveKey, admin);
   }
 
   if (!datasetId) {
@@ -66,6 +73,35 @@ export const loader = async (args: LoaderFunctionArgs) => {
   };
 };
 
+const startCrawl = async (
+  crawlOptions: ExtendedCrawlOptions,
+  datasetId: string,
+  session: { shop: string },
+  trieveKey: TrieveKey,
+  admin: any
+) => {
+  await prisma.crawlSettings.upsert({
+    create: {
+      datasetId: datasetId,
+      shop: session.shop,
+      crawlSettings: crawlOptions,
+    },
+    update: {
+      crawlSettings: crawlOptions,
+    },
+    where: {
+      datasetId_shop: {
+        datasetId: datasetId,
+        shop: session.shop,
+      },
+    },
+  });
+
+  sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions).catch(
+    console.error
+  );
+};
+
 export const action = async (data: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(data.request);
   const trieveKey = await validateTrieveAuth(data);
@@ -73,36 +109,12 @@ export const action = async (data: LoaderFunctionArgs) => {
   let formData = await data.request.formData();
   switch (formData.get("type")) {
     case "crawl":
-      const crawlOptions: ExtendedCrawlOptions =
-        (JSON.parse(
-          formData.get("crawl_options") as string
-        ) as ExtendedCrawlOptions) ?? defaultCrawlOptions;
-      const crawlDatasetId = formData.get("dataset_id") as string;
+      const crawlOptions: ExtendedCrawlOptions = JSON.parse(
+        formData.get("crawl_options") as string
+      );
+      const datasetId = formData.get("dataset_id") as string;
 
-      await prisma.crawlSettings.upsert({
-        create: {
-          datasetId: crawlDatasetId,
-          shop: session.shop,
-          crawlSettings: crawlOptions,
-        },
-        update: {
-          crawlSettings: crawlOptions,
-        },
-        where: {
-          datasetId_shop: {
-            datasetId: crawlDatasetId,
-            shop: session.shop,
-          },
-        },
-      });
-
-      sendChunks(
-        crawlDatasetId ?? "",
-        trieveKey,
-        admin,
-        session,
-        crawlOptions
-      ).catch(console.error);
+      startCrawl(crawlOptions, datasetId, session, trieveKey, admin);
       break;
     case "dataset":
       const datasetSettings: DatasetConfig =
