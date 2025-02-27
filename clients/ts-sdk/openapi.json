@@ -9460,6 +9460,11 @@
             "nullable": true,
             "minimum": 0
           },
+          "remove_stop_words": {
+            "type": "boolean",
+            "description": "If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.",
+            "nullable": true
+          },
           "score_threshold": {
             "type": "number",
             "format": "float",
@@ -9492,9 +9497,22 @@
             "format": "uuid",
             "description": "The ID of the topic to attach the message to."
           },
+          "typo_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoOptions"
+              }
+            ],
+            "nullable": true
+          },
           "use_group_search": {
             "type": "boolean",
             "description": "If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.",
+            "nullable": true
+          },
+          "use_quote_negated_terms": {
+            "type": "boolean",
+            "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
             "nullable": true
           },
           "user_id": {
@@ -10391,6 +10409,11 @@
             "nullable": true,
             "minimum": 0
           },
+          "remove_stop_words": {
+            "type": "boolean",
+            "description": "If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.",
+            "nullable": true
+          },
           "score_threshold": {
             "type": "number",
             "format": "float",
@@ -10423,8 +10446,21 @@
             "format": "uuid",
             "description": "The id of the topic to edit the message at the given sort order for."
           },
+          "typo_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoOptions"
+              }
+            ],
+            "nullable": true
+          },
           "use_group_search": {
             "type": "boolean",
+            "nullable": true
+          },
+          "use_quote_negated_terms": {
+            "type": "boolean",
+            "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
             "nullable": true
           },
           "user_id": {
@@ -13581,27 +13617,35 @@
         "type": "object",
         "properties": {
           "gt": {
-            "type": "string",
-            "nullable": true
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
           },
           "gte": {
-            "type": "string",
-            "nullable": true
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
           },
           "lt": {
-            "type": "string",
-            "nullable": true
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
           },
           "lte": {
-            "type": "string",
-            "nullable": true
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
           }
         },
         "example": {
-          "gt": "2021-01-01 00:00:00.000",
-          "gte": "2021-01-01 00:00:00.000",
-          "lt": "2021-01-01 00:00:00.000",
-          "lte": "2021-01-01 00:00:00.000"
+          "gt": 1,
+          "gte": 1,
+          "lt": 1,
+          "lte": 1
         }
       },
       "QueryTypes": {
@@ -14716,6 +14760,11 @@
             "nullable": true,
             "minimum": 0
           },
+          "remove_stop_words": {
+            "type": "boolean",
+            "description": "If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.",
+            "nullable": true
+          },
           "score_threshold": {
             "type": "number",
             "format": "float",
@@ -14748,9 +14797,22 @@
             "format": "uuid",
             "description": "The id of the topic to regenerate the last message for."
           },
+          "typo_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoOptions"
+              }
+            ],
+            "nullable": true
+          },
           "use_group_search": {
             "type": "boolean",
             "description": "If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.",
+            "nullable": true
+          },
+          "use_quote_negated_terms": {
+            "type": "boolean",
+            "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
             "nullable": true
           },
           "user_id": {

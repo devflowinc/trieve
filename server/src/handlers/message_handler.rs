@@ -5,7 +5,7 @@ use super::{
 use crate::{
     data::models::{
         self, ContextOptions, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, HighlightOptions,
-        LLMOptions, Pool, RedisPool, SearchMethod, SortOptions, SuggestType,
+        LLMOptions, Pool, RedisPool, SearchMethod, SortOptions, SuggestType, TypoOptions,
     },
     errors::ServiceError,
     get_env,
@@ -87,24 +87,10 @@ pub struct CreateMessageReqPayload {
     pub topic_id: uuid::Uuid,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
     pub user_id: Option<String>,
-    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
-    pub highlight_options: Option<HighlightOptions>,
-    /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
-    pub search_type: Option<SearchMethod>,
     /// If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
     pub use_group_search: Option<bool>,
     /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
     pub concat_user_messages_query: Option<bool>,
-    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
-    pub search_query: Option<String>,
-    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
-    pub page_size: Option<u64>,
-    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
-    pub sort_options: Option<SortOptions>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
-    pub score_threshold: Option<f32>,
-    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<ChunkFilter>,
     /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
     pub llm_options: Option<LLMOptions>,
     /// Context options to use for the completion. If not specified, all options will default to false.
@@ -113,6 +99,26 @@ pub struct CreateMessageReqPayload {
     pub no_result_message: Option<String>,
     /// Only include docs used in the completion. If not specified, this defaults to false.
     pub only_include_docs_used: Option<bool>,
+    /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
+    pub search_type: Option<SearchMethod>,
+    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
+    pub search_query: Option<String>,
+    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
+    pub page_size: Option<u64>,
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    pub filters: Option<ChunkFilter>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
+    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub highlight_options: Option<HighlightOptions>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
+    pub score_threshold: Option<f32>,
+    /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+    pub use_quote_negated_terms: Option<bool>,
+    /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
+    pub remove_stop_words: Option<bool>,
+    /// Typo options lets you specify different methods to handle typos in the search query. If not specified, this defaults to no typo handling.
+    pub typo_options: Option<TypoOptions>,
 }
 
 /// Create message
@@ -360,24 +366,10 @@ pub async fn get_message_by_id(
 pub struct RegenerateMessageReqPayload {
     /// The id of the topic to regenerate the last message for.
     pub topic_id: uuid::Uuid,
-    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
-    pub highlight_options: Option<HighlightOptions>,
-    /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
-    pub search_type: Option<SearchMethod>,
     /// If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
     pub use_group_search: Option<bool>,
     /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
     pub concat_user_messages_query: Option<bool>,
-    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
-    pub search_query: Option<String>,
-    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
-    pub page_size: Option<u64>,
-    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
-    pub sort_options: Option<SortOptions>,
-    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<ChunkFilter>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
-    pub score_threshold: Option<f32>,
     /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
     pub llm_options: Option<LLMOptions>,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
@@ -388,6 +380,26 @@ pub struct RegenerateMessageReqPayload {
     pub no_result_message: Option<String>,
     /// Only include docs used in the completion. If not specified, this defaults to false.
     pub only_include_docs_used: Option<bool>,
+    /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
+    pub search_type: Option<SearchMethod>,
+    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
+    pub search_query: Option<String>,
+    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
+    pub page_size: Option<u64>,
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    pub filters: Option<ChunkFilter>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
+    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub highlight_options: Option<HighlightOptions>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
+    pub score_threshold: Option<f32>,
+    /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+    pub use_quote_negated_terms: Option<bool>,
+    /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
+    pub remove_stop_words: Option<bool>,
+    /// Typo options lets you specify different methods to handle typos in the search query. If not specified, this defaults to no typo handling.
+    pub typo_options: Option<TypoOptions>,
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -402,24 +414,10 @@ pub struct EditMessageReqPayload {
     pub audio_input: Option<String>,
     /// The URL of the image(s) to attach to the message.
     pub image_urls: Option<Vec<String>>,
-    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
-    pub highlight_options: Option<HighlightOptions>,
-    /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
-    pub search_type: Option<SearchMethod>,
     // If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
     pub use_group_search: Option<bool>,
     /// If concat user messages query is set to true, all of the user messages in the topic will be concatenated together and used as the search query. If not specified, this defaults to false. Default is false.
     pub concat_user_messages_query: Option<bool>,
-    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
-    pub search_query: Option<String>,
-    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
-    pub sort_options: Option<SortOptions>,
-    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
-    pub page_size: Option<u64>,
-    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
-    pub filters: Option<ChunkFilter>,
-    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
-    pub score_threshold: Option<f32>,
     /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
     pub llm_options: Option<LLMOptions>,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
@@ -430,6 +428,26 @@ pub struct EditMessageReqPayload {
     pub no_result_message: Option<String>,
     /// Only include docs used in the completion. If not specified, this defaults to false.
     pub only_include_docs_used: Option<bool>,
+    /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
+    pub search_type: Option<SearchMethod>,
+    /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
+    pub search_query: Option<String>,
+    /// Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
+    pub page_size: Option<u64>,
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    pub filters: Option<ChunkFilter>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
+    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub highlight_options: Option<HighlightOptions>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
+    pub score_threshold: Option<f32>,
+    /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+    pub use_quote_negated_terms: Option<bool>,
+    /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
+    pub remove_stop_words: Option<bool>,
+    /// Typo options lets you specify different methods to handle typos in the search query. If not specified, this defaults to no typo handling.
+    pub typo_options: Option<TypoOptions>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -453,6 +471,9 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             context_options: data.context_options,
             no_result_message: data.no_result_message,
             only_include_docs_used: data.only_include_docs_used,
+            use_quote_negated_terms: data.use_quote_negated_terms,
+            remove_stop_words: data.remove_stop_words,
+            typo_options: data.typo_options,
         }
     }
 }
@@ -478,6 +499,9 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             context_options: data.context_options,
             no_result_message: data.no_result_message,
             only_include_docs_used: data.only_include_docs_used,
+            use_quote_negated_terms: data.use_quote_negated_terms,
+            remove_stop_words: data.remove_stop_words,
+            typo_options: data.typo_options,
         }
     }
 }

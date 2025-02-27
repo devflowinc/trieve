@@ -469,6 +469,9 @@ pub async fn get_rag_chunks_query(
             highlight_options: create_message_req_payload.highlight_options,
             filters: create_message_req_payload.filters,
             group_size: Some(1),
+            use_quote_negated_terms: create_message_req_payload.use_quote_negated_terms,
+            remove_stop_words: create_message_req_payload.remove_stop_words,
+            typo_options: create_message_req_payload.typo_options,
             ..Default::default()
         };
 
@@ -570,6 +573,9 @@ pub async fn get_rag_chunks_query(
             ),
             highlight_options: create_message_req_payload.highlight_options,
             filters: create_message_req_payload.filters,
+            use_quote_negated_terms: create_message_req_payload.use_quote_negated_terms,
+            remove_stop_words: create_message_req_payload.remove_stop_words,
+            typo_options: create_message_req_payload.typo_options,
             ..Default::default()
         };
         let parsed_query = ParsedQuery {

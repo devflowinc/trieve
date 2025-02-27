@@ -789,6 +789,10 @@ export type CreateMessageReqPayload = {
      */
     page_size?: (number) | null;
     /**
+     * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
+     */
+    remove_stop_words?: (boolean) | null;
+    /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
     score_threshold?: (number) | null;
@@ -802,10 +806,15 @@ export type CreateMessageReqPayload = {
      * The ID of the topic to attach the message to.
      */
     topic_id: string;
+    typo_options?: ((TypoOptions) | null);
     /**
      * If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
      */
     use_group_search?: (boolean) | null;
+    /**
+     * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+     */
+    use_quote_negated_terms?: (boolean) | null;
     /**
      * The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
      */
@@ -1218,6 +1227,10 @@ export type EditMessageReqPayload = {
      */
     page_size?: (number) | null;
     /**
+     * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
+     */
+    remove_stop_words?: (boolean) | null;
+    /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
     score_threshold?: (number) | null;
@@ -1231,7 +1244,12 @@ export type EditMessageReqPayload = {
      * The id of the topic to edit the message at the given sort order for.
      */
     topic_id: string;
+    typo_options?: ((TypoOptions) | null);
     use_group_search?: (boolean) | null;
+    /**
+     * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+     */
+    use_quote_negated_terms?: (boolean) | null;
     /**
      * The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
      */
@@ -2361,10 +2379,10 @@ export type QueryCountResponse = {
 };
 
 export type QueryRatingRange = {
-    gt?: (string) | null;
-    gte?: (string) | null;
-    lt?: (string) | null;
-    lte?: (string) | null;
+    gt?: (number) | null;
+    gte?: (number) | null;
+    lt?: (number) | null;
+    lte?: (number) | null;
 };
 
 /**
@@ -2655,6 +2673,10 @@ export type RegenerateMessageReqPayload = {
      */
     page_size?: (number) | null;
     /**
+     * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
+     */
+    remove_stop_words?: (boolean) | null;
+    /**
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
     score_threshold?: (number) | null;
@@ -2668,10 +2690,15 @@ export type RegenerateMessageReqPayload = {
      * The id of the topic to regenerate the last message for.
      */
     topic_id: string;
+    typo_options?: ((TypoOptions) | null);
     /**
      * If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
      */
     use_group_search?: (boolean) | null;
+    /**
+     * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+     */
+    use_quote_negated_terms?: (boolean) | null;
     /**
      * The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
      */

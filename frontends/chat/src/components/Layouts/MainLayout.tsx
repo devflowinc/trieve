@@ -102,6 +102,12 @@ const MainLayout = (props: LayoutProps) => {
     createSignal<AbortController>(new AbortController());
   const [showFilterModal, setShowFilterModal] = createSignal<boolean>(false);
   const [searchType, setSearchType] = createSignal<string | null>("hybrid");
+  const [useQuoteNegatedTerms, setUseQuoteNegatedTerms] = createSignal<
+    boolean | null
+  >(null);
+  const [removeStopWords, setRemoveStopWords] = createSignal<boolean | null>(
+    null,
+  );
   const [contextOptions, setContextOptions] =
     createSignal<ContextOptions | null>(null);
   const [onlyIncludeDocsUsed, setOnlyIncludeDocsUsed] =
@@ -253,6 +259,8 @@ const MainLayout = (props: LayoutProps) => {
             highlight_results: highlightResults(),
           },
           only_include_docs_used: onlyIncludeDocsUsed(),
+          use_quote_negated_terms: useQuoteNegatedTerms(),
+          remove_stop_words: removeStopWords(),
         }),
         signal: completionAbortController().signal,
       });
@@ -490,6 +498,18 @@ const MainLayout = (props: LayoutProps) => {
                     />
                   </div>
                   <div class="flex w-full items-center gap-x-2">
+                    <label for="search_query">No Result Message:</label>
+                    <input
+                      type="text"
+                      id="search_query"
+                      class="w-3/4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-700"
+                      value={noResultMessage() ?? ""}
+                      onChange={(e) => {
+                        setNoResultMessage(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
                     <label for="stream_completion_first">
                       Only include docs used
                     </label>
@@ -631,14 +651,32 @@ const MainLayout = (props: LayoutProps) => {
                     />
                   </div>
                   <div class="flex w-full items-center gap-x-2">
-                    <label for="search_query">No Result Message:</label>
+                    <div class="flex items-center gap-x-2">
+                      <label for="use_quote_negated_terms">
+                        Use Quote Negated Terms:
+                      </label>
+                    </div>
                     <input
-                      type="text"
-                      id="search_query"
-                      class="w-3/4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-700"
-                      value={noResultMessage() ?? ""}
+                      type="checkbox"
+                      id="use_quote_negated_terms"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={useQuoteNegatedTerms() ?? false}
                       onChange={(e) => {
-                        setNoResultMessage(e.target.value);
+                        setUseQuoteNegatedTerms(e.target.checked);
+                      }}
+                    />
+                  </div>
+                  <div class="flex w-full items-center gap-x-2">
+                    <div class="flex items-center gap-x-2">
+                      <label for="remove_stop_words">Remove Stop Words:</label>
+                    </div>
+                    <input
+                      type="checkbox"
+                      id="remove_stop_words"
+                      class="h-4 w-4 rounded-md border border-neutral-300 bg-neutral-100 p-1 dark:border-neutral-900 dark:bg-neutral-800"
+                      checked={removeStopWords() ?? false}
+                      onChange={(e) => {
+                        setRemoveStopWords(e.target.checked);
                       }}
                     />
                   </div>
