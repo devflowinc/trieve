@@ -4,7 +4,14 @@ export type TrieveKey = {
   organizationId: string;
   currentDatasetId: string | null;
   key: string;
-  createdAt: string;
+};
+
+export type StrongTrieveKey = {
+  id: string;
+  userId: string;
+  organizationId: string;
+  currentDatasetId: string;
+  key: string;
 };
 
 export type Product = {
