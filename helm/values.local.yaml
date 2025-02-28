@@ -1,5 +1,60 @@
-environment: local # Set to aws if deploying to 
-useGpu: false
+postgres:
+  enabled: true
+  dbURI: "postgres://postgres:password@postgres.default.svc.cluster.local:5432/trieve"
+  spec:
+    # CloudNativePg template spec
+    instances: 1
+    storage:
+      size: 10Gi
+
+clickhouse:
+  enabled: true
+
+minio:
+  enabled: true
+
+qdrant:
+  enabled: true
+  # Qdrant values.yaml spec
+  replicaCount: 3
+  livenessProbe:
+    enabled: false
+  # HIGHLY RECOMMENDED QDRANT NODES go on a dedicated node
+  # tolerations: 
+  # - key: "qdrant-node"
+  #   operator: "Exists"
+  #   effect: "NoSchedule"
+  metrics:
+    serviceMonitor:
+      enabled: false
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable: 1
+  apiKey: "qdrant-api-key"
+  requests:
+    cpu: 1
+    memory: 10Gi
+
+redis:
+  enabled: true
+  metrics:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+  auth:
+    password: "password"
+  master:
+    disableCommands: []
+    persistence:
+      enabled: false
+    pdb:
+      create: false
+    resources:
+      limits:
+        memory: 5Gi
+  replica:
+    replicaCount: 0
+
 containers:
   server:
     tag: latest
@@ -57,8 +112,6 @@ domains:
   chat:
     host: chat.localtrieve.com
     class: nginx
-postgres:
-  dbURI: "postgres://postgres:password@postgres.default.svc.cluster.local:5432/trieve"
 config:
   vite:
     apiHost: http://api.localtrieve.com/api

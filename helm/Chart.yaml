@@ -8,7 +8,7 @@ dependencies:
   - name: qdrant
     repository: https://qdrant.github.io/qdrant-helm
     version: 1.13.4
-    condition: qdrant.subchart
+    condition: qdrant.enabled
   - name: keycloak-operator
     repository: https://kbumsik.io/keycloak-kubernetes/
     version: 0.0.4
@@ -17,3 +17,15 @@ dependencies:
     repository: https://docs.altinity.com/clickhouse-operator/
     version: 0.24.4
     condition: clickhouse.enabled
+  - name: cloudnative-pg
+    repository: https://cloudnative-pg.github.io/charts
+    version: 0.23.0
+    condition: postgres.enabled
+  - name: minio
+    version: 5.4.0
+    repository: https://charts.min.io/
+    condition: minio.enabled
+  - name: redis
+    repository: https://charts.bitnami.com/bitnami
+    version: 20.10.0
+    condition: redis.enabled

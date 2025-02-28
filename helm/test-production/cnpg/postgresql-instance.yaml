@@ -3,7 +3,4 @@ kind: Cluster
 metadata:
   name: postgresql-cluster
 spec:
-  instances: 1
-  
-  storage:
-    size: 50Gi
+  {{ toYaml $Values.postgres.spec | nindent 2 }}
