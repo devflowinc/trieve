@@ -1,3 +1,4 @@
+authCredentials: "keep"
 
 rules:
 - if: response >= 400
