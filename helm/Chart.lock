@@ -1,2 +1,12 @@
-digest: sha256:a488514116e4a20f59d87bd18617fc3939673fbc498322135b77985dc3875da9
-generated: "2024-06-27T12:05:07.568843652-07:00"
+dependencies:
+- name: qdrant
+  repository: https://qdrant.github.io/qdrant-helm
+  version: 1.13.4
+- name: keycloak-operator
+  repository: https://kbumsik.io/keycloak-kubernetes/
+  version: 0.0.4
+- name: altinity-clickhouse-operator
+  repository: https://docs.altinity.com/clickhouse-operator/
+  version: 0.24.4
+digest: sha256:ededf3f70c582f126598b611e9afea9e470d54e89504f6297d545ba35679758c
+generated: "2025-02-27T18:02:34.953944331-08:00"
