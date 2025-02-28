@@ -7,10 +7,12 @@ import {
   isRouteErrorResponse,
   useRouteLoaderData,
 } from "@remix-run/react";
+import { PolarisVizProvider } from "@shopify/polaris-viz";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
+import "@shopify/polaris-viz/build/esm/styles.css";
 import { MustLoginPage } from "app/components/MustLoginPage";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
@@ -32,7 +34,9 @@ export default function App() {
           Home
         </Link>
       </NavMenu>
-      <Outlet />
+      <PolarisVizProvider>
+        <Outlet />
+      </PolarisVizProvider>
     </AppProvider>
   );
 }

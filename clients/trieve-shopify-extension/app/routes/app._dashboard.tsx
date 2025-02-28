@@ -96,6 +96,7 @@ export default function Dashboard() {
   // Get current tab title for page title
   const currentTabName =
     tabs[selected]?.id.charAt(0).toUpperCase() + tabs[selected]?.id.slice(1);
+
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -103,7 +104,7 @@ export default function Dashboard() {
           queries: {
             // With SSR, we usually want to set some default staleTime
             // above 0 to avoid refetching immediately on the client
-            staleTime: 2 * 1000,
+            staleTime: 6 * 1000,
           },
         },
       }),

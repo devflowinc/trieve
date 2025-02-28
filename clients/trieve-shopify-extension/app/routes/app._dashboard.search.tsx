@@ -1,24 +1,19 @@
-import { Box } from "@shopify/polaris";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createServerLoader } from "app/loaders/serverLoader";
-import { Loader } from "app/loaders";
-import { createClientLoader } from "app/loaders/clientLoader";
+import { Box, Grid } from "@shopify/polaris";
+import { SearchUsageChart } from "app/components/analytics/search/SearchUsageChart";
+import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
+import { useState } from "react";
+import { Granularity } from "trieve-ts-sdk";
 
-const load: Loader = async ({ queryClient }) => {
-  await queryClient.ensureQueryData({
-    queryKey: ["test"],
-    queryFn: async () => "fromserver",
-  });
-};
-
-export const loader = createServerLoader(load);
-export const clientLoader = createClientLoader(load);
-
-export default function Dataset() {
-  const { data } = useSuspenseQuery({
-    queryKey: ["test"],
-    queryFn: async () => "fromclient",
-  });
-
-  return <Box paddingBlockStart="400">Search Analytics Page: {data}</Box>;
+export default function SearchAnalyticsPage() {
+  const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
+  const [granularity, setGranularity] = useState<Granularity>("day");
+  return (
+    <>
+      <Grid>
+        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 3, xl: 3 }}>
+          <SearchUsageChart filters={filters} granularity={granularity} />
+        </Grid.Cell>
+      </Grid>
+    </>
+  );
 }
