@@ -45,14 +45,14 @@ const SearchPage = () => {
                   title={section.title}
                   key={section.key}
                 >
-                  {section.options.map((option) => (
+                  {section.options.map((option, i) => (
                     <FilterButton
                       sectionKey={section.key}
                       label={option.label ?? ""}
                       description={option.description}
                       type={section.selectionType}
                       filterKey={option.tag}
-                      key={option.tag}
+                      key={i}
                     />
                   ))}
                 </Accordion>

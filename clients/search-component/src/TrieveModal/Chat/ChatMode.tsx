@@ -29,7 +29,7 @@ export const ChatMode = () => {
       >
         <ChatRuler minHeight={minHeight} />
         <div
-          className="tv-flex-col tv-h-full tv-grow tv-flex tv-gap-4"
+          className="tv-flex-col tv-h-full tv-grow tv-flex tv-gap-4 tv-max-w-full"
           ref={actualChatRef}
         >
           <SuggestedQuestions /> {/* Only shows with zero messages */}
