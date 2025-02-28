@@ -93,3 +93,4 @@ dist/**
 
 clients/python-sdk/dist
 pdf2md/ch_migrations/chm.toml
+helm/charts/
