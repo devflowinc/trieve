@@ -1,21 +1,14 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { dehydrate, QueryClient } from "@tanstack/react-query";
-import { TrieveSDK } from "trieve-ts-sdk";
-import { sdkFromKey, validateTrieveAuth } from "./auth";
+import { sdkFromKey, validateTrieveAuth } from "../auth";
+import { Loader } from "./";
 
-interface TrieveServerLoaderCtx {
-  queryClient: QueryClient;
-  trieve: TrieveSDK;
-}
-
-export const createServerLoader = (
-  getData: (ctx: TrieveServerLoaderCtx) => Promise<void>,
-) => {
+export const createServerLoader = (loader: Loader) => {
   return async (args: LoaderFunctionArgs) => {
     const queryClient = new QueryClient();
     const key = await validateTrieveAuth(args.request);
     const trieve = sdkFromKey(key);
-    await getData({ queryClient, trieve });
+    await loader({ queryClient, trieve });
     return {
       dehydratedState: dehydrate(queryClient),
     };
