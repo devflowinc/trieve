@@ -17,3 +17,6 @@ dependencies:
     repository: https://docs.altinity.com/clickhouse-operator/
     version: 0.24.4
     condition: clickhouse.enabled
+  - name: cnpg
+    repository: https://cloudnative-pg.github.io/charts
+    version: 0.23.0

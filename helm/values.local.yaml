@@ -1,3 +1,11 @@
+postgres:
+  enabled: true
+  spec:
+    instances: 1
+    
+    storage:
+      size: 50Gi
+
 qdrant:
   replicaCount: 3
   livenessProbe:
