@@ -227,7 +227,8 @@ body {
 
     .carousel-scroll {
       display: flex;
-      overflow-x: hidden;
+      overflow-x: auto;
+      overflow-y: hidden;
       scroll-snap-type: x-mandatory;
       scroll-behavior: smooth;
       width: 100%;
@@ -579,8 +580,9 @@ body {
 
       .suggested-question {
         @apply tv-p-2 tv-text-left tv-rounded-md tv-border tv-transition-all;
-        border-color: var(--tv-zinc-200);
-
+        border-color: var(--tv-zinc-200) !important;
+        border: 1px solid var(--tv-zinc-200);
+        
         &:hover {
           background-color: var(--tv-zinc-200);
         }

@@ -90,7 +90,7 @@ export const Message = ({
   idx: number;
   message: Message;
 }) => {
-  const { rateChatCompletion } = useChatState();
+  const { rateChatCompletion, messages } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
   const { props, trieveSDK } = useModalState();
@@ -187,7 +187,7 @@ export const Message = ({
                     ),
               }}
             />
-            {!props.hidePrice &&
+            {!props.hidePrice && (
               <p
                 className="ecomm-item-price"
                 style={{
@@ -195,8 +195,9 @@ export const Message = ({
                 }}
               >
                 ${item.price}
-              </p>}
-            {!props.hideChunkHtml &&
+              </p>
+            )}
+            {!props.hideChunkHtml && (
               <p
                 className="ecom-item-description"
                 dangerouslySetInnerHTML={{
@@ -207,7 +208,8 @@ export const Message = ({
                         ""
                       ),
                 }}
-              />}
+              />
+            )}
           </div>
           <div className="tv-w-full mt-auto tv-justify-self-end">
             <AddToCartButton item={item} />
@@ -325,7 +327,12 @@ export const Message = ({
         >
           {message.additional &&
             props.type === "ecommerce" &&
-            (!props.inline || props.inlineCarousel) && (
+            (!props.inline ||
+              props.inlineCarousel ||
+              props.recommendOptions?.queriesToTriggerRecommendations.includes(
+                messages[messages.findIndex((m) => m.text === message.text) - 1]
+                  .text
+              )) && (
               <div className="additional-image-links">
                 <Carousel>{ecommerceItems}</Carousel>
               </div>

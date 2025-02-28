@@ -116,7 +116,9 @@ export default function ECommerce() {
               inline={inline}
               showResultHighlights={showResultHighlights}
               recommendOptions={{
-                queryToTriggerRecommendations: "What if this is out of stock?",
+                queriesToTriggerRecommendations: [
+                  "What if this is out of stock?",
+                ],
                 productId: "42002562449585",
                 filter: {
                   must: [

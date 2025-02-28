@@ -107,7 +107,9 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
         className="carousel-scroll tv-flex tv-gap-4 tv-m-0 tv-overflow-y-hidden tv-scroll-smooth tv-scrollbar-none"
         ref={scrollRef}
         style={{
-          overflowX: "scroll",
+          overflowX: "auto",
+          flexShrink: 0,
+          width: "100%",
         }}
       >
         {productItems.map((child, index) => (

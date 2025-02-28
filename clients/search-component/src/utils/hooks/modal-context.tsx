@@ -162,7 +162,7 @@ export type ModalProps = {
   displayModal?: boolean;
   searchPageProps?: SearchPageProps;
   recommendOptions?: {
-    queryToTriggerRecommendations: string;
+    queriesToTriggerRecommendations: string[];
     productId: string;
     filter?: ChunkFilter;
   };
