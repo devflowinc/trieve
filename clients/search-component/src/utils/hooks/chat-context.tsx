@@ -245,7 +245,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     // This only works w/ shopify rn
     if (
       props.recommendOptions &&
-      props.recommendOptions?.queryToTriggerRecommendations == questionProp
+      props.recommendOptions?.queriesToTriggerRecommendations.includes(
+        questionProp ?? ""
+      )
     ) {
       const item = await trieveSDK.getChunkByTrackingId({
         trackingId: props.recommendOptions.productId,
@@ -254,7 +256,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         title: string;
         variantName: string;
       };
-      questionProp = `Show me more like ${metadata.title} - ${metadata.variantName}`;
+      questionProp = `The user wants to find things similar to ${metadata.title} - ${metadata.variantName} and says ${question}. Find me some items that are just like it`;
     }
 
     // Use group search
@@ -272,7 +274,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       });
     }
 
-    if (curGroup) {
+    if (
+      curGroup &&
+      !props.recommendOptions?.queriesToTriggerRecommendations.includes(
+        question ?? ""
+      )
+    ) {
       if (!filters.should) {
         filters.should = [];
       }
@@ -305,7 +312,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
     if (
       props.recommendOptions?.filter &&
-      props.recommendOptions?.queryToTriggerRecommendations == question
+      props.recommendOptions?.queriesToTriggerRecommendations.includes(
+        question ?? ""
+      )
     ) {
       if (props.recommendOptions?.filter.must) {
         if (!filters.must) {
