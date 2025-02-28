@@ -1,66 +1,46 @@
 import { useTrieve } from "app/context/trieveContext";
 import { useNavigate } from "@remix-run/react";
-import { useState, useEffect } from "react";
 import {
   Card,
   Text,
   Badge,
   Banner,
   Button,
-  Icon,
   SkeletonBodyText,
   DescriptionList,
   Box,
   BlockStack,
   InlineStack,
-  Divider,
   Grid,
-  InlineGrid,
 } from "@shopify/polaris";
 import { RefreshIcon } from "@shopify/polaris-icons";
+import { usageQuery } from "app/queries/usage";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
   const { dataset, organization, trieve } = useTrieve();
-  const [stats, setStats] = useState({
-    chunks: 0,
-    lastUpdated: null as string | null,
-    isLoading: true,
-  });
 
-  const fetchStats = async () => {
-    try {
-      const stats = await trieve.getDatasetUsageById(dataset.id);
-      setStats({
-        chunks: stats.chunk_count,
-        lastUpdated: new Date().toISOString(),
-        isLoading: false,
-      });
-    } catch (error) {
-      console.error("Failed to fetch dataset stats:", error);
-      setStats((prev) => ({ ...prev, isLoading: false }));
-    }
-  };
-
-  useEffect(() => {
-    if (dataset?.id) {
-      fetchStats();
-    }
-  }, [dataset?.id]);
+  const {
+    data: usage,
+    isLoading,
+    dataUpdatedAt,
+    refetch,
+  } = useQuery(usageQuery(trieve));
 
   const planType = organization?.plan?.name || "Free";
 
   const statsItems = [
     {
       term: "Chunks",
-      description: stats.isLoading ? (
+      description: isLoading ? (
         <SkeletonBodyText lines={1} />
       ) : (
         <InlineStack align="space-between">
-          {stats.chunks.toLocaleString()}{" "}
+          {usage?.chunk_count.toLocaleString()}{" "}
           <Button
             icon={RefreshIcon}
             onClick={() => {
-              fetchStats();
+              refetch();
             }}
           ></Button>
         </InlineStack>
@@ -68,10 +48,10 @@ export default function Dashboard() {
     },
     {
       term: "Last Updated",
-      description: stats.isLoading ? (
+      description: isLoading ? (
         <SkeletonBodyText lines={1} />
-      ) : stats.lastUpdated ? (
-        new Date(stats.lastUpdated).toLocaleString()
+      ) : dataUpdatedAt ? (
+        new Date(dataUpdatedAt).toLocaleString()
       ) : (
         "Never"
       ),
@@ -120,7 +100,7 @@ export default function Dashboard() {
                   <Text variant="headingMd" as="h2">
                     Dataset Overview
                   </Text>
-                  <Badge>{planType} Plan</Badge>
+                  <Badge>{planType + " Plan"}</Badge>
                 </InlineStack>
               </Box>
 
