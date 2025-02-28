@@ -19,6 +19,7 @@ import { useDehydratedState } from "app/dehydrate";
 import { StrongTrieveKey } from "app/types";
 import { Dataset, OrganizationWithSubAndPlan } from "trieve-ts-sdk";
 import { useCallback, useMemo, useState, Suspense, useEffect } from "react";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 // Validates that user has a connected dataset, if not redirects to /app/setup and then right back
 export const loader = async (args: LoaderFunctionArgs) => {
@@ -128,6 +129,7 @@ export default function Dashboard() {
                 trieveKey={key}
               >
                 <QueryClientProvider client={queryClient}>
+                  <ReactQueryDevtools initialIsOpen={false} />
                   <HydrationBoundary state={dehydratedState}>
                     <div style={{ minHeight: "300px" }}>
                       <Outlet />

@@ -12,7 +12,6 @@ import { type Dataset } from "trieve-ts-sdk";
 const load: Loader = async ({ queryClient, trieve }) => {
   await queryClient.ensureQueryData(shopDatasetQuery(trieve));
   await queryClient.ensureQueryData(scrapeOptionsQuery(trieve));
-  return;
 };
 
 export const loader = createServerLoader(load);
