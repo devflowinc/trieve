@@ -29,12 +29,12 @@ spec:
             httpGet:
               path: "/"
               port: 80
-          image: {{ ternary "ghcr.io/huggingface/text-embeddings-inference:89-1.2" "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $.Values.useGpu }}
+          image: {{ ternary "ghcr.io/huggingface/text-embeddings-inference:89-1.2" "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $service.useGpu }}
           args: 
             {{ (concat (list "--model-id" $service.model "--revision" $service.revision) $service.args) | toJson }}
           ports:
             - containerPort: 80
-{{- if $.Values.useGpu }}
+{{- if $service.useGpu }}
           resources:
             limits:
               nvidia.com/gpu: 1
