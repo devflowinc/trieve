@@ -31,6 +31,7 @@
     "@remix-run/serve": "^2.7.1",
     "@shopify/app-bridge-react": "^4.1.6",
     "@shopify/polaris": "^12.0.0",
+    "@shopify/polaris-viz": "^16.4.0",
     "@shopify/shopify-app-remix": "^3.4.0",
     "@shopify/shopify-app-session-storage-prisma": "^5.1.5",
     "@tanstack/react-query": "5.66.9",

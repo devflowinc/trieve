@@ -6464,7 +6464,7 @@ trieve-ts-sdk@^0.0.50:
   integrity sha512-AbV41cEzxNSJ+gXUAOFK5OoMl4Kgu/DGkIU/fRS+k8rH+s0ePwBK6CYSPKBxGvNajbZ9hoqiUgN9/qZJX+k0yA==
 
 "trieve-ts-sdk@file:clients/ts-sdk":
-  version "0.0.59"
+  version "0.0.61"
 
 trim-lines@^3.0.0:
   version "3.0.1"

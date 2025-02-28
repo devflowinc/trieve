@@ -1,3 +1,4 @@
+import { ChartState } from "@shopify/polaris-viz";
 import { differenceInHours, format } from "date-fns";
 
 export const formatDateForApi = (date: Date) => {
@@ -127,3 +128,15 @@ export function convertToISO8601(dateString: string) {
 
   return isoString;
 }
+
+export const queryStateToChartState = (
+  queryState: "error" | "success" | "pending",
+): ChartState => {
+  if (queryState === "error") {
+    return "Error" as ChartState;
+  }
+  if (queryState === "success") {
+    return "Success" as ChartState;
+  }
+  return "Loading" as ChartState;
+};
