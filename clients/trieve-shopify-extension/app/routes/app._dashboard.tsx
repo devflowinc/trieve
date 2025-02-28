@@ -2,7 +2,6 @@
 import { LoaderFunctionArgs, redirect } from "@remix-run/node";
 import {
   Outlet,
-  PrefetchPageLinks,
   useLoaderData,
   useLocation,
   useNavigate,
@@ -19,7 +18,7 @@ import { authenticate } from "app/shopify.server";
 import { useDehydratedState } from "app/dehydrate";
 import { StrongTrieveKey } from "app/types";
 import { Dataset, OrganizationWithSubAndPlan } from "trieve-ts-sdk";
-import { useCallback, useMemo, useState, Suspense } from "react";
+import { useCallback, useMemo, useState, Suspense, useEffect } from "react";
 
 // Validates that user has a connected dataset, if not redirects to /app/setup and then right back
 export const loader = async (args: LoaderFunctionArgs) => {
@@ -123,6 +122,7 @@ export default function Dashboard() {
           <Layout.Section>
             <Suspense fallback={<SkeletonBodyText lines={3} />}>
               <TrieveProvider
+                queryClient={queryClient}
                 dataset={dataset as Dataset}
                 organization={organization as OrganizationWithSubAndPlan}
                 trieveKey={key}
@@ -139,8 +139,6 @@ export default function Dashboard() {
           </Layout.Section>
         </Layout>
       </Page>
-      <PrefetchPageLinks page="/app/settings" />
-      <PrefetchPageLinks page="/app/search" />
     </Frame>
   );
 }
