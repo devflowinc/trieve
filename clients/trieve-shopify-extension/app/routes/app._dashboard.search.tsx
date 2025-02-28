@@ -1,6 +1,6 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Box } from "@shopify/polaris";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
   defaultSearchAnalyticsFilter,
   searchUsageQuery,
@@ -11,14 +11,14 @@ export const loader = createServerLoader(async ({ trieve, queryClient }) => {
   await queryClient.prefetchQuery(
     searchUsageQuery(trieve, defaultSearchAnalyticsFilter, "day"),
   );
-  await queryClient.prefetchQuery({
+  await queryClient.ensureQueryData({
     queryKey: ["test"],
     queryFn: async () => "fromserver",
   });
 });
 
 export default function Dataset() {
-  const { data } = useQuery({
+  const { data } = useSuspenseQuery({
     queryKey: ["test"],
     queryFn: async () => "test",
   });
