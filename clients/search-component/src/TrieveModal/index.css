@@ -1181,7 +1181,7 @@ body {
   }
 
   .floating-action-button {
-    @apply tv-fixed tv-flex tv-flex-row tv-gap-2 tv-justify-center tv-items-center tv-cursor-pointer tv-rounded-full tv-border-0 tv-shadow-sm tv-bg-zinc-100 tv-px-4 tv-py-2.5;
+    @apply tv-fixed tv-flex tv-flex-row tv-gap-2 tv-justify-center tv-items-center tv-cursor-pointer tv-rounded-full tv-border-0 tv-shadow-sm tv-bg-zinc-100 tv-px-4 tv-py-2.5 tv-text-black;
     font-family: var(--tv-prop-brand-font-family);
 
     &.dark {
