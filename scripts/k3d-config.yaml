@@ -1,0 +1,4 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+servers: 1 # same as `--servers 1`
+agents: 3 # same as `--agents 2`

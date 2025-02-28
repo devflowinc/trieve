@@ -1,0 +1,8 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-cluster
+annotations:
+  "helm.sh/hook-weight": "5"
+spec:
+  {{ toYaml $.Values.postgres.spec | nindent 2 }}
