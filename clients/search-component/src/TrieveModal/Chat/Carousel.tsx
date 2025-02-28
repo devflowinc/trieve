@@ -7,18 +7,19 @@ import React, {
 } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
+import { useModalState } from "../../utils/hooks/modal-context";
 
 export const Carousel = ({ children }: { children: React.ReactNode }) => {
+  const { modalRef } = useModalState();
   const [itemsPerPage, setItemsPerPage] = useState(1);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
 
   const scrollRef = useRef<HTMLUListElement>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
 
   const calcItemsPerPage = useCallback(() => {
-    if (rootRef.current) {
-      const width = rootRef.current.getBoundingClientRect().width;
+    if (modalRef.current) {
+      const width = modalRef.current.getBoundingClientRect().width;
       const itemsFit = Math.max(1, Math.floor(width / (12 * 16)));
       setItemsPerPage(itemsFit);
     }
@@ -29,8 +30,8 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
       calcItemsPerPage();
     });
 
-    if (rootRef.current) {
-      resizeObserver.observe(rootRef.current);
+    if (modalRef.current) {
+      resizeObserver.observe(modalRef.current);
       calcItemsPerPage();
     }
 
@@ -77,10 +78,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
   }, [children, itemsPerPage, checkScrollPosition]);
 
   return (
-    <div
-      className="carousel-root tv-relative tv-w-full tv-max-w-full tv-overflow-hidden"
-      ref={rootRef}
-    >
+    <div className="carousel-root tv-relative tv-w-full tv-max-w-full tv-overflow-hidden">
       <div
         className="tv-absolute tv-left-0 tv-top-0 tv-bottom-0 tv-w-12 tv-pointer-events-none tv-z-10"
         style={{
@@ -117,7 +115,7 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
             className={`tv-carousel-item tv-flex-shrink-0 tv-list-none tv-rounded-lg tv-overflow-hidden tv-bg-white tv-shadow-sm tv-border-2 dark:tv-bg-zinc-800`}
             key={index}
             style={{
-              width: `min(calc((100% / ${itemsPerPage}) - 1rem), calc(90% - 1rem))`,
+              maxWidth: `min(calc((100% / ${itemsPerPage}) - 1rem), calc(90% - 1rem))`,
               transition: "border-color 0.2s ease",
             }}
             initial={{ opacity: 0, y: 20 }}

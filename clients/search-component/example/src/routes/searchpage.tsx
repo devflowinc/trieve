@@ -1,5 +1,6 @@
-import { TrieveModalSearch } from "../../../src/index";
 import "../../../dist/index.css";
+import "../custom-css/searchpage.css";
+import { TrieveModalSearch } from "../../../src/index";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -60,10 +61,10 @@ export default function ECommerce() {
                     title: "Categories",
                     options: [
                       {
-                        label: "Indoor Wall",
-                        tag: "Indoor Wall",
+                        label: "Backsplash",
+                        tag: "Backsplash",
                         description:
-                          "Set this to true anytime the image seems to include walls.",
+                          "Set this to true anytime the image seems to include backsplashes or a kitchen counter in general.",
                       },
                       {
                         label: "Flooring",
@@ -101,8 +102,56 @@ export default function ECommerce() {
                         description:
                           "Set this to true anytime the image seems to include or like it could include a rug.",
                       },
+                      {
+                        label: "Indoor Wall Covering",
+                        tag: "Wallcovering",
+                        description:
+                          "Set this to true anytime the image seems to include indoor walls. If paint is present, set this to true as well. Literally any time you see a wall, set this to true.",
+                      },
+                      {
+                        label: "Paint",
+                        tag: "Paint",
+                        description:
+                          "Set this to true anytime the image seems to include walls. If wallcovering is present, set this to true as well. Literally any time you see a wall, set this to true.",
+                      },
+                      {
+                        label: "Hardwood Flooring",
+                        tag: "Engineered Hardwood",
+                        description:
+                          "Set this to true anytime the image seems to include or like it could include hardwood flooring.",
+                      },
+                      {
+                        label: "Bathroom Flooring",
+                        tag: "Bathroom Flooring",
+                        description:
+                          "Set this to true anytime the image seems to include or like it could include bathroom flooring.",
+                      },
+                      {
+                        label: "Shower Wall",
+                        tag: "Shower Wall",
+                        description:
+                          "Set this to true anytime the image seems to include or like it could include shower walls. Specifically shower. Bathrooms in general should have this set to true.",
+                      },
+                      {
+                        label: "Fabric",
+                        tag: "Fabric",
+                        description:
+                          "Set this to true anytime the image seems to include or like it could include fabric. Upholstery, curtains, etc.",
+                      },
+                      {
+                        label: "Home Exterior Patterns",
+                        tag: "Home Exterior",
+                        description:
+                          "Set this to true anytime the image seems to include or like it could include outdoor walls. Literally if you see an outdoor space, set this to true.",
+                      },
+                      {
+                        label: "Outdoor Wall Paint",
+                        tag: "Paint",
+                        description:
+                          "Set this to true anytime the image seems to include outdoor walls. Literally if you see an outdoor space, set this to true.",
+                      },
                     ],
-                    selectionType: "multiple",
+                    selectionType: "single",
                     filterType: "match_any",
                   },
                 ],
@@ -119,7 +168,7 @@ export default function ECommerce() {
                   {
                     title: "Category Selection",
                     description:
-                      "Select the materials you are interested in replacing.",
+                      "Select the material you are interested in getting recommendations for.",
                     type: "tags",
                     placeholder: "Select categories",
                     filterSidebarSectionKey: "categories",

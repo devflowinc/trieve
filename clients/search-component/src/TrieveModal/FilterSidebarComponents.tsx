@@ -317,9 +317,9 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               user_message_text: steps[i].prompt ?? "",
               image_url: imageUrl ? imageUrl : null,
               tool_function: {
-                name: "get_materials_present_in_image",
+                name: "get_applicable_materials",
                 description:
-                  "Decide on which materials are present in the image. Err on the side of caution and include materials that you are only somewhat sure are present.",
+                  "Decide on which materials might be applicable based on the image. Err on the side of caution and include materials that you are only somewhat sure apply. Follow instructions in parameter descriptions for marking their values.",
                 parameters:
                   correspondingFilter.options?.map((tag) => {
                     return {
@@ -345,6 +345,11 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 match_any_tags.push(tag);
               }
             }
+          }
+          if (match_any_tags.length === 0) {
+            match_any_tags.push(
+              ...correspondingFilter.options.map((t) => t.tag)
+            );
           }
           setFilterOptions((prev) => {
             const newFilterOptions = {
@@ -567,21 +572,42 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                     setSelectedSidebarFilters((prev) => {
                       const selectedTags =
                         prev[step.filterSidebarSectionKey ?? ""];
-                      if (selectedTags?.includes(tag)) {
+                      const tagCurrentlySelected = selectedTags?.includes(tag);
+
+                      if (
+                        props.searchPageProps?.filterSidebarProps?.sections.find(
+                          (section) =>
+                            section.key === step.filterSidebarSectionKey
+                        )?.selectionType === "single"
+                      ) {
+                        if (tagCurrentlySelected) {
+                          return {
+                            ...prev,
+                            [step.filterSidebarSectionKey ?? ""]: [],
+                          };
+                        }
+
                         return {
                           ...prev,
-                          [step.filterSidebarSectionKey ?? ""]:
-                            selectedTags.filter((t) => t !== tag),
+                          [step.filterSidebarSectionKey ?? ""]: [tag],
+                        };
+                      } else {
+                        if (tagCurrentlySelected) {
+                          return {
+                            ...prev,
+                            [step.filterSidebarSectionKey ?? ""]:
+                              selectedTags.filter((t) => t !== tag),
+                          };
+                        }
+
+                        return {
+                          ...prev,
+                          [step.filterSidebarSectionKey ?? ""]: [
+                            ...(prev[step.filterSidebarSectionKey ?? ""] ?? []),
+                            tag,
+                          ],
                         };
                       }
-
-                      return {
-                        ...prev,
-                        [step.filterSidebarSectionKey ?? ""]: [
-                          ...(prev[step.filterSidebarSectionKey ?? ""] ?? []),
-                          tag,
-                        ],
-                      };
                     });
                   }}
                 >
