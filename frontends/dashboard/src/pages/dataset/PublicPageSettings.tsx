@@ -34,16 +34,31 @@ export const PublicPageSettingsPage = () => {
 
 const searchTypeOptions = [
   {
-    label: "Docs",
+    label: "Docs, Blog, etc.",
     value: "docs",
   },
   {
-    label: "Ecommerce",
+    label: "Shopify/Youtube",
     value: "ecommerce",
   },
   {
     label: "PDF",
     value: "pdf",
+  },
+];
+
+const componentVersionOptions = [
+  {
+    label: "Stable",
+    value: "stable",
+  },
+  {
+    label: "Beta",
+    value: "beta",
+  },
+  {
+    label: "Local dev",
+    value: "local",
   },
 ];
 
@@ -147,25 +162,6 @@ const PublicPageControls = () => {
               value={extraParams.brandColor || ""}
               onInput={(e) => {
                 setExtraParams("brandColor", e.currentTarget.value);
-              }}
-              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
-          <div class="grow">
-            <div class="flex items-center gap-1">
-              <label class="block" for="">
-                Problem Link
-              </label>
-              <Tooltip
-                tooltipText="Contact link for users to report issues (e.g. mailto: or support URL)"
-                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-              />
-            </div>
-            <input
-              placeholder="mailto:humans@trieve.ai"
-              value={extraParams.problemLink || ""}
-              onInput={(e) => {
-                setExtraParams("problemLink", e.currentTarget.value);
               }}
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
@@ -358,7 +354,7 @@ const PublicPageControls = () => {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 items-start gap-2 gap-x-9 pt-4">
+          <div class="grid grid-cols-2 items-start gap-2 gap-x-9">
             <div class="col-span-2 max-w-[250px]">
               <label>Search Type</label>
               <Select
@@ -377,187 +373,39 @@ const PublicPageControls = () => {
                 options={searchTypeOptions}
               />
             </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Enable Followup Questions
-                </label>
-                <Tooltip
-                  tooltipText="Show AI powered suggested followup questions after the first message."
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                checked={extraParams.followupQuestions ?? true}
-                type="checkbox"
-                onChange={(e) => {
-                  setExtraParams("followupQuestions", e.currentTarget.checked);
+            <div class="col-span-2 max-w-[250px]">
+              <label>Component Version</label>
+              <Select
+                display={(option) => (option ? option.label : "Stable")}
+                onSelected={(option) => {
+                  if (option?.value === "stable") {
+                    setExtraParams("isTestMode", false);
+                    setExtraParams("useLocal", false);
+                  } else if (option?.value === "beta") {
+                    setExtraParams("isTestMode", true);
+                    setExtraParams("useLocal", false);
+                  } else if (option?.value === "local") {
+                    setExtraParams("isTestMode", false);
+                    setExtraParams("useLocal", true);
+                  }
                 }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Enable Suggestions
-                </label>
-                <Tooltip
-                  tooltipText="Show search suggestions as users type"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                checked={extraParams.suggestedQueries ?? true}
-                type="checkbox"
-                onChange={(e) => {
-                  setExtraParams("suggestedQueries", e.currentTarget.checked);
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Enable Chat
-                </label>
-                <Tooltip
-                  tooltipText="Enable RAG Chat in the component"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                checked={extraParams.chat ?? true}
-                type="checkbox"
-                onChange={(e) => {
-                  setExtraParams("chat", e.currentTarget.checked);
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Use Grouping
-                </label>
-                <Tooltip
-                  tooltipText="Use search over groups instead of chunk-level search"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                checked={extraParams.useGroupSearch || false}
-                type="checkbox"
-                onChange={(e) => {
-                  setExtraParams("useGroupSearch", e.currentTarget.checked);
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Use Localsearch
-                </label>
-                <Tooltip
-                  tooltipText="Localsearch uses pagefind to do search on the client side, must enable pagefind in Dataset Settings"
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                checked={extraParams.usePagefind ?? false}
-                type="checkbox"
-                onChange={(e) => {
-                  setExtraParams("usePagefind", e.currentTarget.checked);
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <Show when={extraParams.type?.toLowerCase() == "ecommerce"}>
-              <div class="flex gap-2">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Display Inline
-                  </label>
-                  <Tooltip
-                    tooltipText="Display the search component inline"
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <input
-                  checked={extraParams.inline ?? true}
-                  type="checkbox"
-                  onChange={(e) => {
-                    setExtraParams("inline", e.currentTarget.checked);
-                  }}
-                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-            </Show>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Use Beta component
-                </label>
-                <Tooltip
-                  tooltipText="Use the beta version of the search-component."
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                type="checkbox"
-                checked={extraParams.isTestMode || false}
-                onChange={(e) => {
-                  setExtraParams("isTestMode", e.currentTarget.checked);
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Use local component
-                </label>
-                <Tooltip
-                  tooltipText="Use your locally hosted version of the search-component."
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                type="checkbox"
-                checked={extraParams.useLocal ?? false}
-                onChange={(e) => {
-                  setExtraParams("useLocal", e.currentTarget.checked);
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-              />
-            </div>
-            <div class="flex gap-2">
-              <div class="flex items-center gap-1">
-                <label class="block" for="">
-                  Highlight Search/Chat Results
-                </label>
-                <Tooltip
-                  tooltipText="Highlight the results in docs and products in the search component."
-                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-                />
-              </div>
-              <input
-                type="checkbox"
-                checked={(extraParams.showResultHighlights as boolean) || true}
-                onChange={(e) => {
-                  setExtraParams(
-                    "showResultHighlights",
-                    e.currentTarget.checked,
-                  );
-                }}
-                class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                class="min-w-[250px] bg-white py-1"
+                selected={
+                  componentVersionOptions.find(
+                    (option) =>
+                      option.value ===
+                      (extraParams.useLocal
+                        ? "local"
+                        : extraParams.isTestMode
+                          ? "beta"
+                          : "stable"),
+                  ) ?? componentVersionOptions[0]
+                }
+                options={componentVersionOptions}
               />
             </div>
           </div>
         </div>
-        <SearchOptions />
         <div class="mt-4 grid grid-cols-2 gap-4">
           <div class="grow">
             <div class="flex items-center gap-1">
@@ -603,27 +451,6 @@ const PublicPageControls = () => {
               addLabel="Add Example Question"
               addClass="text-sm"
               inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-            />
-          </div>
-
-          <div class="grow">
-            <div class="flex items-center gap-1">
-              <label class="block">Default Image Query</label>
-              <Tooltip
-                tooltipText="The prompt to send when the user only uploads an image"
-                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
-              />
-            </div>
-            <input
-              placeholder="Search..."
-              value={
-                extraParams.defaultImageQuestion ||
-                "This is an image of a product that I want you to show similar recomendations for."
-              }
-              onInput={(e) => {
-                setExtraParams("defaultImageQuestion", e.currentTarget.value);
-              }}
-              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
           </div>
 
@@ -766,7 +593,151 @@ const PublicPageControls = () => {
             />
           </div>
         </div>
-        <details class="pt-4">
+
+        <details class="my-4">
+          <summary class="cursor-pointer text-sm font-medium">
+            Floating Button Options
+          </summary>
+          <div class="mt-4 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Show Floating Chat Button
+                  </label>
+                  <Tooltip
+                    tooltipText="Show a floating chat button on the page"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  type="checkbox"
+                  checked={extraParams.showFloatingButton || false}
+                  onChange={(e) => {
+                    setExtraParams(
+                      "showFloatingButton",
+                      e.currentTarget.checked,
+                    );
+                  }}
+                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Floating Chat Button Position
+                  </label>
+                  <Tooltip
+                    tooltipText="Either top-right, bottom-right, top-left, or bottom-left"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <Select
+                  display={(option) => option ?? "bottom-right"}
+                  onSelected={(option) => {
+                    setExtraParams("floatingButtonPosition", option);
+                  }}
+                  class="bg-white py-1"
+                  selected={extraParams.floatingButtonPosition}
+                  options={[
+                    "top-right",
+                    "bottom-right",
+                    "top-left",
+                    "bottom-left",
+                  ]}
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Show Floating Search Button
+                  </label>
+                  <Tooltip
+                    tooltipText="Show a floating search button on the page"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  type="checkbox"
+                  checked={extraParams.showFloatingSearchIcon || false}
+                  onChange={(e) => {
+                    setExtraParams(
+                      "showFloatingSearchIcon",
+                      e.currentTarget.checked,
+                    );
+                  }}
+                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Floating Search Button Position
+                  </label>
+                  <Tooltip
+                    tooltipText="Either left or right"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <Select
+                  display={(option) => option ?? "right"}
+                  onSelected={(option) => {
+                    setExtraParams("floatingSearchIconPosition", option);
+                  }}
+                  class="bg-white py-1"
+                  selected={extraParams.floatingSearchIconPosition}
+                  options={["right", "left"]}
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Show Floating Search Input
+                  </label>
+                  <Tooltip
+                    tooltipText="Show floating search input on the page"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  type="checkbox"
+                  checked={extraParams.showFloatingInput || false}
+                  onChange={(e) => {
+                    setExtraParams(
+                      "showFloatingInput",
+                      e.currentTarget.checked,
+                    );
+                  }}
+                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <OgOptions />
+
+        <SingleProductOptions />
+
+        <TabOptions />
+
+        <details class="my-4">
           <summary class="cursor-pointer text-sm font-medium">
             Advanced Settings
           </summary>
@@ -982,136 +953,6 @@ const PublicPageControls = () => {
               <div class="flex gap-2">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">
-                    Show Floating Chat Button
-                  </label>
-                  <Tooltip
-                    tooltipText="Show a floating chat button on the page"
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <input
-                  type="checkbox"
-                  checked={extraParams.showFloatingButton || false}
-                  onChange={(e) => {
-                    setExtraParams(
-                      "showFloatingButton",
-                      e.currentTarget.checked,
-                    );
-                  }}
-                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-              <div class="grow">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Floating Chat Button Position
-                  </label>
-                  <Tooltip
-                    tooltipText="Either top-right, bottom-right, top-left, or bottom-left"
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <Select
-                  display={(option) => option ?? "bottom-right"}
-                  onSelected={(option) => {
-                    setExtraParams("floatingButtonPosition", option);
-                  }}
-                  class="bg-white py-1"
-                  selected={extraParams.floatingButtonPosition}
-                  options={[
-                    "top-right",
-                    "bottom-right",
-                    "top-left",
-                    "bottom-left",
-                  ]}
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex gap-2">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Show Floating Search Button
-                  </label>
-                  <Tooltip
-                    tooltipText="Show a floating search button on the page"
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <input
-                  type="checkbox"
-                  checked={extraParams.showFloatingSearchIcon || false}
-                  onChange={(e) => {
-                    setExtraParams(
-                      "showFloatingSearchIcon",
-                      e.currentTarget.checked,
-                    );
-                  }}
-                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-              <div class="grow">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Floating Search Button Position
-                  </label>
-                  <Tooltip
-                    tooltipText="Either left or right"
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <Select
-                  display={(option) => option ?? "right"}
-                  onSelected={(option) => {
-                    setExtraParams("floatingSearchIconPosition", option);
-                  }}
-                  class="bg-white py-1"
-                  selected={extraParams.floatingSearchIconPosition}
-                  options={["right", "left"]}
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex gap-2">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Show Floating Search Input
-                  </label>
-                  <Tooltip
-                    tooltipText="Show floating search input on the page"
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <input
-                  type="checkbox"
-                  checked={extraParams.showFloatingInput || false}
-                  onChange={(e) => {
-                    setExtraParams(
-                      "showFloatingInput",
-                      e.currentTarget.checked,
-                    );
-                  }}
-                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex gap-2">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
                     Allow Switching Modes
                   </label>
                   <Tooltip
@@ -1133,8 +974,6 @@ const PublicPageControls = () => {
                   class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
               </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
               <div class="flex gap-2">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">
@@ -1159,6 +998,98 @@ const PublicPageControls = () => {
                   class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
               </div>
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Enable Suggestions
+                  </label>
+                  <Tooltip
+                    tooltipText="Show search suggestions as users type"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  checked={extraParams.suggestedQueries ?? true}
+                  type="checkbox"
+                  onChange={(e) => {
+                    setExtraParams("suggestedQueries", e.currentTarget.checked);
+                  }}
+                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Enable Followup Questions
+                  </label>
+                  <Tooltip
+                    tooltipText="Show AI powered suggested followup questions after the first message."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  checked={extraParams.followupQuestions ?? true}
+                  type="checkbox"
+                  onChange={(e) => {
+                    setExtraParams(
+                      "followupQuestions",
+                      e.currentTarget.checked,
+                    );
+                  }}
+                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Use Grouping
+                  </label>
+                  <Tooltip
+                    tooltipText="Use search over groups instead of chunk-level search"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  checked={extraParams.useGroupSearch || false}
+                  type="checkbox"
+                  onChange={(e) => {
+                    setExtraParams("useGroupSearch", e.currentTarget.checked);
+                  }}
+                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="flex gap-2">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Highlight Search/Chat Results
+                  </label>
+                  <Tooltip
+                    tooltipText="Highlight the results in docs and products in the search component."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <input
+                  type="checkbox"
+                  checked={
+                    (extraParams.showResultHighlights as boolean) || true
+                  }
+                  onChange={(e) => {
+                    setExtraParams(
+                      "showResultHighlights",
+                      e.currentTarget.checked,
+                    );
+                  }}
+                  class="block w-4 rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
             </div>
             <div class="grow">
               <div class="flex items-center gap-1">
@@ -1177,14 +1108,48 @@ const PublicPageControls = () => {
                 class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
+            <div class="grow">
+              <div class="flex items-center gap-1">
+                <label class="block">Default Image Query</label>
+                <Tooltip
+                  tooltipText="The prompt to send when the user only uploads an image"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                placeholder="Search..."
+                value={
+                  extraParams.defaultImageQuestion ||
+                  "This is an image of a product that I want you to show similar recomendations for."
+                }
+                onInput={(e) => {
+                  setExtraParams("defaultImageQuestion", e.currentTarget.value);
+                }}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
+            <SearchOptions />
+            <div class="grow">
+              <div class="flex items-center gap-1">
+                <label class="block" for="">
+                  Problem Link
+                </label>
+                <Tooltip
+                  tooltipText="Contact link for users to report issues (e.g. mailto: or support URL)"
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                placeholder="mailto:humans@trieve.ai"
+                value={extraParams.problemLink || ""}
+                onInput={(e) => {
+                  setExtraParams("problemLink", e.currentTarget.value);
+                }}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
           </div>
         </details>
-
-        <OgOptions />
-
-        <SingleProductOptions />
-
-        <TabOptions />
 
         <div class="space-x-1.5 pt-8">
           <button
@@ -1220,7 +1185,7 @@ export const SingleProductOptions = () => {
   );
 
   return (
-    <details class="pt-2" open={defaultDetailOpen()}>
+    <details class="my-4" open={defaultDetailOpen()}>
       <summary class="cursor-pointer text-sm font-medium">
         Single Product View
       </summary>
@@ -1340,6 +1305,7 @@ export const SingleProductOptions = () => {
                 ...extraParams.singleProductOptions,
                 productDescriptionHtml: e.currentTarget.value,
               });
+              setExtraParams("inline", !!e.currentTarget.value);
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
@@ -1445,7 +1411,7 @@ export const TabOptions = () => {
   };
 
   return (
-    <details class="pt-2" open={messages.length > 0}>
+    <details class="my-4" open={messages.length > 0}>
       <summary class="cursor-pointer text-sm font-medium">Tab Messages</summary>
       <div class="flex items-end gap-2 overflow-y-auto pt-2">
         <For each={messages}>
@@ -1574,7 +1540,7 @@ export const OgOptions = () => {
   );
 
   return (
-    <details class="pt-2" open={defaultDetailOpen()}>
+    <details class="my-4" open={defaultDetailOpen()}>
       <summary class="cursor-pointer text-sm font-medium">Open Graph</summary>
       <div class="flex gap-4 pt-2">
         <div class="grow">
