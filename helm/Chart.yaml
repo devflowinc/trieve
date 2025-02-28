@@ -4,3 +4,16 @@ description: Helm chart expressing Trieve deployment without any dependencies
 type: application
 version: 0.1.19
 appVersion: "0.12.0"
+dependencies:
+  - name: qdrant
+    repository: https://qdrant.github.io/qdrant-helm
+    version: 1.13.4
+    condition: qdrant.subchart
+  - name: keycloak-operator
+    repository: https://kbumsik.io/keycloak-kubernetes/
+    version: 0.0.4
+    condition: keycloak.enabled
+  - name: altinity-clickhouse-operator
+    repository: https://docs.altinity.com/clickhouse-operator/
+    version: 0.24.4
+    condition: clickhouse.enabled
