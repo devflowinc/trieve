@@ -431,7 +431,11 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 ...prev,
                 [steps[i].title]: "idle",
               }));
-              askQuestion(textInStream);
+              askQuestion(
+                textInStream,
+                undefined,
+                undefined,
+              );
               setSearchQueries((prev) => ({
                 ...prev,
                 [steps[i].title]: {
