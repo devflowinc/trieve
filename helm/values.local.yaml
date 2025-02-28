@@ -1,5 +1,23 @@
-environment: local # Set to aws if deploying to 
-useGpu: false
+qdrant:
+  replicaCount: 3
+  livenessProbe:
+    enabled: false
+  # HIGHLY RECOMENDED QDRANT NODES go on a dedicated node
+  # tolerations: 
+  # - key: "qdrant-node"
+  #   operator: "Exists"
+  #   effect: "NoSchedule"
+  metrics:
+    serviceMonitor:
+      enabled: false
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable: 1
+  apiKey: "qdrant-api-key"
+  requests:
+    cpu: 1
+    memory: 10Gi
+
 containers:
   server:
     tag: latest
