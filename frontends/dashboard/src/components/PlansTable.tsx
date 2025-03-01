@@ -52,6 +52,9 @@ export const PlansTable = (props: PlansTableProps) => {
   });
 
   createEffect(() => {
+    if (!props.currentOrgSubPlan?.organization) {
+      return;
+    }
     const availablePlansAbortController = new AbortController();
     void fetch(`${apiHost}/stripe/plans`, {
       credentials: "include",

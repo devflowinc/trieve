@@ -759,10 +759,6 @@ pub fn main() -> std::io::Result<()> {
             minijinja_embed::load_templates!(&mut env);
 
             App::new()
-                .wrap(
-                    Cors::permissive()
-                )
-                .app_data(PayloadConfig::new(134200000))
                 .wrap(middleware::json_middleware::JsonMiddlewareFactory)
                 .app_data(web::Data::new(env))
                 .app_data(json_cfg.clone())
@@ -810,6 +806,10 @@ pub fn main() -> std::io::Result<()> {
                     .cookie_path("/".to_owned())
                     .build(),
                 )
+                .wrap(
+                    Cors::permissive()
+                )
+                .app_data(PayloadConfig::new(134200000))
                 .wrap(
                     // Set up logger, but avoid logging hot status endpoints
                     Logger::new("%r %s %b %{Referer}i %{User-Agent}i %T %{TR-Dataset}i")
