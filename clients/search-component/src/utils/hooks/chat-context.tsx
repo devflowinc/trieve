@@ -352,7 +352,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
     let stoppedGeneratingMessage = false;
 
-    if (!defaultMatchAnyTags && !curGroup && (props.tags?.length ?? 0) > 0) {
+    if (
+      (!defaultMatchAnyTags || !defaultMatchAnyTags?.length) &&
+      !curGroup &&
+      (props.tags?.length ?? 0) > 0
+    ) {
       let filterParamsRetries = 0;
       while (filterParamsRetries < 3) {
         filterParamsRetries++;
@@ -467,11 +471,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    if (defaultMatchAnyTags) {
-      if (!filters.must) {
-        filters.must = [];
+    if (defaultMatchAnyTags?.length) {
+      if (!filters.should) {
+        filters.should = [];
       }
-      filters.must.push({
+      filters.should.push({
         field: "tag_set",
         match_any: defaultMatchAnyTags,
       });
