@@ -443,6 +443,7 @@ export const GroupPage = (props: GroupPageProps) => {
   const fetchBookmarks = () => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
+    if (!chunkMetadatas().length) return;
 
     void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",

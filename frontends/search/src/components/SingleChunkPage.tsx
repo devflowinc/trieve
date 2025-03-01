@@ -163,6 +163,8 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   const fetchBookmarks = () => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
+    if (!chunkMetadata()?.id) return;
+
     void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",
       credentials: "include",
