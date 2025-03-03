@@ -5,22 +5,18 @@ metadata:
 data:
   ADMIN_API_KEY: {{ .Values.config.trieve.adminApiKey }}
   BASE_SERVER_URL: {{ .Values.config.trieve.baseServerUrl }}
-  REDIS_URL: {{ .Values.config.redis.uri }}
-  QDRANT_URL: {{ .Values.config.qdrant.qdrantUrl }}
-  QDRANT_API_KEY: {{ .Values.config.qdrant.apiKey }}
+  DATABASE_URL: {{ include "trieve.databaseUrl" . | indent 2 }}
+  REDIS_URL: {{ include "trieve.redisUrl" . | indent 2 }}
+  QDRANT_URL: {{ .Values.qdrant.url }}
+  QDRANT_API_KEY: {{ .Values.qdrant.apiKey }}
+  CLICKHOUSE_URL: {{ .Values.clickhouse.connection.clickhouseUrl | quote }}
+  CLICKHOUSE_DB: {{ .Values.clickhouse.connection.clickhouseDB | quote }}
+  CLICKHOUSE_USER: {{ .Values.clickhouse.connection.clickhouseUser | quote }}
+  CLICKHOUSE_PASSWORD: {{ .Values.clickhouse.connection.clickhousePassword | quote }}
   QUANTIZE_VECTORS: {{ .Values.config.qdrant.quantizeVectors | quote }}
   QDRANT_SHARD_COUNT: {{ .Values.config.qdrant.shardCount | quote }}
   REPLICATION_FACTOR: {{ .Values.config.qdrant.replicationFactor | quote }}
   VECTOR_SIZES: {{ join "," .Values.config.qdrant.vectorSizes | quote }}
-  {{- if $.Values.postgres.dbURI }}
-  DATABASE_URL: {{ .Values.postgres.dbURI }}
-  {{- else if $.Values.postgres.secretKeyRef }}
-  {{- $secretName := .Values.postgres.secretKeyRef.name }}
-  {{- $secretKey := .Values.postgres.secretKeyRef.key }}
-  {{- with (lookup "v1" "Secret" .Release.Namespace $secretName) }}
-  DATABASE_URL: {{ index .data $secretKey | b64dec }}
-  {{- end }}
-  {{- end }}
   {{- if .Values.config.smtp.relay }}
   SMTP_RELAY: {{ .Values.config.smtp.relay }}
   {{- end }}
@@ -91,11 +87,7 @@ data:
   RERANKER_SERVER_ORIGIN: {{ .Values.config.trieve.rerankerServerOrigin }}
   UNLIMITED: {{ .Values.config.trieve.unlimited | quote }}
   REDIS_CONNECTIONS: "30"
-  CLICKHOUSE_URL: {{ .Values.config.analytics.clickhouseUrl | quote }}
-  CLICKHOUSE_DB: {{ .Values.config.analytics.clickhouseDB | quote }}
-  CLICKHOUSE_USER: {{ .Values.config.analytics.clickhouseUser | quote }}
-  CLICKHOUSE_PASSWORD: {{ .Values.config.analytics.clickhousePassword | quote }}
-  USE_ANALYTICS: {{ .Values.config.analytics.enabled | quote }}
+  USE_ANALYTICS: "true"
   BM25_ACTIVE: {{ .Values.config.trieve.bm25Active | quote }}
   SUBTRACE_TOKEN: {{ .Values.config.trieve.subtraceToken | quote }}
   FIRECRAWL_URL: {{ .Values.config.trieve.firecrawlUrl | quote }}

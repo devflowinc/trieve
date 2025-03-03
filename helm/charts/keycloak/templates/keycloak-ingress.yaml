@@ -1,0 +1,34 @@
+{{- with $.Values.ingress }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-keycloak
+j annotations:
+    kubernetes.io/ingress.class: {{ .class | default "gce" }}
+    {{- with .annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .class | default "gce" }}
+  {{- if .tls }}
+  tls:
+    {{- range .tls}}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName | quote }}
+    {{- end }}
+  {{- end }}
+  rules:
+    - host: {{ .host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: trieve-keycloak-service
+                port:
+                  number: 8080
+{{- end }}

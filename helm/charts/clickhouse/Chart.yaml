@@ -1,0 +1,8 @@
+name: clickhouse
+apiVersion: v2
+version: 0.0.0
+dependencies:
+  - name: altinity-clickhouse-operator
+    version: 0.24.4
+    repository: https://docs.altinity.com/clickhouse-operator/
+    condition: installCrds

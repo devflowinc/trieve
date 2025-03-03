@@ -5,6 +5,8 @@ metadata:
   labels:
     app.kubernetes.io/name: ingest
     app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/backend-configmap.yaml") . | sha256sum }}
 spec:
   replicas: {{ .Values.containers.ingest.replicas | default 10 }}
   selector:

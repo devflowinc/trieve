@@ -1,20 +1,89 @@
 postgres:
+  # Enables Postgres via the subchart
   enabled: true
-  dbURI: "postgres://postgres:password@postgres.default.svc.cluster.local:5432/trieve"
-  spec:
+  # Installs cloudnative-pg operator
+  installCrds: true
+  # Pulls from secret if postgres.enabled = true
+  # dbURI: "postgres://postgres:password@postgres.default.svc.cluster.local:5432/trieve"
+  # This requires installing cloud-native-pg operator https://cloudnative-pg.io/documentation/1.24/installation_upgrade/
+  clusterSpec:
     # CloudNativePg template spec
     instances: 1
     storage:
       size: 10Gi
 
+keycloak:
+  ## WARNING THIS IS NOT PRODUCTION SAFE.
+  ## THIS USeS A DEFAULT REALM EXPORT.
+  ## YOU MUST MAKE A NEW keycloak realm
+  ## TO HARDEN THIS.
+
+  # Install keycloak subchart
+  enabled: true
+  # Installs the keycloak crd / operator
+  installCrds: true
+
+  ingress:
+    host: auth.localtrieve.com
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    tls:
+      - hosts:
+          - auth.localtrieve.com
+        secretName: auth-localtrieve-com
+
 clickhouse:
   enabled: true
+  installCrds: true
+
+  connection:
+    clickhouseDB: default
+    clickhouseUser: default
+    clickhousePassword: clickhouse
+    clickhouseUrl: http://clickhouse-trieve-local-trieve:8123
+
+  clickhouseSpec:
+    ## A ClickhouseInstallation template spec
+    configuration:
+      users:
+        default/password: clickhouse
+        # to allow access outside from kubernetes
+        default/networks/ip:
+          - 0.0.0.0/0
+      clusters:
+        - name: cluster1
+          templates:
+            podTemplate: clickhouse-pod-template
+          layout:
+            shardsCount: 1
+            replicasCount: 1
+    templates:
+      podTemplates:
+        - name: clickhouse-pod-template
+          spec:
+            containers:
+              - name: clickhouse
+                image: trieve/clickhouse:latest
+                digest: sha256:324f541975c43e96b5df6ede74632102d89172b703960bbf01f1842ccf48d240
+                volumeMounts:
+                  - name: data-storage-vc
+                    mountPath: /var/lib/clickhouse
+                  - name: log-storage-vc
+                    mountPath: /var/log/clickhouse-server
+                env:
+                  - name: CLICKHOUSE_ADMIN_PASSWORD
+                    value: clickhouse
 
 minio:
-  enabled: true
+  enabled: false
 
 qdrant:
   enabled: true
+  url: http://trieve-local-qdrant:6334
+
+  apiKey: "qdrant-api-key"
   # Qdrant values.yaml spec
   replicaCount: 3
   livenessProbe:
@@ -30,7 +99,6 @@ qdrant:
   podDisruptionBudget:
     enabled: false
     maxUnavailable: 1
-  apiKey: "qdrant-api-key"
   requests:
     cpu: 1
     memory: 10Gi
@@ -62,6 +130,12 @@ containers:
   ingest:
     tag: latest
     resources: {}
+  update_worker:
+    tag: latest
+    resources: {}
+  batch_etl_worker:
+    tag: latest
+    resources: {}
   file_worker:
     tag: latest
     resources: {}
@@ -81,6 +155,21 @@ containers:
     tag: latest
     resources: {}
   word_id_cronjob:
+    tag: latest
+    resources: {}
+  crawl_worker:
+    tag: latest
+    resources: {}
+  ditto_feed_cronjob:
+    tag: latest
+    resources: {}
+  csv_jsonl_worker:
+    tag: latest
+    resources: {}
+  pagefind_worker:
+    tag: latest
+    resources: {}
+  video_worker:
     tag: latest
     resources: {}
   clone_qdrant:
@@ -123,20 +212,12 @@ config:
     connections: 3
     uri: "redis://:@redis.default.svc.cluster.local:6379"
   qdrant:
-    qdrantUrl: http://qdrant.default.svc.cluster.local:6334
-    apiKey: "qdrant-api-key"
     quantizeVectors: false  # If set to true will binary quantize
     replicationFactor: 2
     shardCount: 12
     vectorSizes:
       - 768
       - 1024
-  analytics:
-    enabled: true
-    clickhouseDB: default
-    clickhouseUser: default
-    clickhousePassword: clickhouse
-    clickhouseUrl: http://clickhouse-trieve-clickhouse.default.svc.cluster.local:8123
   delete_worker:
     batch_size: 10000
   trieve:

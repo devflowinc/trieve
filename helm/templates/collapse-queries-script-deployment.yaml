@@ -15,5 +15,5 @@ spec:
               imagePullPolicy: IfNotPresent
               env:
                 - name: CLICKHOUSE_DSN
-                  value: {{ .Values.config.analytics.clickhouseDSN }}
+                  value: {{ .Values.clickhouse.dsn }}
           restartPolicy: Never

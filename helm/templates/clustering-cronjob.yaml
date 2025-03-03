@@ -17,5 +17,5 @@ spec:
                 - name: ANTHROPIC_API_KEY
                   value: {{ .Values.config.trieve.anthropicAPIKey | quote }}
                 - name: CLICKHOUSE_DSN
-                  value: {{ .Values.config.analytics.clickhouseDSN }}
+                  value: {{ .Values.clickhouse.dsn }}
           restartPolicy: Never

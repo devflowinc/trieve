@@ -644,9 +644,7 @@ spec:
       - http://dashboard.localtrieve.com/*
       - http://chat.localtrieve.com/*
       - http://search.localtrieve.com/*
-      - http://analytics.localtrieve.com/*
       webOrigins:
-      - http://analytics.localtrieve.com
       - http://chat.localtrieve.com
       - http://api.localtrieve.com
       - http://search.localtrieve.com
