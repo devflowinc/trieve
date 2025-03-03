@@ -1,0 +1,50 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: trieve-keycloak
+spec:
+  instances: 1
+  bootstrapAdmin:
+    user:
+      secret: "trieve-keycloak-admin-override"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 500Mi
+    limits:
+      memory: 2Gi
+  db:
+    vendor: postgres
+    host: keycloak-postgres
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+  http:
+    httpEnabled: true
+  ingress:
+    enabled: false
+  hostname:
+    strict: false
+  proxy:
+    headers: xforwarded # double check your reverse proxy sets and overwrites the X-Forwarded-* headers
+---
+apiVersion: v1
+data:
+  password: cGFzc3dvcmQ=
+  username: a2V5Y2xvYWs=
+kind: Secret
+metadata:
+  name: keycloak-db-secret
+type: Opaque
+---
+apiVersion: v1
+stringData:
+  username: admin
+  password: password
+kind: Secret
+metadata:
+  name: trieve-keycloak-admin-override
+type: Opaque

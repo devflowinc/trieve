@@ -1,0 +1,11 @@
+
+installCrds: true
+
+clickhouseSpec: 
+  ## A ClickhouseInstallation template spec
+  configuration:
+    users:
+      # printf 'test_password' | sha256sum
+      test_user/password_sha256_hex: 10a6e6cc8311a3e2bcc09bf6c199adecd5dd59408c343e926b129c4914f3cb01
+    clusters:
+      - name: "simple"

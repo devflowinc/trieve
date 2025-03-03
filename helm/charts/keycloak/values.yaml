@@ -1,0 +1,10 @@
+ingress:
+  # host: auth.yourdomain.com
+  # ingressClassName: nginx
+  # annotations:
+  #   cert-manager.io/cluster-issuer: "letsencrypt"
+  #   nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  # tls:
+  #   - hosts:
+  #       - dashboard.yourdomain.com
+  #     secretName: dashboard-ansear-ai
