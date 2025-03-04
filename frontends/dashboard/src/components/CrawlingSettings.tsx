@@ -22,7 +22,7 @@ export const defaultCrawlOptions: CrawlOptions = {
   allow_external_links: false,
   ignore_sitemap: false,
   exclude_paths: [],
-  exclude_tags: ["navbar", "footer", "aside", "nav", "form"],
+  exclude_tags: ["header", "navbar", "footer", "aside", "nav", "form"],
   include_paths: [],
   include_tags: [],
   interval: "daily",
