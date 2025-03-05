@@ -14,9 +14,7 @@ export const SearchUsageChart = ({
   granularity: Granularity;
 }) => {
   const { trieve } = useTrieve();
-  const { data, status } = useQuery(
-    searchUsageQuery(trieve, filters, granularity),
-  );
+  const { data } = useQuery(searchUsageQuery(trieve, filters, granularity));
 
   return (
     <Card>
@@ -25,6 +23,7 @@ export const SearchUsageChart = ({
       </Text>
       <Box minHeight="14px">
         <AnalyticsChart
+          wholeUnits
           data={data?.usage_points}
           xAxis={"time_stamp"}
           yAxis={"requests"}

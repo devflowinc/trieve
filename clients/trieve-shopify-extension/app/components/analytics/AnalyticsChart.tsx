@@ -3,7 +3,6 @@ import { useEffect, useRef } from "react";
 import { Chart } from "chart.js";
 import { enUS } from "date-fns/locale";
 import { convertToISO8601, fillDate } from "app/queries/analytics/formatting";
-import { DateRangeFilter } from "./DateRangePicker";
 import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
 
 interface AnalyticsChartProps<T> {
@@ -38,16 +37,21 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
     if (!chartInstanceRef.current) {
       // Create the chart only if it doesn't exist
       chartInstanceRef.current = new Chart(canvas, {
-        type: "bar",
+        type: "line",
         data: {
           labels: [],
           datasets: [
             {
               label: props.yLabel,
               data: [],
-              backgroundColor: "rgba(128, 0, 128, 0.9)", // Light purple background
-              borderWidth: 1,
-              barThickness: data.length === 1 ? 40 : undefined,
+              backgroundColor: "rgba(128, 0, 128, 0.06)", // Light purple background for fill
+              borderColor: "rgba(128, 0, 128, 0.5)", // Purple line color
+              borderWidth: 2,
+              tension: 0.3, // Slight curve to the line
+              fill: true, // Fill area under the line
+              pointBackgroundColor: "rgba(128, 0, 128, 0.9)",
+              pointRadius: 2,
+              pointHoverRadius: 5,
             },
           ],
         },
@@ -96,17 +100,6 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
     }
 
     const chartInstance = chartInstanceRef.current;
-
-    if (data.length <= 1) {
-      // @ts-expect-error library types not updated
-      chartInstance.options.scales["x"].offset = true;
-      // Set the bar thickness to 40 if there is only one data point
-      // @ts-expect-error library types not updated
-      chartInstance.data.datasets[0].barThickness = 40;
-    } else {
-      // @ts-expect-error library types not updated
-      chartInstance.data.datasets[0].barThickness = undefined;
-    }
 
     if (props.granularity === "month") {
       // @ts-expect-error library types not updated
@@ -178,17 +171,21 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
 
     if (!chartInstanceRef.current) {
       chartInstanceRef.current = new Chart(canvas, {
-        type: "bar",
+        type: "line",
         data: {
           labels: [],
           datasets: [
             {
               label: props.yLabel,
               data: [],
-              backgroundColor: "rgba(128, 0, 128, 0.9)",
-              borderWidth: 1,
-              barPercentage: 0.8, // Controls the width of the bars
-              categoryPercentage: 0.9, // Controls the spacing between bars
+              backgroundColor: "rgba(128, 0, 128, 0.1)",
+              borderColor: "rgba(128, 0, 128, 0.9)",
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true,
+              pointBackgroundColor: "rgba(128, 0, 128, 0.9)",
+              pointRadius: 4,
+              pointHoverRadius: 6,
             },
           ],
         },
@@ -249,21 +246,6 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
     }
 
     const chartInstance = chartInstanceRef.current;
-
-    // Handle single data point
-    if (data.length <= 1) {
-      // @ts-expect-error library types not updated
-      chartInstance.options.scales["x"].offset = true;
-      // @ts-expect-error library types not updated
-      chartInstance.data.datasets[0].barPercentage = 0.3;
-    } else {
-      // @ts-expect-error library types not updated
-      chartInstance.options.scales["x"].offset = true;
-      // @ts-expect-error library types not updated
-      chartInstance.data.datasets[0].barPercentage = 0.8;
-    }
-    // @ts-expect-error library types not updated
-    chartInstance.data.datasets[0].barThickness = undefined;
 
     // Update the chart data
     chartInstance.data.labels = data.map((point) =>
