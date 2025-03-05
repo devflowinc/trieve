@@ -5,6 +5,7 @@ import {
   formatStringDateRangeToDates,
   transformDateParams,
 } from "app/queries/analytics/formatting";
+import { Box } from "@shopify/polaris";
 
 interface SearchFilterBarProps {
   granularity: Granularity;
@@ -14,17 +15,18 @@ interface SearchFilterBarProps {
 }
 export const SearchFilterBar = (props: SearchFilterBarProps) => {
   return (
-    <div>
-      <div>Search filter bar</div>
-      <DateRangePicker
-        value={formatStringDateRangeToDates(props.filters.date_range)}
-        onChange={(s) => {
-          props.setFilters({
-            ...props.filters,
-            date_range: transformDateParams(s),
-          });
-        }}
-      />
+    <div className="flex py-4 justify-between">
+      <Box maxWidth="200">
+        <DateRangePicker
+          value={formatStringDateRangeToDates(props.filters.date_range)}
+          onChange={(s) => {
+            props.setFilters({
+              ...props.filters,
+              date_range: transformDateParams(s),
+            });
+          }}
+        />
+      </Box>
     </div>
   );
 };
