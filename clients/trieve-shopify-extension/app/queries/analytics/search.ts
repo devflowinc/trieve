@@ -51,3 +51,22 @@ export const headQueriesQuery = (
     },
   } satisfies QueryOptions;
 };
+
+export const noResultQueriesQuery = (
+  trieve: TrieveSDK,
+  filters: SearchAnalyticsFilter,
+  granularity: Granularity,
+  page: number,
+) => {
+  return {
+    queryKey: ["no_result_queries", filters, granularity, page],
+    queryFn: async () => {
+      const result = await trieve.getSearchAnalytics({
+        filter: filters,
+        type: "no_result_queries",
+        page: page,
+      });
+      return result as HeadQueryResponse;
+    },
+  } satisfies QueryOptions;
+};
