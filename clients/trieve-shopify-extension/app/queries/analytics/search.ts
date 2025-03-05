@@ -10,7 +10,7 @@ import { formatDateForApi } from "./formatting";
 
 export const defaultSearchAnalyticsFilter: SearchAnalyticsFilter = {
   date_range: {
-    gt: formatDateForApi(subDays(new Date(), 7)),
+    gte: formatDateForApi(subDays(new Date(), 30)),
   },
 };
 
