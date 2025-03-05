@@ -33,7 +33,7 @@ export const HeadQueriesTable = ({
   return (
     <Card>
       <Text as="h5" variant="headingSm">
-        Search Usage
+        Most Popular Searches
       </Text>
       <Box minHeight="14px">
         <DataTable
