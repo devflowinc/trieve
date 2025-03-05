@@ -45,6 +45,17 @@ export const parseCustomDateString = (dateString: string) => {
   return new Date(isoString);
 };
 
+export const formatStringDateRangeToDates = (
+  range: SearchAnalyticsFilter["date_range"],
+): DateRangeWithDates => {
+  return {
+    gt: range?.gt ? parseCustomDateString(range.gt) : undefined,
+    lt: range?.lt ? parseCustomDateString(range.lt) : undefined,
+    gte: range?.gte ? parseCustomDateString(range.gte) : undefined,
+    lte: range?.lte ? parseCustomDateString(range.lte) : undefined,
+  };
+};
+
 interface HasDateRange {
   date_range?: DateRangeWithDates | null;
 }
