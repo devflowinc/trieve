@@ -8,6 +8,7 @@ use crate::{
         SearchQueryEventClickhouse, SearchQueryRating, WorkerEventClickhouse,
     },
     errors::ServiceError,
+    get_env,
     handlers::analytics_handler::RateQueryRequest,
 };
 
@@ -249,7 +250,10 @@ impl EventQueue {
 
     pub fn start_service(&mut self) {
         let clickhouse_client = self.clickhouse_client.clone();
-        let (sender, mut reciever) = mpsc::channel(1000);
+        let queue_length = get_env!("CLICKHOUSE_QUEUE_LENGTH", "CLICKHOUSE_QUEUE_LENGTH")
+            .parse()
+            .unwrap_or(10000);
+        let (sender, mut reciever) = mpsc::channel(queue_length);
         self.sender = Some(sender);
 
         tokio::spawn(async move {
@@ -259,7 +263,7 @@ impl EventQueue {
                 tokio::select! {
                     Some(event) = reciever.recv() => {
                         events.push(event);
-                        if Instant::now().0.duration_since(timer.0).as_secs() > 10 || events.len() > 500 {
+                        if Instant::now().0.duration_since(timer.0).as_secs() > 10 || events.len() > 5000 {
                             if let Err(e) = send_to_clickhouse(events.clone(), &clickhouse_client).await {
                                 log::error!("Error sending events to clickhouse: {:?}", e);
                             }
