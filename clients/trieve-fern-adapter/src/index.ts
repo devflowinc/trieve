@@ -147,13 +147,17 @@ const extractChunksFromPath = async (
     }
 
     const tracking_id =
-      `${slug ?? path.replace('.mdx', '')}-${heading}`.replace(' ', '-');
+      `${slug && slug != path ? slug + '/' : ''}${path.replace('.mdx', '')}-${heading}`.replace(
+        /\s/g,
+        '-',
+      );
 
     const chunk: ChunkReqPayload = {
       chunk_html,
       link,
       tag_set,
       tracking_id,
+      upsert_by_tracking_id: true,
       metadata,
       group_tracking_ids: [path],
       convert_html_to_text: true,
@@ -162,7 +166,7 @@ const extractChunksFromPath = async (
     if (semantic_boost_phrase) {
       chunk.semantic_boost = {
         phrase: semantic_boost_phrase,
-        distance_factor: 0.3,
+        distance_factor: 0.5,
       };
     }
 
@@ -223,7 +227,8 @@ const extractChunksFromOpenapiSpec = async (
           summary,
           description,
         };
-        const heading = `<h2><span class="openapi-method">${method.toUpperCase()}</span> ${summary}</h2>`;
+        const heading = `<h2><span class="openapi-method">${method.toUpperCase()}</span> ${summary} /${endpoint}</h2>`;
+        const cleanHeading = `${method.toUpperCase()} ${summary} ${endpoint}`;
         let chunk_html = heading;
         if (description) {
           chunk_html += `\n\n<p>${description}</p>`;
@@ -235,14 +240,15 @@ const extractChunksFromOpenapiSpec = async (
           tag_set: ['openapi-route', operationId, method],
           metadata,
           tracking_id: operationId,
+          upsert_by_tracking_id: true,
           group_tracking_ids: [path],
           fulltext_boost: {
-            phrase: heading,
-            boost_factor: 1.3,
+            phrase: cleanHeading,
+            boost_factor: 1.5,
           },
           semantic_boost: {
-            phrase: heading,
-            distance_factor: 0.3,
+            phrase: cleanHeading,
+            distance_factor: 0.5,
           },
           convert_html_to_text: true,
         };
@@ -346,13 +352,27 @@ try {
       });
 
       if (groups.groups.length === 0) {
-        console.info('Dataset cleared');
+        console.info('Groups cleared');
         break;
       }
     } catch (err) {
       console.error('Error getting groups', err);
     }
-    console.info('Waiting on delete...');
+    console.info('Waiting on groups to clear...');
+  }
+  while (true) {
+    try {
+      console.info('Checking for chunks...');
+      const scrollResp = await trieve.scroll({});
+
+      if (scrollResp.chunks.length === 0) {
+        console.info('Chunks cleared');
+        break;
+      }
+    } catch (err) {
+      console.error('Error getting groups', err);
+    }
+    console.info('Waiting on chunks to clear...');
   }
 } catch {
   console.info('Dataset not found, creating...');
@@ -368,6 +388,10 @@ try {
     process.exit(1);
   }
 }
+
+chunkReqPayloads = chunkReqPayloads.filter(
+  (v, i, a) => a.findIndex((t) => t.chunk_html === v.chunk_html) === i,
+);
 
 for (let i = 0; i < chunkReqPayloads.length; i += 120) {
   const chunkBatch = chunkReqPayloads.slice(i, i + 120);
