@@ -18,12 +18,16 @@ spec:
       template:
         metadata:
           annotations:
-            checksum/config: {{ include (print $.Template.BasePath "/backend-configmap.yaml") . | sha256sum }}
+            checksum/config: {{ include (print $.Template.BasePath "/settings/backend-configmap.yaml") . | sha256sum }}
         spec:
           restartPolicy: Never
+          {{- if $.Values.global.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+          {{- end }}
           containers:
           - name: clone-qdrant-{{ $service.clone_name }}
-            image: {{ printf "%s%s:%s" (ternary "trieve/" "localhost:5000/" (ne $.Values.environment "local")) "clone_qdrant" $.Values.containers.clone_qdrant.tag }}
+            image: {{ printf "%s%s:%s" $.Values.global.image.registry $.Values.containers.clone_qdrant.repository $.Values.containers.clone_qdrant.tag }}
             envFrom:
               - configMapRef:
                   name: trieve-server-config

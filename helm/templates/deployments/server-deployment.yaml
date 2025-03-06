@@ -17,7 +17,7 @@ metadata:
     app.kubernetes.io/name: server
     app.kubernetes.io/instance: {{ .Release.Name }}
   annotations:
-    checksum/config: {{ include (print $.Template.BasePath "/backend-configmap.yaml") . | sha256sum }}
+    checksum/config: {{ include (print $.Template.BasePath "/settings/backend-configmap.yaml") . | sha256sum }}
 spec:
   replicas: {{ .Values.containers.search.replicas | default 3 }}
   selector:
@@ -27,12 +27,16 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/backend-configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/settings/backend-configmap.yaml") . | sha256sum }}
       labels:
         app.kubernetes.io/name: server
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       terminationGracePeriodSeconds: 10
+      {{- if $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
       containers:
       - name: server
         {{- if .Values.config.trieve.useSubtrace }}
@@ -47,7 +51,7 @@ spec:
           - "--"
           - "/app/trieve-server"
         {{- end }}
-        image: {{ printf "%s:%s" "trieve/server" .Values.containers.server.tag }}
+        image: {{ printf "%s/%s:%s" $.Values.global.image.registry $.Values.containers.server.repository .Values.containers.server.tag }}
         resources:
           {{- toYaml .Values.containers.server.resources | nindent 12 }}
         livenessProbe:

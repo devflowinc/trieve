@@ -14,14 +14,19 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/backend-configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/settings/backend-configmap.yaml") . | sha256sum }}
       labels:
         app.kubernetes.io/name: sync-qdrant
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      {{- if $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
       containers:
       - name: sync-qdrant
-        image: {{ printf "%s:%s" "trieve/sync_qdrant" .Values.containers.sync_qdrant.tag }}
+        image: {{ printf "%s/%s:%s" $.Values.global.image.registry $.Values.containers.sync_qdrant.repository .Values.containers.sync_qdrant.tag }}
+        imagePullPolicy: {{ $.Values.global.image.imagePullPolicy }}
         envFrom:
           - configMapRef:
               name: trieve-server-config
