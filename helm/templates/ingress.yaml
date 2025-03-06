@@ -1,5 +1,6 @@
 ---
 {{- with $.Values.domains.chat }}
+{{ if not .disabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -35,8 +36,10 @@ spec:
                 port:
                   number: 3000
 {{- end }}
+{{- end }}
 ---
 {{- with $.Values.domains.server }}
+{{ if not .disabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -72,8 +75,10 @@ spec:
                 port:
                   number: 8090
 {{- end }}
+{{- end }}
 ---
 {{- with $.Values.domains.search }}
+{{ if not .disabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -109,8 +114,10 @@ spec:
                 port:
                   number: 3001
 {{- end }}
+{{- end }}
 ---
 {{- with $.Values.domains.dashboard }}
+{{ if not .disabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -145,5 +152,6 @@ spec:
                 name: dashboard-service
                 port:
                   number: 3002
+{{- end }}
 {{- end }}
 ---

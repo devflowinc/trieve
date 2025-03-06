@@ -29,7 +29,7 @@ spec:
             httpGet:
               path: "/"
               port: 80
-          image: {{ ternary "ghcr.io/huggingface/text-embeddings-inference:89-1.2" "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $service.useGpu }}
+          image: {{ ternary (printf "ghcr.io/huggingface/text-embeddings-inference:%s" $service.tag) "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $service.useGpu }}
           args: 
             {{ (concat (list "--model-id" $service.model "--revision" $service.revision) $service.args) | toJson }}
           ports:
