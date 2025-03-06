@@ -39,6 +39,7 @@ clickhouse:
   installCrds: true
 
   connection:
+    # TODO modify password
     clickhouseDB: default
     clickhouseUser: default
     clickhousePassword: clickhouse
@@ -83,6 +84,7 @@ qdrant:
   enabled: true
   url: http://trieve-local-qdrant:6334
 
+  # TODO modify apiKey
   apiKey: "qdrant-api-key"
   # Qdrant values.yaml spec
   replicaCount: 3
@@ -169,9 +171,6 @@ containers:
   pagefind_worker:
     tag: sha-2b6d5eb
     resources: {}
-  video_worker:
-    tag: sha-2b6d5eb
-    resources: {}
   clone_qdrant:
     tag: sha-2b6d5eb
     resources: {}
@@ -190,8 +189,9 @@ containers:
     tag: latest
 domains:
   dashboard:
+    disabled: true
     host: dashboard.yourdomain.com
-    # TODO modify as needed
+    # TODO modify as needed for your ingress
     class: nginx
     # annotations:
     #   cert-manager.io/cluster-issuer: "letsencrypt"
@@ -201,6 +201,7 @@ domains:
     #       - dashboard.yourdomain.com
     #     secretName: dashboard-ansear-ai
   server:
+    disabled: true
     host: api.yourdomain.com
     class: nginx
     # annotations:
@@ -211,6 +212,7 @@ domains:
     #       - dashboard.yourdomain.com
     #     secretName: dashboard-ansear-ai
   search:
+    disabled: true
     host: search.yourdomain.com
     class: nginx
     # annotations:
@@ -221,6 +223,7 @@ domains:
     #       - dashboard.yourdomain.com
     #     secretName: dashboard-ansear-ai
   chat:
+    disabled: true
     host: chat.yourdomain.com
     class: nginx
     # annotations:
@@ -232,6 +235,7 @@ domains:
     #     secretName: dashboard-ansear-ai
 config:
   vite:
+    # TODO modify domain name
     apiHost: http://api.yourdomain.com/api
     searchUiUrl: http://search.yourdomain.com
     chatUiUrl: http://chat.yourdomain.com
@@ -253,11 +257,14 @@ config:
   delete_worker:
     batch_size: 10000
   trieve:
+    # TODO modify domain name
+    baseServerUrl: http://api.yourdomain.com
+
+    disableCrons: true
     batch_limit: 120
     bm25Active: true
     unlimited: true
     cookieSecure: false
-    baseServerUrl: http://api.yourdomain.com
     embeddingServerOrigin: http://embedding-jina.default.svc.cluster.local
     sparseServerQueryOrigin: http://embedding-splade-query.default.svc.cluster.local
     sparseServerDocOrigin: http://embedding-splade-doc.default.svc.cluster.local
@@ -311,30 +318,30 @@ embeddings:
   - name: jina
     revision: main
     model: jinaai/jina-embeddings-v2-base-en
-    tag: 
+    tag: "89-1.2"
     useGpu: true
     args: []
   - name: splade-doc
     model: naver/efficient-splade-VI-BT-large-doc
-    tag: 
+    tag: "89-1.2"
     revision: main
     useGpu: true
     args: ["--pooling", "splade"]
   - name: splade-query
     model: naver/efficient-splade-VI-BT-large-query
-    tag: 
+    tag: "89-1.2"
     revision: main
     useGpu: true
     args: ["--pooling", "splade"]
   - name: m3
     model: BAAI/bge-m3
-    tag: 
+    tag: "89-1.2"
     revision: main
     useGpu: true
     args: []
   - name: reranker
     model: BAAI/bge-reranker-large
-    tag: 
+    tag: "89-1.2"
     revision: refs/pr/4
     useGpu: true
     args: []

@@ -48,21 +48,6 @@ data:
   {{- if .Values.config.s3.region }}
   AWS_REGION: {{ .Values.config.s3.region }}
   {{- end }}
-  {{- if .Values.config.pagefind_s3.endpoint }}
-  S3_ENDPOINT_PAGEFIND: {{ .Values.config.pagefind_s3.endpoint }}
-  {{- end }}
-  {{- if .Values.config.pagefind_s3.accessKey }}
-  S3_ACCESS_KEY_PAGEFIND: {{ .Values.config.pagefind_s3.accessKey }}
-  {{- end }}
-  {{- if .Values.config.pagefind_s3.secretKey }}
-  S3_SECRET_KEY_PAGEFIND: {{ .Values.config.pagefind_s3.secretKey }}
-  {{- end }}
-  {{- if .Values.config.pagefind_s3.bucket }}
-  S3_BUCKET_PAGEFIND: {{ .Values.config.pagefind_s3.bucket }}
-  {{- end }}
-  {{- if .Values.config.pagefind_s3.region }}
-  AWS_REGION_PAGEFIND: {{ .Values.config.pagefind_s3.region }}
-  {{- end }}
   COOKIE_SECURE: {{ .Values.config.trieve.cookieSecure | quote }}
   TIKA_URL: tika.default.svc.cluster.local
   OPENAI_BASE_URL: {{ .Values.config.openai.baseUrl }}

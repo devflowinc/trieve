@@ -4,6 +4,7 @@ metadata:
   name: clustering-cronjob
 spec:
   schedule: "1 * * * *"
+  suspend: {{ $.Values.config.trieve.disableCrons }}
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:

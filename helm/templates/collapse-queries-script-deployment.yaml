@@ -5,6 +5,7 @@ metadata:
 spec:
   schedule: "*/30 * * * *"
   concurrencyPolicy: Forbid
+  suspend: {{ $.Values.config.trieve.disableCrons }}
   jobTemplate:
     spec:
       template:
