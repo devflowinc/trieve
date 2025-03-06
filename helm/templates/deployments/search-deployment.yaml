@@ -14,11 +14,15 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/frontend-configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/settings/frontend-configmap.yaml") . | sha256sum }}
       labels:
         app.kubernetes.io/name: search
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      {{- if $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
       containers:
       - name: search
         livenessProbe:
@@ -29,7 +33,7 @@ spec:
           httpGet:
             path: "/"
             port: 80
-        image: {{ printf "%s:%s" "trieve/search" $.Values.containers.search.tag }}
+        image: {{ printf "%s/%s:%s" $.Values.global.image.registry $.Values.containers.search.repository $.Values.containers.search.tag }}
         ports:
           - containerPort: 80
         envFrom:

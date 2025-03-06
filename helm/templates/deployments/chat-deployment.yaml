@@ -17,11 +17,15 @@ spec:
         app.kubernetes.io/name: chat
         app.kubernetes.io/instance: {{ .Release.Name }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/frontend-configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/settings/frontend-configmap.yaml") . | sha256sum }}
     spec:
+      {{- if $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
       containers:
       - name: chat
-        image: {{ (printf "%s:%s" "trieve/chat" .Values.containers.chat.tag) }}
+        image: {{ (printf "%s/%s:%s" $.Values.global.image.registry $.Values.containers.chat.repository .Values.containers.chat.tag) }}
         ports:
           - containerPort: 80
         envFrom:

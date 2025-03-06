@@ -1,3 +1,12 @@
+global:
+  image:
+    registry: trieve
+    imagePullPolicy: Always
+    # Optional if using your own repository
+    # the default is 
+    # imagePullSecrets: 
+    #   - name: pull-secret-name
+
 postgres:
   # Enables Postgres via the subchart
   enabled: true
@@ -128,65 +137,95 @@ redis:
 containers:
   server:
     tag: sha-2b6d5eb
+    repository: server
     resources: {}
   ingest:
     tag: sha-2b6d5eb
+    repository: ingest
+    replicas: 3
     resources: {}
   update_worker:
     tag: sha-2b6d5eb
+    repository: update-worker
+    replicas: 1
     resources: {}
   batch_etl_worker:
     tag: sha-2b6d5eb
+    repository: etl-worker
+    replicas: 1
     resources: {}
   file_worker:
     tag: sha-2b6d5eb
+    repository: file_worker
+    replicas: 1
     resources: {}
   delete_worker:
     tag: sha-2b6d5eb
+    repository: delete_worker
+    replicas: 1
     resources: {}
   group_worker:
     tag: sha-2b6d5eb
+    repository: group_worker
+    replicas: 1
     resources: {}
   sync_qdrant:
     tag: sha-2b6d5eb
+    repository: sync_qdrant
     resources: {}
   bktree_worker:
     tag: sha-2b6d5eb
+    repository: bktree-worker
+    replicas: 1
     resources: {}
   word_worker:
     tag: sha-2b6d5eb
+    repository: word-worker
+    replicas: 1
     resources: {}
   word_id_cronjob:
     tag: sha-2b6d5eb
+    repository: word-id-cronjob
+    replicas: 1
     resources: {}
   crawl_worker:
     tag: sha-2b6d5eb
+    repository: crawl-worker
+    replicas: 1
     resources: {}
   ditto_feed_cronjob:
     tag: sha-2b6d5eb
+    repository: dittofeed-sync-worker
     resources: {}
   csv_jsonl_worker:
     tag: sha-2b6d5eb
+    repository: csv-jsonl-worker
+    replicas: 1
     resources: {}
   pagefind_worker:
     tag: sha-2b6d5eb
+    repository: pagefind-worker
+    replicas: 1
     resources: {}
   clone_qdrant:
     tag: sha-2b6d5eb
+    repository: clone_qdrant
     resources: {}
   search:
     tag: sha-62f367a
+    repository: search
     resources: {}
   chat:
     tag: sha-62f367a
+    repository: chat
     resources: {}
   dashboard:
     tag: sha-62f367a
+    repository: dashboard
     resources: {}
-  clustering_cron:
-    tag: latest
   clickhouse_collapse:
     tag: latest
+    repository: clickhouse-collapse-query-script
 domains:
   dashboard:
     disabled: true
@@ -319,29 +358,39 @@ embeddings:
     revision: main
     model: jinaai/jina-embeddings-v2-base-en
     tag: "89-1.2"
+    registry: ghcr.io/huggingface
+    repository: text-embeddings-inference
     useGpu: true
     args: []
   - name: splade-doc
     model: naver/efficient-splade-VI-BT-large-doc
     tag: "89-1.2"
+    registry: ghcr.io/huggingface
+    repository: text-embeddings-inference
     revision: main
     useGpu: true
     args: ["--pooling", "splade"]
   - name: splade-query
     model: naver/efficient-splade-VI-BT-large-query
     tag: "89-1.2"
+    registry: ghcr.io/huggingface
+    repository: text-embeddings-inference
     revision: main
     useGpu: true
     args: ["--pooling", "splade"]
   - name: m3
     model: BAAI/bge-m3
     tag: "89-1.2"
+    registry: ghcr.io/huggingface
+    repository: text-embeddings-inference
     revision: main
     useGpu: true
     args: []
   - name: reranker
     model: BAAI/bge-reranker-large
     tag: "89-1.2"
+    registry: ghcr.io/huggingface
+    repository: text-embeddings-inference
     revision: refs/pr/4
     useGpu: true
     args: []

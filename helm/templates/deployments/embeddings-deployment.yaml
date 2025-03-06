@@ -23,13 +23,17 @@ spec:
         app.kubernetes.io/instance: {{ $.Release.Name }}
     spec:
       terminationGracePeriodSeconds: 30
+      {{- if $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ $name }}
           readinessProbe:
             httpGet:
               path: "/"
               port: 80
-          image: {{ ternary (printf "ghcr.io/huggingface/text-embeddings-inference:%s" $service.tag) "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2" $service.useGpu }}
+          image: {{ printf "%s/%s:%s" $service.registry $service.repository $service.tag }}
           args: 
             {{ (concat (list "--model-id" $service.model "--revision" $service.revision) $service.args) | toJson }}
           ports:
