@@ -1,6 +1,6 @@
 {
   "name": "trieve-vitepress-adapter",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "main": "dist/index.js",
   "bin": "dist/index.js",
