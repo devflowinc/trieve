@@ -1,0 +1,7 @@
+# Ignore artifacts:
+build
+coverage
+.prettierrc
+.prettierignore
+tsconfig.json
+eslint.config.mjs

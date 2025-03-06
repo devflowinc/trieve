@@ -1,0 +1,10 @@
+/node_modules
+/src
+
+.env
+.env.dist
+eslint.config.mjs
+.prettierignore
+.prettierrc
+tsconfig.json
+yarn.lock

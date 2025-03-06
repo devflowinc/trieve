@@ -32,6 +32,7 @@ rustc-ice*
 tr-cli/sample-data
 tr-cli/dist
 clients/trieve-fern-adapter/dist
+clients/trieve-vitepress-adapter/dist
 sample-data
 dashboard/.vite/*
 kubectl
