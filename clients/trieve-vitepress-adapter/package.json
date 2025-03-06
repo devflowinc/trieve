@@ -1,0 +1,49 @@
+{
+  "name": "trieve-vitepress-adapter",
+  "version": "0.0.2",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "private": false,
+  "description": "Trieve adapter for Fern",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "build": "tsc",
+    "postbuild": "chmod +x dist/index.js",
+    "prepublishOnly": "yarn build",
+    "dev": "tsc && node --env-file .env dist/index.js"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/trieve-vitepress-adapter",
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "@types/node": "^22.10.0",
+    "@types/pluralize": "^0.0.33",
+    "@typescript-eslint/eslint-plugin": "^8.16.0",
+    "@typescript-eslint/parser": "^8.16.0",
+    "eslint": "^9.15.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.12.0",
+    "prettier": "3.4.1",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.16.0"
+  },
+  "dependencies": {
+    "@trojs/openapi-dereference": "^1.0.0",
+    "commander": "^12.1.0",
+    "happy-dom": "^15.11.6",
+    "marked": "^15.0.2",
+    "pluralize": "^8.0.0",
+    "trieve-ts-sdk": "^0.0.40",
+    "yaml": "^2.6.1"
+  }
+}
