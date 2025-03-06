@@ -5,7 +5,7 @@ import {
   ProductsResponse,
   ProductWebhook,
 } from "app/types";
-import { ChunkReqPayload } from "trieve-ts-sdk";
+import { BulkDeleteChunkPayload, ChunkReqPayload } from "trieve-ts-sdk";
 
 function createChunkFromProduct(
   product: Product,
@@ -320,6 +320,35 @@ export async function sendChunksToTrieve(
   });
 }
 
+export async function bulkDeleteTrieveGroups(
+  groupTrackingIds: string[],
+  key: TrieveKey,
+  datasetId: string,
+) {
+  const reqPayload: BulkDeleteChunkPayload = {
+    filter: {
+      must: [
+        {
+          field: "group_tracking_ids",
+          match_any: groupTrackingIds,
+        },
+      ],
+    },
+  };
+
+  await fetch(`https://api.trieve.ai/api/chunk`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${key.key}`,
+      "TR-Dataset": datasetId ?? "",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(reqPayload),
+  }).catch((e) => {
+    console.error(`Error sending chunks to Trieve: ${e}`);
+  });
+}
+
 export async function deleteChunkFromTrieve(
   id: string,
   key: TrieveKey,
@@ -361,6 +390,7 @@ export const sendChunks = async (
             bodyHtml
             handle
             tags
+            status
             category {
               name
             }
@@ -400,8 +430,9 @@ export const sendChunks = async (
 
     const { data } = (await response.json()) as { data: ProductsResponse };
 
-    const dataChunks: ChunkReqPayload[] = data.products.nodes.flatMap(
-      (product) =>
+    const inActiveChunks: ChunkReqPayload[] = data.products.nodes
+      .filter((node) => node.status != "ACTIVE")
+      .flatMap((product) =>
         product.variants.nodes.map((variant) =>
           createChunkFromProduct(
             product,
@@ -410,7 +441,29 @@ export const sendChunks = async (
             crawlOptions,
           ),
         ),
-    );
+      );
+
+    const chunkGroupIds = inActiveChunks
+      .map((chunk) => chunk.group_tracking_ids)
+      .flatMap((ids) => ids)
+      .filter((id): id is string => !!id)
+      .filter((id, index, self) => self.indexOf(id) === index);
+    for (const batch of chunk_to_size(chunkGroupIds, 10)) {
+      await bulkDeleteTrieveGroups(batch, key, datasetId ?? "");
+    }
+
+    const dataChunks: ChunkReqPayload[] = data.products.nodes
+      .filter((node) => node.status == "ACTIVE")
+      .flatMap((product) =>
+        product.variants.nodes.map((variant) =>
+          createChunkFromProduct(
+            product,
+            variant,
+            `https://${session.shop}`,
+            crawlOptions,
+          ),
+        ),
+      );
 
     for (const batch of chunk_to_size(dataChunks, 120)) {
       sendChunksToTrieve(batch, key, datasetId ?? "");

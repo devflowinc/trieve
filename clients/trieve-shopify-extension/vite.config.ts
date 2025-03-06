@@ -51,7 +51,7 @@ export default defineConfig(({ mode }) => {
       allowedHosts: [
         (process.env.TRIEVE_AUTH_URL || env.TRIEVE_AUTH_URL)!.replace(
           "https://",
-          ""
+          "",
         ),
       ],
     },
@@ -71,6 +71,9 @@ export default defineConfig(({ mode }) => {
     ],
     build: {
       assetsInlineLimit: 0,
+      rollupOptions: {
+        external: ["trieve-ts-sdk"],
+      },
     },
     ssr: {
       noExternal: [
