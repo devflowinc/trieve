@@ -376,7 +376,7 @@ embeddings:
     tag: "89-1.2"
     registry: ghcr.io/huggingface
     repository: text-embeddings-inference
-    useGpu: true
+    useGpu: false
     args: []
   - name: splade-doc
     model: naver/efficient-splade-VI-BT-large-doc
@@ -384,7 +384,7 @@ embeddings:
     registry: ghcr.io/huggingface
     repository: text-embeddings-inference
     revision: main
-    useGpu: true
+    useGpu: false
     args: ["--pooling", "splade"]
   - name: splade-query
     model: naver/efficient-splade-VI-BT-large-query
@@ -392,7 +392,7 @@ embeddings:
     registry: ghcr.io/huggingface
     repository: text-embeddings-inference
     revision: main
-    useGpu: true
+    useGpu: false
     args: ["--pooling", "splade"]
   - name: m3
     model: BAAI/bge-m3
@@ -400,7 +400,7 @@ embeddings:
     registry: ghcr.io/huggingface
     repository: text-embeddings-inference
     revision: main
-    useGpu: true
+    useGpu: false
     args: []
   - name: reranker
     model: BAAI/bge-reranker-large
@@ -408,5 +408,5 @@ embeddings:
     registry: ghcr.io/huggingface
     repository: text-embeddings-inference
     revision: refs/pr/4
-    useGpu: true
+    useGpu: false
     args: []
