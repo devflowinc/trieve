@@ -15,7 +15,7 @@ interface SearchFilterBarProps {
 }
 export const SearchFilterBar = (props: SearchFilterBarProps) => {
   return (
-    <div className="flex py-4 justify-between">
+    <div className="flex py-4 justify-end">
       <Box maxWidth="200">
         <DateRangePicker
           value={formatStringDateRangeToDates(props.filters.date_range)}

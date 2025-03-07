@@ -1,4 +1,4 @@
-import { Box, Card, DataTable, Text } from "@shopify/polaris";
+import { Box, Card, DataTable, Pagination, Text } from "@shopify/polaris";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { headQueriesQuery } from "app/queries/analytics/search";
@@ -42,17 +42,19 @@ export const HeadQueriesTable = ({
           rows={mappedData}
           columnContentTypes={["text", "numeric"]}
           headings={["Query", "Count"]}
-          pagination={{
-            onNext() {
-              setPage((prevPage) => prevPage + 1);
-            },
-            onPrevious() {
-              setPage((prevPage) => prevPage - 1);
-            },
-            hasPrevious: page > 1,
-            hasNext: data?.queries.length == 10,
-          }}
         />
+        <div className="flex justify-end">
+          <Pagination
+            onNext={() => {
+              setPage((prevPage) => prevPage + 1);
+            }}
+            onPrevious={() => {
+              setPage((prevPage) => prevPage - 1);
+            }}
+            hasPrevious={page > 1}
+            hasNext={data?.queries.length == 10}
+          ></Pagination>
+        </div>
       </Box>
     </Card>
   );
