@@ -28,20 +28,20 @@ keycloak:
   ## TO HARDEN THIS.
 
   # Install keycloak subchart
-  enabled: false
+  enabled: true
   # Installs the keycloak crd / operator
-  # installCrds: true
+  installCrds: true
   #
-  # ingress:
-  #   host: auth.localtrieve.com
-  #   ingressClassName: nginx
-  #   annotations:
-  #     cert-manager.io/cluster-issuer: "letsencrypt"
-  #     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-  #   tls:
-  #     - hosts:
-  #         - auth.localtrieve.com
-  #       secretName: auth-localtrieve-com
+  ingress:
+    host: auth.localtrieve.com
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    tls:
+      - hosts:
+          - auth.localtrieve.com
+        secretName: auth-localtrieve-com
 
 clickhouse:
   enabled: true
@@ -85,6 +85,22 @@ clickhouse:
                 env:
                   - name: CLICKHOUSE_ADMIN_PASSWORD
                     value: clickhouse
+
+      volumeClaimTemplates:
+        - name: data-storage-vc
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+        - name: log-storage-vc
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 2Gi
 
 minio:
   enabled: false
@@ -322,9 +338,9 @@ config:
     # - chat.yourdomain.com/*
     # - search.yourdomain.com/*
     # TODO replace with Okteta client secret
-    clientSecret: ""
+    clientSecret: "YllmLDTy67MbsUBrUAWvQ7z9aMq0QcKx"
     # TODO replace with Okteta client id
-    clientId: ""
+    clientId: "trieve"
     # TODO Replace with Okteta issuer url
     issuerUrl: "http://trieve-keycloak-service:8080/realms/trieve"
     # TODO Replace with Okteta redirect url

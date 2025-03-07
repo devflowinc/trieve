@@ -76,6 +76,23 @@ clickhouse:
                   - name: CLICKHOUSE_ADMIN_PASSWORD
                     value: clickhouse
 
+      volumeClaimTemplates:
+        - name: data-storage-vc
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+        - name: log-storage-vc
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 2Gi
+
+
 minio:
   enabled: false
 
