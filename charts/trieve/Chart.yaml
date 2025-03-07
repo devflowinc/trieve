@@ -2,7 +2,7 @@ apiVersion: v2
 name: trieve-helm
 description: Helm chart expressing Trieve deployment without any dependencies
 type: application
-version: 0.2.1
+version: 0.2.2
 appVersion: "0.12.0"
 dependencies:
   - name: qdrant
