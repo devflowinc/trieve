@@ -100,6 +100,13 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
       if (extraParams.inline == undefined || extraParams.inline == null) {
         setExtraParams("inline", true);
       }
+
+      if (
+        extraParams.showResultHighlights === null ||
+        extraParams.showResultHighlights === undefined
+      ) {
+        setExtraParams("showResultHighlights", true);
+      }
     });
 
     // Selecting another pattern builds the svg field
