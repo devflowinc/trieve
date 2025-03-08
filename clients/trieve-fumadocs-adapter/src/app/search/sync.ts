@@ -9,7 +9,7 @@ export async function sync(trieve: TrieveSDK, pages: TrieveDocument[]) {
     `/api/dataset/clear/${trieve.datasetId}` as `/api/dataset/clear/{dataset_id}`,
     "put",
     {
-      datasetId: trieve.datasetId,
+      datasetId: trieve.datasetId ?? "",
     },
   );
 
