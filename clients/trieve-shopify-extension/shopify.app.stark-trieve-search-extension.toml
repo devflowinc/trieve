@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "39654580026bc6aa0906bea48fd3f77d"
-application_url = "https://continuous-attendance-mainly-relates.trycloudflare.com"
+application_url = "https://shopify.trieve.ai"
 embedded = true
 name = "stark-trieve-search-extension"
 handle = "stark-trieve-search-extension"
@@ -28,9 +28,9 @@ scopes = "write_products,read_products"
 
 [auth]
 redirect_urls = [
-  "https://continuous-attendance-mainly-relates.trycloudflare.com/auth/callback",
-  "https://continuous-attendance-mainly-relates.trycloudflare.com/auth/shopify/callback",
-  "https://continuous-attendance-mainly-relates.trycloudflare.com/api/auth/callback"
+  "https://shopify.trieve.ai/auth/callback",
+  "https://shopify.trieve.ai/auth/shopify/callback",
+  "https://shopify.trieve.ai/api/auth/callback"
 ]
 
 [pos]
