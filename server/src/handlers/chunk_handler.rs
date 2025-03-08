@@ -2830,6 +2830,7 @@ pub async fn generate_off_chunks(
                         json.to_string()
                     })
                     .collect(),
+                topic_id: uuid::Uuid::nil(),
                 top_score: 0.0,
                 user_message: format!("{} {}", rag_prompt, last_prev_message.content.clone()),
                 query_rating: String::new(),
@@ -2917,6 +2918,7 @@ pub async fn generate_off_chunks(
                     })
                     .collect(),
                 top_score: 0.0,
+                topic_id: uuid::Uuid::nil(),
                 user_message: format!("{} {}", rag_prompt, last_message_arb.clone()),
                 rag_type: "chosen_chunks".to_string(),
                 query_rating: String::new(),

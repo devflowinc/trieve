@@ -13,13 +13,16 @@ use crate::{
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
         SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopDatasetsResponse,
-        TopDatasetsResponseClickhouse, UsageGraphPoint, UsageGraphPointClickhouse,
+        TopDatasetsResponseClickhouse, TopicAnalyticsResponse, TopicAnalyticsSummaryClickhouse,
+        TopicDetailsResponse, TopicQueryClickhouse, TopicSortBy, TopicTimePointClickhouse,
+        TopicsOverTimeResponse, UsageGraphPoint, UsageGraphPointClickhouse,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
 };
 use actix_web::web;
-use diesel::prelude::*;
+
+use diesel::{ExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
 use futures::future::join_all;
 use itertools::Itertools;
@@ -1584,4 +1587,164 @@ pub async fn get_rag_query_ratings_query(
         })?;
 
     Ok(response)
+}
+
+pub async fn get_topic_analytics_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RAGAnalyticsFilter>,
+    sort_by: Option<TopicSortBy>,
+    sort_order: Option<SortOrder>,
+    page: Option<u32>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<TopicAnalyticsResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            topics.id,
+            topics.name,
+            topics.topic_id,
+            topics.owner_id,
+            topics.referrer,
+            topics.created_at,
+            topics.updated_at,
+            COUNT(rag_queries.id) as message_count 
+        FROM topics 
+        JOIN rag_queries ON topics.topic_id = rag_queries.topic_id 
+        WHERE dataset_id = ?",
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    // Apply sorting
+    let sort_direction = match sort_order {
+        Some(SortOrder::Asc) => "ASC",
+        _ => "DESC",
+    };
+
+    query_string.push_str(&format!(
+        "GROUP BY 
+            topics.id, 
+            topics.name, 
+            topics.topic_id, 
+            topics.owner_id, 
+            topics.referrer,
+            topics.created_at, 
+            topics.updated_at 
+        ORDER BY {} {} LIMIT 10 OFFSET {}",
+        sort_by.unwrap_or(TopicSortBy::CreatedAt),
+        sort_direction,
+        page.unwrap_or(0) * 10
+    ));
+
+    let topics = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<TopicAnalyticsSummaryClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching topics: {:?}", e);
+            ServiceError::InternalServerError("Error fetching topics".to_string())
+        })?;
+
+    Ok(TopicAnalyticsResponse {
+        topics: topics.into_iter().map(|t| t.into()).collect(),
+    })
+}
+
+pub async fn get_topic_details_query(
+    topic_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<TopicDetailsResponse, ServiceError> {
+    // Get topic details
+    let topic = clickhouse_client
+        .query("SELECT ?fields FROM topics WHERE topic_id = ?")
+        .bind(topic_id)
+        .fetch_one::<TopicQueryClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching topic: {:?}", e);
+            ServiceError::InternalServerError("Error fetching topic".to_string())
+        })?;
+
+    // Get message count and timestamps
+    let messages = clickhouse_client
+        .query("SELECT ?fields FROM rag_queries WHERE topic_id = ? ORDER BY created_at ASC")
+        .bind(topic_id)
+        .fetch_all::<RagQueryEventClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching messages: {:?}", e);
+            ServiceError::InternalServerError("Error fetching messages".to_string())
+        })?;
+
+    let messages: Vec<RagQueryEvent> = join_all(
+        messages
+            .into_iter()
+            .map(|q| q.from_clickhouse(pool.clone())),
+    )
+    .await;
+
+    Ok(TopicDetailsResponse {
+        topic: topic.into(),
+        messages,
+    })
+}
+
+pub async fn get_topics_over_time_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RAGAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<TopicsOverTimeResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut query_string = format!(
+        "SELECT 
+	        CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            count(*) AS requests
+        FROM 
+            topics
+        JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
+        WHERE 
+            dataset_id = ?
+        ",
+        interval
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "  
+        GROUP BY 
+            time_stamp
+        ORDER BY 
+            time_stamp
+        LIMIT
+            1000",
+    );
+
+    let time_points = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<TopicTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching time points: {:?}", e);
+            ServiceError::InternalServerError("Error fetching time points".to_string())
+        })?;
+
+    Ok(TopicsOverTimeResponse {
+        time_points: time_points.into_iter().map(|t| t.into()).collect(),
+    })
 }

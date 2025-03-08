@@ -567,6 +567,13 @@ impl Modify for SecurityAddon {
             data::models::CrawlYoutubeOptions,
             data::models::RagQueryRatingsResponse,
             data::models::QueryRatingRange,
+            data::models::TopicAnalyticsResponse,
+            data::models::TopicDetailsResponse,
+            data::models::TopicsOverTimeResponse,
+            data::models::TopicAnalyticsSummary,
+            data::models::TopicQuery,
+            data::models::TopicTimePoint,
+            data::models::TopicSortBy,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
         )

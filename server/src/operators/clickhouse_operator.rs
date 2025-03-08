@@ -5,7 +5,7 @@ use tokio::sync::mpsc;
 use crate::{
     data::models::{
         EventDataClickhouse, RagQueryEventClickhouse, RecommendationEventClickhouse,
-        SearchQueryEventClickhouse, SearchQueryRating, WorkerEventClickhouse,
+        SearchQueryEventClickhouse, SearchQueryRating, TopicQueryClickhouse, WorkerEventClickhouse,
     },
     errors::ServiceError,
     handlers::analytics_handler::RateQueryRequest,
@@ -16,6 +16,7 @@ pub enum ClickHouseEvent {
     SearchQueryEvent(SearchQueryEventClickhouse),
     RecommendationEvent(RecommendationEventClickhouse),
     RagQueryEvent(RagQueryEventClickhouse),
+    TopicCreateEvent(TopicQueryClickhouse),
     AnalyticsEvent(EventDataClickhouse),
     WorkerEvent(WorkerEventClickhouse),
     RagQueryRatingEvent(RateQueryRequest),
@@ -68,6 +69,11 @@ pub async fn send_to_clickhouse(
         ServiceError::InternalServerError(format!("Error inserting analytics: {:?}", e))
     })?;
 
+    let mut topics_inserter = clickhouse_client.insert("topics").map_err(|e| {
+        log::error!("Error inserting topics: {:?}", e);
+        ServiceError::InternalServerError(format!("Error inserting topics: {:?}", e))
+    })?;
+
     for event in &events {
         match event {
             ClickHouseEvent::SearchQueryEvent(event) => {
@@ -113,6 +119,12 @@ pub async fn send_to_clickhouse(
                         "Error writing analytics event: {:?}",
                         e
                     ))
+                })?;
+            }
+            ClickHouseEvent::TopicCreateEvent(event) => {
+                topics_inserter.write(event).await.map_err(|e| {
+                    log::error!("Error writing topic event: {:?}", e);
+                    ServiceError::InternalServerError(format!("Error writing topic event: {:?}", e))
                 })?;
             }
             ClickHouseEvent::RagQueryRatingEvent(event) => {
@@ -228,6 +240,10 @@ pub async fn send_to_clickhouse(
             "Error ending analytics events inserter: {:?}",
             e
         ))
+    })?;
+    topics_inserter.end().await.map_err(|e| {
+        log::error!("Error ending topics inserter: {:?}", e);
+        ServiceError::InternalServerError(format!("Error ending topics inserter: {:?}", e))
     })?;
 
     Ok(())

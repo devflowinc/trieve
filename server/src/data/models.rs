@@ -4441,7 +4441,6 @@ impl UnifiedId {
         }
     }
 }
-
 impl From<uuid::Uuid> for UnifiedId {
     fn from(uuid: uuid::Uuid) -> Self {
         UnifiedId::TrieveUuid(uuid)
@@ -5471,6 +5470,7 @@ pub struct RagQueryEvent {
     pub rag_type: ClickhouseRagTypes,
     pub user_message: String,
     pub search_id: uuid::Uuid,
+    pub topic_id: uuid::Uuid,
     pub results: Vec<serde_json::Value>,
     pub dataset_id: uuid::Uuid,
     pub llm_response: String,
@@ -5530,6 +5530,7 @@ impl RagQueryEventClickhouse {
             rag_type: self.rag_type.into(),
             user_message: self.user_message,
             search_id: uuid::Uuid::from_bytes(*self.search_id.as_bytes()),
+            topic_id: uuid::Uuid::from_bytes(*self.topic_id.as_bytes()),
             results,
             top_score: self.top_score,
             query_rating,
@@ -5551,6 +5552,8 @@ pub struct RagQueryEventClickhouse {
     pub user_message: String,
     #[serde(with = "clickhouse::serde::uuid")]
     pub search_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub topic_id: uuid::Uuid,
     pub results: Vec<String>,
     pub json_results: Vec<String>,
     pub top_score: f32,
@@ -5915,31 +5918,31 @@ impl RAGAnalyticsFilter {
         }
 
         if let Some(rag_type) = &self.rag_type {
-            query_string.push_str(&format!(" AND rag_type = '{}'", rag_type));
+            query_string.push_str(&format!(" AND rag_queries.rag_type = '{}'", rag_type));
         }
 
         if let Some(query_rating) = &self.query_rating {
             if let Some(gt) = &query_rating.gt {
                 query_string.push_str(&format!(
-                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') > {}",
+                    " AND JSONExtract(rag_queries.query_rating, 'rating', 'Nullable(Float64)') > {}",
                     gt
                 ));
             }
             if let Some(lt) = &query_rating.lt {
                 query_string.push_str(&format!(
-                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') < {}",
+                    " AND JSONExtract(rag_queries.query_rating, 'rating', 'Nullable(Float64)') < {}",
                     lt
                 ));
             }
             if let Some(gte) = &query_rating.gte {
                 query_string.push_str(&format!(
-                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') >= {}",
+                    " AND JSONExtract(rag_queries.query_rating, 'rating', 'Nullable(Float64)') >= {}",
                     gte
                 ));
             }
             if let Some(lte) = &query_rating.lte {
                 query_string.push_str(&format!(
-                    " AND JSONExtract(query_rating, 'rating', 'Nullable(Float64)') <= {}",
+                    " AND JSONExtract(rag_queries.query_rating, 'rating', 'Nullable(Float64)') <= {}",
                     lte
                 ));
             }
@@ -6195,6 +6198,50 @@ pub struct PopularFiltersClickhouse {
     pub common_values: String,
 }
 
+#[derive(Debug, Row, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TopicQueryClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    pub name: String,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub topic_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    pub owner_id: String,
+    pub referrer: String,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TopicQuery {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub topic_id: uuid::Uuid,
+    pub dataset_id: uuid::Uuid,
+    pub owner_id: String,
+    pub referrer: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+impl From<TopicQueryClickhouse> for TopicQuery {
+    fn from(topic_query: TopicQueryClickhouse) -> Self {
+        TopicQuery {
+            id: uuid::Uuid::from_bytes(topic_query.id.into_bytes()),
+            name: topic_query.name,
+            topic_id: uuid::Uuid::from_bytes(topic_query.topic_id.into_bytes()),
+            dataset_id: uuid::Uuid::from_bytes(topic_query.dataset_id.into_bytes()),
+            owner_id: topic_query.owner_id,
+            referrer: topic_query.referrer,
+            created_at: topic_query.created_at.to_string(),
+            updated_at: topic_query.updated_at.to_string(),
+        }
+    }
+}
+
 /// EventData represents a single analytics event
 #[derive(Debug, ToSchema, Serialize, Deserialize, Clone)]
 #[schema(title = "EventData", example = json!({
@@ -6419,6 +6466,7 @@ impl EventTypes {
                 rag_type,
                 user_message,
                 search_id,
+                topic_id,
                 results,
                 query_rating,
                 llm_response,
@@ -6433,6 +6481,7 @@ impl EventTypes {
                 user_message,
                 search_id: search_id.unwrap_or_default(),
                 results: vec![String::new()],
+                topic_id: topic_id.unwrap_or_default(),
                 json_results: results
                     .unwrap_or_default()
                     .iter()
@@ -6812,6 +6861,13 @@ pub enum RAGSortBy {
     Latency,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum TopicSortBy {
+    #[display(fmt = "created_at")]
+    CreatedAt,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum SortOrder {
@@ -6911,6 +6967,23 @@ pub enum RAGAnalytics {
     #[schema(title = "RAGQueryRatings")]
     #[serde(rename = "rag_query_ratings")]
     RAGQueryRatings { filter: Option<RAGAnalyticsFilter> },
+    #[schema(title = "TopicAnalytics")]
+    #[serde(rename = "topic_analytics")]
+    TopicAnalytics {
+        filter: Option<RAGAnalyticsFilter>,
+        page: Option<u32>,
+        sort_by: Option<TopicSortBy>,
+        sort_order: Option<SortOrder>,
+    },
+    #[schema(title = "TopicDetails")]
+    #[serde(rename = "topic_details")]
+    TopicDetails { topic_id: uuid::Uuid },
+    #[schema(title = "TopicsOverTime")]
+    #[serde(rename = "topics_over_time")]
+    TopicsOverTime {
+        filter: Option<RAGAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7008,6 +7081,107 @@ pub struct RagQueryRatingsResponse {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]
+pub enum RAGAnalyticsResponse {
+    #[schema(title = "RAGQueries")]
+    RAGQueries(RagQueryResponse),
+    #[schema(title = "RAGUsage")]
+    RAGUsage(RAGUsageResponse),
+    #[schema(title = "RAGUsageGraph")]
+    RAGUsageGraph(RAGUsageGraphResponse),
+    #[schema(title = "RAGQueryDetails")]
+    RAGQueryDetails(Box<RagQueryEvent>),
+    #[schema(title = "RAGQueryRatings")]
+    RAGQueryRatings(RagQueryRatingsResponse),
+    #[schema(title = "TopicAnalytics")]
+    TopicAnalytics(TopicAnalyticsResponse),
+    #[schema(title = "TopicDetails")]
+    TopicDetails(TopicDetailsResponse),
+    #[schema(title = "TopicsOverTime")]
+    TopicsOverTime(TopicsOverTimeResponse),
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct TopicAnalyticsResponse {
+    pub topics: Vec<TopicAnalyticsSummary>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct TopicAnalyticsSummaryClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    pub name: String,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub topic_id: uuid::Uuid,
+    pub owner_id: String,
+    pub referrer: String,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub updated_at: OffsetDateTime,
+    pub message_count: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TopicAnalyticsSummary {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub topic_id: uuid::Uuid,
+    pub owner_id: String,
+    pub referrer: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub message_count: u64,
+}
+
+impl From<TopicAnalyticsSummaryClickhouse> for TopicAnalyticsSummary {
+    fn from(value: TopicAnalyticsSummaryClickhouse) -> Self {
+        TopicAnalyticsSummary {
+            id: uuid::Uuid::from_bytes(value.id.into_bytes()),
+            name: value.name,
+            topic_id: uuid::Uuid::from_bytes(value.topic_id.into_bytes()),
+            owner_id: value.owner_id,
+            referrer: value.referrer,
+            created_at: value.created_at.to_string(),
+            updated_at: value.updated_at.to_string(),
+            message_count: value.message_count,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TopicDetailsResponse {
+    pub topic: TopicQuery,
+    pub messages: Vec<RagQueryEvent>,
+}
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TopicsOverTimeResponse {
+    pub time_points: Vec<TopicTimePoint>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct TopicTimePointClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub topic_count: i64,
+}
+
+impl From<TopicTimePointClickhouse> for TopicTimePoint {
+    fn from(value: TopicTimePointClickhouse) -> Self {
+        TopicTimePoint {
+            time_stamp: value.time_stamp.to_string(),
+            topic_count: value.topic_count,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TopicTimePoint {
+    pub time_stamp: String,
+    pub topic_count: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
 pub enum SearchAnalyticsResponse {
     #[schema(title = "LatencyGraph")]
     LatencyGraph(LatencyGraphResponse),
@@ -7029,21 +7203,6 @@ pub enum SearchAnalyticsResponse {
     QueryDetails(SearchQueryEvent),
     #[schema(title = "PopularFilters")]
     PopularFilters(PopularFiltersResponse),
-}
-
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
-#[serde(untagged)]
-pub enum RAGAnalyticsResponse {
-    #[schema(title = "RAGQueries")]
-    RAGQueries(RagQueryResponse),
-    #[schema(title = "RAGUsage")]
-    RAGUsage(RAGUsageResponse),
-    #[schema(title = "RAGUsageGraph")]
-    RAGUsageGraph(RAGUsageGraphResponse),
-    #[schema(title = "RAGQueryDetails")]
-    RAGQueryDetails(Box<RagQueryEvent>),
-    #[schema(title = "RAGQueryRatings")]
-    RAGQueryRatings(RagQueryRatingsResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7334,6 +7493,8 @@ pub enum EventTypes {
         user_message: String,
         /// The search id to associate the RAG event with a search
         search_id: Option<uuid::Uuid>,
+        /// The topic id to associate the RAG event with a topic
+        topic_id: Option<uuid::Uuid>,
         /// The results of the RAG event    
         results: Option<Vec<serde_json::Value>>,
         /// The rating of the query
