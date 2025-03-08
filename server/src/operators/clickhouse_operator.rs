@@ -8,7 +8,6 @@ use crate::{
         SearchQueryEventClickhouse, SearchQueryRating, WorkerEventClickhouse,
     },
     errors::ServiceError,
-    get_env,
     handlers::analytics_handler::RateQueryRequest,
 };
 
@@ -250,7 +249,8 @@ impl EventQueue {
 
     pub fn start_service(&mut self) {
         let clickhouse_client = self.clickhouse_client.clone();
-        let queue_length = get_env!("CLICKHOUSE_QUEUE_LENGTH", "CLICKHOUSE_QUEUE_LENGTH")
+        let queue_length = std::env::var("CLICKHOUSE_QUEUE_LENGTH")
+            .unwrap_or("10000".to_string())
             .parse()
             .unwrap_or(10000);
         let (sender, mut reciever) = mpsc::channel(queue_length);

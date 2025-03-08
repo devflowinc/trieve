@@ -145,7 +145,8 @@ pub async fn build_oidc_client() -> CoreClient {
         async_http_client,
     )
     .await
-    .expect("Failed to discover OpenID provider");
+    .map_err(|err| format!("Failed to discover OIDC provider {:?}", err))
+    .unwrap();
 
     CoreClient::new(
         ClientId::new(client_id.clone()),
@@ -344,7 +345,9 @@ pub async fn login(
 
     session
         .insert(OIDC_SESSION_KEY, oidc_state)
-        .map_err(|_| ServiceError::InternalServerError("Could not set OIDC Session".into()))?;
+        .map_err(|err| {
+            ServiceError::InternalServerError(format!("Could not set OIDC Session {:?}", err))
+        })?;
 
     let redirect_uri = match data.redirect_uri.clone() {
         Some(redirect_uri) => redirect_uri,
@@ -362,9 +365,9 @@ pub async fn login(
         inv_code: data.inv_code,
     };
 
-    session
-        .insert("login_state", login_state)
-        .map_err(|_| ServiceError::InternalServerError("Could not set redirect url".into()))?;
+    session.insert("login_state", login_state).map_err(|err| {
+        ServiceError::InternalServerError(format!("Could not set redirect url {:?}", err))
+    })?;
 
     //redirect to OpenIdProvider for authentication
     Ok(HttpResponse::SeeOther()
