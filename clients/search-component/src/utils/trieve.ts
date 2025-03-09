@@ -16,6 +16,7 @@ import {
 } from "./types";
 import { defaultHighlightOptions, highlightText } from "./highlight";
 import { ModalProps, ModalTypes, PagefindApi } from "./hooks/modal-context";
+import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
@@ -284,18 +285,25 @@ export const sendCtrData = async ({
   chunkID,
   requestID,
   index,
+  componentName,
 }: {
   trieve: TrieveSDK;
   chunkID: string;
   requestID: string;
   type: CTRType;
   index: number;
+  componentName: string | undefined;
 }) => {
   await trieve.sendCTRAnalytics({
     ctr_type: type,
     clicked_chunk_id: chunkID,
     request_id: requestID,
     position: index,
+    metadata: {
+      component_name: componentName,
+      page_url: window.location.href,
+      fingerprint: await getFingerprint()
+    }
   });
 
   return null;
@@ -306,11 +314,13 @@ export const trackViews = async ({
   type,
   requestID,
   items,
+  componentName,
 }: {
   trieve: TrieveSDK;
   requestID: string;
   type: CTRType;
   items: string[];
+  componentName: string | undefined;
 }) => {
   trieve.trieve.fetch("/api/analytics/events", "put", {
     datasetId: trieve.datasetId ?? "",
@@ -322,6 +332,11 @@ export const trackViews = async ({
         request_id: requestID,
         request_type: type,
       },
+      metadata: {
+        component_name: componentName,
+        page_url: window.location.href,
+        fingerprint: await getFingerprint()
+      }
     },
   });
 
