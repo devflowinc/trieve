@@ -6398,22 +6398,32 @@ impl EventTypes {
                 event_name,
                 request,
                 clicked_items: clicked_item,
+                metadata,
                 user_id,
                 is_conversion,
-            } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
-                id: uuid::Uuid::new_v4(),
-                event_type: "click".to_string(),
-                event_name,
-                request_id: request.clone().unwrap_or_default().request_id.to_string(),
-                request_type: request.unwrap_or_default().request_type.to_string(),
-                items: vec![],
-                metadata: serde_json::to_string(&clicked_item).unwrap_or_default(),
-                user_id: user_id.unwrap_or_default(),
-                is_conversion: is_conversion.unwrap_or(true),
-                dataset_id,
-                created_at: OffsetDateTime::now_utc(),
-                updated_at: OffsetDateTime::now_utc(),
-            }),
+            } => {
+                let clicked_items = if let Some(clicked_item) = clicked_item {
+                    vec![serde_json::to_string(&clicked_item).unwrap_or_default()]
+                } else {
+                    vec![]
+                };
+
+                EventDataTypes::EventDataClickhouse(EventDataClickhouse {
+                    id: uuid::Uuid::new_v4(),
+                    event_type: "click".to_string(),
+                    event_name,
+                    request_id: request.clone().unwrap_or_default().request_id.to_string(),
+                    request_type: request.unwrap_or_default().request_type.to_string(),
+                    items: clicked_items,
+                    metadata: serde_json::to_string(&metadata.unwrap_or_default())
+                        .unwrap_or_default(),
+                    user_id: user_id.unwrap_or_default(),
+                    is_conversion: is_conversion.unwrap_or(true),
+                    dataset_id,
+                    created_at: OffsetDateTime::now_utc(),
+                    updated_at: OffsetDateTime::now_utc(),
+                })
+            }
             EventTypes::FilterClicked {
                 event_name,
                 request,
@@ -7430,6 +7440,8 @@ pub enum EventTypes {
         user_id: Option<String>,
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
+        /// Metadata to include with click event
+        metadata: Option<serde_json::Value>,
     },
     #[display(fmt = "purchase")]
     #[schema(title = "Purchase")]
@@ -7544,6 +7556,7 @@ impl From<CTRDataRequestBody> for EventTypes {
                 chunk_id: data.clicked_chunk_id.unwrap_or_default(),
                 position: data.position,
             }),
+            metadata: data.metadata,
             user_id: None,
             is_conversion: None,
         }
