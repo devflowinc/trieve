@@ -114,6 +114,7 @@ export const Message = ({
           items: ecommerceChunks.map((chunk) => {
             return chunk.id ?? "";
           }),
+          componentName: props.componentName,
         });
       }
     }
@@ -162,6 +163,7 @@ export const Message = ({
               sendCtrData({
                 type: "rag",
                 trieve: trieveSDK,
+                componentName: props.componentName,
                 index: index + 1,
                 requestID: message.queryId,
                 chunkID: item.id,
