@@ -9745,6 +9745,11 @@
           "owner_id": {
             "type": "string",
             "description": "The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user."
+          },
+          "referrer": {
+            "type": "string",
+            "description": "The referrer of the topic. This allows you to distinguish between multiple different sources from where your chats occur",
+            "nullable": true
           }
         }
       },
@@ -10802,6 +10807,10 @@
                 "description": "Whether the event is a conversion event",
                 "nullable": true
               },
+              "metadata": {
+                "description": "Metadata to include with click event",
+                "nullable": true
+              },
               "request": {
                 "allOf": [
                   {
@@ -11042,6 +11051,12 @@
                 "type": "string",
                 "format": "uuid",
                 "description": "The search id to associate the RAG event with a search",
+                "nullable": true
+              },
+              "topic_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The topic id to associate the RAG event with a topic",
                 "nullable": true
               },
               "user_id": {
@@ -13805,6 +13820,102 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "TopicAnalytics",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "page": {
+                "type": "integer",
+                "format": "int32",
+                "nullable": true,
+                "minimum": 0
+              },
+              "sort_by": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/TopicSortBy"
+                  }
+                ],
+                "nullable": true
+              },
+              "sort_order": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SortOrder"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "topic_analytics"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "TopicDetails",
+            "required": [
+              "topic_id",
+              "type"
+            ],
+            "properties": {
+              "topic_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "topic_details"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "TopicsOverTime",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "topics_over_time"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -13856,6 +13967,15 @@
           },
           {
             "$ref": "#/components/schemas/RagQueryRatingsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TopicAnalyticsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TopicDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TopicsOverTimeResponse"
           }
         ]
       },
@@ -13905,6 +14025,7 @@
           "rag_type",
           "user_message",
           "search_id",
+          "topic_id",
           "results",
           "dataset_id",
           "llm_response",
@@ -13961,6 +14082,10 @@
           "top_score": {
             "type": "number",
             "format": "float"
+          },
+          "topic_id": {
+            "type": "string",
+            "format": "uuid"
           },
           "user_id": {
             "type": "string"
@@ -17301,6 +17426,159 @@
           "name": "Trieve",
           "owner_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "updated_at": "2021-01-01 00:00:00.000"
+        }
+      },
+      "TopicAnalyticsResponse": {
+        "type": "object",
+        "required": [
+          "topics"
+        ],
+        "properties": {
+          "topics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopicAnalyticsSummary"
+            }
+          }
+        }
+      },
+      "TopicAnalyticsSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "topic_id",
+          "owner_id",
+          "referrer",
+          "created_at",
+          "updated_at",
+          "message_count"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "message_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string"
+          },
+          "referrer": {
+            "type": "string"
+          },
+          "topic_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "TopicDetailsResponse": {
+        "type": "object",
+        "required": [
+          "topic",
+          "messages"
+        ],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RagQueryEvent"
+            }
+          },
+          "topic": {
+            "$ref": "#/components/schemas/TopicQuery"
+          }
+        }
+      },
+      "TopicQuery": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "topic_id",
+          "dataset_id",
+          "owner_id",
+          "referrer",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "dataset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string"
+          },
+          "referrer": {
+            "type": "string"
+          },
+          "topic_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "TopicSortBy": {
+        "type": "string",
+        "enum": [
+          "created_at"
+        ]
+      },
+      "TopicTimePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "topic_count"
+        ],
+        "properties": {
+          "time_stamp": {
+            "type": "string"
+          },
+          "topic_count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TopicsOverTimeResponse": {
+        "type": "object",
+        "required": [
+          "time_points"
+        ],
+        "properties": {
+          "time_points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopicTimePoint"
+            }
+          }
         }
       },
       "TypoOptions": {

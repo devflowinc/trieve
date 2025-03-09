@@ -184,7 +184,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             trackViews({
               trieve: trieveSDK,
               requestID: queryId,
-              componentName: props.componentName,
               type: "rag",
               items: ecommerceChunks.map((chunk) => {
                 return chunk.id ?? "";

@@ -11,7 +11,7 @@ import { OpenModalButton } from "./OpenModalButton";
 import { ChatProvider, useChatState } from "../utils/hooks/chat-context";
 import r2wc from "@r2wc/react-to-web-component";
 import { setClickTriggers } from "../utils/hooks/setClickTriggers";
-import { ChunkGroup } from "trieve-ts-sdk";
+import { ChunkGroup, TrieveSDK } from "trieve-ts-sdk";
 import { FloatingActionButton } from "./FloatingActionButton";
 import { FloatingSearchIcon } from "./FloatingSearchIcon";
 import { FloatingSearchInput } from "./FloatingSearchInput";
@@ -22,6 +22,7 @@ import {
   FilterButton,
   InferenceFiltersForm,
 } from "./FilterSidebarComponents";
+import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 const SearchPage = () => {
   const { props } = useModalState();
@@ -106,6 +107,36 @@ const Modal = () => {
       });
     }
   }, [open]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const trieveSDK = new TrieveSDK({
+      apiKey: props.apiKey,
+      datasetId: props.datasetId,
+      baseUrl: props.baseUrl,
+    });
+
+    const timeoutId = setTimeout(async () => {
+      if (abortController.signal.aborted) return;
+      const fingerprint = await getFingerprint();
+      trieveSDK.sendAnalyticsEvent({
+        event_name: `${props.componentName ?? "trieve-modal-search"}_load`,
+        event_type: "view",
+        items: [],
+        metadata: {
+          component_name: props.componentName ?? "trieve-modal-search",
+          page_url: window.location.href,
+          component_props: props,
+          fingerprint
+        },
+      });
+    }, 1);
+
+    return () => {
+      clearTimeout(timeoutId);
+      abortController.abort("Component unmounted");
+    };
+  }, []);
 
   useEffect(() => {
     onViewportResize();
@@ -309,7 +340,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
     );
   }, [props.brandColor, props.brandFontFamily]);

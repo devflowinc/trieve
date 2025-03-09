@@ -933,6 +933,10 @@ export type CreateTopicReqPayload = {
      * The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user.
      */
     owner_id: string;
+    /**
+     * The referrer of the topic. This allows you to distinguish between multiple different sources from where your chats occur
+     */
+    referrer?: (string) | null;
 };
 
 export type Dataset = {
@@ -1395,6 +1399,10 @@ export type EventTypes = {
      * Whether the event is a conversion event
      */
     is_conversion?: (boolean) | null;
+    /**
+     * Metadata to include with click event
+     */
+    metadata?: unknown;
     request?: ((RequestInfo) | null);
     /**
      * The user id of the user who clicked the items
@@ -1500,6 +1508,10 @@ export type EventTypes = {
      * The search id to associate the RAG event with a search
      */
     search_id?: (string) | null;
+    /**
+     * The topic id to associate the RAG event with a topic
+     */
+    topic_id?: (string) | null;
     /**
      * The user id of the user who made the RAG event
      */
@@ -2409,6 +2421,19 @@ export type RAGAnalytics = {
 } | {
     filter?: ((RAGAnalyticsFilter) | null);
     type: 'rag_query_ratings';
+} | {
+    filter?: ((RAGAnalyticsFilter) | null);
+    page?: (number) | null;
+    sort_by?: ((TopicSortBy) | null);
+    sort_order?: ((SortOrder) | null);
+    type: 'topic_analytics';
+} | {
+    topic_id: string;
+    type: 'topic_details';
+} | {
+    filter?: ((RAGAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'topics_over_time';
 };
 
 export type type3 = 'rag_queries';
@@ -2419,7 +2444,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicAnalyticsResponse | TopicDetailsResponse | TopicsOverTimeResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at' | 'latency';
 
@@ -2443,6 +2468,7 @@ export type RagQueryEvent = {
     results: Array<unknown>;
     search_id: string;
     top_score: number;
+    topic_id: string;
     user_id: string;
     user_message: string;
 };
@@ -3366,6 +3392,48 @@ export type Topic = {
     name: string;
     owner_id: string;
     updated_at: string;
+};
+
+export type TopicAnalyticsResponse = {
+    topics: Array<TopicAnalyticsSummary>;
+};
+
+export type TopicAnalyticsSummary = {
+    created_at: string;
+    id: string;
+    message_count: number;
+    name: string;
+    owner_id: string;
+    referrer: string;
+    topic_id: string;
+    updated_at: string;
+};
+
+export type TopicDetailsResponse = {
+    messages: Array<RagQueryEvent>;
+    topic: TopicQuery;
+};
+
+export type TopicQuery = {
+    created_at: string;
+    dataset_id: string;
+    id: string;
+    name: string;
+    owner_id: string;
+    referrer: string;
+    topic_id: string;
+    updated_at: string;
+};
+
+export type TopicSortBy = 'created_at';
+
+export type TopicTimePoint = {
+    time_stamp: string;
+    topic_count: number;
+};
+
+export type TopicsOverTimeResponse = {
+    time_points: Array<TopicTimePoint>;
 };
 
 /**
