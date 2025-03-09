@@ -98,19 +98,16 @@ export const SingleEventQuery = (props: SingleEventQueryProps) => {
                   let link;
                   switch (props.event_data.request_type) {
                     case "search":
-                      link = `/dataset/${dataset.datasetId()}/analytics/query/${
-                        props.event_data.request_id
-                      }`;
+                      link = `/dataset/${dataset.datasetId()}/analytics/query/${props.event_data.request_id
+                        }`;
                       break;
                     case "rag":
-                      link = `/dataset/${dataset.datasetId()}/analytics/rag/${
-                        props.event_data.request_id
-                      }`;
+                      link = `/dataset/${dataset.datasetId()}/analytics/rag/${props.event_data.request_id
+                        }`;
                       break;
                     case "recommendations":
-                      link = `/dataset/${dataset.datasetId()}/analytics/recommendations/${
-                        props.event_data.request_id
-                      }`;
+                      link = `/dataset/${dataset.datasetId()}/analytics/recommendations/${props.event_data.request_id
+                        }`;
                       break;
                     default:
                       break;
@@ -126,18 +123,19 @@ export const SingleEventQuery = (props: SingleEventQueryProps) => {
         </div>
         <Show
           when={
-            props.event_data.metadata &&
-            (props.event_data.metadata as { chunk_id: string }).chunk_id !==
-              undefined
+            props.event_data.items &&
+            props.event_data.items[0] &&
+            props.event_data.items[0].includes("chunk_id") &&
+            props.event_data.items[0].includes("position")
           }
         >
           <Card title="Items">
             <ProductItem
               chunkId={
-                (props.event_data.metadata as { chunk_id: string }).chunk_id
+                (JSON.parse(props.event_data.items[0]) as { chunk_id: string }).chunk_id
               }
               position={
-                (props.event_data.metadata as { position: string }).position
+                (JSON.parse(props.event_data.items[0]) as { position: string }).position
               }
               index={0}
             />
