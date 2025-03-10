@@ -46,12 +46,14 @@ export default function Home() {
       <div
         className={`p-12 flex flex-col items-center justify-center w-screen h-screen relative ${
           theme === "dark" ? "bg-black text-zinc-50" : ""
-        }`}>
+        }`}
+      >
         <div className="absolute top-6 right-6">
           <ul>
             <li key="theme">
               <button
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              >
                 {theme === "light" ? (
                   <span>
                     <i className="fa-regular fa-sun"></i>

@@ -1,0 +1,13 @@
+{{- include "trieve.worker.deployment" (dict 
+  "name" "pagefind-worker"
+  "replicas" ($.Values.containers.pagefind_worker.replicas | default 1)
+  "image" (dict 
+    "repository" $.Values.containers.pagefind_worker.repository
+    "tag" $.Values.containers.pagefind_worker.tag
+  )
+  "resources" $.Values.containers.pagefind_worker.resources
+  "Values" $.Values
+  "Release" $.Release
+  "Template" $.Template
+)
+-}}

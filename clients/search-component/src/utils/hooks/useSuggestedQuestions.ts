@@ -24,7 +24,7 @@ export const useSuggestedQuestions = () => {
     setSuggestedQuestions(
       queries.queries.map((q) => {
         return q.replace(/^[\d.-]+\s*/, "").trim();
-      })
+      }),
     );
     setIsLoading(false);
   };
@@ -52,7 +52,7 @@ export const useSuggestedQuestions = () => {
       setSuggestedQuestions(
         queries.queries.map((q) => {
           return q.replace(/^[\d.-]+\s*/, "").trim();
-        })
+        }),
       );
       setIsLoading(false);
     });

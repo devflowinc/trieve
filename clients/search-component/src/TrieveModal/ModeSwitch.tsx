@@ -3,6 +3,7 @@ import { useModalState } from "../utils/hooks/modal-context";
 import { SparklesIcon } from "./icons";
 import { useChatState } from "../utils/hooks/chat-context";
 import { cn } from "../utils/styles";
+import { useChatHeight } from "../utils/hooks/useChatHeight";
 
 export const ChatModeSwitch = () => {
   const { props, mode, query, setOpen } = useModalState();
@@ -55,11 +56,17 @@ export const ModeSwitch = () => {
 
 export const PopupChatCloseButton = () => {
   const { props, setOpen } = useModalState();
+  const { resetHeight } = useChatHeight();
 
   const { messages, isDoneReading, stopGeneratingMessage, clearConversation } =
     useChatState();
 
   if (props.inline) return null;
+
+  const clear = () => {
+    clearConversation();
+    resetHeight();
+  };
 
   return (
     <div
@@ -68,7 +75,7 @@ export const PopupChatCloseButton = () => {
         messages.length < 1
           ? setOpen(false)
           : isDoneReading
-            ? clearConversation()
+            ? clear()
             : stopGeneratingMessage()
       }
     >

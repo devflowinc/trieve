@@ -11,7 +11,7 @@ import { OpenModalButton } from "./OpenModalButton";
 import { ChatProvider, useChatState } from "../utils/hooks/chat-context";
 import r2wc from "@r2wc/react-to-web-component";
 import { setClickTriggers } from "../utils/hooks/setClickTriggers";
-import { ChunkGroup } from "trieve-ts-sdk";
+import { ChunkGroup, TrieveSDK } from "trieve-ts-sdk";
 import { FloatingActionButton } from "./FloatingActionButton";
 import { FloatingSearchIcon } from "./FloatingSearchIcon";
 import { FloatingSearchInput } from "./FloatingSearchInput";
@@ -22,6 +22,7 @@ import {
   FilterButton,
   InferenceFiltersForm,
 } from "./FilterSidebarComponents";
+import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 const SearchPage = () => {
   const { props } = useModalState();
@@ -56,7 +57,7 @@ const SearchPage = () => {
                     />
                   ))}
                 </Accordion>
-              )
+              ),
             )}
           </div>
         </div>
@@ -85,7 +86,7 @@ const Modal = () => {
     }
 
     const trieveSearchModal = document.querySelector(
-      "#trieve-search-modal"
+      "#trieve-search-modal",
     ) as HTMLElement;
 
     const chatModalWrapper = document.querySelector(".chat-modal-wrapper");
@@ -106,6 +107,38 @@ const Modal = () => {
       });
     }
   }, [open]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const trieveSDK = new TrieveSDK({
+      apiKey: props.apiKey,
+      datasetId: props.datasetId,
+      baseUrl: props.baseUrl,
+    });
+
+    console.log("sending load event");
+
+    getFingerprint().then((fingerprint) => {
+      trieveSDK.sendAnalyticsEvent(
+        {
+          event_name: `trieve-modal_load`,
+          event_type: "view",
+          items: [],
+          metadata: {
+            page_url: window.location.href,
+            component_props: props,
+            fingerprint,
+          },
+        },
+        abortController.signal,
+      );
+    });
+
+    return () => {
+      abortController.abort("AbortError trieve-modal_load");
+    };
+  }, []);
+
 
   useEffect(() => {
     onViewportResize();
@@ -142,7 +175,7 @@ const Modal = () => {
         clearConversation();
         chatWithGroup(
           customEvent.detail.group,
-          customEvent.detail.betterGroupName
+          customEvent.detail.betterGroupName,
         );
         if (customEvent.detail.message) {
           askQuestion(customEvent.detail.message, customEvent.detail.group);
@@ -219,7 +252,7 @@ const Modal = () => {
     if (!props.ignoreEventListeners) {
       window.addEventListener(
         "trieve-start-chat-with-group",
-        chatWithGroupListener
+        chatWithGroupListener,
       );
       window.addEventListener("trieve-open-with-text", openWithTextListener);
 
@@ -232,14 +265,14 @@ const Modal = () => {
       if (!props.ignoreEventListeners) {
         window.removeEventListener(
           "trieve-start-chat-with-group",
-          chatWithGroupListener
+          chatWithGroupListener,
         );
 
         window.addEventListener("trieve-open-modal", openModalListener);
 
         window.removeEventListener(
           "trieve-open-with-text",
-          openWithTextListener
+          openWithTextListener,
         );
 
         window.addEventListener("trieve-close-modal", closeModalListener);
@@ -291,18 +324,18 @@ export const TrieveModalSearch = (props: ModalProps) => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB"
+      props.brandColor ?? "#CB53EB",
     );
 
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)"
+        "var(--tv-zinc-700)",
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)"
+        "var(--tv-zinc-300)",
       );
     }
 
@@ -310,7 +343,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
         `Maven Pro, ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);
 

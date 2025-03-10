@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sync-qdrant
+  labels:
+    app.kubernetes.io/name: sync-qdrant
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.containers.sync_qdrant.replicas | default 0 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sync-qdrant
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/settings/backend-configmap.yaml") . | sha256sum }}
+      labels:
+        app.kubernetes.io/name: sync-qdrant
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{- if $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: sync-qdrant
+        image: {{ printf "%s/%s:%s" $.Values.global.image.registry $.Values.containers.sync_qdrant.repository .Values.containers.sync_qdrant.tag }}
+        imagePullPolicy: {{ $.Values.global.image.imagePullPolicy }}
+        envFrom:
+          - configMapRef:
+              name: trieve-server-config

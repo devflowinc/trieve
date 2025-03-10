@@ -446,6 +446,7 @@ body {
         @apply tv-border;
         border-color: var(--tv-zinc-300);
         background-color: var(--tv-zinc-100);
+        border-style: solid;
       }
 
       &:not(:disabled):not(p):hover {

@@ -13,7 +13,7 @@ export const SuggestedQueries = () => {
     <div
       className={cn(
         `suggested-queries-wrapper tv-flex tv-mt-2 tv-gap-2 tv-items-center tv-flex-wrap tv-mb-2 ${props.type}`,
-        imageUrl && "tv-pt-2"
+        imageUrl && "tv-pt-2",
       )}
     >
       <button

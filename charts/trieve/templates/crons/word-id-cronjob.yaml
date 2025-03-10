@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: word-id-cronjob
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/settings/backend-configmap.yaml") . | sha256sum }}
+  labels:
+    app.kubernetes.io/name: word-id-cronjob
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  schedule: "0 0 * * *"
+  concurrencyPolicy: Replace
+  suspend: {{ $.Values.config.trieve.disableCrons }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- if $.Values.global.imagePullSecrets }}
+          imagePullSecrets:
+          {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+          {{- end }}
+          containers:
+          - name: word-id-cronjob
+            image: {{ printf "%s/%s:%s" $.Values.global.image.registry $.Values.containers.word_id_cronjob.repository .Values.containers.word_id_cronjob.tag }}
+            envFrom:
+              - configMapRef:
+                  name: trieve-server-config

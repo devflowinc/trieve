@@ -10,27 +10,20 @@ type Props = {
 };
 
 export const ProductGroupItem = ({ index, group, requestID }: Props) => {
-  const selectedItem = useMemo(
-    () => group[0].chunks[0],
-    [],
-  );
+  const selectedItem = useMemo(() => group[0].chunks[0], []);
 
-  const betterGroupName = useMemo(
-    () => {
-      const productNames: string[] = [];
-      group.forEach(
-        g => g.chunks.forEach(c => {
-          const {title} = guessTitleAndDesc(c);
-          productNames.push(title)
-        })
-      )
+  const betterGroupName = useMemo(() => {
+    const productNames: string[] = [];
+    group.forEach((g) =>
+      g.chunks.forEach((c) => {
+        const { title } = guessTitleAndDesc(c);
+        productNames.push(title);
+      }),
+    );
 
-      const commonName = findCommonName(productNames);
-      return commonName || undefined;
-    },
-    [group]
-  )
-
+    const commonName = findCommonName(productNames);
+    return commonName || undefined;
+  }, [group]);
 
   return (
     <ProductItem

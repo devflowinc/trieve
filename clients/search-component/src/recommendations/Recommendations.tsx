@@ -138,7 +138,8 @@ export const Recommendations = (config: RecommendationsConfig) => {
           })}
           style={{
             fontFamily: config.theme?.font || "inherit",
-          }}>
+          }}
+        >
           {config.title}
         </div>
       )}
@@ -153,7 +154,8 @@ export const Recommendations = (config: RecommendationsConfig) => {
         style={{
           fontFamily: config.theme?.font || "inherit",
           ...config.theme?.containerStyles,
-        }}>
+        }}
+      >
         {results?.map((r) => (
           <RecommendationsItem key={r.chunk.id} item={r} config={config} />
         ))}
@@ -193,7 +195,8 @@ const RecommendationsItem = ({
       style={{
         border: config.theme?.border ? `1px solid ${config.theme?.border}` : "",
         ...config.theme?.itemStyles,
-      }}>
+      }}
+    >
       <img
         className={imageClass({
           ...config.theme,

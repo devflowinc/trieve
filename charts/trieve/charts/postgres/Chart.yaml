@@ -1,0 +1,7 @@
+name: postgres
+apiVersion: v2
+version: 0.0.0
+dependencies:
+  - name: crds
+    version: 0.0.0
+    condition: installCrds

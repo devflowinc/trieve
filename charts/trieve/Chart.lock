@@ -1,0 +1,18 @@
+dependencies:
+- name: qdrant
+  repository: https://qdrant.github.io/qdrant-helm
+  version: 1.13.4
+- name: redis
+  repository: https://charts.bitnami.com/bitnami
+  version: 20.10.0
+- name: keycloak
+  repository: ""
+  version: 0.0.0
+- name: clickhouse
+  repository: ""
+  version: 0.0.0
+- name: postgres
+  repository: ""
+  version: 0.0.0
+digest: sha256:494ac7f03d62bcbaac54353c99bbb5f990de1fc31bf35204216f376869c98c1f
+generated: "2025-03-02T21:58:01.746161849-08:00"

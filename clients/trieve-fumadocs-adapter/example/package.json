@@ -16,7 +16,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "trieve-fumadocs-adapter": "../dist",
-    "trieve-ts-sdk": "^0.0.14"
+    "trieve-ts-sdk": ">=0.0.14"
   },
   "devDependencies": {
     "@types/mdx": "^2.0.13",

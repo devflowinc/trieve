@@ -24,14 +24,14 @@ export const SuggestedQuestions = () => {
       <AIInitialMessage />
       <div
         className={cn(
-          props.inline && "tv-flex tv-gap-x-3 tv-flex-wrap tv-items-center"
+          props.inline && "tv-flex tv-gap-x-3 tv-flex-wrap tv-items-center",
         )}
       >
         <div
           ref={parent}
           className={cn(
             "questions tv-pt-2 ",
-            props.inline && "inline-questions !tv-pb-0"
+            props.inline && "inline-questions !tv-pb-0",
           )}
         >
           <button

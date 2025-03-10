@@ -1,0 +1,13 @@
+{{- include "trieve.worker.deployment" (dict 
+  "name" "csv-jsonl-worker"
+  "replicas" ($.Values.containers.csv_jsonl_worker.replicas | default 1)
+  "image" (dict 
+    "repository" $.Values.containers.csv_jsonl_worker.repository
+    "tag" $.Values.containers.csv_jsonl_worker.tag
+  )
+  "resources" $.Values.containers.csv_jsonl_worker.resources
+  "Values" $.Values
+  "Release" $.Release
+  "Template" $.Template
+)
+-}}

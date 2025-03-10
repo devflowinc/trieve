@@ -1,0 +1,7 @@
+installCrds: true
+
+clusterSpec:
+  instances: 3
+
+  storage:
+    size: 1Gi

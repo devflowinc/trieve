@@ -47,7 +47,6 @@
 
     <script type="module">
       window.paramsData = {{params | tojson}};
-
       const brandFontFamily = window.paramsData.brandFontFamily;
       if (brandFontFamily) {
         const link = document.createElement("link");
@@ -462,6 +461,10 @@
           renderToDiv(inlineRoot, {
             ...inlineParams,
           })
+        }
+
+        if (!params.showResultHighlights) {
+          params.hideChunkHtml = true
         }
 
         params.buttonTriggers = [

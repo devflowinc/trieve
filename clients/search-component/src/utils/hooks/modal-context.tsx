@@ -24,6 +24,7 @@ import {
   getPagefindIndex,
 } from "../trieve";
 import { InferenceFilterFormStep } from "../../TrieveModal/FilterSidebarComponents";
+import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 export const ALL_TAG = {
   tag: "all",
@@ -224,7 +225,7 @@ const defaultProps = {
   hideOverlay: false,
   hidePrice: false,
   hideChunkHtml: false,
-  componentName: "Trieve Search Component",
+  componentName: "trieve-modal-search",
   displayModal: true,
   searchPageProps: {
     filterSidebarProps: {
@@ -336,7 +337,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [selectedTags, setSelectedTags] = useState(
-    props.tags?.filter((t) => t.selected)
+    props.tags?.filter((t) => t.selected),
   );
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
   const [currentGroup, setCurrentGroup] = useState<ChunkGroup | null>(null);
@@ -392,7 +393,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          selectedTags?.map((t) => t.tag)
+          selectedTags?.map((t) => t.tag),
         );
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
@@ -409,7 +410,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          selectedTags?.map((t) => t.tag)
+          selectedTags?.map((t) => t.tag),
         );
         setResults(results);
       } else {
@@ -449,7 +450,7 @@ const ModalProvider = ({
         const filterCounts = await countChunksWithPagefind(
           pagefind,
           query,
-          props.tags
+          props.tags,
         );
         setTagCounts(filterCounts);
       } else {
@@ -461,8 +462,8 @@ const ModalProvider = ({
                 trieve: trieve,
                 abortController,
                 ...(tag.tag !== "all" && { tag: tag.tag }),
-              })
-            )
+              }),
+            ),
           );
           setTagCounts(numberOfRecords);
         } catch (e) {
@@ -500,6 +501,31 @@ const ModalProvider = ({
     props.onOpenChange?.(open);
   }, [open]);
 
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    if (open && props.analytics) {
+      getFingerprint().then((fingerprint) => {
+        trieve.sendAnalyticsEvent(
+          {
+            event_name: `trieve-modal_click`,
+            event_type: "click",
+            clicked_items: null,
+            metadata: {
+              page_url: window.location.href,
+              component_props: props,
+              fingerprint,
+            },
+          },
+          abortController.signal,
+        );
+      });
+    }
+
+    return () => {
+      abortController.abort("AbortError trieve-modal_click");
+    };
+  }, [open, props.analytics, props.componentName]);
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (
@@ -513,7 +539,7 @@ const ModalProvider = ({
         setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
       }
     },
-    [open, props.allowSwitchingModes]
+    [open, props.allowSwitchingModes],
   );
 
   useEffect(() => {

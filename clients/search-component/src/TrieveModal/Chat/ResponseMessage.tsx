@@ -104,7 +104,7 @@ export const Message = ({
             chunk.metadata.page_title) &&
           chunk.link &&
           chunk.image_urls?.length &&
-          chunk.num_value
+          chunk.num_value,
       );
       if (ecommerceChunks && message.queryId) {
         trackViews({
@@ -127,7 +127,7 @@ export const Message = ({
           chunk.metadata.page_title) &&
         chunk.link &&
         chunk.image_urls?.length &&
-        chunk.num_value
+        chunk.num_value,
     )
     .map((chunk) => ({
       chunk,
@@ -145,7 +145,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title
+          index && item.title,
     )
     .map((item, index) => {
       const { title, descriptionHtml } = guessTitleAndDesc(item);
@@ -183,7 +183,7 @@ export const Message = ({
                   ? title
                   : title.replace(
                       /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      ""
+                      "",
                     ),
               }}
             />
@@ -197,16 +197,14 @@ export const Message = ({
                 ${item.price}
               </p>
             )}
-            {!props.hideChunkHtml && (
+            {!props.hideChunkHtml && props.showResultHighlights && (
               <p
                 className="ecom-item-description"
                 dangerouslySetInnerHTML={{
-                  __html: props.showResultHighlights
-                    ? descriptionHtml
-                    : descriptionHtml.replace(
-                        /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                        ""
-                      ),
+                  __html: descriptionHtml.replace(
+                    /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                    "",
+                  ),
                 }}
               />
             )}
@@ -231,7 +229,7 @@ export const Message = ({
           chunk.metadata.title ||
           chunk.metadata.page_title) &&
         chunk.link &&
-        chunk.metadata.yt_preview_src
+        chunk.metadata.yt_preview_src,
     )
     .map((chunk) => {
       return {
@@ -264,7 +262,7 @@ export const Message = ({
       const chunkHtmlHeadingsDiv = document.createElement("div");
       chunkHtmlHeadingsDiv.innerHTML = chunk.chunk_html || "";
       const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-        "h1, h2, h3, h4, h5, h6"
+        "h1, h2, h3, h4, h5, h6",
       );
       const $firstHeading =
         chunkHtmlHeadings[0] ?? document.createElement("h1");
@@ -290,7 +288,8 @@ export const Message = ({
     .filter((chunk) => chunk.link && !chunk.metadata.yt_preview_src)
     .filter(
       (item, index, array) =>
-        array.findIndex((arrayItem) => arrayItem.title === item.title) === index
+        array.findIndex((arrayItem) => arrayItem.title === item.title) ===
+        index,
     )
     .map((item, index) => (
       <a
@@ -331,7 +330,7 @@ export const Message = ({
               props.inlineCarousel ||
               props.recommendOptions?.queriesToTriggerRecommendations.includes(
                 messages[messages.findIndex((m) => m.text === message.text) - 1]
-                  .text
+                  .text,
               )) && (
               <div className="additional-image-links">
                 <Carousel>{ecommerceItems}</Carousel>

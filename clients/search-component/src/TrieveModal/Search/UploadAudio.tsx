@@ -81,13 +81,6 @@ export const UploadAudio = () => {
           toggleRecording();
         }}
       >
-        <div
-          onClick={(e) => {
-            e.preventDefault();
-            toggleRecording();
-          }}
-          className="tv-block md:tv-hidden tv-top-0 tv-bottom-0 tv-left-0 tv-right-0 tv-scale-125 tv-pr-3 tv-pl-6 tv-py-8 -tv-translate-x-5 tv-absolute"
-        ></div>
         {isRecording ? (
           <motion.div
             animate={{

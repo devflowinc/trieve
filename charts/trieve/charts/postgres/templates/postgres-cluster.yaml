@@ -1,0 +1,9 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ $.Release.Name }}-trieve-postgres
+  labels:
+    app.kubernetes.io/name: {{ $.Release.Name }}-trieve-postgres
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+{{ toYaml $.Values.clusterSpec | nindent 2 }}

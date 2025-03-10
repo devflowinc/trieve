@@ -1,0 +1,13 @@
+{{- include "trieve.worker.deployment" (dict 
+  "name" "word-worker"
+  "replicas" ($.Values.containers.word_worker.replicas | default 1)
+  "image" (dict 
+    "repository" $.Values.containers.word_worker.repository
+    "tag" $.Values.containers.word_worker.tag
+  )
+  "resources" $.Values.containers.word_worker.resources
+  "Values" $.Values
+  "Release" $.Release
+  "Template" $.Template
+)
+-}}

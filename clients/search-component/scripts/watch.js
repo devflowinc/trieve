@@ -25,11 +25,7 @@ const main = async () => {
     target: ["es2020"],
   });
 
-  Promise.all([
-    ctx1.watch(),
-    vanillaJsBuild.watch()
-  ])
-
+  Promise.all([ctx1.watch(), vanillaJsBuild.watch()]);
 };
 
 main();

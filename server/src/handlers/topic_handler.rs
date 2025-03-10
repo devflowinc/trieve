@@ -1,8 +1,11 @@
 use crate::{
-    data::models::{DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool, Topic},
+    data::models::{
+        DatasetAndOrgWithSubAndPlan, DatasetConfiguration, Pool, Topic, TopicQueryClickhouse,
+    },
     errors::ServiceError,
     handlers::auth_handler::AdminOnly,
     operators::{
+        clickhouse_operator::{ClickHouseEvent, EventQueue},
         message_operator::{create_messages_query, get_topic_messages_query, get_topic_string},
         topic_operator::{
             create_topic_query, delete_topic_query, get_all_topics_for_owner_id_query,
@@ -12,6 +15,7 @@ use crate::{
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -22,6 +26,8 @@ pub struct CreateTopicReqPayload {
     pub name: Option<String>,
     /// The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user.
     pub owner_id: String,
+    /// The referrer of the topic. This allows you to distinguish between multiple different sources from where your chats occur
+    pub referrer: Option<String>,
 }
 
 /// Create Topic
@@ -48,6 +54,7 @@ pub async fn create_topic(
     data: web::Json<CreateTopicReqPayload>,
     _user: AdminOnly,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    event_queue: web::Data<EventQueue>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data_inner = data.into_inner();
@@ -83,7 +90,22 @@ pub async fn create_topic(
     );
     let new_topic1 = new_topic.clone();
 
-    create_topic_query(new_topic, &pool).await?;
+    create_topic_query(new_topic.clone(), &pool).await?;
+
+    let clickhouse_topic_event = TopicQueryClickhouse {
+        id: uuid::Uuid::new_v4(),
+        topic_id: new_topic.id,
+        dataset_id: dataset_org_plan_sub.dataset.id,
+        referrer: data_inner.referrer.unwrap_or_default(),
+        name: new_topic.name.clone(),
+        owner_id: new_topic.owner_id.clone(),
+        created_at: OffsetDateTime::now_utc(),
+        updated_at: OffsetDateTime::now_utc(),
+    };
+
+    event_queue
+        .send(ClickHouseEvent::TopicCreateEvent(clickhouse_topic_event))
+        .await;
 
     Ok(HttpResponse::Ok().json(new_topic1))
 }

@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: clickhouse-collapse
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  suspend: {{ $.Values.config.trieve.disableCrons }}
+
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- if $.Values.global.imagePullSecrets }}
+          imagePullSecrets:
+          {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
+          {{- end }}
+          containers:
+            - name: clustering
+              image: {{ printf "%s/%s:%s" $.Values.global.image.registry $.Values.containers.clickhouse_collapse.repository .Values.containers.clickhouse_collapse.tag }}
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: CLICKHOUSE_DSN
+                  value: {{ .Values.clickhouse.dsn }}
+          restartPolicy: Never

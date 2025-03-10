@@ -1,0 +1,18 @@
+{{- include "trieve.worker.deployment" (dict 
+  "name" "openai-ingest"
+  "replicas" ($.Values.containers.ingest.replicas | default 1)
+  "image" (dict 
+    "repository" $.Values.containers.ingest.repository
+    "tag" $.Values.containers.ingest.tag
+  )
+  "resources" $.Values.containers.ingest.resources
+  "Values" $.Values
+  "Release" $.Release
+  "Template" $.Template
+  "env" (list
+    (dict
+      "name" "INGESTION_QUEUE_NAME" 
+      "value" "openai_ingestion")
+  )
+)
+-}}

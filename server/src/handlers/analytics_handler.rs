@@ -376,7 +376,6 @@ pub async fn get_rag_analytics(
             .await?;
             RAGAnalyticsResponse::RAGUsageGraph(rag)
         }
-
         RAGAnalytics::RAGQueryDetails { request_id } => {
             let rag_query = get_rag_query(
                 dataset_org_plan_sub.dataset.id,
@@ -395,6 +394,42 @@ pub async fn get_rag_analytics(
             )
             .await?;
             RAGAnalyticsResponse::RAGQueryRatings(rag_query_ratings)
+        }
+        RAGAnalytics::TopicAnalytics {
+            filter,
+            page,
+            sort_by,
+            sort_order,
+        } => {
+            let topic_analytics = get_topic_analytics_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                sort_by,
+                sort_order,
+                page,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::TopicAnalytics(topic_analytics)
+        }
+        RAGAnalytics::TopicDetails { topic_id } => {
+            let topic_details =
+                get_topic_details_query(topic_id, pool.clone(), clickhouse_client.get_ref())
+                    .await?;
+            RAGAnalyticsResponse::TopicDetails(topic_details)
+        }
+        RAGAnalytics::TopicsOverTime {
+            filter,
+            granularity,
+        } => {
+            let topics_over_time = get_topics_over_time_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::TopicsOverTime(topics_over_time)
         }
     };
 

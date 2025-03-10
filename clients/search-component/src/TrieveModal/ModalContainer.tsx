@@ -30,7 +30,7 @@ export const ModalContainer = () => {
         } ${props.type}`.trim(),
         !props.inline && "md:tv-resize-y",
         props.inline && "tv-border-2",
-        componentClass
+        componentClass,
       )}
       style={{
         zIndex: (props.zIndex ?? 1000) + 1,
