@@ -136,6 +136,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
 
     if (props.analytics) {
       await sendCtrData({
+        props: props,
         type: "search",
         trieve: trieveSDK,
         index: chunk.position,

@@ -15,12 +15,7 @@ import {
   SearchResults,
 } from "./types";
 import { defaultHighlightOptions, highlightText } from "./highlight";
-import {
-  ModalProps,
-  ModalTypes,
-  PagefindApi,
-  useModalState,
-} from "./hooks/modal-context";
+import { ModalProps, ModalTypes, PagefindApi } from "./hooks/modal-context";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 export const omit = (obj: object | null | undefined, keys: string[]) => {
@@ -290,14 +285,15 @@ export const sendCtrData = async ({
   chunkID,
   requestID,
   index,
+  props,
 }: {
   trieve: TrieveSDK;
   chunkID: string;
   requestID: string;
   type: CTRType;
   index: number;
+  props: ModalProps;
 }) => {
-  const { props } = useModalState();
   await trieve.sendCTRAnalytics({
     ctr_type: type,
     clicked_chunk_id: chunkID,
@@ -318,13 +314,14 @@ export const trackViews = async ({
   type,
   requestID,
   items,
+  props,
 }: {
   trieve: TrieveSDK;
   requestID: string;
   type: CTRType;
   items: string[];
+  props: ModalProps;
 }) => {
-  const { props } = useModalState();
   trieve.trieve.fetch("/api/analytics/events", "put", {
     datasetId: trieve.datasetId ?? "",
     data: {

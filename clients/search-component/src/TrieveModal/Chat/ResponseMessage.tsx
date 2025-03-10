@@ -108,6 +108,7 @@ export const Message = ({
       );
       if (ecommerceChunks && message.queryId) {
         trackViews({
+          props: props,
           trieve: trieveSDK,
           requestID: message.queryId,
           type: "rag",
@@ -160,6 +161,7 @@ export const Message = ({
           onClick={() => {
             if (props.analytics && message.queryId) {
               sendCtrData({
+                props: props,
                 type: "rag",
                 trieve: trieveSDK,
                 index: index + 1,
@@ -233,6 +235,7 @@ export const Message = ({
     )
     .map((chunk) => {
       return {
+        id: chunk.id,
         title:
           chunk.metadata.heading ||
           chunk.metadata.title ||
@@ -247,6 +250,18 @@ export const Message = ({
         key={index}
         href={item.link as string}
         target="_blank"
+        onClick={() => {
+          if (props.analytics && message.queryId) {
+            sendCtrData({
+              props: props,
+              type: "rag",
+              trieve: trieveSDK,
+              index: index + 1,
+              requestID: message.queryId,
+              chunkID: item.id,
+            });
+          }
+        }}
       >
         {item.metadata?.yt_preview_src ? (
           <img className="yt-preview" src={item.metadata?.yt_preview_src} />
@@ -280,6 +295,7 @@ export const Message = ({
         .replace("#", "")
         .replace("¶", "");
       return {
+        id: chunk.id,
         title: title,
         link: chunk.link,
         metadata: chunk.metadata,
@@ -299,6 +315,18 @@ export const Message = ({
         key={index}
         href={item.link as string}
         target="_blank"
+        onClick={() => {
+          if (props.analytics && message.queryId) {
+            sendCtrData({
+              props: props,
+              type: "rag",
+              trieve: trieveSDK,
+              index: index + 1,
+              requestID: message.queryId,
+              chunkID: item.id,
+            });
+          }
+        }}
       >
         {item.metadata?.yt_preview_src ? (
           <img className="yt-preview" src={item.metadata?.yt_preview_src} />
