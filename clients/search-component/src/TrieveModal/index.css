@@ -1475,7 +1475,7 @@ body {
       }
 
       .trieve-inference-filters-step-header {
-        @apply tv-flex tv-items-center tv-gap-2;
+        @apply tv-text-lg tv-flex tv-items-center tv-gap-2;
 
         .trieve-inference-filters-step-number {
           @apply tv-rounded-full tv-text-white tv-w-5 tv-h-5 tv-text-center tv-text-sm;
@@ -1488,7 +1488,7 @@ body {
       }
 
       .trieve-inference-filters-step-description {
-        @apply tv-text-sm tv-mt-0.5 tv-text-gray-500;
+        @apply tv-mt-0.5 tv-text-gray-500;
       }
 
       .trieve-inference-filters-step-input-container {
@@ -1540,6 +1540,60 @@ body {
 
           .trieve-image-input-placeholder {
             @apply tv-text-sm tv-mt-6 tv-max-w-[75%] tv-text-center;
+          }
+        }
+
+        .trieve-text-step-container {
+          display: none;
+
+          &[data-input-field-type="text"] {
+            display: block;
+          }
+
+          &[data-prev-complete="false"] {
+            .trieve-text-input-container {
+              display: none;
+            }
+
+            .trieve-text-button-container {
+              display: none;
+            }
+          }
+
+          .trieve-text-input-container {
+            @apply tv-w-full tv-mt-4;
+
+            .trieve-text-input-label {
+              @apply tv-block tv-text-sm/6 tv-font-medium tv-ml-1 tv-text-gray-700;
+            }
+
+            .trieve-text-input-textarea-container {
+              .trieve-text-input-textarea {
+                @apply tv-block tv-w-full tv-rounded-md tv-bg-white tv-px-3 tv-py-1.5 tv-outline tv-outline-1 tv--outline-offset-1 tv-outline-gray-300 placeholder:tv-text-gray-400 focus:tv-outline focus:tv-outline-2 focus:tv--outline-offset-2 sm:tv-text-sm/6;
+
+                &:focus,
+                &:hover {
+                  outline-color: var(--tv-prop-brand-color);
+                }
+              }
+            }
+          }
+
+          .trieve-text-button-container {
+            @apply tv-flex tv-w-full tv-mt-4;
+
+            .trieve-text-input-button {
+              @apply tv-flex tv-items-center tv-justify-center tv-px-3 tv-py-1.5 tv-rounded-md tv-gap-x-1;
+
+              background-color: var(--tv-prop-brand-color);
+              color: var(--tv-zinc-50);
+
+              &:hover {
+                @apply tv-outline tv-outline-2 tv-outline-offset-2;
+
+                outline-color: var(--tv-prop-brand-color);
+              }
+            }
           }
         }
 
