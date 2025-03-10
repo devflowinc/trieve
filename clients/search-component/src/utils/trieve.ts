@@ -304,7 +304,6 @@ export const sendCtrData = async ({
     request_id: requestID,
     position: index,
     metadata: {
-      component_name: props.componentName,
       page_url: window.location.href,
       component_props: props,
       fingerprint: await getFingerprint(),
@@ -337,7 +336,6 @@ export const trackViews = async ({
         request_type: type,
       },
       metadata: {
-        component_name: props.componentName,
         component_props: props,
         page_url: window.location.href,
         fingerprint: await getFingerprint(),

@@ -139,7 +139,6 @@ const Modal = () => {
     };
   }, []);
 
-
   useEffect(() => {
     onViewportResize();
     window.addEventListener("resize", onViewportResize);
