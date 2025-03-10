@@ -525,7 +525,8 @@ const ModalProvider = ({
     return () => {
       abortController.abort("AbortError trieve-modal_click");
     };
-  }, [open, props.analytics, props.componentName]);
+  }, [open, props.analytics, props]);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (

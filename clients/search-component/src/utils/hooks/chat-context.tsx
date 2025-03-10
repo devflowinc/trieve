@@ -728,7 +728,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         rating: isPositive ? 1 : 0,
         query_id: queryId,
         metadata: {
-          component_name: props.componentName,
+          component_props: props,
         },
       });
     }
