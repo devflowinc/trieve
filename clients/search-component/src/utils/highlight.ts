@@ -2,7 +2,7 @@ import { HighlightOptions } from "trieve-ts-sdk";
 
 export function highlightText(
   searchTerm: string,
-  textToHighlight: string | null | undefined
+  textToHighlight: string | null | undefined,
 ) {
   const regex = new RegExp(`(${searchTerm})`, "gi");
   if (textToHighlight && textToHighlight.match(regex)) {

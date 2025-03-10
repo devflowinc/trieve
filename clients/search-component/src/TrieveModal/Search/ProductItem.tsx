@@ -65,13 +65,15 @@ export const ProductItem = ({
 
   const formatPrice = (price: number | null | undefined) => {
     return price
-      ? `${props.currencyPosition === "before"
-        ? (props.defaultCurrency ?? "$")
-        : ""
-      }${price}${props.currencyPosition === "after"
-        ? (props.defaultCurrency ?? "$")
-        : ""
-      }`
+      ? `${
+          props.currencyPosition === "before"
+            ? (props.defaultCurrency ?? "$")
+            : ""
+        }${price}${
+          props.currencyPosition === "after"
+            ? (props.defaultCurrency ?? "$")
+            : ""
+        }`
       : "";
   };
 
@@ -177,9 +179,9 @@ export const ProductItem = ({
                   __html: props.showResultHighlights
                     ? betterGroupName || title
                     : (betterGroupName || title).replace(
-                      /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      "",
-                    ),
+                        /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                        "",
+                      ),
                 }}
               />
               <div className="ecommerce-secondary-row">
@@ -209,9 +211,9 @@ export const ProductItem = ({
                   __html: props.showResultHighlights
                     ? descriptionHtml
                     : descriptionHtml.replace(
-                      /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      "",
-                    ),
+                        /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                        "",
+                      ),
                 }}
               />
               <>

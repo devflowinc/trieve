@@ -73,46 +73,45 @@ declare module "solid-js" {
 
 #### Props
 
-| Name                       | Type                                                                                           | Default                                                               |     
-| -------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |      
-| datasetId                  | string                                                                                         | ''                                                                    |     
-| apiKey                     | string                                                                                         | ''                                                                    |     
-| baseUrl                    | string                                                                                         | "https://api.trieve.ai"                                               |     
-| type                       | "docs"                                                                                         | "ecommerce"                                                           |      
-| useGroupSearch             | boolean                                                                                        | false                                                                 |     
-| chat                       | boolean                                                                                        | true                                                                  |     
-| analytics                  | boolean                                                                                        | true                                                                  |     
-| placeholder                | string                                                                                         | "Search..."                                                           |     
-| onResultClick              | () => void                                                                                     | () => {}                                                              |     
-| theme                      | "light" or "dark"                                                                              | "light"                                                               |     
-| searchOptions              | [AutocompleteReqPayload](https://ts-sdk.trieve.ai/types/types_gen.AutocompleteReqPayload.html) | `{ search_type: "fulltext" }`                                         |     
-| openKeyCombination         | { key?: string; label?: string; ctrl?: boolean }[]                                             | [{ ctrl: true }, { key: "k", label: "K" }]                            |     
-| tags                       | { tag: string; label?: string; selected? boolean; iconClassName?: string }[]                   | [{tag: "docs", label: "dev docs", iconClassName: "fa-solid fa-info"}] |     
+| Name                       | Type                                                                                           | Default                                                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| datasetId                  | string                                                                                         | ''                                                                    |
+| apiKey                     | string                                                                                         | ''                                                                    |
+| baseUrl                    | string                                                                                         | "https://api.trieve.ai"                                               |
+| type                       | "docs"                                                                                         | "ecommerce"                                                           |
+| useGroupSearch             | boolean                                                                                        | false                                                                 |
+| chat                       | boolean                                                                                        | true                                                                  |
+| analytics                  | boolean                                                                                        | true                                                                  |
+| placeholder                | string                                                                                         | "Search..."                                                           |
+| onResultClick              | () => void                                                                                     | () => {}                                                              |
+| theme                      | "light" or "dark"                                                                              | "light"                                                               |
+| searchOptions              | [AutocompleteReqPayload](https://ts-sdk.trieve.ai/types/types_gen.AutocompleteReqPayload.html) | `{ search_type: "fulltext" }`                                         |
+| openKeyCombination         | { key?: string; label?: string; ctrl?: boolean }[]                                             | [{ ctrl: true }, { key: "k", label: "K" }]                            |
+| tags                       | { tag: string; label?: string; selected? boolean; iconClassName?: string }[]                   | [{tag: "docs", label: "dev docs", iconClassName: "fa-solid fa-info"}] |
 | inline                     | boolean                                                                                        | true                                                                  |
 | inlineHeader               | string                                                                                         | ""                                                                    |
 | initialAiMessage           | string                                                                                         | ""                                                                    |
-| ButtonEl                   | JSX.ElementType                                                                                | null                                                                  |     
-| suggestedQueries           | boolean                                                                                        | true                                                                  |     
-| defaultSearchQueries       | string[]                                                                                       | []                                                                    |     
-| defaultAiQuestions         | string[]                                                                                       | []                                                                    |     
-| brandLogoImgSrcUrl         | string                                                                                         | null                                                                  |     
-| brandName                  | string                                                                                         | null                                                                  |     
-| brandColor                 | string                                                                                         | #CB53EB                                                               |     
-| brandFontFamily            | string                                                                                         | Maven Pro                                                             |     
-| problemLink                | string (example: "mailto:help@trieve.ai?subject=")                                             | null                                                                  |     
-| responsive                 | boolean                                                                                        | false                                                                 |     
-| floatingButtonPosition     | "top-left", "top-right", "bottom-left", or "bottom-right"                                      | "bottom-right"                                                        |     
-| showFloatingButton         | boolean                                                                                        | false                                                                 |     
-| floatingSearchIconPosition | "left" or "right"                                                                              | "right"                                                               |     
-| showFloatingSearchIcon     | boolean                                                                                        | false                                                                 |     
-| showFloatingInput          | boolean                                                                                        | false                                                                 |      
-| buttonTriggers             | [{ selector: <"query-selector">, mode: "chat"|"search" }]                                      | []                                                                    |      
+| ButtonEl                   | JSX.ElementType                                                                                | null                                                                  |
+| suggestedQueries           | boolean                                                                                        | true                                                                  |
+| defaultSearchQueries       | string[]                                                                                       | []                                                                    |
+| defaultAiQuestions         | string[]                                                                                       | []                                                                    |
+| brandLogoImgSrcUrl         | string                                                                                         | null                                                                  |
+| brandName                  | string                                                                                         | null                                                                  |
+| brandColor                 | string                                                                                         | #CB53EB                                                               |
+| brandFontFamily            | string                                                                                         | Maven Pro                                                             |
+| problemLink                | string (example: "mailto:help@trieve.ai?subject=")                                             | null                                                                  |
+| responsive                 | boolean                                                                                        | false                                                                 |
+| floatingButtonPosition     | "top-left", "top-right", "bottom-left", or "bottom-right"                                      | "bottom-right"                                                        |
+| showFloatingButton         | boolean                                                                                        | false                                                                 |
+| floatingSearchIconPosition | "left" or "right"                                                                              | "right"                                                               |
+| showFloatingSearchIcon     | boolean                                                                                        | false                                                                 |
+| showFloatingInput          | boolean                                                                                        | false                                                                 |
+| buttonTriggers             | [{ selector: <"query-selector">, mode: "chat"}]                                                |                                                                       |
 | hideopenButton             | boolean                                                                                        | false                                                                 |
 | showResultHighlights       | boolean                                                                                        | true                                                                  |
 | initialAiMessage           | string (example: "<p>Hi! How can I help</p>")                                                  | null                                                                  |
 | ignoreEventListeners       | boolean                                                                                        | false                                                                 |
 | hideOverlay                | boolean                                                                                        | false                                                                 |
-
 
 ### Search Results
 
@@ -127,16 +126,23 @@ declare module "solid-js" {
 #### Usage in React:
 
 ```jsx
-<TrieveSearch apiKey="<your trieve apiKey>" datasetId="<your trieve datasetId" />
+<TrieveSearch
+  apiKey="<your trieve apiKey>"
+  datasetId="<your trieve datasetId"
+/>
 ```
 
 #### Usage in Web Components:
 
 ```html
-<trieve-search apiKey="<your trieve apiKey>" datasetId="<your trieve datasetId" />
+<trieve-search
+  apiKey="<your trieve apiKey>"
+  datasetId="<your trieve datasetId"
+/>
 ```
 
 #### Usage with Vanilla JS
+
 ```javascript
 import "trieve-search-component/styles";
 import { renderToDiv } from 'trieve-search-component/vanilla';
@@ -155,7 +161,6 @@ MIT
 
 ## Development Guide
 
-
 ### Deploying to view search playground UI
 
 The `example/` folder shows the example application for what rendering this would look like
@@ -165,7 +170,6 @@ Run the example, search-component, css, javascript and watcher for demos page
 ```sh
 $clients/search-component yarn all
 ```
-
 
 or to run each individually
 

@@ -30,7 +30,7 @@ const popupClass = cva(
         chat: [],
       },
     },
-  }
+  },
 );
 
 const inlineClass = cva(
@@ -51,7 +51,7 @@ const inlineClass = cva(
         pdf: [],
       },
     },
-  }
+  },
 );
 
 export const useSizing = () => {
