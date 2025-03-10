@@ -166,9 +166,24 @@ export default function ECommerce() {
                     placeholder: "Click or drag to upload (Max 5MB)",
                   },
                   {
+                    title: "Describe Your Space and Goals",
+                    description:
+                      "Describe the space you want to renovate and what you are looking for in terms of style, color, and materials.",
+                    type: "text",
+                    filterSidebarSectionKey: "description",
+                    prompt:
+                      "Write 1 sentence describing in high detail the way you see the space in the image in terms of color, luminance, and style. Make a specific callout to something unique so a reader knows you actually saw the image. \n\n",
+                    inferenceInputLabel:
+                      "How the AI understands your image (editable)",
+                    inputLabel:
+                      "What are your goals?",
+                    placeholder:
+                      "I want to change the countertops and backsplash to something more modern and colorful.",
+                  },
+                  {
                     title: "Category Selection",
                     description:
-                      "Select the material you are interested in getting recommendations for.",
+                      "Select the material(s) you want to change and are interested in getting recommendations for.",
                     type: "tags",
                     placeholder: "Select categories",
                     filterSidebarSectionKey: "categories",

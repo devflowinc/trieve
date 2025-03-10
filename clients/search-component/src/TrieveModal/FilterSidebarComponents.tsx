@@ -233,13 +233,20 @@ export interface SearchQueryState {
   loading: boolean;
 }
 
+export interface TextFieldState {
+  value: string;
+  loading: boolean;
+}
+
 export interface InferenceFilterFormStep {
   title: string;
   description: string;
-  type: "image" | "tags" | "search_modal";
+  type: "image" | "tags" | "search_modal" | "text";
   placeholder?: string;
   filterSidebarSectionKey?: string;
   prompt?: string;
+  inferenceInputLabel?: string;
+  inputLabel?: string;
 }
 
 export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
@@ -252,6 +259,9 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
   const { askQuestion, clearConversation } = useChatState();
   const [images, setImages] = useState<Record<string, File>>({});
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const [textFields, setTextFields] = useState<Record<string, TextFieldState>>(
+    {},
+  );
   const [searchQueries, setSearchQueries] = useState<
     Record<string, SearchQueryState>
   >({});
@@ -276,9 +286,10 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
 
       const prevStep = steps[i - 1];
       if (prevStep.type === "image") {
-        if (!images[prevStep.title]) {
+        if (!imageUrls[prevStep.title]) {
           continue;
         }
+        const imageUrl = imageUrls[prevStep.title];
         (async () => {
           setSelectedSidebarFilters((prev) => {
             return {
@@ -286,27 +297,6 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               [steps[i].filterSidebarSectionKey ?? ""]: [],
             };
           });
-          setLoadingStates((prev) => ({
-            ...prev,
-            [steps[i].title]: "Uploading image...",
-          }));
-          const imageFile = images[prevStep.title];
-          const data = await toBase64(imageFile);
-          const base64File = data
-            .split(",")[1]
-            .replace(/\+/g, "-")
-            .replace(/\//g, "_")
-            .replace(/=+$/, "");
-          const fileId = await uploadFile(
-            trieveSDK,
-            imageFile.name,
-            base64File,
-          );
-          const imageUrl = await getPresignedUrl(trieveSDK, fileId);
-          setImageUrls((prev) => ({
-            ...prev,
-            [prevStep.title]: imageUrl,
-          }));
 
           setLoadingStates((prev) => ({
             ...prev,
@@ -371,7 +361,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     return () => {
       toolCallAbortController.abort();
     };
-  }, [images]);
+  }, [imageUrls]);
 
   useEffect(() => {
     const firstMessageInferenceAbortController = new AbortController();
@@ -461,6 +451,87 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     };
   }, [selectedSidebarFilters]);
 
+  useEffect(() => {
+    const textInferenceAbortController = new AbortController();
+    for (let i = 1; i < steps.length; i++) {
+      if (steps[i].type === "text") {
+        const prevStep = steps[i - 1];
+        const image_url = imageUrls[prevStep.title];
+        if (!image_url) {
+          continue;
+        }
+
+        (async () => {
+          setLoadingStates((prev) => ({
+            ...prev,
+            [steps[i].title]: "Understanding your space...",
+          }));
+
+          const fingerprint = await getFingerprint();
+          const replacementMaterialDescriptionReader =
+            await trieveSDK.ragOnChunkReader(
+              {
+                chunk_ids: [],
+                image_urls: Object.values(imageUrls).filter((url) => url),
+                prev_messages: [
+                  {
+                    content: `${steps[i].prompt ?? ""}`,
+                    role: "user",
+                  },
+                ],
+                prompt: "",
+                stream_response: true,
+                user_id: fingerprint.toString(),
+              },
+              textInferenceAbortController.signal,
+            );
+
+          setLoadingStates((prev) => ({
+            ...prev,
+            [steps[i].title]: "Generating style analysis...",
+          }));
+
+          let done = false;
+          let textInStream = "";
+          while (!done) {
+            const { value, done: doneReading } =
+              await replacementMaterialDescriptionReader.read();
+            if (doneReading) {
+              done = doneReading;
+              setLoadingStates((prev) => ({
+                ...prev,
+                [steps[i].title]: "idle",
+              }));
+              askQuestion(textInStream, undefined, undefined);
+              setTextFields((prev) => ({
+                ...prev,
+                [steps[i].title]: {
+                  value: textInStream,
+                  loading: false,
+                },
+              }));
+            } else if (value) {
+              const decoder = new TextDecoder();
+              const newText = decoder.decode(value);
+              textInStream += newText;
+              setTextFields((prev) => ({
+                ...prev,
+                [steps[i].title]: {
+                  value: textInStream,
+                  loading: false,
+                },
+              }));
+            }
+          }
+        })();
+      }
+    }
+
+    return () => {
+      textInferenceAbortController.abort();
+    };
+  }, [imageUrls]);
+
   return (
     <div className="trieve-inference-filters-form">
       {steps.map((step, index) => (
@@ -524,6 +595,34 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                       ...prev,
                       [step.title]: files[0],
                     }));
+                    setLoadingStates((prev) => ({
+                      ...prev,
+                      [step.title]: "Uploading image...",
+                    }));
+                    toBase64(files[0]).then((data) => {
+                      const base64File = data
+                        .split(",")[1]
+                        .replace(/\+/g, "-")
+                        .replace(/\//g, "_")
+                        .replace(/=+$/, "");
+                      uploadFile(trieveSDK, files[0].name, base64File).then(
+                        (fileId) => {
+                          getPresignedUrl(trieveSDK, fileId).then(
+                            (imageUrl) => {
+                              setImageUrls((prev) => ({
+                                ...prev,
+                                [step.title]: imageUrl,
+                              }));
+
+                              setLoadingStates((prev) => ({
+                                ...prev,
+                                [step.title]: "idle",
+                              }));
+                            },
+                          );
+                        },
+                      );
+                    });
                   }
                 };
                 input.click();
@@ -548,6 +647,52 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               <p className="trieve-image-input-placeholder">
                 {step.placeholder}
               </p>
+            </div>
+
+            <div
+              className="trieve-text-step-container"
+              data-input-field-type={step.type}
+              data-prev-complete={textFields[step.title] ? "true" : "false"}
+            >
+              <div className="trieve-text-input-container">
+                <label
+                  htmlFor="ai-understanding-input"
+                  className="trieve-text-input-label"
+                >
+                  {step.inferenceInputLabel ?? "AI Understanding"}
+                </label>
+                <div className="trieve-text-input-textarea-container">
+                  <textarea
+                    name="ai-understanding-input"
+                    rows={4}
+                    className="trieve-text-input-textarea"
+                    defaultValue={textFields[step.title]?.value}
+                  />
+                </div>
+              </div>
+
+              <div className="trieve-text-input-container">
+                <label htmlFor="text-input" className="trieve-text-input-label">
+                  {step.inputLabel ?? "Your message"}
+                </label>
+                <div className="trieve-text-input-textarea-container">
+                  <textarea
+                    name="text-input"
+                    rows={4}
+                    className="trieve-text-input-textarea"
+                    placeholder={step.placeholder}
+                  />
+                </div>
+              </div>
+
+              <div className="trieve-text-button-container">
+                <button type="button" className="trieve-text-input-button">
+                  Next
+                  <div>
+                    <i className="fa-solid fa-arrow-right"></i>
+                  </div>
+                </button>
+              </div>
             </div>
 
             <div
