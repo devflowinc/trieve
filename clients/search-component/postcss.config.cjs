@@ -12,7 +12,7 @@ const convertRemToPx = {
         if (p1 === undefined) return match;
 
         return `${p1 * opts.baseValue}${p1 == 0 ? "" : unit}`;
-      }
+      },
     );
   },
 };

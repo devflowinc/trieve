@@ -73,7 +73,7 @@ export const useKeyboardNavigation = () => {
         }
       }
     },
-    [open]
+    [open],
   );
 
   useEffect(() => {

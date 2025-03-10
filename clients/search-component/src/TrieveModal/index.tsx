@@ -57,7 +57,7 @@ const SearchPage = () => {
                     />
                   ))}
                 </Accordion>
-              )
+              ),
             )}
           </div>
         </div>
@@ -86,7 +86,7 @@ const Modal = () => {
     }
 
     const trieveSearchModal = document.querySelector(
-      "#trieve-search-modal"
+      "#trieve-search-modal",
     ) as HTMLElement;
 
     const chatModalWrapper = document.querySelector(".chat-modal-wrapper");
@@ -175,7 +175,7 @@ const Modal = () => {
         clearConversation();
         chatWithGroup(
           customEvent.detail.group,
-          customEvent.detail.betterGroupName
+          customEvent.detail.betterGroupName,
         );
         if (customEvent.detail.message) {
           askQuestion(customEvent.detail.message, customEvent.detail.group);
@@ -252,7 +252,7 @@ const Modal = () => {
     if (!props.ignoreEventListeners) {
       window.addEventListener(
         "trieve-start-chat-with-group",
-        chatWithGroupListener
+        chatWithGroupListener,
       );
       window.addEventListener("trieve-open-with-text", openWithTextListener);
 
@@ -265,14 +265,14 @@ const Modal = () => {
       if (!props.ignoreEventListeners) {
         window.removeEventListener(
           "trieve-start-chat-with-group",
-          chatWithGroupListener
+          chatWithGroupListener,
         );
 
         window.addEventListener("trieve-open-modal", openModalListener);
 
         window.removeEventListener(
           "trieve-open-with-text",
-          openWithTextListener
+          openWithTextListener,
         );
 
         window.addEventListener("trieve-close-modal", closeModalListener);
@@ -324,26 +324,26 @@ export const TrieveModalSearch = (props: ModalProps) => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-color",
-      props.brandColor ?? "#CB53EB"
+      props.brandColor ?? "#CB53EB",
     );
 
     if (props.theme === "dark") {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-700)"
+        "var(--tv-zinc-700)",
       );
     } else {
       document.documentElement.style.setProperty(
         "--tv-prop-scrollbar-thumb-color",
-        "var(--tv-zinc-300)"
+        "var(--tv-zinc-300)",
       );
     }
 
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
+        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);
 

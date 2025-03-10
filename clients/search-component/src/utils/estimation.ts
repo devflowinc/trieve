@@ -1,7 +1,7 @@
 import { ChunkWithHighlights } from "./types";
 
 export const guessTitleAndDesc = (
-  item: ChunkWithHighlights
+  item: ChunkWithHighlights,
 ): {
   title: string;
   descriptionHtml: string;
@@ -19,7 +19,7 @@ export const guessTitleAndDesc = (
   const chunkHtmlHeadingsDiv = document.createElement("div");
   chunkHtmlHeadingsDiv.innerHTML = item.chunk.chunk_html || "";
   const chunkHtmlHeadings = chunkHtmlHeadingsDiv.querySelectorAll(
-    "h1, h2, h3, h4, h5, h6"
+    "h1, h2, h3, h4, h5, h6",
   );
   const $firstHeading = chunkHtmlHeadings[0] ?? document.createElement("h1");
   $firstHeading.querySelectorAll("b").forEach((b) => {
@@ -54,7 +54,7 @@ export const findCommonName = (names: string[]) => {
     const currentChar = firstString[i];
 
     const allMatch = names.every(
-      (str) => str[i]?.toLowerCase() === currentChar.toLowerCase()
+      (str) => str[i]?.toLowerCase() === currentChar.toLowerCase(),
     );
 
     if (allMatch) {

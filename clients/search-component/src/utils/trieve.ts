@@ -15,14 +15,19 @@ import {
   SearchResults,
 } from "./types";
 import { defaultHighlightOptions, highlightText } from "./highlight";
-import { ModalProps, ModalTypes, PagefindApi, useModalState } from "./hooks/modal-context";
+import {
+  ModalProps,
+  ModalTypes,
+  PagefindApi,
+  useModalState,
+} from "./hooks/modal-context";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
 
   return Object.fromEntries(
-    Object.entries(obj).filter(([key]) => !keys.includes(key))
+    Object.entries(obj).filter(([key]) => !keys.includes(key)),
   );
 };
 
@@ -97,7 +102,7 @@ export const searchWithTrieve = async ({
         if (headers["x-tr-query"] && audioBase64) {
           transcribedQuery = headers["x-tr-query"];
         }
-      }
+      },
     )) as SearchResponseBody;
   } else {
     results = (await trieve.search(
@@ -126,7 +131,7 @@ export const searchWithTrieve = async ({
         if (headers["x-tr-query"] && audioBase64) {
           transcribedQuery = headers["x-tr-query"];
         }
-      }
+      },
     )) as SearchResponseBody;
   }
 
@@ -214,7 +219,7 @@ export const groupSearchWithTrieve = async ({
       if (headers["x-tr-query"] && audioBase64) {
         transcribedQuery = headers["x-tr-query"];
       }
-    }
+    },
   );
 
   const resultsWithHighlight = results.results.map((group) => {
@@ -274,7 +279,7 @@ export const countChunks = async ({
       search_type: "fulltext",
       ...omit(searchOptions, ["search_type"]),
     },
-    abortController?.signal
+    abortController?.signal,
   );
   return results;
 };
@@ -292,7 +297,7 @@ export const sendCtrData = async ({
   type: CTRType;
   index: number;
 }) => {
-  const {props} = useModalState();
+  const { props } = useModalState();
   await trieve.sendCTRAnalytics({
     ctr_type: type,
     clicked_chunk_id: chunkID,
@@ -302,8 +307,8 @@ export const sendCtrData = async ({
       component_name: props.componentName,
       page_url: window.location.href,
       component_props: props,
-      fingerprint: await getFingerprint()
-    }
+      fingerprint: await getFingerprint(),
+    },
   });
 
   return null;
@@ -320,7 +325,7 @@ export const trackViews = async ({
   type: CTRType;
   items: string[];
 }) => {
-  const {props} = useModalState();
+  const { props } = useModalState();
   trieve.trieve.fetch("/api/analytics/events", "put", {
     datasetId: trieve.datasetId ?? "",
     data: {
@@ -335,8 +340,8 @@ export const trackViews = async ({
         component_name: props.componentName,
         component_props: props,
         page_url: window.location.href,
-        fingerprint: await getFingerprint()
-      }
+        fingerprint: await getFingerprint(),
+      },
     },
   });
 
@@ -361,7 +366,7 @@ export const getSuggestedQueries = async ({
       suggestions_to_create: count,
       search_type: "semantic",
     },
-    abortController?.signal
+    abortController?.signal,
   );
 };
 
@@ -381,12 +386,11 @@ export const getSuggestedQuestions = async ({
   query?: string;
   count: number;
   groupTrackingId?: string | null;
-  is_followup?: boolean,
-  prevUserMessages?: string[],
+  is_followup?: boolean;
+  prevUserMessages?: string[];
   props?: ModalProps;
-  chunks?: Chunk[] | null,
+  chunks?: Chunk[] | null;
 }) => {
-
   let context: string;
   if (groupTrackingId && modalProps?.cleanGroupName) {
     context = `The user is specifically and exclusively interested in the ${modalProps.cleanGroupName}. Suggest short questions limited to 3-6 words based on the reference content.`;
@@ -395,9 +399,12 @@ export const getSuggestedQuestions = async ({
     const cleanedChunks = chunks.map((chunk) => {
       return {
         chunk_html: chunk.chunk_html,
-        title: chunk.metadata.heading || chunk.metadata.title || chunk.metadata.page_title,
-        price: chunk.num_value
-      }
+        title:
+          chunk.metadata.heading ||
+          chunk.metadata.title ||
+          chunk.metadata.page_title,
+        price: chunk.num_value,
+      };
     });
     context = `The previous messages were ${JSON.stringify(prevUserMessages)}. The AI presented ${JSON.stringify(cleanedChunks)}. You are the user asking follow up questions to the AI. Keep your query recommendations short, limited to 3-6 words.`;
   } else if (query) {
@@ -426,7 +433,7 @@ export const getSuggestedQuestions = async ({
           },
         }),
     },
-    abortController?.signal
+    abortController?.signal,
   );
 };
 
@@ -436,7 +443,7 @@ export const searchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
   datasetId: string,
-  tags?: string[]
+  tags?: string[],
 ) => {
   const response = await pagefind.search(
     query,
@@ -444,14 +451,14 @@ export const searchWithPagefind = async (
       filters: {
         tag_set: tags,
       },
-    }
+    },
   );
 
   const results = await Promise.all(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     response.results.map(async (result: any) => {
       return await result.data();
-    })
+    }),
   );
 
   // Set pagesize to 20
@@ -486,7 +493,7 @@ export const groupSearchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
   datasetId: string,
-  tags?: string[]
+  tags?: string[],
 ): Promise<GroupSearchResults> => {
   const response = await pagefind.search(
     query,
@@ -494,14 +501,14 @@ export const groupSearchWithPagefind = async (
       filters: {
         tag_set: tags,
       },
-    }
+    },
   );
 
   const results = await Promise.all(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     response.results.map(async (result: any) => {
       return await result.data();
-    })
+    }),
   );
 
   const groupMap = new Map<string, ChunkWithHighlights[]>();
@@ -575,7 +582,7 @@ export const countChunksWithPagefind = async (
     selected?: boolean;
     iconClassName?: string;
     icon?: () => JSX.Element;
-  }[]
+  }[],
 ): Promise<CountChunkQueryResponseBody[]> => {
   let queryParam: string | null = query;
   if (query.trim() === "") {
@@ -615,7 +622,7 @@ export const getPagefindIndex = async (trieve: TrieveSDK): Promise<string> => {
 export const uploadFile = async (
   trieve: TrieveSDK,
   file_name: string,
-  base64_file: string
+  base64_file: string,
 ): Promise<string> => {
   const response = await trieve.trieve.fetch("/api/file", "post", {
     datasetId: trieve.datasetId as string,
@@ -631,7 +638,7 @@ export const uploadFile = async (
 
 export const getPresignedUrl = async (
   trieve: TrieveSDK,
-  fileId: string
+  fileId: string,
 ): Promise<string> => {
   const response = await trieve.trieve.fetch("/api/file/{file_id}", "get", {
     datasetId: trieve.datasetId as string,

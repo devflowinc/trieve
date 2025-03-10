@@ -45,7 +45,7 @@ export const UploadImage = () => {
         const fileId = await uploadFile(
           trieveSDK,
           internalFile.name,
-          base64File
+          base64File,
         );
         const imageUrl = await getPresignedUrl(trieveSDK, fileId);
         setImageUrl(imageUrl);

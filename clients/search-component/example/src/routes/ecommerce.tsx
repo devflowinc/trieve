@@ -29,7 +29,7 @@ export default function ECommerce() {
     import.meta.env.VITE_DEFAULT_SEARCH_QUERIES ?? ""
   ).split(",");
   const defaultTags: any[] = JSON.parse(
-    import.meta.env.VITE_DEFAULT_TAGS ?? "[]"
+    import.meta.env.VITE_DEFAULT_TAGS ?? "[]",
   );
   const defaultSearchMode =
     import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "search";

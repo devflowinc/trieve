@@ -31,7 +31,7 @@ export const ActiveFilterPills = () => {
       ([sectionKey, tags]) => ({
         sectionKey,
         tags,
-      })
+      }),
     );
     return filters;
   }, [selectedSidebarFilters]);
@@ -69,7 +69,7 @@ export const ActiveFilterPills = () => {
                 <XIcon />
               </i>
             </button>
-          ))
+          )),
         )}
       </div>
       <button
@@ -194,7 +194,7 @@ export const FilterButton = ({
         setSelectedSidebarFilters({
           ...selectedSidebarFilters,
           [sectionKey]: selectedSidebarFilters[sectionKey].filter(
-            (item) => item !== filterKey
+            (item) => item !== filterKey,
           ),
         });
       } else {
@@ -256,10 +256,10 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     Record<string, SearchQueryState>
   >({});
   const [loadingStates, setLoadingStates] = useState<Record<string, string>>(
-    {}
+    {},
   );
   const [filterOptions, setFilterOptions] = useState<Record<string, string[]>>(
-    {}
+    {},
   );
 
   useEffect(() => {
@@ -268,7 +268,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     for (let i = 1; i < steps.length; i++) {
       const correspondingFilter =
         props.searchPageProps?.filterSidebarProps?.sections.find(
-          (section) => section.key === steps[i].filterSidebarSectionKey
+          (section) => section.key === steps[i].filterSidebarSectionKey,
         );
       if (!correspondingFilter?.options) {
         continue;
@@ -300,7 +300,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
           const fileId = await uploadFile(
             trieveSDK,
             imageFile.name,
-            base64File
+            base64File,
           );
           const imageUrl = await getPresignedUrl(trieveSDK, fileId);
           setImageUrls((prev) => ({
@@ -330,7 +330,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                   }) ?? [],
               },
             },
-            toolCallAbortController.signal
+            toolCallAbortController.signal,
           );
           const match_any_tags: string[] = [];
           for (const key of Object.keys(filterParamsResp.parameters ?? {})) {
@@ -339,7 +339,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             ];
             if (typeof filterParam === "boolean" && filterParam) {
               const tag = correspondingFilter.options?.find(
-                (t) => t.label === key
+                (t) => t.label === key,
               )?.tag;
               if (tag) {
                 match_any_tags.push(tag);
@@ -348,7 +348,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
           }
           if (match_any_tags.length === 0) {
             match_any_tags.push(
-              ...correspondingFilter.options.map((t) => t.tag)
+              ...correspondingFilter.options.map((t) => t.tag),
             );
           }
           setFilterOptions((prev) => {
@@ -413,7 +413,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 stream_response: true,
                 user_id: fingerprint.toString(),
               },
-              firstMessageInferenceAbortController.signal
+              firstMessageInferenceAbortController.signal,
             );
           setLoadingStates((prev) => ({
             ...prev,
@@ -431,11 +431,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 ...prev,
                 [steps[i].title]: "idle",
               }));
-              askQuestion(
-                textInStream,
-                undefined,
-                undefined,
-              );
+              askQuestion(textInStream, undefined, undefined);
               setSearchQueries((prev) => ({
                 ...prev,
                 [steps[i].title]: {
@@ -564,7 +560,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                   key={tag}
                   data-active={
                     Object.keys(selectedSidebarFilters ?? {}).includes(
-                      step.filterSidebarSectionKey ?? ""
+                      step.filterSidebarSectionKey ?? "",
                     ) &&
                     selectedSidebarFilters[
                       step.filterSidebarSectionKey ?? ""
@@ -581,7 +577,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                       if (
                         props.searchPageProps?.filterSidebarProps?.sections.find(
                           (section) =>
-                            section.key === step.filterSidebarSectionKey
+                            section.key === step.filterSidebarSectionKey,
                         )?.selectionType === "single"
                       ) {
                         if (tagCurrentlySelected) {

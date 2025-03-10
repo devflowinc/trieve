@@ -137,10 +137,10 @@ export type ModalProps = {
   zIndex?: number;
   showFloatingButton?: boolean;
   floatingButtonPosition?:
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-right";
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right";
   floatingSearchIconPosition?: "left" | "right";
   showFloatingSearchIcon?: boolean;
   disableFloatingSearchIconClick?: boolean;
@@ -275,7 +275,7 @@ const ModalContext = createContext<{
   >;
 }>({
   props: defaultProps,
-  trieveSDK: (() => { }) as unknown as TrieveSDK,
+  trieveSDK: (() => {}) as unknown as TrieveSDK,
   query: "",
   imageUrl: "",
   audioBase64: "",
@@ -286,28 +286,28 @@ const ModalContext = createContext<{
   inputRef: { current: null },
   modalRef: { current: null },
   mode: "search",
-  setMode: () => { },
-  setOpen: () => { },
-  setQuery: () => { },
-  setImageUrl: () => { },
-  setAudioBase64: () => { },
-  setUploadingImage: () => { },
-  setResults: () => { },
+  setMode: () => {},
+  setOpen: () => {},
+  setQuery: () => {},
+  setImageUrl: () => {},
+  setAudioBase64: () => {},
+  setUploadingImage: () => {},
+  setResults: () => {},
   requestID: "",
-  setRequestID: () => { },
-  setLoadingResults: () => { },
+  setRequestID: () => {},
+  setLoadingResults: () => {},
   selectedTags: [],
-  setSelectedTags: () => { },
+  setSelectedTags: () => {},
   currentGroup: null,
-  setCurrentGroup: () => { },
+  setCurrentGroup: () => {},
   tagCounts: [],
-  setContextProps: () => { },
+  setContextProps: () => {},
   pagefind: null,
   isRecording: false,
-  setIsRecording: () => { },
+  setIsRecording: () => {},
   // sidebar filter specific state
   selectedSidebarFilters: {},
-  setSelectedSidebarFilters: () => { },
+  setSelectedSidebarFilters: () => {},
 });
 
 const ModalProvider = ({
@@ -337,7 +337,7 @@ const ModalProvider = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [selectedTags, setSelectedTags] = useState(
-    props.tags?.filter((t) => t.selected)
+    props.tags?.filter((t) => t.selected),
   );
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
   const [currentGroup, setCurrentGroup] = useState<ChunkGroup | null>(null);
@@ -393,7 +393,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          selectedTags?.map((t) => t.tag)
+          selectedTags?.map((t) => t.tag),
         );
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
@@ -410,7 +410,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          selectedTags?.map((t) => t.tag)
+          selectedTags?.map((t) => t.tag),
         );
         setResults(results);
       } else {
@@ -450,7 +450,7 @@ const ModalProvider = ({
         const filterCounts = await countChunksWithPagefind(
           pagefind,
           query,
-          props.tags
+          props.tags,
         );
         setTagCounts(filterCounts);
       } else {
@@ -462,8 +462,8 @@ const ModalProvider = ({
                 trieve: trieve,
                 abortController,
                 ...(tag.tag !== "all" && { tag: tag.tag }),
-              })
-            )
+              }),
+            ),
           );
           setTagCounts(numberOfRecords);
         } catch (e) {
@@ -491,7 +491,7 @@ const ModalProvider = ({
         import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
           // @vite-ignore
           setPagefind(pagefind);
-          pagefind.filters().then(() => { });
+          pagefind.filters().then(() => {});
         });
       });
     }
@@ -502,24 +502,29 @@ const ModalProvider = ({
   }, [open]);
 
   useEffect(() => {
-    const sendAnalyticsEvent = async () => {
-      if (open && props.analytics) {
-        const fingerprint = await getFingerprint();
-        trieve.sendAnalyticsEvent({
-          event_name: `${props.componentName}_click`,
-          event_type: "click",
-          clicked_items: null,
-          metadata: {
-            component_name: props.componentName,
-            component_props: props,
-            page_url: window.location.href,
-            fingerprint,
-          },
-        });
-      }
-    };
+    const abortController = new AbortController();
 
-    sendAnalyticsEvent();
+    if (open && props.analytics) {
+      getFingerprint().then((fingerprint) => {
+        trieve.sendAnalyticsEvent(
+          {
+            event_name: `trieve-modal_click`,
+            event_type: "click",
+            clicked_items: null,
+            metadata: {
+              page_url: window.location.href,
+              component_props: props,
+              fingerprint,
+            },
+          },
+          abortController.signal,
+        );
+      });
+    }
+
+    return () => {
+      abortController.abort("AbortError trieve-modal_click");
+    };
   }, [open, props.analytics, props.componentName]);
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -534,7 +539,7 @@ const ModalProvider = ({
         setMode((prevMode) => (prevMode === "chat" ? "search" : "chat"));
       }
     },
-    [open, props.allowSwitchingModes]
+    [open, props.allowSwitchingModes],
   );
 
   useEffect(() => {
