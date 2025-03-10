@@ -359,7 +359,7 @@ body {
     .code-markdown {
       @apply tv-mt-2 sm:tv-mt-2 tv-mb-2 tv-items-center tv-overflow-ellipsis;
 
-      p {
+      p:not(.ecomm-item-title) {
         @apply tv-pb-2;
       }
 
@@ -1555,6 +1555,12 @@ body {
               display: none;
             }
 
+            .trieve-text-button-container {
+              display: none;
+            }
+          }
+
+          &[data-completed="true"] {
             .trieve-text-button-container {
               display: none;
             }

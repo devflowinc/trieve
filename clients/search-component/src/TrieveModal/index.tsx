@@ -17,9 +17,7 @@ import { FloatingSearchIcon } from "./FloatingSearchIcon";
 import { FloatingSearchInput } from "./FloatingSearchInput";
 import { ModalContainer } from "./ModalContainer";
 import {
-  Accordion,
   ActiveFilterPills,
-  FilterButton,
   InferenceFiltersForm,
 } from "./FilterSidebarComponents";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
@@ -37,30 +35,6 @@ const SearchPage = () => {
         <ActiveFilterPills />
       </div>
       <div className="trieve-search-page-main-section">
-        <div className="trieve-filter-bar-section">
-          <div className="trieve-filter-sidebar">
-            {props.searchPageProps?.filterSidebarProps?.sections.map(
-              (section) => (
-                <Accordion
-                  sectionKey={section.key}
-                  title={section.title}
-                  key={section.key}
-                >
-                  {section.options.map((option, i) => (
-                    <FilterButton
-                      sectionKey={section.key}
-                      label={option.label ?? ""}
-                      description={option.description}
-                      type={section.selectionType}
-                      filterKey={option.tag}
-                      key={i}
-                    />
-                  ))}
-                </Accordion>
-              ),
-            )}
-          </div>
-        </div>
         <div className="trieve-filter-main-section">
           <InferenceFiltersForm
             steps={
@@ -118,21 +92,25 @@ const Modal = () => {
 
     console.log("sending load event");
 
-    getFingerprint().then((fingerprint) => {
-      trieveSDK.sendAnalyticsEvent(
-        {
-          event_name: `trieve-modal_load`,
-          event_type: "view",
-          items: [],
-          metadata: {
-            page_url: window.location.href,
-            component_props: props,
-            fingerprint,
+    try {
+      getFingerprint().then((fingerprint) => {
+        trieveSDK.sendAnalyticsEvent(
+          {
+            event_name: `trieve-modal_load`,
+            event_type: "view",
+            items: [],
+            metadata: {
+              page_url: window.location.href,
+              component_props: props,
+              fingerprint,
+            },
           },
-        },
-        abortController.signal,
-      );
-    });
+          abortController.signal,
+        );
+      });
+    } catch (e) {
+      console.log("error on load event", e);
+    }
 
     return () => {
       abortController.abort("AbortError trieve-modal_load");
