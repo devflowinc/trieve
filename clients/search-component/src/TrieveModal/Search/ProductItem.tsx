@@ -120,6 +120,7 @@ export const ProductItem = ({
   ) => {
     if (props.analytics) {
       await sendCtrData({
+        props: props,
         trieve: trieveSDK,
         type: type ?? "search",
         index: chunk.position,

@@ -182,6 +182,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           );
           if (ecommerceChunks && queryId) {
             trackViews({
+              props: props,
               trieve: trieveSDK,
               requestID: queryId,
               type: "rag",
