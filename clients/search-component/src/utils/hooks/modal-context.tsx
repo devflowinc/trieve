@@ -63,16 +63,17 @@ export interface TagProp {
   description?: string;
 }
 
-export interface FilterSidebarSections {
+export interface FilterSidebarSection {
   key: string;
   title: string;
   selectionType: "single" | "multiple";
   filterType: "match_any" | "match_all";
   options: TagProp[];
+  child?: FilterSidebarSection;
 }
 
 export interface FilterSidebarProps {
-  sections: FilterSidebarSections[];
+  sections: FilterSidebarSection[];
 }
 
 export interface InferenceFiltersFormProps {
@@ -505,21 +506,25 @@ const ModalProvider = ({
     const abortController = new AbortController();
 
     if (open && props.analytics) {
-      getFingerprint().then((fingerprint) => {
-        trieve.sendAnalyticsEvent(
-          {
-            event_name: `trieve-modal_click`,
-            event_type: "click",
-            clicked_items: null,
-            metadata: {
-              page_url: window.location.href,
-              component_props: props,
-              fingerprint,
+      try {
+        getFingerprint().then((fingerprint) => {
+          trieve.sendAnalyticsEvent(
+            {
+              event_name: `trieve-modal_click`,
+              event_type: "click",
+              clicked_items: null,
+              metadata: {
+                page_url: window.location.href,
+                component_props: props,
+                fingerprint,
+              },
             },
-          },
-          abortController.signal,
-        );
-      });
+            abortController.signal,
+          );
+        });
+      } catch (e) {
+        console.log("error on click event", e);
+      }
     }
 
     return () => {

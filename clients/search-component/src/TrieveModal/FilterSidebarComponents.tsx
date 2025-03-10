@@ -234,7 +234,8 @@ export interface SearchQueryState {
 }
 
 export interface TextFieldState {
-  value: string;
+  inferenceValue: string;
+  inputValue?: string;
   loading: boolean;
 }
 
@@ -262,13 +263,13 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
   const [textFields, setTextFields] = useState<Record<string, TextFieldState>>(
     {},
   );
-  const [searchQueries, setSearchQueries] = useState<
-    Record<string, SearchQueryState>
-  >({});
   const [loadingStates, setLoadingStates] = useState<Record<string, string>>(
     {},
   );
   const [filterOptions, setFilterOptions] = useState<Record<string, string[]>>(
+    {},
+  );
+  const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>(
     {},
   );
 
@@ -276,6 +277,10 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     const toolCallAbortController = new AbortController();
 
     for (let i = 1; i < steps.length; i++) {
+      if (completedSteps[steps[i].title]) {
+        continue;
+      }
+
       const correspondingFilter =
         props.searchPageProps?.filterSidebarProps?.sections.find(
           (section) => section.key === steps[i].filterSidebarSectionKey,
@@ -285,87 +290,105 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
       }
 
       const prevStep = steps[i - 1];
-      if (prevStep.type === "image") {
-        if (!imageUrls[prevStep.title]) {
-          continue;
-        }
-        const imageUrl = imageUrls[prevStep.title];
-        (async () => {
-          setSelectedSidebarFilters((prev) => {
-            return {
-              ...prev,
-              [steps[i].filterSidebarSectionKey ?? ""]: [],
-            };
-          });
+      if (!completedSteps[prevStep.title]) {
+        continue;
+      }
 
-          setLoadingStates((prev) => ({
+      let prevImageUrl = "";
+      let prevInferenceText = "";
+      let prevInputText = "";
+      if (prevStep.type === "text") {
+        prevInferenceText = textFields[prevStep.title]?.inferenceValue ?? "";
+        prevInputText = textFields[prevStep.title]?.inputValue ?? "";
+      }
+      if (prevStep.type === "image") {
+        prevImageUrl = imageUrls[prevStep.title] ?? "";
+      }
+      let promptDescription =
+        "Decide on which materials might be applicable based on the information provided. Err on the side of caution and include materials that you are only somewhat sure apply. Follow instructions in parameter descriptions for marking their values.";
+      if (prevStep.type === "text") {
+        promptDescription += `\n\n[Context for the existing space]:\n${prevInferenceText}`;
+        if (prevInputText) {
+          promptDescription += `\n\n[User's goal for the space]:\n${prevInputText}`;
+        }
+      }
+
+      (async () => {
+        setSelectedSidebarFilters((prev) => {
+          return {
             ...prev,
-            [steps[i].title]: "Detecting materials present in the image...",
-          }));
-          const filterParamsResp = await trieveSDK.getToolCallFunctionParams(
-            {
-              user_message_text: steps[i].prompt ?? "",
-              image_url: imageUrl ? imageUrl : null,
-              tool_function: {
-                name: "get_applicable_materials",
-                description:
-                  "Decide on which materials might be applicable based on the image. Err on the side of caution and include materials that you are only somewhat sure apply. Follow instructions in parameter descriptions for marking their values.",
-                parameters:
-                  correspondingFilter.options?.map((tag) => {
-                    return {
-                      name: tag.label,
-                      parameter_type: "boolean",
-                      description: tag.description ?? "",
-                    } as ToolFunctionParameter;
-                  }) ?? [],
-              },
+            [steps[i].filterSidebarSectionKey ?? ""]: [],
+          };
+        });
+
+        setLoadingStates((prev) => ({
+          ...prev,
+          [steps[i].title]: "Detecting materials present in the image...",
+        }));
+        const filterParamsResp = await trieveSDK.getToolCallFunctionParams(
+          {
+            user_message_text: steps[i].prompt ?? "",
+            image_url: prevImageUrl ? prevImageUrl : null,
+            tool_function: {
+              name: "get_applicable_materials",
+              description: promptDescription,
+              parameters:
+                correspondingFilter.options?.map((tag) => {
+                  return {
+                    name: tag.label,
+                    parameter_type: "boolean",
+                    description: tag.description ?? "",
+                  } as ToolFunctionParameter;
+                }) ?? [],
             },
-            toolCallAbortController.signal,
-          );
-          const match_any_tags: string[] = [];
-          for (const key of Object.keys(filterParamsResp.parameters ?? {})) {
-            const filterParam = (filterParamsResp.parameters as any)[
-              key as keyof typeof filterParamsResp.parameters
-            ];
-            if (typeof filterParam === "boolean" && filterParam) {
-              const tag = correspondingFilter.options?.find(
-                (t) => t.label === key,
-              )?.tag;
-              if (tag) {
-                match_any_tags.push(tag);
-              }
+          },
+          toolCallAbortController.signal,
+        );
+        const match_any_tags: string[] = [];
+        for (const key of Object.keys(filterParamsResp.parameters ?? {})) {
+          const filterParam = (filterParamsResp.parameters as any)[
+            key as keyof typeof filterParamsResp.parameters
+          ];
+          if (typeof filterParam === "boolean" && filterParam) {
+            const tag = correspondingFilter.options?.find(
+              (t) => t.label === key,
+            )?.tag;
+            if (tag) {
+              match_any_tags.push(tag);
             }
           }
-          if (match_any_tags.length === 0) {
-            match_any_tags.push(
-              ...correspondingFilter.options.map((t) => t.tag),
-            );
-          }
-          setFilterOptions((prev) => {
-            const newFilterOptions = {
-              ...prev,
-              [steps[i].filterSidebarSectionKey ?? ""]: match_any_tags,
-            };
-
-            return newFilterOptions;
-          });
-
-          setLoadingStates((prev) => ({
+        }
+        if (match_any_tags.length === 0) {
+          match_any_tags.push(...correspondingFilter.options.map((t) => t.tag));
+        }
+        setFilterOptions((prev) => {
+          const newFilterOptions = {
             ...prev,
-            [steps[i].title]: "idle",
-          }));
-        })();
-      }
+            [steps[i].filterSidebarSectionKey ?? ""]: match_any_tags,
+          };
+
+          return newFilterOptions;
+        });
+
+        setLoadingStates((prev) => ({
+          ...prev,
+          [steps[i].title]: "idle",
+        }));
+      })();
     }
 
     return () => {
       toolCallAbortController.abort();
     };
-  }, [imageUrls]);
+  }, [completedSteps]);
 
   useEffect(() => {
     const firstMessageInferenceAbortController = new AbortController();
     for (let i = 1; i < steps.length; i++) {
+      if (completedSteps[steps[i].title]) {
+        continue;
+      }
+
       if (steps[i].type === "search_modal") {
         const prevFilter = steps[i - 1].filterSidebarSectionKey;
         const selectedTags = selectedSidebarFilters[prevFilter ?? ""];
@@ -378,14 +401,24 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             ...prev,
             [steps[i].title]: "Figuring out what will look good...",
           }));
-          setSearchQueries((prev) => ({
-            ...prev,
-            [steps[i].title]: {
-              query: "",
-              loading: true,
-            },
-          }));
           clearConversation();
+
+          const prevTextStep = steps.find((step) => step.type === "text");
+
+          let prevInferenceText = "";
+          let prevInputText = "";
+          if (prevTextStep) {
+            prevInferenceText =
+              textFields[prevTextStep.title]?.inferenceValue ?? "";
+            prevInputText = textFields[prevTextStep.title]?.inputValue ?? "";
+          }
+          let promptDescription = `${steps[i].prompt ?? ""} ${selectedTags.join(", ")}`;
+          if (prevTextStep) {
+            promptDescription += `\n\n[Context for the existing space]:\n${prevInferenceText}`;
+            if (prevInputText) {
+              promptDescription += `\n\n[User's goal for the space (take more into account than anything else)]:\n${prevInputText}`;
+            }
+          }
 
           const fingerprint = await getFingerprint();
           const replacementMaterialDescriptionReader =
@@ -395,7 +428,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 image_urls: Object.values(imageUrls).filter((url) => url),
                 prev_messages: [
                   {
-                    content: `${steps[i].prompt ?? ""} ${selectedTags.join(", ")}`,
+                    content: promptDescription,
                     role: "user",
                   },
                 ],
@@ -421,25 +454,23 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 ...prev,
                 [steps[i].title]: "idle",
               }));
-              askQuestion(textInStream, undefined, undefined);
-              setSearchQueries((prev) => ({
+              if (prevTextStep) {
+                textInStream += `\n\n[Context on my space]:\n${prevInferenceText}`;
+                if (prevInputText) {
+                  textInStream += `\n\n[My goal for the space]:\n${prevInputText}`;
+                }
+              }
+
+              askQuestion(textInStream, undefined, false);
+
+              setCompletedSteps((prev) => ({
                 ...prev,
-                [steps[i].title]: {
-                  query: textInStream,
-                  loading: false,
-                },
+                [steps[i].title]: true,
               }));
             } else if (value) {
               const decoder = new TextDecoder();
               const newText = decoder.decode(value);
               textInStream += newText;
-              setSearchQueries((prev) => ({
-                ...prev,
-                [steps[i].title]: {
-                  query: textInStream,
-                  loading: false,
-                },
-              }));
             }
           }
         })();
@@ -449,7 +480,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     return () => {
       firstMessageInferenceAbortController.abort();
     };
-  }, [selectedSidebarFilters]);
+  }, [completedSteps]);
 
   useEffect(() => {
     const textInferenceAbortController = new AbortController();
@@ -506,7 +537,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               setTextFields((prev) => ({
                 ...prev,
                 [steps[i].title]: {
-                  value: textInStream,
+                  inferenceValue: textInStream,
                   loading: false,
                 },
               }));
@@ -517,7 +548,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               setTextFields((prev) => ({
                 ...prev,
                 [steps[i].title]: {
-                  value: textInStream,
+                  inferenceValue: textInStream,
                   loading: false,
                 },
               }));
@@ -539,11 +570,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
           className="trieve-inference-filters-step-container"
           key={index}
           data-prev-complete={
-            index == 0 ||
-            images[steps[index - 1].title] ||
-            selectedSidebarFilters[
-              steps[index - 1].filterSidebarSectionKey ?? ""
-            ]?.length
+            index == 0 || completedSteps[steps[index - 1].title]
               ? "true"
               : "false"
           }
@@ -618,6 +645,11 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                                 ...prev,
                                 [step.title]: "idle",
                               }));
+
+                              setCompletedSteps((prev) => ({
+                                ...prev,
+                                [step.title]: true,
+                              }));
                             },
                           );
                         },
@@ -652,7 +684,12 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             <div
               className="trieve-text-step-container"
               data-input-field-type={step.type}
-              data-prev-complete={textFields[step.title] ? "true" : "false"}
+              data-prev-complete={
+                index == 0 || completedSteps[steps[index - 1].title]
+                  ? "true"
+                  : "false"
+              }
+              data-completed={completedSteps[step.title] ? "true" : "false"}
             >
               <div className="trieve-text-input-container">
                 <label
@@ -666,7 +703,17 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                     name="ai-understanding-input"
                     rows={4}
                     className="trieve-text-input-textarea"
-                    defaultValue={textFields[step.title]?.value}
+                    disabled={completedSteps[step.title]}
+                    value={textFields[step.title]?.inferenceValue}
+                    onChange={(e) => {
+                      setTextFields((prev) => ({
+                        ...prev,
+                        [step.title]: {
+                          ...prev[step.title],
+                          inferenceValue: e.target.value,
+                        },
+                      }));
+                    }}
                   />
                 </div>
               </div>
@@ -680,13 +727,33 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                     name="text-input"
                     rows={4}
                     className="trieve-text-input-textarea"
+                    disabled={completedSteps[step.title]}
                     placeholder={step.placeholder}
+                    value={textFields[step.title]?.inputValue}
+                    onChange={(e) => {
+                      setTextFields((prev) => ({
+                        ...prev,
+                        [step.title]: {
+                          ...prev[step.title],
+                          inputValue: e.target.value,
+                        },
+                      }));
+                    }}
                   />
                 </div>
               </div>
 
               <div className="trieve-text-button-container">
-                <button type="button" className="trieve-text-input-button">
+                <button
+                  type="button"
+                  className="trieve-text-input-button"
+                  onClick={() => {
+                    setCompletedSteps((prev) => ({
+                      ...prev,
+                      [step.title]: true,
+                    }));
+                  }}
+                >
                   Next
                   <div>
                     <i className="fa-solid fa-arrow-right"></i>
@@ -754,6 +821,11 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                         };
                       }
                     });
+
+                    setCompletedSteps((prev) => ({
+                      ...prev,
+                      [step.title]: true,
+                    }));
                   }}
                 >
                   <span>{tag}</span>
@@ -767,9 +839,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             <div
               className="trieve-inference-filters-search-modal-container"
               data-prev-complete={
-                index == 0 ||
-                (searchQueries[steps[index].title]?.query &&
-                  !searchQueries[steps[index].title]?.loading)
+                index == 0 || completedSteps[steps[index - 1].title]
                   ? "true"
                   : "false"
               }
