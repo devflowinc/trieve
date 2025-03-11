@@ -7,7 +7,11 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { SparklesIcon } from "../icons";
 import { AIInitialMessage } from "./AIInitalMessage";
 
-export const SuggestedQuestions = () => {
+export const SuggestedQuestions = ({
+  onMessageSend,
+}: {
+  onMessageSend?: () => void;
+}) => {
   const { askQuestion, messages, setCurrentQuestion } = useChatState();
   const { suggestedQuestions, isLoadingSuggestedQueries, getQuestions } =
     useSuggestedQuestions();
@@ -52,6 +56,9 @@ export const SuggestedQuestions = () => {
               onClick={() => {
                 setCurrentQuestion(q);
                 askQuestion(q);
+                if (onMessageSend) {
+                  onMessageSend();
+                }
               }}
               key={q}
               className={`suggested-question tv-flex tv-gap-1 tv-items-center${
