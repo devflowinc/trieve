@@ -21,36 +21,40 @@ export const ChatMode = () => {
   const isOnScreen = entry && entry.isIntersecting;
 
   const onMessageSend = () => {
-    // get visible height portion of div
-    const visibleHeight = actualChatRef.current?.getBoundingClientRect().height;
-    if (!visibleHeight) {
-      return;
-    }
-
+    // Ensure we have enough height for new messages
     addHeight(800);
-    console.log("visibleHeight", visibleHeight);
 
-    // Get y position of last message in chat
-    const lastMessage = actualChatRef.current?.lastElementChild;
-    if (!lastMessage) {
-      return;
-    }
-    const lastMessagePosition = lastMessage.getBoundingClientRect().top;
+    // We need to scroll after the DOM updates with the new message
+    // Using setTimeout to ensure this happens after React's render cycle
+    setTimeout(() => {
+      if (!actualChatRef.current || !modalRef.current) {
+        return;
+      }
 
-    // Get y position of chat container
-    const chatContainerPosition =
-      actualChatRef.current?.getBoundingClientRect().top;
+      // Find the user message that was just added (the last user message)
+      const userMessages = actualChatRef.current.querySelectorAll(
+        ".user-message-container",
+      );
+      if (userMessages.length === 0) {
+        return;
+      }
 
-    // Scroll to said message
-    const scrollToMessage = () => {
-      const scrollTo = lastMessagePosition - chatContainerPosition;
-      actualChatRef.current?.scrollTo({
+      const lastUserMessage = userMessages[userMessages.length - 1];
+
+      // Calculate position to scroll to - we want the user message at the top of the viewport
+      const messageRect = lastUserMessage.getBoundingClientRect();
+      const containerRect = modalRef.current.getBoundingClientRect();
+
+      // Calculate the scroll position - message position relative to the scrollable container
+      const scrollTo =
+        messageRect.top - containerRect.top + modalRef.current.scrollTop;
+
+      // Scroll the modal container
+      modalRef.current.scrollTo({
         top: scrollTo,
         behavior: "smooth",
       });
-    };
-
-    setTimeout(scrollToMessage, 100);
+    }, 100);
   };
 
   return (
