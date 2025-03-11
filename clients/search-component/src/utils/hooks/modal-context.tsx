@@ -110,6 +110,7 @@ export type ModalProps = {
     checkout: {
       querySelector: string;
       containerSelector: string;
+      watchSelectorToRefreshListener?: string;
     };
   };
   ButtonEl?: JSX.ElementType;
