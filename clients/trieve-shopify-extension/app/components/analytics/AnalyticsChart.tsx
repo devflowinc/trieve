@@ -4,6 +4,9 @@ import { Chart } from "chart.js";
 import { enUS } from "date-fns/locale";
 import { convertToISO8601, fillDate } from "app/queries/analytics/formatting";
 import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
+import Crosshair from 'chartjs-plugin-crosshair';
+
+Chart.register(Crosshair);
 
 interface AnalyticsChartProps<T> {
   data: T[] | null | undefined;
@@ -50,20 +53,74 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
               tension: 0.3, // Slight curve to the line
               fill: true, // Fill area under the line
               pointBackgroundColor: "rgba(128, 0, 128, 0.9)",
-              pointRadius: 2,
+              pointRadius: 0,
               pointHoverRadius: 5,
             },
           ],
         },
         options: {
           responsive: true,
+          aspectRatio: 1,
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false,
+          },
           plugins: {
             legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(128, 0, 128, 0.9)',
+              titleColor: 'white',
+              bodyColor: 'white',
+              padding: 4,
+              displayColors: false,
+              position: 'nearest',
+              titleFont: {
+                size: 11
+              },
+              bodyFont: {
+                size: 11
+              },
+              callbacks: {
+                title: (context) => {
+                  const date = new Date(context[0].parsed.x);
+                  return date.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric'
+                  });
+                },
+                label: (context) => {
+                  return `${props.yLabel}: ${context.parsed.y}`;
+                }
+              }
+            },
+            // @ts-expect-error library types not updated
+            crosshair: {
+              line: {
+                color: 'rgba(128, 0, 128, 0.3)',
+                width: 1,
+                dashPattern: [6, 6],
+              },
+              sync: {
+                enabled: true,
+                group: 1,
+              },
+              snap: {
+                enabled: true,
+              },
+              zoom: {
+                enabled: false,
+              },
+            }
           },
-          aspectRatio: 3,
           scales: {
             y: {
-              grid: { color: "rgba(128, 0, 128, 0.1)" }, // Light purple grid
+              grid: {
+                display: false  // Turn off horizontal grid lines
+              },
               title: {
                 text: props.yLabel,
                 display: true,
@@ -71,8 +128,8 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
               beginAtZero: true,
               ticks: props.wholeUnits
                 ? {
-                    precision: 0,
-                  }
+                  precision: 0,
+                }
                 : undefined,
             },
             x: {
@@ -90,6 +147,13 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
                 display: true,
               },
               offset: false,
+              grid: {
+                display: true,
+                color: 'rgba(128, 0, 128, 0.2)',
+                lineWidth: 0.5,
+                drawOnChartArea: true,
+                drawTicks: false
+              },
             },
           },
           animation: {
@@ -125,14 +189,12 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
       chartInstance.options.scales["x"].time.round = undefined;
     }
 
-    console.log("data", props.data);
     const info = fillDate({
       data,
       date_range: props.date_range,
       dataKey: props.yAxis,
       timestampKey: props.xAxis,
     });
-    console.log(info);
 
     // Update the chart data;
     chartInstance.data.labels = info.map((point) => point.time);
@@ -157,7 +219,7 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
     props.wholeUnits,
   ]);
 
-  return <canvas ref={canvasRef} className="h-full w-full" />;
+  return <canvas ref={canvasRef} className="max-h-[300px] w-full" />;
 };
 
 const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
@@ -191,23 +253,76 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
         },
         options: {
           responsive: true,
+          aspectRatio: 1,
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false,
+          },
           plugins: {
             legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(128, 0, 128, 0.9)',
+              titleColor: 'white',
+              bodyColor: 'white',
+              padding: 4,
+              displayColors: false,
+              position: 'nearest',
+              titleFont: {
+                size: 11
+              },
+              bodyFont: {
+                size: 11
+              },
+              callbacks: {
+                title: (context) => {
+                  const date = new Date(context[0].parsed.x);
+                  return date.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric'
+                  });
+                },
+                label: (context) => {
+                  return `${props.yLabel}: ${context.parsed.y}`;
+                }
+              }
+            },
+            // @ts-expect-error library types not updated
+            crosshair: {
+              line: {
+                color: 'rgba(128, 0, 128, 0.3)',
+                width: 1,
+                dashPattern: [6, 6],
+              },
+              sync: {
+                enabled: true,
+                group: 1,
+              },
+              snap: {
+                enabled: true,
+              },
+              zoom: {
+                enabled: false,
+              },
+            }
           },
-          aspectRatio: 3,
           scales: {
             y: {
-              grid: { color: "rgba(128, 0, 128, 0.1)" },
+              grid: {
+                display: false  // Turn off horizontal grid lines
+              },
               title: {
                 text: props.yLabel,
                 display: true,
               },
               beginAtZero: true,
-              // ts-expect-error old
               ticks: props.wholeUnits
                 ? {
-                    precision: 0,
-                  }
+                  precision: 0,
+                }
                 : undefined,
             },
             x: {
@@ -220,20 +335,20 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
               time: {
                 unit: "month",
                 displayFormats: {
-                  month: "MMM yyyy", // Format as "Jan 2023"
+                  month: "MMM yyyy",
                 },
                 round: "month",
-                tooltipFormat: "MMM yyyy", // Format as "Jan 2023"
+                tooltipFormat: "MMM yyyy",
               },
               title: {
                 text: props.xLabel || "Month",
                 display: true,
               },
               grid: {
-                display: false, // Hide vertical grid lines
+                display: false  // Turn off vertical grid lines
               },
               ticks: {
-                maxRotation: 45, // Rotate labels for better readability
+                maxRotation: 45,
                 minRotation: 45,
               },
             },

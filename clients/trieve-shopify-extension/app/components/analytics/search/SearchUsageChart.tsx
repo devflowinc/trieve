@@ -21,13 +21,13 @@ export const SearchUsageChart = ({
       <Text as="h5" variant="headingSm">
         Search Usage
       </Text>
-      <Box minHeight="14px">
+      <Box minHeight="150px" >
         <AnalyticsChart
           wholeUnits
           data={data?.usage_points}
           xAxis={"time_stamp"}
           yAxis={"requests"}
-          granularity="day"
+          granularity={granularity}
           yLabel="Requests"
           date_range={filters.date_range}
         />
