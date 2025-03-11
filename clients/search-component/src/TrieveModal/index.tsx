@@ -134,31 +134,59 @@ const Modal = () => {
 
         const checkoutSelector = props.analyticsSelectors?.checkout;
         if (checkoutSelector) {
-          const checkouts = document.querySelectorAll(checkoutSelector.querySelector);
-
-          checkouts.forEach((checkout) => {
-            const itemsElem = document.querySelector(
-              checkoutSelector.containerSelector,
+          const setCheckoutEventListener = () => {
+            const checkouts = document.querySelectorAll(
+              checkoutSelector.querySelector,
             );
 
-            checkout.addEventListener("click", () => {
-              trieveSDK.sendAnalyticsEvent(
-                {
-                  event_name: `site-checkout`,
-                  event_type: "purchase",
-                  items: [],
-                  is_conversion: true,
-                  metadata: {
-                    page_url: window.location.href,
-                    component_props: props,
-                    itemsElem: itemsElem?.outerHTML,
-                    fingerprint,
-                  },
-                },
-                abortController.signal,
+            checkouts.forEach((checkout) => {
+              if (checkout.getAttribute("data-tr-checkout") === "true") {
+                return;
+              }
+
+              const itemsElem = document.querySelector(
+                checkoutSelector.containerSelector,
               );
+
+              checkout.addEventListener("click", () => {
+                trieveSDK.sendAnalyticsEvent(
+                  {
+                    event_name: `site-checkout`,
+                    event_type: "purchase",
+                    items: [],
+                    is_conversion: true,
+                    metadata: {
+                      page_url: window.location.href,
+                      component_props: props,
+                      itemsElem: itemsElem?.outerHTML,
+                      fingerprint,
+                    },
+                  },
+                  abortController.signal,
+                );
+              });
+
+              checkout.setAttribute("data-tr-checkout", "true");
             });
-          });
+          };
+
+          setCheckoutEventListener();
+
+          if (checkoutSelector.watchSelectorToRefreshListener) {
+            const checkoutElemToObserve = document.querySelector(
+              checkoutSelector.watchSelectorToRefreshListener,
+            );
+            if (checkoutElemToObserve) {
+              const observer = new MutationObserver(() => {
+                setCheckoutEventListener();
+              });
+              observer.observe(checkoutElemToObserve, {
+                attributes: true,
+                childList: true,
+                subtree: true,
+              });
+            }
+          }
         }
       });
     } catch (e) {
