@@ -43,5 +43,9 @@ export const useChatHeight = (
     }, 200);
   };
 
-  return { minHeight, resetHeight };
+  const addHeight = (height: number) => {
+    setChatHeight((prev) => prev + height);
+  };
+
+  return { minHeight, resetHeight, addHeight };
 };

@@ -15,10 +15,25 @@ export const ChatMode = () => {
   const { messages } = useChatState();
 
   const actualChatRef = useRef<HTMLDivElement>(null);
-  const { minHeight, resetHeight } = useChatHeight(actualChatRef);
+  const { minHeight, resetHeight, addHeight } = useChatHeight(actualChatRef);
 
   const [ref, { entry }] = useIntersectionObserver();
   const isOnScreen = entry && entry.isIntersecting;
+
+  const onMessageSend = () => {
+    // get visible height portion of div
+    const visibleHeight = actualChatRef.current?.getBoundingClientRect().height;
+    if (!visibleHeight) {
+      return;
+    }
+
+    addHeight(visibleHeight);
+    // Scroll to bottom
+    actualChatRef.current?.scrollTo({
+      top: actualChatRef.current?.scrollHeight,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <Suspense>
@@ -47,7 +62,7 @@ export const ChatMode = () => {
           ></div>
         </div>
       </div>
-      <ChatInput showShadow={!isOnScreen} />
+      <ChatInput onMessageSend={onMessageSend} showShadow={!isOnScreen} />
     </Suspense>
   );
 };
