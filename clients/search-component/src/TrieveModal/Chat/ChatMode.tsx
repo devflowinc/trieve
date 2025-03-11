@@ -27,12 +27,30 @@ export const ChatMode = () => {
       return;
     }
 
-    addHeight(visibleHeight);
-    // Scroll to bottom
-    actualChatRef.current?.scrollTo({
-      top: actualChatRef.current?.scrollHeight,
-      behavior: "smooth",
-    });
+    addHeight(800);
+    console.log("visibleHeight", visibleHeight);
+
+    // Get y position of last message in chat
+    const lastMessage = actualChatRef.current?.lastElementChild;
+    if (!lastMessage) {
+      return;
+    }
+    const lastMessagePosition = lastMessage.getBoundingClientRect().top;
+
+    // Get y position of chat container
+    const chatContainerPosition =
+      actualChatRef.current?.getBoundingClientRect().top;
+
+    // Scroll to said message
+    const scrollToMessage = () => {
+      const scrollTo = lastMessagePosition - chatContainerPosition;
+      actualChatRef.current?.scrollTo({
+        top: scrollTo,
+        behavior: "smooth",
+      });
+    };
+
+    setTimeout(scrollToMessage, 100);
   };
 
   return (
@@ -56,6 +74,7 @@ export const ChatMode = () => {
             }
           })}
           <FollowupQueries />
+          <button onClick={onMessageSend}>Add height - {minHeight}</button>
           <div
             ref={ref}
             className="tv-z-50 tv-mx-4 tv-w-4 tv-min-h-1 tv-h-1"
@@ -71,6 +90,7 @@ export const ChatMode = () => {
 const ChatRuler = ({ minHeight }: { minHeight: number }) => {
   return (
     <div
+      className="tv-bg-red-500 tv-min-w-[8px]"
       style={{
         minHeight,
       }}
