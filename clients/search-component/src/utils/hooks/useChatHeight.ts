@@ -14,26 +14,25 @@ export const useChatHeight = (
   const [enabled, setEnabled] = useAtom(enabledAtom);
 
   useEffect(() => {
-    if (!modalRef) {
+    if (!modalRef || !modalRef.current) {
       return;
     }
     const ref = modalRef.current;
-    if (ref) {
-      const observer = new ResizeObserver((entries) => {
-        setChatHeight(entries[0].contentRect.height);
-      });
-      observer.observe(ref);
-      return () => {
-        observer.disconnect();
-      };
-    }
+    const observer = new ResizeObserver((entries) => {
+      setChatHeight(entries[0].contentRect.height);
+    });
+
+    observer.observe(ref);
+    return () => {
+      observer.disconnect();
+    };
   }, [modalRef]);
 
   useEffect(() => {
     if (chatHeight > minHeight && enabled) {
       setMinHeight(chatHeight);
     }
-  }, [chatHeight]);
+  }, [chatHeight, minHeight, enabled]);
 
   const resetHeight = () => {
     setMinHeight(absoluteMinimum);
@@ -43,5 +42,9 @@ export const useChatHeight = (
     }, 200);
   };
 
-  return { minHeight, resetHeight };
+  const addHeight = (height: number) => {
+    setMinHeight((prev) => prev + height);
+  };
+
+  return { minHeight, resetHeight, addHeight };
 };
