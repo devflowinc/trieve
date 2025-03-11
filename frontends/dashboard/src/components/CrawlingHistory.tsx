@@ -20,65 +20,8 @@ import { Card } from "../analytics/components/charts/Card";
 import { useTrieve } from "../hooks/useTrieve";
 import { usePagination } from "../analytics/hooks/usePagination";
 import { AiOutlineLoading } from "solid-icons/ai";
-
-const columns: SortableColumnDef<CrawlRequest>[] = [
-  {
-    accessorKey: "url",
-    header: "Url",
-  },
-  {
-    accessorKey: "created_at",
-    header: "Crawled At",
-    cell(props) {
-      return format(
-        parseCustomDateString(props.getValue<string>()),
-        "M/d/yy h:mm a",
-      );
-    },
-  },
-  {
-    accessorKey: "status",
-    header: (props) => {
-      const query = (
-        props.table.options.meta as {
-          [key: string]: CreateQueryResult<CrawlRequest[], Error>;
-        }
-      ).query;
-      return (
-        <div class="flex items-center gap-2">
-          <span>Status</span>
-          {query?.isFetching && (
-            <AiOutlineLoading class="h-4 w-4 animate-spin" />
-          )}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "crawl_type",
-    id: "crawl_type",
-    header: "Crawl Type",
-    cell(props) {
-      if (props.getValue<string>() === "firecrawl") {
-        return "Website";
-      }
-      return (
-        props.getValue<string>().charAt(0).toUpperCase() +
-        props.getValue<string>().slice(1)
-      );
-    },
-  },
-  {
-    accessorKey: "next_crawl_at",
-    header: "Next Crawl At",
-    cell(props) {
-      return format(
-        parseCustomDateString(props.getValue<string>()),
-        "M/d/yy h:mm a",
-      );
-    },
-  },
-];
+import { FaRegularTrashCan } from "solid-icons/fa";
+import { createToast } from "./ShowToasts";
 
 export const CrawlingHistory = () => {
   const datasetContext = useContext(DatasetContext);
@@ -106,6 +49,112 @@ export const CrawlingHistory = () => {
     refetchInterval: 5000,
   }));
 
+  const crawlColumns: SortableColumnDef<CrawlRequest>[] = [
+    {
+      accessorKey: "url",
+      header: "Url",
+    },
+    {
+      accessorKey: "created_at",
+      header: "Crawled At",
+      cell(props) {
+        return format(
+          parseCustomDateString(props.getValue<string>()),
+          "M/d/yy h:mm a",
+        );
+      },
+    },
+    {
+      accessorKey: "status",
+      header: (props) => {
+        const query = (
+          props.table.options.meta as {
+            [key: string]: CreateQueryResult<CrawlRequest[], Error>;
+          }
+        ).query;
+        return (
+          <div class="flex items-center gap-2">
+            <span>Status</span>
+            {query?.isFetching && (
+              <AiOutlineLoading class="h-4 w-4 animate-spin" />
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "crawl_type",
+      id: "crawl_type",
+      header: "Crawl Type",
+      cell(props) {
+        if (props.getValue<string>() === "firecrawl") {
+          return "Website";
+        }
+        return (
+          props.getValue<string>().charAt(0).toUpperCase() +
+          props.getValue<string>().slice(1)
+        );
+      },
+    },
+    {
+      accessorKey: "next_crawl_at",
+      header: "Next Crawl At",
+      cell(props) {
+        return format(
+          parseCustomDateString(props.getValue<string>()),
+          "M/d/yy h:mm a",
+        );
+      },
+    },
+    {
+      accessorKey: "id",
+      header: "",
+      cell(props) {
+        return (
+          <button
+            type="button"
+            class="inline-flex justify-center px-3 py-2 text-sm text-red-500 hover:text-red-800"
+            onClick={(e) => {
+              e.preventDefault();
+              const result = window.confirm(
+                "Are you sure you want to delete this crawl?",
+              );
+              if (!result) {
+                return;
+              }
+              void trieve
+                .fetch<"eject">(
+                  `/api/crawl/${props.getValue<string>()}` as keyof $OpenApiTs,
+                  "delete",
+                  {
+                    datasetId: datasetContext.datasetId(),
+                  },
+                )
+                .then(() => {
+                  createToast({
+                    title: "Success",
+                    type: "success",
+                    message: "Successfully deleted crawl",
+                  });
+
+                  void crawlTableQuery.refetch();
+                })
+                .catch((err) => {
+                  createToast({
+                    title: "Error",
+                    type: "error",
+                    message: `Failed to delete crawl: ${err}`,
+                  });
+                });
+            }}
+          >
+            <FaRegularTrashCan class="h-4 w-4" />
+          </button>
+        );
+      },
+    },
+  ];
+
   const table = createSolidTable({
     get data() {
       return crawlTableQuery.data || [];
@@ -116,7 +165,7 @@ export const CrawlingHistory = () => {
         pageSize: 10,
       },
     },
-    columns,
+    columns: crawlColumns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     meta: {
