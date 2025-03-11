@@ -1,4 +1,4 @@
-CREATE TABLE rag_queries_new
+CREATE TABLE rag_queries_new on CLUSTER `{cluster}`
 (
     `id` UUID,
     `rag_type` String,
@@ -15,7 +15,7 @@ CREATE TABLE rag_queries_new
     `detected_hallucinations` Array(String) DEFAULT [],
     `top_score` Int32 DEFAULT 0
 )
-ENGINE = ReplacingMergeTree()
+ENGINE = ReplicatedReplacingMergeTree()
 PARTITION BY (toYYYYMM(created_at), dataset_id)
 ORDER BY (id, created_at)
 SETTINGS index_granularity = 8192;

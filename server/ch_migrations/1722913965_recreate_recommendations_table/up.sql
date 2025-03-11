@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS recommendations (
+CREATE TABLE IF NOT EXISTS recommendations on CLUSTER `{cluster}`
+(
     id UUID,
     recommendation_type String,
     positive_ids Array(String),
@@ -10,7 +11,7 @@ CREATE TABLE IF NOT EXISTS recommendations (
     top_score Float32,
     dataset_id UUID,
     created_at DateTime,
-) ENGINE = MergeTree()
+) ENGINE = ReplicatedMergeTree()
 ORDER BY (id, created_at)
 PARTITION BY
     (toYYYYMM(created_at),

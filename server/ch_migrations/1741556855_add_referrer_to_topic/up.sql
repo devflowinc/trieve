@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS default.topics
+CREATE TABLE IF NOT EXISTS default.topics on CLUSTER `{cluster}`
 (
 
     `id` UUID,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS default.topics
 
     `metadata` String
 )
-ENGINE = ReplacingMergeTree
+ENGINE = ReplicatedReplacingMergeTree
 PARTITION BY dataset_id
 ORDER BY (id,
  topic_id,

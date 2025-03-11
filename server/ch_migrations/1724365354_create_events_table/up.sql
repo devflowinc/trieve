@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS events (
+CREATE TABLE IF NOT EXISTS events on CLUSTER `{cluster}`
+(
     id UUID,
     event_type String,
     event_name String,
@@ -11,6 +12,7 @@ CREATE TABLE IF NOT EXISTS events (
     created_at DateTime DEFAULT now(),
     updated_at DateTime DEFAULT now(),
 )
+ENGINE = ReplicatedMergeTree()
 ORDER BY (event_type, created_at, id)
 PARTITION BY
     (toYYYYMM(created_at),

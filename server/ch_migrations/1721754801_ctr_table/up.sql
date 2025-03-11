@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS ctr_data (
+CREATE TABLE IF NOT EXISTS ctr_data on CLUSTER `{cluster}`
+(
     id UUID,
     request_id UUID,
     chunk_id UUID,
@@ -6,7 +7,7 @@ CREATE TABLE IF NOT EXISTS ctr_data (
     position Int32,
     metadata String,
     created_at DateTime,
-) ENGINE = MergeTree()
+) ENGINE = ReplicatedMergeTree()
 ORDER BY (dataset_id, created_at, request_id, id)
 PARTITION BY
     (toYYYYMM(created_at),
