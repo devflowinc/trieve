@@ -6353,9 +6353,8 @@ impl EventTypes {
                 request,
                 items,
                 user_id,
+                metadata,
                 is_conversion,
-                value,
-                currency,
             } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
                 event_type: "purchase".to_string(),
@@ -6363,12 +6362,8 @@ impl EventTypes {
                 request_id: request.clone().unwrap_or_default().request_id.to_string(),
                 request_type: request.unwrap_or_default().request_type.to_string(),
                 items,
-                metadata: json!({
-                    "value": value.unwrap_or(0.0f64),
-                    "currency": currency.unwrap_or("USD".to_string())
-                })
-                .to_string(),
                 user_id: user_id.unwrap_or_default(),
+                metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
                 is_conversion: is_conversion.unwrap_or(true),
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
@@ -7454,10 +7449,8 @@ pub enum EventTypes {
         items: Vec<String>,
         /// The user id of the user who purchased the items
         user_id: Option<String>,
-        /// The value of the purchase
-        value: Option<f64>,
-        /// The currency of the purchase
-        currency: Option<String>,
+        /// Any other metadata associated with the event
+        metadata: Option<serde_json::Value>,
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
     },
