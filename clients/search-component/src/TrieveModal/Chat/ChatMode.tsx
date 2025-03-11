@@ -17,8 +17,7 @@ export const ChatMode = () => {
 
   const actualChatRef = useRef<HTMLDivElement>(null);
   const rulerRef = useRef<HTMLDivElement>(null);
-  const { minHeight, resetHeight, addHeight, contentHeight } =
-    useChatHeight(actualChatRef); // Get contentHeight from the hook
+  const { minHeight, resetHeight, addHeight } = useChatHeight(actualChatRef); // Get contentHeight from the hook
 
   const [ref, { entry }] = useIntersectionObserver();
   const isOnScreen = entry && entry.isIntersecting;
@@ -49,10 +48,19 @@ export const ChatMode = () => {
         modalRef.current.scrollTop -
         bufferSpace;
 
-      modalRef.current.scrollTo({
-        top: scrollTo,
-        behavior: "instant",
-      });
+      console.log("scrollTo", scrollTo);
+
+      handleHeightAddition();
+
+      setTimeout(() => {
+        if (!modalRef.current) {
+          return;
+        }
+        modalRef.current.scrollTo({
+          top: scrollTo,
+          behavior: "smooth",
+        });
+      }, 30); // 30 used for consistency with react-dom updates
     }, 100);
   };
 
@@ -76,14 +84,19 @@ export const ChatMode = () => {
     const messageRect = lastUserMessage.getBoundingClientRect();
 
     const scrollContainerVisibleHeight = modalRef.current.clientHeight;
-    const messageRectYDistance = messageRect.top + modalRef.current.scrollTop;
+    const messageRectYDistance =
+      messageRect.top +
+      modalRef.current.scrollTop +
+      lastUserMessage.scrollHeight;
 
     console.log("messageRectYDistance", messageRectYDistance);
 
+    console.log("ruler height", rulerRef.current.scrollHeight);
     const redLead = rulerRef.current.scrollHeight - messageRectYDistance;
     console.log("redLead", redLead);
 
-    const targetGap = scrollContainerVisibleHeight;
+    const targetGap =
+      scrollContainerVisibleHeight - lastUserMessage.scrollHeight;
 
     const heightToAdd = targetGap - redLead;
     console.log(
@@ -93,12 +106,11 @@ export const ChatMode = () => {
     // subtract the height of the message itself
     // 40 is the magic number somehow
     console.log("lastUserMessage.scrollHeight", lastUserMessage.scrollHeight);
-    return heightToAdd - lastUserMessage.scrollHeight - 10;
+    return heightToAdd - 80;
   };
 
   const handleHeightAddition = () => {
     const height = calculateHeightToAdd();
-    console.log("handleHeightAddition", height);
     addHeight(height);
   };
 
@@ -114,7 +126,8 @@ export const ChatMode = () => {
           className="tv-flex-col tv-h-full tv-grow tv-flex tv-gap-4 tv-max-w-full"
           ref={actualChatRef}
         >
-          <SuggestedQuestions /> {/* Only shows with zero messages */}
+          {/* Only shows with zero messages */}
+          <SuggestedQuestions onMessageSend={onMessageSend} />{" "}
           {messages.map((message, i) => {
             if (message.type === "user") {
               return <UserMessage key={i} message={message} idx={i} />;
@@ -123,10 +136,6 @@ export const ChatMode = () => {
             }
           })}
           <FollowupQueries />
-          <button onClick={handleHeightAddition}>
-            Add height - {minHeight} -{" "}
-            {modalRef.current?.scrollHeight || "no max"}
-          </button>
           <div
             ref={ref}
             className="tv-z-50 tv-mx-4 tv-w-4 tv-min-h-1 tv-h-1"
@@ -149,7 +158,7 @@ const ChatRuler = ({
   return (
     <div
       ref={rulerRef}
-      className="tv-bg-red-500 tv-min-w-[8px]"
+      className="tv-min-w-[1px]"
       style={{
         minHeight,
       }}
