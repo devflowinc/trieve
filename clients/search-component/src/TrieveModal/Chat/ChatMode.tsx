@@ -21,17 +21,11 @@ export const ChatMode = () => {
   const isOnScreen = entry && entry.isIntersecting;
 
   const onMessageSend = () => {
-    // Ensure we have enough height for new messages
-    addHeight(800);
-
-    // We need to scroll after the DOM updates with the new message
-    // Using setTimeout to ensure this happens after React's render cycle
     setTimeout(() => {
       if (!actualChatRef.current || !modalRef.current) {
         return;
       }
 
-      // Find the user message that was just added (the last user message)
       const userMessages = actualChatRef.current.querySelectorAll(
         ".user-message-container",
       );
@@ -41,18 +35,20 @@ export const ChatMode = () => {
 
       const lastUserMessage = userMessages[userMessages.length - 1];
 
-      // Calculate position to scroll to - we want the user message at the top of the viewport
       const messageRect = lastUserMessage.getBoundingClientRect();
       const containerRect = modalRef.current.getBoundingClientRect();
 
-      // Calculate the scroll position - message position relative to the scrollable container
-      const scrollTo =
-        messageRect.top - containerRect.top + modalRef.current.scrollTop;
+      const bufferSpace = 20;
 
-      // Scroll the modal container
+      const scrollTo =
+        messageRect.top -
+        containerRect.top +
+        modalRef.current.scrollTop -
+        bufferSpace;
+
       modalRef.current.scrollTo({
         top: scrollTo,
-        behavior: "smooth",
+        behavior: "instant",
       });
     }, 100);
   };
