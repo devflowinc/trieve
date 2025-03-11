@@ -107,6 +107,59 @@ const Modal = () => {
           },
           abortController.signal,
         );
+
+        const addToCart = props.analyticsSelectors?.addToCart;
+        if (addToCart) {
+          const addCarts = document.querySelectorAll(addToCart.querySelector);
+
+          addCarts.forEach((cart) => {
+            cart.addEventListener("click", () => {
+              trieveSDK.sendAnalyticsEvent(
+                {
+                  event_name: `site-add_to_cart`,
+                  event_type: "add_to_cart",
+                  items: [],
+                  metadata: {
+                    page_url: window.location.href,
+                    component_props: props,
+                    elementHtml: cart.outerHTML,
+                    fingerprint,
+                  },
+                },
+                abortController.signal,
+              );
+            });
+          });
+        }
+
+        const checkoutSelector = props.analyticsSelectors?.checkout;
+        if (checkoutSelector) {
+          const checkouts = document.querySelectorAll(checkoutSelector.querySelector);
+
+          checkouts.forEach((checkout) => {
+            const itemsElem = document.querySelector(
+              checkoutSelector.containerSelector,
+            );
+
+            checkout.addEventListener("click", () => {
+              trieveSDK.sendAnalyticsEvent(
+                {
+                  event_name: `site-checkout`,
+                  event_type: "purchase",
+                  items: [],
+                  is_conversion: true,
+                  metadata: {
+                    page_url: window.location.href,
+                    component_props: props,
+                    itemsElem: itemsElem?.outerHTML,
+                    fingerprint,
+                  },
+                },
+                abortController.signal,
+              );
+            });
+          });
+        }
       });
     } catch (e) {
       console.log("error on load event", e);

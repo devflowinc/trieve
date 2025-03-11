@@ -10835,11 +10835,6 @@
               "event_type"
             ],
             "properties": {
-              "currency": {
-                "type": "string",
-                "description": "The currency of the purchase",
-                "nullable": true
-              },
               "event_name": {
                 "type": "string",
                 "description": "The name of the event"
@@ -10862,6 +10857,10 @@
                 },
                 "description": "The items that were purchased"
               },
+              "metadata": {
+                "description": "Any other metadata associated with the event",
+                "nullable": true
+              },
               "request": {
                 "allOf": [
                   {
@@ -10873,12 +10872,6 @@
               "user_id": {
                 "type": "string",
                 "description": "The user id of the user who purchased the items",
-                "nullable": true
-              },
-              "value": {
-                "type": "number",
-                "format": "double",
-                "description": "The value of the purchase",
                 "nullable": true
               }
             }

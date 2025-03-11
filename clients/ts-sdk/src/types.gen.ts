@@ -1410,10 +1410,6 @@ export type EventTypes = {
     user_id?: (string) | null;
 } | {
     /**
-     * The currency of the purchase
-     */
-    currency?: (string) | null;
-    /**
      * The name of the event
      */
     event_name: string;
@@ -1426,15 +1422,15 @@ export type EventTypes = {
      * The items that were purchased
      */
     items: Array<(string)>;
+    /**
+     * Any other metadata associated with the event
+     */
+    metadata?: unknown;
     request?: ((RequestInfo) | null);
     /**
      * The user id of the user who purchased the items
      */
     user_id?: (string) | null;
-    /**
-     * The value of the purchase
-     */
-    value?: (number) | null;
 } | {
     /**
      * The name of the event

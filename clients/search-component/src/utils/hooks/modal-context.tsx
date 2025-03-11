@@ -103,6 +103,15 @@ export type ModalProps = {
   chatPlaceholder?: string;
   chat?: boolean;
   analytics?: boolean;
+  analyticsSelectors?: {
+    addToCart: {
+      querySelector: string;
+    };
+    checkout: {
+      querySelector: string;
+      containerSelector: string;
+    };
+  };
   ButtonEl?: JSX.ElementType;
   suggestedQueries?: boolean;
   followupQuestions?: boolean;
