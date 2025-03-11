@@ -882,7 +882,7 @@ pub fn main() -> std::io::Result<()> {
                                             .route(web::get().to(handlers::crawl_handler::get_crawl_requests_for_dataset))
                                 )
                                 .service(
-                                    web::resource("/:crawl_id")
+                                    web::resource("/{crawl_id}")
                                         .route(web::delete().to(handlers::crawl_handler::delete_crawl_request))
                                 )
                         )
