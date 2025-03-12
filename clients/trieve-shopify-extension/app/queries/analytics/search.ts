@@ -36,11 +36,10 @@ export const searchUsageQuery = (
 export const headQueriesQuery = (
   trieve: TrieveSDK,
   filters: SearchAnalyticsFilter,
-  granularity: Granularity,
   page: number,
 ) => {
   return {
-    queryKey: ["head_queries", filters, granularity, page],
+    queryKey: ["head_queries", filters, page],
     queryFn: async () => {
       const result = await trieve.getSearchAnalytics({
         filter: filters,
@@ -55,11 +54,10 @@ export const headQueriesQuery = (
 export const noResultQueriesQuery = (
   trieve: TrieveSDK,
   filters: SearchAnalyticsFilter,
-  granularity: Granularity,
   page: number,
 ) => {
   return {
-    queryKey: ["no_result_queries", filters, granularity, page],
+    queryKey: ["no_result_queries", filters, page],
     queryFn: async () => {
       const result = await trieve.getSearchAnalytics({
         filter: filters,

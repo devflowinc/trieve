@@ -513,6 +513,10 @@ export type ComponentAnalytics = {
     filter?: ((ComponentAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'total_unique_users';
+} | {
+    filter?: ((ComponentAnalyticsFilter) | null);
+    page?: (number) | null;
+    type: 'top_pages';
 };
 
 export type type3 = 'total_unique_users';
@@ -522,7 +526,7 @@ export type ComponentAnalyticsFilter = {
     date_range?: ((DateRange) | null);
 };
 
-export type ComponentAnalyticsResponse = TotalUniqueUsersResponse;
+export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse;
 
 /**
  * Filters can be constructed using either fields on the chunk objects, ids or tracking ids of chunks, and finally ids or tracking ids of groups.
@@ -1372,6 +1376,10 @@ export type EventTypes = {
      */
     items: Array<(string)>;
     /**
+     * The location of the event
+     */
+    location?: (string) | null;
+    /**
      * Any other metadata associated with the event
      */
     metadata?: unknown;
@@ -1395,6 +1403,10 @@ export type EventTypes = {
      */
     items: Array<(string)>;
     /**
+     * The location of the event
+     */
+    location?: (string) | null;
+    /**
      * Any other metadata associated with the event
      */
     metadata?: unknown;
@@ -1414,6 +1426,10 @@ export type EventTypes = {
      * Whether the event is a conversion event
      */
     is_conversion?: (boolean) | null;
+    /**
+     * The location of the event
+     */
+    location?: (string) | null;
     /**
      * Metadata to include with click event
      */
@@ -1437,6 +1453,10 @@ export type EventTypes = {
      * The items that were purchased
      */
     items: Array<(string)>;
+    /**
+     * The location of the event
+     */
+    location?: (string) | null;
     /**
      * Any other metadata associated with the event
      */
@@ -1462,6 +1482,10 @@ export type EventTypes = {
     items: {
         [key: string]: (string);
     };
+    /**
+     * The location of the event
+     */
+    location?: (string) | null;
     request?: ((RequestInfo) | null);
     /**
      * The user id of the user who clicked the items
@@ -3079,6 +3103,7 @@ export type SearchTypeCount = {
 };
 
 export type SearchUsageGraphResponse = {
+    total_searches: number;
     usage_points: Array<UsageGraphPoint>;
 };
 
@@ -3403,6 +3428,15 @@ export type TopDatasetsResponse = {
     dataset_id: string;
     dataset_tracking_id?: (string) | null;
     total_queries: number;
+};
+
+export type TopPages = {
+    count: number;
+    page: string;
+};
+
+export type TopPagesResponse = {
+    top_pages: Array<TopPages>;
 };
 
 export type Topic = {

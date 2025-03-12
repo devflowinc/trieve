@@ -580,6 +580,8 @@ impl Modify for SecurityAddon {
             data::models::TopicQuery,
             data::models::TopicTimePoint,
             data::models::TopicSortBy,
+            data::models::TopPages,
+            data::models::TopPagesResponse,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
         )

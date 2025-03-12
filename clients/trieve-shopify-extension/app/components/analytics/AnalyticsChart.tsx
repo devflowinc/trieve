@@ -14,8 +14,7 @@ interface AnalyticsChartProps<T> {
   date_range?: SearchAnalyticsFilter["date_range"];
   yAxis: keyof T;
   xAxis: keyof T;
-  yLabel: string;
-  xLabel?: string;
+  label: string;
   wholeUnits?: boolean;
 }
 
@@ -45,7 +44,7 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
           labels: [],
           datasets: [
             {
-              label: props.yLabel,
+              label: props.label,
               data: [],
               backgroundColor: "rgba(128, 0, 128, 0.06)", // Light purple background for fill
               borderColor: "rgba(128, 0, 128, 0.5)", // Purple line color
@@ -93,7 +92,7 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
                   });
                 },
                 label: (context) => {
-                  return `${props.yLabel}: ${context.parsed.y}`;
+                  return `${props.label}: ${context.parsed.y}`;
                 }
               }
             },
@@ -137,10 +136,6 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
               type: "time",
               time: {
                 unit: "day",
-              },
-              title: {
-                text: props.xLabel || "Timestamp",
-                display: true,
               },
               offset: false,
               grid: {
@@ -210,8 +205,7 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
     props.date_range,
     props.yAxis,
     props.xAxis,
-    props.yLabel,
-    props.xLabel,
+    props.label,
     props.wholeUnits,
   ]);
 
@@ -234,7 +228,7 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
           labels: [],
           datasets: [
             {
-              label: props.yLabel,
+              label: props.label,
               data: [],
               backgroundColor: "rgba(128, 0, 128, 0.1)",
               borderColor: "rgba(128, 0, 128, 0.9)",
@@ -282,7 +276,7 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
                   });
                 },
                 label: (context) => {
-                  return `${props.yLabel}: ${context.parsed.y}`;
+                  return `${props.label}: ${context.parsed.y}`;
                 }
               }
             },
@@ -332,10 +326,6 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
                 round: "month",
                 tooltipFormat: "MMM yyyy",
               },
-              title: {
-                text: props.xLabel || "Month",
-                display: true,
-              },
               grid: {
                 display: false  // Turn off vertical grid lines
               },
@@ -375,8 +365,7 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
     props.granularity,
     props.yAxis,
     props.xAxis,
-    props.yLabel,
-    props.xLabel,
+    props.label,
     props.wholeUnits,
     props.date_range,
   ]);

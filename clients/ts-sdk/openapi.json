@@ -8758,6 +8758,35 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "TopPages",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ComponentAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "page": {
+                "type": "integer",
+                "format": "int32",
+                "nullable": true,
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "top_pages"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -8785,6 +8814,9 @@
         "oneOf": [
           {
             "$ref": "#/components/schemas/TotalUniqueUsersResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TopPagesResponse"
           }
         ]
       },
@@ -10853,6 +10885,11 @@
                 },
                 "description": "The items that were viewed"
               },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
+                "nullable": true
+              },
               "metadata": {
                 "description": "Any other metadata associated with the event",
                 "nullable": true
@@ -10903,6 +10940,11 @@
                 },
                 "description": "The items that were added to the cart"
               },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
+                "nullable": true
+              },
               "metadata": {
                 "description": "Any other metadata associated with the event",
                 "nullable": true
@@ -10951,6 +10993,11 @@
               "is_conversion": {
                 "type": "boolean",
                 "description": "Whether the event is a conversion event",
+                "nullable": true
+              },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
                 "nullable": true
               },
               "metadata": {
@@ -11003,6 +11050,11 @@
                 },
                 "description": "The items that were purchased"
               },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
+                "nullable": true
+              },
               "metadata": {
                 "description": "Any other metadata associated with the event",
                 "nullable": true
@@ -11052,6 +11104,11 @@
                 "additionalProperties": {
                   "type": "string"
                 }
+              },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
+                "nullable": true
               },
               "request": {
                 "allOf": [
@@ -16458,9 +16515,14 @@
         "type": "object",
         "title": "SearchUsageGraphResponse",
         "required": [
+          "total_searches",
           "usage_points"
         ],
         "properties": {
+          "total_searches": {
+            "type": "integer",
+            "format": "int64"
+          },
           "usage_points": {
             "type": "array",
             "items": {
@@ -17527,6 +17589,37 @@
           }
         }
       },
+      "TopPages": {
+        "type": "object",
+        "required": [
+          "page",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "page": {
+            "type": "string"
+          }
+        }
+      },
+      "TopPagesResponse": {
+        "type": "object",
+        "required": [
+          "top_pages"
+        ],
+        "properties": {
+          "top_pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopPages"
+            }
+          }
+        }
+      },
       "Topic": {
         "type": "object",
         "required": [
@@ -17743,7 +17836,7 @@
           },
           "total_unique_users": {
             "type": "integer",
-            "format": "int32",
+            "format": "int64",
             "minimum": 0
           }
         }
@@ -17760,7 +17853,7 @@
           },
           "total_unique_users": {
             "type": "integer",
-            "format": "int32",
+            "format": "int64",
             "minimum": 0
           }
         }

@@ -100,6 +100,7 @@ const Modal = () => {
             event_type: "view",
             items: [],
             user_id: fingerprint,
+            location: window.location.href,
             metadata: {
               page_url: window.location.href,
               component_props: props,
@@ -121,6 +122,7 @@ const Modal = () => {
                   event_type: "add_to_cart",
                   items: [],
                   user_id: fingerprint,
+                  location: window.location.href,
                   metadata: {
                     page_url: window.location.href,
                     component_props: props,
@@ -158,6 +160,7 @@ const Modal = () => {
                     items: [],
                     is_conversion: true,
                     user_id: fingerprint,
+                    location: window.location.href,
                     metadata: {
                       page_url: window.location.href,
                       component_props: props,

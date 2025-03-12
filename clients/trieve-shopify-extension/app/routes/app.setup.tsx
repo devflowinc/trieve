@@ -123,7 +123,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   let datasetId = trieve.datasetId;
 
   let shopDataset = await trieve
-    .getDatasetByTrackingId(session.shop ?? "")
+    .getDatasetByTrackingId(session.shop)
     .catch(() => {
       return null;
     });

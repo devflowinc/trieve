@@ -22,10 +22,10 @@ export default function SearchAnalyticsPage() {
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
           <SearchUsageChart filters={filters} granularity={granularity} />
           <div className="py-3"></div>
-          <NoResultQueriesTable filters={filters} granularity={granularity} />
+          <NoResultQueriesTable filters={filters} />
         </Grid.Cell>
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-          <HeadQueriesTable filters={filters} granularity={granularity} />
+          <HeadQueriesTable filters={filters} />
         </Grid.Cell>
       </Grid>
     </>
