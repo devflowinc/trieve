@@ -14,8 +14,8 @@ import {
   Divider,
 } from "@shopify/polaris";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
+import { useEnvs } from "app/context/useEnvs";
 import { useCallback, useEffect, useState } from "react";
-import { getTrieveBaseUrl } from "app/env";
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const key = await validateTrieveAuth(args.request, false);
@@ -37,6 +37,7 @@ export default function PlansPage() {
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(
     organization.plan?.id || null,
   );
+  const envs = useEnvs();
 
   const formatCurrency = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -60,7 +61,7 @@ export default function PlansPage() {
 
       try {
         window.open(
-          `${getTrieveBaseUrl()}/api/stripe/payment_link/${planId}/${organization?.organization.id}`,
+          `${envs.TRIEVE_BASE_URL}/api/stripe/payment_link/${planId}/${organization?.organization.id}`,
         );
       } catch (error) {
         console.error("Failed to upgrade plan:", error);

@@ -6,12 +6,13 @@ import {
   ScrollRestoration,
   useLoaderData,
 } from "@remix-run/react";
-import { getTrieveBaseUrl } from "./env";
+import { AppEnvProvider } from "./context/useEnvs";
+import { getTrieveBaseUrlEnv } from "./env.server";
 
 export async function loader() {
   return {
     ENV: {
-      TRIEVE_BASE_URL: process.env.TRIEVE_BASE_URL ?? "https://api.trieve.ai/",
+      TRIEVE_BASE_URL: getTrieveBaseUrlEnv(),
     },
   };
 }
@@ -32,14 +33,11 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Outlet />
+        <AppEnvProvider envs={data.ENV}>
+          <Outlet />
+        </AppEnvProvider>
         <ScrollRestoration />
         <Scripts />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
-          }}
-        />
       </body>
     </html>
   );

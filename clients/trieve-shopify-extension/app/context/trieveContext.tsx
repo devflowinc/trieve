@@ -6,7 +6,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { setQueryClientAndTrieveSDK } from "app/loaders/clientLoader";
 import { shopDatasetQuery } from "app/queries/shopDataset";
 import { scrapeOptionsQuery } from "app/queries/scrapeOptions";
-import { getTrieveBaseUrl } from "app/env";
+import { useEnvs } from "./useEnvs";
 
 export const TrieveContext = createContext<{
   trieve: TrieveSDK;
@@ -33,10 +33,11 @@ export const TrieveProvider = ({
   organization: OrganizationWithSubAndPlan;
   queryClient: QueryClient;
 }) => {
+  const envs = useEnvs();
   const trieve = useMemo(
     () =>
       new TrieveSDK({
-        baseUrl: getTrieveBaseUrl(),
+        baseUrl: envs.TRIEVE_BASE_URL,
         apiKey: trieveKey.key,
         datasetId: trieveKey.currentDatasetId,
         organizationId: trieveKey.organizationId,
