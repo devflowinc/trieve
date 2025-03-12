@@ -294,15 +294,23 @@ export const sendCtrData = async ({
   index: number;
   props: ModalProps;
 }) => {
-  await trieve.sendCTRAnalytics({
-    ctr_type: type,
-    clicked_chunk_id: chunkID,
-    request_id: requestID,
-    position: index,
+  const user_id = await getFingerprint();
+  await trieve.sendAnalyticsEvent({
+    event_name: "Click",
+    event_type: "click",
+    clicked_items: {
+      chunk_id: chunkID,
+      position: index,
+    },
+    request: {
+      request_id: requestID,
+      request_type: type,
+    },
+    user_id: user_id,
     metadata: {
       page_url: window.location.href,
       component_props: props,
-      fingerprint: await getFingerprint(),
+      fingerprint: user_id,
     },
   });
 
@@ -322,21 +330,20 @@ export const trackViews = async ({
   items: string[];
   props: ModalProps;
 }) => {
-  trieve.trieve.fetch("/api/analytics/events", "put", {
-    datasetId: trieve.datasetId ?? "",
-    data: {
-      event_name: "View",
-      event_type: "view",
-      items: items,
-      request: {
-        request_id: requestID,
-        request_type: type,
-      },
-      metadata: {
-        component_props: props,
-        page_url: window.location.href,
-        fingerprint: await getFingerprint(),
-      },
+  const user_id = await getFingerprint();
+  await trieve.sendAnalyticsEvent({
+    event_name: "View",
+    event_type: "view",
+    items: items,
+    request: {
+      request_id: requestID,
+      request_type: type,
+    },
+    user_id: user_id,
+    metadata: {
+      component_props: props,
+      page_url: window.location.href,
+      fingerprint: user_id,
     },
   });
 

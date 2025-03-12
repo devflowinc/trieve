@@ -509,6 +509,21 @@ export type ClusterAnalyticsFilter = {
 
 export type ClusterAnalyticsResponse = SearchClusterResponse | SearchQueryResponse;
 
+export type ComponentAnalytics = {
+    filter?: ((ComponentAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'total_unique_users';
+};
+
+export type type3 = 'total_unique_users';
+
+export type ComponentAnalyticsFilter = {
+    component_name?: (string) | null;
+    date_range?: ((DateRange) | null);
+};
+
+export type ComponentAnalyticsResponse = TotalUniqueUsersResponse;
+
 /**
  * Filters can be constructed using either fields on the chunk objects, ids or tracking ids of chunks, and finally ids or tracking ids of groups.
  */
@@ -1860,7 +1875,17 @@ export type GetTrackingChunksData = {
 export type Granularity = 'minute' | 'second' | 'hour' | 'day' | 'month';
 
 export type GroupData = {
+    /**
+     * The list of all the groups.
+     */
     groups: Array<ChunkGroupAndFileId>;
+    /**
+     * Parameter for the next cursor offset.
+     */
+    next_cursor?: (string) | null;
+    /**
+     * Total number of pages. Pages is groups_count / 10
+     */
     total_pages: number;
 };
 
@@ -2432,7 +2457,7 @@ export type RAGAnalytics = {
     type: 'topics_over_time';
 };
 
-export type type3 = 'rag_queries';
+export type type4 = 'rag_queries';
 
 export type RAGAnalyticsFilter = {
     date_range?: ((DateRange) | null);
@@ -2611,7 +2636,7 @@ export type RecommendationAnalytics = {
     type: 'query_details';
 };
 
-export type type4 = 'low_confidence_recommendations';
+export type type5 = 'low_confidence_recommendations';
 
 export type RecommendationAnalyticsFilter = {
     date_range?: ((DateRange) | null);
@@ -2774,7 +2799,7 @@ export type ScrapeOptions = (CrawlOpenAPIOptions & {
     type: 'youtube';
 });
 
-export type type5 = 'openapi';
+export type type6 = 'openapi';
 
 export type ScrollChunksReqPayload = {
     filters?: ((ChunkFilter) | null);
@@ -2834,7 +2859,7 @@ export type SearchAnalytics = {
     type: 'popular_filters';
 };
 
-export type type6 = 'latency_graph';
+export type type7 = 'latency_graph';
 
 export type SearchAnalyticsFilter = {
     date_range?: ((DateRange) | null);
@@ -3432,6 +3457,16 @@ export type TopicsOverTimeResponse = {
     time_points: Array<TopicTimePoint>;
 };
 
+export type TotalUniqueUsersResponse = {
+    time_points: Array<TotalUniqueUsersTimePoint>;
+    total_unique_users: number;
+};
+
+export type TotalUniqueUsersTimePoint = {
+    time_stamp: string;
+    total_unique_users: number;
+};
+
 /**
  * Typo Options lets you specify different methods to correct typos in the query. If not specified, typos will not be corrected.
  */
@@ -3826,6 +3861,19 @@ export type GetAllEventsData = {
 };
 
 export type GetAllEventsResponse = (GetEventsResponseBody);
+
+export type GetComponentAnalyticsData = {
+    /**
+     * JSON request payload to filter the graph
+     */
+    requestBody: ComponentAnalytics;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetComponentAnalyticsResponse = (ComponentAnalyticsResponse);
 
 export type GetCtrAnalyticsData = {
     /**
@@ -4636,17 +4684,25 @@ export type GetAllTagsResponse2 = (GetAllTagsResponse);
 
 export type GetGroupsForDatasetData = {
     /**
+     * The cursor offset for .Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`
+     */
+    cursor?: (string) | null;
+    /**
      * The id of the dataset to fetch groups for.
      */
     datasetId: string;
     /**
-     * The page of groups to fetch. Page is 1-indexed.
+     * The page of groups to fetch. Page is 1-indexed. Only used if `use_cursor` = `false`.
      */
-    page: number;
+    page: (number) | null;
     /**
      * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
      */
     trDataset: string;
+    /**
+     * Flag to enable `cursor` mode, this runs faster for large scroll operations. Defaults to false
+     */
+    useCursor?: (boolean) | null;
 };
 
 export type GetGroupsForDatasetResponse = (GroupData);
@@ -5293,6 +5349,21 @@ export type $OpenApiTs = {
                 200: GetEventsResponseBody;
                 /**
                  * Service error relating to getting events
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/analytics/events/component': {
+        post: {
+            req: GetComponentAnalyticsData;
+            res: {
+                /**
+                 * The component analytics for the dataset
+                 */
+                200: ComponentAnalyticsResponse;
+                /**
+                 * Service error relating to getting component analytics
                  */
                 400: ErrorResponseBody;
             };

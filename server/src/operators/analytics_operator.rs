@@ -1,11 +1,12 @@
 use crate::{
     data::models::{
-        ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, EventAnalyticsFilter,
-        EventData, EventDataClickhouse, GetEventsResponseBody, Granularity, HeadQueries, Pool,
-        PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
-        RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
-        RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
-        RecommendationEvent, RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
+        ClusterAnalyticsFilter, ClusterTopicsClickhouse, ComponentAnalyticsFilter,
+        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse,
+        GetEventsResponseBody, Granularity, HeadQueries, Pool, PopularFilters,
+        PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse,
+        RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse, RagQueryRatingsResponse,
+        RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
+        RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
         RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
         RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
         SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
@@ -15,7 +16,8 @@ use crate::{
         SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopDatasetsResponse,
         TopDatasetsResponseClickhouse, TopicAnalyticsResponse, TopicAnalyticsSummaryClickhouse,
         TopicDetailsResponse, TopicQueryClickhouse, TopicSortBy, TopicTimePointClickhouse,
-        TopicsOverTimeResponse, UsageGraphPoint, UsageGraphPointClickhouse,
+        TopicsOverTimeResponse, TotalUniqueUsersResponse, TotalUniqueUsersTimePointClickhouse,
+        UsageGraphPoint, UsageGraphPointClickhouse,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
@@ -1745,6 +1747,64 @@ pub async fn get_topics_over_time_query(
         })?;
 
     Ok(TopicsOverTimeResponse {
+        time_points: time_points.into_iter().map(|t| t.into()).collect(),
+    })
+}
+
+pub async fn get_total_unique_users_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<ComponentAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<TotalUniqueUsersResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+    let mut query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            count(DISTINCT user_id) AS total_unique_users
+        FROM 
+            events
+        WHERE 
+            dataset_id = ?
+        ",
+        interval,
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "  
+        GROUP BY 
+            time_stamp
+        ORDER BY 
+            time_stamp
+        LIMIT
+            1000",
+    );
+
+    let time_points = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<TotalUniqueUsersTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching time points: {:?}", e);
+            ServiceError::InternalServerError("Error fetching time points".to_string())
+        })?;
+
+    let total_unique_users = time_points.iter().map(|t| t.total_unique_users).sum();
+
+    Ok(TotalUniqueUsersResponse {
+        total_unique_users,
         time_points: time_points.into_iter().map(|t| t.into()).collect(),
     })
 }

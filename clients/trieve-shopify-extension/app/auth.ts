@@ -34,7 +34,7 @@ export const validateTrieveAuth = async <S extends boolean = true>(
 
 export const sdkFromKey = (key: TrieveKey): TrieveSDK => {
   const trieve = new TrieveSDK({
-    baseUrl: "https://api.trieve.ai",
+    baseUrl: process.env.TRIEVE_API_URL || "https://api.trieve.ai",
     apiKey: key.key,
     datasetId: key.currentDatasetId ? key.currentDatasetId : undefined,
     organizationId: key.organizationId,

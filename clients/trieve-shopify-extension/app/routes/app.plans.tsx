@@ -31,12 +31,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const availablePlans = await trieve.getStripePlans();
   const organization = await trieve.getOrganizationById(key.organizationId);
 
-  return { availablePlans, organization };
+  return { availablePlans, organization, baseUrl: process.env.TRIEVE_API_URL || "https://api.trieve.ai" };
 };
 
 export default function PlansPage() {
   const navigate = useNavigate();
-  const { availablePlans, organization } = useLoaderData<typeof loader>();
+  const { availablePlans, organization, baseUrl } = useLoaderData<typeof loader>();
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(
@@ -65,7 +65,7 @@ export default function PlansPage() {
 
       try {
         window.open(
-          `https://api.trieve.ai/api/stripe/payment_link/${planId}/${organization?.organization.id}`
+          `${baseUrl}/api/stripe/payment_link/${planId}/${organization?.organization.id}`
         );
       } catch (error) {
         console.error("Failed to upgrade plan:", error);

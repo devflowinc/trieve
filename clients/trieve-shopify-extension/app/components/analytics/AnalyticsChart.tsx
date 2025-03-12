@@ -121,10 +121,6 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
               grid: {
                 display: false  // Turn off horizontal grid lines
               },
-              title: {
-                text: props.yLabel,
-                display: true,
-              },
               beginAtZero: true,
               ticks: props.wholeUnits
                 ? {
@@ -313,10 +309,6 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
             y: {
               grid: {
                 display: false  // Turn off horizontal grid lines
-              },
-              title: {
-                text: props.yLabel,
-                display: true,
               },
               beginAtZero: true,
               ticks: props.wholeUnits
