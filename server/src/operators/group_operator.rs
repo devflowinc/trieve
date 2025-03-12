@@ -161,7 +161,90 @@ pub async fn create_groups_query(
     Ok(inserted_groups)
 }
 
-pub async fn get_groups_for_dataset_query(
+pub async fn get_groups_for_dataset_cursor_query(
+    cursor: Option<uuid::Uuid>,
+    dataset_uuid: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(Vec<ChunkGroupAndFileId>, i32, Option<uuid::Uuid>), ServiceError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+    use crate::data::schema::dataset_group_counts::dsl as dataset_group_count_columns;
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    let group_count_result = dataset_group_count_columns::dataset_group_counts
+        .filter(dataset_group_count_columns::dataset_id.eq(dataset_uuid))
+        .select(dataset_group_count_columns::group_count)
+        .first::<i32>(&mut conn)
+        .await;
+
+    let group_count: i32 = match group_count_result {
+        Ok(count) => count,
+        Err(_) => return Ok((vec![], 0, None)),
+    };
+
+    let groups = chunk_group_columns::chunk_group
+        .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
+        .filter(chunk_group_columns::id.ge(cursor.unwrap_or(uuid::Uuid::nil())))
+        .order_by(chunk_group_columns::id.asc())
+        .limit(10)
+        .load::<ChunkGroup>(&mut conn)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Error getting groups for dataset".to_string()))?;
+
+    let file_ids = groups_from_files_columns::groups_from_files
+        .filter(
+            groups_from_files_columns::group_id
+                .eq_any(groups.iter().map(|x| x.id).collect::<Vec<uuid::Uuid>>()),
+        )
+        .select((
+            groups_from_files_columns::group_id,
+            groups_from_files_columns::file_id,
+        ))
+        .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
+        .await
+        .map_err(|_err| ServiceError::BadRequest("Error getting file ids".to_string()))?;
+
+    let group_and_files = groups
+        .clone()
+        .into_iter()
+        .map(|group| {
+            let file_id = file_ids
+                .iter()
+                .find(|(group_id, _)| group.id == *group_id)
+                .map(|(_, file_id)| *file_id);
+
+            ChunkGroupAndFileId {
+                id: group.id,
+                dataset_id: group.dataset_id,
+                name: group.name,
+                description: group.description,
+                tracking_id: group.tracking_id,
+                tag_set: group.tag_set,
+                metadata: group.metadata,
+                file_id,
+                created_at: group.created_at,
+                updated_at: group.updated_at,
+            }
+        })
+        .collect();
+
+    let next = groups
+        .iter()
+        .map(|group| group.id)
+        .max()
+        .unwrap_or(uuid::Uuid::nil());
+
+    if next == cursor.unwrap_or(uuid::Uuid::nil()) || groups.len() < 10 {
+        Ok((group_and_files, group_count, None))
+    } else {
+        Ok((group_and_files, group_count, Some(next)))
+    }
+}
+
+pub async fn get_groups_for_dataset_page_query(
     page: u64,
     dataset_uuid: uuid::Uuid,
     pool: web::Data<Pool>,

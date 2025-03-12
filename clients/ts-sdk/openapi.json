@@ -3969,11 +3969,33 @@
           {
             "name": "page",
             "in": "path",
-            "description": "The page of groups to fetch. Page is 1-indexed.",
+            "description": "The page of groups to fetch. Page is 1-indexed. Not used if `use_cursor` = `false`.",
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64"
+              "format": "int64",
+              "nullable": true
+            }
+          },
+          {
+            "name": "use_cursor",
+            "in": "query",
+            "description": "Flag to enable `cursor` mode, this runs faster for large scroll operations. Defaults to false",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "The cursor offset for .Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "nullable": true
             }
           }
         ],
@@ -11960,11 +11982,19 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ChunkGroupAndFileId"
-            }
+            },
+            "description": "The list of all the groups."
+          },
+          "next_cursor": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Parameter for the next cursor offset.",
+            "nullable": true
           },
           "total_pages": {
             "type": "integer",
             "format": "int32",
+            "description": "Total number of pages. Pages is groups_count / 10",
             "minimum": 0
           }
         }

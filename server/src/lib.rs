@@ -945,23 +945,16 @@ pub fn main() -> std::io::Result<()> {
                                         ),
                                 )
                                 .service(
-                                    web::resource("/groups/{dataset_id}/{page}").route(web::get().to(
-                                        handlers::group_handler::get_groups_for_dataset,
-                                    )),
+                                    web::scope("/groups/{dataset_id}")
+                                        .route("", web::get().to( handlers::group_handler::get_groups_for_dataset,))
+                                        .route("/", web::get().to( handlers::group_handler::get_groups_for_dataset,))
+                                        .route("/{page}", web::get().to( handlers::group_handler::get_groups_for_dataset,))
                                 )
-                                .service(web::resource("/files/{dataset_id}/{page}").route(
-                                    web::get().to(handlers::file_handler::get_dataset_files_handler),
-                                )),
+                                .route("/files/{dataset_id}/{page}", web::get().to(handlers::file_handler::get_dataset_files_handler)),
                         )
                         .service(web::scope("/etl")
-                            .service(
-                                web::resource("/create_job")
-                                    .route(web::post().to(handlers::etl_handler::create_etl_job)),
-                            )
-                            .service(
-                                web::resource("/webhook")
-                                    .route(web::post().to(handlers::etl_handler::webhook_response)),
-                            )
+                            .route("/create_job", web::post().to(handlers::etl_handler::create_etl_job))
+                            .route("/webhook", web::post().to(handlers::etl_handler::webhook_response))
                         )
                         .service(
                             web::scope("/auth")
