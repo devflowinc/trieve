@@ -526,9 +526,7 @@ const ModalProvider = ({
               user_id: fingerprint,
               location: window.location.href,
               metadata: {
-                page_url: window.location.href,
                 component_props: props,
-                fingerprint,
               },
             },
             abortController.signal,
