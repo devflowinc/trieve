@@ -7,6 +7,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { login } from "../../shopify.server";
 
 import { useEffect, useState } from "react";
+import { getTrieveBaseUrl } from "app/env";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
@@ -15,7 +16,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     throw redirect(`/app?${url.searchParams.toString()}`);
   }
 
-  return { baseUrl: process.env.TRIEVE_API_URL || "https://api.trieve.ai" };
+  return null;
 };
 
 export const action = async ({ request }: LoaderFunctionArgs) => {
@@ -55,15 +56,14 @@ type Orgs = {
 
 export default function App() {
   const fetcher = useFetcher<typeof action>();
-  const { baseUrl } = useLoaderData<typeof loader>();
   const [orgs, setOrgs] = useState<Orgs[]>([]);
 
   useEffect(() => {
-    fetch(`${baseUrl}/api/auth/me`, {
+    fetch(`${getTrieveBaseUrl()}/api/auth/me`, {
       credentials: "include",
     }).then((response) => {
       if (response.status === 401) {
-        window.location.href = `${baseUrl}/api/auth?redirect_uri=${window.location}`;
+        window.location.href = `${getTrieveBaseUrl()}/api/auth?redirect_uri=${window.location}`;
       }
       response.json().then((data: User) => {
         setOrgs(data.orgs);
@@ -81,7 +81,7 @@ export default function App() {
     if (!selectedOrg) {
       return;
     }
-    fetch(`${baseUrl}/api/organization/api_key`, {
+    fetch(`${getTrieveBaseUrl()}/api/organization/api_key`, {
       method: "POST",
       credentials: "include",
       headers: {
