@@ -7,7 +7,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { login } from "../../shopify.server";
 
 import { useEffect, useState } from "react";
-import { getTrieveBaseUrl } from "app/env.server";
+import { getTrieveBaseUrl } from "app/env";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);

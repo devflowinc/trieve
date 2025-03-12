@@ -4,9 +4,20 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
+import { getTrieveBaseUrl } from "./env.server";
+
+export async function loader() {
+  return {
+    ENV: {
+      TRIEVE_BASE_URL: getTrieveBaseUrl(),
+    },
+  };
+}
 
 export default function App() {
+  const data = useLoaderData<typeof loader>();
   return (
     <html>
       <head>
@@ -24,6 +35,11 @@ export default function App() {
         <Outlet />
         <ScrollRestoration />
         <Scripts />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
+          }}
+        />
       </body>
     </html>
   );
