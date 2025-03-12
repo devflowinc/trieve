@@ -1,12 +1,13 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import "./tailwind.css";
-import { useFetcher } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 import { login } from "../../shopify.server";
 
 import { useEffect, useState } from "react";
+import { getTrieveBaseUrl } from "app/env.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
@@ -15,7 +16,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     throw redirect(`/app?${url.searchParams.toString()}`);
   }
 
-  return { showForm: Boolean(login) };
+  return { showForm: Boolean(login), trieveBaseUrl: getTrieveBaseUrl() };
 };
 
 export const action = async ({ request }: LoaderFunctionArgs) => {
@@ -54,15 +55,16 @@ type Orgs = {
 };
 
 export default function App() {
+  const loaderData = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const [orgs, setOrgs] = useState<Orgs[]>([]);
 
   useEffect(() => {
-    fetch("https://api.trieve.ai/api/auth/me", {
+    fetch(`${loaderData.trieveBaseUrl}/api/auth/me`, {
       credentials: "include",
     }).then((response) => {
       if (response.status === 401) {
-        window.location.href = `https://api.trieve.ai/api/auth?redirect_uri=${window.location}`;
+        window.location.href = `${loaderData.trieveBaseUrl}/api/auth?redirect_uri=${window.location}`;
       }
       response.json().then((data: User) => {
         setOrgs(data.orgs);
@@ -80,7 +82,7 @@ export default function App() {
     if (!selectedOrg) {
       return;
     }
-    fetch("https://api.trieve.ai/api/organization/api_key", {
+    fetch(`${loaderData.trieveBaseUrl}/api/organization/api_key`, {
       method: "POST",
       credentials: "include",
       headers: {
