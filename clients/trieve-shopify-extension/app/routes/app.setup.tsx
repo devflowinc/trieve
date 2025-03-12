@@ -33,7 +33,7 @@ const startCrawl = async (
     },
   });
 
-  sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions).catch(
+  sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions, process.env.TRIEVE_API_URL || "https://api.trieve.ai").catch(
     console.error
   );
 };
@@ -113,7 +113,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   }
 
   const trieve = new TrieveSDK({
-    baseUrl: "https://api.trieve.ai",
+    baseUrl: process.env.TRIEVE_API_URL || "https://api.trieve.ai",
     apiKey: key.key,
     datasetId: key.currentDatasetId ? key.currentDatasetId : undefined,
     organizationId: key.organizationId,

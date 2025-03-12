@@ -186,6 +186,68 @@
         ]
       }
     },
+    "/api/analytics/events/component": {
+      "post": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Component Analytics",
+        "description": "This route allows you to view the component analytics for a dataset.",
+        "operationId": "get_component_analytics",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to filter the graph",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComponentAnalytics"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The component analytics for the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting component analytics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/analytics/events/ctr": {
       "post": {
         "tags": [
@@ -3969,7 +4031,7 @@
           {
             "name": "page",
             "in": "path",
-            "description": "The page of groups to fetch. Page is 1-indexed. Not used if `use_cursor` = `false`.",
+            "description": "The page of groups to fetch. Page is 1-indexed. Only used if `use_cursor` = `false`.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -8661,6 +8723,68 @@
           },
           {
             "$ref": "#/components/schemas/SearchQueryResponse"
+          }
+        ]
+      },
+      "ComponentAnalytics": {
+        "oneOf": [
+          {
+            "type": "object",
+            "title": "TotalUniqueUsers",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ComponentAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "total_unique_users"
+                ]
+              }
+            }
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type"
+        }
+      },
+      "ComponentAnalyticsFilter": {
+        "type": "object",
+        "properties": {
+          "component_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "date_range": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DateRange"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "ComponentAnalyticsResponse": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TotalUniqueUsersResponse"
           }
         ]
       },
@@ -17601,6 +17725,43 @@
             "items": {
               "$ref": "#/components/schemas/TopicTimePoint"
             }
+          }
+        }
+      },
+      "TotalUniqueUsersResponse": {
+        "type": "object",
+        "required": [
+          "total_unique_users",
+          "time_points"
+        ],
+        "properties": {
+          "time_points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TotalUniqueUsersTimePoint"
+            }
+          },
+          "total_unique_users": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "TotalUniqueUsersTimePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "total_unique_users"
+        ],
+        "properties": {
+          "time_stamp": {
+            "type": "string"
+          },
+          "total_unique_users": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           }
         }
       },

@@ -262,6 +262,7 @@ export async function sendChunksFromWebhook(
   admin: any,
   session: any,
   crawlOptions: ExtendedCrawlOptions,
+  baseUrl: string,
 ) {
   const dataChunks = product.variants.map(async (variant) => {
     let response = await admin?.graphql(
@@ -298,7 +299,7 @@ export async function sendChunksFromWebhook(
   let dataChunksResolved = await Promise.all(dataChunks);
 
   for (const batch of chunk_to_size(dataChunksResolved, 120)) {
-    sendChunksToTrieve(batch, key, datasetId ?? "");
+    sendChunksToTrieve(batch, key, datasetId ?? "", baseUrl);
   }
 }
 
@@ -306,8 +307,9 @@ export async function sendChunksToTrieve(
   chunks: ChunkReqPayload[],
   key: TrieveKey,
   datasetId: string,
+  baseUrl: string,
 ) {
-  await fetch(`https://api.trieve.ai/api/chunk`, {
+  await fetch(`${baseUrl}/api/chunk`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key.key}`,
@@ -324,8 +326,9 @@ export async function deleteChunkFromTrieve(
   id: string,
   key: TrieveKey,
   datasetId: string,
+  baseUrl: string,
 ) {
-  await fetch(`https://api.trieve.ai/api/chunk/tracking_id/${id}`, {
+  await fetch(`${baseUrl}/api/chunk/tracking_id/${id}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${key.key}`,
@@ -342,6 +345,7 @@ export const sendChunks = async (
   admin: any,
   session: any,
   crawlOptions: ExtendedCrawlOptions,
+  baseUrl: string,
 ) => {
   let next_page = null;
   let started = false;
@@ -415,7 +419,7 @@ export const sendChunks = async (
       );
 
     for (const batch of chunk_to_size(dataChunks, 120)) {
-      sendChunksToTrieve(batch, key, datasetId ?? "");
+      sendChunksToTrieve(batch, key, datasetId ?? "", baseUrl);
     }
 
     next_page = data.products.pageInfo.hasNextPage

@@ -40,21 +40,25 @@ export const loader = async (args: LoaderFunctionArgs) => {
     key: key as StrongTrieveKey,
     dataset,
     organization,
+    baseUrl: process.env.TRIEVE_API_URL || "https://api.trieve.ai",
   };
 };
 
 export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { dataset, organization, key } = useLoaderData<typeof loader>();
+  const { dataset, organization, key, baseUrl } = useLoaderData<typeof loader>();
 
   // Determine selected tab based on current path
   const selected = useMemo(() => {
     if (location.pathname.includes("/settings")) {
-      return 2; // Settings tab index
+      return 3; // Settings tab index
     }
     if (location.pathname.includes("/search")) {
-      return 1; // Search tab index
+      return 2; // Search tab index
+    }
+    if (location.pathname.includes("/component")) {
+      return 1; // Component tab index
     }
     return 0; // Homepage tab index (default)
   }, [location.pathname]);
@@ -64,9 +68,11 @@ export default function Dashboard() {
       if (selectedTabIndex === 0) {
         navigate("/app/"); // Navigate to homepage
       } else if (selectedTabIndex === 2) {
-        navigate("/app/settings"); // Navigate to settings
-      } else if (selectedTabIndex === 1) {
         navigate("/app/search"); // Navigate to search
+      } else if (selectedTabIndex === 1) {
+        navigate("/app/component"); // Navigate to component
+      } else if (selectedTabIndex === 3) {
+        navigate("/app/settings"); // Navigate to settings
       }
     },
     [navigate],
@@ -78,6 +84,12 @@ export default function Dashboard() {
       content: "Home",
       accessibilityLabel: "Homepage",
       panelID: "homepage-panel",
+    },
+    {
+      id: "component",
+      content: "Component",
+      accessibilityLabel: "Component",
+      panelID: "component-panel",
     },
     {
       id: "search",
@@ -128,6 +140,7 @@ export default function Dashboard() {
                 dataset={dataset as Dataset}
                 organization={organization as OrganizationWithSubAndPlan}
                 trieveKey={key}
+                baseUrl={baseUrl}
               >
                 <QueryClientProvider client={queryClient}>
                   <ReactQueryDevtools initialIsOpen={false} />

@@ -2,10 +2,11 @@ use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
-        DatasetAndOrgWithSubAndPlan, DateRange, EventDataTypes, EventTypes, GetEventsRequestBody,
-        OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
-        RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
-        SearchAnalyticsResponse, TopDatasetsRequestTypes,
+        ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
+        EventDataTypes, EventTypes, GetEventsRequestBody, OrganizationWithSubAndPlan, Pool,
+        RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
+        RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
+        TopDatasetsRequestTypes,
     },
     errors::ServiceError,
     operators::{
@@ -719,6 +720,53 @@ pub async fn get_ctr_analytics(
             .await?;
 
             CTRAnalyticsResponse::RecommendationsWithoutClicks(recommendations_without_clicks)
+        }
+    };
+
+    Ok(HttpResponse::Ok().json(response))
+}
+
+/// Get Component Analytics
+///
+/// This route allows you to view the component analytics for a dataset.
+#[utoipa::path(
+    post,
+    path = "/analytics/events/component",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = ComponentAnalytics, description = "JSON request payload to filter the graph", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The component analytics for the dataset", body = ComponentAnalyticsResponse),
+
+        (status = 400, description = "Service error relating to getting component analytics", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_component_analytics(
+    _user: AdminOnly,
+    data: web::Json<ComponentAnalytics>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let response = match data.into_inner() {
+        ComponentAnalytics::TotalUniqueUsers {
+            filter,
+            granularity,
+        } => {
+            let total_unique_users = get_total_unique_users_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            ComponentAnalyticsResponse::TotalUniqueUsers(total_unique_users)
         }
     };
 

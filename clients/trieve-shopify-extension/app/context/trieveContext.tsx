@@ -25,17 +25,19 @@ export const TrieveProvider = ({
   dataset,
   organization,
   queryClient,
+  baseUrl = "https://api.trieve.ai",
 }: {
   children: React.ReactNode;
   trieveKey: StrongTrieveKey;
   dataset: Dataset;
   organization: OrganizationWithSubAndPlan;
   queryClient: QueryClient;
+  baseUrl: string;
 }) => {
   const trieve = useMemo(
     () =>
       new TrieveSDK({
-        baseUrl: "https://api.trieve.ai",
+        baseUrl,
         apiKey: trieveKey.key,
         datasetId: trieveKey.currentDatasetId,
         organizationId: trieveKey.organizationId,

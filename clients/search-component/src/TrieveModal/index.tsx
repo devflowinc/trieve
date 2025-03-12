@@ -99,6 +99,7 @@ const Modal = () => {
             event_name: `trieve-modal_load`,
             event_type: "view",
             items: [],
+            user_id: fingerprint,
             metadata: {
               page_url: window.location.href,
               component_props: props,
@@ -119,6 +120,7 @@ const Modal = () => {
                   event_name: `site-add_to_cart`,
                   event_type: "add_to_cart",
                   items: [],
+                  user_id: fingerprint,
                   metadata: {
                     page_url: window.location.href,
                     component_props: props,
@@ -155,6 +157,7 @@ const Modal = () => {
                     event_type: "purchase",
                     items: [],
                     is_conversion: true,
+                    user_id: fingerprint,
                     metadata: {
                       page_url: window.location.href,
                       component_props: props,

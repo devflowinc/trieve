@@ -5849,6 +5849,40 @@ impl SearchAnalyticsFilter {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ComponentAnalyticsFilter {
+    pub date_range: Option<DateRange>,
+    pub component_name: Option<String>,
+}
+
+impl ComponentAnalyticsFilter {
+    pub fn add_to_query(&self, mut query_string: String) -> String {
+        if let Some(date_range) = &self.date_range {
+            if let Some(gt) = &date_range.gt {
+                query_string.push_str(&format!(" AND created_at > '{}'", gt));
+            }
+            if let Some(lt) = &date_range.lt {
+                query_string.push_str(&format!(" AND created_at < '{}'", lt));
+            }
+            if let Some(gte) = &date_range.gte {
+                query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+            }
+            if let Some(lte) = &date_range.lte {
+                query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+            }
+        }
+
+        if let Some(component_name) = &self.component_name {
+            query_string.push_str(&format!(
+                " AND JSONExtractString(metadata.component_props, 'component_name') = '{}'",
+                component_name
+            ));
+        }
+
+        query_string
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TopDatasetsResponse {
     pub dataset_id: uuid::Uuid,
     pub dataset_tracking_id: Option<String>,
@@ -7063,6 +7097,17 @@ pub enum CTRAnalytics {
     },
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
+pub enum ComponentAnalytics {
+    #[schema(title = "TotalUniqueUsers")]
+    TotalUniqueUsers {
+        filter: Option<ComponentAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
 #[schema(title = "RAGUsageResponse")]
 pub struct RAGUsageResponse {
@@ -7245,6 +7290,41 @@ pub enum CTRAnalyticsResponse {
     RecommendationsWithoutClicks(CTRRecommendationsWithoutClicksResponse),
     #[schema(title = "RecommendationsWithClicks")]
     RecommendationsWithClicks(CTRRecommendationsWithClicksResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum ComponentAnalyticsResponse {
+    #[schema(title = "TotalUniqueUsers")]
+    TotalUniqueUsers(TotalUniqueUsersResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TotalUniqueUsersResponse {
+    pub total_unique_users: u64,
+    pub time_points: Vec<TotalUniqueUsersTimePoint>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct TotalUniqueUsersTimePointClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub total_unique_users: u64,
+}
+
+impl From<TotalUniqueUsersTimePointClickhouse> for TotalUniqueUsersTimePoint {
+    fn from(value: TotalUniqueUsersTimePointClickhouse) -> Self {
+        TotalUniqueUsersTimePoint {
+            time_stamp: value.time_stamp.to_string(),
+            total_unique_users: value.total_unique_users,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TotalUniqueUsersTimePoint {
+    pub time_stamp: String,
+    pub total_unique_users: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
