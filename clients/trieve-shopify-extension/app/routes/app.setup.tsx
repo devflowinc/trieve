@@ -1,10 +1,9 @@
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
-import { validateTrieveAuth } from "app/auth";
 import {
   defaultCrawlOptions,
   ExtendedCrawlOptions,
 } from "app/components/DatasetSettings";
-import { getTrieveBaseUrl } from "app/env";
+import { getTrieveBaseUrlEnv } from "app/env.server";
 import { sendChunks } from "app/processors/getProducts";
 import { authenticate } from "app/shopify.server";
 import { TrieveKey } from "app/types";
@@ -34,14 +33,9 @@ const startCrawl = async (
     },
   });
 
-  sendChunks(
-    datasetId ?? "",
-    trieveKey,
-    admin,
-    session,
-    crawlOptions,
-    process.env.TRIEVE_API_URL || "https://api.trieve.ai",
-  ).catch(console.error);
+  sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions).catch(
+    console.error,
+  );
 };
 
 const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
@@ -119,7 +113,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   }
 
   const trieve = new TrieveSDK({
-    baseUrl: getTrieveBaseUrl(),
+    baseUrl: getTrieveBaseUrlEnv(),
     apiKey: key.key,
     datasetId: key.currentDatasetId ? key.currentDatasetId : undefined,
     organizationId: key.organizationId,

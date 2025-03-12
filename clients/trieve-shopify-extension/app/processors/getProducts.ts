@@ -1,5 +1,5 @@
 import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
-import { getTrieveBaseUrl } from "app/env";
+import { getTrieveBaseUrlEnv } from "app/env.server";
 import {
   Product,
   TrieveKey,
@@ -263,7 +263,6 @@ export async function sendChunksFromWebhook(
   admin: any,
   session: any,
   crawlOptions: ExtendedCrawlOptions,
-  baseUrl: string,
 ) {
   const dataChunks = product.variants.map(async (variant) => {
     let response = await admin?.graphql(
@@ -309,7 +308,7 @@ export async function sendChunksToTrieve(
   key: TrieveKey,
   datasetId: string,
 ) {
-  await fetch(`${getTrieveBaseUrl()}/api/chunk`, {
+  await fetch(`${getTrieveBaseUrlEnv()}/api/chunk`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key.key}`,
