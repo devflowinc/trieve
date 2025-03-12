@@ -1,4 +1,5 @@
 import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
+import { getTrieveBaseUrl } from "app/env";
 import {
   Product,
   TrieveKey,
@@ -299,7 +300,7 @@ export async function sendChunksFromWebhook(
   let dataChunksResolved = await Promise.all(dataChunks);
 
   for (const batch of chunk_to_size(dataChunksResolved, 120)) {
-    sendChunksToTrieve(batch, key, datasetId ?? "", baseUrl);
+    sendChunksToTrieve(batch, key, datasetId ?? "");
   }
 }
 
@@ -307,9 +308,8 @@ export async function sendChunksToTrieve(
   chunks: ChunkReqPayload[],
   key: TrieveKey,
   datasetId: string,
-  baseUrl: string,
 ) {
-  await fetch(`${baseUrl}/api/chunk`, {
+  await fetch(`${getTrieveBaseUrl()}/api/chunk`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key.key}`,
@@ -345,7 +345,6 @@ export const sendChunks = async (
   admin: any,
   session: any,
   crawlOptions: ExtendedCrawlOptions,
-  baseUrl: string,
 ) => {
   let next_page = null;
   let started = false;
@@ -419,7 +418,7 @@ export const sendChunks = async (
       );
 
     for (const batch of chunk_to_size(dataChunks, 120)) {
-      sendChunksToTrieve(batch, key, datasetId ?? "", baseUrl);
+      sendChunksToTrieve(batch, key, datasetId ?? "");
     }
 
     next_page = data.products.pageInfo.hasNextPage

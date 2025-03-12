@@ -8,18 +8,14 @@ import {
   Text,
   Button,
   Banner,
-  Badge,
   Box,
   BlockStack,
   InlineStack,
   Divider,
-  Icon,
 } from "@shopify/polaris";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
-import { useTrieve } from "app/context/trieveContext";
-import { CheckIcon } from "@shopify/polaris-icons";
 import { useCallback, useEffect, useState } from "react";
-import { StripePlan } from "trieve-ts-sdk";
+import { getTrieveBaseUrl } from "app/env";
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const key = await validateTrieveAuth(args.request, false);
@@ -31,16 +27,15 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const availablePlans = await trieve.getStripePlans();
   const organization = await trieve.getOrganizationById(key.organizationId);
 
-  return { availablePlans, organization, baseUrl: process.env.TRIEVE_API_URL || "https://api.trieve.ai" };
+  return { availablePlans, organization };
 };
 
 export default function PlansPage() {
   const navigate = useNavigate();
-  const { availablePlans, organization, baseUrl } = useLoaderData<typeof loader>();
-  const [loading, setLoading] = useState(true);
+  const { availablePlans, organization } = useLoaderData<typeof loader>();
   const [upgrading, setUpgrading] = useState(false);
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(
-    organization.plan?.id || null
+    organization.plan?.id || null,
   );
 
   const formatCurrency = new Intl.NumberFormat("en-US", {
@@ -65,7 +60,7 @@ export default function PlansPage() {
 
       try {
         window.open(
-          `${baseUrl}/api/stripe/payment_link/${planId}/${organization?.organization.id}`
+          `${getTrieveBaseUrl()}/api/stripe/payment_link/${planId}/${organization?.organization.id}`,
         );
       } catch (error) {
         console.error("Failed to upgrade plan:", error);
@@ -73,7 +68,7 @@ export default function PlansPage() {
         setProcessingPlanId(null);
       }
     },
-    [organization?.organization.id]
+    [organization?.organization.id],
   );
 
   // Current plan details

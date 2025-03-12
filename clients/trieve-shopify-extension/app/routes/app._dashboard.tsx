@@ -40,14 +40,13 @@ export const loader = async (args: LoaderFunctionArgs) => {
     key: key as StrongTrieveKey,
     dataset,
     organization,
-    baseUrl: process.env.TRIEVE_API_URL || "https://api.trieve.ai",
   };
 };
 
 export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { dataset, organization, key, baseUrl } = useLoaderData<typeof loader>();
+  const { dataset, organization, key } = useLoaderData<typeof loader>();
 
   // Determine selected tab based on current path
   const selected = useMemo(() => {
@@ -140,7 +139,6 @@ export default function Dashboard() {
                 dataset={dataset as Dataset}
                 organization={organization as OrganizationWithSubAndPlan}
                 trieveKey={key}
-                baseUrl={baseUrl}
               >
                 <QueryClientProvider client={queryClient}>
                   <ReactQueryDevtools initialIsOpen={false} />
