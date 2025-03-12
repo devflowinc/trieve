@@ -114,7 +114,7 @@ export const ApiKeys = () => {
           return (
             <button
               type="button"
-              class="inline-flex justify-center px-3 py-2 text-sm text-red-500"
+              class="inline-flex justify-center px-3 py-2 text-sm text-red-500 hover:text-red-800"
               onClick={(e) => {
                 e.preventDefault();
                 const result = window.confirm(

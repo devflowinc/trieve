@@ -63,16 +63,17 @@ export interface TagProp {
   description?: string;
 }
 
-export interface FilterSidebarSections {
+export interface FilterSidebarSection {
   key: string;
   title: string;
   selectionType: "single" | "multiple";
   filterType: "match_any" | "match_all";
   options: TagProp[];
+  child?: FilterSidebarSection;
 }
 
 export interface FilterSidebarProps {
-  sections: FilterSidebarSections[];
+  sections: FilterSidebarSection[];
 }
 
 export interface InferenceFiltersFormProps {
@@ -102,6 +103,16 @@ export type ModalProps = {
   chatPlaceholder?: string;
   chat?: boolean;
   analytics?: boolean;
+  analyticsSelectors?: {
+    addToCart: {
+      querySelector: string;
+    };
+    checkout: {
+      querySelector: string;
+      containerSelector: string;
+      watchSelectorToRefreshListener?: string;
+    };
+  };
   ButtonEl?: JSX.ElementType;
   suggestedQueries?: boolean;
   followupQuestions?: boolean;
@@ -505,27 +516,32 @@ const ModalProvider = ({
     const abortController = new AbortController();
 
     if (open && props.analytics) {
-      getFingerprint().then((fingerprint) => {
-        trieve.sendAnalyticsEvent(
-          {
-            event_name: `trieve-modal_click`,
-            event_type: "click",
-            clicked_items: null,
-            metadata: {
-              page_url: window.location.href,
-              component_props: props,
-              fingerprint,
+      try {
+        getFingerprint().then((fingerprint) => {
+          trieve.sendAnalyticsEvent(
+            {
+              event_name: `trieve-modal_click`,
+              event_type: "click",
+              clicked_items: null,
+              metadata: {
+                page_url: window.location.href,
+                component_props: props,
+                fingerprint,
+              },
             },
-          },
-          abortController.signal,
-        );
-      });
+            abortController.signal,
+          );
+        });
+      } catch (e) {
+        console.log("error on click event", e);
+      }
     }
 
     return () => {
       abortController.abort("AbortError trieve-modal_click");
     };
-  }, [open, props.analytics, props.componentName]);
+  }, [open, props.analytics, props]);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (

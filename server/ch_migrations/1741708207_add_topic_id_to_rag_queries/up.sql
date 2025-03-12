@@ -1,0 +1,1 @@
+ALTER TABLE rag_queries ADD COLUMN IF NOT EXISTS topic_id UUID;

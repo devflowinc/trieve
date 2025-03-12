@@ -182,6 +182,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           );
           if (ecommerceChunks && queryId) {
             trackViews({
+              props: props,
               trieve: trieveSDK,
               requestID: queryId,
               type: "rag",
@@ -623,7 +624,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const askQuestion = async (
     question?: string,
     group?: ChunkGroup,
-    retry?: boolean,
+    displayUserMessage?: boolean,
   ) => {
     const questionProp = question;
     setIsDoneReading(false);
@@ -657,43 +658,40 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         question = props.defaultImageQuestion;
       }
 
-      if (!retry) {
-        setMessages((m) => [
-          ...m,
-          {
-            type: "user",
-            text: questionProp || currentQuestion,
-            additional: null,
-            queryId: null,
-            imageUrl: imageUrl ? imageUrl : null,
-          },
-          {
-            type: "system",
-            text: "Loading...",
-            additional: null,
-            queryId: null,
-          },
-        ]);
-      }
+      setMessages((m) => [
+        ...m,
+        {
+          type: "user",
+          text:
+            (displayUserMessage ?? true) ? questionProp || currentQuestion : "",
+          additional: null,
+          queryId: null,
+          imageUrl: imageUrl ? imageUrl : null,
+        },
+        {
+          type: "system",
+          text: "Loading...",
+          additional: null,
+          queryId: null,
+        },
+      ]);
     } else {
-      if (!retry) {
-        setMessages((m) => [
-          ...m,
-          {
-            type: "user",
-            text: "Loading...",
-            additional: null,
-            queryId: null,
-            imageUrl: imageUrl ? imageUrl : null,
-          },
-          {
-            type: "system",
-            text: "Loading...",
-            additional: null,
-            queryId: null,
-          },
-        ]);
-      }
+      setMessages((m) => [
+        ...m,
+        {
+          type: "user",
+          text: "Loading...",
+          additional: null,
+          queryId: null,
+          imageUrl: imageUrl ? imageUrl : null,
+        },
+        {
+          type: "system",
+          text: "Loading...",
+          additional: null,
+          queryId: null,
+        },
+      ]);
     }
     scrollToBottomOfChatModalWrapper();
 
@@ -728,7 +726,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         rating: isPositive ? 1 : 0,
         query_id: queryId,
         metadata: {
-          component_name: props.componentName,
+          component_props: props,
         },
       });
     }

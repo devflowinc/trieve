@@ -17,9 +17,7 @@ import { FloatingSearchIcon } from "./FloatingSearchIcon";
 import { FloatingSearchInput } from "./FloatingSearchInput";
 import { ModalContainer } from "./ModalContainer";
 import {
-  Accordion,
   ActiveFilterPills,
-  FilterButton,
   InferenceFiltersForm,
 } from "./FilterSidebarComponents";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
@@ -37,30 +35,6 @@ const SearchPage = () => {
         <ActiveFilterPills />
       </div>
       <div className="trieve-search-page-main-section">
-        <div className="trieve-filter-bar-section">
-          <div className="trieve-filter-sidebar">
-            {props.searchPageProps?.filterSidebarProps?.sections.map(
-              (section) => (
-                <Accordion
-                  sectionKey={section.key}
-                  title={section.title}
-                  key={section.key}
-                >
-                  {section.options.map((option, i) => (
-                    <FilterButton
-                      sectionKey={section.key}
-                      label={option.label ?? ""}
-                      description={option.description}
-                      type={section.selectionType}
-                      filterKey={option.tag}
-                      key={i}
-                    />
-                  ))}
-                </Accordion>
-              ),
-            )}
-          </div>
-        </div>
         <div className="trieve-filter-main-section">
           <InferenceFiltersForm
             steps={
@@ -118,27 +92,111 @@ const Modal = () => {
 
     console.log("sending load event");
 
-    getFingerprint().then((fingerprint) => {
-      trieveSDK.sendAnalyticsEvent(
-        {
-          event_name: `trieve-modal_load`,
-          event_type: "view",
-          items: [],
-          metadata: {
-            page_url: window.location.href,
-            component_props: props,
-            fingerprint,
+    try {
+      getFingerprint().then((fingerprint) => {
+        trieveSDK.sendAnalyticsEvent(
+          {
+            event_name: `trieve-modal_load`,
+            event_type: "view",
+            items: [],
+            metadata: {
+              page_url: window.location.href,
+              component_props: props,
+              fingerprint,
+            },
           },
-        },
-        abortController.signal,
-      );
-    });
+          abortController.signal,
+        );
+
+        const addToCart = props.analyticsSelectors?.addToCart;
+        if (addToCart) {
+          const addCarts = document.querySelectorAll(addToCart.querySelector);
+
+          addCarts.forEach((cart) => {
+            cart.addEventListener("click", () => {
+              trieveSDK.sendAnalyticsEvent(
+                {
+                  event_name: `site-add_to_cart`,
+                  event_type: "add_to_cart",
+                  items: [],
+                  metadata: {
+                    page_url: window.location.href,
+                    component_props: props,
+                    elementHtml: cart.outerHTML,
+                    fingerprint,
+                  },
+                },
+                abortController.signal,
+              );
+            });
+          });
+        }
+
+        const checkoutSelector = props.analyticsSelectors?.checkout;
+        if (checkoutSelector) {
+          const setCheckoutEventListener = () => {
+            const checkouts = document.querySelectorAll(
+              checkoutSelector.querySelector,
+            );
+
+            checkouts.forEach((checkout) => {
+              if (checkout.getAttribute("data-tr-checkout") === "true") {
+                return;
+              }
+
+              const itemsElem = document.querySelector(
+                checkoutSelector.containerSelector,
+              );
+
+              checkout.addEventListener("click", () => {
+                trieveSDK.sendAnalyticsEvent(
+                  {
+                    event_name: `site-checkout`,
+                    event_type: "purchase",
+                    items: [],
+                    is_conversion: true,
+                    metadata: {
+                      page_url: window.location.href,
+                      component_props: props,
+                      itemsElem: itemsElem?.outerHTML,
+                      fingerprint,
+                    },
+                  },
+                  abortController.signal,
+                );
+              });
+
+              checkout.setAttribute("data-tr-checkout", "true");
+            });
+          };
+
+          setCheckoutEventListener();
+
+          if (checkoutSelector.watchSelectorToRefreshListener) {
+            const checkoutElemToObserve = document.querySelector(
+              checkoutSelector.watchSelectorToRefreshListener,
+            );
+            if (checkoutElemToObserve) {
+              const observer = new MutationObserver(() => {
+                setCheckoutEventListener();
+              });
+              observer.observe(checkoutElemToObserve, {
+                attributes: true,
+                childList: true,
+                subtree: true,
+              });
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.log("error on load event", e);
+    }
 
     return () => {
       abortController.abort("AbortError trieve-modal_load");
     };
   }, []);
-
 
   useEffect(() => {
     onViewportResize();

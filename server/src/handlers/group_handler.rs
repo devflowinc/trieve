@@ -287,14 +287,24 @@ pub async fn create_chunk_group(
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GroupData {
+    /// The list of all the groups.
     pub groups: Vec<ChunkGroupAndFileId>,
+    /// Total number of pages. Pages is groups_count / 10
     pub total_pages: u32,
+    /// Parameter for the next cursor offset.
+    pub next_cursor: Option<uuid::Uuid>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DatasetGroupCursorQuery {
+    pub cursor: Option<uuid::Uuid>,
+    pub use_cursor: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DatasetGroupQuery {
     pub dataset_id: uuid::Uuid,
-    pub page: u64,
+    pub page: Option<u64>,
 }
 
 /// Get Groups for Dataset
@@ -312,7 +322,9 @@ pub struct DatasetGroupQuery {
     params(
         ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("dataset_id" = uuid::Uuid, description = "The id of the dataset to fetch groups for."),
-        ("page" = i64, description = "The page of groups to fetch. Page is 1-indexed."),
+        ("page" = Option<i64>, description = "The page of groups to fetch. Page is 1-indexed. Only used if `use_cursor` = `false`."),
+        ("use_cursor" = Option<bool>, Query, description = "Flag to enable `cursor` mode, this runs faster for large scroll operations. Defaults to false"),
+        ("cursor" = Option<uuid::Uuid>, Query, description = "The cursor offset for .Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -320,20 +332,43 @@ pub struct DatasetGroupQuery {
 )]
 pub async fn get_groups_for_dataset(
     dataset_and_page: web::Path<DatasetGroupQuery>,
-    _dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    query_params: web::Query<DatasetGroupCursorQuery>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     pool: web::Data<Pool>,
     _required_user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let (groups, group_count) =
-        get_groups_for_dataset_query(dataset_and_page.page, dataset_and_page.dataset_id, pool)
+    match query_params.use_cursor {
+        Some(true) => {
+            let (groups, group_count, next_cursor) = get_groups_for_dataset_cursor_query(
+                query_params.cursor,
+                dataset_org_plan_sub.dataset.id,
+                pool,
+            )
             .await?;
+            let pages = (group_count as u32).div_ceil(10);
 
-    let pages = (group_count as u32).div_ceil(10);
+            Ok(HttpResponse::Ok().json(GroupData {
+                groups,
+                total_pages: pages,
+                next_cursor,
+            }))
+        }
+        _ => {
+            let (groups, group_count) = get_groups_for_dataset_page_query(
+                dataset_and_page.page.unwrap_or(1),
+                dataset_and_page.dataset_id,
+                pool,
+            )
+            .await?;
+            let pages = (group_count as u32).div_ceil(10);
 
-    Ok(HttpResponse::Ok().json(GroupData {
-        groups,
-        total_pages: pages,
-    }))
+            Ok(HttpResponse::Ok().json(GroupData {
+                groups,
+                total_pages: pages,
+                next_cursor: None,
+            }))
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]

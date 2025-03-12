@@ -1,7 +1,6 @@
 import "../../../dist/index.css";
 import "../custom-css/searchpage.css";
 import { TrieveModalSearch } from "../../../src/index";
-import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/searchpage")({
@@ -13,34 +12,9 @@ export default function ECommerce() {
   const datasetId = import.meta.env.VITE_DATASET_ID;
   const apiKey = import.meta.env.VITE_API_KEY;
 
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-
   return (
     <>
-      <div
-        className={`min-w-screen min-h-screen relative ${
-          theme === "dark" ? "bg-zinc-900 text-zinc-50" : ""
-        }`}
-      >
-        <div className="absolute top-6 right-6">
-          <ul>
-            <li key="theme">
-              <button
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              >
-                {theme === "light" ? (
-                  <span>
-                    <i className="fa-regular fa-sun"></i>
-                  </span>
-                ) : (
-                  <span>
-                    <i className="fa-regular fa-moon"></i>
-                  </span>
-                )}
-              </button>
-            </li>
-          </ul>
-        </div>
+      <div className="min-w-screen min-h-screen relative">
         <div className="w-full">
           <TrieveModalSearch
             displayModal={false}
@@ -76,7 +50,7 @@ export default function ECommerce() {
                         label: "Countertops",
                         tag: "Countertops",
                         description:
-                          "Set this to true anytime the image seems to include countertops.",
+                          "Set this to true anytime the image seems to include countertops or something that looks vaguely like a countertop.",
                       },
                       {
                         label: "Cabinets",
@@ -144,12 +118,6 @@ export default function ECommerce() {
                         description:
                           "Set this to true anytime the image seems to include or like it could include outdoor walls. Literally if you see an outdoor space, set this to true.",
                       },
-                      {
-                        label: "Outdoor Wall Paint",
-                        tag: "Paint",
-                        description:
-                          "Set this to true anytime the image seems to include outdoor walls. Literally if you see an outdoor space, set this to true.",
-                      },
                     ],
                     selectionType: "single",
                     filterType: "match_any",
@@ -166,9 +134,23 @@ export default function ECommerce() {
                     placeholder: "Click or drag to upload (Max 5MB)",
                   },
                   {
+                    title: "Describe Your Space and Goals",
+                    description:
+                      "Describe the space you want to renovate and what you are looking for in terms of style, color, and materials.",
+                    type: "text",
+                    filterSidebarSectionKey: "description",
+                    prompt:
+                      "Write 1 sentence describing in high detail the way you see the space in the image in terms of color, luminance, and style. Make a specific callout to something unique so a reader knows you actually saw the image. \n\n",
+                    inferenceInputLabel:
+                      "How the AI understands your image (editable)",
+                    inputLabel: "What are your goals?",
+                    placeholder:
+                      "I want to change the countertops and backsplash to something more modern and colorful.",
+                  },
+                  {
                     title: "Category Selection",
                     description:
-                      "Select the material you are interested in getting recommendations for.",
+                      "Select the material(s) you want to change and are interested in getting recommendations for.",
                     type: "tags",
                     placeholder: "Select categories",
                     filterSidebarSectionKey: "categories",
@@ -179,7 +161,7 @@ export default function ECommerce() {
                       "Our AI will recommend materials based on your image and which materials you are replacing.",
                     type: "search_modal",
                     prompt:
-                      "Write 1 sentence describing the ideal replacements in terms of color, luminance, and style of ONLY the following materials:\n\n",
+                      "Taking the space and other details into consideration, write 1 sentence describing the ideal replacements in terms of color, luminance, and style of ONLY the following materials:\n\n",
                   },
                 ],
               },
