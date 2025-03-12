@@ -16,7 +16,7 @@ CREATE TABLE rag_queries_new on CLUSTER `{cluster}`
     `top_score` Int32 DEFAULT 0
 )
 ENGINE = ReplicatedReplacingMergeTree()
-PARTITION BY (toYYYYMM(created_at), dataset_id)
+PARTITION BY (dataset_id)
 ORDER BY (id, created_at)
 SETTINGS index_granularity = 8192;
 

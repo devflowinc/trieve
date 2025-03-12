@@ -8,8 +8,7 @@ CREATE TABLE IF NOT EXISTS dataset_events on CLUSTER `{cluster}`
 ) ENGINE = ReplicatedMergeTree()
 ORDER BY (dataset_id, created_at, event_type, id)
 PARTITION BY
-    (toYYYYMM(created_at),
-    dataset_id)
+    (dataset_id)
 TTL created_at + INTERVAL 30 DAY;
 
 CREATE TABLE IF NOT EXISTS search_queries on CLUSTER `{cluster}`
@@ -28,8 +27,7 @@ CREATE TABLE IF NOT EXISTS search_queries on CLUSTER `{cluster}`
 ) ENGINE = ReplicatedReplacingMergeTree(is_duplicate)
 ORDER BY (dataset_id, created_at, top_score, latency, id)
 PARTITION BY
-    (toYYYYMM(created_at),
-    dataset_id)
+    (dataset_id)
 TTL created_at + INTERVAL 30 DAY;
 
 CREATE TABLE IF NOT EXISTS cluster_topics on CLUSTER `{cluster}`
@@ -67,8 +65,7 @@ CREATE TABLE IF NOT EXISTS rag_queries on CLUSTER `{cluster}`
 ) ENGINE = ReplicatedMergeTree()
 ORDER BY (id, created_at)
 PARTITION BY
-    (toYYYYMM(created_at),
-    dataset_id)
+    (dataset_id)
 TTL created_at + INTERVAL 30 DAY;
 
 
@@ -88,6 +85,5 @@ CREATE TABLE IF NOT EXISTS recommendations on CLUSTER `{cluster}`
 ) ENGINE = ReplicatedMergeTree()
 ORDER BY (id, created_at)
 PARTITION BY
-    (toYYYYMM(created_at),
-    dataset_id)
+    (dataset_id)
 TTL created_at + INTERVAL 30 DAY;

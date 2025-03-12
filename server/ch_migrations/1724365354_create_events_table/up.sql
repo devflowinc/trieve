@@ -15,5 +15,4 @@ CREATE TABLE IF NOT EXISTS events on CLUSTER `{cluster}`
 ENGINE = ReplicatedMergeTree()
 ORDER BY (event_type, created_at, id)
 PARTITION BY
-    (toYYYYMM(created_at),
-    dataset_id);
+    (dataset_id);

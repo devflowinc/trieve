@@ -7,5 +7,5 @@ CREATE TABLE IF NOT EXISTS last_collapsed_dataset on CLUSTER `{cluster}`
 )
 ENGINE = ReplicatedReplacingMergeTree(created_at)
 ORDER BY (dataset_id)
-PARTITION BY (toYYYYMM(created_at), dataset_id);
+PARTITION BY (dataset_id);
 

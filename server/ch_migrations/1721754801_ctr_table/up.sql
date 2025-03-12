@@ -10,6 +10,5 @@ CREATE TABLE IF NOT EXISTS ctr_data on CLUSTER `{cluster}`
 ) ENGINE = ReplicatedMergeTree()
 ORDER BY (dataset_id, created_at, request_id, id)
 PARTITION BY
-    (toYYYYMM(created_at),
-    dataset_id)
+    (dataset_id)
 TTL created_at + INTERVAL 30 DAY;
