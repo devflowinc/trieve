@@ -102,9 +102,7 @@ const Modal = () => {
             user_id: fingerprint,
             location: window.location.href,
             metadata: {
-              page_url: window.location.href,
               component_props: props,
-              fingerprint,
             },
           },
           abortController.signal,
@@ -124,10 +122,8 @@ const Modal = () => {
                   user_id: fingerprint,
                   location: window.location.href,
                   metadata: {
-                    page_url: window.location.href,
                     component_props: props,
                     elementHtml: cart.outerHTML,
-                    fingerprint,
                   },
                 },
                 abortController.signal,
@@ -162,10 +158,8 @@ const Modal = () => {
                     user_id: fingerprint,
                     location: window.location.href,
                     metadata: {
-                      page_url: window.location.href,
                       component_props: props,
                       itemsElem: itemsElem?.outerHTML,
-                      fingerprint,
                     },
                   },
                   abortController.signal,
@@ -406,7 +400,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);

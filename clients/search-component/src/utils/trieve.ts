@@ -309,9 +309,7 @@ export const sendCtrData = async ({
     location: window.location.href,
     user_id: user_id,
     metadata: {
-      page_url: window.location.href,
       component_props: props,
-      fingerprint: user_id,
     },
   });
 
@@ -344,8 +342,6 @@ export const trackViews = async ({
     user_id: user_id,
     metadata: {
       component_props: props,
-      page_url: window.location.href,
-      fingerprint: user_id,
     },
   });
 
