@@ -306,6 +306,7 @@ export const sendCtrData = async ({
       request_id: requestID,
       request_type: type,
     },
+    location: window.location.href,
     user_id: user_id,
     metadata: {
       page_url: window.location.href,
@@ -339,6 +340,7 @@ export const trackViews = async ({
       request_id: requestID,
       request_type: type,
     },
+    location: window.location.href,
     user_id: user_id,
     metadata: {
       component_props: props,

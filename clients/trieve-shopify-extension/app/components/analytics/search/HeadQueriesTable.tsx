@@ -4,25 +4,24 @@ import { useTrieve } from "app/context/trieveContext";
 import { headQueriesQuery } from "app/queries/analytics/search";
 import { useEffect, useState } from "react";
 import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
+import { TableComponent } from "../TableComponent";
 
 export const HeadQueriesTable = ({
   filters,
-  granularity,
 }: {
   filters: SearchAnalyticsFilter;
-  granularity: Granularity;
 }) => {
   const { trieve } = useTrieve();
   const [page, setPage] = useState(1);
   const { data } = useQuery(
-    headQueriesQuery(trieve, filters, granularity, page),
+    headQueriesQuery(trieve, filters, page),
   );
 
   const client = useQueryClient();
   useEffect(() => {
     // prefetch the next page
     client.prefetchQuery(
-      headQueriesQuery(trieve, filters, granularity, page + 1),
+      headQueriesQuery(trieve, filters, page + 1),
     );
   }, [page]);
 
@@ -31,31 +30,15 @@ export const HeadQueriesTable = ({
     : [];
 
   return (
-    <Card>
-      <Text as="h5" variant="headingSm">
-        Most Popular Searches
-      </Text>
-      <Box minHeight="14px">
-        <DataTable
-          truncate
-          increasedTableDensity
-          rows={mappedData}
-          columnContentTypes={["text", "numeric"]}
-          headings={["Query", "Count"]}
-        />
-        <div className="flex justify-end">
-          <Pagination
-            onNext={() => {
-              setPage((prevPage) => prevPage + 1);
-            }}
-            onPrevious={() => {
-              setPage((prevPage) => prevPage - 1);
-            }}
-            hasPrevious={page > 1}
-            hasNext={data?.queries.length == 10}
-          ></Pagination>
-        </div>
-      </Box>
-    </Card>
+    <TableComponent
+      data={mappedData}
+      page={page}
+      setPage={setPage}
+      label="Most Popular Searches"
+      tooltipContent="The most popular searches by number of requests."
+      tableContentTypes={["text", "numeric"]}
+      tableHeadings={["Query", "Count"]}
+      hasNext={data?.queries.length == 10}
+    />
   );
 };

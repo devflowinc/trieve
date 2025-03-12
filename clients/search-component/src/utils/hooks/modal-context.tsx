@@ -524,6 +524,7 @@ const ModalProvider = ({
               event_type: "click",
               clicked_items: null,
               user_id: fingerprint,
+              location: window.location.href,
               metadata: {
                 page_url: window.location.href,
                 component_props: props,

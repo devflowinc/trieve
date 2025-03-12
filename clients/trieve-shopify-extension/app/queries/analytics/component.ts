@@ -1,5 +1,5 @@
 import { QueryOptions } from "@tanstack/react-query";
-import { TrieveSDK, ComponentAnalyticsFilter, Granularity } from "trieve-ts-sdk";
+import { TrieveSDK, ComponentAnalyticsFilter, Granularity, TotalUniqueUsersResponse, TopPagesResponse } from "trieve-ts-sdk";
 
 export const totalUniqueUsersQuery = (
   trieve: TrieveSDK,
@@ -15,7 +15,26 @@ export const totalUniqueUsersQuery = (
         granularity: granularity,
       });
 
-      return result;
+      return result as TotalUniqueUsersResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const topPagesQuery = (
+  trieve: TrieveSDK,
+  filters: ComponentAnalyticsFilter,
+  page: number,
+) => {
+  return {
+    queryKey: ["topPages", filters, page],
+    queryFn: async () => {
+      const result = await trieve.getComponentAnalytics({
+        filter: filters,
+        type: "top_pages",
+        page: page,
+      });
+
+      return result as TopPagesResponse;
     },
   } satisfies QueryOptions;
 };

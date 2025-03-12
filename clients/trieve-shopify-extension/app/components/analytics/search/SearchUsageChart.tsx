@@ -4,7 +4,7 @@ import { useTrieve } from "app/context/trieveContext";
 import { searchUsageQuery } from "app/queries/analytics/search";
 import { SearchAnalyticsFilter } from "trieve-ts-sdk";
 import { Granularity } from "trieve-ts-sdk";
-import { AnalyticsChart } from "../AnalyticsChart";
+import { GraphComponent } from "../GraphComponent";
 
 export const SearchUsageChart = ({
   filters,
@@ -17,21 +17,14 @@ export const SearchUsageChart = ({
   const { data } = useQuery(searchUsageQuery(trieve, filters, granularity));
 
   return (
-    <Card>
-      <Text as="h5" variant="headingSm">
-        Search Usage
-      </Text>
-      <Box minHeight="150px" >
-        <AnalyticsChart
-          wholeUnits
-          data={data?.usage_points}
-          xAxis={"time_stamp"}
-          yAxis={"requests"}
-          granularity={granularity}
-          yLabel="Requests"
-          date_range={filters.date_range}
-        />
-      </Box>
-    </Card>
+    <GraphComponent
+      topLevelMetric={data?.total_searches}
+      graphData={data?.usage_points}
+      granularity={granularity}
+      xAxis={"time_stamp"}
+      yAxis={"requests"}
+      label="Search Usage"
+      tooltipContent="The total number of searches made by users."
+    />
   );
 };

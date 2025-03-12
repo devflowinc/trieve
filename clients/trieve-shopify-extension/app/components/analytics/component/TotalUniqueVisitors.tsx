@@ -5,6 +5,7 @@ import { totalUniqueUsersQuery } from "app/queries/analytics/component";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
 import { Granularity } from "trieve-ts-sdk";
 import { AnalyticsChart } from "../AnalyticsChart";
+import { GraphComponent } from "../GraphComponent";
 
 export const TotalUniqueVisitors = ({
   filters,
@@ -17,30 +18,14 @@ export const TotalUniqueVisitors = ({
   const { data } = useQuery(totalUniqueUsersQuery(trieve, filters, granularity));
 
   return (
-    <Card>
-      <div className="flex flex-col gap-2 pl-2 pb-2">
-        <div className="max-w-fit">
-          <Tooltip content="The total number of unique visitors to your store that interacted with the Trieve component." hasUnderline>
-            <Text as="span" variant="bodyLg" fontWeight="bold">
-              Total Unique Visitors
-            </Text>
-          </Tooltip>
-        </div>
-        <Text as="span" variant="heading3xl" fontWeight="bold">
-          {data?.total_unique_users}
-        </Text>
-      </div>
-      <Box minHeight="150px">
-        <AnalyticsChart
-          wholeUnits
-          data={data?.time_points}
-          xAxis={"time_stamp"}
-          yAxis={"total_unique_users"}
-          granularity={granularity}
-          yLabel="Total Unique Users"
-          date_range={filters.date_range}
-        />
-      </Box>
-    </Card>
+    <GraphComponent
+      topLevelMetric={data?.total_unique_users}
+      graphData={data?.time_points}
+      granularity={granularity}
+      xAxis={"time_stamp"}
+      yAxis={"total_unique_users"}
+      label="Total Unique Visitors"
+      tooltipContent="The total number of unique visitors to your store that interacted with the Trieve component."
+    />
   );
 };

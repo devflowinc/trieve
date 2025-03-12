@@ -14,10 +14,10 @@ use crate::{
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
         SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopDatasetsResponse,
-        TopDatasetsResponseClickhouse, TopicAnalyticsResponse, TopicAnalyticsSummaryClickhouse,
-        TopicDetailsResponse, TopicQueryClickhouse, TopicSortBy, TopicTimePointClickhouse,
-        TopicsOverTimeResponse, TotalUniqueUsersResponse, TotalUniqueUsersTimePointClickhouse,
-        UsageGraphPoint, UsageGraphPointClickhouse,
+        TopDatasetsResponseClickhouse, TopPages, TopPagesResponse, TopicAnalyticsResponse,
+        TopicAnalyticsSummaryClickhouse, TopicDetailsResponse, TopicQueryClickhouse, TopicSortBy,
+        TopicTimePointClickhouse, TopicsOverTimeResponse, TotalUniqueUsersResponse,
+        TotalUniqueUsersTimePointClickhouse, UsageGraphPoint, UsageGraphPointClickhouse,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
@@ -592,6 +592,7 @@ pub async fn get_popular_filter_values_query(
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(title = "SearchUsageGraphResponse")]
 pub struct SearchUsageGraphResponse {
+    pub total_searches: i64,
     pub usage_points: Vec<UsageGraphPoint>,
 }
 
@@ -652,7 +653,10 @@ pub async fn get_search_usage_graph_query(
         .map(|q| q.into())
         .collect::<Vec<_>>();
 
+    let total_searches = rps_graph.iter().map(|q| q.requests).sum();
+
     Ok(SearchUsageGraphResponse {
+        total_searches,
         usage_points: rps_graph,
     })
 }
@@ -1772,7 +1776,7 @@ pub async fn get_total_unique_users_query(
         FROM 
             events
         WHERE 
-            dataset_id = ?
+            dataset_id = ? AND user_id != ''
         ",
         interval,
     );
@@ -1807,4 +1811,46 @@ pub async fn get_total_unique_users_query(
         total_unique_users,
         time_points: time_points.into_iter().map(|t| t.into()).collect(),
     })
+}
+
+pub async fn get_top_pages_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    filter: Option<ComponentAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<TopPagesResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            location,
+            count(*) as count
+        FROM events
+        WHERE dataset_id = ? AND location != ''",
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            location
+        ORDER BY 
+            count DESC
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let top_pages = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<TopPages>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching top pages: {:?}", e);
+            ServiceError::InternalServerError("Error fetching top pages".to_string())
+        })?;
+
+    Ok(TopPagesResponse { top_pages })
 }
