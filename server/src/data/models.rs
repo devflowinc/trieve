@@ -5873,7 +5873,7 @@ impl ComponentAnalyticsFilter {
 
         if let Some(component_name) = &self.component_name {
             query_string.push_str(&format!(
-                " AND JSONExtractString(metadata.component_props, 'component_name') = '{}'",
+                " AND JSONExtractString(metadata, 'component_props', 'componentName') = '{}'",
                 component_name
             ));
         }
@@ -7123,6 +7123,11 @@ pub enum ComponentAnalytics {
         filter: Option<ComponentAnalyticsFilter>,
         page: Option<u32>,
     },
+    #[schema(title = "TopComponents")]
+    TopComponents {
+        filter: Option<ComponentAnalyticsFilter>,
+        page: Option<u32>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
@@ -7316,6 +7321,19 @@ pub enum ComponentAnalyticsResponse {
     TotalUniqueUsers(TotalUniqueUsersResponse),
     #[schema(title = "TopPages")]
     TopPages(TopPagesResponse),
+    #[schema(title = "TopComponents")]
+    TopComponents(TopComponentsResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TopComponentsResponse {
+    pub top_components: Vec<TopComponents>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
+pub struct TopComponents {
+    pub component_name: String,
+    pub count: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

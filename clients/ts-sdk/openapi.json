@@ -8787,6 +8787,35 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "TopComponents",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ComponentAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "page": {
+                "type": "integer",
+                "format": "int32",
+                "nullable": true,
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "top_components"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -8817,6 +8846,9 @@
           },
           {
             "$ref": "#/components/schemas/TopPagesResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TopComponentsResponse"
           }
         ]
       },
@@ -17559,6 +17591,37 @@
           "number",
           "boolean"
         ]
+      },
+      "TopComponents": {
+        "type": "object",
+        "required": [
+          "component_name",
+          "count"
+        ],
+        "properties": {
+          "component_name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TopComponentsResponse": {
+        "type": "object",
+        "required": [
+          "top_components"
+        ],
+        "properties": {
+          "top_components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopComponents"
+            }
+          }
+        }
       },
       "TopDatasetsRequestTypes": {
         "type": "string",
