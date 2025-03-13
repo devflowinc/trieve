@@ -2,11 +2,11 @@ use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
-        ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
-        EventDataTypes, EventTypes, GetEventsRequestBody, OrganizationWithSubAndPlan, Pool,
-        RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
-        RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
-        TopDatasetsRequestTypes,
+        ComponentAnalytics, ComponentAnalyticsResponse, ComponentNamesRequest,
+        DatasetAndOrgWithSubAndPlan, DateRange, EventDataTypes, EventTypes, GetEventsRequestBody,
+        OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
+        RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
+        SearchAnalyticsResponse, TopDatasetsRequestTypes,
     },
     errors::ServiceError,
     operators::{
@@ -792,6 +792,42 @@ pub async fn get_component_analytics(
         }
     };
 
+    Ok(HttpResponse::Ok().json(response))
+}
+
+/// Get Component Names
+///
+/// This route allows you to view the component names for a dataset.
+#[utoipa::path(
+    get,
+    path = "/analytics/component_names",
+    context_path = "/api",
+    tag = "Analytics",
+    responses(
+        (status = 200, description = "The list of component names", body = Vec<String>),
+        (status = 400, description = "Service error relating to getting component analytics", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("page" = Option<i64>, Query, description = "The page to view"),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_component_names(
+    _user: AdminOnly,
+    data: web::Query<ComponentNamesRequest>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let data = data.into_inner();
+    let response = get_component_names_query(
+        dataset_org_plan_sub.dataset.id,
+        data.page,
+        clickhouse_client.get_ref(),
+    )
+    .await?;
     Ok(HttpResponse::Ok().json(response))
 }
 

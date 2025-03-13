@@ -1897,3 +1897,31 @@ pub async fn get_top_components_query(
 
     Ok(TopComponentsResponse { top_components })
 }
+
+pub async fn get_component_names_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<Vec<String>, ServiceError> {
+    let query_string = String::from(
+        " SELECT DISTINCT
+            JSONExtractString(metadata, 'component_props', 'componentName') AS component_name
+        FROM events
+            WHERE component_name != '' 
+            AND dataset_id = ?
+        LIMIT 10 OFFSET ?",
+    );
+
+    let component_names = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<String>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching top pages: {:?}", e);
+            ServiceError::InternalServerError("Error fetching top pages".to_string())
+        })?;
+
+    Ok(component_names)
+}
