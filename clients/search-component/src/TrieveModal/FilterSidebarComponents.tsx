@@ -393,7 +393,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
       if (steps[i].type === "search_modal") {
         const prevFilter = steps[i - 1].filterSidebarSectionKey;
         const selectedTags = selectedSidebarFilters[prevFilter ?? ""];
-        if (!selectedTags?.length) {
+        if (!completedSteps[steps[i - 1].title]) {
           continue;
         }
 
@@ -404,21 +404,19 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
           }));
           clearConversation();
 
-          const prevTextStep = steps.find((step) => step.type === "text");
-
-          let prevInferenceText = "";
-          let prevInputText = "";
-          if (prevTextStep) {
-            prevInferenceText =
-              textFields[prevTextStep.title]?.inferenceValue ?? "";
-            prevInputText = textFields[prevTextStep.title]?.inputValue ?? "";
-          }
+          const prevStep = i > 0 ? steps[i - 1] : null;
+          const prevInferenceText = prevStep
+            ? (textFields[prevStep.title]?.inferenceValue ?? "")
+            : "";
+          const prevInputText = prevStep
+            ? (textFields[prevStep.title]?.inputValue ?? "")
+            : "";
           let promptDescription = `${steps[i].prompt ?? ""} ${selectedTags.join(", ")}`;
-          if (prevTextStep) {
+          if (prevInferenceText) {
             promptDescription += `\n\n[Context for the existing space]:\n${prevInferenceText}`;
-            if (prevInputText) {
-              promptDescription += `\n\n[User's goal for the space (take more into account than anything else)]:\n${prevInputText}`;
-            }
+          }
+          if (prevInputText) {
+            promptDescription += `\n\n[User's goal for the space (take more into account than anything else)]:\n${prevInputText}`;
           }
 
           const fingerprint = await getFingerprint();
@@ -455,11 +453,11 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 ...prev,
                 [steps[i].title]: "idle",
               }));
-              if (prevTextStep) {
+              if (prevInferenceText) {
                 textInStream += `\n\n[Context on my space]:\n${prevInferenceText}`;
-                if (prevInputText) {
-                  textInStream += `\n\n[My goal for the space]:\n${prevInputText}`;
-                }
+              }
+              if (prevInputText) {
+                textInStream += `\n\n[My goal for the space]:\n${prevInputText}`;
               }
 
               askQuestion(textInStream, undefined, false);
@@ -749,30 +747,35 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 </div>
               </div>
 
-              <div className="trieve-text-input-container">
-                <label htmlFor="text-input" className="trieve-text-input-label">
-                  {step.inputLabel ?? "Your message"}
-                </label>
-                <div className="trieve-text-input-textarea-container">
-                  <textarea
-                    name="text-input"
-                    rows={4}
-                    className="trieve-text-input-textarea"
-                    disabled={completedSteps[step.title]}
-                    placeholder={step.placeholder}
-                    value={textFields[step.title]?.inputValue}
-                    onChange={(e) => {
-                      setTextFields((prev) => ({
-                        ...prev,
-                        [step.title]: {
-                          ...prev[step.title],
-                          inputValue: e.target.value,
-                        },
-                      }));
-                    }}
-                  />
+              {step.inputLabel && (
+                <div className="trieve-text-input-container">
+                  <label
+                    htmlFor="text-input"
+                    className="trieve-text-input-label"
+                  >
+                    {step.inputLabel}
+                  </label>
+                  <div className="trieve-text-input-textarea-container">
+                    <textarea
+                      name="text-input"
+                      rows={4}
+                      className="trieve-text-input-textarea"
+                      disabled={completedSteps[step.title]}
+                      placeholder={step.placeholder}
+                      value={textFields[step.title]?.inputValue}
+                      onChange={(e) => {
+                        setTextFields((prev) => ({
+                          ...prev,
+                          [step.title]: {
+                            ...prev[step.title],
+                            inputValue: e.target.value,
+                          },
+                        }));
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="trieve-text-button-container">
                 <button
@@ -794,77 +797,132 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             </div>
 
             <div
-              className="trieve-inference-filters-step-tags"
+              className="trieve-inference-filters-step-tags-container"
               data-input-field-type={step.type}
+              data-prev-complete={
+                index == 0 || completedSteps[steps[index - 1].title]
+                  ? "true"
+                  : "false"
+              }
+              data-completed={completedSteps[step.title] ? "true" : "false"}
             >
-              {filterOptions[step.filterSidebarSectionKey ?? ""]?.map((tag) => (
-                <button
-                  className="trieve-inference-filters-step-tag"
-                  key={tag}
-                  data-active={
-                    Object.keys(selectedSidebarFilters ?? {}).includes(
-                      step.filterSidebarSectionKey ?? "",
-                    ) &&
-                    selectedSidebarFilters[
-                      step.filterSidebarSectionKey ?? ""
-                    ]?.includes(tag)
-                      ? "true"
-                      : "false"
-                  }
-                  onClick={() => {
-                    setSelectedSidebarFilters((prev) => {
-                      const selectedTags =
-                        prev[step.filterSidebarSectionKey ?? ""];
-                      const tagCurrentlySelected = selectedTags?.includes(tag);
-
-                      if (
-                        props.searchPageProps?.filterSidebarProps?.sections.find(
-                          (section) =>
-                            section.key === step.filterSidebarSectionKey,
-                        )?.selectionType === "single"
-                      ) {
-                        if (tagCurrentlySelected) {
-                          return {
-                            ...prev,
-                            [step.filterSidebarSectionKey ?? ""]: [],
-                          };
-                        }
-
-                        return {
-                          ...prev,
-                          [step.filterSidebarSectionKey ?? ""]: [tag],
-                        };
-                      } else {
-                        if (tagCurrentlySelected) {
-                          return {
-                            ...prev,
-                            [step.filterSidebarSectionKey ?? ""]:
-                              selectedTags.filter((t) => t !== tag),
-                          };
-                        }
-
-                        return {
-                          ...prev,
-                          [step.filterSidebarSectionKey ?? ""]: [
-                            ...(prev[step.filterSidebarSectionKey ?? ""] ?? []),
-                            tag,
-                          ],
-                        };
+              <div className="trieve-inference-filters-step-tags">
+                {filterOptions[step.filterSidebarSectionKey ?? ""]?.map(
+                  (tag) => (
+                    <button
+                      className="trieve-inference-filters-step-tag"
+                      key={tag}
+                      data-active={
+                        Object.keys(selectedSidebarFilters ?? {}).includes(
+                          step.filterSidebarSectionKey ?? "",
+                        ) &&
+                        selectedSidebarFilters[
+                          step.filterSidebarSectionKey ?? ""
+                        ]?.includes(tag)
+                          ? "true"
+                          : "false"
                       }
-                    });
+                      onClick={() => {
+                        setSelectedSidebarFilters((prev) => {
+                          const selectedTags =
+                            prev[step.filterSidebarSectionKey ?? ""];
+                          const tagCurrentlySelected =
+                            selectedTags?.includes(tag);
 
+                          if (
+                            props.searchPageProps?.filterSidebarProps?.sections.find(
+                              (section) =>
+                                section.key === step.filterSidebarSectionKey,
+                            )?.selectionType === "single"
+                          ) {
+                            if (tagCurrentlySelected) {
+                              return {
+                                ...prev,
+                                [step.filterSidebarSectionKey ?? ""]: [],
+                              };
+                            }
+
+                            return {
+                              ...prev,
+                              [step.filterSidebarSectionKey ?? ""]: [tag],
+                            };
+                          } else {
+                            if (tagCurrentlySelected) {
+                              return {
+                                ...prev,
+                                [step.filterSidebarSectionKey ?? ""]:
+                                  selectedTags.filter((t) => t !== tag),
+                              };
+                            }
+
+                            return {
+                              ...prev,
+                              [step.filterSidebarSectionKey ?? ""]: [
+                                ...(prev[step.filterSidebarSectionKey ?? ""] ??
+                                  []),
+                                tag,
+                              ],
+                            };
+                          }
+                        });
+                      }}
+                    >
+                      <span>{tag}</span>
+                      <i className="trieve-checkbox-icon">
+                        <CheckIcon />
+                      </i>
+                    </button>
+                  ),
+                )}
+              </div>
+
+              {step.inputLabel && (
+                <div className="trieve-text-input-container">
+                  <label
+                    htmlFor="text-input"
+                    className="trieve-text-input-label"
+                  >
+                    {step.inputLabel}
+                  </label>
+                  <div className="trieve-text-input-textarea-container">
+                    <textarea
+                      name="text-input"
+                      rows={4}
+                      className="trieve-text-input-textarea"
+                      disabled={completedSteps[step.title]}
+                      placeholder={step.placeholder}
+                      value={textFields[step.title]?.inputValue}
+                      onChange={(e) => {
+                        setTextFields((prev) => ({
+                          ...prev,
+                          [step.title]: {
+                            ...prev[step.title],
+                            inputValue: e.target.value,
+                          },
+                        }));
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="trieve-text-button-container">
+                <button
+                  type="button"
+                  className="trieve-text-input-button"
+                  onClick={() => {
                     setCompletedSteps((prev) => ({
                       ...prev,
                       [step.title]: true,
                     }));
                   }}
                 >
-                  <span>{tag}</span>
-                  <i className="trieve-checkbox-icon">
-                    <CheckIcon />
-                  </i>
+                  Next
+                  <div>
+                    <i className="fa-solid fa-arrow-right"></i>
+                  </div>
                 </button>
-              ))}
+              </div>
             </div>
 
             <div

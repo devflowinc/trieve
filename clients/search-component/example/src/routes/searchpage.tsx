@@ -131,29 +131,29 @@ export default function ECommerce() {
                     description:
                       "Upload an image of the space you want to renovate or materials you like and we will recommend products that match your style.",
                     type: "image",
-                    placeholder: "Click or drag to upload (HEIC, PNG, WEBP, JPG - Max 5MB)",
+                    placeholder:
+                      "Click or drag to upload (HEIC, PNG, WEBP, JPG - Max 5MB)",
                   },
                   {
-                    title: "Describe Your Space and Goals",
+                    title: "What's in the image",
                     description:
-                      "Describe the space you want to renovate and what you are looking for in terms of style, color, and materials.",
+                      "Understand how the AI sees your image and make adjustments to get the best results.",
                     type: "text",
                     filterSidebarSectionKey: "description",
                     prompt:
                       "Write 1 sentence describing in high detail the way you see the space in the image in terms of color, luminance, and style. Make a specific callout to something unique so a reader knows you actually saw the image. \n\n",
                     inferenceInputLabel:
                       "How the AI understands your image (editable)",
-                    inputLabel: "What are your goals?",
-                    placeholder:
-                      "I want to change the countertops and backsplash to something more modern and colorful.",
                   },
                   {
                     title: "Category Selection",
                     description:
                       "Select the material(s) you want to change and are interested in getting recommendations for.",
                     type: "tags",
-                    placeholder: "Select categories",
                     filterSidebarSectionKey: "categories",
+                    inputLabel: "Describe the goal of the change",
+                    placeholder:
+                      "I want to make the space more modern and bright.",
                   },
                   {
                     title: "View Recommended Materials",

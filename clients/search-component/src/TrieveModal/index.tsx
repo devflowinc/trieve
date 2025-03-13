@@ -16,10 +16,7 @@ import { FloatingActionButton } from "./FloatingActionButton";
 import { FloatingSearchIcon } from "./FloatingSearchIcon";
 import { FloatingSearchInput } from "./FloatingSearchInput";
 import { ModalContainer } from "./ModalContainer";
-import {
-  ActiveFilterPills,
-  InferenceFiltersForm,
-} from "./FilterSidebarComponents";
+import { InferenceFiltersForm } from "./FilterSidebarComponents";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 const SearchPage = () => {
@@ -31,9 +28,6 @@ const SearchPage = () => {
       className="trieve-search-page"
       data-display={props.searchPageProps?.display ? "true" : "false"}
     >
-      <div className="trieve-search-subheader-w-full">
-        <ActiveFilterPills />
-      </div>
       <div className="trieve-search-page-main-section">
         <div className="trieve-filter-main-section">
           <InferenceFiltersForm
@@ -400,7 +394,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);
