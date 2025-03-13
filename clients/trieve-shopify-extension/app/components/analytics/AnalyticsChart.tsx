@@ -2,7 +2,7 @@ import "chartjs-adapter-date-fns";
 import { useEffect, useRef } from "react";
 import { Chart } from "chart.js";
 import { enUS } from "date-fns/locale";
-import { convertToISO8601, fillDate } from "app/queries/analytics/formatting";
+import { fillDate } from "app/queries/analytics/formatting";
 import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
 import Crosshair from "chartjs-plugin-crosshair";
 
@@ -125,7 +125,11 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
           scales: {
             y: {
               grid: {
-                display: false,
+                display: true,
+                color: "rgba(128, 0, 128, 0.2)",
+                lineWidth: 0.5,
+                drawOnChartArea: true,
+                drawTicks: false,
               },
               beginAtZero: true,
               ticks: props.wholeUnits
@@ -164,11 +168,10 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
                 }),
               },
               grid: {
-                display: true,
-                color: "rgba(128, 0, 128, 0.2)",
-                lineWidth: 0.5,
-                drawOnChartArea: true,
-                drawTicks: false,
+                display: false
+              },
+              ticks: {
+                padding: 10,
               },
             },
           },
@@ -234,7 +237,6 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
     props.wholeUnits,
     props.dataType,
   ]);
-
 
   return <canvas ref={canvasRef} className="max-h-[300px] w-full" />;
 };

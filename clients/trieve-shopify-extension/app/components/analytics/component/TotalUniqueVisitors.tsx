@@ -15,10 +15,11 @@ export const TotalUniqueVisitors = ({
   granularity: Granularity;
 }) => {
   const { trieve } = useTrieve();
-  const { data } = useQuery(totalUniqueUsersQuery(trieve, filters, granularity));
+  const { data, isLoading } = useQuery(totalUniqueUsersQuery(trieve, filters, granularity));
 
   return (
     <GraphComponent
+      loading={isLoading}
       topLevelMetric={data?.total_unique_users}
       graphData={data?.time_points}
       granularity={granularity}

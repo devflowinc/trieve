@@ -13,10 +13,11 @@ export const TopicCTRRate = ({
     granularity: Granularity;
 }) => {
     const { trieve } = useTrieve();
-    const { data } = useQuery(topicsCTRRateQuery(trieve, filters, granularity));
+    const { data, isLoading } = useQuery(topicsCTRRateQuery(trieve, filters, granularity));
 
     return (
         <GraphComponent
+            loading={isLoading}
             topLevelMetric={data?.total_ctr}
             graphData={data?.ctr_points}
             granularity={granularity}
