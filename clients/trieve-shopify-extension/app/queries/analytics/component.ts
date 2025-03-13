@@ -5,10 +5,8 @@ import {
   Granularity,
   TotalUniqueUsersResponse,
   TopPagesResponse,
-<<<<<<< HEAD
   TopComponentsResponse,
-=======
->>>>>>> bb0a48cda (feat: get component name in analytics filter)
+  ComponentNamesResponse,
 } from "trieve-ts-sdk";
 
 export const totalUniqueUsersQuery = (
@@ -72,15 +70,11 @@ export const componentNamesQuery = (trieve: TrieveSDK) => {
   return {
     queryKey: ["componentNames", trieve.datasetId],
     queryFn: async () => {
-      const result = await trieve.trieve.fetch(
-        "/api/analytics/component_names",
-        "get",
-        {
-          datasetId: trieve.datasetId!,
-        },
-      );
+      const result = await trieve.getComponentAnalytics({
+        type: "component_names",
+      });
 
-      return result as string[];
+      return result as ComponentNamesResponse;
     },
   } satisfies QueryOptions;
 };

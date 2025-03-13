@@ -1,8 +1,8 @@
 use crate::{
     data::models::{
         ClusterAnalyticsFilter, ClusterTopicsClickhouse, ComponentAnalyticsFilter,
-        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse,
-        GetEventsResponseBody, Granularity, HeadQueries, Pool, PopularFilters,
+        ComponentNamesResponse, DatasetAnalytics, EventAnalyticsFilter, EventData,
+        EventDataClickhouse, GetEventsResponseBody, Granularity, HeadQueries, Pool, PopularFilters,
         PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse,
         RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse, RagQueryRatingsResponse,
         RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
@@ -1902,7 +1902,7 @@ pub async fn get_component_names_query(
     dataset_id: uuid::Uuid,
     page: Option<u32>,
     clickhouse_client: &clickhouse::Client,
-) -> Result<Vec<String>, ServiceError> {
+) -> Result<ComponentNamesResponse, ServiceError> {
     let query_string = String::from(
         " SELECT DISTINCT
             JSONExtractString(metadata, 'component_props', 'componentName') AS component_name
@@ -1923,5 +1923,5 @@ pub async fn get_component_names_query(
             ServiceError::InternalServerError("Error fetching top pages".to_string())
         })?;
 
-    Ok(component_names)
+    Ok(ComponentNamesResponse { component_names })
 }
