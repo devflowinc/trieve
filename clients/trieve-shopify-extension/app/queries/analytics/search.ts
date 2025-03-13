@@ -7,7 +7,7 @@ import {
   TrieveSDK,
 } from "trieve-ts-sdk";
 import { subDays } from "date-fns";
-import { formatDateForApi } from "./formatting";
+import { formatDateForApi } from "../../../utils/formatting";
 
 export const defaultSearchAnalyticsFilter: SearchAnalyticsFilter = {
   date_range: {
