@@ -6,6 +6,7 @@ import { SearchUsageChart } from "app/components/analytics/search/SearchUsageCha
 import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
 import { useState } from "react";
 import { Granularity } from "trieve-ts-sdk";
+import { AllSearchesTable } from "app/components/analytics/search/AllSearchesTable";
 
 export default function SearchAnalyticsPage() {
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
@@ -26,6 +27,9 @@ export default function SearchAnalyticsPage() {
         </Grid.Cell>
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
           <HeadQueriesTable filters={filters} />
+        </Grid.Cell>
+        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+          <AllSearchesTable filters={filters} />
         </Grid.Cell>
       </Grid>
     </>

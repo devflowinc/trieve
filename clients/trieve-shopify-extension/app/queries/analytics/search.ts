@@ -3,6 +3,7 @@ import {
   Granularity,
   HeadQueryResponse,
   SearchAnalyticsFilter,
+  SearchQueryResponse,
   SearchUsageGraphResponse,
   TrieveSDK,
 } from "trieve-ts-sdk";
@@ -65,6 +66,24 @@ export const noResultQueriesQuery = (
         page: page,
       });
       return result as HeadQueryResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const allSearchesQuery = (
+  trieve: TrieveSDK,
+  filters: SearchAnalyticsFilter,
+  page: number,
+) => {
+  return {
+    queryKey: ["all_searches", filters, page],
+    queryFn: async () => {
+      const result = await trieve.getSearchAnalytics({
+        filter: filters,
+        type: "search_queries",
+        page: page,
+      });
+      return result as SearchQueryResponse;
     },
   } satisfies QueryOptions;
 };
