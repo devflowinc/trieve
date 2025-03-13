@@ -1751,7 +1751,10 @@ pub async fn get_topics_over_time_query(
             ServiceError::InternalServerError("Error fetching time points".to_string())
         })?;
 
+    let total_topics = time_points.iter().map(|x| x.topic_count).sum();
+
     Ok(TopicsOverTimeResponse {
+        total_topics,
         time_points: time_points.into_iter().map(|t| t.into()).collect(),
     })
 }
@@ -1806,7 +1809,7 @@ pub async fn get_total_unique_users_query(
             ServiceError::InternalServerError("Error fetching time points".to_string())
         })?;
 
-    let total_unique_users = time_points.iter().map(|t| t.total_unique_users).sum();
+    let total_unique_users = time_points.iter().map(|t| t.unique_users).sum();
 
     Ok(TotalUniqueUsersResponse {
         total_unique_users,
