@@ -131,7 +131,7 @@ export default function ECommerce() {
                     description:
                       "Upload an image of the space you want to renovate or materials you like and we will recommend products that match your style.",
                     type: "image",
-                    placeholder: "Click or drag to upload (Max 5MB)",
+                    placeholder: "Click or drag to upload (HEIC, PNG, WEBP, JPG - Max 5MB)",
                   },
                   {
                     title: "Describe Your Space and Goals",

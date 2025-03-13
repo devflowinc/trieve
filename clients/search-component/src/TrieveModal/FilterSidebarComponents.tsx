@@ -19,6 +19,7 @@ import { ToolFunctionParameter } from "trieve-ts-sdk";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { ModalContainer } from "./ModalContainer";
 import { useChatState } from "../utils/hooks/chat-context";
+import convert from "heic-convert/browser";
 
 export const ActiveFilterPills = () => {
   const { selectedSidebarFilters, setSelectedSidebarFilters } = useModalState();
@@ -613,50 +614,80 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               onClick={() => {
                 const input = document.createElement("input");
                 input.type = "file";
-                input.accept = "image/*";
-                input.multiple = true;
-                input.onchange = (e) => {
+                input.accept = "image/*, .heic, .HEIC";
+                input.capture = "environment";
+                input.multiple = false;
+                input.onchange = async (e) => {
                   const files = (e.target as HTMLInputElement).files;
-                  if (files) {
-                    setImages((prev) => ({
-                      ...prev,
-                      [step.title]: files[0],
-                    }));
-                    setLoadingStates((prev) => ({
-                      ...prev,
-                      [step.title]: "Uploading image...",
-                    }));
-                    toBase64(files[0]).then((data) => {
-                      const base64File = data
-                        .split(",")[1]
-                        .replace(/\+/g, "-")
-                        .replace(/\//g, "_")
-                        .replace(/=+$/, "");
-                      uploadFile(trieveSDK, files[0].name, base64File).then(
-                        (fileId) => {
-                          getPresignedUrl(trieveSDK, fileId).then(
-                            (imageUrl) => {
-                              setImageUrls((prev) => ({
-                                ...prev,
-                                [step.title]: imageUrl,
-                              }));
+                  let processedFile =
+                    (files?.length ?? 1) > 0 ? files?.[0] : null;
+                  if (!processedFile) {
+                    return;
+                  }
 
-                              setLoadingStates((prev) => ({
-                                ...prev,
-                                [step.title]: "idle",
-                              }));
-
-                              setCompletedSteps((prev) => ({
-                                ...prev,
-                                [step.title]: true,
-                              }));
-                            },
-                          );
+                  if (
+                    processedFile.type === "image/heic" ||
+                    processedFile.name.toLowerCase().endsWith(".heic")
+                  ) {
+                    try {
+                      const buffer = await processedFile.arrayBuffer();
+                      const convertedFile = await convert({
+                        buffer: new Uint8Array(
+                          buffer,
+                        ) as unknown as ArrayBuffer,
+                        format: "PNG",
+                      });
+                      processedFile = new File(
+                        [convertedFile],
+                        processedFile.name.replace(/\.heic$/i, ".png"),
+                        {
+                          type: "image/png",
+                          lastModified: Date.now(),
                         },
                       );
-                    });
+                    } catch (err) {
+                      console.error("HEIC conversion failed:", err);
+                      return;
+                    }
                   }
+
+                  setImages((prev) => ({
+                    ...prev,
+                    [step.title]: processedFile,
+                  }));
+                  setLoadingStates((prev) => ({
+                    ...prev,
+                    [step.title]: "Uploading image...",
+                  }));
+                  toBase64(processedFile).then((data) => {
+                    const base64File = data
+                      .split(",")[1]
+                      .replace(/\+/g, "-")
+                      .replace(/\//g, "_")
+                      .replace(/=+$/, "");
+                    uploadFile(trieveSDK, processedFile.name, base64File).then(
+                      (fileId) => {
+                        getPresignedUrl(trieveSDK, fileId).then((imageUrl) => {
+                          setImageUrls((prev) => ({
+                            ...prev,
+                            [step.title]: imageUrl,
+                          }));
+
+                          setLoadingStates((prev) => ({
+                            ...prev,
+                            [step.title]: "idle",
+                          }));
+
+                          setCompletedSteps((prev) => ({
+                            ...prev,
+                            [step.title]: true,
+                          }));
+                        });
+                      },
+                    );
+                  });
                 };
+
                 input.click();
               }}
             >
