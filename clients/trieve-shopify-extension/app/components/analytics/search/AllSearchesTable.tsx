@@ -4,6 +4,7 @@ import { allSearchesQuery } from "app/queries/analytics/search";
 import { useEffect, useState } from "react";
 import { SearchAnalyticsFilter } from "trieve-ts-sdk";
 import { TableComponent } from "../TableComponent";
+import { parseCustomDateString } from "app/queries/analytics/formatting";
 
 export const AllSearchesTable = ({
   filters,
@@ -20,7 +21,13 @@ export const AllSearchesTable = ({
     client.prefetchQuery(allSearchesQuery(trieve, filters, page + 1));
   }, [page]);
 
-  const mappedData = data ? data.queries.map((query) => [query.query]) : [];
+  const mappedData = data
+    ? data.queries.map((query) => [
+        query.query,
+        parseCustomDateString(query.created_at).toLocaleString(),
+        query.results.length,
+      ])
+    : [];
 
   return (
     <TableComponent
@@ -29,8 +36,8 @@ export const AllSearchesTable = ({
       setPage={setPage}
       label="All Searches"
       tooltipContent="All searches"
-      tableContentTypes={["text"]}
-      tableHeadings={["Query"]}
+      tableContentTypes={["text", "text", "numeric"]}
+      tableHeadings={["Query", "Created At", "Results"]}
       hasNext={data?.queries.length == 10}
     />
   );
