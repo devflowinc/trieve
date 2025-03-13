@@ -2,7 +2,7 @@ import { Grid } from "@shopify/polaris";
 import { TopComponents } from "app/components/analytics/component/TopComponents";
 import { TopPages } from "app/components/analytics/component/TopPages";
 import { TotalUniqueVisitors } from "app/components/analytics/component/TotalUniqueVisitors";
-import { SearchFilterBar } from "app/components/analytics/search/SearchFilterBar";
+import { SearchFilterBar } from "app/components/analytics/FilterBar";
 import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
 import { useState } from "react";
 import { Granularity } from "trieve-ts-sdk";

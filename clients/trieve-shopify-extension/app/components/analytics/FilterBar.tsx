@@ -1,12 +1,12 @@
 import { Granularity } from "trieve-ts-sdk";
 import { SearchAnalyticsFilter } from "trieve-ts-sdk";
-import { DateRangePicker } from "../DateRangePicker";
+import { DateRangePicker } from "./DateRangePicker";
 import {
   formatStringDateRangeToDates,
   transformDateParams,
 } from "app/queries/analytics/formatting";
 import { Box } from "@shopify/polaris";
-import { ComponentNameSelect } from "../ComponentNameSelect";
+import { ComponentNameSelect } from "./ComponentNameSelect";
 
 interface SearchFilterBarProps {
   granularity: Granularity;

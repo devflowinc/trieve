@@ -1,7 +1,7 @@
 import { Grid } from "@shopify/polaris";
 import { HeadQueriesTable } from "app/components/analytics/search/HeadQueriesTable";
 import { NoResultQueriesTable } from "app/components/analytics/search/NoResultQueriesTable";
-import { SearchFilterBar } from "app/components/analytics/search/SearchFilterBar";
+import { SearchFilterBar } from "app/components/analytics/FilterBar";
 import { SearchUsageChart } from "app/components/analytics/search/SearchUsageChart";
 import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
 import { useState } from "react";
