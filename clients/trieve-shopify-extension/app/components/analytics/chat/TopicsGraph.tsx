@@ -13,10 +13,11 @@ export const TopicsUsage = ({
   granularity: Granularity;
 }) => {
   const { trieve } = useTrieve();
-  const { data } = useQuery(topicsUsageQuery(trieve, filters, granularity));
+  const { data, isLoading } = useQuery(topicsUsageQuery(trieve, filters, granularity));
 
   return (
     <GraphComponent
+      loading={isLoading}
       topLevelMetric={data?.total_topics}
       graphData={data?.time_points}
       granularity={granularity}

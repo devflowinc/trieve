@@ -14,10 +14,11 @@ export const SearchUsageChart = ({
   granularity: Granularity;
 }) => {
   const { trieve } = useTrieve();
-  const { data } = useQuery(searchUsageQuery(trieve, filters, granularity));
+  const { data, isLoading } = useQuery(searchUsageQuery(trieve, filters, granularity));
 
   return (
     <GraphComponent
+      loading={isLoading}
       topLevelMetric={data?.total_searches}
       graphData={data?.usage_points}
       granularity={granularity}
