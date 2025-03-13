@@ -4,7 +4,7 @@ import { DateRangePicker } from "./DateRangePicker";
 import {
   formatStringDateRangeToDates,
   transformDateParams,
-} from "app/queries/analytics/formatting";
+} from "utils/formatting";
 import { Box } from "@shopify/polaris";
 import { ComponentNameSelect } from "./ComponentNameSelect";
 

@@ -2,7 +2,7 @@ import "chartjs-adapter-date-fns";
 import { useEffect, useRef } from "react";
 import { Chart } from "chart.js";
 import { enUS } from "date-fns/locale";
-import { fillDate } from "app/queries/analytics/formatting";
+import { fillDate } from "utils/formatting";
 import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
 import Crosshair from "chartjs-plugin-crosshair";
 
