@@ -517,6 +517,10 @@ export type ComponentAnalytics = {
     filter?: ((ComponentAnalyticsFilter) | null);
     page?: (number) | null;
     type: 'top_pages';
+} | {
+    filter?: ((ComponentAnalyticsFilter) | null);
+    page?: (number) | null;
+    type: 'top_components';
 };
 
 export type type3 = 'total_unique_users';
@@ -526,7 +530,7 @@ export type ComponentAnalyticsFilter = {
     date_range?: ((DateRange) | null);
 };
 
-export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse;
+export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse;
 
 /**
  * Filters can be constructed using either fields on the chunk objects, ids or tracking ids of chunks, and finally ids or tracking ids of groups.
@@ -3421,6 +3425,15 @@ export type ToolFunctionParameter = {
  * Type of a given parameter for a LLM tool call
  */
 export type ToolFunctionParameterType = 'number' | 'boolean';
+
+export type TopComponents = {
+    component_name: string;
+    count: number;
+};
+
+export type TopComponentsResponse = {
+    top_components: Array<TopComponents>;
+};
 
 export type TopDatasetsRequestTypes = 'search' | 'rag' | 'recommendation';
 

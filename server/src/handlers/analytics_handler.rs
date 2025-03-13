@@ -779,6 +779,17 @@ pub async fn get_component_analytics(
 
             ComponentAnalyticsResponse::TopPages(top_pages)
         }
+        ComponentAnalytics::TopComponents { filter, page } => {
+            let top_components = get_top_components_query(
+                dataset_org_plan_sub.dataset.id,
+                page,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            ComponentAnalyticsResponse::TopComponents(top_components)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))

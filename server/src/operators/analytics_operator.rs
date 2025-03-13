@@ -13,11 +13,12 @@ use crate::{
         SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
-        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopDatasetsResponse,
-        TopDatasetsResponseClickhouse, TopPages, TopPagesResponse, TopicAnalyticsResponse,
-        TopicAnalyticsSummaryClickhouse, TopicDetailsResponse, TopicQueryClickhouse, TopicSortBy,
-        TopicTimePointClickhouse, TopicsOverTimeResponse, TotalUniqueUsersResponse,
-        TotalUniqueUsersTimePointClickhouse, UsageGraphPoint, UsageGraphPointClickhouse,
+        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopComponents,
+        TopComponentsResponse, TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages,
+        TopPagesResponse, TopicAnalyticsResponse, TopicAnalyticsSummaryClickhouse,
+        TopicDetailsResponse, TopicQueryClickhouse, TopicSortBy, TopicTimePointClickhouse,
+        TopicsOverTimeResponse, TotalUniqueUsersResponse, TotalUniqueUsersTimePointClickhouse,
+        UsageGraphPoint, UsageGraphPointClickhouse,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
@@ -1853,4 +1854,46 @@ pub async fn get_top_pages_query(
         })?;
 
     Ok(TopPagesResponse { top_pages })
+}
+
+pub async fn get_top_components_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    filter: Option<ComponentAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<TopComponentsResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            JSONExtractString(metadata, 'component_props', 'componentName') as componentName,
+            count(*) as count
+        FROM events
+        WHERE dataset_id = ? AND componentName != ''",
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            componentName
+        ORDER BY 
+            count DESC
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let top_components = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<TopComponents>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching top pages: {:?}", e);
+            ServiceError::InternalServerError("Error fetching top pages".to_string())
+        })?;
+
+    Ok(TopComponentsResponse { top_components })
 }

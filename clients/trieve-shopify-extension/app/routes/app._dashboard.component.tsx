@@ -1,4 +1,5 @@
 import { Grid } from "@shopify/polaris";
+import { TopComponents } from "app/components/analytics/component/TopComponents";
 import { TopPages } from "app/components/analytics/component/TopPages";
 import { TotalUniqueVisitors } from "app/components/analytics/component/TotalUniqueVisitors";
 import { SearchFilterBar } from "app/components/analytics/search/SearchFilterBar";
@@ -22,7 +23,10 @@ export default function SearchAnalyticsPage() {
           <TotalUniqueVisitors filters={filters} granularity={granularity} />
         </Grid.Cell>
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-          <TopPages filters={filters} />
+          <div className="flex flex-col gap-4">
+            <TopPages filters={filters} />
+            <TopComponents filters={filters} />
+          </div>
         </Grid.Cell>
       </Grid>
     </>
