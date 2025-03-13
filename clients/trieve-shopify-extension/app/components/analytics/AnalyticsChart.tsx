@@ -2,7 +2,7 @@ import "chartjs-adapter-date-fns";
 import { useEffect, useRef } from "react";
 import { Chart } from "chart.js";
 import { enUS } from "date-fns/locale";
-import { fillDate } from "utils/formatting";
+import { fillDate } from "app/utils/formatting";
 import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
 import Crosshair from "chartjs-plugin-crosshair";
 
@@ -134,19 +134,19 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
               beginAtZero: true,
               ticks: props.wholeUnits
                 ? {
-                  precision: 0,
-                  ...(props.dataType === "percentage" && {
-                    callback: function (tickValue: number | string) {
-                      return `${tickValue}%`;
-                    },
-                  }),
-                }
+                    precision: 0,
+                    ...(props.dataType === "percentage" && {
+                      callback: function (tickValue: number | string) {
+                        return `${tickValue}%`;
+                      },
+                    }),
+                  }
                 : props.dataType === "percentage"
                   ? {
-                    callback: function (tickValue: number | string) {
-                      return `${tickValue}%`;
-                    },
-                  }
+                      callback: function (tickValue: number | string) {
+                        return `${tickValue}%`;
+                      },
+                    }
                   : undefined,
               max: props.dataType === "percentage" ? 100 : undefined,
             },
@@ -168,7 +168,7 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
                 }),
               },
               grid: {
-                display: false
+                display: false,
               },
               ticks: {
                 padding: 10,

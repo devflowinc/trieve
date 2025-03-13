@@ -1245,6 +1245,8 @@ pub struct RecommendGroupsReqPayload {
     pub slim_chunks: Option<bool>,
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the rrecommendation results.
     pub user_id: Option<String>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Debug, Clone)]
@@ -1465,6 +1467,7 @@ pub async fn get_recommended_groups(
                 .first()
                 .map(|x| x.metadata.first().map(|x| x.score).unwrap_or(0.0))
                 .unwrap_or(0.0) as f32,
+            metadata: serde_json::to_string(&data.metadata.clone()).unwrap_or_default(),
             results: recommended_chunk_metadatas
                 .iter()
                 .map(|x| serde_json::to_string(x).unwrap_or_default())
@@ -1536,6 +1539,8 @@ pub struct SearchWithinGroupReqPayload {
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.
     pub user_id: Option<String>,
     pub typo_options: Option<TypoOptions>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
 }
 
 impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
@@ -1557,6 +1562,7 @@ impl From<SearchWithinGroupReqPayload> for SearchChunksReqPayload {
             remove_stop_words: search_within_group_data.remove_stop_words,
             user_id: search_within_group_data.user_id,
             typo_options: search_within_group_data.typo_options,
+            metadata: search_within_group_data.metadata,
         }
     }
 }
@@ -1754,6 +1760,7 @@ pub async fn search_within_group(
                     json.to_string()
                 })
                 .collect(),
+            metadata: serde_json::to_string(&data.metadata.clone()).unwrap_or_default(),
             dataset_id: dataset_org_plan_sub.dataset.id,
             created_at: time::OffsetDateTime::now_utc(),
             query_rating: String::from(""),
@@ -1815,6 +1822,8 @@ pub struct SearchOverGroupsReqPayload {
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.
     pub user_id: Option<String>,
     pub typo_options: Option<TypoOptions>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
 }
 
 /// Search Over Groups
@@ -1953,6 +1962,7 @@ pub async fn search_over_groups(
                     json.to_string()
                 })
                 .collect(),
+            metadata: serde_json::to_string(&data.metadata.clone()).unwrap_or_default(),
             dataset_id: dataset_org_plan_sub.dataset.id,
             created_at: time::OffsetDateTime::now_utc(),
             query_rating: String::from(""),

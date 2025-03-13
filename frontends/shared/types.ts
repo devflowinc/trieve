@@ -705,11 +705,11 @@ export interface SearchClusterResponse {
 }
 
 export interface UsageGraphResponse {
-  usage_points: UsageDatapoint[];
+  points: UsageDatapoint[];
 }
 
 export interface LatencyGraphResponse {
-  latency_points: LatencyDatapoint[];
+  points: LatencyDatapoint[];
 }
 
 export interface RagQueryResponse {

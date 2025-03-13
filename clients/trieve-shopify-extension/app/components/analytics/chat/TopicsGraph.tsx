@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
-import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
+import { RAGAnalyticsFilter } from "trieve-ts-sdk";
 import { Granularity } from "trieve-ts-sdk";
 import { GraphComponent } from "../GraphComponent";
 import { topicsUsageQuery } from "app/queries/analytics/chat";
@@ -9,7 +9,7 @@ export const TopicsUsage = ({
   filters,
   granularity,
 }: {
-  filters: ComponentAnalyticsFilter;
+  filters: RAGAnalyticsFilter;
   granularity: Granularity;
 }) => {
   const { trieve } = useTrieve();
@@ -19,7 +19,7 @@ export const TopicsUsage = ({
     <GraphComponent
       loading={isLoading}
       topLevelMetric={data?.total_topics}
-      graphData={data?.time_points}
+      graphData={data?.points}
       granularity={granularity}
       date_range={filters.date_range}
       xAxis={"time_stamp"}

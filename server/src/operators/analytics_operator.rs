@@ -3,15 +3,15 @@ use crate::{
         CTRMetricsOverTimePoint, CTRMetricsOverTimeResponse, ClusterAnalyticsFilter,
         ClusterTopicsClickhouse, ComponentAnalyticsFilter, ComponentNamesResponse,
         DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse,
-        GetEventsResponseBody, Granularity, HeadQueries, Pool, PopularFilters,
-        PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse,
-        RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse, RagQueryRatingsResponse,
-        RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
-        RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
-        RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
-        RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
-        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
-        SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
+        GetEventsResponseBody, Granularity, HeadQueries, MessagesPerUserResponse,
+        MessagesPerUserTimePointClickhouse, Pool, PopularFilters, PopularFiltersClickhouse,
+        RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent,
+        RagQueryEventClickhouse, RagQueryRatingsResponse, RecommendationAnalyticsFilter,
+        RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse,
+        RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
+        RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
+        SearchAnalyticsFilter, SearchCTRMetrics, SearchCTRMetricsClickhouse, SearchClusterTopics,
+        SearchLatencyGraph, SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
         SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopComponents,
@@ -597,7 +597,7 @@ pub async fn get_popular_filter_values_query(
 #[schema(title = "SearchUsageGraphResponse")]
 pub struct SearchUsageGraphResponse {
     pub total_searches: i64,
-    pub usage_points: Vec<UsageGraphPoint>,
+    pub points: Vec<UsageGraphPoint>,
 }
 
 pub async fn get_search_usage_graph_query(
@@ -661,14 +661,14 @@ pub async fn get_search_usage_graph_query(
 
     Ok(SearchUsageGraphResponse {
         total_searches,
-        usage_points: rps_graph,
+        points: rps_graph,
     })
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(title = "LatencyGraphResponse")]
 pub struct LatencyGraphResponse {
-    pub latency_points: Vec<SearchLatencyGraph>,
+    pub points: Vec<SearchLatencyGraph>,
 }
 
 pub async fn get_latency_graph_query(
@@ -735,7 +735,7 @@ pub async fn get_latency_graph_query(
         .collect::<Vec<_>>();
 
     Ok(LatencyGraphResponse {
-        latency_points: latency_query,
+        points: latency_query,
     })
 }
 
@@ -883,9 +883,7 @@ pub async fn get_rag_usage_graph_query(
         .map(|q| q.into())
         .collect::<Vec<_>>();
 
-    Ok(RAGUsageGraphResponse {
-        usage_points: rps_graph,
-    })
+    Ok(RAGUsageGraphResponse { points: rps_graph })
 }
 
 pub async fn get_rag_query(
@@ -1758,7 +1756,7 @@ pub async fn get_topics_over_time_query(
 
     Ok(TopicsOverTimeResponse {
         total_topics,
-        time_points: time_points.into_iter().map(|t| t.into()).collect(),
+        points: time_points.into_iter().map(|t| t.into()).collect(),
     })
 }
 
@@ -1816,7 +1814,7 @@ pub async fn get_total_unique_users_query(
 
     Ok(TotalUniqueUsersResponse {
         total_unique_users,
-        time_points: time_points.into_iter().map(|t| t.into()).collect(),
+        points: time_points.into_iter().map(|t| t.into()).collect(),
     })
 }
 
@@ -1995,7 +1993,7 @@ pub async fn get_ctr_metrics_over_time_query(
     let chats_over_time =
         get_rag_usage_graph_query(dataset_id, filter, granularity, clickhouse_client)
             .await?
-            .usage_points;
+            .points;
 
     let ctr_metrics_over_time: Vec<CTRMetricsOverTimePoint> = clicks_over_time
         .iter()
@@ -2015,6 +2013,83 @@ pub async fn get_ctr_metrics_over_time_query(
 
     Ok(CTRMetricsOverTimeResponse {
         total_ctr,
-        ctr_points: ctr_metrics_over_time,
+        points: ctr_metrics_over_time,
+    })
+}
+
+pub async fn get_messages_per_user(
+    dataset_id: uuid::Uuid,
+    filter: Option<RAGAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<MessagesPerUserResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut query_string = format!(
+        "WITH user_daily_messages AS (
+            SELECT
+                toStartOfInterval(created_at, INTERVAL {}) AS time_stamp,
+                user_id,
+                COUNT(*) AS message_count
+            FROM
+                rag_queries
+            WHERE
+                dataset_id = ?
+        ",
+        interval,
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+           GROUP BY
+                time_stamp,
+                user_id
+        )
+        SELECT
+            time_stamp,
+            AVG(message_count) AS avg_messages_per_user
+        FROM
+            user_daily_messages
+        GROUP BY
+            time_stamp
+        ORDER BY
+            time_stamp
+        LIMIT 1000",
+    );
+
+    let chats_over_time = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<MessagesPerUserTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching ctr metrics over time: {:?}", e);
+            ServiceError::InternalServerError("Error fetching ctr metrics over time".to_string())
+        })?;
+
+    let avg_messages_per_user = if !chats_over_time.is_empty() {
+        chats_over_time
+            .iter()
+            .map(|x| x.messages_per_user)
+            .sum::<f64>()
+            / chats_over_time.len() as f64
+    } else {
+        0.0
+    };
+
+    Ok(MessagesPerUserResponse {
+        avg_messages_per_user,
+        points: chats_over_time.into_iter().map(|x| x.into()).collect(),
     })
 }
