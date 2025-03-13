@@ -26,8 +26,8 @@ pub struct CreateTopicReqPayload {
     pub name: Option<String>,
     /// The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user.
     pub owner_id: String,
-    /// The referrer of the topic. This allows you to distinguish between multiple different sources from where your chats occur
-    pub referrer: Option<String>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
 }
 
 /// Create Topic
@@ -96,8 +96,8 @@ pub async fn create_topic(
         id: uuid::Uuid::new_v4(),
         topic_id: new_topic.id,
         dataset_id: dataset_org_plan_sub.dataset.id,
-        referrer: data_inner.referrer.unwrap_or_default(),
         name: new_topic.name.clone(),
+        metadata: serde_json::to_string(&data_inner.metadata.clone()).unwrap_or_default(),
         owner_id: new_topic.owner_id.clone(),
         created_at: OffsetDateTime::now_utc(),
         updated_at: OffsetDateTime::now_utc(),

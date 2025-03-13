@@ -7249,6 +7249,10 @@
             ],
             "nullable": true
           },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
+          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -7708,10 +7712,10 @@
         "type": "object",
         "required": [
           "total_ctr",
-          "ctr_points"
+          "points"
         ],
         "properties": {
-          "ctr_points": {
+          "points": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CTRMetricsOverTimePoint"
@@ -9721,6 +9725,10 @@
             ],
             "nullable": true
           },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
+          },
           "new_message_content": {
             "type": "string",
             "description": "The content of the user message to attach to the topic and then generate an assistant message in response to.",
@@ -10020,6 +10028,10 @@
             "description": "The first message which will belong to the topic. The topic name is generated based on this message similar to how it works in the OpenAI chat UX if a name is not explicitly provided on the name request body key.",
             "nullable": true
           },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
+          },
           "name": {
             "type": "string",
             "description": "The name of the topic. If this is not provided, the topic name is generated from the first_user_message.",
@@ -10028,11 +10040,6 @@
           "owner_id": {
             "type": "string",
             "description": "The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user."
-          },
-          "referrer": {
-            "type": "string",
-            "description": "The referrer of the topic. This allows you to distinguish between multiple different sources from where your chats occur",
-            "nullable": true
           }
         }
       },
@@ -10675,6 +10682,10 @@
             "format": "int32",
             "description": "The sort order of the message to edit."
           },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
+          },
           "new_message_content": {
             "type": "string",
             "description": "The new content of the message to replace the old content with.",
@@ -11250,6 +11261,10 @@
                 "description": "Latency of the search",
                 "nullable": true
               },
+              "metadata": {
+                "description": "Metadata to provide with each request",
+                "nullable": true
+              },
               "query": {
                 "type": "string",
                 "description": "The search query"
@@ -11326,6 +11341,10 @@
                 "description": "The response from the LLM",
                 "nullable": true
               },
+              "metadata": {
+                "description": "Metadata to provide with each request",
+                "nullable": true
+              },
               "query_rating": {
                 "allOf": [
                   {
@@ -11383,6 +11402,10 @@
                 "enum": [
                   "recommendation"
                 ]
+              },
+              "metadata": {
+                "description": "Metadata to provide with each request",
+                "nullable": true
               },
               "negative_ids": {
                 "type": "array",
@@ -11790,6 +11813,10 @@
             "description": "The maximum number of tokens to generate in the chat completion. Default is None.",
             "nullable": true,
             "minimum": 0
+          },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
           },
           "presence_penalty": {
             "type": "number",
@@ -12707,10 +12734,10 @@
         "type": "object",
         "title": "LatencyGraphResponse",
         "required": [
-          "latency_points"
+          "points"
         ],
         "properties": {
-          "latency_points": {
+          "points": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SearchLatencyGraph"
@@ -12858,6 +12885,41 @@
           "sort_order": 1,
           "topic_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "updated_at": "2021-01-01 00:00:00.000"
+        }
+      },
+      "MessagesPerUserResponse": {
+        "type": "object",
+        "required": [
+          "avg_messages_per_user",
+          "points"
+        ],
+        "properties": {
+          "avg_messages_per_user": {
+            "type": "number",
+            "format": "float"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessagesPerUserTimePoint"
+            }
+          }
+        }
+      },
+      "MessagesPerUserTimePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "messages_per_user"
+        ],
+        "properties": {
+          "messages_per_user": {
+            "type": "number",
+            "format": "float"
+          },
+          "time_stamp": {
+            "type": "string"
+          }
         }
       },
       "Metadata": {
@@ -14255,6 +14317,36 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "messages_per_user"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -14318,6 +14410,9 @@
           },
           {
             "$ref": "#/components/schemas/CTRMetricsOverTimeResponse"
+          },
+          {
+            "$ref": "#/components/schemas/MessagesPerUserResponse"
           }
         ]
       },
@@ -14334,10 +14429,10 @@
         "type": "object",
         "title": "RAGUsageGraphResponse",
         "required": [
-          "usage_points"
+          "points"
         ],
         "properties": {
-          "usage_points": {
+          "points": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UsageGraphPoint"
@@ -14401,6 +14496,9 @@
           },
           "llm_response": {
             "type": "string"
+          },
+          "metadata": {
+            "nullable": true
           },
           "query_rating": {
             "allOf": [
@@ -14585,6 +14683,10 @@
             "nullable": true,
             "minimum": 0
           },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
+          },
           "negative_chunk_ids": {
             "type": "array",
             "items": {
@@ -14691,6 +14793,10 @@
             "description": "The number of groups to return. This is the number of groups which will be returned in the response. The default is 10.",
             "nullable": true,
             "minimum": 0
+          },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
           },
           "negative_group_ids": {
             "type": "array",
@@ -14999,6 +15105,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "metadata": {
+            "nullable": true
+          },
           "negative_ids": {
             "type": "array",
             "items": {
@@ -15208,6 +15317,10 @@
                 "$ref": "#/components/schemas/LLMOptions"
               }
             ],
+            "nullable": true
+          },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
             "nullable": true
           },
           "no_result_message": {
@@ -16022,6 +16135,10 @@
             ],
             "nullable": true
           },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
+          },
           "page": {
             "type": "integer",
             "format": "int64",
@@ -16296,6 +16413,10 @@
             ],
             "nullable": true
           },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
+          },
           "page": {
             "type": "integer",
             "format": "int64",
@@ -16501,6 +16622,9 @@
             "type": "number",
             "format": "float"
           },
+          "metadata": {
+            "nullable": true
+          },
           "query": {
             "type": "string"
           },
@@ -16658,18 +16782,18 @@
         "title": "SearchUsageGraphResponse",
         "required": [
           "total_searches",
-          "usage_points"
+          "points"
         ],
         "properties": {
-          "total_searches": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "usage_points": {
+          "points": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UsageGraphPoint"
             }
+          },
+          "total_searches": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -16715,6 +16839,10 @@
                 "$ref": "#/components/schemas/HighlightOptions"
               }
             ],
+            "nullable": true
+          },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
             "nullable": true
           },
           "page": {
@@ -17924,7 +18052,6 @@
           "topic_id",
           "dataset_id",
           "owner_id",
-          "referrer",
           "created_at",
           "updated_at"
         ],
@@ -17940,13 +18067,13 @@
             "type": "string",
             "format": "uuid"
           },
+          "metadata": {
+            "nullable": true
+          },
           "name": {
             "type": "string"
           },
           "owner_id": {
-            "type": "string"
-          },
-          "referrer": {
             "type": "string"
           },
           "topic_id": {
@@ -17984,10 +18111,10 @@
         "type": "object",
         "required": [
           "total_topics",
-          "time_points"
+          "points"
         ],
         "properties": {
-          "time_points": {
+          "points": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TopicTimePoint"
@@ -18003,10 +18130,10 @@
         "type": "object",
         "required": [
           "total_unique_users",
-          "time_points"
+          "points"
         ],
         "properties": {
-          "time_points": {
+          "points": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TotalUniqueUsersTimePoint"

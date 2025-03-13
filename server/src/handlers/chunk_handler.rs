@@ -1137,6 +1137,8 @@ pub struct SearchChunksReqPayload {
     pub remove_stop_words: Option<bool>,
     /// User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
     pub user_id: Option<String>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
     /// Typo options lets you specify different methods to handle typos in the search query. If not specified, this defaults to no typo handling.
     pub typo_options: Option<TypoOptions>,
 }
@@ -1160,6 +1162,7 @@ impl Default for SearchChunksReqPayload {
             remove_stop_words: None,
             user_id: None,
             typo_options: None,
+            metadata: None,
         }
     }
 }
@@ -1348,6 +1351,7 @@ pub async fn search_chunks(
                     json.to_string()
                 })
                 .collect(),
+            metadata: serde_json::to_string(&data.metadata.clone()).unwrap_or_default(),
             dataset_id: dataset_org_plan_sub.dataset.id,
             created_at: time::OffsetDateTime::now_utc(),
             query_rating: String::from(""),
@@ -1462,6 +1466,8 @@ pub struct AutocompleteReqPayload {
     /// User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
     pub user_id: Option<String>,
     pub typo_options: Option<TypoOptions>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
 }
 
 impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
@@ -1483,6 +1489,7 @@ impl From<AutocompleteReqPayload> for SearchChunksReqPayload {
             remove_stop_words: autocomplete_data.remove_stop_words,
             user_id: autocomplete_data.user_id,
             typo_options: autocomplete_data.typo_options,
+            metadata: autocomplete_data.metadata,
         }
     }
 }
@@ -1560,6 +1567,7 @@ pub async fn autocomplete(
                 .first()
                 .map(|x| x.score as f32)
                 .unwrap_or(0.0),
+            metadata: serde_json::to_string(&data.metadata.clone()).unwrap_or_default(),
             results: result_chunks
                 .score_chunks
                 .clone()
@@ -1811,6 +1819,7 @@ impl From<CountChunksReqPayload> for SearchChunksReqPayload {
             remove_stop_words: None,
             user_id: None,
             typo_options: None,
+            metadata: None,
         }
     }
 }
@@ -2135,6 +2144,8 @@ pub struct RecommendChunksRequest {
     pub slim_chunks: Option<bool>,
     /// User ID is the id of the user who is making the request. This is used to track user interactions with the recommendation results.
     pub user_id: Option<String>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -2419,6 +2430,7 @@ pub async fn get_recommended_chunks(
                 .first()
                 .map(|x| x.score)
                 .unwrap_or(0.0),
+            metadata: serde_json::to_string(&data.metadata.clone()).unwrap_or_default(),
             results: recommended_score_chunks
                 .iter()
                 .map(|x| serde_json::to_string(x).unwrap_or_default())
@@ -2498,6 +2510,8 @@ pub struct GenerateOffChunksReqPayload {
     pub stop_tokens: Option<Vec<String>>,
     /// User ID is the id of the user who is making the request. This is used to track user interactions with the RAG results.
     pub user_id: Option<String>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
     /// Configuration for sending images to the llm
     pub image_config: Option<ImageConfig>,
     /// Context options to use for the completion. If not specified, all options will default to false.
@@ -2830,6 +2844,7 @@ pub async fn generate_off_chunks(
                         json.to_string()
                     })
                     .collect(),
+                metadata: serde_json::to_string(&data.metadata.clone()).unwrap_or_default(),
                 topic_id: uuid::Uuid::nil(),
                 top_score: 0.0,
                 user_message: format!("{} {}", rag_prompt, last_prev_message.content.clone()),
@@ -2873,6 +2888,7 @@ pub async fn generate_off_chunks(
 
     let last_message_arb = last_prev_message.content.clone();
     let user_id = data.user_id.clone().unwrap_or_default();
+    let metadata = data.metadata.clone();
     Arbiter::new().spawn(async move {
         let chunk_v: Vec<String> = r.iter().collect();
         let completion = chunk_v.join("");
@@ -2908,6 +2924,7 @@ pub async fn generate_off_chunks(
                 dataset_id: dataset_org_plan_sub.dataset.id,
                 search_id: uuid::Uuid::nil(),
                 results: vec![],
+                metadata: serde_json::to_string(&metadata.clone()).unwrap_or_default(),
                 json_results: chunks
                     .clone()
                     .into_iter()

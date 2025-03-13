@@ -445,6 +445,19 @@ pub async fn get_rag_analytics(
             .await?;
             RAGAnalyticsResponse::CTRMetricsOverTime(ctr_metrics_over_time)
         }
+        RAGAnalytics::MessagesPerUser {
+            filter,
+            granularity,
+        } => {
+            let messages_per_user = get_messages_per_user(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::MessagesPerUser(messages_per_user)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))
