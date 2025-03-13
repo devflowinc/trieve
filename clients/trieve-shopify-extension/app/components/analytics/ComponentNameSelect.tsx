@@ -22,7 +22,7 @@ export const ComponentNameSelect = ({
       label: "All",
       value: "",
     },
-    ...names.map((name) => ({
+    ...names.component_names.map((name) => ({
       label: name,
       value: name,
     })),

@@ -521,6 +521,9 @@ export type ComponentAnalytics = {
     filter?: ((ComponentAnalyticsFilter) | null);
     page?: (number) | null;
     type: 'top_components';
+} | {
+    page?: (number) | null;
+    type: 'component_names';
 };
 
 export type type3 = 'total_unique_users';
@@ -530,10 +533,10 @@ export type ComponentAnalyticsFilter = {
     date_range?: ((DateRange) | null);
 };
 
-export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse;
+export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse;
 
-export type ComponentNamesRequest = {
-    page?: (number) | null;
+export type ComponentNamesResponse = {
+    component_names: Array<(string)>;
 };
 
 /**
@@ -3879,19 +3882,6 @@ export type WorkerEvent = {
     id: string;
 };
 
-export type GetComponentNamesData = {
-    /**
-     * The page to view
-     */
-    page?: (number) | null;
-    /**
-     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
-     */
-    trDataset: string;
-};
-
-export type GetComponentNamesResponse = (Array<(string)>);
-
 export type SendCtrDataData = {
     /**
      * JSON request payload to send CTR data
@@ -5374,21 +5364,6 @@ export type DeleteUserApiKeyResponse = (void);
 export type GetMetricsResponse = (string);
 
 export type $OpenApiTs = {
-    '/api/analytics/component_names': {
-        get: {
-            req: GetComponentNamesData;
-            res: {
-                /**
-                 * The list of component names
-                 */
-                200: Array<(string)>;
-                /**
-                 * Service error relating to getting component analytics
-                 */
-                400: ErrorResponseBody;
-            };
-        };
-    };
     '/api/analytics/ctr': {
         put: {
             req: SendCtrDataData;

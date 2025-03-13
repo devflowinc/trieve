@@ -7129,11 +7129,8 @@ pub enum ComponentAnalytics {
         filter: Option<ComponentAnalyticsFilter>,
         page: Option<u32>,
     },
-}
-
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct ComponentNamesRequest {
-    pub page: Option<u32>,
+    #[schema(title = "ComponentNames")]
+    ComponentNames { page: Option<u32> },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
@@ -7329,6 +7326,8 @@ pub enum ComponentAnalyticsResponse {
     TopPages(TopPagesResponse),
     #[schema(title = "TopComponents")]
     TopComponents(TopComponentsResponse),
+    #[schema(title = "ComponentNames")]
+    ComponentNames(ComponentNamesResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7340,6 +7339,11 @@ pub struct TopComponentsResponse {
 pub struct TopComponents {
     pub component_name: String,
     pub count: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ComponentNamesResponse {
+    pub component_names: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
