@@ -1544,11 +1544,14 @@ body {
         }
 
         .trieve-text-step-container {
-          display: none;
-
           &[data-input-field-type="text"] {
             display: block;
           }
+        }
+
+        .trieve-text-step-container,
+        .trieve-inference-filters-step-tags-container {
+          display: none;
 
           &[data-prev-complete="false"] {
             .trieve-text-input-container {
@@ -1603,32 +1606,40 @@ body {
           }
         }
 
-        .trieve-inference-filters-step-tags {
-          @apply tv-flex tv-flex-wrap tv-gap-2 tv-mt-4;
+        .trieve-inference-filters-step-tags-container {
+          display: none;
 
-          button.trieve-inference-filters-step-tag {
-            @apply tv-flex tv-items-center tv-gap-x-1 tv-py-1 tv-px-2 tv-rounded-lg tv-cursor-pointer tv-bg-zinc-100;
+          &[data-input-field-type="tags"] {
+            display: block;
+          }
 
-            &[data-active="true"] {
-              background-color: var(--tv-prop-brand-color);
-              color: var(--tv-zinc-50);
+          .trieve-inference-filters-step-tags {
+            @apply tv-flex tv-flex-wrap tv-gap-2 tv-mt-4;
+
+            button.trieve-inference-filters-step-tag {
+              @apply tv-flex tv-items-center tv-gap-x-1 tv-py-1 tv-px-2 tv-rounded-lg tv-cursor-pointer tv-bg-zinc-100;
+
+              &[data-active="true"] {
+                background-color: var(--tv-prop-brand-color);
+                color: var(--tv-zinc-50);
+
+                .trieve-checkbox-icon {
+                  display: block;
+                }
+              }
+
+              &:hover:not([data-active="true"]) {
+                background-color: var(--tv-zinc-200);
+                color: var(--tv-prop-brand-color);
+
+                .trieve-checkbox-icon {
+                  display: block;
+                }
+              }
 
               .trieve-checkbox-icon {
-                display: block;
+                display: none;
               }
-            }
-
-            &:hover:not([data-active="true"]) {
-              background-color: var(--tv-zinc-200);
-              color: var(--tv-prop-brand-color);
-
-              .trieve-checkbox-icon {
-                display: block;
-              }
-            }
-
-            .trieve-checkbox-icon {
-              display: none;
             }
           }
         }

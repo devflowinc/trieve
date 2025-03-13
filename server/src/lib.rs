@@ -271,6 +271,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_top_datasets,
         handlers::analytics_handler::get_all_events,
         handlers::analytics_handler::get_event_by_id,
+        handlers::analytics_handler::get_component_analytics,
         handlers::metrics_handler::get_metrics,
         handlers::page_handler::public_page,
         handlers::etl_handler::create_etl_job
@@ -571,9 +572,21 @@ impl Modify for SecurityAddon {
             data::models::TopicDetailsResponse,
             data::models::TopicsOverTimeResponse,
             data::models::TopicAnalyticsSummary,
+            data::models::TotalUniqueUsersResponse,
+            data::models::TotalUniqueUsersTimePoint,
+            data::models::ComponentAnalyticsFilter,
+            data::models::ComponentAnalytics,
+            data::models::ComponentNamesResponse,
+            data::models::ComponentAnalyticsResponse,
+            data::models::CTRMetricsOverTimeResponse,
+            data::models::CTRMetricsOverTimePoint,
             data::models::TopicQuery,
             data::models::TopicTimePoint,
             data::models::TopicSortBy,
+            data::models::TopPages,
+            data::models::TopPagesResponse,
+            data::models::TopComponents,
+            data::models::TopComponentsResponse,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
         )
@@ -1368,6 +1381,10 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/ctr")
                                         .route(web::post().to(handlers::analytics_handler::get_ctr_analytics)),
+                                )
+                                .service(
+                                    web::resource("/component")
+                                        .route(web::post().to(handlers::analytics_handler::get_component_analytics)),
                                 )
                                 .service(
                                     web::resource("/{id}")

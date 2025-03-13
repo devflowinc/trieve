@@ -181,6 +181,16 @@ export type CTRDataRequestBody = {
     request_id: string;
 };
 
+export type CTRMetricsOverTimePoint = {
+    ctr: number;
+    time_stamp: string;
+};
+
+export type CTRMetricsOverTimeResponse = {
+    ctr_points: Array<CTRMetricsOverTimePoint>;
+    total_ctr: number;
+};
+
 export type CTRRecommendationsWithClicksResponse = {
     recommendations: Array<RecommendationsWithClicksCTRResponse>;
 };
@@ -508,6 +518,36 @@ export type ClusterAnalyticsFilter = {
 };
 
 export type ClusterAnalyticsResponse = SearchClusterResponse | SearchQueryResponse;
+
+export type ComponentAnalytics = {
+    filter?: ((ComponentAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'total_unique_users';
+} | {
+    filter?: ((ComponentAnalyticsFilter) | null);
+    page?: (number) | null;
+    type: 'top_pages';
+} | {
+    filter?: ((ComponentAnalyticsFilter) | null);
+    page?: (number) | null;
+    type: 'top_components';
+} | {
+    page?: (number) | null;
+    type: 'component_names';
+};
+
+export type type3 = 'total_unique_users';
+
+export type ComponentAnalyticsFilter = {
+    component_name?: (string) | null;
+    date_range?: ((DateRange) | null);
+};
+
+export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse;
+
+export type ComponentNamesResponse = {
+    component_names: Array<(string)>;
+};
 
 /**
  * Filters can be constructed using either fields on the chunk objects, ids or tracking ids of chunks, and finally ids or tracking ids of groups.
@@ -1362,6 +1402,10 @@ export type EventTypes = {
      */
     items: Array<(string)>;
     /**
+     * The location of the event
+     */
+    location?: (string) | null;
+    /**
      * Any other metadata associated with the event
      */
     metadata?: unknown;
@@ -1385,6 +1429,10 @@ export type EventTypes = {
      */
     items: Array<(string)>;
     /**
+     * The location of the event
+     */
+    location?: (string) | null;
+    /**
      * Any other metadata associated with the event
      */
     metadata?: unknown;
@@ -1404,6 +1452,10 @@ export type EventTypes = {
      * Whether the event is a conversion event
      */
     is_conversion?: (boolean) | null;
+    /**
+     * The location of the event
+     */
+    location?: (string) | null;
     /**
      * Metadata to include with click event
      */
@@ -1427,6 +1479,10 @@ export type EventTypes = {
      * The items that were purchased
      */
     items: Array<(string)>;
+    /**
+     * The location of the event
+     */
+    location?: (string) | null;
     /**
      * Any other metadata associated with the event
      */
@@ -1452,6 +1508,10 @@ export type EventTypes = {
     items: {
         [key: string]: (string);
     };
+    /**
+     * The location of the event
+     */
+    location?: (string) | null;
     request?: ((RequestInfo) | null);
     /**
      * The user id of the user who clicked the items
@@ -1865,7 +1925,17 @@ export type GetTrackingChunksData = {
 export type Granularity = 'minute' | 'second' | 'hour' | 'day' | 'month';
 
 export type GroupData = {
+    /**
+     * The list of all the groups.
+     */
     groups: Array<ChunkGroupAndFileId>;
+    /**
+     * Parameter for the next cursor offset.
+     */
+    next_cursor?: (string) | null;
+    /**
+     * Total number of pages. Pages is groups_count / 10
+     */
     total_pages: number;
 };
 
@@ -2435,9 +2505,13 @@ export type RAGAnalytics = {
     filter?: ((RAGAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'topics_over_time';
+} | {
+    filter?: ((RAGAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'ctr_metrics_over_time';
 };
 
-export type type3 = 'rag_queries';
+export type type4 = 'rag_queries';
 
 export type RAGAnalyticsFilter = {
     date_range?: ((DateRange) | null);
@@ -2445,7 +2519,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicAnalyticsResponse | TopicDetailsResponse | TopicsOverTimeResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicAnalyticsResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at' | 'latency';
 
@@ -2616,7 +2690,7 @@ export type RecommendationAnalytics = {
     type: 'query_details';
 };
 
-export type type4 = 'low_confidence_recommendations';
+export type type5 = 'low_confidence_recommendations';
 
 export type RecommendationAnalyticsFilter = {
     date_range?: ((DateRange) | null);
@@ -2779,7 +2853,7 @@ export type ScrapeOptions = (CrawlOpenAPIOptions & {
     type: 'youtube';
 });
 
-export type type5 = 'openapi';
+export type type6 = 'openapi';
 
 export type ScrollChunksReqPayload = {
     filters?: ((ChunkFilter) | null);
@@ -2839,9 +2913,10 @@ export type SearchAnalytics = {
     type: 'popular_filters';
 };
 
-export type type6 = 'latency_graph';
+export type type7 = 'latency_graph';
 
 export type SearchAnalyticsFilter = {
+    component_name?: (string) | null;
     date_range?: ((DateRange) | null);
     query_rating?: ((QueryRatingRange) | null);
     search_method?: ((SearchMethod) | null);
@@ -3059,6 +3134,7 @@ export type SearchTypeCount = {
 };
 
 export type SearchUsageGraphResponse = {
+    total_searches: number;
     usage_points: Array<UsageGraphPoint>;
 };
 
@@ -3377,12 +3453,30 @@ export type ToolFunctionParameter = {
  */
 export type ToolFunctionParameterType = 'number' | 'boolean';
 
+export type TopComponents = {
+    component_name: string;
+    count: number;
+};
+
+export type TopComponentsResponse = {
+    top_components: Array<TopComponents>;
+};
+
 export type TopDatasetsRequestTypes = 'search' | 'rag' | 'recommendation';
 
 export type TopDatasetsResponse = {
     dataset_id: string;
     dataset_tracking_id?: (string) | null;
     total_queries: number;
+};
+
+export type TopPages = {
+    count: number;
+    page: string;
+};
+
+export type TopPagesResponse = {
+    top_pages: Array<TopPages>;
 };
 
 export type Topic = {
@@ -3435,6 +3529,17 @@ export type TopicTimePoint = {
 
 export type TopicsOverTimeResponse = {
     time_points: Array<TopicTimePoint>;
+    total_topics: number;
+};
+
+export type TotalUniqueUsersResponse = {
+    time_points: Array<TotalUniqueUsersTimePoint>;
+    total_unique_users: number;
+};
+
+export type TotalUniqueUsersTimePoint = {
+    time_stamp: string;
+    unique_users: number;
 };
 
 /**
@@ -3831,6 +3936,19 @@ export type GetAllEventsData = {
 };
 
 export type GetAllEventsResponse = (GetEventsResponseBody);
+
+export type GetComponentAnalyticsData = {
+    /**
+     * JSON request payload to filter the graph
+     */
+    requestBody: ComponentAnalytics;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetComponentAnalyticsResponse = (ComponentAnalyticsResponse);
 
 export type GetCtrAnalyticsData = {
     /**
@@ -4641,17 +4759,25 @@ export type GetAllTagsResponse2 = (GetAllTagsResponse);
 
 export type GetGroupsForDatasetData = {
     /**
+     * The cursor offset for .Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`
+     */
+    cursor?: (string) | null;
+    /**
      * The id of the dataset to fetch groups for.
      */
     datasetId: string;
     /**
-     * The page of groups to fetch. Page is 1-indexed.
+     * The page of groups to fetch. Page is 1-indexed. Only used if `use_cursor` = `false`.
      */
-    page: number;
+    page: (number) | null;
     /**
      * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
      */
     trDataset: string;
+    /**
+     * Flag to enable `cursor` mode, this runs faster for large scroll operations. Defaults to false
+     */
+    useCursor?: (boolean) | null;
 };
 
 export type GetGroupsForDatasetResponse = (GroupData);
@@ -5298,6 +5424,21 @@ export type $OpenApiTs = {
                 200: GetEventsResponseBody;
                 /**
                  * Service error relating to getting events
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/analytics/events/component': {
+        post: {
+            req: GetComponentAnalyticsData;
+            res: {
+                /**
+                 * The component analytics for the dataset
+                 */
+                200: ComponentAnalyticsResponse;
+                /**
+                 * Service error relating to getting component analytics
                  */
                 400: ErrorResponseBody;
             };

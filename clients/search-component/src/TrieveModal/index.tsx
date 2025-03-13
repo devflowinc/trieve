@@ -16,10 +16,7 @@ import { FloatingActionButton } from "./FloatingActionButton";
 import { FloatingSearchIcon } from "./FloatingSearchIcon";
 import { FloatingSearchInput } from "./FloatingSearchInput";
 import { ModalContainer } from "./ModalContainer";
-import {
-  ActiveFilterPills,
-  InferenceFiltersForm,
-} from "./FilterSidebarComponents";
+import { InferenceFiltersForm } from "./FilterSidebarComponents";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 const SearchPage = () => {
@@ -31,9 +28,6 @@ const SearchPage = () => {
       className="trieve-search-page"
       data-display={props.searchPageProps?.display ? "true" : "false"}
     >
-      <div className="trieve-search-subheader-w-full">
-        <ActiveFilterPills />
-      </div>
       <div className="trieve-search-page-main-section">
         <div className="trieve-filter-main-section">
           <InferenceFiltersForm
@@ -99,10 +93,10 @@ const Modal = () => {
             event_name: `trieve-modal_load`,
             event_type: "view",
             items: [],
+            user_id: fingerprint,
+            location: window.location.href,
             metadata: {
-              page_url: window.location.href,
               component_props: props,
-              fingerprint,
             },
           },
           abortController.signal,
@@ -119,11 +113,11 @@ const Modal = () => {
                   event_name: `site-add_to_cart`,
                   event_type: "add_to_cart",
                   items: [],
+                  user_id: fingerprint,
+                  location: window.location.href,
                   metadata: {
-                    page_url: window.location.href,
                     component_props: props,
                     elementHtml: cart.outerHTML,
-                    fingerprint,
                   },
                 },
                 abortController.signal,
@@ -155,11 +149,11 @@ const Modal = () => {
                     event_type: "purchase",
                     items: [],
                     is_conversion: true,
+                    user_id: fingerprint,
+                    location: window.location.href,
                     metadata: {
-                      page_url: window.location.href,
                       component_props: props,
                       itemsElem: itemsElem?.outerHTML,
-                      fingerprint,
                     },
                   },
                   abortController.signal,

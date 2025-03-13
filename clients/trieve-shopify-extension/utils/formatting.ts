@@ -1,13 +1,15 @@
-import { ChartState } from "@shopify/polaris-viz";
-import { DateRangeFilter } from "app/components/analytics/DateRangePicker";
 import {
   differenceInHours,
   eachDayOfInterval,
+  eachHourOfInterval,
+  eachMinuteOfInterval,
   format,
   isSameDay,
+  isSameHour,
+  isSameMinute,
   subDays,
 } from "date-fns";
-import { SearchAnalyticsFilter } from "trieve-ts-sdk";
+import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
 
 export const formatDateForApi = (date: Date) => {
   return date
@@ -42,7 +44,9 @@ export const parseCustomDateString = (dateString: string) => {
 
   const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}Z`;
 
-  return new Date(isoString);
+  var date = new Date(isoString);
+  var userTimezoneOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() + userTimezoneOffset);
 };
 
 export const formatStringDateRangeToDates = (
@@ -148,61 +152,107 @@ export function convertToISO8601(dateString: string) {
   return isoString;
 }
 
-export const queryStateToChartState = (
-  queryState: "error" | "success" | "pending",
-): ChartState => {
-  if (queryState === "error") {
-    return "Error" as ChartState;
-  }
-  if (queryState === "success") {
-    return "Success" as ChartState;
-  }
-  return "Loading" as ChartState;
-};
-
 export const fillDate = <T>({
   dataKey,
   timestampKey,
   data,
   date_range,
+  granularity,
   defaultValue = 0,
 }: {
   dataKey: keyof T;
   timestampKey: keyof T;
   data: T[];
   date_range: SearchAnalyticsFilter["date_range"] | undefined;
+  granularity: Granularity;
   defaultValue?: number | null;
 }) => {
-  console.log("date_range", date_range);
   const startDate = date_range?.gte || subDays(new Date(), 7);
   const endDate = date_range?.lte || new Date();
 
-  const info = eachDayOfInterval({
-    start: startDate,
-    end: endDate,
-  }).map((d) => {
-    let foundDataPoint = null;
+  let info: { time: Date; value: number | null }[] = [];
+  if (granularity == "day") {
+    info = eachDayOfInterval({
+      start: startDate,
+      end: endDate,
+    }).map((d) => {
+      let foundDataPoint = null;
 
-    for (const curr of data) {
-      const parsedDate = new Date(
-        parseCustomDateString(curr[timestampKey] as string),
-      );
-      if (isSameDay(parsedDate, d)) {
-        foundDataPoint = {
-          time: parsedDate,
-          value: (curr[dataKey] as number) || 0, // Use || 0 to handle undefined/null
-        };
-        break; // Exit loop after finding a match
+      for (const curr of data) {
+        const parsedDate = new Date(
+          parseCustomDateString(curr[timestampKey] as string),
+        );
+        if (isSameDay(parsedDate, d)) {
+          foundDataPoint = {
+            time: parsedDate,
+            value: (curr[dataKey] as number) || 0, // Use || 0 to handle undefined/null
+          };
+          break; // Exit loop after finding a match
+        }
       }
-    }
 
-    return foundDataPoint
-      ? foundDataPoint
-      : {
-          time: d,
-          value: defaultValue,
-        };
-  });
+      return foundDataPoint
+        ? foundDataPoint
+        : {
+            time: d,
+            value: defaultValue,
+          };
+    });
+  } else if (granularity == "hour") {
+    info = eachHourOfInterval({
+      start: startDate,
+      end: endDate,
+    }).map((d) => {
+      let foundDataPoint = null;
+
+      for (const curr of data) {
+        const parsedDate = new Date(
+          parseCustomDateString(curr[timestampKey] as string),
+        );
+        if (isSameHour(parsedDate, d)) {
+          foundDataPoint = {
+            time: parsedDate,
+            value: (curr[dataKey] as number) || 0, // Use || 0 to handle undefined/null
+          };
+          break; // Exit loop after finding a match
+        }
+      }
+
+      return foundDataPoint
+        ? foundDataPoint
+        : {
+            time: d,
+            value: defaultValue,
+          };
+    });
+  } else if (granularity == "minute") {
+    info = eachMinuteOfInterval({
+      start: startDate,
+      end: endDate,
+    }).map((d) => {
+      let foundDataPoint = null;
+
+      for (const curr of data) {
+        const parsedDate = new Date(
+          parseCustomDateString(curr[timestampKey] as string),
+        );
+        if (isSameMinute(parsedDate, d)) {
+          foundDataPoint = {
+            time: parsedDate,
+            value: (curr[dataKey] as number) || 0, // Use || 0 to handle undefined/null
+          };
+          break; // Exit loop after finding a match
+        }
+      }
+
+      return foundDataPoint
+        ? foundDataPoint
+        : {
+            time: d,
+            value: defaultValue,
+          };
+    });
+  }
 
   return info;
 };

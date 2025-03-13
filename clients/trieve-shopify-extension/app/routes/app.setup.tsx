@@ -1,9 +1,9 @@
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
-import { validateTrieveAuth } from "app/auth";
 import {
   defaultCrawlOptions,
   ExtendedCrawlOptions,
 } from "app/components/DatasetSettings";
+import { getTrieveBaseUrlEnv } from "app/env.server";
 import { sendChunks } from "app/processors/getProducts";
 import { authenticate } from "app/shopify.server";
 import { TrieveKey } from "app/types";
@@ -14,7 +14,7 @@ const startCrawl = async (
   datasetId: string,
   session: { shop: string },
   trieveKey: TrieveKey,
-  admin: any
+  admin: any,
 ) => {
   await prisma.crawlSettings.upsert({
     create: {
@@ -34,7 +34,7 @@ const startCrawl = async (
   });
 
   sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions).catch(
-    console.error
+    console.error,
   );
 };
 
@@ -87,14 +87,14 @@ const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
           },
         ],
       },
-    }
+    },
   );
 };
 
 export const loader = async (args: LoaderFunctionArgs) => {
   // You've been redirected here from app._dashboard.tsx because your trieve <-> shopify connection doesn't have a database
   const { admin, session, sessionToken } = await authenticate.admin(
-    args.request
+    args.request,
   );
 
   let key = await prisma.apiKey.findFirst({
@@ -113,7 +113,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   }
 
   const trieve = new TrieveSDK({
-    baseUrl: "https://api.trieve.ai",
+    baseUrl: getTrieveBaseUrlEnv(),
     apiKey: key.key,
     datasetId: key.currentDatasetId ? key.currentDatasetId : undefined,
     organizationId: key.organizationId,
@@ -123,7 +123,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   let datasetId = trieve.datasetId;
 
   let shopDataset = await trieve
-    .getDatasetByTrackingId(session.shop ?? "")
+    .getDatasetByTrackingId(session.shop)
     .catch(() => {
       return null;
     });

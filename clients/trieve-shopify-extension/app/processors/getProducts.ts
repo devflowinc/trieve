@@ -1,4 +1,5 @@
 import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
+import { getTrieveBaseUrlEnv } from "app/env.server";
 import {
   Product,
   TrieveKey,
@@ -307,7 +308,7 @@ export async function sendChunksToTrieve(
   key: TrieveKey,
   datasetId: string,
 ) {
-  await fetch(`https://api.trieve.ai/api/chunk`, {
+  await fetch(`${getTrieveBaseUrlEnv()}/api/chunk`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key.key}`,
@@ -324,8 +325,9 @@ export async function deleteChunkFromTrieve(
   id: string,
   key: TrieveKey,
   datasetId: string,
+  baseUrl: string,
 ) {
-  await fetch(`https://api.trieve.ai/api/chunk/tracking_id/${id}`, {
+  await fetch(`${baseUrl}/api/chunk/tracking_id/${id}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${key.key}`,

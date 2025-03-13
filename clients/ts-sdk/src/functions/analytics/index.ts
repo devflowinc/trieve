@@ -6,6 +6,7 @@
 
 import {
   ClusterAnalytics,
+  ComponentAnalytics,
   CTRAnalytics,
   CTRDataRequestBody,
   EventTypes,
@@ -285,6 +286,46 @@ export async function getClusterAnalytics(
 
   return this.trieve.fetch(
     "/api/analytics/search/cluster",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal,
+  );
+}
+
+/** 
+ * Function that allows you to view the component analytics for a dataset.
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getComponentAnalytics({
+  filter: {
+    date_range: {
+      gt: "2021-01-01 00:00:00.000",
+      gte: "2021-01-01 00:00:00.000",
+      lt: "2021-01-01 00:00:00.000",
+      lte: "2021-01-01 00:00:00.000",
+    },
+  },
+  granularity: "minute",
+  type: "total_unique_visitors",
+});
+ * ```
+ */
+export async function getComponentAnalytics(
+  /** @hidden */
+  this: TrieveSDK,
+  data: ComponentAnalytics,
+  signal?: AbortSignal,
+) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
+  return this.trieve.fetch(
+    "/api/analytics/events/component",
     "post",
     {
       data,

@@ -5814,6 +5814,7 @@ pub struct SearchAnalyticsFilter {
     pub search_method: Option<SearchMethod>,
     pub search_type: Option<SearchType>,
     pub query_rating: Option<QueryRatingRange>,
+    pub component_name: Option<String>,
 }
 
 impl SearchAnalyticsFilter {
@@ -5868,6 +5869,40 @@ impl SearchAnalyticsFilter {
                     lte
                 ));
             }
+        }
+
+        query_string
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ComponentAnalyticsFilter {
+    pub date_range: Option<DateRange>,
+    pub component_name: Option<String>,
+}
+
+impl ComponentAnalyticsFilter {
+    pub fn add_to_query(&self, mut query_string: String) -> String {
+        if let Some(date_range) = &self.date_range {
+            if let Some(gt) = &date_range.gt {
+                query_string.push_str(&format!(" AND created_at > '{}'", gt));
+            }
+            if let Some(lt) = &date_range.lt {
+                query_string.push_str(&format!(" AND created_at < '{}'", lt));
+            }
+            if let Some(gte) = &date_range.gte {
+                query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+            }
+            if let Some(lte) = &date_range.lte {
+                query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+            }
+        }
+
+        if let Some(component_name) = &self.component_name {
+            query_string.push_str(&format!(
+                " AND JSONExtractString(metadata, 'component_props', 'componentName') = '{}'",
+                component_name
+            ));
         }
 
         query_string
@@ -6318,6 +6353,7 @@ pub struct EventData {
     "items": ["item1", "item2"],
     "user_id": "user1",
     "metadata": "metadata",
+    "location": "location",
     "is_conversion": true,
     "user_id": "user1",
     "dataset_id": "00000000-0000-0000-0000-000000000000",
@@ -6331,6 +6367,7 @@ pub struct EventDataClickhouse {
     pub event_name: String,
     pub request_id: String,
     pub request_type: String,
+    pub location: String,
     pub items: Vec<String>,
     pub metadata: String,
     pub user_id: String,
@@ -6360,6 +6397,7 @@ impl EventTypes {
                 user_id,
                 metadata,
                 is_conversion,
+                location,
             } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
                 event_type: "add_to_cart".to_string(),
@@ -6367,6 +6405,7 @@ impl EventTypes {
                 request_id: request.clone().unwrap_or_default().request_id.to_string(),
                 request_type: request.unwrap_or_default().request_type.to_string(),
                 items,
+                location: location.unwrap_or_default(),
                 metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
                 user_id: user_id.unwrap_or_default(),
                 is_conversion: is_conversion.unwrap_or(true),
@@ -6381,6 +6420,7 @@ impl EventTypes {
                 user_id,
                 metadata,
                 is_conversion,
+                location,
             } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
                 event_type: "purchase".to_string(),
@@ -6391,6 +6431,7 @@ impl EventTypes {
                 user_id: user_id.unwrap_or_default(),
                 metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
                 is_conversion: is_conversion.unwrap_or(true),
+                location: location.unwrap_or_default(),
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
@@ -6401,6 +6442,7 @@ impl EventTypes {
                 items,
                 user_id,
                 metadata,
+                location,
             } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
                 event_type: "view".to_string(),
@@ -6408,6 +6450,7 @@ impl EventTypes {
                 request_id: request.clone().unwrap_or_default().request_id.to_string(),
                 request_type: request.unwrap_or_default().request_type.to_string(),
                 items,
+                location: location.unwrap_or_default(),
                 metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
                 user_id: user_id.unwrap_or_default(),
                 is_conversion: false,
@@ -6422,6 +6465,7 @@ impl EventTypes {
                 metadata,
                 user_id,
                 is_conversion,
+                location,
             } => {
                 let clicked_items = if let Some(clicked_item) = clicked_item {
                     vec![serde_json::to_string(&clicked_item).unwrap_or_default()]
@@ -6440,6 +6484,7 @@ impl EventTypes {
                         .unwrap_or_default(),
                     user_id: user_id.unwrap_or_default(),
                     is_conversion: is_conversion.unwrap_or(true),
+                    location: location.unwrap_or_default(),
                     dataset_id,
                     created_at: OffsetDateTime::now_utc(),
                     updated_at: OffsetDateTime::now_utc(),
@@ -6451,6 +6496,7 @@ impl EventTypes {
                 items,
                 user_id,
                 is_conversion,
+                location,
             } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
                 event_type: "filter_clicked".to_string(),
@@ -6461,6 +6507,7 @@ impl EventTypes {
                 metadata: serde_json::to_string(&items).unwrap_or_default(),
                 user_id: user_id.unwrap_or_default(),
                 is_conversion: is_conversion.unwrap_or(true),
+                location: location.unwrap_or_default(),
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
@@ -7015,6 +7062,11 @@ pub enum RAGAnalytics {
         filter: Option<RAGAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[serde(rename = "ctr_metrics_over_time")]
+    CTRMetricsOverTime {
+        filter: Option<RAGAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7089,6 +7141,29 @@ pub enum CTRAnalytics {
     },
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
+pub enum ComponentAnalytics {
+    #[schema(title = "TotalUniqueUsers")]
+    TotalUniqueUsers {
+        filter: Option<ComponentAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
+    #[schema(title = "TopPages")]
+    TopPages {
+        filter: Option<ComponentAnalyticsFilter>,
+        page: Option<u32>,
+    },
+    #[schema(title = "TopComponents")]
+    TopComponents {
+        filter: Option<ComponentAnalyticsFilter>,
+        page: Option<u32>,
+    },
+    #[schema(title = "ComponentNames")]
+    ComponentNames { page: Option<u32> },
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
 #[schema(title = "RAGUsageResponse")]
 pub struct RAGUsageResponse {
@@ -7129,6 +7204,20 @@ pub enum RAGAnalyticsResponse {
     TopicDetails(TopicDetailsResponse),
     #[schema(title = "TopicsOverTime")]
     TopicsOverTime(TopicsOverTimeResponse),
+    #[schema(title = "CTRMetricsOverTime")]
+    CTRMetricsOverTime(CTRMetricsOverTimeResponse),
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct CTRMetricsOverTimeResponse {
+    pub total_ctr: f32,
+    pub ctr_points: Vec<CTRMetricsOverTimePoint>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct CTRMetricsOverTimePoint {
+    pub time_stamp: String,
+    pub ctr: f32,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -7186,6 +7275,7 @@ pub struct TopicDetailsResponse {
 }
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TopicsOverTimeResponse {
+    pub total_topics: i64,
     pub time_points: Vec<TopicTimePoint>,
 }
 
@@ -7271,6 +7361,74 @@ pub enum CTRAnalyticsResponse {
     RecommendationsWithoutClicks(CTRRecommendationsWithoutClicksResponse),
     #[schema(title = "RecommendationsWithClicks")]
     RecommendationsWithClicks(CTRRecommendationsWithClicksResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(untagged)]
+pub enum ComponentAnalyticsResponse {
+    #[schema(title = "TotalUniqueUsers")]
+    TotalUniqueUsers(TotalUniqueUsersResponse),
+    #[schema(title = "TopPages")]
+    TopPages(TopPagesResponse),
+    #[schema(title = "TopComponents")]
+    TopComponents(TopComponentsResponse),
+    #[schema(title = "ComponentNames")]
+    ComponentNames(ComponentNamesResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TopComponentsResponse {
+    pub top_components: Vec<TopComponents>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
+pub struct TopComponents {
+    pub component_name: String,
+    pub count: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ComponentNamesResponse {
+    pub component_names: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TotalUniqueUsersResponse {
+    pub total_unique_users: u64,
+    pub time_points: Vec<TotalUniqueUsersTimePoint>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TopPagesResponse {
+    pub top_pages: Vec<TopPages>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
+pub struct TopPages {
+    pub page: String,
+    pub count: u64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct TotalUniqueUsersTimePointClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub unique_users: u64,
+}
+
+impl From<TotalUniqueUsersTimePointClickhouse> for TotalUniqueUsersTimePoint {
+    fn from(value: TotalUniqueUsersTimePointClickhouse) -> Self {
+        TotalUniqueUsersTimePoint {
+            time_stamp: value.time_stamp.to_string(),
+            unique_users: value.unique_users,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TotalUniqueUsersTimePoint {
+    pub time_stamp: String,
+    pub unique_users: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]
@@ -7431,6 +7589,8 @@ pub enum EventTypes {
         user_id: Option<String>,
         /// Any other metadata associated with the event
         metadata: Option<serde_json::Value>,
+        /// The location of the event
+        location: Option<String>,
     },
     #[display(fmt = "add_to_cart")]
     #[schema(title = "AddToCart")]
@@ -7447,6 +7607,8 @@ pub enum EventTypes {
         metadata: Option<serde_json::Value>,
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
+        /// The location of the event
+        location: Option<String>,
     },
     #[display(fmt = "click")]
     #[schema(title = "Click")]
@@ -7463,6 +7625,8 @@ pub enum EventTypes {
         is_conversion: Option<bool>,
         /// Metadata to include with click event
         metadata: Option<serde_json::Value>,
+        /// The location of the event
+        location: Option<String>,
     },
     #[display(fmt = "purchase")]
     #[schema(title = "Purchase")]
@@ -7479,6 +7643,8 @@ pub enum EventTypes {
         metadata: Option<serde_json::Value>,
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
+        /// The location of the event
+        location: Option<String>,
     },
     #[display(fmt = "filter_clicked")]
     #[schema(title = "FilterClicked")]
@@ -7493,6 +7659,8 @@ pub enum EventTypes {
         user_id: Option<String>,
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
+        /// The location of the event
+        location: Option<String>,
     },
     #[display(fmt = "search")]
     #[schema(title = "Search")]
@@ -7571,6 +7739,7 @@ impl From<CTRDataRequestBody> for EventTypes {
                 request_type: data.ctr_type,
                 request_id: data.request_id,
             }),
+            location: None,
             clicked_items: Some(ChunkWithPosition {
                 chunk_id: data.clicked_chunk_id.unwrap_or_default(),
                 position: data.position,

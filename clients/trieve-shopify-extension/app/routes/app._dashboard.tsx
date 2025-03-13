@@ -51,10 +51,16 @@ export default function Dashboard() {
   // Determine selected tab based on current path
   const selected = useMemo(() => {
     if (location.pathname.includes("/settings")) {
-      return 2; // Settings tab index
+      return 4; // Settings tab index
+    }
+    if (location.pathname.includes("/chat")) {
+      return 3; // Settings tab index
     }
     if (location.pathname.includes("/search")) {
-      return 1; // Search tab index
+      return 2; // Search tab index
+    }
+    if (location.pathname.includes("/component")) {
+      return 1; // Component tab index
     }
     return 0; // Homepage tab index (default)
   }, [location.pathname]);
@@ -63,10 +69,14 @@ export default function Dashboard() {
     (selectedTabIndex: number) => {
       if (selectedTabIndex === 0) {
         navigate("/app/"); // Navigate to homepage
-      } else if (selectedTabIndex === 2) {
-        navigate("/app/settings"); // Navigate to settings
       } else if (selectedTabIndex === 1) {
+        navigate("/app/component"); // Navigate to component
+      } else if (selectedTabIndex === 2) {
         navigate("/app/search"); // Navigate to search
+      } else if (selectedTabIndex === 3) {
+        navigate("/app/chat"); // Navigate to settings
+      } else if (selectedTabIndex === 4) {
+        navigate("/app/settings"); // Navigate to settings
       }
     },
     [navigate],
@@ -80,10 +90,22 @@ export default function Dashboard() {
       panelID: "homepage-panel",
     },
     {
+      id: "component",
+      content: "Component",
+      accessibilityLabel: "Component",
+      panelID: "component-panel",
+    },
+    {
       id: "search",
       content: "Search",
       accessibilityLabel: "Search",
       panelID: "search",
+    },
+    {
+      id: "chat",
+      content: "Chat",
+      accessibilityLabel: "chat",
+      panelID: "chat",
     },
     {
       id: "settings",
@@ -127,8 +149,7 @@ export default function Dashboard() {
                 queryClient={queryClient}
                 dataset={dataset as Dataset}
                 organization={organization as OrganizationWithSubAndPlan}
-                trieveKey={key}
-              >
+                trieveKey={key}>
                 <QueryClientProvider client={queryClient}>
                   <ReactQueryDevtools initialIsOpen={false} />
                   <HydrationBoundary state={dehydratedState}>

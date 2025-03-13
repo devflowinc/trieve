@@ -1,32 +1,38 @@
 use crate::{
     data::models::{
-        ClusterAnalyticsFilter, ClusterTopicsClickhouse, DatasetAnalytics, EventAnalyticsFilter,
-        EventData, EventDataClickhouse, GetEventsResponseBody, Granularity, HeadQueries, Pool,
-        PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
-        RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
-        RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
-        RecommendationEvent, RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
+        CTRMetricsOverTimePoint, CTRMetricsOverTimeResponse, ClusterAnalyticsFilter,
+        ClusterTopicsClickhouse, ComponentAnalyticsFilter, ComponentNamesResponse,
+        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse,
+        GetEventsResponseBody, Granularity, HeadQueries, Pool, PopularFilters,
+        PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse,
+        RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse, RagQueryRatingsResponse,
+        RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
+        RecommendationEventClickhouse, RecommendationsWithClicksCTRResponse,
         RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
         RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
         SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
         SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
-        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopDatasetsResponse,
-        TopDatasetsResponseClickhouse, TopicAnalyticsResponse, TopicAnalyticsSummaryClickhouse,
+        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopComponents,
+        TopComponentsResponse, TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages,
+        TopPagesResponse, TopicAnalyticsResponse, TopicAnalyticsSummaryClickhouse,
         TopicDetailsResponse, TopicQueryClickhouse, TopicSortBy, TopicTimePointClickhouse,
-        TopicsOverTimeResponse, UsageGraphPoint, UsageGraphPointClickhouse,
+        TopicsOverTimeResponse, TotalUniqueUsersResponse, TotalUniqueUsersTimePointClickhouse,
+        UsageGraphPoint, UsageGraphPointClickhouse,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
 };
 use actix_web::web;
 
+use clickhouse::Row;
 use diesel::{ExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
 use futures::future::join_all;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -590,6 +596,7 @@ pub async fn get_popular_filter_values_query(
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(title = "SearchUsageGraphResponse")]
 pub struct SearchUsageGraphResponse {
+    pub total_searches: i64,
     pub usage_points: Vec<UsageGraphPoint>,
 }
 
@@ -650,7 +657,10 @@ pub async fn get_search_usage_graph_query(
         .map(|q| q.into())
         .collect::<Vec<_>>();
 
+    let total_searches = rps_graph.iter().map(|q| q.requests).sum();
+
     Ok(SearchUsageGraphResponse {
+        total_searches,
         usage_points: rps_graph,
     })
 }
@@ -1744,7 +1754,267 @@ pub async fn get_topics_over_time_query(
             ServiceError::InternalServerError("Error fetching time points".to_string())
         })?;
 
+    let total_topics = time_points.iter().map(|x| x.topic_count).sum();
+
     Ok(TopicsOverTimeResponse {
+        total_topics,
         time_points: time_points.into_iter().map(|t| t.into()).collect(),
+    })
+}
+
+pub async fn get_total_unique_users_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<ComponentAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<TotalUniqueUsersResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+    let mut query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            count(DISTINCT user_id) AS total_unique_users
+        FROM 
+            events
+        WHERE 
+            dataset_id = ? AND user_id != ''
+        ",
+        interval,
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "  
+        GROUP BY 
+            time_stamp
+        ORDER BY 
+            time_stamp
+        LIMIT
+            1000",
+    );
+
+    let time_points = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<TotalUniqueUsersTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching time points: {:?}", e);
+            ServiceError::InternalServerError("Error fetching time points".to_string())
+        })?;
+
+    let total_unique_users = time_points.iter().map(|t| t.unique_users).sum();
+
+    Ok(TotalUniqueUsersResponse {
+        total_unique_users,
+        time_points: time_points.into_iter().map(|t| t.into()).collect(),
+    })
+}
+
+pub async fn get_top_pages_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    filter: Option<ComponentAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<TopPagesResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            location,
+            count(*) as count
+        FROM events
+        WHERE dataset_id = ? AND location != ''",
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            location
+        ORDER BY 
+            count DESC
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let top_pages = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<TopPages>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching top pages: {:?}", e);
+            ServiceError::InternalServerError("Error fetching top pages".to_string())
+        })?;
+
+    Ok(TopPagesResponse { top_pages })
+}
+
+pub async fn get_top_components_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    filter: Option<ComponentAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<TopComponentsResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT 
+            JSONExtractString(metadata, 'component_props', 'componentName') as componentName,
+            count(*) as count
+        FROM events
+        WHERE dataset_id = ? AND componentName != ''",
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            componentName
+        ORDER BY 
+            count DESC
+        LIMIT 10
+        OFFSET ?",
+    );
+
+    let top_components = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<TopComponents>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching top pages: {:?}", e);
+            ServiceError::InternalServerError("Error fetching top pages".to_string())
+        })?;
+
+    Ok(TopComponentsResponse { top_components })
+}
+
+pub async fn get_component_names_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<ComponentNamesResponse, ServiceError> {
+    let query_string = String::from(
+        " SELECT DISTINCT
+            JSONExtractString(metadata, 'component_props', 'componentName') AS component_name
+        FROM events
+            WHERE component_name != '' 
+            AND dataset_id = ?
+        LIMIT 10 OFFSET ?",
+    );
+
+    let component_names = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind((page.unwrap_or(1) - 1) * 10)
+        .fetch_all::<String>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching top pages: {:?}", e);
+            ServiceError::InternalServerError("Error fetching top pages".to_string())
+        })?;
+
+    Ok(ComponentNamesResponse { component_names })
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct ClicksOverTime {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub clicks: i64,
+}
+
+pub async fn get_ctr_metrics_over_time_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RAGAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<CTRMetricsOverTimeResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            count(*) AS clicks
+        FROM 
+            events
+        WHERE 
+            dataset_id = ? 
+            AND event_type = 'click' 
+            AND event_name = 'Click'
+            AND request_type = 'rag'
+        ",
+        interval,
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            time_stamp
+        ORDER BY 
+            time_stamp
+        LIMIT 1000",
+    );
+
+    let clicks_over_time = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<ClicksOverTime>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching ctr metrics over time: {:?}", e);
+            ServiceError::InternalServerError("Error fetching ctr metrics over time".to_string())
+        })?;
+
+    let chats_over_time =
+        get_rag_usage_graph_query(dataset_id, filter, granularity, clickhouse_client)
+            .await?
+            .usage_points;
+
+    let ctr_metrics_over_time: Vec<CTRMetricsOverTimePoint> = clicks_over_time
+        .iter()
+        .zip(chats_over_time.iter())
+        .map(|(x, y)| CTRMetricsOverTimePoint {
+            time_stamp: x.time_stamp.to_string(),
+            ctr: x.clicks as f32 / y.requests as f32,
+        })
+        .collect();
+
+    let total_ctr = if !ctr_metrics_over_time.is_empty() {
+        ctr_metrics_over_time.iter().map(|x| x.ctr).sum::<f32>()
+            / ctr_metrics_over_time.len() as f32
+    } else {
+        0.0
+    };
+
+    Ok(CTRMetricsOverTimeResponse {
+        total_ctr,
+        ctr_points: ctr_metrics_over_time,
     })
 }

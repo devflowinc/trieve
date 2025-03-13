@@ -4,9 +4,21 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
+import { AppEnvProvider } from "./context/useEnvs";
+import { getTrieveBaseUrlEnv } from "./env.server";
+
+export async function loader() {
+  return {
+    ENV: {
+      TRIEVE_BASE_URL: getTrieveBaseUrlEnv(),
+    },
+  };
+}
 
 export default function App() {
+  const data = useLoaderData<typeof loader>();
   return (
     <html>
       <head>
@@ -21,7 +33,9 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Outlet />
+        <AppEnvProvider envs={data.ENV}>
+          <Outlet />
+        </AppEnvProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

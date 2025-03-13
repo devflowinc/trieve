@@ -186,6 +186,68 @@
         ]
       }
     },
+    "/api/analytics/events/component": {
+      "post": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Component Analytics",
+        "description": "This route allows you to view the component analytics for a dataset.",
+        "operationId": "get_component_analytics",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to filter the graph",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComponentAnalytics"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The component analytics for the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting component analytics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/analytics/events/ctr": {
       "post": {
         "tags": [
@@ -3969,7 +4031,7 @@
           {
             "name": "page",
             "in": "path",
-            "description": "The page of groups to fetch. Page is 1-indexed. Not used if `use_cursor` = `false`.",
+            "description": "The page of groups to fetch. Page is 1-indexed. Only used if `use_cursor` = `false`.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -7626,6 +7688,41 @@
           }
         }
       },
+      "CTRMetricsOverTimePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "ctr"
+        ],
+        "properties": {
+          "ctr": {
+            "type": "number",
+            "format": "float"
+          },
+          "time_stamp": {
+            "type": "string"
+          }
+        }
+      },
+      "CTRMetricsOverTimeResponse": {
+        "type": "object",
+        "required": [
+          "total_ctr",
+          "ctr_points"
+        ],
+        "properties": {
+          "ctr_points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CTRMetricsOverTimePoint"
+            }
+          },
+          "total_ctr": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
       "CTRRecommendationsWithClicksResponse": {
         "type": "object",
         "title": "RecommendationsWithClicks",
@@ -8663,6 +8760,170 @@
             "$ref": "#/components/schemas/SearchQueryResponse"
           }
         ]
+      },
+      "ComponentAnalytics": {
+        "oneOf": [
+          {
+            "type": "object",
+            "title": "TotalUniqueUsers",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ComponentAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "total_unique_users"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "TopPages",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ComponentAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "page": {
+                "type": "integer",
+                "format": "int32",
+                "nullable": true,
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "top_pages"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "TopComponents",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ComponentAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "page": {
+                "type": "integer",
+                "format": "int32",
+                "nullable": true,
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "top_components"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "ComponentNames",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "page": {
+                "type": "integer",
+                "format": "int32",
+                "nullable": true,
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "component_names"
+                ]
+              }
+            }
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type"
+        }
+      },
+      "ComponentAnalyticsFilter": {
+        "type": "object",
+        "properties": {
+          "component_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "date_range": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DateRange"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "ComponentAnalyticsResponse": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TotalUniqueUsersResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TopPagesResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TopComponentsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/ComponentNamesResponse"
+          }
+        ]
+      },
+      "ComponentNamesResponse": {
+        "type": "object",
+        "required": [
+          "component_names"
+        ],
+        "properties": {
+          "component_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "ConditionType": {
         "oneOf": [
@@ -10737,6 +10998,11 @@
                 },
                 "description": "The items that were viewed"
               },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
+                "nullable": true
+              },
               "metadata": {
                 "description": "Any other metadata associated with the event",
                 "nullable": true
@@ -10787,6 +11053,11 @@
                 },
                 "description": "The items that were added to the cart"
               },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
+                "nullable": true
+              },
               "metadata": {
                 "description": "Any other metadata associated with the event",
                 "nullable": true
@@ -10835,6 +11106,11 @@
               "is_conversion": {
                 "type": "boolean",
                 "description": "Whether the event is a conversion event",
+                "nullable": true
+              },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
                 "nullable": true
               },
               "metadata": {
@@ -10887,6 +11163,11 @@
                 },
                 "description": "The items that were purchased"
               },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
+                "nullable": true
+              },
               "metadata": {
                 "description": "Any other metadata associated with the event",
                 "nullable": true
@@ -10936,6 +11217,11 @@
                 "additionalProperties": {
                   "type": "string"
                 }
+              },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
+                "nullable": true
               },
               "request": {
                 "allOf": [
@@ -13947,6 +14233,36 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "ctr_metrics_over_time"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -14007,6 +14323,9 @@
           },
           {
             "$ref": "#/components/schemas/TopicsOverTimeResponse"
+          },
+          {
+            "$ref": "#/components/schemas/CTRMetricsOverTimeResponse"
           }
         ]
       },
@@ -15554,6 +15873,10 @@
       "SearchAnalyticsFilter": {
         "type": "object",
         "properties": {
+          "component_name": {
+            "type": "string",
+            "nullable": true
+          },
           "date_range": {
             "allOf": [
               {
@@ -16342,9 +16665,14 @@
         "type": "object",
         "title": "SearchUsageGraphResponse",
         "required": [
+          "total_searches",
           "usage_points"
         ],
         "properties": {
+          "total_searches": {
+            "type": "integer",
+            "format": "int64"
+          },
           "usage_points": {
             "type": "array",
             "items": {
@@ -17382,6 +17710,37 @@
           "boolean"
         ]
       },
+      "TopComponents": {
+        "type": "object",
+        "required": [
+          "component_name",
+          "count"
+        ],
+        "properties": {
+          "component_name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TopComponentsResponse": {
+        "type": "object",
+        "required": [
+          "top_components"
+        ],
+        "properties": {
+          "top_components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopComponents"
+            }
+          }
+        }
+      },
       "TopDatasetsRequestTypes": {
         "type": "string",
         "enum": [
@@ -17408,6 +17767,37 @@
           "total_queries": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "TopPages": {
+        "type": "object",
+        "required": [
+          "page",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "page": {
+            "type": "string"
+          }
+        }
+      },
+      "TopPagesResponse": {
+        "type": "object",
+        "required": [
+          "top_pages"
+        ],
+        "properties": {
+          "top_pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopPages"
+            }
           }
         }
       },
@@ -17601,6 +17991,7 @@
       "TopicsOverTimeResponse": {
         "type": "object",
         "required": [
+          "total_topics",
           "time_points"
         ],
         "properties": {
@@ -17609,6 +18000,47 @@
             "items": {
               "$ref": "#/components/schemas/TopicTimePoint"
             }
+          },
+          "total_topics": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TotalUniqueUsersResponse": {
+        "type": "object",
+        "required": [
+          "total_unique_users",
+          "time_points"
+        ],
+        "properties": {
+          "time_points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TotalUniqueUsersTimePoint"
+            }
+          },
+          "total_unique_users": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TotalUniqueUsersTimePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "unique_users"
+        ],
+        "properties": {
+          "time_stamp": {
+            "type": "string"
+          },
+          "unique_users": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },

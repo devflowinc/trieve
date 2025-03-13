@@ -2,6 +2,7 @@ import { LoaderFunctionArgs, json } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
 import { StrongTrieveKey, TrieveKey } from "./types";
 import { TrieveSDK } from "trieve-ts-sdk";
+import { getTrieveBaseUrlEnv } from "./env.server";
 
 export const validateTrieveAuth = async <S extends boolean = true>(
   request: LoaderFunctionArgs["request"],
@@ -34,7 +35,7 @@ export const validateTrieveAuth = async <S extends boolean = true>(
 
 export const sdkFromKey = (key: TrieveKey): TrieveSDK => {
   const trieve = new TrieveSDK({
-    baseUrl: "https://api.trieve.ai",
+    baseUrl: getTrieveBaseUrlEnv(),
     apiKey: key.key,
     datasetId: key.currentDatasetId ? key.currentDatasetId : undefined,
     organizationId: key.organizationId,

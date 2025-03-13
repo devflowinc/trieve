@@ -2,10 +2,11 @@ use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
-        DatasetAndOrgWithSubAndPlan, DateRange, EventDataTypes, EventTypes, GetEventsRequestBody,
-        OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
-        RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
-        SearchAnalyticsResponse, TopDatasetsRequestTypes,
+        ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
+        EventDataTypes, EventTypes, GetEventsRequestBody, OrganizationWithSubAndPlan, Pool,
+        RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
+        RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
+        TopDatasetsRequestTypes,
     },
     errors::ServiceError,
     operators::{
@@ -431,6 +432,19 @@ pub async fn get_rag_analytics(
             .await?;
             RAGAnalyticsResponse::TopicsOverTime(topics_over_time)
         }
+        RAGAnalytics::CTRMetricsOverTime {
+            filter,
+            granularity,
+        } => {
+            let ctr_metrics_over_time = get_ctr_metrics_over_time_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::CTRMetricsOverTime(ctr_metrics_over_time)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))
@@ -719,6 +733,85 @@ pub async fn get_ctr_analytics(
             .await?;
 
             CTRAnalyticsResponse::RecommendationsWithoutClicks(recommendations_without_clicks)
+        }
+    };
+
+    Ok(HttpResponse::Ok().json(response))
+}
+
+/// Get Component Analytics
+///
+/// This route allows you to view the component analytics for a dataset.
+#[utoipa::path(
+    post,
+    path = "/analytics/events/component",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = ComponentAnalytics, description = "JSON request payload to filter the graph", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The component analytics for the dataset", body = ComponentAnalyticsResponse),
+
+        (status = 400, description = "Service error relating to getting component analytics", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_component_analytics(
+    _user: AdminOnly,
+    data: web::Json<ComponentAnalytics>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let response = match data.into_inner() {
+        ComponentAnalytics::TotalUniqueUsers {
+            filter,
+            granularity,
+        } => {
+            let total_unique_users = get_total_unique_users_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            ComponentAnalyticsResponse::TotalUniqueUsers(total_unique_users)
+        }
+        ComponentAnalytics::TopPages { filter, page } => {
+            let top_pages = get_top_pages_query(
+                dataset_org_plan_sub.dataset.id,
+                page,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            ComponentAnalyticsResponse::TopPages(top_pages)
+        }
+        ComponentAnalytics::TopComponents { filter, page } => {
+            let top_components = get_top_components_query(
+                dataset_org_plan_sub.dataset.id,
+                page,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            ComponentAnalyticsResponse::TopComponents(top_components)
+        }
+        ComponentAnalytics::ComponentNames { page } => {
+            let component_names = get_component_names_query(
+                dataset_org_plan_sub.dataset.id,
+                page,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            ComponentAnalyticsResponse::ComponentNames(component_names)
         }
     };
 
