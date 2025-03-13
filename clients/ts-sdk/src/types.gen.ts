@@ -181,6 +181,16 @@ export type CTRDataRequestBody = {
     request_id: string;
 };
 
+export type CTRMetricsOverTimePoint = {
+    ctr: number;
+    time_stamp: string;
+};
+
+export type CTRMetricsOverTimeResponse = {
+    ctr_points: Array<CTRMetricsOverTimePoint>;
+    total_ctr: number;
+};
+
 export type CTRRecommendationsWithClicksResponse = {
     recommendations: Array<RecommendationsWithClicksCTRResponse>;
 };
@@ -2490,6 +2500,10 @@ export type RAGAnalytics = {
     filter?: ((RAGAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'topics_over_time';
+} | {
+    filter?: ((RAGAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'ctr_metrics_over_time';
 };
 
 export type type4 = 'rag_queries';
@@ -2500,7 +2514,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicAnalyticsResponse | TopicDetailsResponse | TopicsOverTimeResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicAnalyticsResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at' | 'latency';
 

@@ -1,4 +1,5 @@
 import { Grid } from "@shopify/polaris";
+import { TopicCTRRate } from "app/components/analytics/chat/TopicCTRRate";
 import { TopicsUsage } from "app/components/analytics/chat/TopicsGraph";
 import { TopComponents } from "app/components/analytics/component/TopComponents";
 import { TopPages } from "app/components/analytics/component/TopPages";
@@ -22,6 +23,9 @@ export default function ChatAnalyticsPage() {
       <Grid>
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
           <TopicsUsage filters={filters} granularity={granularity} />
+        </Grid.Cell>
+        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+          <TopicCTRRate filters={filters} granularity={granularity} />
         </Grid.Cell>
       </Grid>
     </>

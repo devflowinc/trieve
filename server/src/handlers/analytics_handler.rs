@@ -432,6 +432,19 @@ pub async fn get_rag_analytics(
             .await?;
             RAGAnalyticsResponse::TopicsOverTime(topics_over_time)
         }
+        RAGAnalytics::CTRMetricsOverTime {
+            filter,
+            granularity,
+        } => {
+            let ctr_metrics_over_time = get_ctr_metrics_over_time_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::CTRMetricsOverTime(ctr_metrics_over_time)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))

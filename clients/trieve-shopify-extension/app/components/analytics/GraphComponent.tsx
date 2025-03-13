@@ -13,6 +13,7 @@ interface GraphComponentProps<T> {
   label: string;
   date_range: ComponentAnalyticsFilter["date_range"];
   tooltipContent: string;
+  dataType?: "number" | "percentage" | "currency";
 }
 
 export const GraphComponent = <T,>({
@@ -24,6 +25,7 @@ export const GraphComponent = <T,>({
   label,
   date_range,
   tooltipContent,
+  dataType = "number",
 }: GraphComponentProps<T>) => {
   return (
     <Card>
@@ -36,12 +38,15 @@ export const GraphComponent = <T,>({
           </Tooltip>
         </div>
         <Text as="span" variant="heading3xl" fontWeight="bold">
-          {topLevelMetric}
+          {dataType === "percentage"
+            ? `${(topLevelMetric ?? 0) * 100}%`
+            : topLevelMetric}
         </Text>
       </div>
       <Box minHeight="150px">
         <AnalyticsChart
           wholeUnits
+          dataType={dataType}
           data={graphData}
           xAxis={xAxis}
           yAxis={yAxis}
