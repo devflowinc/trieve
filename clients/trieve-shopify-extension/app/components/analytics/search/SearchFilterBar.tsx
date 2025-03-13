@@ -25,6 +25,20 @@ export const SearchFilterBar = (props: SearchFilterBarProps) => {
         <DateRangePicker
           value={formatStringDateRangeToDates(props.filters.date_range)}
           onChange={(s) => {
+            if (
+              (s.lte || new Date()).getTime() -
+              (s.gte || new Date()).getTime() <=
+              3.6e6
+            ) {
+              props.setGranularity("minute");
+            } else if (
+              (s.lte || new Date()).getTime() -
+              (s.gte || new Date()).getTime() <=
+              8.64e7
+            ) {
+              props.setGranularity("hour");
+            }
+
             props.setFilters({
               ...props.filters,
               date_range: transformDateParams(s),

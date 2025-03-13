@@ -4,7 +4,7 @@ import { Chart } from "chart.js";
 import { enUS } from "date-fns/locale";
 import { convertToISO8601, fillDate } from "app/queries/analytics/formatting";
 import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
-import Crosshair from 'chartjs-plugin-crosshair';
+import Crosshair from "chartjs-plugin-crosshair";
 
 Chart.register(Crosshair);
 
@@ -61,45 +61,57 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
           responsive: true,
           aspectRatio: 1,
           interaction: {
-            mode: 'nearest',
-            axis: 'x',
+            mode: "nearest",
+            axis: "x",
             intersect: false,
           },
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: 'rgba(128, 0, 128, 0.9)',
-              titleColor: 'white',
-              bodyColor: 'white',
+              backgroundColor: "rgba(128, 0, 128, 0.9)",
+              titleColor: "white",
+              bodyColor: "white",
               padding: 4,
               displayColors: false,
-              position: 'nearest',
+              position: "nearest",
               titleFont: {
-                size: 11
+                size: 11,
               },
               bodyFont: {
-                size: 11
+                size: 11,
               },
               callbacks: {
                 title: (context) => {
                   const date = new Date(context[0].parsed.x);
-                  return date.toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: 'numeric'
+                  if (
+                    date.getHours() == 0 &&
+                    date.getMinutes() == 0 &&
+                    date.getSeconds() == 0
+                  ) {
+                    return date.toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    });
+                  }
+
+                  return date.toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "numeric",
                   });
                 },
                 label: (context) => {
                   return `${props.label}: ${context.parsed.y}`;
-                }
-              }
+                },
+              },
             },
             // @ts-expect-error library types not updated
             crosshair: {
               line: {
-                color: 'rgba(128, 0, 128, 0.3)',
+                color: "rgba(128, 0, 128, 0.3)",
                 width: 1,
                 dashPattern: [6, 6],
               },
@@ -113,18 +125,18 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
               zoom: {
                 enabled: false,
               },
-            }
+            },
           },
           scales: {
             y: {
               grid: {
-                display: false  // Turn off horizontal grid lines
+                display: false, // Turn off horizontal grid lines
               },
               beginAtZero: true,
               ticks: props.wholeUnits
                 ? {
-                  precision: 0,
-                }
+                    precision: 0,
+                  }
                 : undefined,
             },
             x: {
@@ -140,10 +152,10 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
               offset: false,
               grid: {
                 display: true,
-                color: 'rgba(128, 0, 128, 0.2)',
+                color: "rgba(128, 0, 128, 0.2)",
                 lineWidth: 0.5,
                 drawOnChartArea: true,
-                drawTicks: false
+                drawTicks: false,
               },
             },
           },
@@ -183,6 +195,7 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
     const info = fillDate({
       data,
       date_range: props.date_range,
+      granularity: props.granularity,
       dataKey: props.yAxis,
       timestampKey: props.xAxis,
     });
@@ -245,45 +258,45 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
           responsive: true,
           aspectRatio: 1,
           interaction: {
-            mode: 'nearest',
-            axis: 'x',
+            mode: "nearest",
+            axis: "x",
             intersect: false,
           },
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: 'rgba(128, 0, 128, 0.9)',
-              titleColor: 'white',
-              bodyColor: 'white',
+              backgroundColor: "rgba(128, 0, 128, 0.9)",
+              titleColor: "white",
+              bodyColor: "white",
               padding: 4,
               displayColors: false,
-              position: 'nearest',
+              position: "nearest",
               titleFont: {
-                size: 11
+                size: 11,
               },
               bodyFont: {
-                size: 11
+                size: 11,
               },
               callbacks: {
                 title: (context) => {
                   const date = new Date(context[0].parsed.x);
-                  return date.toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: 'numeric'
+                  return date.toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "numeric",
                   });
                 },
                 label: (context) => {
                   return `${props.label}: ${context.parsed.y}`;
-                }
-              }
+                },
+              },
             },
             // @ts-expect-error library types not updated
             crosshair: {
               line: {
-                color: 'rgba(128, 0, 128, 0.3)',
+                color: "rgba(128, 0, 128, 0.3)",
                 width: 1,
                 dashPattern: [6, 6],
               },
@@ -297,18 +310,18 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
               zoom: {
                 enabled: false,
               },
-            }
+            },
           },
           scales: {
             y: {
               grid: {
-                display: false  // Turn off horizontal grid lines
+                display: false, // Turn off horizontal grid lines
               },
               beginAtZero: true,
               ticks: props.wholeUnits
                 ? {
-                  precision: 0,
-                }
+                    precision: 0,
+                  }
                 : undefined,
             },
             x: {
@@ -327,7 +340,7 @@ const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
                 tooltipFormat: "MMM yyyy",
               },
               grid: {
-                display: false  // Turn off vertical grid lines
+                display: false, // Turn off vertical grid lines
               },
               ticks: {
                 maxRotation: 45,

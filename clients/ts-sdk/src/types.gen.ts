@@ -3510,6 +3510,7 @@ export type TopicTimePoint = {
 
 export type TopicsOverTimeResponse = {
     time_points: Array<TopicTimePoint>;
+    total_topics: number;
 };
 
 export type TotalUniqueUsersResponse = {
@@ -3519,7 +3520,7 @@ export type TotalUniqueUsersResponse = {
 
 export type TotalUniqueUsersTimePoint = {
     time_stamp: string;
-    total_unique_users: number;
+    unique_users: number;
 };
 
 /**

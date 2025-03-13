@@ -7230,6 +7230,7 @@ pub struct TopicDetailsResponse {
 }
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TopicsOverTimeResponse {
+    pub total_topics: i64,
     pub time_points: Vec<TopicTimePoint>,
 }
 
@@ -7367,14 +7368,14 @@ pub struct TopPages {
 pub struct TotalUniqueUsersTimePointClickhouse {
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub time_stamp: OffsetDateTime,
-    pub total_unique_users: u64,
+    pub unique_users: u64,
 }
 
 impl From<TotalUniqueUsersTimePointClickhouse> for TotalUniqueUsersTimePoint {
     fn from(value: TotalUniqueUsersTimePointClickhouse) -> Self {
         TotalUniqueUsersTimePoint {
             time_stamp: value.time_stamp.to_string(),
-            total_unique_users: value.total_unique_users,
+            unique_users: value.unique_users,
         }
     }
 }
@@ -7382,7 +7383,7 @@ impl From<TotalUniqueUsersTimePointClickhouse> for TotalUniqueUsersTimePoint {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TotalUniqueUsersTimePoint {
     pub time_stamp: String,
-    pub total_unique_users: u64,
+    pub unique_users: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]

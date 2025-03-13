@@ -51,6 +51,9 @@ export default function Dashboard() {
   // Determine selected tab based on current path
   const selected = useMemo(() => {
     if (location.pathname.includes("/settings")) {
+      return 4; // Settings tab index
+    }
+    if (location.pathname.includes("/chat")) {
       return 3; // Settings tab index
     }
     if (location.pathname.includes("/search")) {
@@ -66,11 +69,13 @@ export default function Dashboard() {
     (selectedTabIndex: number) => {
       if (selectedTabIndex === 0) {
         navigate("/app/"); // Navigate to homepage
-      } else if (selectedTabIndex === 2) {
-        navigate("/app/search"); // Navigate to search
       } else if (selectedTabIndex === 1) {
         navigate("/app/component"); // Navigate to component
+      } else if (selectedTabIndex === 2) {
+        navigate("/app/search"); // Navigate to search
       } else if (selectedTabIndex === 3) {
+        navigate("/app/chat"); // Navigate to settings
+      } else if (selectedTabIndex === 4) {
         navigate("/app/settings"); // Navigate to settings
       }
     },
@@ -95,6 +100,12 @@ export default function Dashboard() {
       content: "Search",
       accessibilityLabel: "Search",
       panelID: "search",
+    },
+    {
+      id: "chat",
+      content: "Chat",
+      accessibilityLabel: "chat",
+      panelID: "chat",
     },
     {
       id: "settings",
@@ -138,8 +149,7 @@ export default function Dashboard() {
                 queryClient={queryClient}
                 dataset={dataset as Dataset}
                 organization={organization as OrganizationWithSubAndPlan}
-                trieveKey={key}
-              >
+                trieveKey={key}>
                 <QueryClientProvider client={queryClient}>
                   <ReactQueryDevtools initialIsOpen={false} />
                   <HydrationBoundary state={dehydratedState}>

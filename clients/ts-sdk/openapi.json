@@ -17915,6 +17915,7 @@
       "TopicsOverTimeResponse": {
         "type": "object",
         "required": [
+          "total_topics",
           "time_points"
         ],
         "properties": {
@@ -17923,6 +17924,10 @@
             "items": {
               "$ref": "#/components/schemas/TopicTimePoint"
             }
+          },
+          "total_topics": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -17950,13 +17955,13 @@
         "type": "object",
         "required": [
           "time_stamp",
-          "total_unique_users"
+          "unique_users"
         ],
         "properties": {
           "time_stamp": {
             "type": "string"
           },
-          "total_unique_users": {
+          "unique_users": {
             "type": "integer",
             "format": "int64",
             "minimum": 0

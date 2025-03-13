@@ -21,6 +21,7 @@ export const SearchUsageChart = ({
       topLevelMetric={data?.total_searches}
       graphData={data?.usage_points}
       granularity={granularity}
+      date_range={filters.date_range}
       xAxis={"time_stamp"}
       yAxis={"requests"}
       label="Search Usage"
