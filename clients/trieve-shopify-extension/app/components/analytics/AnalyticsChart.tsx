@@ -16,17 +16,10 @@ interface AnalyticsChartProps<T> {
   xAxis: keyof T;
   label: string;
   wholeUnits?: boolean;
+  dataType?: "number" | "percentage" | "currency";
 }
 
 export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
-  return props.granularity !== "month" ? (
-    <NormalChart {...props} />
-  ) : (
-    <MonthChart {...props} />
-  );
-};
-
-const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
@@ -37,7 +30,7 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
     if (!canvas || !data) return;
 
     if (!chartInstanceRef.current) {
-      // Create the chart only if it doesn't exist
+      const isMonthView = props.granularity === "month";
       chartInstanceRef.current = new Chart(canvas, {
         type: "line",
         data: {
@@ -46,11 +39,11 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
             {
               label: props.label,
               data: [],
-              backgroundColor: "rgba(128, 0, 128, 0.06)", // Light purple background for fill
-              borderColor: "rgba(128, 0, 128, 0.5)", // Purple line color
+              backgroundColor: "rgba(128, 0, 128, 0.06)",
+              borderColor: "rgba(128, 0, 128, 0.5)",
               borderWidth: 2,
-              tension: 0.3, // Slight curve to the line
-              fill: true, // Fill area under the line
+              tension: 0.3,
+              fill: true,
               pointBackgroundColor: "rgba(128, 0, 128, 0.9)",
               pointRadius: 0,
               pointHoverRadius: 5,
@@ -74,19 +67,21 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
               padding: 4,
               displayColors: false,
               position: "nearest",
-              titleFont: {
-                size: 11,
-              },
-              bodyFont: {
-                size: 11,
-              },
+              titleFont: { size: 11 },
+              bodyFont: { size: 11 },
               callbacks: {
                 title: (context) => {
                   const date = new Date(context[0].parsed.x);
+                  if (isMonthView) {
+                    return date.toLocaleString("en-US", {
+                      month: "short",
+                      year: "numeric",
+                    });
+                  }
                   if (
-                    date.getHours() == 0 &&
-                    date.getMinutes() == 0 &&
-                    date.getSeconds() == 0
+                    date.getHours() === 0 &&
+                    date.getMinutes() === 0 &&
+                    date.getSeconds() === 0
                   ) {
                     return date.toLocaleString("en-US", {
                       month: "short",
@@ -94,7 +89,6 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
                       year: "numeric",
                     });
                   }
-
                   return date.toLocaleString("en-US", {
                     month: "short",
                     day: "numeric",
@@ -104,7 +98,8 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
                   });
                 },
                 label: (context) => {
-                  return `${props.label}: ${context.parsed.y}`;
+                  const value = context.parsed.y;
+                  return `${props.label}: ${value}${props.dataType === "percentage" ? "%" : ""}`;
                 },
               },
             },
@@ -130,14 +125,26 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
           scales: {
             y: {
               grid: {
-                display: false, // Turn off horizontal grid lines
+                display: false,
               },
               beginAtZero: true,
               ticks: props.wholeUnits
                 ? {
-                    precision: 0,
+                  precision: 0,
+                  ...(props.dataType === "percentage" && {
+                    callback: function (tickValue: number | string) {
+                      return `${tickValue}%`;
+                    },
+                  }),
+                }
+                : props.dataType === "percentage"
+                  ? {
+                    callback: function (tickValue: number | string) {
+                      return `${tickValue}%`;
+                    },
                   }
-                : undefined,
+                  : undefined,
+              max: props.dataType === "percentage" ? 100 : undefined,
             },
             x: {
               adapters: {
@@ -147,9 +154,15 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
               },
               type: "time",
               time: {
-                unit: "day",
+                unit: isMonthView ? "month" : "day",
+                ...(isMonthView && {
+                  displayFormats: {
+                    month: "MMM yyyy",
+                  },
+                  round: "month",
+                  tooltipFormat: "MMM yyyy",
+                }),
               },
-              offset: false,
               grid: {
                 display: true,
                 color: "rgba(128, 0, 128, 0.2)",
@@ -170,25 +183,19 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
 
     if (props.granularity === "month") {
       // @ts-expect-error library types not updated
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = "month";
     } else if (props.granularity === "day") {
       // @ts-expect-error library types not updated
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = "day";
       // @ts-expect-error library types not updated
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.round = "day";
     } else if (props.granularity === "minute") {
       // @ts-expect-error library types not updated
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = "minute";
     } else {
       // @ts-expect-error library types not updated
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.unit = undefined;
       // @ts-expect-error library types not updated
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       chartInstance.options.scales["x"].time.round = undefined;
     }
 
@@ -200,9 +207,14 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
       timestampKey: props.xAxis,
     });
 
-    // Update the chart data;
+    // Update the chart data
     chartInstance.data.labels = info.map((point) => point.time);
-    chartInstance.data.datasets[0].data = info.map((point) => point.value);
+    chartInstance.data.datasets[0].data = info.map((point) => {
+      if (props.dataType === "percentage") {
+        return (point.value ?? 0) * 100;
+      }
+      return point.value;
+    });
     chartInstance.update();
 
     // Cleanup function
@@ -220,168 +232,9 @@ const NormalChart = <T,>(props: AnalyticsChartProps<T>) => {
     props.xAxis,
     props.label,
     props.wholeUnits,
+    props.dataType,
   ]);
+
 
   return <canvas ref={canvasRef} className="max-h-[300px] w-full" />;
-};
-
-const MonthChart = <T,>(props: AnalyticsChartProps<T>) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const chartInstanceRef = useRef<Chart | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const data = props.data;
-    if (!canvas || !data) return;
-
-    if (!chartInstanceRef.current) {
-      chartInstanceRef.current = new Chart(canvas, {
-        type: "line",
-        data: {
-          labels: [],
-          datasets: [
-            {
-              label: props.label,
-              data: [],
-              backgroundColor: "rgba(128, 0, 128, 0.1)",
-              borderColor: "rgba(128, 0, 128, 0.9)",
-              borderWidth: 2,
-              tension: 0.3,
-              fill: true,
-              pointBackgroundColor: "rgba(128, 0, 128, 0.9)",
-              pointRadius: 4,
-              pointHoverRadius: 6,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          aspectRatio: 1,
-          interaction: {
-            mode: "nearest",
-            axis: "x",
-            intersect: false,
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: "rgba(128, 0, 128, 0.9)",
-              titleColor: "white",
-              bodyColor: "white",
-              padding: 4,
-              displayColors: false,
-              position: "nearest",
-              titleFont: {
-                size: 11,
-              },
-              bodyFont: {
-                size: 11,
-              },
-              callbacks: {
-                title: (context) => {
-                  const date = new Date(context[0].parsed.x);
-                  return date.toLocaleString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "numeric",
-                    minute: "numeric",
-                  });
-                },
-                label: (context) => {
-                  return `${props.label}: ${context.parsed.y}`;
-                },
-              },
-            },
-            // @ts-expect-error library types not updated
-            crosshair: {
-              line: {
-                color: "rgba(128, 0, 128, 0.3)",
-                width: 1,
-                dashPattern: [6, 6],
-              },
-              sync: {
-                enabled: true,
-                group: 1,
-              },
-              snap: {
-                enabled: true,
-              },
-              zoom: {
-                enabled: false,
-              },
-            },
-          },
-          scales: {
-            y: {
-              grid: {
-                display: false, // Turn off horizontal grid lines
-              },
-              beginAtZero: true,
-              ticks: props.wholeUnits
-                ? {
-                    precision: 0,
-                  }
-                : undefined,
-            },
-            x: {
-              adapters: {
-                date: {
-                  locale: enUS,
-                },
-              },
-              type: "time",
-              time: {
-                unit: "month",
-                displayFormats: {
-                  month: "MMM yyyy",
-                },
-                round: "month",
-                tooltipFormat: "MMM yyyy",
-              },
-              grid: {
-                display: false, // Turn off vertical grid lines
-              },
-              ticks: {
-                maxRotation: 45,
-                minRotation: 45,
-              },
-            },
-          },
-          animation: {
-            duration: 0,
-          },
-        },
-      });
-    }
-
-    const chartInstance = chartInstanceRef.current;
-
-    // Update the chart data
-    chartInstance.data.labels = data.map((point) =>
-      convertToISO8601(point[props.xAxis] as string),
-    );
-    chartInstance.data.datasets[0].data = data.map(
-      (point) => point[props.yAxis] as number,
-    );
-    chartInstance.update();
-
-    // Cleanup function
-    return () => {
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.destroy();
-        chartInstanceRef.current = null;
-      }
-    };
-  }, [
-    props.data,
-    props.granularity,
-    props.yAxis,
-    props.xAxis,
-    props.label,
-    props.wholeUnits,
-    props.date_range,
-  ]);
-
-  return <canvas ref={canvasRef} className="h-full w-full" />;
 };

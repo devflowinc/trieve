@@ -7036,6 +7036,11 @@ pub enum RAGAnalytics {
         filter: Option<RAGAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[serde(rename = "ctr_metrics_over_time")]
+    CTRMetricsOverTime {
+        filter: Option<RAGAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7173,6 +7178,20 @@ pub enum RAGAnalyticsResponse {
     TopicDetails(TopicDetailsResponse),
     #[schema(title = "TopicsOverTime")]
     TopicsOverTime(TopicsOverTimeResponse),
+    #[schema(title = "CTRMetricsOverTime")]
+    CTRMetricsOverTime(CTRMetricsOverTimeResponse),
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct CTRMetricsOverTimeResponse {
+    pub total_ctr: f32,
+    pub ctr_points: Vec<CTRMetricsOverTimePoint>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct CTRMetricsOverTimePoint {
+    pub time_stamp: String,
+    pub ctr: f32,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]

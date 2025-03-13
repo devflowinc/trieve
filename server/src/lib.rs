@@ -578,6 +578,8 @@ impl Modify for SecurityAddon {
             data::models::ComponentAnalytics,
             data::models::ComponentNamesResponse,
             data::models::ComponentAnalyticsResponse,
+            data::models::CTRMetricsOverTimeResponse,
+            data::models::CTRMetricsOverTimePoint,
             data::models::TopicQuery,
             data::models::TopicTimePoint,
             data::models::TopicSortBy,

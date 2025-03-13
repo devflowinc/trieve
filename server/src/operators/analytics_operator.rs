@@ -1,8 +1,9 @@
 use crate::{
     data::models::{
-        ClusterAnalyticsFilter, ClusterTopicsClickhouse, ComponentAnalyticsFilter,
-        ComponentNamesResponse, DatasetAnalytics, EventAnalyticsFilter, EventData,
-        EventDataClickhouse, GetEventsResponseBody, Granularity, HeadQueries, Pool, PopularFilters,
+        CTRMetricsOverTimePoint, CTRMetricsOverTimeResponse, ClusterAnalyticsFilter,
+        ClusterTopicsClickhouse, ComponentAnalyticsFilter, ComponentNamesResponse,
+        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse,
+        GetEventsResponseBody, Granularity, HeadQueries, Pool, PopularFilters,
         PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse,
         RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse, RagQueryRatingsResponse,
         RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
@@ -25,11 +26,13 @@ use crate::{
 };
 use actix_web::web;
 
+use clickhouse::Row;
 use diesel::{ExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
 use futures::future::join_all;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -1927,4 +1930,91 @@ pub async fn get_component_names_query(
         })?;
 
     Ok(ComponentNamesResponse { component_names })
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct ClicksOverTime {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub clicks: i64,
+}
+
+pub async fn get_ctr_metrics_over_time_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RAGAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<CTRMetricsOverTimeResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            count(*) AS clicks
+        FROM 
+            events
+        WHERE 
+            dataset_id = ? 
+            AND event_type = 'click' 
+            AND event_name = 'Click'
+            AND request_type = 'rag'
+        ",
+        interval,
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            time_stamp
+        ORDER BY 
+            time_stamp
+        LIMIT 1000",
+    );
+
+    let clicks_over_time = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<ClicksOverTime>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching ctr metrics over time: {:?}", e);
+            ServiceError::InternalServerError("Error fetching ctr metrics over time".to_string())
+        })?;
+
+    let chats_over_time =
+        get_rag_usage_graph_query(dataset_id, filter, granularity, clickhouse_client)
+            .await?
+            .usage_points;
+
+    let ctr_metrics_over_time: Vec<CTRMetricsOverTimePoint> = clicks_over_time
+        .iter()
+        .zip(chats_over_time.iter())
+        .map(|(x, y)| CTRMetricsOverTimePoint {
+            time_stamp: x.time_stamp.to_string(),
+            ctr: x.clicks as f32 / y.requests as f32,
+        })
+        .collect();
+
+    let total_ctr = if !ctr_metrics_over_time.is_empty() {
+        ctr_metrics_over_time.iter().map(|x| x.ctr).sum::<f32>()
+            / ctr_metrics_over_time.len() as f32
+    } else {
+        0.0
+    };
+
+    Ok(CTRMetricsOverTimeResponse {
+        total_ctr,
+        ctr_points: ctr_metrics_over_time,
+    })
 }

@@ -7688,6 +7688,41 @@
           }
         }
       },
+      "CTRMetricsOverTimePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "ctr"
+        ],
+        "properties": {
+          "ctr": {
+            "type": "number",
+            "format": "float"
+          },
+          "time_stamp": {
+            "type": "string"
+          }
+        }
+      },
+      "CTRMetricsOverTimeResponse": {
+        "type": "object",
+        "required": [
+          "total_ctr",
+          "ctr_points"
+        ],
+        "properties": {
+          "ctr_points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CTRMetricsOverTimePoint"
+            }
+          },
+          "total_ctr": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
       "CTRRecommendationsWithClicksResponse": {
         "type": "object",
         "title": "RecommendationsWithClicks",
@@ -14190,6 +14225,36 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "ctr_metrics_over_time"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -14250,6 +14315,9 @@
           },
           {
             "$ref": "#/components/schemas/TopicsOverTimeResponse"
+          },
+          {
+            "$ref": "#/components/schemas/CTRMetricsOverTimeResponse"
           }
         ]
       },

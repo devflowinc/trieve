@@ -23,7 +23,8 @@ export const TotalUniqueVisitors = ({
       graphData={data?.time_points}
       granularity={granularity}
       xAxis={"time_stamp"}
-      yAxis={"total_unique_users"}
+      yAxis={"unique_users"}
+      dateRange={filters.date_range}
       label="Total Unique Visitors"
       tooltipContent="The total number of unique visitors to your store that interacted with the Trieve component."
     />
