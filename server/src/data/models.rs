@@ -5788,6 +5788,7 @@ pub struct SearchAnalyticsFilter {
     pub search_method: Option<SearchMethod>,
     pub search_type: Option<SearchType>,
     pub query_rating: Option<QueryRatingRange>,
+    pub component_name: Option<String>,
 }
 
 impl SearchAnalyticsFilter {
@@ -7128,6 +7129,11 @@ pub enum ComponentAnalytics {
         filter: Option<ComponentAnalyticsFilter>,
         page: Option<u32>,
     },
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ComponentNamesRequest {
+    pub page: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]

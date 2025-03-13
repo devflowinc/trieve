@@ -271,6 +271,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_top_datasets,
         handlers::analytics_handler::get_all_events,
         handlers::analytics_handler::get_event_by_id,
+        handlers::analytics_handler::get_component_names,
         handlers::analytics_handler::get_component_analytics,
         handlers::metrics_handler::get_metrics,
         handlers::page_handler::public_page,
@@ -574,6 +575,7 @@ impl Modify for SecurityAddon {
             data::models::TopicAnalyticsSummary,
             data::models::TotalUniqueUsersResponse,
             data::models::TotalUniqueUsersTimePoint,
+            data::models::ComponentNamesRequest,
             data::models::ComponentAnalyticsFilter,
             data::models::ComponentAnalytics,
             data::models::ComponentAnalyticsResponse,
@@ -1391,6 +1393,10 @@ pub fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/ctr")
                                     .route(web::put().to(handlers::analytics_handler::send_ctr_data))
+                            )
+                            .service(
+                                web::resource("/component_names")
+                                    .route(web::get().to(handlers::analytics_handler::get_component_names))
                             )
                         ),
                 )

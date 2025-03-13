@@ -532,6 +532,10 @@ export type ComponentAnalyticsFilter = {
 
 export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse;
 
+export type ComponentNamesRequest = {
+    page?: (number) | null;
+};
+
 /**
  * Filters can be constructed using either fields on the chunk objects, ids or tracking ids of chunks, and finally ids or tracking ids of groups.
  */
@@ -2890,6 +2894,7 @@ export type SearchAnalytics = {
 export type type7 = 'latency_graph';
 
 export type SearchAnalyticsFilter = {
+    component_name?: (string) | null;
     date_range?: ((DateRange) | null);
     query_rating?: ((QueryRatingRange) | null);
     search_method?: ((SearchMethod) | null);
@@ -3873,6 +3878,19 @@ export type WorkerEvent = {
     event_type: string;
     id: string;
 };
+
+export type GetComponentNamesData = {
+    /**
+     * The page to view
+     */
+    page?: (number) | null;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetComponentNamesResponse = (Array<(string)>);
 
 export type SendCtrDataData = {
     /**
@@ -5356,6 +5374,21 @@ export type DeleteUserApiKeyResponse = (void);
 export type GetMetricsResponse = (string);
 
 export type $OpenApiTs = {
+    '/api/analytics/component_names': {
+        get: {
+            req: GetComponentNamesData;
+            res: {
+                /**
+                 * The list of component names
+                 */
+                200: Array<(string)>;
+                /**
+                 * Service error relating to getting component analytics
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
     '/api/analytics/ctr': {
         put: {
             req: SendCtrDataData;

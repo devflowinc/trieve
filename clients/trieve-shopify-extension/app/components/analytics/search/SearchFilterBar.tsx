@@ -6,6 +6,7 @@ import {
   transformDateParams,
 } from "app/queries/analytics/formatting";
 import { Box } from "@shopify/polaris";
+import { ComponentNameSelect } from "../ComponentNameSelect";
 
 interface SearchFilterBarProps {
   granularity: Granularity;
@@ -15,7 +16,11 @@ interface SearchFilterBarProps {
 }
 export const SearchFilterBar = (props: SearchFilterBarProps) => {
   return (
-    <div className="flex py-4 justify-end">
+    <div className="flex py-4 justify-between">
+      <ComponentNameSelect
+        filters={props.filters}
+        setFilters={props.setFilters}
+      />
       <Box maxWidth="200">
         <DateRangePicker
           value={formatStringDateRangeToDates(props.filters.date_range)}

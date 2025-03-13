@@ -25,6 +25,71 @@
     }
   ],
   "paths": {
+    "/api/analytics/component_names": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Component Names",
+        "description": "This route allows you to view the component names for a dataset.",
+        "operationId": "get_component_names",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "The page to view",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The list of component names",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting component analytics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/analytics/ctr": {
       "put": {
         "tags": [
@@ -8852,6 +8917,17 @@
           }
         ]
       },
+      "ComponentNamesRequest": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
+          }
+        }
+      },
       "ConditionType": {
         "oneOf": [
           {
@@ -15759,6 +15835,10 @@
       "SearchAnalyticsFilter": {
         "type": "object",
         "properties": {
+          "component_name": {
+            "type": "string",
+            "nullable": true
+          },
           "date_range": {
             "allOf": [
               {
