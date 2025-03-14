@@ -21,6 +21,7 @@ export interface Filter {
   key: string;
   label: string;
   filter: React.ReactNode;
+  pinned?: boolean;
 }
 
 export interface AdvancedTableComponentProps {
@@ -96,7 +97,7 @@ export const AdvancedTableComponent = ({
           mode={mode}
           setMode={setMode}
           tabs={indexTabs}
-          filters={filters.map((filter) => ({ ...filter, pinned: true, shortcut: true }))}
+          filters={filters.map((filter) => ({ ...filter, shortcut: true }))}
           queryValue={query}
           cancelAction={{
             onAction: () => { },
@@ -111,6 +112,7 @@ export const AdvancedTableComponent = ({
           selected={selected}
           onSelect={setSelected}
           loading={loading}
+          canCreateNewView={false}
         />
         <IndexTable
           hasZebraStriping
@@ -120,7 +122,7 @@ export const AdvancedTableComponent = ({
           selectable={false}
           itemCount={data.length}
           headings={
-            tableHeadings.map((heading) => {
+            tableHeadings.map((heading, index) => {
               return {
                 title: (
                   <Tooltip content={heading.tooltip} hasUnderline>
@@ -129,6 +131,7 @@ export const AdvancedTableComponent = ({
                     </Text>
                   </Tooltip>
                 ),
+                id: index.toString(),
               };
             }) as NonEmptyArray<IndexTableHeading>
           }
@@ -145,8 +148,8 @@ export const AdvancedTableComponent = ({
           {data.map((row, index) => {
             return (
               <IndexTable.Row key={index} id={index.toString()} position={index}>
-                {row.map((cell, index) => (
-                  <IndexTable.Cell key={index}>{cell}</IndexTable.Cell>
+                {row.map((cell, innerIndex) => (
+                  <IndexTable.Cell key={innerIndex}>{cell}</IndexTable.Cell>
                 ))}
               </IndexTable.Row>
             );

@@ -25,9 +25,7 @@ use crate::operators::analytics_operator::{
     RecommendationsEventResponse, SearchClusterResponse, SearchQueryResponse,
     SearchUsageGraphResponse,
 };
-use crate::operators::chunk_operator::{
-    get_metadata_from_id_query, get_metadata_from_ids_query, HighlightStrategy,
-};
+use crate::operators::chunk_operator::{get_metadata_from_id_query, HighlightStrategy};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::search_operator::{
     get_group_metadata_filter_condition, get_group_tag_set_filter_condition, GroupScoreChunk,
@@ -5508,60 +5506,43 @@ impl From<String> for ClickhouseRagTypes {
     }
 }
 
-impl RagQueryEventClickhouse {
-    pub async fn from_clickhouse(self, pool: web::Data<Pool>) -> RagQueryEvent {
-        let chunk_ids = self
-            .results
+impl From<RagQueryEventClickhouse> for RagQueryEvent {
+    fn from(clickhouse_response: RagQueryEventClickhouse) -> Self {
+        let results = clickhouse_response
+            .json_results
             .iter()
-            .filter_map(|x| x.parse::<uuid::Uuid>().ok())
-            .collect_vec();
+            .map(|r| {
+                serde_json::from_str(&r.replace("|q", "?").replace('\n', "")).unwrap_or_default()
+            })
+            .collect::<Vec<serde_json::Value>>();
 
-        let results = if !chunk_ids.is_empty() {
-            let chunks = get_metadata_from_ids_query(chunk_ids, self.dataset_id, pool)
-                .await
-                .unwrap_or(vec![]);
-
-            chunks
-                .into_iter()
-                .map(|chunk| serde_json::to_value(chunk).unwrap_or_default())
-                .collect::<Vec<serde_json::Value>>()
-        } else {
-            self.json_results
-                .iter()
-                .map(|r| {
-                    serde_json::from_str(&r.replace("|q", "?").replace('\n', ""))
-                        .unwrap_or_default()
-                })
-                .collect::<Vec<serde_json::Value>>()
-        };
-
-        let query_rating = if !self.query_rating.is_empty() {
-            Some(serde_json::from_str(&self.query_rating).unwrap_or_default())
+        let query_rating = if !clickhouse_response.query_rating.is_empty() {
+            Some(serde_json::from_str(&clickhouse_response.query_rating).unwrap_or_default())
         } else {
             None
         };
-        let metadata = if !self.metadata.is_empty() {
-            Some(serde_json::from_str(&self.metadata).unwrap_or_default())
+        let metadata = if !clickhouse_response.metadata.is_empty() {
+            Some(serde_json::from_str(&clickhouse_response.metadata).unwrap_or_default())
         } else {
             None
         };
 
         RagQueryEvent {
-            id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
-            rag_type: self.rag_type.into(),
-            user_message: self.user_message,
-            search_id: uuid::Uuid::from_bytes(*self.search_id.as_bytes()),
-            topic_id: uuid::Uuid::from_bytes(*self.topic_id.as_bytes()),
+            id: uuid::Uuid::from_bytes(*clickhouse_response.id.as_bytes()),
+            rag_type: clickhouse_response.rag_type.into(),
+            user_message: clickhouse_response.user_message,
+            search_id: uuid::Uuid::from_bytes(*clickhouse_response.search_id.as_bytes()),
+            topic_id: uuid::Uuid::from_bytes(*clickhouse_response.topic_id.as_bytes()),
             results,
-            top_score: self.top_score,
+            top_score: clickhouse_response.top_score,
             query_rating,
-            dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
+            dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
             metadata,
-            llm_response: self.llm_response,
-            hallucination_score: self.hallucination_score,
-            detected_hallucinations: self.detected_hallucinations,
-            created_at: self.created_at.to_string(),
-            user_id: self.user_id,
+            llm_response: clickhouse_response.llm_response,
+            hallucination_score: clickhouse_response.hallucination_score,
+            detected_hallucinations: clickhouse_response.detected_hallucinations,
+            created_at: clickhouse_response.created_at.to_string(),
+            user_id: clickhouse_response.user_id,
         }
     }
 }
@@ -5819,6 +5800,7 @@ pub struct SearchAnalyticsFilter {
     pub search_type: Option<SearchType>,
     pub query_rating: Option<QueryRatingRange>,
     pub component_name: Option<String>,
+    pub top_score: Option<FloatRange>,
     pub query: Option<String>,
 }
 
@@ -5885,6 +5867,21 @@ impl SearchAnalyticsFilter {
 
         if let Some(query) = &self.query {
             query_string.push_str(&format!(" AND query ILIKE '%{}%'", query));
+        }
+
+        if let Some(top_score) = &self.top_score {
+            if let Some(gt) = &top_score.gt {
+                query_string.push_str(&format!(" AND top_score > {}", gt));
+            }
+            if let Some(lt) = &top_score.lt {
+                query_string.push_str(&format!(" AND top_score < {}", lt));
+            }
+            if let Some(gte) = &top_score.gte {
+                query_string.push_str(&format!(" AND top_score >= {}", gte));
+            }
+            if let Some(lte) = &top_score.lte {
+                query_string.push_str(&format!(" AND top_score <= {}", lte));
+            }
         }
 
         query_string
@@ -5975,6 +5972,8 @@ pub struct RAGAnalyticsFilter {
     pub date_range: Option<DateRange>,
     pub rag_type: Option<RagTypes>,
     pub query_rating: Option<QueryRatingRange>,
+    pub component_name: Option<String>,
+    pub query: Option<String>,
 }
 
 impl RAGAnalyticsFilter {
@@ -5996,6 +5995,13 @@ impl RAGAnalyticsFilter {
 
         if let Some(rag_type) = &self.rag_type {
             query_string.push_str(&format!(" AND rag_queries.rag_type = '{}'", rag_type));
+        }
+
+        if let Some(component_name) = &self.component_name {
+            query_string.push_str(&format!(
+                " AND JSONExtractString(rag_queries.metadata, 'component_props', 'componentName') = '{}'",
+                component_name
+            ));
         }
 
         if let Some(query_rating) = &self.query_rating {
@@ -6022,6 +6028,175 @@ impl RAGAnalyticsFilter {
                     " AND JSONExtract(rag_queries.query_rating, 'rating', 'Nullable(Float64)') <= {}",
                     lte
                 ));
+            }
+        }
+
+        if let Some(query) = &self.query {
+            query_string.push_str(&format!(
+                " AND rag_queries.user_message ILIKE '%{}%'",
+                query
+            ));
+        }
+
+        query_string
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct FloatRange {
+    pub gte: Option<f64>,
+    pub lte: Option<f64>,
+    pub gt: Option<f64>,
+    pub lt: Option<f64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct TopicAnalyticsFilter {
+    pub date_range: Option<DateRange>,
+    pub rag_type: Option<RagTypes>,
+    pub query_rating: Option<QueryRatingRange>,
+    pub top_score: Option<FloatRange>,
+    pub hallucination_score: Option<FloatRange>,
+    pub component_name: Option<String>,
+    pub query: Option<String>,
+}
+
+impl TopicAnalyticsFilter {
+    pub fn add_to_query(&self, mut query_string: String) -> String {
+        if let Some(date_range) = &self.date_range {
+            if let Some(gt) = &date_range.gt {
+                query_string.push_str(&format!(" AND topics.created_at > '{}'", gt));
+            }
+            if let Some(lt) = &date_range.lt {
+                query_string.push_str(&format!(" AND topics.created_at < '{}'", lt));
+            }
+            if let Some(gte) = &date_range.gte {
+                query_string.push_str(&format!(" AND topics.created_at >= '{}'", gte));
+            }
+            if let Some(lte) = &date_range.lte {
+                query_string.push_str(&format!(" AND topics.created_at <= '{}'", lte));
+            }
+        }
+
+        if let Some(component_name) = &self.component_name {
+            query_string.push_str(&format!(
+                " AND JSONExtractString(topics.metadata, 'component_props', 'componentName') = '{}'",
+                component_name
+            ));
+        }
+
+        if let Some(rag_type) = &self.rag_type {
+            query_string.push_str(&format!(" AND rag_queries.rag_type = '{}'", rag_type));
+        }
+
+        if let Some(query) = &self.query {
+            query_string.push_str(&format!(" AND topics.name ILIKE '%{}%'", query));
+        }
+
+        query_string
+    }
+
+    pub fn add_having_conditions(&self, mut query_string: String) -> String {
+        let mut added_having = false;
+        let mut first = true;
+
+        if let Some(query_rating) = &self.query_rating {
+            query_string.push_str("HAVING ");
+            added_having = true;
+
+            if let Some(gt) = &query_rating.gt {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("query_rating > {} ", gt));
+                first = false;
+            }
+            if let Some(lt) = &query_rating.lt {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("query_rating < {} ", lt));
+                first = false;
+            }
+            if let Some(gte) = &query_rating.gte {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("query_rating >= {} ", gte));
+                first = false;
+            }
+            if let Some(lte) = &query_rating.lte {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("query_rating <= {} ", lte));
+                first = false;
+            }
+        }
+        if let Some(top_score) = &self.top_score {
+            if !added_having {
+                query_string.push_str("HAVING ");
+                added_having = true;
+            }
+            if let Some(gt) = &top_score.gt {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("top_score > {} ", gt));
+                first = false;
+            }
+            if let Some(lt) = &top_score.lt {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("top_score < {} ", lt));
+                first = false;
+            }
+            if let Some(gte) = &top_score.gte {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("top_score >= {} ", gte));
+                first = false;
+            }
+            if let Some(lte) = &top_score.lte {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("top_score <= {} ", lte));
+                first = false;
+            }
+        }
+        if let Some(hallucination_score) = &self.hallucination_score {
+            if !added_having {
+                query_string.push_str("HAVING ");
+            }
+            if let Some(gt) = &hallucination_score.gt {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("hallucination_score > {} ", gt));
+                first = false;
+            }
+            if let Some(lt) = &hallucination_score.lt {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("hallucination_score < {} ", lt));
+                first = false;
+            }
+            if let Some(gte) = &hallucination_score.gte {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("hallucination_score >= {} ", gte));
+                first = false;
+            }
+            if let Some(lte) = &hallucination_score.lte {
+                if !first {
+                    query_string.push_str(" AND ");
+                }
+                query_string.push_str(&format!("hallucination_score <= {} ", lte));
             }
         }
 
@@ -6962,15 +7137,6 @@ pub enum RAGSortBy {
     TopScore,
     #[display(fmt = "created_at")]
     CreatedAt,
-    #[display(fmt = "latency")]
-    Latency,
-}
-
-#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
-#[serde(rename_all = "snake_case")]
-pub enum TopicSortBy {
-    #[display(fmt = "created_at")]
-    CreatedAt,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq, Eq)]
@@ -7055,6 +7221,7 @@ pub enum RAGAnalytics {
     RAGQueries {
         filter: Option<RAGAnalyticsFilter>,
         page: Option<u32>,
+        has_clicks: Option<bool>,
         sort_by: Option<RAGSortBy>,
         sort_order: Option<SortOrder>,
     },
@@ -7074,11 +7241,12 @@ pub enum RAGAnalytics {
     #[serde(rename = "rag_query_ratings")]
     RAGQueryRatings { filter: Option<RAGAnalyticsFilter> },
     #[schema(title = "TopicAnalytics")]
-    #[serde(rename = "topic_analytics")]
-    TopicAnalytics {
-        filter: Option<RAGAnalyticsFilter>,
+    #[serde(rename = "topic_queries")]
+    TopicQueries {
+        filter: Option<TopicAnalyticsFilter>,
         page: Option<u32>,
-        sort_by: Option<TopicSortBy>,
+        has_clicks: Option<bool>,
+        sort_by: Option<RAGSortBy>,
         sort_order: Option<SortOrder>,
     },
     #[schema(title = "TopicDetails")]
@@ -7087,7 +7255,7 @@ pub enum RAGAnalytics {
     #[schema(title = "TopicsOverTime")]
     #[serde(rename = "topics_over_time")]
     TopicsOverTime {
-        filter: Option<RAGAnalyticsFilter>,
+        filter: Option<TopicAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
     #[serde(rename = "ctr_metrics_over_time")]
@@ -7232,7 +7400,7 @@ pub enum RAGAnalyticsResponse {
     #[schema(title = "RAGQueryRatings")]
     RAGQueryRatings(RagQueryRatingsResponse),
     #[schema(title = "TopicAnalytics")]
-    TopicAnalytics(TopicAnalyticsResponse),
+    TopicQueries(TopicQueriesResponse),
     #[schema(title = "TopicDetails")]
     TopicDetails(TopicDetailsResponse),
     #[schema(title = "TopicsOverTime")]
@@ -7284,7 +7452,7 @@ pub struct CTRMetricsOverTimePoint {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct TopicAnalyticsResponse {
+pub struct TopicQueriesResponse {
     pub topics: Vec<TopicAnalyticsSummary>,
 }
 
@@ -7296,12 +7464,14 @@ pub struct TopicAnalyticsSummaryClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub topic_id: uuid::Uuid,
     pub owner_id: String,
-    pub referrer: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub updated_at: OffsetDateTime,
     pub message_count: u64,
+    pub avg_top_score: f64,
+    pub avg_hallucination_score: f64,
+    pub avg_query_rating: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7310,10 +7480,12 @@ pub struct TopicAnalyticsSummary {
     pub name: String,
     pub topic_id: uuid::Uuid,
     pub owner_id: String,
-    pub referrer: String,
     pub created_at: String,
     pub updated_at: String,
     pub message_count: u64,
+    pub avg_top_score: f64,
+    pub avg_hallucination_score: f64,
+    pub avg_query_rating: Option<f64>,
 }
 
 impl From<TopicAnalyticsSummaryClickhouse> for TopicAnalyticsSummary {
@@ -7323,10 +7495,12 @@ impl From<TopicAnalyticsSummaryClickhouse> for TopicAnalyticsSummary {
             name: value.name,
             topic_id: uuid::Uuid::from_bytes(value.topic_id.into_bytes()),
             owner_id: value.owner_id,
-            referrer: value.referrer,
             created_at: value.created_at.to_string(),
             updated_at: value.updated_at.to_string(),
             message_count: value.message_count,
+            avg_top_score: value.avg_top_score,
+            avg_hallucination_score: value.avg_hallucination_score,
+            avg_query_rating: value.avg_query_rating,
         }
     }
 }

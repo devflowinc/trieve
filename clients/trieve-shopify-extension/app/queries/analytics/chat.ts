@@ -6,6 +6,10 @@ import {
   TopicsOverTimeResponse,
   CTRMetricsOverTimeResponse,
   MessagesPerUserResponse,
+  RAGSortBy,
+  SortOrder,
+  RagQueryResponse,
+  TopicQueriesResponse,
 } from "trieve-ts-sdk";
 
 export const topicsUsageQuery = (
@@ -61,6 +65,30 @@ export const messagesPerUserQuery = (
       });
 
       return result as MessagesPerUserResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const allChatsQuery = (
+  trieve: TrieveSDK,
+  filters: RAGAnalyticsFilter,
+  page: number,
+  has_clicks?: boolean,
+  sort_by?: RAGSortBy,
+  sort_order?: SortOrder,
+) => {
+  return {
+    queryKey: ["all_chats", filters, page, has_clicks, sort_by, sort_order],
+    queryFn: async () => {
+      const result = await trieve.getRagAnalytics({
+        filter: filters,
+        type: "topic_queries",
+        page: page,
+        has_clicks,
+        sort_by,
+        sort_order,
+      });
+      return result as TopicQueriesResponse;
     },
   } satisfies QueryOptions;
 };

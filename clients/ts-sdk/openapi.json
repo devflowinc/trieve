@@ -11733,6 +11733,31 @@
           }
         }
       },
+      "FloatRange": {
+        "type": "object",
+        "properties": {
+          "gt": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gte": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "lt": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "lte": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        }
+      },
       "FullTextBoost": {
         "type": "object",
         "description": "Boost the presence of certain tokens for fulltext (SPLADE) and keyword (BM25) search. I.e. boosting title phrases to priortize title matches or making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).",
@@ -14065,6 +14090,10 @@
                 ],
                 "nullable": true
               },
+              "has_clicks": {
+                "type": "boolean",
+                "nullable": true
+              },
               "page": {
                 "type": "integer",
                 "format": "int32",
@@ -14202,9 +14231,13 @@
               "filter": {
                 "allOf": [
                   {
-                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                    "$ref": "#/components/schemas/TopicAnalyticsFilter"
                   }
                 ],
+                "nullable": true
+              },
+              "has_clicks": {
+                "type": "boolean",
                 "nullable": true
               },
               "page": {
@@ -14216,7 +14249,7 @@
               "sort_by": {
                 "allOf": [
                   {
-                    "$ref": "#/components/schemas/TopicSortBy"
+                    "$ref": "#/components/schemas/RAGSortBy"
                   }
                 ],
                 "nullable": true
@@ -14232,7 +14265,7 @@
               "type": {
                 "type": "string",
                 "enum": [
-                  "topic_analytics"
+                  "topic_queries"
                 ]
               }
             }
@@ -14267,7 +14300,7 @@
               "filter": {
                 "allOf": [
                   {
-                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                    "$ref": "#/components/schemas/TopicAnalyticsFilter"
                   }
                 ],
                 "nullable": true
@@ -14356,12 +14389,20 @@
       "RAGAnalyticsFilter": {
         "type": "object",
         "properties": {
+          "component_name": {
+            "type": "string",
+            "nullable": true
+          },
           "date_range": {
             "allOf": [
               {
                 "$ref": "#/components/schemas/DateRange"
               }
             ],
+            "nullable": true
+          },
+          "query": {
+            "type": "string",
             "nullable": true
           },
           "query_rating": {
@@ -14400,7 +14441,7 @@
             "$ref": "#/components/schemas/RagQueryRatingsResponse"
           },
           {
-            "$ref": "#/components/schemas/TopicAnalyticsResponse"
+            "$ref": "#/components/schemas/TopicQueriesResponse"
           },
           {
             "$ref": "#/components/schemas/TopicDetailsResponse"
@@ -14421,8 +14462,7 @@
         "enum": [
           "hallucination_score",
           "top_score",
-          "created_at",
-          "latency"
+          "created_at"
         ]
       },
       "RAGUsageGraphResponse": {
@@ -16018,6 +16058,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/SearchType"
+              }
+            ],
+            "nullable": true
+          },
+          "top_score": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FloatRange"
               }
             ],
             "nullable": true
@@ -17977,17 +18025,56 @@
           "updated_at": "2021-01-01 00:00:00.000"
         }
       },
-      "TopicAnalyticsResponse": {
+      "TopicAnalyticsFilter": {
         "type": "object",
-        "required": [
-          "topics"
-        ],
         "properties": {
-          "topics": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TopicAnalyticsSummary"
-            }
+          "component_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "date_range": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DateRange"
+              }
+            ],
+            "nullable": true
+          },
+          "hallucination_score": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FloatRange"
+              }
+            ],
+            "nullable": true
+          },
+          "query": {
+            "type": "string",
+            "nullable": true
+          },
+          "query_rating": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QueryRatingRange"
+              }
+            ],
+            "nullable": true
+          },
+          "rag_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RagTypes"
+              }
+            ],
+            "nullable": true
+          },
+          "top_score": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FloatRange"
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -17998,12 +18085,26 @@
           "name",
           "topic_id",
           "owner_id",
-          "referrer",
           "created_at",
           "updated_at",
-          "message_count"
+          "message_count",
+          "avg_top_score",
+          "avg_hallucination_score"
         ],
         "properties": {
+          "avg_hallucination_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "avg_query_rating": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "avg_top_score": {
+            "type": "number",
+            "format": "double"
+          },
           "created_at": {
             "type": "string"
           },
@@ -18020,9 +18121,6 @@
             "type": "string"
           },
           "owner_id": {
-            "type": "string"
-          },
-          "referrer": {
             "type": "string"
           },
           "topic_id": {
@@ -18049,6 +18147,20 @@
           },
           "topic": {
             "$ref": "#/components/schemas/TopicQuery"
+          }
+        }
+      },
+      "TopicQueriesResponse": {
+        "type": "object",
+        "required": [
+          "topics"
+        ],
+        "properties": {
+          "topics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopicAnalyticsSummary"
+            }
           }
         }
       },
@@ -18092,12 +18204,6 @@
             "type": "string"
           }
         }
-      },
-      "TopicSortBy": {
-        "type": "string",
-        "enum": [
-          "created_at"
-        ]
       },
       "TopicTimePoint": {
         "type": "object",
