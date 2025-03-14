@@ -1,44 +1,314 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { allSearchesQuery } from "app/queries/analytics/search";
-import { useEffect, useState } from "react";
-import { SearchAnalyticsFilter } from "trieve-ts-sdk";
-import { TableComponent } from "../TableComponent";
-import { parseCustomDateString } from "app/queries/analytics/formatting";
+import { useEffect, useMemo, useState } from "react";
+import { SearchAnalyticsFilter, SearchChunksReqPayload, SearchMethod, SearchSortBy, SearchType, SortOrder } from "trieve-ts-sdk";
+import { formatStringDateRangeToDates, parseCustomDateString, toTitleCase, transformDateParams } from "app/utils/formatting";
+import { AdvancedTableComponent, Filter } from "../AdvancedTableComponent";
+import { Checkbox, ChoiceList, IndexFiltersProps, RangeSlider } from "@shopify/polaris";
+import { componentNamesQuery } from "app/queries/analytics/component";
+import { DateRangePicker } from "../DateRangePicker";
+import { ComponentNameSelect } from "../ComponentNameSelect";
 
-export const AllSearchesTable = ({
-  filters,
-}: {
-  filters: SearchAnalyticsFilter;
-}) => {
+export const AllSearchesTable = () => {
   const { trieve } = useTrieve();
   const [page, setPage] = useState(1);
-  const { data } = useQuery(allSearchesQuery(trieve, filters, page));
+  const [selected, setSelected] = useState(0);
+  const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<SearchAnalyticsFilter>({});
+  const [hasClicks, setHasClicks] = useState<boolean | undefined>(undefined);
+  const [appliedFilters, setAppliedFilters] = useState<IndexFiltersProps['appliedFilters']>([]);
+  const [sortSelected, setSortSelected] = useState<string[]>(['created_at desc']);
+  const [sortBy, setSortBy] = useState<SearchSortBy | undefined>(undefined);
+  const [sortOrder, setSortOrder] = useState<SortOrder | undefined>(undefined);
+  const { data, isLoading } = useQuery(allSearchesQuery(trieve, filters, page, hasClicks, sortBy, sortOrder));
 
   const client = useQueryClient();
   useEffect(() => {
     // prefetch the next page
-    client.prefetchQuery(allSearchesQuery(trieve, filters, page + 1));
-  }, [page]);
+    client.prefetchQuery(allSearchesQuery(trieve, filters, page + 1, hasClicks));
+  }, [page, hasClicks, filters]);
 
-  const mappedData = data
-    ? data.queries.map((query) => [
+
+  const mappedData = useMemo(() => {
+    if (isLoading) {
+      return [];
+    }
+
+    return data?.queries.map((query) => {
+      const searchMethod = (query.request_params as SearchChunksReqPayload).search_type;
+      return [
         query.query,
         parseCustomDateString(query.created_at).toLocaleString(),
+        toTitleCase(query.search_type),
+        toTitleCase(searchMethod),
+        query.top_score,
+        query.latency,
         query.results.length,
-      ])
-    : [];
+      ];
+    }) ?? [];
+  }, [data, hasClicks, filters]);
+
+  const sortOptions: IndexFiltersProps['sortOptions'] = [
+    { label: 'Queried At', value: 'created_at asc', directionLabel: 'Ascending' },
+    { label: 'Queried At', value: 'created_at desc', directionLabel: 'Descending' },
+    { label: 'Latency', value: 'latency asc', directionLabel: 'Ascending' },
+    { label: 'Latency', value: 'latency desc', directionLabel: 'Descending' },
+    { label: 'Top Score', value: 'top_score asc', directionLabel: 'Ascending' },
+    { label: 'Top Score', value: 'top_score desc', directionLabel: 'Descending' },
+  ];
+
+
+  const shopifyFilters: Filter[] = [
+    {
+      key: "component_name",
+      label: "Component Name",
+      filter: <ComponentNameSelect filters={filters} setFilters={setFilters} onChange={(componentName) => {
+        if (componentName != "") {
+          setAppliedFilters([...(appliedFilters?.filter((filter) => filter.key !== "component_name") || []), {
+            key: "component_name",
+            label: "Component Name: " + componentName,
+            onRemove: () => {
+              setFilters({
+                ...filters,
+                component_name: undefined,
+              });
+              setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "component_name"));
+            },
+          }]);
+        } else {
+          setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "component_name"));
+        }
+      }} />,
+    },
+    {
+      key: "search_type",
+      label: "Search Type",
+      filter: <ChoiceList
+        title="Search Type"
+        titleHidden
+        choices={[
+          { label: "All", value: "all" },
+          { label: "Search", value: "search" },
+          { label: "Autocomplete", value: "autocomplete" },
+          { label: "Search Over Groups", value: "search_over_groups" },
+          { label: "Search Within Groups", value: "search_within_groups" },
+        ]}
+        allowMultiple={false}
+        selected={[filters.search_type || "all"]}
+        onChange={(e) => {
+          setFilters({
+            ...filters,
+            search_type: e[0] == "all" ? undefined : e[0] as SearchType,
+          });
+          if (e[0] != "all") {
+            setAppliedFilters([...(appliedFilters?.filter((filter) => filter.key !== "search_type") || []), {
+              key: "search_type",
+              label: "Search Type: " + toTitleCase(e[0]),
+              onRemove: () => {
+                setFilters({
+                  ...filters,
+                  search_type: undefined,
+                });
+                setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "search_type"));
+              },
+            }]);
+          } else {
+            setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "search_type"));
+          }
+        }}
+      />,
+    },
+    {
+      key: "search_method",
+      label: "Search Method",
+      filter: <ChoiceList
+        title="Search Method"
+        titleHidden
+        choices={[
+          { label: "All", value: "all" },
+          { label: "Fulltext", value: "fulltext" },
+          { label: "Hybrid", value: "hybrid" },
+          { label: "Semantic", value: "semantic" },
+        ]}
+        allowMultiple={false}
+        selected={[filters.search_method || "all"]}
+        onChange={(e) => {
+          setFilters({
+            ...filters,
+            search_method: e[0] == "all" ? undefined : e[0] as SearchMethod,
+          });
+          if (e[0] != "all") {
+            setAppliedFilters([...(appliedFilters?.filter((filter) => filter.key !== "search_method") || []), {
+              key: "search_method",
+              label: "Search Method: " + toTitleCase(e[0]),
+              onRemove: () => {
+                setFilters({
+                  ...filters,
+                  search_method: undefined,
+                });
+                setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "search_method"));
+              },
+            }]);
+          } else {
+            setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "search_method"));
+          }
+        }}
+      />,
+    },
+    {
+      key: "date_range",
+      label: "Date Range",
+      filter: <DateRangePicker
+        value={formatStringDateRangeToDates(filters.date_range)}
+        onChange={(e) => {
+          setFilters({ ...filters, date_range: transformDateParams(e) });
+          let label;
+          if (e.gte?.getHours() === 0 &&
+            e.gte?.getMinutes() === 0 &&
+            e.gte?.getSeconds() === 0) {
+            label = "From " + e.gte?.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }) + " to " + e.lte?.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+
+          } else {
+            label = "From " + e.gte?.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+            }) + " to " + e.lte?.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+            });
+          }
+          setAppliedFilters([...(appliedFilters?.filter((filter) => filter.key !== "date_range") || []), {
+            key: "date_range",
+            label: label,
+            onRemove: () => {
+              setFilters({
+                ...filters,
+                date_range: undefined,
+              });
+              setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "date_range"));
+            },
+          }]);
+        }}
+      />,
+    },
+    {
+      key: "query_rating",
+      label: "Query Rating",
+      filter: <RangeSlider
+        label="Query Rating"
+        min={0}
+        max={10}
+        value={[filters.query_rating?.gt || 0, filters.query_rating?.lt || 5]}
+        onChange={(e: [number, number]) => {
+          setFilters({ ...filters, query_rating: { gt: e[0], lt: e[1] } });
+          setAppliedFilters([...(appliedFilters?.filter((filter) => filter.key !== "query_rating") || []), {
+            key: "query_rating",
+            label: "Query Rating: " + e[0] + " - " + e[1],
+            onRemove: () => {
+              setFilters({
+                ...filters,
+                query_rating: undefined,
+              });
+              setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "query_rating"));
+            },
+          }]);
+        }}
+      />,
+    },
+    {
+      key: "has_clicks",
+      label: "Has Clicks",
+      filter: <Checkbox label="Has Clicks" checked={hasClicks} onChange={(e) => {
+        setHasClicks(e);
+        setAppliedFilters([...(appliedFilters?.filter((filter) => filter.key !== "has_clicks") || []), {
+          key: "has_clicks",
+          label: "Has Clicks: " + e,
+          onRemove: () => {
+            setHasClicks(undefined);
+            setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "has_clicks"));
+          },
+        }]);
+      }} />,
+    },
+  ];
+
+  const tabs = ["All Searches", "Searches w/ Clicks", "Searches w/o Clicks"];
+
+  useEffect(() => {
+    setHasClicks(tabs[selected] === "Searches w/ Clicks" ? true : tabs[selected] === "Searches w/o Clicks" ? false : undefined);
+  }, [selected]);
+
+  useEffect(() => {
+    if (sortSelected.length > 0) {
+      const [sortBy, sortOrder] = sortSelected[0].split(" ");
+      setSortBy(sortBy as SearchSortBy);
+      setSortOrder(sortOrder as SortOrder);
+    }
+  }, [sortSelected]);
+
+  useEffect(() => {
+    if (query != "") {
+      setFilters({
+        ...filters,
+        query: query,
+      });
+    } else {
+      setFilters({
+        ...filters,
+        query: undefined,
+      });
+    }
+  }, [query]);
 
   return (
-    <TableComponent
+    <AdvancedTableComponent
       data={mappedData}
+      appliedFilters={appliedFilters}
       page={page}
       setPage={setPage}
-      label="All Searches"
-      tooltipContent="All searches"
-      tableContentTypes={["text", "text", "numeric"]}
-      tableHeadings={["Query", "Created At", "Results"]}
+      label="Searches"
+      tooltipContent="View and filter all your users' searches."
+      tableHeadings={[
+        { heading: "Query", tooltip: "The search query" },
+        { heading: "Created At", tooltip: "The date and time the search was made" },
+        { heading: "Search Type", tooltip: "Represents the type of search. Can be Search, Autocomplete, Search Over Groups, or Search Within Groups" },
+        { heading: "Search Method", tooltip: "Represents the method used to search. Can be Fulltext, Hybrid, or Semantic" },
+        { heading: "Top Score", tooltip: "The top score of the search" },
+        { heading: "Latency", tooltip: "The latency of the search" },
+        { heading: "Results", tooltip: "The number of results returned" },
+      ]}
       hasNext={data?.queries.length == 10}
+      tabs={tabs}
+      filters={shopifyFilters}
+      query={query}
+      setQuery={setQuery}
+      handleClearAll={() => {
+        setQuery("");
+        setFilters({});
+        setAppliedFilters([]);
+        setSortSelected(['created_at desc']);
+      }}
+      selected={selected}
+      setSelected={setSelected}
+      loading={isLoading}
+      sortOptions={sortOptions}
+      sortSelected={sortSelected}
+      setSortSelected={setSortSelected}
     />
   );
 };

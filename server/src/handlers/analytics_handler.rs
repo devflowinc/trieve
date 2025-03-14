@@ -256,6 +256,7 @@ pub async fn get_search_analytics(
         }
         SearchAnalytics::SearchQueries {
             filter,
+            has_clicks,
             page,
             sort_by,
             sort_order,
@@ -265,6 +266,7 @@ pub async fn get_search_analytics(
                 filter,
                 sort_by,
                 sort_order,
+                has_clicks,
                 page,
                 clickhouse_client.get_ref(),
             )

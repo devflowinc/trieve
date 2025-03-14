@@ -5819,6 +5819,7 @@ pub struct SearchAnalyticsFilter {
     pub search_type: Option<SearchType>,
     pub query_rating: Option<QueryRatingRange>,
     pub component_name: Option<String>,
+    pub query: Option<String>,
 }
 
 impl SearchAnalyticsFilter {
@@ -5848,6 +5849,13 @@ impl SearchAnalyticsFilter {
             ));
         }
 
+        if let Some(component_name) = &self.component_name {
+            query_string.push_str(&format!(
+                " AND JSONExtractString(metadata, 'component_props', 'componentName') = '{}'",
+                component_name
+            ));
+        }
+
         if let Some(query_rating) = &self.query_rating {
             if let Some(gt) = &query_rating.gt {
                 query_string.push_str(&format!(
@@ -5873,6 +5881,10 @@ impl SearchAnalyticsFilter {
                     lte
                 ));
             }
+        }
+
+        if let Some(query) = &self.query {
+            query_string.push_str(&format!(" AND query ILIKE '%{}%'", query));
         }
 
         query_string
@@ -7017,6 +7029,7 @@ pub enum SearchAnalytics {
     #[schema(title = "SearchQueries")]
     SearchQueries {
         filter: Option<SearchAnalyticsFilter>,
+        has_clicks: Option<bool>,
         page: Option<u32>,
         sort_by: Option<SearchSortBy>,
         sort_order: Option<SortOrder>,

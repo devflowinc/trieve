@@ -1,10 +1,8 @@
-import { Box, Card, Text, Tooltip } from "@shopify/polaris";
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { totalUniqueUsersQuery } from "app/queries/analytics/component";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
 import { Granularity } from "trieve-ts-sdk";
-import { AnalyticsChart } from "../AnalyticsChart";
 import { GraphComponent } from "../GraphComponent";
 
 export const TotalUniqueVisitors = ({

@@ -4,7 +4,7 @@ import { useTrieve } from "app/context/trieveContext";
 import { headQueriesQuery } from "app/queries/analytics/search";
 import { useEffect, useState } from "react";
 import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
-import { TableComponent } from "../TableComponent";
+import { BasicTableComponent } from "../BasicTableComponent";
 
 export const HeadQueriesTable = ({
   filters,
@@ -30,7 +30,7 @@ export const HeadQueriesTable = ({
     : [];
 
   return (
-    <TableComponent
+    <BasicTableComponent
       data={mappedData}
       page={page}
       setPage={setPage}

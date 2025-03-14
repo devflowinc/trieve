@@ -2949,6 +2949,7 @@ export type SearchAnalytics = {
     type: 'no_result_queries';
 } | {
     filter?: ((SearchAnalyticsFilter) | null);
+    has_clicks?: (boolean) | null;
     page?: (number) | null;
     sort_by?: ((SearchSortBy) | null);
     sort_order?: ((SortOrder) | null);
@@ -2969,6 +2970,7 @@ export type type7 = 'latency_graph';
 export type SearchAnalyticsFilter = {
     component_name?: (string) | null;
     date_range?: ((DateRange) | null);
+    query?: (string) | null;
     query_rating?: ((QueryRatingRange) | null);
     search_method?: ((SearchMethod) | null);
     search_type?: ((SearchType) | null);
