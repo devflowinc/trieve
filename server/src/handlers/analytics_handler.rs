@@ -334,7 +334,6 @@ pub async fn get_rag_analytics(
     data: web::Json<RAGAnalytics>,
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
-    pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let response = match data.into_inner() {
@@ -350,6 +349,7 @@ pub async fn get_rag_analytics(
         RAGAnalytics::RAGQueries {
             filter,
             page,
+            has_clicks,
             sort_by,
             sort_order,
         } => {
@@ -358,8 +358,8 @@ pub async fn get_rag_analytics(
                 filter,
                 sort_by,
                 sort_order,
+                has_clicks,
                 page,
-                pool.clone(),
                 clickhouse_client.get_ref(),
             )
             .await?;
@@ -383,7 +383,6 @@ pub async fn get_rag_analytics(
             let rag_query = get_rag_query(
                 dataset_org_plan_sub.dataset.id,
                 request_id,
-                pool.clone(),
                 clickhouse_client.get_ref(),
             )
             .await?;
@@ -398,27 +397,28 @@ pub async fn get_rag_analytics(
             .await?;
             RAGAnalyticsResponse::RAGQueryRatings(rag_query_ratings)
         }
-        RAGAnalytics::TopicAnalytics {
+        RAGAnalytics::TopicQueries {
             filter,
             page,
+            has_clicks,
             sort_by,
             sort_order,
         } => {
-            let topic_analytics = get_topic_analytics_query(
+            let topic_queries = get_topic_queries_query(
                 dataset_org_plan_sub.dataset.id,
                 filter,
                 sort_by,
                 sort_order,
+                has_clicks,
                 page,
                 clickhouse_client.get_ref(),
             )
             .await?;
-            RAGAnalyticsResponse::TopicAnalytics(topic_analytics)
+            RAGAnalyticsResponse::TopicQueries(topic_queries)
         }
         RAGAnalytics::TopicDetails { topic_id } => {
             let topic_details =
-                get_topic_details_query(topic_id, pool.clone(), clickhouse_client.get_ref())
-                    .await?;
+                get_topic_details_query(topic_id, clickhouse_client.get_ref()).await?;
             RAGAnalyticsResponse::TopicDetails(topic_details)
         }
         RAGAnalytics::TopicsOverTime {

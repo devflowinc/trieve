@@ -16,8 +16,8 @@ use crate::{
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
         SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopComponents,
         TopComponentsResponse, TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages,
-        TopPagesResponse, TopicAnalyticsResponse, TopicAnalyticsSummaryClickhouse,
-        TopicDetailsResponse, TopicQueryClickhouse, TopicSortBy, TopicTimePointClickhouse,
+        TopPagesResponse, TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse,
+        TopicDetailsResponse, TopicQueriesResponse, TopicQueryClickhouse, TopicTimePointClickhouse,
         TopicsOverTimeResponse, TotalUniqueUsersResponse, TotalUniqueUsersTimePointClickhouse,
         UsageGraphPoint, UsageGraphPointClickhouse,
     },
@@ -412,8 +412,10 @@ pub async fn get_all_queries_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let queries: Vec<SearchQueryEvent> =
-        clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
+    let queries: Vec<SearchQueryEvent> = clickhouse_query
+        .into_iter()
+        .map(|q: SearchQueryEventClickhouse| q.into())
+        .collect_vec();
 
     Ok(SearchQueryResponse { queries })
 }
@@ -764,8 +766,8 @@ pub async fn get_rag_queries_query(
     filter: Option<RAGAnalyticsFilter>,
     sort_by: Option<RAGSortBy>,
     sort_order: Option<SortOrder>,
+    has_clicks: Option<bool>,
     page: Option<u32>,
-    pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RagQueryResponse, ServiceError> {
     let mut query_string = String::from(
@@ -773,8 +775,21 @@ pub async fn get_rag_queries_query(
             ?fields,
         FROM 
             rag_queries
-        WHERE dataset_id = ?",
+        ",
     );
+
+    if let Some(has_clicks) = has_clicks {
+        if has_clicks {
+            query_string
+                .push_str("JOIN events ON toUUID(events.request_id) = rag_queries.id AND events.event_type = 'click'")
+        } else {
+            query_string.push_str(
+                "LEFT ANTI JOIN events ON  toUUID(events.request_id) = rag_queries.id AND events.event_type = 'click'",
+            )
+        }
+    }
+
+    query_string.push_str("WHERE dataset_id = ?");
 
     if let Some(filter) = filter {
         query_string = filter.add_to_query(query_string);
@@ -801,12 +816,7 @@ pub async fn get_rag_queries_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let queries: Vec<RagQueryEvent> = join_all(
-        clickhouse_query
-            .into_iter()
-            .map(|q| q.from_clickhouse(pool.clone())),
-    )
-    .await;
+    let queries: Vec<RagQueryEvent> = clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
 
     Ok(RagQueryResponse { queries })
 }
@@ -903,7 +913,6 @@ pub async fn get_rag_usage_graph_query(
 pub async fn get_rag_query(
     dataset_id: uuid::Uuid,
     request_id: uuid::Uuid,
-    pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RagQueryEvent, ServiceError> {
     let clickhouse_query = clickhouse_client
@@ -917,7 +926,7 @@ pub async fn get_rag_query(
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let query: RagQueryEvent = clickhouse_query.from_clickhouse(pool.clone()).await;
+    let query: RagQueryEvent = clickhouse_query.into();
 
     Ok(query)
 }
@@ -1611,30 +1620,45 @@ pub async fn get_rag_query_ratings_query(
     Ok(response)
 }
 
-pub async fn get_topic_analytics_query(
+pub async fn get_topic_queries_query(
     dataset_id: uuid::Uuid,
-    filter: Option<RAGAnalyticsFilter>,
-    sort_by: Option<TopicSortBy>,
+    filter: Option<TopicAnalyticsFilter>,
+    sort_by: Option<RAGSortBy>,
     sort_order: Option<SortOrder>,
+    has_clicks: Option<bool>,
     page: Option<u32>,
     clickhouse_client: &clickhouse::Client,
-) -> Result<TopicAnalyticsResponse, ServiceError> {
+) -> Result<TopicQueriesResponse, ServiceError> {
     let mut query_string = String::from(
         "SELECT 
             topics.id,
             topics.name,
             topics.topic_id,
             topics.owner_id,
-            topics.referrer,
             topics.created_at,
             topics.updated_at,
-            COUNT(rag_queries.id) as message_count 
+            COUNT(rag_queries.id) as message_count,
+            AVG(rag_queries.top_score) as top_score,
+            AVG(rag_queries.hallucination_score) as hallucination_score,
+            AVG(JSONExtract(query_rating, 'rating', 'Nullable(Float64)')) as query_rating
         FROM topics 
-        JOIN rag_queries ON topics.topic_id = rag_queries.topic_id 
-        WHERE dataset_id = ?",
+        JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
+        ",
     );
 
-    if let Some(filter) = filter {
+    if let Some(has_clicks) = has_clicks {
+        if has_clicks {
+            query_string.push_str(
+                "JOIN events ON rag_queries.id = toUUID(events.request_id) AND events.event_type = 'click'",
+            );
+        } else {
+            query_string.push_str("LEFT ANTI JOIN events ON rag_queries.id = toUUID(events.request_id) AND events.event_type = 'click'");
+        }
+    }
+
+    query_string.push_str("WHERE topics.dataset_id = ? ");
+
+    if let Some(ref filter) = filter {
         query_string = filter.add_to_query(query_string);
     }
 
@@ -1644,20 +1668,28 @@ pub async fn get_topic_analytics_query(
         _ => "DESC",
     };
 
+    query_string.push_str("GROUP BY ALL ");
+
+    if let Some(filter) = filter {
+        query_string = filter.add_having_conditions(query_string);
+    }
+
+    let sort_by_str = match sort_by {
+        Some(RAGSortBy::CreatedAt) => "topics.created_at",
+        Some(RAGSortBy::TopScore) => "top_score",
+        Some(RAGSortBy::HallucinationScore) => "hallucination_score",
+        _ => "topics.created_at",
+    };
+
     query_string.push_str(&format!(
-        "GROUP BY 
-            topics.id, 
-            topics.name, 
-            topics.topic_id, 
-            topics.owner_id, 
-            topics.referrer,
-            topics.created_at, 
-            topics.updated_at 
+        "
         ORDER BY {} {} LIMIT 10 OFFSET {}",
-        sort_by.unwrap_or(TopicSortBy::CreatedAt),
+        sort_by_str,
         sort_direction,
-        page.unwrap_or(0) * 10
+        (page.unwrap_or(1) - 1) * 10
     ));
+
+    println!("{}", query_string);
 
     let topics = clickhouse_client
         .query(query_string.as_str())
@@ -1669,14 +1701,13 @@ pub async fn get_topic_analytics_query(
             ServiceError::InternalServerError("Error fetching topics".to_string())
         })?;
 
-    Ok(TopicAnalyticsResponse {
+    Ok(TopicQueriesResponse {
         topics: topics.into_iter().map(|t| t.into()).collect(),
     })
 }
 
 pub async fn get_topic_details_query(
     topic_id: uuid::Uuid,
-    pool: web::Data<Pool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<TopicDetailsResponse, ServiceError> {
     // Get topic details
@@ -1701,13 +1732,7 @@ pub async fn get_topic_details_query(
             ServiceError::InternalServerError("Error fetching messages".to_string())
         })?;
 
-    let messages: Vec<RagQueryEvent> = join_all(
-        messages
-            .into_iter()
-            .map(|q| q.from_clickhouse(pool.clone())),
-    )
-    .await;
-
+    let messages: Vec<RagQueryEvent> = messages.into_iter().map(|q| q.into()).collect_vec();
     Ok(TopicDetailsResponse {
         topic: topic.into(),
         messages,
@@ -1716,7 +1741,7 @@ pub async fn get_topic_details_query(
 
 pub async fn get_topics_over_time_query(
     dataset_id: uuid::Uuid,
-    filter: Option<RAGAnalyticsFilter>,
+    filter: Option<TopicAnalyticsFilter>,
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<TopicsOverTimeResponse, ServiceError> {
@@ -1736,8 +1761,6 @@ pub async fn get_topics_over_time_query(
         FROM 
             topics
         JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
-        WHERE 
-            dataset_id = ?
         ",
         interval
     );
@@ -1748,6 +1771,7 @@ pub async fn get_topics_over_time_query(
 
     query_string.push_str(
         "  
+        AND dataset_id = ?
         GROUP BY 
             time_stamp
         ORDER BY 
