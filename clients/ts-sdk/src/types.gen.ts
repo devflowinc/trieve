@@ -1706,6 +1706,13 @@ export type FileData = {
     total_pages: number;
 };
 
+export type FloatRange = {
+    gt?: (number) | null;
+    gte?: (number) | null;
+    lt?: (number) | null;
+    lte?: (number) | null;
+};
+
 /**
  * Boost the presence of certain tokens for fulltext (SPLADE) and keyword (BM25) search. I.e. boosting title phrases to priortize title matches or making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
  */
@@ -2512,6 +2519,7 @@ export type QueryTypes = SearchModalities | Array<MultiQuery>;
 
 export type RAGAnalytics = {
     filter?: ((RAGAnalyticsFilter) | null);
+    has_clicks?: (boolean) | null;
     page?: (number) | null;
     sort_by?: ((RAGSortBy) | null);
     sort_order?: ((SortOrder) | null);
@@ -2530,16 +2538,17 @@ export type RAGAnalytics = {
     filter?: ((RAGAnalyticsFilter) | null);
     type: 'rag_query_ratings';
 } | {
-    filter?: ((RAGAnalyticsFilter) | null);
+    filter?: ((TopicAnalyticsFilter) | null);
+    has_clicks?: (boolean) | null;
     page?: (number) | null;
-    sort_by?: ((TopicSortBy) | null);
+    sort_by?: ((RAGSortBy) | null);
     sort_order?: ((SortOrder) | null);
-    type: 'topic_analytics';
+    type: 'topic_queries';
 } | {
     topic_id: string;
     type: 'topic_details';
 } | {
-    filter?: ((RAGAnalyticsFilter) | null);
+    filter?: ((TopicAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'topics_over_time';
 } | {
@@ -2555,14 +2564,16 @@ export type RAGAnalytics = {
 export type type4 = 'rag_queries';
 
 export type RAGAnalyticsFilter = {
+    component_name?: (string) | null;
     date_range?: ((DateRange) | null);
+    query?: (string) | null;
     query_rating?: ((QueryRatingRange) | null);
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicAnalyticsResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse;
 
-export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at' | 'latency';
+export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at';
 
 export type RAGUsageGraphResponse = {
     points: Array<UsageGraphPoint>;
@@ -2978,6 +2989,7 @@ export type SearchAnalyticsFilter = {
     query_rating?: ((QueryRatingRange) | null);
     search_method?: ((SearchMethod) | null);
     search_type?: ((SearchType) | null);
+    top_score?: ((FloatRange) | null);
 };
 
 export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse;
@@ -3559,17 +3571,25 @@ export type Topic = {
     updated_at: string;
 };
 
-export type TopicAnalyticsResponse = {
-    topics: Array<TopicAnalyticsSummary>;
+export type TopicAnalyticsFilter = {
+    component_name?: (string) | null;
+    date_range?: ((DateRange) | null);
+    hallucination_score?: ((FloatRange) | null);
+    query?: (string) | null;
+    query_rating?: ((QueryRatingRange) | null);
+    rag_type?: ((RagTypes) | null);
+    top_score?: ((FloatRange) | null);
 };
 
 export type TopicAnalyticsSummary = {
+    avg_hallucination_score: number;
+    avg_query_rating?: (number) | null;
+    avg_top_score: number;
     created_at: string;
     id: string;
     message_count: number;
     name: string;
     owner_id: string;
-    referrer: string;
     topic_id: string;
     updated_at: string;
 };
@@ -3577,6 +3597,10 @@ export type TopicAnalyticsSummary = {
 export type TopicDetailsResponse = {
     messages: Array<RagQueryEvent>;
     topic: TopicQuery;
+};
+
+export type TopicQueriesResponse = {
+    topics: Array<TopicAnalyticsSummary>;
 };
 
 export type TopicQuery = {
@@ -3589,8 +3613,6 @@ export type TopicQuery = {
     topic_id: string;
     updated_at: string;
 };
-
-export type TopicSortBy = 'created_at';
 
 export type TopicTimePoint = {
     time_stamp: string;

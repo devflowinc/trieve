@@ -1,31 +1,31 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
-import { allSearchesQuery } from "app/queries/analytics/search";
 import { useEffect, useMemo, useState } from "react";
-import { SearchAnalyticsFilter, SearchChunksReqPayload, SearchMethod, SearchSortBy, SearchType, SortOrder } from "trieve-ts-sdk";
+import { RAGSortBy, SortOrder, TopicAnalyticsFilter, RagTypes } from "trieve-ts-sdk";
 import { formatStringDateRangeToDates, parseCustomDateString, toTitleCase, transformDateParams } from "app/utils/formatting";
 import { AdvancedTableComponent, Filter } from "../AdvancedTableComponent";
 import { Checkbox, ChoiceList, IndexFiltersProps, RangeSlider } from "@shopify/polaris";
 import { DateRangePicker } from "../DateRangePicker";
 import { ComponentNameSelect } from "../ComponentNameSelect";
+import { allChatsQuery } from "app/queries/analytics/chat";
 
-export const AllSearchesTable = () => {
+export const AllChatsTable = () => {
   const { trieve } = useTrieve();
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(0);
   const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<SearchAnalyticsFilter>({});
+  const [filters, setFilters] = useState<TopicAnalyticsFilter>({});
   const [hasClicks, setHasClicks] = useState<boolean | undefined>(undefined);
   const [appliedFilters, setAppliedFilters] = useState<IndexFiltersProps['appliedFilters']>([]);
   const [sortSelected, setSortSelected] = useState<string[]>(['created_at desc']);
-  const [sortBy, setSortBy] = useState<SearchSortBy | undefined>(undefined);
+  const [sortBy, setSortBy] = useState<RAGSortBy | undefined>(undefined);
   const [sortOrder, setSortOrder] = useState<SortOrder | undefined>(undefined);
-  const { data, isLoading } = useQuery(allSearchesQuery(trieve, filters, page, hasClicks, sortBy, sortOrder));
+  const { data, isLoading } = useQuery(allChatsQuery(trieve, filters, page, hasClicks, sortBy, sortOrder));
 
   const client = useQueryClient();
   useEffect(() => {
     // prefetch the next page
-    client.prefetchQuery(allSearchesQuery(trieve, filters, page + 1, hasClicks, sortBy, sortOrder));
+    client.prefetchQuery(allChatsQuery(trieve, filters, page + 1, hasClicks, sortBy, sortOrder));
   }, [page, hasClicks, filters, sortBy, sortOrder]);
 
   const [previousData, setPreviousData] = useState<any[][]>([]);
@@ -36,20 +36,17 @@ export const AllSearchesTable = () => {
       return previousData;
     }
 
-    if (!data?.queries) {
+    if (!data?.topics) {
       return [];
     }
 
-    let newData = data?.queries.map((query) => {
-      const searchMethod = (query.request_params as SearchChunksReqPayload).search_type;
+    let newData = data?.topics.map((query) => {
       return [
-        query.query,
-        toTitleCase(query.search_type),
-        toTitleCase(searchMethod),
-        query.top_score,
-        query.latency,
-        query.query_rating ?? "N/A",
-        query.results.length,
+        query.name,
+        query.message_count,
+        query.avg_top_score,
+        query.avg_hallucination_score,
+        query.avg_query_rating ?? "N/A",
         parseCustomDateString(query.created_at).toLocaleString(),
       ];
     }) ?? [];
@@ -66,10 +63,10 @@ export const AllSearchesTable = () => {
   const sortOptions: IndexFiltersProps['sortOptions'] = [
     { label: 'Queried At', value: 'created_at asc', directionLabel: 'Ascending' },
     { label: 'Queried At', value: 'created_at desc', directionLabel: 'Descending' },
-    { label: 'Latency', value: 'latency asc', directionLabel: 'Ascending' },
-    { label: 'Latency', value: 'latency desc', directionLabel: 'Descending' },
     { label: 'Top Score', value: 'top_score asc', directionLabel: 'Ascending' },
     { label: 'Top Score', value: 'top_score desc', directionLabel: 'Descending' },
+    { label: 'Hallucination Score', value: 'hallucination_score asc', directionLabel: 'Ascending' },
+    { label: 'Hallucination Score', value: 'hallucination_score desc', directionLabel: 'Descending' },
   ];
 
 
@@ -97,80 +94,40 @@ export const AllSearchesTable = () => {
       pinned: true,
     },
     {
-      key: "search_type",
-      label: "Search Type",
+      key: "rag_type",
+      label: "RAG Type",
       filter: <ChoiceList
-        title="Search Type"
+        title="RAG Type"
         titleHidden
         choices={[
           { label: "All", value: "all" },
-          { label: "Search", value: "search" },
-          { label: "Autocomplete", value: "autocomplete" },
-          { label: "Search Over Groups", value: "search_over_groups" },
-          { label: "Search Within Groups", value: "search_within_groups" },
+          { label: "All Chunks", value: "all_chunks" },
+          { label: "Selected Chunks", value: "chosen_chunks" },
         ]}
         allowMultiple={false}
-        selected={[filters.search_type || "all"]}
+        selected={[filters.rag_type || "all"]}
         onChange={(e) => {
           setFilters({
             ...filters,
-            search_type: e[0] == "all" ? undefined : e[0] as SearchType,
+            rag_type: e[0] == "all" ? undefined : e[0] as RagTypes,
           });
           if (e[0] != "all") {
-            setAppliedFilters([...(appliedFilters?.filter((filter) => filter.key !== "search_type") || []), {
-              key: "search_type",
-              label: "Search Type: " + toTitleCase(e[0]),
+            setAppliedFilters([...(appliedFilters?.filter((filter) => filter.key !== "rag_type") || []), {
+              key: "rag_type",
+              label: "RAG Type: " + toTitleCase(e[0]),
               onRemove: () => {
                 setFilters({
                   ...filters,
-                  search_type: undefined,
+                  rag_type: undefined,
                 });
-                setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "search_type"));
+                setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "rag_type"));
               },
             }]);
           } else {
-            setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "search_type"));
+            setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "rag_type"));
           }
         }}
       />,
-    },
-    {
-      key: "search_method",
-      label: "Search Method",
-      filter: <ChoiceList
-        title="Search Method"
-        titleHidden
-        choices={[
-          { label: "All", value: "all" },
-          { label: "Fulltext", value: "fulltext" },
-          { label: "Hybrid", value: "hybrid" },
-          { label: "Semantic", value: "semantic" },
-        ]}
-        allowMultiple={false}
-        selected={[filters.search_method || "all"]}
-        onChange={(e) => {
-          setFilters({
-            ...filters,
-            search_method: e[0] == "all" ? undefined : e[0] as SearchMethod,
-          });
-          if (e[0] != "all") {
-            setAppliedFilters([...(appliedFilters?.filter((filter) => filter.key !== "search_method") || []), {
-              key: "search_method",
-              label: "Search Method: " + toTitleCase(e[0]),
-              onRemove: () => {
-                setFilters({
-                  ...filters,
-                  search_method: undefined,
-                });
-                setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "search_method"));
-              },
-            }]);
-          } else {
-            setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "search_method"));
-          }
-        }}
-      />,
-      pinned: true,
     },
     {
       key: "date_range",
@@ -271,6 +228,28 @@ export const AllSearchesTable = () => {
       pinned: true,
     },
     {
+      key: "hallucination_score",
+      label: "Hallucination Score",
+      filter: <RangeSlider
+        label="Hallucination Score"
+        min={0}
+        max={10}
+        value={[filters.hallucination_score?.gt || 0 * 10, filters.hallucination_score?.lt || 5 * 10]}
+        onChange={(e: [number, number]) => {
+          setFilters({ ...filters, hallucination_score: { gte: e[0] / 10, lte: e[1] / 10 } });
+          setAppliedFilters([...(appliedFilters?.filter((filter) => filter.key !== "hallucination_score") || []), {
+            key: "hallucination_score",
+            label: "Hallucination Score: " + (e[0] / 10) + " - " + (e[1] / 10),
+            onRemove: () => {
+              setFilters({ ...filters, hallucination_score: undefined });
+              setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "hallucination_score"));
+            },
+          }]);
+        }}
+      />,
+      pinned: true,
+    },
+    {
       key: "has_clicks",
       label: "Has Clicks",
       filter: <Checkbox label="Has Clicks" checked={hasClicks} onChange={(e) => {
@@ -287,7 +266,7 @@ export const AllSearchesTable = () => {
     },
   ];
 
-  const tabs = ["All Searches", "Searches w/ Clicks", "Searches w/o Clicks", "Low Confidence Searches"];
+  const tabs = ["All Chats", "Chats w/ Clicks", "Chats w/o Clicks", "High Hallucination Score", "Low Top Score"];
 
   useEffect(() => {
     if (selected === 0) {
@@ -301,17 +280,44 @@ export const AllSearchesTable = () => {
       setSortBy(undefined);
       setSortOrder(undefined);
       setFilters({});
-      setAppliedFilters([]);
+      setAppliedFilters([{
+        key: "has_clicks",
+        label: "Has Clicks: true",
+        onRemove: () => {
+          setHasClicks(undefined);
+          setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "has_clicks"));
+        },
+      }]);
     } else if (selected === 2) {
       setHasClicks(false);
       setSortBy(undefined);
       setSortOrder(undefined);
       setFilters({});
-      setAppliedFilters([]);
+      setAppliedFilters([{
+        key: "has_clicks",
+        label: "Has Clicks: false",
+        onRemove: () => {
+          setHasClicks(undefined);
+          setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "has_clicks"));
+        },
+      }]);
     } else if (selected === 3) {
       setHasClicks(undefined);
-      setSortBy("top_score");
+      setSortBy("hallucination_score");
       setSortOrder("desc");
+      setFilters({ hallucination_score: { gte: 0.5, lte: 1 } });
+      setAppliedFilters([{
+        key: "hallucination_score",
+        label: "Hallucination Score: 0.5 to 1",
+        onRemove: () => {
+          setFilters({ ...filters, hallucination_score: undefined });
+          setAppliedFilters(appliedFilters?.filter((filter) => filter.key !== "hallucination_score"));
+        },
+      }]);
+    } else if (selected === 4) {
+      setHasClicks(undefined);
+      setSortBy("top_score");
+      setSortOrder("asc");
       setFilters({ top_score: { gte: 0, lte: 0.5 } });
       setAppliedFilters([{
         key: "top_score",
@@ -327,7 +333,7 @@ export const AllSearchesTable = () => {
   useEffect(() => {
     if (sortSelected.length > 0) {
       const [sortBy, sortOrder] = sortSelected[0].split(" ");
-      setSortBy(sortBy as SearchSortBy);
+      setSortBy(sortBy as RAGSortBy);
       setSortOrder(sortOrder as SortOrder);
     }
   }, [sortSelected]);
@@ -352,19 +358,17 @@ export const AllSearchesTable = () => {
       appliedFilters={appliedFilters}
       page={page}
       setPage={setPage}
-      label="Searches"
-      tooltipContent="View and filter all your users' searches."
+      label="Chat Sessions"
+      tooltipContent="View and filter all your users' chat sessions."
       tableHeadings={[
-        { heading: "Query", tooltip: "The search query" },
-        { heading: "Search Type", tooltip: "Represents the type of search. Can be Search, Autocomplete, Search Over Groups, or Search Within Groups" },
-        { heading: "Search Method", tooltip: "Represents the method used to search. Can be Fulltext, Hybrid, or Semantic" },
-        { heading: "Top Score", tooltip: "The top score of the search" },
-        { heading: "Latency", tooltip: "The latency of the search" },
-        { heading: "Query Rating", tooltip: "The rating of the search by the user." },
-        { heading: "Results", tooltip: "The number of results returned" },
-        { heading: "Created At", tooltip: "The date and time the search was made" },
+        { heading: "Name", tooltip: "The name created by the chatbot to represent the chat session." },
+        { heading: "Message Count", tooltip: "The number of messages in the chat session." },
+        { heading: "Avg Top Score", tooltip: "The average top score of the chat session." },
+        { heading: "Avg Hallucination Score", tooltip: "The average hallucination score of the chat session." },
+        { heading: "Avg Query Rating", tooltip: "The average query rating of the chat session." },
+        { heading: "Created At", tooltip: "The date and time the chat session was created." },
       ]}
-      hasNext={data?.queries.length == 10}
+      hasNext={data?.topics.length == 10}
       tabs={tabs}
       filters={shopifyFilters}
       query={query}
