@@ -7486,6 +7486,10 @@ pub enum ComponentAnalytics {
         filter: Option<ComponentAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "EventCounts")]
+    EventCounts {
+        filter: Option<EventAnalyticsFilter>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
@@ -7562,6 +7566,28 @@ pub struct ChatAverageRatingResponse {
 pub struct MessagesPerUserResponse {
     pub avg_messages_per_user: f64,
     pub points: Vec<FloatTimePoint>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct EventTypeAndCounts {
+    pub event_type: String,
+    pub event_count: i64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct ChatMessageCount {
+    pub total_queries: i64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct EventTypeAndCountsResponse {
+    pub event_types: Vec<EventTypeAndCounts>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct GetEventCountsRequestBody {
+    /// Filter to apply to the events
+    pub filter: Option<EventAnalyticsFilter>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -7821,6 +7847,8 @@ pub enum ComponentAnalyticsResponse {
     ComponentNames(ComponentNamesResponse),
     #[schema(title = "ComponentInteractionTime")]
     ComponentInteractionTime(ComponentInteractionTimeResponse),
+    #[schema(title = "EventTypeAndCounts")]
+    EventTypeAndCounts(EventTypeAndCountsResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

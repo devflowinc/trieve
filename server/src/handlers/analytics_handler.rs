@@ -3,7 +3,8 @@ use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
         ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
-        EventDataTypes, EventTypes, GetEventsRequestBody, OrganizationWithSubAndPlan, Pool,
+        EventDataTypes, EventTypeAndCounts, EventTypeAndCountsResponse, EventTypes,
+        GetEventCountsRequestBody, GetEventsRequestBody, OrganizationWithSubAndPlan, Pool,
         RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
         RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
         TopDatasetsRequestTypes,
@@ -1005,6 +1006,30 @@ pub async fn get_component_analytics(
             .await?;
 
             ComponentAnalyticsResponse::ComponentInteractionTime(component_interaction_time)
+        }
+        ComponentAnalytics::EventCounts { filter } => {
+            let mut event_counts = get_event_counts_by_type_query(
+                dataset_org_plan_sub.dataset.id,
+                filter.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            let chat_counts = get_chat_message_counts_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            event_counts.push(EventTypeAndCounts {
+                event_type: "chat_message".to_string(),
+                event_count: chat_counts.total_queries,
+            });
+
+            ComponentAnalyticsResponse::EventTypeAndCounts(EventTypeAndCountsResponse {
+                event_types: event_counts,
+            })
         }
     };
 

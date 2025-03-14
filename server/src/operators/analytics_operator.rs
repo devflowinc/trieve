@@ -2428,7 +2428,6 @@ pub async fn get_search_ctr_metrics_over_time_query(
         points: ctr_metrics_over_time,
     })
 }
-
 pub async fn get_recommendation_conversion_rate_query(
     dataset_id: uuid::Uuid,
     filter: Option<RecommendationAnalyticsFilter>,
@@ -2934,4 +2933,86 @@ pub async fn get_chat_revenue_query(
         avg_chat_revenue,
         points: chat_revenue.into_iter().map(|x| x.into()).collect(),
     })
+}
+pub async fn get_event_counts_by_type_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<EventAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<Vec<EventTypeAndCounts>, ServiceError> {
+    let mut query_string = "SELECT
+            event_type,
+            COUNT(DISTINCT id) AS event_count
+        FROM
+            events
+        WHERE dataset_id = ?
+    "
+    .to_string();
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string).map_err(|e| {
+            log::error!("Error adding filter to query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+    }
+
+    query_string.push_str(" GROUP BY event_type ORDER BY event_count DESC");
+
+    let result = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<EventTypeAndCounts>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching event counts: {:?}", e);
+            ServiceError::InternalServerError("Error fetching event counts".to_string())
+        })?;
+
+    Ok(result)
+}
+
+pub async fn get_chat_message_counts_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<EventAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<ChatMessageCount, ServiceError> {
+    let mut query_string = "SELECT
+            COUNT(*) as total_queries
+        FROM
+            topics
+        WHERE dataset_id = ?
+    "
+    .to_string();
+
+    if let Some(filter) = filter {
+        if let Some(date_range) = filter.date_range {
+            if let Some(gt) = &date_range.gt {
+                query_string.push_str(&format!(" AND created_at > '{}'", gt));
+            }
+            if let Some(lt) = &date_range.lt {
+                query_string.push_str(&format!(" AND created_at < '{}'", lt));
+            }
+            if let Some(gte) = &date_range.gte {
+                query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+            }
+            if let Some(lte) = &date_range.lte {
+                query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+            }
+        }
+
+        if let Some(user_id) = filter.user_id {
+            query_string.push_str(&format!(" AND user_id = '{}'", user_id));
+        }
+    }
+
+    let result = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_one::<ChatMessageCount>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching event counts: {:?}", e);
+            ServiceError::InternalServerError("Error fetching event counts".to_string())
+        })?;
+
+    Ok(result)
 }
