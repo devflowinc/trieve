@@ -2,7 +2,7 @@ import { useMatches } from "@remix-run/react";
 import merge from "deepmerge";
 import { DehydratedState } from "@tanstack/react-query";
 
-export const useDehydratedState = (): DehydratedState => {
+export const useDehydratedState = (): DehydratedState | undefined => {
   const matches = useMatches();
 
   const dehydratedState = matches

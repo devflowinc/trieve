@@ -538,6 +538,9 @@ export type ComponentAnalytics = {
 } | {
     page?: (number) | null;
     type: 'component_names';
+} | {
+    filter?: ((EventAnalyticsFilter) | null);
+    type: 'event_counts';
 };
 
 export type type3 = 'total_unique_users';
@@ -547,7 +550,7 @@ export type ComponentAnalyticsFilter = {
     date_range?: ((DateRange) | null);
 };
 
-export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse;
+export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse | EventTypeAndCountsResponse;
 
 export type ComponentNamesResponse = {
     component_names: Array<(string)>;
@@ -1396,6 +1399,15 @@ export type EventReturn = {
     page_count: number;
 };
 
+export type EventTypeAndCounts = {
+    event_count: number;
+    event_type: string;
+};
+
+export type EventTypeAndCountsResponse = {
+    event_types: Array<EventTypeAndCounts>;
+};
+
 export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'chunk_update_failed' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started' | 'csv_jsonl_processing_failed' | 'csv_jsonl_processing_checkpoint' | 'csv_jsonl_processing_completed' | 'video_uploaded' | 'pagefind_indexing_started' | 'pagefind_indexing_finished' | 'etl_started' | 'etl_completed' | 'etl_failed';
 
 export type EventTypes = {
@@ -1862,6 +1874,10 @@ export type GetCrawlRequestsReqPayload = {
 export type GetDatasetsPagination = {
     limit?: (number) | null;
     offset?: (number) | null;
+};
+
+export type GetEventCountsRequestBody = {
+    filter?: ((EventAnalyticsFilter) | null);
 };
 
 export type GetEventsData = {

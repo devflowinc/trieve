@@ -7195,6 +7195,10 @@ pub enum ComponentAnalytics {
     },
     #[schema(title = "ComponentNames")]
     ComponentNames { page: Option<u32> },
+    #[schema(title = "EventCounts")]
+    EventCounts {
+        filter: Option<EventAnalyticsFilter>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
@@ -7269,6 +7273,28 @@ impl From<MessagesPerUserTimePointClickhouse> for MessagesPerUserTimePoint {
             messages_per_user: value.messages_per_user,
         }
     }
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct EventTypeAndCounts {
+    pub event_type: String,
+    pub event_count: i64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct ChatMessageCount {
+    pub total_queries: i64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct EventTypeAndCountsResponse {
+    pub event_types: Vec<EventTypeAndCounts>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct GetEventCountsRequestBody {
+    /// Filter to apply to the events
+    pub filter: Option<EventAnalyticsFilter>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -7437,6 +7463,8 @@ pub enum ComponentAnalyticsResponse {
     TopComponents(TopComponentsResponse),
     #[schema(title = "ComponentNames")]
     ComponentNames(ComponentNamesResponse),
+    #[schema(title = "EventTypeAndCounts")]
+    EventTypeAndCounts(EventTypeAndCountsResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
