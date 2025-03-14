@@ -3,6 +3,7 @@ import { AverageInteractionTime } from "app/components/analytics/component/Avera
 import { TopComponents } from "app/components/analytics/component/TopComponents";
 import { TopPages } from "app/components/analytics/component/TopPages";
 import { TotalUniqueVisitors } from "app/components/analytics/component/TotalUniqueVisitors";
+import { UserJourneyFunnel } from "app/components/analytics/component/UserJourneyFunnel";
 import { SearchFilterBar } from "app/components/analytics/FilterBar";
 import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
 import { useState } from "react";
@@ -30,6 +31,8 @@ export default function ComponentAnalyticsPage() {
           <div className="flex flex-col gap-4">
             <TopPages filters={filters} />
             <TopComponents filters={filters} />
+            <TopComponents filters={filters} />
+            <UserJourneyFunnel filters={filters} />
           </div>
         </Grid.Cell>
       </Grid>

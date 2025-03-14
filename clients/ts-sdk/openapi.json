@@ -8940,6 +8940,29 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "EventCounts",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EventAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "event_counts"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -8979,6 +9002,9 @@
           },
           {
             "$ref": "#/components/schemas/ComponentInteractionTimeResponse"
+          },
+          {
+            "$ref": "#/components/schemas/EventTypeAndCountsResponse"
           }
         ]
       },
@@ -11035,6 +11061,36 @@
           }
         }
       },
+      "EventTypeAndCounts": {
+        "type": "object",
+        "required": [
+          "event_type",
+          "event_count"
+        ],
+        "properties": {
+          "event_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "event_type": {
+            "type": "string"
+          }
+        }
+      },
+      "EventTypeAndCountsResponse": {
+        "type": "object",
+        "required": [
+          "event_types"
+        ],
+        "properties": {
+          "event_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTypeAndCounts"
+            }
+          }
+        }
+      },
       "EventTypeRequest": {
         "type": "string",
         "enum": [
@@ -12298,6 +12354,19 @@
           "offset": {
             "type": "integer",
             "format": "int64",
+            "nullable": true
+          }
+        }
+      },
+      "GetEventCountsRequestBody": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventAnalyticsFilter"
+              }
+            ],
             "nullable": true
           }
         }
