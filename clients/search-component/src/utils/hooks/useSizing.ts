@@ -27,7 +27,7 @@ const popupClass = cva(
       },
       mode: {
         search: [],
-        chat: [],
+        chat: ["md:!tv-max-h-[60vh]"],
       },
     },
   },

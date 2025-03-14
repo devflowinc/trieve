@@ -4,7 +4,13 @@ import { useChatState } from "../../utils/hooks/chat-context";
 import ImagePreview from "../ImagePreview";
 import { UploadAudio } from "../Search/UploadAudio";
 import { UploadImage } from "../Search/UploadImage";
-export const ChatInput = ({ showShadow }: { showShadow?: boolean }) => {
+export const ChatInput = ({
+  showShadow,
+  onMessageSend,
+}: {
+  showShadow?: boolean;
+  onMessageSend?: () => void;
+}) => {
   const {
     props,
     mode,
@@ -69,6 +75,9 @@ export const ChatInput = ({ showShadow }: { showShadow?: boolean }) => {
           onSubmit={(e) => {
             e.preventDefault();
             if (currentQuestion || imageUrl !== "") {
+              if (onMessageSend) {
+                onMessageSend();
+              }
               askQuestion(currentQuestion);
             }
           }}
@@ -91,6 +100,9 @@ export const ChatInput = ({ showShadow }: { showShadow?: boolean }) => {
         <button
           onClick={() => {
             if (currentQuestion || imageUrl !== "") {
+              if (onMessageSend) {
+                onMessageSend();
+              }
               askQuestion(currentQuestion);
             }
           }}
