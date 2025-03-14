@@ -11,7 +11,7 @@ import { Granularity } from "trieve-ts-sdk";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
 import { formatTimeValueForChart } from "app/utils/formatting";
 
-interface GraphComponentProps<T> {
+interface GraphComponentProps<T extends Record<string, any>> {
   topLevelMetric: number | undefined;
   graphData: T[] | null | undefined;
   loading: boolean;
@@ -24,7 +24,7 @@ interface GraphComponentProps<T> {
   dataType?: "number" | "percentage" | "currency" | "time";
 }
 
-export const GraphComponent = <T,>({
+export const GraphComponent = <T extends Record<string, any>>({
   topLevelMetric,
   graphData,
   loading,
