@@ -137,7 +137,9 @@ export const AllChatsTable = () => {
         onChange={(e) => {
           setFilters({ ...filters, date_range: transformDateParams(e) });
           let label;
-          if (e.gte?.getHours() === 0 &&
+          if (e.gte == null) {
+            label = "From All Time";
+          } else if (e.gte?.getHours() === 0 &&
             e.gte?.getMinutes() === 0 &&
             e.gte?.getSeconds() === 0) {
             label = "From " + e.gte?.toLocaleString("en-US", {
