@@ -17,9 +17,11 @@ export interface TableComponentProps {
   tableHeadings: string[];
   tooltipContent: string;
   hasNext: boolean;
+  sortableColumns?: boolean[];
+  onSort?: (index: number, direction: "ascending" | "descending") => void;
 }
 
-export const TableComponent = ({
+export const BasicTableComponent = ({
   data,
   page,
   setPage,
@@ -28,6 +30,8 @@ export const TableComponent = ({
   tableContentTypes,
   tableHeadings,
   hasNext,
+  sortableColumns,
+  onSort,
 }: TableComponentProps) => {
   return (
     <Card>
@@ -42,6 +46,8 @@ export const TableComponent = ({
         <DataTable
           truncate
           hasZebraStripingOnData
+          sortable={sortableColumns}
+          onSort={onSort}
           rows={data}
           columnContentTypes={tableContentTypes}
           headings={tableHeadings}
@@ -56,8 +62,7 @@ export const TableComponent = ({
               setPage((prevPage) => prevPage - 1);
             }}
             hasPrevious={page > 1}
-            hasNext={hasNext}
-          ></Pagination>
+            hasNext={hasNext}></Pagination>
         </div>
       </Box>
     </Card>

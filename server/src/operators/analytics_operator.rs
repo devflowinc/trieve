@@ -362,6 +362,7 @@ pub async fn get_all_queries_query(
     filter: Option<SearchAnalyticsFilter>,
     sort_by: Option<SearchSortBy>,
     sort_order: Option<SortOrder>,
+    has_clicks: Option<bool>,
     page: Option<u32>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchQueryResponse, ServiceError> {
@@ -370,8 +371,21 @@ pub async fn get_all_queries_query(
             ?fields
         FROM 
             search_queries
-        WHERE dataset_id = ? AND search_queries.is_duplicate = 0",
+        ",
     );
+
+    if let Some(has_clicks) = has_clicks {
+        if has_clicks {
+            query_string
+                .push_str("JOIN events ON toUUID(events.request_id) = search_queries.id AND events.event_type = 'click'")
+        } else {
+            query_string.push_str(
+                "LEFT ANTI JOIN events ON  toUUID(events.request_id) = search_queries.id AND events.event_type = 'click'",
+            )
+        }
+    }
+
+    query_string.push_str("WHERE dataset_id = ? AND search_queries.is_duplicate = 0");
 
     if let Some(filter) = filter {
         query_string = filter.add_to_query(query_string);

@@ -12896,7 +12896,7 @@
         "properties": {
           "avg_messages_per_user": {
             "type": "number",
-            "format": "float"
+            "format": "double"
           },
           "points": {
             "type": "array",
@@ -12915,7 +12915,7 @@
         "properties": {
           "messages_per_user": {
             "type": "number",
-            "format": "float"
+            "format": "double"
           },
           "time_stamp": {
             "type": "string"
@@ -15874,6 +15874,10 @@
                 ],
                 "nullable": true
               },
+              "has_clicks": {
+                "type": "boolean",
+                "nullable": true
+              },
               "page": {
                 "type": "integer",
                 "format": "int32",
@@ -15988,6 +15992,10 @@
                 "$ref": "#/components/schemas/DateRange"
               }
             ],
+            "nullable": true
+          },
+          "query": {
+            "type": "string",
             "nullable": true
           },
           "query_rating": {

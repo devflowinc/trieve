@@ -4,6 +4,8 @@ import {
   HeadQueryResponse,
   SearchAnalyticsFilter,
   SearchQueryResponse,
+  SearchSortBy,
+  SortOrder,
   SearchUsageGraphResponse,
   TrieveSDK,
 } from "trieve-ts-sdk";
@@ -74,14 +76,20 @@ export const allSearchesQuery = (
   trieve: TrieveSDK,
   filters: SearchAnalyticsFilter,
   page: number,
+  has_clicks?: boolean,
+  sort_by?: SearchSortBy,
+  sort_order?: SortOrder,
 ) => {
   return {
-    queryKey: ["all_searches", filters, page],
+    queryKey: ["all_searches", filters, page, has_clicks, sort_by, sort_order],
     queryFn: async () => {
       const result = await trieve.getSearchAnalytics({
         filter: filters,
         type: "search_queries",
         page: page,
+        has_clicks,
+        sort_by,
+        sort_order,
       });
       return result as SearchQueryResponse;
     },

@@ -256,3 +256,7 @@ export const fillDate = <T>({
 
   return info;
 };
+
+export const toTitleCase = (str: string) => {
+  return str.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+};
