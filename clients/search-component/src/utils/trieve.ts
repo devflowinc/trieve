@@ -28,6 +28,7 @@ export const omit = (obj: object | null | undefined, keys: string[]) => {
 
 export const searchWithTrieve = async ({
   trieve,
+  props,
   query_string,
   image_url,
   audioBase64,
@@ -39,6 +40,7 @@ export const searchWithTrieve = async ({
   type,
 }: {
   trieve: TrieveSDK;
+  props: ModalProps;
   query_string: string;
   image_url?: string;
   audioBase64?: string;
@@ -86,6 +88,10 @@ export const searchWithTrieve = async ({
             must: [{ field: "tag_set", match_any: tags }],
           },
         }),
+        metadata: {
+          component_props: props,
+        },
+        user_id: await getFingerprint(),  
         typo_options: {
           correct_typos: true,
         },
@@ -115,6 +121,10 @@ export const searchWithTrieve = async ({
             must: [{ field: "tag_set", match_any: tags }],
           },
         }),
+        metadata: {
+          component_props: props,
+        },
+        user_id: await getFingerprint(),
         typo_options: {
           correct_typos: true,
         },
@@ -151,6 +161,7 @@ export const searchWithTrieve = async ({
 
 export const groupSearchWithTrieve = async ({
   trieve,
+  props,
   query_string,
   image_url,
   audioBase64,
@@ -161,6 +172,7 @@ export const groupSearchWithTrieve = async ({
   tags,
   type,
 }: {
+  props: ModalProps;
   trieve: TrieveSDK;
   query_string: string;
   image_url?: string;
@@ -206,6 +218,10 @@ export const groupSearchWithTrieve = async ({
         },
       }),
       group_size: 1,
+      metadata: {
+        component_props: props,
+      },
+      user_id: await getFingerprint(),
       search_type: searchOptions.search_type ?? "fulltext",
       ...omit(searchOptions, ["use_autocomplete"]),
     },

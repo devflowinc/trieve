@@ -5,7 +5,7 @@ import { topPagesQuery } from "app/queries/analytics/component";
 import { useState } from "react";
 import { useEffect } from "react";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
-import { TableComponent } from "../TableComponent";
+import { BasicTableComponent } from "../BasicTableComponent";
 export const TopPages = ({
   filters,
 }: {
@@ -27,7 +27,7 @@ export const TopPages = ({
   const mappedData = data ? data.top_pages.map((query) => [query.page, query.count]) : [];
 
   return (
-    <TableComponent
+    <BasicTableComponent
       data={mappedData}
       page={page}
       setPage={setPage}

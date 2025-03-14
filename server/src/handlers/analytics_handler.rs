@@ -256,6 +256,7 @@ pub async fn get_search_analytics(
         }
         SearchAnalytics::SearchQueries {
             filter,
+            has_clicks,
             page,
             sort_by,
             sort_order,
@@ -265,6 +266,7 @@ pub async fn get_search_analytics(
                 filter,
                 sort_by,
                 sort_order,
+                has_clicks,
                 page,
                 clickhouse_client.get_ref(),
             )
@@ -444,6 +446,19 @@ pub async fn get_rag_analytics(
             )
             .await?;
             RAGAnalyticsResponse::CTRMetricsOverTime(ctr_metrics_over_time)
+        }
+        RAGAnalytics::MessagesPerUser {
+            filter,
+            granularity,
+        } => {
+            let messages_per_user = get_messages_per_user(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::MessagesPerUser(messages_per_user)
         }
     };
 

@@ -8,7 +8,7 @@ import {
 import { useState } from "react";
 import { useEffect } from "react";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
-import { TableComponent } from "../TableComponent";
+import { BasicTableComponent } from "../BasicTableComponent";
 export const TopComponents = ({
   filters,
 }: {
@@ -28,7 +28,7 @@ export const TopComponents = ({
     : [];
 
   return (
-    <TableComponent
+    <BasicTableComponent
       data={mappedData}
       page={page}
       setPage={setPage}

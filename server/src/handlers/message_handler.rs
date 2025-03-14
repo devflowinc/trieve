@@ -119,6 +119,8 @@ pub struct CreateMessageReqPayload {
     pub remove_stop_words: Option<bool>,
     /// Typo options lets you specify different methods to handle typos in the search query. If not specified, this defaults to no typo handling.
     pub typo_options: Option<TypoOptions>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
 }
 
 /// Create message
@@ -400,6 +402,8 @@ pub struct RegenerateMessageReqPayload {
     pub remove_stop_words: Option<bool>,
     /// Typo options lets you specify different methods to handle typos in the search query. If not specified, this defaults to no typo handling.
     pub typo_options: Option<TypoOptions>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -448,6 +452,8 @@ pub struct EditMessageReqPayload {
     pub remove_stop_words: Option<bool>,
     /// Typo options lets you specify different methods to handle typos in the search query. If not specified, this defaults to no typo handling.
     pub typo_options: Option<TypoOptions>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -474,6 +480,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             use_quote_negated_terms: data.use_quote_negated_terms,
             remove_stop_words: data.remove_stop_words,
             typo_options: data.typo_options,
+            metadata: data.metadata,
         }
     }
 }
@@ -502,6 +509,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             use_quote_negated_terms: data.use_quote_negated_terms,
             remove_stop_words: data.remove_stop_words,
             typo_options: data.typo_options,
+            metadata: data.metadata,
         }
     }
 }

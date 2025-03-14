@@ -7,9 +7,11 @@ import { SearchAnalyticsFilter } from "trieve-ts-sdk";
 export const ComponentNameSelect = ({
   filters,
   setFilters,
+  onChange,
 }: {
   filters: SearchAnalyticsFilter;
   setFilters: (filters: SearchAnalyticsFilter) => void;
+  onChange?: (componentName: string) => void;
 }) => {
   const { trieve } = useTrieve();
   const { data: names, status } = useQuery(componentNamesQuery(trieve));
@@ -34,6 +36,9 @@ export const ComponentNameSelect = ({
       options={mappedOptions}
       value={filters.component_name || "All"}
       onChange={(s) => {
+        if (onChange) {
+          onChange(s);
+        }
         setFilters({
           ...filters,
           component_name: s === "" ? undefined : s,

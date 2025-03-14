@@ -3,11 +3,14 @@ import {
   Granularity,
   HeadQueryResponse,
   SearchAnalyticsFilter,
+  SearchQueryResponse,
+  SearchSortBy,
+  SortOrder,
   SearchUsageGraphResponse,
   TrieveSDK,
 } from "trieve-ts-sdk";
 import { subDays } from "date-fns";
-import { formatDateForApi } from "../../../utils/formatting";
+import { formatDateForApi } from "../../utils/formatting";
 
 export const defaultSearchAnalyticsFilter: SearchAnalyticsFilter = {
   date_range: {
@@ -65,6 +68,30 @@ export const noResultQueriesQuery = (
         page: page,
       });
       return result as HeadQueryResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const allSearchesQuery = (
+  trieve: TrieveSDK,
+  filters: SearchAnalyticsFilter,
+  page: number,
+  has_clicks?: boolean,
+  sort_by?: SearchSortBy,
+  sort_order?: SortOrder,
+) => {
+  return {
+    queryKey: ["all_searches", filters, page, has_clicks, sort_by, sort_order],
+    queryFn: async () => {
+      const result = await trieve.getSearchAnalytics({
+        filter: filters,
+        type: "search_queries",
+        page: page,
+        has_clicks,
+        sort_by,
+        sort_order,
+      });
+      return result as SearchQueryResponse;
     },
   } satisfies QueryOptions;
 };

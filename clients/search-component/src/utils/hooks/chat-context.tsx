@@ -94,6 +94,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       const topic = await trieveSDK.createTopic({
         name: currentQuestion,
         owner_id: fingerprint.toString(),
+        metadata: {
+          component_props: props,
+        },
       });
       setCurrentTopic(topic.id);
       createQuestion({ id: topic.id, question: question, defaultMatchAnyTags });
@@ -526,11 +529,14 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               completion_first: false,
             },
             concat_user_messages_query: true,
-            user_id: `${props.componentName}`,
+            user_id: await getFingerprint(),
             page_size: props.searchOptions?.page_size ?? 8,
             score_threshold: props.searchOptions?.score_threshold || null,
             use_group_search: props.useGroupSearch,
             filters: filters,
+            metadata: {
+              component_props: props
+            },
             highlight_options: {
               ...defaultHighlightOptions,
               highlight_delimiters: ["?", ",", ".", "!", "\n"],

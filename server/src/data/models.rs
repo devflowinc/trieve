@@ -4128,6 +4128,7 @@ impl ApiKeyRequestParams {
                 .or(payload.use_quote_negated_terms),
             remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
             typo_options: self.typo_options.or(payload.typo_options),
+            metadata: payload.metadata,
         }
     }
 
@@ -4154,6 +4155,7 @@ impl ApiKeyRequestParams {
             remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
             user_id: payload.user_id,
             typo_options: self.typo_options.or(payload.typo_options),
+            metadata: payload.metadata,
         }
     }
 
@@ -4191,6 +4193,7 @@ impl ApiKeyRequestParams {
             remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
             user_id: payload.user_id,
             typo_options: self.typo_options.or(payload.typo_options),
+            metadata: payload.metadata,
         }
     }
 
@@ -4216,6 +4219,7 @@ impl ApiKeyRequestParams {
             user_id: payload.user_id,
             typo_options: self.typo_options.or(payload.typo_options),
             sort_options: payload.sort_options,
+            metadata: payload.metadata,
         }
     }
 
@@ -4243,6 +4247,7 @@ impl ApiKeyRequestParams {
             remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
             user_id: payload.user_id,
             typo_options: self.typo_options.or(payload.typo_options),
+            metadata: payload.metadata,
         }
     }
 }
@@ -5126,6 +5131,7 @@ pub struct SearchQueryEvent {
     pub latency: f32,
     pub top_score: f32,
     pub results: Vec<serde_json::Value>,
+    pub metadata: Option<serde_json::Value>,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
     pub query_rating: Option<SearchQueryRating>,
@@ -5142,6 +5148,7 @@ impl Default for SearchQueryEvent {
             latency: 0.0,
             top_score: 0.0,
             results: vec![],
+            metadata: None,
             dataset_id: uuid::Uuid::new_v4(),
             created_at: chrono::Utc::now().to_string(),
             query_rating: None,
@@ -5398,6 +5405,7 @@ pub struct SearchQueryEventClickhouse {
     pub dataset_id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
+    pub metadata: String,
     pub query_rating: String,
     pub user_id: String,
 }
@@ -5429,6 +5437,12 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
             None
         };
 
+        let metadata = if !clickhouse_response.metadata.is_empty() {
+            Some(serde_json::from_str(&clickhouse_response.metadata).unwrap_or_default())
+        } else {
+            None
+        };
+
         SearchQueryEvent {
             id: uuid::Uuid::from_bytes(*clickhouse_response.id.as_bytes()),
             search_type: clickhouse_response.search_type.into(),
@@ -5453,6 +5467,7 @@ impl From<SearchQueryEventClickhouse> for SearchQueryEvent {
                         .unwrap_or_default()
                 })
                 .collect::<Vec<serde_json::Value>>(),
+            metadata,
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
             created_at: clickhouse_response.created_at.to_string(),
             query_rating,
@@ -5504,6 +5519,7 @@ pub struct RagQueryEvent {
     pub query_rating: Option<SearchQueryRating>,
     pub hallucination_score: f64,
     pub detected_hallucinations: Vec<String>,
+    pub metadata: Option<serde_json::Value>,
     pub created_at: String,
     pub user_id: String,
 }
@@ -5550,6 +5566,11 @@ impl RagQueryEventClickhouse {
         } else {
             None
         };
+        let metadata = if !self.metadata.is_empty() {
+            Some(serde_json::from_str(&self.metadata).unwrap_or_default())
+        } else {
+            None
+        };
 
         RagQueryEvent {
             id: uuid::Uuid::from_bytes(*self.id.as_bytes()),
@@ -5561,6 +5582,7 @@ impl RagQueryEventClickhouse {
             top_score: self.top_score,
             query_rating,
             dataset_id: uuid::Uuid::from_bytes(*self.dataset_id.as_bytes()),
+            metadata,
             llm_response: self.llm_response,
             hallucination_score: self.hallucination_score,
             detected_hallucinations: self.detected_hallucinations,
@@ -5585,6 +5607,7 @@ pub struct RagQueryEventClickhouse {
     pub top_score: f32,
     pub query_rating: String,
     pub llm_response: String,
+    pub metadata: String,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::time::datetime")]
@@ -5636,6 +5659,7 @@ pub struct RecommendationEventClickhouse {
     pub dataset_id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
+    pub metadata: String,
     pub user_id: String,
 }
 
@@ -5659,6 +5683,7 @@ pub struct RecommendationEvent {
     pub negative_tracking_ids: Vec<String>,
     pub request_params: serde_json::Value,
     pub results: Vec<serde_json::Value>,
+    pub metadata: Option<serde_json::Value>,
     pub top_score: f32,
     pub dataset_id: uuid::Uuid,
     pub created_at: String,
@@ -5677,6 +5702,11 @@ impl From<String> for ClickhouseRecommendationTypes {
 
 impl From<RecommendationEventClickhouse> for RecommendationEvent {
     fn from(clickhouse_response: RecommendationEventClickhouse) -> RecommendationEvent {
+        let metadata = if !clickhouse_response.metadata.is_empty() {
+            Some(serde_json::from_str(&clickhouse_response.metadata).unwrap_or_default())
+        } else {
+            None
+        };
         RecommendationEvent {
             id: uuid::Uuid::from_bytes(*clickhouse_response.id.as_bytes()),
             recommendation_type: clickhouse_response.recommendation_type.into(),
@@ -5690,7 +5720,7 @@ impl From<RecommendationEventClickhouse> for RecommendationEvent {
                 .iter()
                 .map(|id| uuid::Uuid::parse_str(id).unwrap())
                 .collect(),
-
+            metadata,
             positive_tracking_ids: clickhouse_response.positive_tracking_ids.clone(),
             negative_tracking_ids: clickhouse_response.negative_tracking_ids.clone(),
             request_params: serde_json::from_str(&clickhouse_response.request_params).unwrap(),
@@ -5815,6 +5845,7 @@ pub struct SearchAnalyticsFilter {
     pub search_type: Option<SearchType>,
     pub query_rating: Option<QueryRatingRange>,
     pub component_name: Option<String>,
+    pub query: Option<String>,
 }
 
 impl SearchAnalyticsFilter {
@@ -5844,6 +5875,13 @@ impl SearchAnalyticsFilter {
             ));
         }
 
+        if let Some(component_name) = &self.component_name {
+            query_string.push_str(&format!(
+                " AND JSONExtractString(metadata, 'component_props', 'componentName') = '{}'",
+                component_name
+            ));
+        }
+
         if let Some(query_rating) = &self.query_rating {
             if let Some(gt) = &query_rating.gt {
                 query_string.push_str(&format!(
@@ -5869,6 +5907,10 @@ impl SearchAnalyticsFilter {
                     lte
                 ));
             }
+        }
+
+        if let Some(query) = &self.query {
+            query_string.push_str(&format!(" AND query ILIKE '%{}%'", query));
         }
 
         query_string
@@ -6269,7 +6311,7 @@ pub struct TopicQueryClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
     pub owner_id: String,
-    pub referrer: String,
+    pub metadata: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
     #[serde(with = "clickhouse::serde::time::datetime")]
@@ -6283,20 +6325,25 @@ pub struct TopicQuery {
     pub topic_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
     pub owner_id: String,
-    pub referrer: String,
+    pub metadata: Option<serde_json::Value>,
     pub created_at: String,
     pub updated_at: String,
 }
 
 impl From<TopicQueryClickhouse> for TopicQuery {
     fn from(topic_query: TopicQueryClickhouse) -> Self {
+        let metadata = if !topic_query.metadata.is_empty() {
+            Some(serde_json::from_str(&topic_query.metadata).unwrap_or_default())
+        } else {
+            None
+        };
         TopicQuery {
             id: uuid::Uuid::from_bytes(topic_query.id.into_bytes()),
             name: topic_query.name,
             topic_id: uuid::Uuid::from_bytes(topic_query.topic_id.into_bytes()),
             dataset_id: uuid::Uuid::from_bytes(topic_query.dataset_id.into_bytes()),
             owner_id: topic_query.owner_id,
-            referrer: topic_query.referrer,
+            metadata,
             created_at: topic_query.created_at.to_string(),
             updated_at: topic_query.updated_at.to_string(),
         }
@@ -6521,6 +6568,7 @@ impl EventTypes {
                 results,
                 query_rating,
                 user_id,
+                metadata,
             } => EventDataTypes::SearchQueryEventClickhouse(SearchQueryEventClickhouse {
                 id: uuid::Uuid::new_v4(),
                 search_type: search_type
@@ -6528,6 +6576,7 @@ impl EventTypes {
                     .to_string(),
                 query,
                 request_params: serde_json::to_string(&request_params).unwrap_or_default(),
+                metadata: serde_json::to_string(&metadata).unwrap_or("".to_string()),
                 latency: latency.unwrap_or(0.0),
                 top_score: top_score.unwrap_or(0.0),
                 results: results
@@ -6551,6 +6600,7 @@ impl EventTypes {
                 user_id,
                 hallucination_score,
                 detected_hallucinations,
+                metadata,
             } => EventDataTypes::RagQueryEventClickhouse(RagQueryEventClickhouse {
                 id: uuid::Uuid::new_v4(),
                 rag_type: rag_type
@@ -6571,6 +6621,7 @@ impl EventTypes {
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
                 user_id: user_id.unwrap_or_default(),
+                metadata: serde_json::to_string(&metadata).unwrap_or("".to_string()),
                 hallucination_score: hallucination_score.unwrap_or(0.0),
                 detected_hallucinations: detected_hallucinations.unwrap_or_default(),
             }),
@@ -6584,6 +6635,7 @@ impl EventTypes {
                 top_score,
                 results,
                 user_id,
+                metadata,
             } => EventDataTypes::RecommendationEventClickhouse(RecommendationEventClickhouse {
                 id: uuid::Uuid::new_v4(),
                 recommendation_type: recommendation_type.unwrap_or_default().to_string(),
@@ -6600,6 +6652,7 @@ impl EventTypes {
                 positive_tracking_ids: positive_tracking_ids.unwrap_or_default().clone(),
                 negative_tracking_ids: negative_tracking_ids.unwrap_or_default().clone(),
                 request_params: serde_json::to_string(&request_params).unwrap_or_default(),
+                metadata: serde_json::to_string(&metadata).unwrap_or("".to_string()),
                 results: results
                     .unwrap_or_default()
                     .iter()
@@ -7002,6 +7055,7 @@ pub enum SearchAnalytics {
     #[schema(title = "SearchQueries")]
     SearchQueries {
         filter: Option<SearchAnalyticsFilter>,
+        has_clicks: Option<bool>,
         page: Option<u32>,
         sort_by: Option<SearchSortBy>,
         sort_order: Option<SortOrder>,
@@ -7064,6 +7118,11 @@ pub enum RAGAnalytics {
     },
     #[serde(rename = "ctr_metrics_over_time")]
     CTRMetricsOverTime {
+        filter: Option<RAGAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
+    #[serde(rename = "messages_per_user")]
+    MessagesPerUser {
         filter: Option<RAGAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
@@ -7173,7 +7232,7 @@ pub struct RAGUsageResponse {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(title = "RAGUsageGraphResponse")]
 pub struct RAGUsageGraphResponse {
-    pub usage_points: Vec<UsageGraphPoint>,
+    pub points: Vec<UsageGraphPoint>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
@@ -7206,12 +7265,42 @@ pub enum RAGAnalyticsResponse {
     TopicsOverTime(TopicsOverTimeResponse),
     #[schema(title = "CTRMetricsOverTime")]
     CTRMetricsOverTime(CTRMetricsOverTimeResponse),
+    #[schema(title = "MessagesPerUser")]
+    MessagesPerUser(MessagesPerUserResponse),
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct MessagesPerUserResponse {
+    pub avg_messages_per_user: f64,
+    pub points: Vec<MessagesPerUserTimePoint>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct MessagesPerUserTimePoint {
+    pub time_stamp: String,
+    pub messages_per_user: f64,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct MessagesPerUserTimePointClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub messages_per_user: f64,
+}
+
+impl From<MessagesPerUserTimePointClickhouse> for MessagesPerUserTimePoint {
+    fn from(value: MessagesPerUserTimePointClickhouse) -> Self {
+        MessagesPerUserTimePoint {
+            time_stamp: value.time_stamp.to_string(),
+            messages_per_user: value.messages_per_user,
+        }
+    }
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct CTRMetricsOverTimeResponse {
     pub total_ctr: f32,
-    pub ctr_points: Vec<CTRMetricsOverTimePoint>,
+    pub points: Vec<CTRMetricsOverTimePoint>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -7276,7 +7365,7 @@ pub struct TopicDetailsResponse {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TopicsOverTimeResponse {
     pub total_topics: i64,
-    pub time_points: Vec<TopicTimePoint>,
+    pub points: Vec<TopicTimePoint>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -7395,7 +7484,7 @@ pub struct ComponentNamesResponse {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TotalUniqueUsersResponse {
     pub total_unique_users: u64,
-    pub time_points: Vec<TotalUniqueUsersTimePoint>,
+    pub points: Vec<TotalUniqueUsersTimePoint>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7679,6 +7768,8 @@ pub enum EventTypes {
         results: Option<Vec<serde_json::Value>>,
         /// The rating of the query
         query_rating: Option<SearchQueryRating>,
+        /// Metadata to provide with each request
+        metadata: Option<serde_json::Value>,
         /// The user id of the user who made the search
         user_id: Option<String>,
     },
@@ -7700,6 +7791,8 @@ pub enum EventTypes {
         query_rating: Option<SearchQueryRating>,
         /// The response from the LLM
         llm_response: Option<String>,
+        /// Metadata to provide with each request
+        metadata: Option<serde_json::Value>,
         /// The user id of the user who made the RAG event
         user_id: Option<String>,
         /// The hallucination score of the RAG event
@@ -7726,6 +7819,8 @@ pub enum EventTypes {
         results: Option<Vec<serde_json::Value>>,
         /// Top score of the recommendation
         top_score: Option<f32>,
+        /// Metadata to provide with each request
+        metadata: Option<serde_json::Value>,
         /// The user id of the user who made the recommendation
         user_id: Option<String>,
     },
@@ -8042,6 +8137,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             remove_stop_words: Option<bool>,
             user_id: Option<String>,
             typo_options: Option<TypoOptions>,
+            metadata: Option<serde_json::Value>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -8070,6 +8166,7 @@ impl<'de> Deserialize<'de> for SearchChunksReqPayload {
             score_threshold: helper.score_threshold,
             slim_chunks: helper.slim_chunks,
             content_only: helper.content_only,
+            metadata: helper.metadata,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
@@ -8100,6 +8197,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             remove_stop_words: Option<bool>,
             user_id: Option<String>,
             typo_options: Option<TypoOptions>,
+            metadata: Option<serde_json::Value>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -8127,6 +8225,7 @@ impl<'de> Deserialize<'de> for AutocompleteReqPayload {
             score_threshold: helper.score_threshold,
             slim_chunks: helper.slim_chunks,
             content_only: helper.content_only,
+            metadata: helper.metadata,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
@@ -8159,6 +8258,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             remove_stop_words: Option<bool>,
             user_id: Option<String>,
             typo_options: Option<TypoOptions>,
+            metadata: Option<serde_json::Value>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -8189,6 +8289,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             slim_chunks: helper.slim_chunks,
             content_only: helper.content_only,
             use_quote_negated_terms: helper.use_quote_negated_terms,
+            metadata: helper.metadata,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
             typo_options: helper.typo_options,
@@ -8218,6 +8319,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             user_id: Option<String>,
             typo_options: Option<TypoOptions>,
             sort_options: Option<SortOptions>,
+            metadata: Option<serde_json::Value>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -8245,6 +8347,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             slim_chunks: helper.slim_chunks,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             typo_options: helper.typo_options,
+            metadata: helper.metadata,
             sort_options,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
@@ -8277,6 +8380,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub context_options: Option<ContextOptions>,
             pub no_result_message: Option<String>,
             pub only_include_docs_used: Option<bool>,
+            metadata: Option<serde_json::Value>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
             use_quote_negated_terms: Option<bool>,
@@ -8315,6 +8419,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             user_id: helper.user_id,
             context_options,
             no_result_message: helper.no_result_message,
+            metadata: helper.metadata,
             only_include_docs_used: helper.only_include_docs_used,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
@@ -8345,6 +8450,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub context_options: Option<ContextOptions>,
             pub no_result_message: Option<String>,
             pub only_include_docs_used: Option<bool>,
+            metadata: Option<serde_json::Value>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
             pub use_quote_negated_terms: Option<bool>,
@@ -8379,6 +8485,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             llm_options,
             user_id: helper.user_id,
             context_options,
+            metadata: helper.metadata,
             no_result_message: helper.no_result_message,
             only_include_docs_used: helper.only_include_docs_used,
             use_quote_negated_terms: helper.use_quote_negated_terms,
@@ -8414,6 +8521,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub context_options: Option<ContextOptions>,
             pub no_result_message: Option<String>,
             pub only_include_docs_used: Option<bool>,
+            metadata: Option<serde_json::Value>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
             pub use_quote_negated_terms: Option<bool>,
@@ -8452,6 +8560,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             user_id: helper.user_id,
             llm_options,
             context_options,
+            metadata: helper.metadata,
             no_result_message: helper.no_result_message,
             only_include_docs_used: helper.only_include_docs_used,
             use_quote_negated_terms: helper.use_quote_negated_terms,

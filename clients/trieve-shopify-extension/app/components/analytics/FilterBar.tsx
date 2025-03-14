@@ -4,7 +4,7 @@ import { DateRangePicker } from "./DateRangePicker";
 import {
   formatStringDateRangeToDates,
   transformDateParams,
-} from "utils/formatting";
+} from "app/utils/formatting";
 import { Box } from "@shopify/polaris";
 import { ComponentNameSelect } from "./ComponentNameSelect";
 
@@ -27,13 +27,13 @@ export const SearchFilterBar = (props: SearchFilterBarProps) => {
           onChange={(s) => {
             if (
               (s.lte || new Date()).getTime() -
-              (s.gte || new Date()).getTime() <=
+                (s.gte || new Date()).getTime() <=
               3.6e6
             ) {
               props.setGranularity("minute");
             } else if (
               (s.lte || new Date()).getTime() -
-              (s.gte || new Date()).getTime() <=
+                (s.gte || new Date()).getTime() <=
               8.64e7
             ) {
               props.setGranularity("hour");

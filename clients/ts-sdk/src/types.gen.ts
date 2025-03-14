@@ -85,6 +85,10 @@ export type AutocompleteReqPayload = {
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
     /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
+    /**
      * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
      */
     page_size?: (number) | null;
@@ -187,7 +191,7 @@ export type CTRMetricsOverTimePoint = {
 };
 
 export type CTRMetricsOverTimeResponse = {
-    ctr_points: Array<CTRMetricsOverTimePoint>;
+    points: Array<CTRMetricsOverTimePoint>;
     total_ctr: number;
 };
 
@@ -813,6 +817,10 @@ export type CreateMessageReqPayload = {
     image_urls?: Array<(string)> | null;
     llm_options?: ((LLMOptions) | null);
     /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
+    /**
      * The content of the user message to attach to the topic and then generate an assistant message in response to.
      */
     new_message_content?: (string) | null;
@@ -966,6 +974,10 @@ export type CreateTopicReqPayload = {
      */
     first_user_message?: (string) | null;
     /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
+    /**
      * The name of the topic. If this is not provided, the topic name is generated from the first_user_message.
      */
     name?: (string) | null;
@@ -973,10 +985,6 @@ export type CreateTopicReqPayload = {
      * The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user.
      */
     owner_id: string;
-    /**
-     * The referrer of the topic. This allows you to distinguish between multiple different sources from where your chats occur
-     */
-    referrer?: (string) | null;
 };
 
 export type Dataset = {
@@ -1260,6 +1268,10 @@ export type EditMessageReqPayload = {
      */
     message_sort_order: number;
     /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
+    /**
      * The new content of the message to replace the old content with.
      */
     new_message_content?: (string) | null;
@@ -1524,6 +1536,10 @@ export type EventTypes = {
      */
     latency?: (number) | null;
     /**
+     * Metadata to provide with each request
+     */
+    metadata?: unknown;
+    /**
      * The search query
      */
     query: string;
@@ -1559,6 +1575,10 @@ export type EventTypes = {
      * The response from the LLM
      */
     llm_response?: (string) | null;
+    /**
+     * Metadata to provide with each request
+     */
+    metadata?: unknown;
     query_rating?: ((SearchQueryRating) | null);
     rag_type?: ((ClickhouseRagTypes) | null);
     /**
@@ -1583,6 +1603,10 @@ export type EventTypes = {
     user_message: string;
 } | {
     event_type: 'recommendation';
+    /**
+     * Metadata to provide with each request
+     */
+    metadata?: unknown;
     /**
      * Negative ids used for the recommendation
      */
@@ -1724,6 +1748,10 @@ export type GenerateOffChunksReqPayload = {
      * The maximum number of tokens to generate in the chat completion. Default is None.
      */
     max_tokens?: (number) | null;
+    /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
     /**
      * Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. Default is 0.7.
      */
@@ -2119,7 +2147,7 @@ export type LLMOptions = {
 };
 
 export type LatencyGraphResponse = {
-    latency_points: Array<SearchLatencyGraph>;
+    points: Array<SearchLatencyGraph>;
 };
 
 export type LocationBoundingBox = {
@@ -2151,6 +2179,16 @@ export type Message = {
     sort_order: number;
     topic_id: string;
     updated_at: string;
+};
+
+export type MessagesPerUserResponse = {
+    avg_messages_per_user: number;
+    points: Array<MessagesPerUserTimePoint>;
+};
+
+export type MessagesPerUserTimePoint = {
+    messages_per_user: number;
+    time_stamp: string;
 };
 
 export type Metadata = {
@@ -2509,6 +2547,10 @@ export type RAGAnalytics = {
     filter?: ((RAGAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'ctr_metrics_over_time';
+} | {
+    filter?: ((RAGAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'messages_per_user';
 };
 
 export type type4 = 'rag_queries';
@@ -2519,12 +2561,12 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicAnalyticsResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicAnalyticsResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at' | 'latency';
 
 export type RAGUsageGraphResponse = {
-    usage_points: Array<UsageGraphPoint>;
+    points: Array<UsageGraphPoint>;
 };
 
 export type RAGUsageResponse = {
@@ -2538,6 +2580,7 @@ export type RagQueryEvent = {
     hallucination_score: number;
     id: string;
     llm_response: string;
+    metadata?: unknown;
     query_rating?: ((SearchQueryRating) | null);
     rag_type: ClickhouseRagTypes;
     results: Array<unknown>;
@@ -2590,6 +2633,10 @@ export type RecommendChunksRequest = {
      */
     limit?: (number) | null;
     /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
+    /**
      * The ids of the chunks to be used as negative examples for the recommendation. The chunks in this array will be used to filter out similar chunks.
      */
     negative_chunk_ids?: Array<(string)> | null;
@@ -2632,6 +2679,10 @@ export type RecommendGroupsReqPayload = {
      * The number of groups to return. This is the number of groups which will be returned in the response. The default is 10.
      */
     limit?: (number) | null;
+    /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
     /**
      * The ids of the groups to be used as negative examples for the recommendation. The groups in this array will be used to filter out similar groups.
      */
@@ -2710,6 +2761,7 @@ export type RecommendationEvent = {
     created_at: string;
     dataset_id: string;
     id: string;
+    metadata?: unknown;
     negative_ids: Array<(string)>;
     negative_tracking_ids: Array<(string)>;
     positive_ids: Array<(string)>;
@@ -2761,6 +2813,10 @@ export type RegenerateMessageReqPayload = {
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
     llm_options?: ((LLMOptions) | null);
+    /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
     /**
      * No result message for when there are no chunks found above the score threshold.
      */
@@ -2898,6 +2954,7 @@ export type SearchAnalytics = {
     type: 'no_result_queries';
 } | {
     filter?: ((SearchAnalyticsFilter) | null);
+    has_clicks?: (boolean) | null;
     page?: (number) | null;
     sort_by?: ((SearchSortBy) | null);
     sort_order?: ((SortOrder) | null);
@@ -2918,6 +2975,7 @@ export type type7 = 'latency_graph';
 export type SearchAnalyticsFilter = {
     component_name?: (string) | null;
     date_range?: ((DateRange) | null);
+    query?: (string) | null;
     query_rating?: ((QueryRatingRange) | null);
     search_method?: ((SearchMethod) | null);
     search_type?: ((SearchType) | null);
@@ -2949,6 +3007,10 @@ export type SearchChunksReqPayload = {
      */
     get_total_pages?: (boolean) | null;
     highlight_options?: ((HighlightOptions) | null);
+    /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
     /**
      * Page of chunks to fetch. Page is 1-indexed.
      */
@@ -3025,6 +3087,10 @@ export type SearchOverGroupsReqPayload = {
     group_size?: (number) | null;
     highlight_options?: ((HighlightOptions) | null);
     /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
+    /**
      * Page of group results to fetch. Page is 1-indexed.
      */
     page?: (number) | null;
@@ -3093,6 +3159,7 @@ export type SearchQueryEvent = {
     dataset_id: string;
     id: string;
     latency: number;
+    metadata?: unknown;
     query: string;
     query_rating?: ((SearchQueryRating) | null);
     request_params: unknown;
@@ -3134,8 +3201,8 @@ export type SearchTypeCount = {
 };
 
 export type SearchUsageGraphResponse = {
+    points: Array<UsageGraphPoint>;
     total_searches: number;
-    usage_points: Array<UsageGraphPoint>;
 };
 
 export type SearchWithinGroupReqPayload = {
@@ -3157,6 +3224,10 @@ export type SearchWithinGroupReqPayload = {
      */
     group_tracking_id?: (string) | null;
     highlight_options?: ((HighlightOptions) | null);
+    /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
     /**
      * The page of chunks to fetch. Page is 1-indexed.
      */
@@ -3513,9 +3584,9 @@ export type TopicQuery = {
     created_at: string;
     dataset_id: string;
     id: string;
+    metadata?: unknown;
     name: string;
     owner_id: string;
-    referrer: string;
     topic_id: string;
     updated_at: string;
 };
@@ -3528,12 +3599,12 @@ export type TopicTimePoint = {
 };
 
 export type TopicsOverTimeResponse = {
-    time_points: Array<TopicTimePoint>;
+    points: Array<TopicTimePoint>;
     total_topics: number;
 };
 
 export type TotalUniqueUsersResponse = {
-    time_points: Array<TotalUniqueUsersTimePoint>;
+    points: Array<TotalUniqueUsersTimePoint>;
     total_unique_users: number;
 };
 

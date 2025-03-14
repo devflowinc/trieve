@@ -373,6 +373,7 @@ const ModalProvider = ({
       setLoadingResults(true);
       if (props.useGroupSearch && !props.usePagefind) {
         const results = await groupSearchWithTrieve({
+          props,
           query_string: query,
           image_url: imageUrl,
           audioBase64: audioBase64,
@@ -426,6 +427,7 @@ const ModalProvider = ({
         setResults(results);
       } else {
         const results = await searchWithTrieve({
+          props,
           query_string: query,
           image_url: imageUrl,
           audioBase64: audioBase64,

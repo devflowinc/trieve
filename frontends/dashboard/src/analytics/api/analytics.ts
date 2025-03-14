@@ -53,7 +53,7 @@ export const getLatency = async (
   const data: LatencyGraphResponse =
     (await response.json()) as unknown as LatencyGraphResponse;
 
-  return data.latency_points;
+  return data.points;
 };
 
 export const getRpsUsageGraph = async (
@@ -80,7 +80,7 @@ export const getRpsUsageGraph = async (
   }
 
   const data = (await response.json()) as unknown as UsageGraphResponse;
-  return data.usage_points;
+  return data.points;
 };
 
 export const getHeadQueries = async (
@@ -223,7 +223,7 @@ export const getRagUsageGraph = async (
   }
 
   const data = (await response.json()) as unknown as UsageGraphResponse;
-  return data.usage_points;
+  return data.points;
 };
 
 export const getLowConfidenceQueries = async (

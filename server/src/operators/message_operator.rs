@@ -516,6 +516,8 @@ pub async fn get_rag_chunks_query(
             search_type: "rag_groups".to_string(),
             query: query.clone(),
             dataset_id: dataset.id,
+            metadata: serde_json::to_string(&create_message_req_payload.metadata.clone())
+                .unwrap_or_default(),
             top_score: result_groups
                 .group_chunks
                 .get(0)
@@ -624,6 +626,8 @@ pub async fn get_rag_chunks_query(
                 .map(|x| x.score as f32)
                 .unwrap_or(0.0),
             latency: get_latency_from_header(search_timer.header_value()),
+            metadata: serde_json::to_string(&create_message_req_payload.metadata.clone())
+                .unwrap_or_default(),
             results: result_chunks
                 .score_chunks
                 .clone()
@@ -1110,6 +1114,7 @@ pub async fn stream_response(
             top_score: search_event.top_score,
             results: vec![],
             topic_id,
+            metadata: search_event.metadata,
             json_results: filtered_chunks_data,
             user_message: user_message_query.clone(),
             query_rating: String::new(),
@@ -1238,6 +1243,7 @@ pub async fn stream_response(
                 results: vec![],
                 json_results: chunk_data,
                 user_message: user_message_query.clone(),
+                metadata: search_event.metadata,
                 query_rating: String::new(),
                 rag_type: "all_chunks".to_string(),
                 llm_response: completion.clone(),

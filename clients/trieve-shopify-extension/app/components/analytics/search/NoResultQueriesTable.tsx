@@ -5,7 +5,7 @@ import {
 } from "app/queries/analytics/search";
 import { useEffect, useState } from "react";
 import { SearchAnalyticsFilter } from "trieve-ts-sdk";
-import { TableComponent } from "../TableComponent";
+import { BasicTableComponent } from "../BasicTableComponent";
 
 export const NoResultQueriesTable = ({
   filters,
@@ -28,7 +28,7 @@ export const NoResultQueriesTable = ({
   const mappedData = data ? data.queries.map((query) => [query.query]) : [];
 
   return (
-    <TableComponent
+    <BasicTableComponent
       data={mappedData}
       page={page}
       setPage={setPage}
