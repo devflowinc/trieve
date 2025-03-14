@@ -1184,6 +1184,11 @@ export type DatasetConfigurationDTO = {
      * Whether to use the message to query prompt
      */
     USE_MESSAGE_TO_QUERY_PROMPT?: (boolean) | null;
+    /**
+     * Task definition for AIMon reranker
+     */
+    TASK_DEFINITION?: (string) | null;
+
 };
 
 export type DatasetDTO = {
