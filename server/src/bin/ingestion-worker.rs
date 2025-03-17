@@ -32,7 +32,7 @@ use trieve_server::operators::group_operator::{
     create_groups_query, get_group_ids_from_tracking_ids_query, get_groups_from_group_ids_query,
 };
 use trieve_server::operators::model_operator::{
-    get_bm25_embeddings, get_dense_vectors, get_sparse_vectors,
+    count_tokens, get_bm25_embeddings, get_dense_vectors, get_sparse_vectors,
 };
 use trieve_server::operators::parse_operator::{
     average_embeddings, coarse_doc_chunker, convert_html_to_text,
@@ -201,11 +201,37 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             log::info!("Queue'd dataset for pagefind indexing");
                         }
 
+                        let tokens_ingested = msg
+                            .payload
+                            .ingestion_messages
+                            .iter()
+                            .map(|message| {
+                                count_tokens(&message.clone().chunk.chunk_html.unwrap_or_default())
+                            })
+                            .sum();
+
+                        let bytes_ingested =
+                            msg.payload
+                                .ingestion_messages
+                                .iter()
+                                .fold(0, |acc, message| {
+                                    acc + message
+                                        .clone()
+                                        .chunk
+                                        .metadata
+                                        .map(|meta| meta.to_string().len())
+                                        .unwrap_or(0)
+                                }) as u64;
+
                         event_queue
                             .send(ClickHouseEvent::WorkerEvent(
                                 WorkerEvent::from_details(
                                     msg.payload.dataset_id,
-                                    models::EventType::ChunksUploaded { chunk_ids },
+                                    models::EventType::ChunksUploaded {
+                                        chunk_ids,
+                                        tokens_ingested,
+                                        bytes_ingested,
+                                    },
                                 )
                                 .into(),
                             ))
