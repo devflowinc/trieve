@@ -20,6 +20,7 @@ use crate::operators::dataset_operator::{
     get_dataset_usage_query, ChunkDeleteMessage, DeleteMessage,
 };
 use crate::operators::message_operator::get_text_from_audio;
+use crate::operators::model_operator::{count_message_tokens, count_tokens};
 use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
     point_ids_exists_in_qdrant, recommend_qdrant_query, scroll_dataset_points,
@@ -2739,7 +2740,7 @@ pub async fn generate_off_chunks(
     let parameters = ChatCompletionParameters {
         model: chosen_model,
         stream: stream_response,
-        messages,
+        messages: messages.clone(),
         top_p: None,
         n: None,
         temperature: Some(data.temperature.unwrap_or(0.5)),
@@ -2830,9 +2831,11 @@ pub async fn generate_off_chunks(
             };
 
             let clickhouse_rag_event = RagQueryEventClickhouse {
+                tokens: count_message_tokens(messages) + count_tokens(&completion_content),
                 id: query_id,
                 created_at: time::OffsetDateTime::now_utc(),
                 dataset_id: dataset_org_plan_sub.dataset.id,
+                organization_id: dataset_org_plan_sub.dataset.organization_id,
                 search_id: uuid::Uuid::nil(),
                 results: vec![],
                 json_results: chunks
@@ -2922,6 +2925,7 @@ pub async fn generate_off_chunks(
                 id: uuid::Uuid::new_v4(),
                 created_at: time::OffsetDateTime::now_utc(),
                 dataset_id: dataset_org_plan_sub.dataset.id,
+                organization_id: dataset_org_plan_sub.dataset.organization_id,
                 search_id: uuid::Uuid::nil(),
                 results: vec![],
                 metadata: serde_json::to_string(&metadata.clone()).unwrap_or_default(),
@@ -2939,6 +2943,7 @@ pub async fn generate_off_chunks(
                 user_message: format!("{} {}", rag_prompt, last_message_arb.clone()),
                 rag_type: "chosen_chunks".to_string(),
                 query_rating: String::new(),
+                tokens: count_message_tokens(messages) + count_tokens(&completion),
                 llm_response: completion,
                 user_id,
                 hallucination_score: score.total_score,

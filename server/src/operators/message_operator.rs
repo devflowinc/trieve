@@ -55,6 +55,7 @@ use ureq::json;
 
 use super::chunk_operator::get_chunk_metadatas_from_point_ids;
 use super::clickhouse_operator::{get_latency_from_header, EventQueue};
+use super::model_operator::{count_message_tokens, count_tokens};
 use super::parse_operator::parse_streaming_completetion;
 use super::search_operator::{
     assemble_qdrant_filter, hybrid_search_over_groups, search_chunks_query, search_hybrid_chunks,
@@ -978,7 +979,7 @@ pub async fn stream_response(
 
     let mut parameters = ChatCompletionParameters {
         model: chosen_model,
-        messages: open_ai_messages,
+        messages: open_ai_messages.clone(),
         ..Default::default()
     };
 
@@ -1133,6 +1134,7 @@ pub async fn stream_response(
             id: query_id,
             created_at: time::OffsetDateTime::now_utc(),
             dataset_id: dataset.id,
+            organization_id: dataset.organization_id,
             search_id: search_event.id,
             top_score: search_event.top_score,
             results: vec![],
@@ -1149,6 +1151,7 @@ pub async fn stream_response(
                 .unwrap_or_default(),
             hallucination_score: score.total_score,
             detected_hallucinations: score.detected_hallucinations,
+            tokens: count_message_tokens(open_ai_messages) + count_tokens(&response_text),
         };
 
         if !dataset_config.DISABLE_ANALYTICS {
@@ -1276,6 +1279,8 @@ pub async fn stream_response(
                     .unwrap_or_default(),
                 hallucination_score: score.total_score,
                 detected_hallucinations: score.detected_hallucinations,
+                tokens: count_message_tokens(open_ai_messages) + count_tokens(&completion),
+                organization_id: dataset.organization_id,
             };
 
             event_queue
@@ -1343,7 +1348,6 @@ pub async fn stream_response(
                                         let (text, docs) = if !*bailed_on_iter {
                                             let (parsed_text, docs, bail) = parse_streaming_completetion(text, state.clone(), documents.clone());
                                             if bail {
-                                                log::info!("Bailing {:?} {:?}", &text, &parsed_text);
                                                 *bailed_on_iter = true;
                                                 documents.lock().unwrap().extend(0..score_chunks.len() as u32);
                                                 (Some(text.clone()), Some((0..score_chunks.len() as u32).collect()))
@@ -1351,7 +1355,6 @@ pub async fn stream_response(
                                                 (parsed_text, docs)
                                             }
                                         } else {
-                                            log::info!("Already bailed");
                                             (Some(text.clone()), None)
                                         };
 
