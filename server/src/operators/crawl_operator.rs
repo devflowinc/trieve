@@ -462,18 +462,7 @@ pub async fn get_crawl_by_scrape_id_query(
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     let request: CrawlRequestPG = crawl_requests_table::crawl_requests
-        .select((
-            crawl_requests_table::id,
-            crawl_requests_table::url,
-            crawl_requests_table::status,
-            crawl_requests_table::crawl_type,
-            crawl_requests_table::next_crawl_at,
-            crawl_requests_table::interval,
-            crawl_requests_table::crawl_options,
-            crawl_requests_table::scrape_id,
-            crawl_requests_table::dataset_id,
-            crawl_requests_table::created_at,
-        ))
+        .select(CrawlRequestPG::as_select())
         .filter(crawl_requests_table::scrape_id.eq(scrape_id))
         .first(&mut conn)
         .await
