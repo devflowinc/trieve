@@ -2219,7 +2219,7 @@ pub enum EventType {
     #[display(fmt = "file_upload_failed")]
     FileUploadFailed { file_id: uuid::Uuid, error: String },
     #[display(fmt = "chunks_uploaded")]
-    ChunksUploaded { chunk_ids: Vec<uuid::Uuid> },
+    ChunksUploaded { chunk_ids: Vec<uuid::Uuid>, tokens_ingested: u64, bytes_ingested: u64 },
     #[display(fmt = "chunk_updated")]
     ChunkUpdated { chunk_id: uuid::Uuid },
     #[display(fmt = "bulk_chunks_deleted")]
