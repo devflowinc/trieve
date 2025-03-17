@@ -18,6 +18,7 @@ import { FloatingSearchInput } from "./FloatingSearchInput";
 import { ModalContainer } from "./ModalContainer";
 import { InferenceFiltersForm } from "./FilterSidebarComponents";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
+import { createPortal } from "react-dom";
 
 const SearchPage = () => {
   const { props } = useModalState();
@@ -346,14 +347,19 @@ const Modal = () => {
       )}
       <>
         {!props.inline && !props.hideOverlay && open && (
-          <div
-            onClick={() => {
-              setOpen(false);
-            }}
-            id="trieve-search-modal-overlay"
-            className="tv-bg-black/60 tv-w-screen tv-fixed tv-inset-0 tv-h-screen tv-animate-overlayShow tv-backdrop-blur-sm tv-block"
-            style={{ zIndex: props.zIndex ?? 1000 }}
-          ></div>
+          <>
+            {createPortal(
+              <div
+                onClick={() => {
+                  setOpen(false);
+                }}
+                id="trieve-search-modal-overlay"
+                className="tv-bg-black/60 tv-w-screen tv-fixed tv-inset-0 tv-h-screen tv-animate-overlayShow tv-backdrop-blur-sm tv-block"
+                style={{ zIndex: props.zIndex ?? 1000 }}
+              ></div>,
+              document.body,
+            )}
+          </>
         )}
         {(props.displayModal ?? true) && <ModalContainer />}
       </>
