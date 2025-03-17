@@ -102,7 +102,7 @@ async fn create_job(job: EtlJobRequest, pool: web::Data<Pool>) -> Result<(), Bro
                     "image_key": "image_urls"
                 },
                 "custom_id": "id",
-                "webhook_url": format!("{}/api/etl/webhook", get_env!("BASE_SERVER_URL", "Server hostname for OpenID provider must be set" )),
+                "webhook_urls": format!("{}/api/etl/webhook", get_env!("BASE_SERVER_URL", "Server hostname for OpenID provider must be set" )),
             }))
         .map_err(|e| BroccoliError::Job(format!("Failed to create job {:?}", e)))?;
 

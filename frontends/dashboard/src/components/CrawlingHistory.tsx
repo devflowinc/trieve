@@ -100,6 +100,11 @@ export const CrawlingHistory = () => {
       accessorKey: "next_crawl_at",
       header: "Next Crawl At",
       cell(props) {
+        const nextCrawlAt = props.getValue<string>();
+        if (!nextCrawlAt) {
+          return "N/A";
+        }
+
         return format(
           parseCustomDateString(props.getValue<string>()),
           "M/d/yy h:mm a",

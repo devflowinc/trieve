@@ -16,21 +16,24 @@ import { cn } from "shared/utils";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { useBetterNav } from "../analytics/utils/useBetterNav";
 import { AiOutlineInfoCircle } from "solid-icons/ai";
+import { FiX } from "solid-icons/fi";
 
 export const defaultCrawlOptions: CrawlOptions = {
   boost_titles: true,
   allow_external_links: false,
-  ignore_sitemap: false,
+  ignore_sitemap: true,
   exclude_paths: [],
-  exclude_tags: ["header", "navbar", "footer", "aside", "nav", "form"],
+  exclude_tags: ["header", "head", "navbar", "footer", "aside", "nav", "form"],
   include_paths: [],
   include_tags: [],
-  interval: "daily",
+  interval: undefined,
   limit: 1000,
   site_url: "",
   scrape_options: {
     group_variants: true,
   } as ScrapeOptions,
+  webhook_urls: [],
+  add_chunks_to_dataset: true,
 };
 
 export type FlatCrawlOptions = Omit<CrawlOptions, "scrape_options"> & {
@@ -66,6 +69,8 @@ export const unflattenCrawlOptions = (
         openapi_schema_url: options.openapi_schema_url,
         openapi_tag: options.openapi_tag,
       },
+      webhook_urls: options.webhook_urls,
+      add_chunks_to_dataset: options.add_chunks_to_dataset,
     };
   } else if (options && options.type == "shopify") {
     return {
@@ -83,6 +88,8 @@ export const unflattenCrawlOptions = (
         group_variants: options.group_variants,
         tag_regexes: options.tag_regexes ?? [],
       },
+      webhook_urls: options.webhook_urls,
+      add_chunks_to_dataset: options.add_chunks_to_dataset,
     };
   } else if (options && options.type == "youtube") {
     return {
@@ -98,6 +105,8 @@ export const unflattenCrawlOptions = (
       scrape_options: {
         type: "youtube",
       },
+      webhook_urls: options.webhook_urls,
+      add_chunks_to_dataset: options.add_chunks_to_dataset,
     };
   }
   return {
@@ -111,6 +120,8 @@ export const unflattenCrawlOptions = (
     limit: options.limit,
     site_url: options.site_url,
     scrape_options: null,
+    webhook_urls: options.webhook_urls,
+    add_chunks_to_dataset: options.add_chunks_to_dataset,
   };
 };
 
@@ -313,19 +324,29 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           />
           <Error error={errors.site_url} />
         </div>
-        <div class="min-w-[200px]">
-          <Select
-            options={["daily", "weekly", "monthly"] as CrawlInterval[]}
-            display={(option) => toTitleCase(option)}
-            onSelected={(option) => {
-              setOptions("interval", option);
-            }}
-            class="p-1"
-            selected={options.interval || "daily"}
-            label="Crawl Interval"
-            tooltipText="How often to crawl the site"
-            tooltipDirection="left"
-          />
+        <div class="flex min-w-[200px] gap-4">
+          <div>
+            <Select
+              options={["daily", "weekly", "monthly"] as CrawlInterval[]}
+              display={(option) => (option ? toTitleCase(option) : "")}
+              onSelected={(option) => {
+                setOptions("interval", option);
+              }}
+              class="p-1"
+              selected={options.interval}
+              label="Crawl Interval"
+              tooltipText="How often to crawl the site"
+              tooltipDirection="left"
+            />
+          </div>
+          <button
+            class="mt-1 h-fit"
+            onClick={() => setOptions("interval", undefined)}
+            type="button"
+            title="Clear interval"
+          >
+            <FiX class="h-4 w-4 text-black" />
+          </button>
         </div>
       </div>
       <div class="flex items-center gap-2 py-2 pt-4">
@@ -477,6 +498,23 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             }}
           />
         </div>
+
+        <div class="flex items-center gap-2">
+          <label class="block">Add Chunks to Dataset</label>
+          <Tooltip
+            tooltipText="Populate the dataset with chunks of html from the crawl where each page is split into heading+body chunks at the heading tags. You may want to set this to false if you setup your own webhook and want to handle chunking yourself."
+            body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+          />
+          <input
+            class="h-3 w-3 rounded border border-neutral-300 bg-neutral-100 p-1 accent-magenta-400 dark:border-neutral-900 dark:bg-neutral-800"
+            type="checkbox"
+            disabled={isShopify() || isYoutube()}
+            checked={options.add_chunks_to_dataset ?? true}
+            onChange={(e) => {
+              setOptions("add_chunks_to_dataset", e.currentTarget.checked);
+            }}
+          />
+        </div>
       </div>
 
       <div class="flex items-center gap-2 py-2 pt-4">
@@ -574,7 +612,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           isShopify() && "opacity-40",
         )}
       >
-        <div class="">
+        <div>
           <div class="flex items-center gap-2">
             <label>Include URL Regex's</label>
             <Tooltip
@@ -595,7 +633,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           />
           <Error error={errors.include_paths} />
         </div>
-        <div class="">
+        <div>
           <div class="flex items-center gap-2">
             <div>Exclude URL Regex's</div>
             <Tooltip
@@ -615,7 +653,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           />
           <Error error={errors.exclude_paths} />
         </div>
-        <div class="">
+        <div>
           <div class="flex items-center gap-2">
             <div>Include Query Selectors</div>
             <Tooltip
@@ -635,7 +673,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           />
           <Error error={errors.include_tags} />
         </div>
-        <div class="">
+        <div>
           <div class="flex items-center gap-2">
             <div>Exclude Query Selectors</div>
             <Tooltip
@@ -655,7 +693,28 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           />
           <Error error={errors.exclude_tags} />
         </div>
-        <div class="">
+        <div>
+          <div>
+            <div class="flex items-center gap-2">
+              <div>Custom Webhook Urls</div>
+              <Tooltip
+                tooltipText="If you have a custom webhook endpoint to receive data for each page crawled while the crawl is running, enter it here."
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
+            <MultiStringInput
+              placeholder="https://example.com/webhook"
+              addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
+              addLabel="Add Url"
+              onChange={(value) => {
+                setOptions("webhook_urls", value);
+              }}
+              value={options.webhook_urls || []}
+            />
+            <Error error={errors.webhook_urls} />
+          </div>
+        </div>
+        <div>
           <div class="flex items-center gap-2">
             <div>Heading Remove Strings</div>
             <Tooltip
@@ -674,7 +733,7 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
           />
           <Error error={errors.heading_remove_strings} />
         </div>
-        <div class="">
+        <div>
           <div class="flex items-center gap-2">
             <div>Body Remove Strings</div>
             <Tooltip

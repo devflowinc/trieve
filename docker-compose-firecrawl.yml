@@ -13,9 +13,11 @@ services:
       - TWOCAPTCHA_TOKEN=${TWOCAPTCHA_TOKEN}
     networks:
       - backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   firecrawl-api:
-    image: trieve/firecrawl:v0.0.48
+    image: trieve/firecrawl:v0.0.52
     networks:
       - backend
     environment:
@@ -37,7 +39,7 @@ services:
     command: ["pnpm", "run", "start:production"]
 
   firecrawl-worker:
-    image: trieve/firecrawl:v0.0.48
+    image: trieve/firecrawl:v0.0.52
     networks:
       - backend
     environment:

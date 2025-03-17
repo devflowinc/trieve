@@ -626,6 +626,10 @@ export type CrawlOpenAPIOptions = {
  */
 export type CrawlOptions = {
     /**
+     * Add chunks to the dataset that the crawl is created for, defaults to true
+     */
+    add_chunks_to_dataset?: (boolean) | null;
+    /**
      * Option for allowing the crawl to follow links to external websites.
      */
     allow_external_links?: (boolean) | null;
@@ -678,7 +682,7 @@ export type CrawlOptions = {
     /**
      * Host to call back on the webhook for each successful page scrape
      */
-    webhook_url?: (string) | null;
+    webhook_urls?: Array<(string)> | null;
 };
 
 export type CrawlRequest = {
@@ -688,8 +692,8 @@ export type CrawlRequest = {
     created_at: string;
     dataset_id: string;
     id: string;
-    interval: string;
-    next_crawl_at: string;
+    interval?: (string) | null;
+    next_crawl_at?: (string) | null;
     scrape_id: string;
     status: CrawlStatus;
     url: string;

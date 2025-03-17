@@ -552,14 +552,14 @@ async fn parse_chunks_with_firecrawl(
 }
 
 async fn get_chunks_with_firecrawl(
-    scrape_request: CrawlRequest,
+    crawl_request: CrawlRequest,
     pool: web::Data<Pool>,
     broccoli_queue: web::Data<BroccoliQueue>,
 ) -> Result<(usize, usize), ServiceError> {
     let mut spec = None;
 
     if let Some(ScrapeOptions::OpenApi(openapi_options)) =
-        scrape_request.crawl_options.scrape_options.clone()
+        crawl_request.crawl_options.scrape_options.clone()
     {
         let client = reqwest::Client::new();
 
@@ -595,7 +595,7 @@ async fn get_chunks_with_firecrawl(
 
     let ingest_result;
     loop {
-        let temp_result = get_crawl_from_firecrawl(scrape_request.scrape_id)
+        let temp_result = get_crawl_from_firecrawl(crawl_request.scrape_id)
             .await
             .map_err(|e| {
                 log::error!("Error getting scrape request: {:?}", e);
@@ -603,11 +603,17 @@ async fn get_chunks_with_firecrawl(
             })?;
         if temp_result.status == Status::Completed {
             ingest_result = temp_result;
+            update_crawl_status(crawl_request.id, CrawlStatus::Completed, pool.clone())
+                .await
+                .map_err(|e| {
+                    log::error!("Error updating crawl status: {:?}", e);
+                    ServiceError::InternalServerError("Error updating crawl status".to_string())
+                })?;
             break;
         } else if temp_result.status == Status::Scraping {
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         } else if temp_result.status == Status::Failed {
-            update_crawl_status(scrape_request.id, CrawlStatus::Failed, pool.clone())
+            update_crawl_status(crawl_request.id, CrawlStatus::Failed, pool.clone())
                 .await
                 .map_err(|e| {
                     log::error!("Error updating crawl status: {:?}", e);
@@ -620,14 +626,22 @@ async fn get_chunks_with_firecrawl(
         }
     }
 
-    parse_chunks_with_firecrawl(
-        &scrape_request,
-        ingest_result,
-        spec,
-        pool.clone(),
-        broccoli_queue.clone(),
-    )
-    .await
+    if crawl_request
+        .crawl_options
+        .add_chunks_to_dataset
+        .unwrap_or(true)
+    {
+        parse_chunks_with_firecrawl(
+            &crawl_request,
+            ingest_result,
+            spec,
+            pool.clone(),
+            broccoli_queue.clone(),
+        )
+        .await
+    } else {
+        Ok((0, 0))
+    }
 }
 
 async fn parse_shopify_chunks(
@@ -954,12 +968,17 @@ async fn crawl(
             .await?
     };
 
-    update_next_crawl_at(
-        crawl_request.scrape_id,
-        crawl_request.next_crawl_at + crawl_request.interval,
-        pool.clone(),
-    )
-    .await?;
+    if let Some(interval) = crawl_request.interval {
+        update_next_crawl_at(
+            crawl_request.scrape_id,
+            crawl_request
+                .next_crawl_at
+                .unwrap_or(chrono::Utc::now().naive_utc())
+                + interval,
+            pool.clone(),
+        )
+        .await?;
+    }
 
     Ok(ScrapeReport {
         request_id: crawl_request.id,
