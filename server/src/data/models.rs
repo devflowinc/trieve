@@ -8741,8 +8741,8 @@ pub struct CrawlRequestPG {
     pub url: String,
     pub status: String,
     pub crawl_type: String,
-    pub next_crawl_at: chrono::NaiveDateTime,
-    pub interval: i32,
+    pub next_crawl_at: Option<chrono::NaiveDateTime>,
+    pub interval: Option<i32>,
     pub crawl_options: serde_json::Value,
     pub scrape_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
@@ -8755,8 +8755,8 @@ pub struct CrawlRequest {
     pub url: String,
     pub status: CrawlStatus,
     pub crawl_type: CrawlType,
-    pub next_crawl_at: chrono::NaiveDateTime,
-    pub interval: std::time::Duration,
+    pub next_crawl_at: Option<chrono::NaiveDateTime>,
+    pub interval: Option<std::time::Duration>,
     pub crawl_options: CrawlOptions,
     pub scrape_id: uuid::Uuid,
     pub dataset_id: uuid::Uuid,
@@ -8772,7 +8772,9 @@ impl From<CrawlRequestPG> for CrawlRequest {
             status: crawl_request.status.into(),
             crawl_type: crawl_request.crawl_type.into(),
             next_crawl_at: crawl_request.next_crawl_at,
-            interval: std::time::Duration::from_secs(crawl_request.interval as u64),
+            interval: crawl_request
+                .interval
+                .map(|interval| std::time::Duration::from_secs(interval as u64)),
             crawl_options: serde_json::from_value(crawl_request.crawl_options).unwrap(),
             scrape_id: crawl_request.scrape_id,
             dataset_id: crawl_request.dataset_id,
@@ -8790,7 +8792,9 @@ impl From<CrawlRequest> for CrawlRequestPG {
             status: crawl_request.status.to_string(),
             crawl_type: crawl_request.crawl_type.to_string().to_lowercase(),
             next_crawl_at: crawl_request.next_crawl_at,
-            interval: crawl_request.interval.as_secs() as i32,
+            interval: crawl_request
+                .interval
+                .map(|interval| interval.as_secs() as i32),
             crawl_options: serde_json::to_value(crawl_request.crawl_options).unwrap(),
             scrape_id: crawl_request.scrape_id,
             dataset_id: crawl_request.dataset_id,
@@ -8802,16 +8806,30 @@ impl From<CrawlRequest> for CrawlRequestPG {
 /// Options for setting up the crawl which will populate the dataset.
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example=json!({
-    "site_url": "https://example.com",
-    "interval": "daily",
-    "limit": 1000,
-    "exclude_paths": ["https://example.com/exclude*"],
-    "include_paths": ["https://example.com/include*"],
-    "include_tags": ["h1", "p", "a", ".main-content"],
-    "exclude_tags": ["#ad", "#footer"],
-    "heading_remove_strings": ["Advertisement", "Sponsored"],
-    "body_remove_strings": ["Edit on github"],
+"crawl_options": {
+    "allow_external_links": false,
+    "ignore_sitemap": true,
     "boost_titles": true,
+    "exclude_tags": [
+    "#ad",
+    "#footer",
+    "header",
+    "head",
+    "navbar",
+    "footer",
+    "aside",
+    "nav",
+    "form"
+    ],
+    "heading_remove_strings": [
+    "Advertisement",
+    "Sponsored"
+    ],
+    "include_tags": [],
+    "interval": "daily",
+    "limit": 50,
+    "site_url": "nedzo.ai"
+}
 }))]
 pub struct CrawlOptions {
     /// The URL to crawl
@@ -8841,9 +8859,11 @@ pub struct CrawlOptions {
     /// Options for including an openapi spec in the crawl
     pub scrape_options: Option<ScrapeOptions>,
     /// Host to call back on the webhook for each successful page scrape
-    pub webhook_url: Option<String>,
+    pub webhook_urls: Option<Vec<String>>,
     /// Metadata to send back with the webhook call for each successful page scrape
     pub webhook_metadata: Option<serde_json::Value>,
+    /// Add chunks to the dataset that the crawl is created for, defaults to true
+    pub add_chunks_to_dataset: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -8896,8 +8916,12 @@ impl CrawlOptions {
                 .body_remove_strings
                 .clone()
                 .or(other.body_remove_strings.clone()),
-            webhook_url: None,
-            webhook_metadata: None,
+            webhook_urls: self.webhook_urls.clone().or(other.webhook_urls.clone()),
+            webhook_metadata: self
+                .webhook_metadata
+                .clone()
+                .or(other.webhook_metadata.clone()),
+            add_chunks_to_dataset: self.add_chunks_to_dataset.or(other.add_chunks_to_dataset),
         }
     }
 }
@@ -8919,7 +8943,7 @@ pub struct FirecrawlCrawlRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scrape_options: Option<FirecrawlScraperOptions>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub webhook_url: Option<String>,
+    pub webhook_urls: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub webhook_metadata: Option<serde_json::Value>,
 }
@@ -8952,7 +8976,7 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
                 formats: Some(vec!["rawHtml".to_string()]),
                 wait_for: Some(1000),
             }),
-            webhook_url: crawl_options.webhook_url,
+            webhook_urls: crawl_options.webhook_urls,
             webhook_metadata: crawl_options.webhook_metadata,
         }
     }

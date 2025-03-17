@@ -151,16 +151,23 @@ pub async fn create_crawl_query(
 ) -> Result<CrawlRequest, ServiceError> {
     validate_crawl_options(&crawl_options)?;
 
-    let webhook_url = format!(
-        "{}/api/file/html_page",
-        std::env::var("BASE_SERVER_URL").unwrap_or("https://api.trieve.ai".to_string())
-    );
+    let mut webhook_urls = crawl_options.clone().webhook_urls.unwrap_or_default();
+    if crawl_options.add_chunks_to_dataset.unwrap_or(true) {
+        let trieve_webhook_url = format!(
+            "{}/api/file/html_page",
+            std::env::var("BASE_SERVER_URL").unwrap_or("https://api.trieve.ai".to_string())
+        );
+        if !webhook_urls.contains(&trieve_webhook_url) {
+            webhook_urls.push(trieve_webhook_url);
+        }
+    }
+
     let webhook_metadata = serde_json::json!({
         "dataset_id": dataset_id,
         "webhook_secret": hash_function(std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or("firecrawl".to_string()).as_str())
     });
     let mut crawl_options = crawl_options.clone();
-    crawl_options.webhook_url = Some(webhook_url);
+    crawl_options.webhook_urls = Some(webhook_urls);
     crawl_options.webhook_metadata = Some(webhook_metadata);
 
     let scrape_id = if let Some(ScrapeOptions::Shopify(_)) | Some(ScrapeOptions::Youtube(_)) =
@@ -175,6 +182,7 @@ pub async fn create_crawl_query(
 
     let crawl =
         create_crawl_request(crawl_options, dataset_id, scrape_id, broccoli_queue, pool).await?;
+
     Ok(crawl)
 }
 
@@ -250,10 +258,10 @@ pub async fn create_crawl_request(
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
 
     let interval = match crawl_options.interval {
-        Some(CrawlInterval::Daily) => std::time::Duration::from_secs(60 * 60 * 24),
-        Some(CrawlInterval::Weekly) => std::time::Duration::from_secs(60 * 60 * 24 * 7),
-        Some(CrawlInterval::Monthly) => std::time::Duration::from_secs(60 * 60 * 24 * 30),
-        None => std::time::Duration::from_secs(60 * 60 * 24),
+        Some(CrawlInterval::Daily) => Some(std::time::Duration::from_secs(60 * 60 * 24)),
+        Some(CrawlInterval::Weekly) => Some(std::time::Duration::from_secs(60 * 60 * 24 * 7)),
+        Some(CrawlInterval::Monthly) => Some(std::time::Duration::from_secs(60 * 60 * 24 * 30)),
+        None => None,
     };
 
     let new_crawl_request = CrawlRequest {
@@ -266,7 +274,7 @@ pub async fn create_crawl_request(
             .map(|s| s.into())
             .unwrap_or(CrawlType::Firecrawl),
         interval,
-        next_crawl_at: chrono::Utc::now().naive_utc() + interval,
+        next_crawl_at: interval.map(|interval| chrono::Utc::now().naive_utc() + interval),
         crawl_options,
         scrape_id,
         dataset_id,
@@ -287,17 +295,13 @@ pub async fn create_crawl_request(
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    if new_crawl_request.crawl_type != CrawlType::Firecrawl {
-        broccoli_queue
-            .publish("crawl_queue", None, &new_crawl_request, None)
-            .await
-            .map_err(|e| {
-                log::error!("Error publishing message to crawl_queue: {:?}", e);
-                ServiceError::InternalServerError(
-                    "Error publishing message to crawl_queue".to_string(),
-                )
-            })?;
-    }
+    broccoli_queue
+        .publish("crawl_queue", None, &new_crawl_request, None)
+        .await
+        .map_err(|e| {
+            log::error!("Error publishing message to crawl_queue: {:?}", e);
+            ServiceError::InternalServerError("Error publishing message to crawl_queue".to_string())
+        })?;
 
     Ok(new_crawl_request)
 }
@@ -331,6 +335,7 @@ pub async fn update_next_crawl_at(
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::crawl_requests::dsl as crawl_requests_table;
+
     let mut conn = pool
         .get()
         .await
@@ -342,6 +347,7 @@ pub async fn update_next_crawl_at(
     .execute(&mut conn)
     .await
     .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
     Ok(())
 }
 

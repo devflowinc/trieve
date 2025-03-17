@@ -9108,6 +9108,11 @@
         "type": "object",
         "description": "Options for setting up the crawl which will populate the dataset.",
         "properties": {
+          "add_chunks_to_dataset": {
+            "type": "boolean",
+            "description": "Add chunks to the dataset that the crawl is created for, defaults to true",
+            "nullable": true
+          },
           "allow_external_links": {
             "type": "boolean",
             "description": "Option for allowing the crawl to follow links to external websites.",
@@ -9202,40 +9207,40 @@
             "description": "Metadata to send back with the webhook call for each successful page scrape",
             "nullable": true
           },
-          "webhook_url": {
-            "type": "string",
+          "webhook_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "description": "Host to call back on the webhook for each successful page scrape",
             "nullable": true
           }
         },
         "example": {
-          "body_remove_strings": [
-            "Edit on github"
-          ],
-          "boost_titles": true,
-          "exclude_paths": [
-            "https://example.com/exclude*"
-          ],
-          "exclude_tags": [
-            "#ad",
-            "#footer"
-          ],
-          "heading_remove_strings": [
-            "Advertisement",
-            "Sponsored"
-          ],
-          "include_paths": [
-            "https://example.com/include*"
-          ],
-          "include_tags": [
-            "h1",
-            "p",
-            "a",
-            ".main-content"
-          ],
-          "interval": "daily",
-          "limit": 1000,
-          "site_url": "https://example.com"
+          "crawl_options": {
+            "allow_external_links": false,
+            "boost_titles": true,
+            "exclude_tags": [
+              "#ad",
+              "#footer",
+              "header",
+              "head",
+              "navbar",
+              "footer",
+              "aside",
+              "nav",
+              "form"
+            ],
+            "heading_remove_strings": [
+              "Advertisement",
+              "Sponsored"
+            ],
+            "ignore_sitemap": true,
+            "include_tags": [],
+            "interval": "daily",
+            "limit": 50,
+            "site_url": "nedzo.ai"
+          }
         }
       },
       "CrawlRequest": {
@@ -9245,8 +9250,6 @@
           "url",
           "status",
           "crawl_type",
-          "next_crawl_at",
-          "interval",
           "crawl_options",
           "scrape_id",
           "dataset_id",
@@ -9277,11 +9280,13 @@
             "format": "uuid"
           },
           "interval": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "next_crawl_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "nullable": true
           },
           "scrape_id": {
             "type": "string",
