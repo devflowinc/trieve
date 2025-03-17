@@ -5570,6 +5570,8 @@ pub struct RagQueryEventClickhouse {
     pub user_id: String,
     pub hallucination_score: f64,
     pub detected_hallucinations: Vec<String>,
+    pub tokens: u64,
+    pub organization_id: uuid::Uuid,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -6561,7 +6563,7 @@ pub enum EventDataTypes {
 }
 
 impl EventTypes {
-    pub fn to_event_data(self, dataset_id: uuid::Uuid) -> EventDataTypes {
+    pub fn to_event_data(self, dataset_id: uuid::Uuid, organization_id: uuid::Uuid) -> EventDataTypes {
         match self {
             EventTypes::AddToCart {
                 event_name,
@@ -6727,6 +6729,7 @@ impl EventTypes {
                 hallucination_score,
                 detected_hallucinations,
                 metadata,
+                tokens,
             } => EventDataTypes::RagQueryEventClickhouse(RagQueryEventClickhouse {
                 id: uuid::Uuid::new_v4(),
                 rag_type: rag_type
@@ -6750,6 +6753,8 @@ impl EventTypes {
                 metadata: serde_json::to_string(&metadata).unwrap_or("".to_string()),
                 hallucination_score: hallucination_score.unwrap_or(0.0),
                 detected_hallucinations: detected_hallucinations.unwrap_or_default(),
+                tokens,
+                organization_id,
             }),
             EventTypes::Recommendation {
                 recommendation_type,
@@ -7996,6 +8001,8 @@ pub enum EventTypes {
         hallucination_score: Option<f64>,
         /// The detected hallucinations of the RAG event
         detected_hallucinations: Option<Vec<String>>,
+        /// The number of tokens used for this chat
+        tokens: u64,
     },
     #[display(fmt = "recommendation")]
     #[schema(title = "Recommendation")]

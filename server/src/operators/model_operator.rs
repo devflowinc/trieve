@@ -7,7 +7,10 @@ use crate::{
 use actix_web::web;
 use itertools::Itertools;
 use murmur3::murmur3_32;
-use openai_dive::v1::resources::embedding::EmbeddingInput;
+use openai_dive::v1::resources::{
+    chat::{ChatMessage, ChatMessageContent},
+    embedding::EmbeddingInput,
+};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, io::Cursor, ops::IndexMut, sync::Arc};
 
@@ -1153,7 +1156,7 @@ pub fn get_bm25_embeddings(
     term_frequency(tokenize_batch(chunks_and_boost), avg_len, b, k)
 }
 
-fn tokenize(text: String) -> Vec<String> {
+fn tokenize(text: &str) -> Vec<String> {
     let mut en_stem =
         tantivy::tokenizer::TextAnalyzer::builder(tantivy::tokenizer::SimpleTokenizer::default())
             .filter(tantivy::tokenizer::RemoveLongFilter::limit(40))
@@ -1163,7 +1166,7 @@ fn tokenize(text: String) -> Vec<String> {
             ))
             .build();
 
-    let mut stream = en_stem.token_stream(&text);
+    let mut stream = en_stem.token_stream(text);
     let mut tokens: Vec<String> = vec![];
     while stream.advance() {
         tokens.push(stream.token().text.clone());
@@ -1172,12 +1175,43 @@ fn tokenize(text: String) -> Vec<String> {
     tokens
 }
 
+pub fn count_tokens(text: &str) -> u64 {
+    tokenize(text).len() as u64
+}
+
+pub fn count_message_tokens(messages: Vec<ChatMessage>) -> u64 {
+    messages
+        .clone()
+        .iter()
+        .fold(0, |acc, message| match message {
+            ChatMessage::Developer {
+                content: ChatMessageContent::Text(text),
+                ..
+            } => acc + count_tokens(text),
+            ChatMessage::System {
+                content: ChatMessageContent::Text(text),
+                ..
+            } => acc + count_tokens(text),
+            ChatMessage::User {
+                content: ChatMessageContent::Text(text),
+                ..
+            } => acc + count_tokens(text),
+            ChatMessage::Assistant {
+                content: Some(ChatMessageContent::Text(text)),
+                ..
+            } => acc + count_tokens(text),
+            ChatMessage::Tool { content, .. } => acc + count_tokens(content),
+            // Don't count multi part tokens
+            _ => acc,
+        })
+}
+
 pub fn tokenize_batch(
     chunks: Vec<(String, Option<FullTextBoost>)>,
 ) -> Vec<(Vec<String>, Option<FullTextBoost>)> {
     chunks
         .into_iter()
-        .map(|(chunk, boost)| (tokenize(chunk), boost))
+        .map(|(chunk, boost)| (tokenize(&chunk), boost))
         .collect()
 }
 
@@ -1215,7 +1249,7 @@ pub fn term_frequency(
             }
 
             if let Some(fulltext_boost) = fulltext_boost_option {
-                let tokenized_phrase = tokenize(fulltext_boost.phrase.clone());
+                let tokenized_phrase = tokenize(&fulltext_boost.phrase);
                 for token in tokenized_phrase {
                     let token_id =
                         (murmur3_32(&mut Cursor::new(token), 0).unwrap() as i32).unsigned_abs();
