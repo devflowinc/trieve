@@ -2757,6 +2757,10 @@ export type RecommendationAnalytics = {
     filter?: ((RecommendationAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'recommendations_per_user';
+} | {
+    filter?: ((RecommendationAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'recommendations_ctr_rate';
 };
 
 export type type5 = 'low_confidence_recommendations';
@@ -2766,7 +2770,7 @@ export type RecommendationAnalyticsFilter = {
     recommendation_type?: ((RecommendationType) | null);
 };
 
-export type RecommendationAnalyticsResponse = RecommendationsEventResponse | RecommendationEvent | RecommendationUsageGraphResponse | RecommendationsPerUserResponse;
+export type RecommendationAnalyticsResponse = RecommendationsEventResponse | RecommendationEvent | RecommendationUsageGraphResponse | RecommendationsPerUserResponse | RecommendationsCTRRateResponse;
 
 export type RecommendationCTRMetrics = {
     avg_position_of_click: number;
@@ -2806,6 +2810,16 @@ export type RecommendationUsageGraphPoint = {
 export type RecommendationUsageGraphResponse = {
     points: Array<RecommendationUsageGraphPoint>;
     total_requests: number;
+};
+
+export type RecommendationsCTRRateResponse = {
+    points: Array<RecommendationsCTRRateTimePoint>;
+    total_ctr: number;
+};
+
+export type RecommendationsCTRRateTimePoint = {
+    ctr: number;
+    time_stamp: string;
 };
 
 export type RecommendationsEventResponse = {

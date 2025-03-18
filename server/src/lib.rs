@@ -589,6 +589,8 @@ impl Modify for SecurityAddon {
             data::models::RecommendationUsageGraphPoint,
             data::models::RecommendationsPerUserResponse,
             data::models::RecommendationsPerUserTimePoint,
+            data::models::RecommendationsCTRRateResponse,
+            data::models::RecommendationsCTRRateTimePoint,
             data::models::TopPagesResponse,
             data::models::TopComponents,
             data::models::TopComponentsResponse,

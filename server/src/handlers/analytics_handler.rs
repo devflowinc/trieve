@@ -562,6 +562,19 @@ pub async fn get_recommendation_analytics(
             .await?;
             RecommendationAnalyticsResponse::RecommendationsPerUser(recommendations_per_user)
         }
+        RecommendationAnalytics::RecommendationsCTRRate {
+            filter,
+            granularity,
+        } => {
+            let recommendations_ctr_rate = get_recommendations_ctr_rate_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RecommendationAnalyticsResponse::RecommendationsCTRRate(recommendations_ctr_rate)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))

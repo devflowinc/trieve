@@ -15116,6 +15116,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "RecommendationsCTRRate",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RecommendationAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "recommendations_ctr_rate"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -15159,6 +15190,9 @@
           },
           {
             "$ref": "#/components/schemas/RecommendationsPerUserResponse"
+          },
+          {
+            "$ref": "#/components/schemas/RecommendationsCTRRateResponse"
           }
         ]
       },
@@ -15314,6 +15348,41 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "RecommendationsCTRRateResponse": {
+        "type": "object",
+        "required": [
+          "total_ctr",
+          "points"
+        ],
+        "properties": {
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecommendationsCTRRateTimePoint"
+            }
+          },
+          "total_ctr": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
+      "RecommendationsCTRRateTimePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "ctr"
+        ],
+        "properties": {
+          "ctr": {
+            "type": "number",
+            "format": "float"
+          },
+          "time_stamp": {
+            "type": "string"
           }
         }
       },
