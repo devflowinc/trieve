@@ -5,13 +5,13 @@ import { GraphComponent } from "../GraphComponent";
 import { searchCTRQuery } from "app/queries/analytics/search";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
 
-export default function SearchCTRChart({
+export const SearchCTRChart({
   filters,
   granularity,
 }: {
   filters: ComponentAnalyticsFilter;
   granularity: Granularity;
-}) {
+}) => {
   const { trieve } = useTrieve();
   const { data, isLoading } = useQuery(
     searchCTRQuery(trieve, filters, granularity),
