@@ -148,7 +148,9 @@ export const loader = async (args: LoaderFunctionArgs) => {
       });
     }
 
-    setAppMetafields(admin, key);
+    if (key.currentDatasetId && key.key) {
+      setAppMetafields(admin, key);
+    }
   }
   datasetId = shopDataset?.id;
   if (!datasetId) {
