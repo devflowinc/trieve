@@ -5,7 +5,7 @@ import { GraphComponent } from "../GraphComponent";
 import { searchCTRQuery } from "app/queries/analytics/search";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
 
-export const SearchCTRChart({
+export const SearchCTRChart = ({
   filters,
   granularity,
 }: {
