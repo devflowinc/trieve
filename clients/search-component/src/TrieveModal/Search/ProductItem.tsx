@@ -155,6 +155,7 @@ export const ProductItem = ({
           );
         }}
         href={item.chunk.link ?? ""}
+        target={props.openLinksInNewTab ? "_blank" : ""}
       >
         <div>
           {item.chunk.image_urls?.length && item.chunk.image_urls[0] ? (
