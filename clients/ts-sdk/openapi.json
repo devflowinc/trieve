@@ -16228,6 +16228,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "CTRMetricsOverTime",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SearchAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "ctr_metrics_over_time"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -16318,6 +16349,9 @@
           },
           {
             "$ref": "#/components/schemas/PopularFiltersResponse"
+          },
+          {
+            "$ref": "#/components/schemas/CTRMetricsOverTimeResponse"
           }
         ]
       },

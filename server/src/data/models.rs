@@ -7210,6 +7210,12 @@ pub enum SearchAnalytics {
     PopularFilters {
         filter: Option<SearchAnalyticsFilter>,
     },
+    #[serde(rename = "ctr_metrics_over_time")]
+    #[schema(title = "CTRMetricsOverTime")]
+    CTRMetricsOverTime {
+        filter: Option<SearchAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7577,6 +7583,8 @@ pub enum SearchAnalyticsResponse {
     QueryDetails(SearchQueryEvent),
     #[schema(title = "PopularFilters")]
     PopularFilters(PopularFiltersResponse),
+    #[schema(title = "CTRMetricsOverTime")]
+    CTRMetricsOverTime(CTRMetricsOverTimeResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

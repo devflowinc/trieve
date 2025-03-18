@@ -2336,3 +2336,83 @@ pub async fn get_messages_per_user(
         points: chats_over_time.into_iter().map(|x| x.into()).collect(),
     })
 }
+
+pub async fn get_search_ctr_metrics_over_time_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<SearchAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<CTRMetricsOverTimeResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            count(*) AS clicks
+        FROM 
+            events
+        WHERE 
+            dataset_id = ? 
+            AND event_type = 'click' 
+            AND event_name = 'Click'
+            AND request_type = 'search'
+        ",
+        interval,
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            time_stamp
+        ORDER BY 
+            time_stamp
+        LIMIT 1000",
+    );
+
+    let clicks_over_time = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<ClicksOverTime>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching ctr metrics over time: {:?}", e);
+            ServiceError::InternalServerError("Error fetching ctr metrics over time".to_string())
+        })?;
+
+    let searches_over_time =
+        get_search_usage_graph_query(dataset_id, filter, granularity, clickhouse_client)
+            .await?
+            .points;
+
+    let ctr_metrics_over_time: Vec<CTRMetricsOverTimePoint> = clicks_over_time
+        .iter()
+        .zip(searches_over_time.iter())
+        .map(|(x, y)| CTRMetricsOverTimePoint {
+            time_stamp: x.time_stamp.to_string(),
+            ctr: x.clicks as f32 / y.requests as f32,
+        })
+        .collect();
+
+    let total_ctr = if !ctr_metrics_over_time.is_empty() {
+        ctr_metrics_over_time.iter().map(|x| x.ctr).sum::<f32>()
+            / ctr_metrics_over_time.len() as f32
+    } else {
+        0.0
+    };
+
+    Ok(CTRMetricsOverTimeResponse {
+        total_ctr,
+        points: ctr_metrics_over_time,
+    })
+}
