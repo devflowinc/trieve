@@ -16,7 +16,6 @@ import {
 } from "./types";
 import { defaultHighlightOptions, highlightText } from "./highlight";
 import { ModalProps, ModalTypes, PagefindApi } from "./hooks/modal-context";
-import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
@@ -38,6 +37,7 @@ export const searchWithTrieve = async ({
   abortController,
   tags,
   type,
+  fingerprint,
 }: {
   trieve: TrieveSDK;
   props: ModalProps;
@@ -48,6 +48,7 @@ export const searchWithTrieve = async ({
   abortController?: AbortController;
   tags?: string[];
   type?: ModalTypes;
+  fingerprint?: string;
 }) => {
   const scoreThreshold =
     searchOptions.score_threshold ??
@@ -91,7 +92,7 @@ export const searchWithTrieve = async ({
         metadata: {
           component_props: props,
         },
-        user_id: await getFingerprint(),  
+        user_id: fingerprint,
         typo_options: {
           correct_typos: true,
         },
@@ -124,7 +125,7 @@ export const searchWithTrieve = async ({
         metadata: {
           component_props: props,
         },
-        user_id: await getFingerprint(),
+        user_id: fingerprint,
         typo_options: {
           correct_typos: true,
         },
@@ -171,6 +172,7 @@ export const groupSearchWithTrieve = async ({
   abortController,
   tags,
   type,
+  fingerprint,
 }: {
   props: ModalProps;
   trieve: TrieveSDK;
@@ -181,6 +183,7 @@ export const groupSearchWithTrieve = async ({
   abortController?: AbortController;
   tags?: string[];
   type?: ModalTypes;
+  fingerprint?: string;
 }) => {
   const scoreThreshold =
     searchOptions.score_threshold ??
@@ -221,7 +224,7 @@ export const groupSearchWithTrieve = async ({
       metadata: {
         component_props: props,
       },
-      user_id: await getFingerprint(),
+      user_id: fingerprint,
       search_type: searchOptions.search_type ?? "fulltext",
       ...omit(searchOptions, ["use_autocomplete"]),
     },
@@ -302,6 +305,7 @@ export const sendCtrData = async ({
   requestID,
   index,
   props,
+  fingerprint,
 }: {
   trieve: TrieveSDK;
   chunkID: string;
@@ -309,8 +313,8 @@ export const sendCtrData = async ({
   type: CTRType;
   index: number;
   props: ModalProps;
+  fingerprint: string
 }) => {
-  const user_id = await getFingerprint();
   await trieve.sendAnalyticsEvent({
     event_name: "Click",
     event_type: "click",
@@ -323,7 +327,7 @@ export const sendCtrData = async ({
       request_type: type,
     },
     location: window.location.href,
-    user_id: user_id,
+    user_id: fingerprint,
     metadata: {
       component_props: props,
     },
@@ -338,14 +342,15 @@ export const trackViews = async ({
   requestID,
   items,
   props,
+  fingerprint,
 }: {
   trieve: TrieveSDK;
   requestID: string;
   type: CTRType;
   items: string[];
   props: ModalProps;
+  fingerprint: string;
 }) => {
-  const user_id = await getFingerprint();
   await trieve.sendAnalyticsEvent({
     event_name: "View",
     event_type: "view",
@@ -355,7 +360,7 @@ export const trackViews = async ({
       request_type: type,
     },
     location: window.location.href,
-    user_id: user_id,
+    user_id: fingerprint,
     metadata: {
       component_props: props,
     },
@@ -370,7 +375,7 @@ export const getSuggestedQueries = async ({
   count,
   abortController,
 }: {
-  query: string;
+  query?: string;
   trieve: TrieveSDK;
   count: number;
   abortController?: AbortController;
@@ -439,15 +444,15 @@ export const getSuggestedQuestions = async ({
       context,
       ...(groupTrackingId &&
         groupTrackingId && {
-          filters: {
-            must: [
-              {
-                field: "group_tracking_ids",
-                match_all: [groupTrackingId],
-              },
-            ],
-          },
-        }),
+        filters: {
+          must: [
+            {
+              field: "group_tracking_ids",
+              match_all: [groupTrackingId],
+            },
+          ],
+        },
+      }),
     },
     abortController?.signal,
   );

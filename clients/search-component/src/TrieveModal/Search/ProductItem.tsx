@@ -39,7 +39,7 @@ export const ProductItem = ({
   betterGroupName,
   ctrType: type,
 }: Props) => {
-  const { props, trieveSDK } = useModalState();
+  const { props, trieveSDK, fingerprint } = useModalState();
   const { chatWithGroup } = useChatState();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const itemRef = useRef<HTMLButtonElement | HTMLLinkElement | any>(null);
@@ -126,6 +126,7 @@ export const ProductItem = ({
         index: chunk.position,
         requestID: requestID,
         chunkID: chunk.id,
+        fingerprint
       });
     }
 

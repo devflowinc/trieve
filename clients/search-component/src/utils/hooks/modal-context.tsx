@@ -249,6 +249,8 @@ const ModalContext = createContext<{
   imageUrl: string;
   audioBase64: string | undefined;
   uploadingImage: boolean;
+  fingerprint: string;
+  setFingerprint: React.Dispatch<React.SetStateAction<string>>;
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   setImageUrl: React.Dispatch<React.SetStateAction<string>>;
   setAudioBase64: React.Dispatch<React.SetStateAction<string | undefined>>;
@@ -293,6 +295,8 @@ const ModalContext = createContext<{
   inputRef: { current: null },
   modalRef: { current: null },
   mode: "search",
+  fingerprint: "",
+  setFingerprint: () => {},
   setMode: () => {},
   setOpen: () => {},
   setQuery: () => {},
@@ -328,6 +332,7 @@ const ModalProvider = ({
     ...onLoadProps,
   });
   const [query, setQuery] = useState("");
+  const [fingerprint, setFingerprint] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [audioBase64, setAudioBase64] = useState<string | undefined>(undefined);
   const [isRecording, setIsRecording] = useState(false);
@@ -466,6 +471,12 @@ const ModalProvider = ({
   }, []);
 
   useEffect(() => {
+    getFingerprint().then((fingerprint) => {
+      setFingerprint(fingerprint);
+    });
+  }, []);
+
+  useEffect(() => {
     props.onOpenChange?.(open);
   }, [open]);
 
@@ -575,6 +586,8 @@ const ModalProvider = ({
         setIsRecording,
         selectedSidebarFilters,
         setSelectedSidebarFilters,
+        fingerprint,
+        setFingerprint,
       }}
     >
       {children}
