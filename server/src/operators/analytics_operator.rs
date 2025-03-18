@@ -9,7 +9,8 @@ use crate::{
         RagQueryEventClickhouse, RagQueryRatingsResponse, RecommendationAnalyticsFilter,
         RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse,
         RecommendationUsageGraphPoint, RecommendationUsageGraphPointClickhouse,
-        RecommendationUsageGraphResponse, RecommendationsPerUserResponse,
+        RecommendationUsageGraphResponse, RecommendationsCTRRateResponse,
+        RecommendationsCTRRateTimePoint, RecommendationsPerUserResponse,
         RecommendationsPerUserTimePoint, RecommendationsPerUserTimePointClickhouse,
         RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
         RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
@@ -1211,31 +1212,85 @@ pub async fn get_recommendations_per_user_query(
     })
 }
 
-pub async fn send_event_data_query(
-    data: EventDataClickhouse,
+pub async fn get_recommendations_ctr_rate_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RecommendationAnalyticsFilter>,
+    granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
-) -> Result<(), ServiceError> {
-    let items = data
-        .items
-        .iter()
-        .map(|item| item.replace("\'", "''"))
-        .collect_vec()
-        .join("', '");
-    let query_string = format!(
-        "INSERT INTO events (id, event_type, event_name, items, metadata, user_id, is_conversion, request_id, dataset_id, created_at, updated_at) VALUES ('{}', '{}', '{}', array('{}'), '{}', '{}', '{}', '{}', '{}', now(), now())",
-        data.id, data.event_type, data.event_name.replace('\'', "''").replace('?', "|q").replace('\n', ""), items.replace('?', "|q").replace('\n', ""), data.metadata.replace('\'', "''").replace('?', "|q").replace('\n', ""), data.user_id, data.is_conversion, data.request_id, data.dataset_id
+) -> Result<RecommendationsCTRRateResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        _ => "1 HOUR",
+    };
+
+    let mut query_string = format!(
+        "
+            SELECT 
+                CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS timestamp,  
+                count(*) AS ctr_count
+            FROM 
+                events
+            WHERE 
+                dataset_id = ? 
+                AND event_type = 'click' 
+                AND event_name = 'Click'
+                AND request_type = 'recommendation'
+        ",
+        interval
     );
 
-    clickhouse_client
-        .query(&query_string)
-        .execute()
+    if let Some(filter) = &filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY
+            timestamp
+        ORDER BY
+            timestamp
+        LIMIT
+            1000",
+    );
+
+    let clicks_over_time = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<ClicksOverTime>()
         .await
         .map_err(|e| {
-            log::error!("Error sending event data: {:?}", e);
-            ServiceError::InternalServerError("Error sending event data".to_string())
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    Ok(())
+    let recs_over_time =
+        get_recommendation_usage_graph_query(dataset_id, filter, granularity, clickhouse_client)
+            .await?
+            .points;
+
+    let ctr_metrics = clicks_over_time
+        .iter()
+        .zip(recs_over_time.iter())
+        .map(|(click, rec)| RecommendationsCTRRateTimePoint {
+            time_stamp: click.time_stamp.to_string(),
+            ctr: click.clicks as f32 / rec.requests as f32,
+        })
+        .collect::<Vec<_>>();
+
+    let total_ctr = if !ctr_metrics.is_empty() {
+        ctr_metrics.iter().map(|q| q.ctr).sum::<f32>() / ctr_metrics.len() as f32
+    } else {
+        0.0
+    };
+
+    Ok(RecommendationsCTRRateResponse {
+        total_ctr,
+        points: ctr_metrics,
+    })
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

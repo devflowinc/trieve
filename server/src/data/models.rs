@@ -7299,6 +7299,12 @@ pub enum RecommendationAnalytics {
         filter: Option<RecommendationAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "RecommendationsCTRRate")]
+    #[serde(rename = "recommendations_ctr_rate")]
+    RecommendationsCTRRate {
+        filter: Option<RecommendationAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7595,6 +7601,20 @@ pub enum RecommendationAnalyticsResponse {
     RecommendationUsageGraph(RecommendationUsageGraphResponse),
     #[schema(title = "RecommendationsPerUser")]
     RecommendationsPerUser(RecommendationsPerUserResponse),
+    #[schema(title = "RecommendationsCTRRate")]
+    RecommendationsCTRRate(RecommendationsCTRRateResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RecommendationsCTRRateResponse {
+    pub total_ctr: f32,
+    pub points: Vec<RecommendationsCTRRateTimePoint>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RecommendationsCTRRateTimePoint {
+    pub time_stamp: String,
+    pub ctr: f32,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
