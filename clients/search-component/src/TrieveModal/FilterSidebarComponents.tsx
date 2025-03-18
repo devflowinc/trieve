@@ -16,7 +16,6 @@ import {
 import { toBase64 } from "./Search/UploadImage";
 import { getPresignedUrl, uploadFile } from "../utils/trieve";
 import { ToolFunctionParameter } from "trieve-ts-sdk";
-import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { ModalContainer } from "./ModalContainer";
 import { useChatState } from "../utils/hooks/chat-context";
 import convert from "heic-convert/browser";
@@ -258,6 +257,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     setSelectedSidebarFilters,
     selectedSidebarFilters,
   } = useModalState();
+  const { fingerprint } = useModalState()
   const { askQuestion, clearConversation } = useChatState();
   const [images, setImages] = useState<Record<string, File>>({});
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
@@ -419,7 +419,6 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             promptDescription += `\n\n[User's goal for the space (take more into account than anything else)]:\n${prevInputText}`;
           }
 
-          const fingerprint = await getFingerprint();
           const replacementMaterialDescriptionReader =
             await trieveSDK.ragOnChunkReader(
               {
@@ -497,7 +496,6 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             [steps[i].title]: "Understanding your space...",
           }));
 
-          const fingerprint = await getFingerprint();
           const replacementMaterialDescriptionReader =
             await trieveSDK.ragOnChunkReader(
               {

@@ -11,7 +11,7 @@ type Props = {
 };
 
 export const DocsItem = ({ item, requestID, index, className }: Props) => {
-  const { props, trieveSDK } = useModalState();
+  const { props, trieveSDK, fingerprint } = useModalState();
   const Component = item.chunk.link ? "a" : "button";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const itemRef = useRef<HTMLButtonElement | HTMLLinkElement | any>(null);
@@ -142,6 +142,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
         index: chunk.position,
         requestID: requestID,
         chunkID: chunk.id,
+        fingerprint
       });
     }
   };

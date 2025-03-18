@@ -93,7 +93,7 @@ export const Message = ({
   const { rateChatCompletion, messages } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
-  const { props, trieveSDK } = useModalState();
+  const { props, trieveSDK, fingerprint } = useModalState();
 
   useEffect(() => {
     if (props.analytics) {
@@ -115,6 +115,7 @@ export const Message = ({
           items: ecommerceChunks.map((chunk) => {
             return chunk.id ?? "";
           }),
+          fingerprint
         });
       }
     }
@@ -167,6 +168,7 @@ export const Message = ({
                 index: index + 1,
                 requestID: message.queryId,
                 chunkID: item.id,
+                fingerprint,
               });
             }
           }}
@@ -259,6 +261,7 @@ export const Message = ({
               index: index + 1,
               requestID: message.queryId,
               chunkID: item.id,
+              fingerprint,
             });
           }
         }}
@@ -324,6 +327,7 @@ export const Message = ({
               index: index + 1,
               requestID: message.queryId,
               chunkID: item.id,
+              fingerprint,
             });
           }
         }}
