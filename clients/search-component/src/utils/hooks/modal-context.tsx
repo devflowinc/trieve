@@ -10,13 +10,10 @@ import { Chunk, ChunkWithHighlights, GroupChunk } from "../types";
 import {
   ChunkFilter,
   ChunkGroup,
-  CountChunkQueryResponseBody,
   SearchChunksReqPayload,
   TrieveSDK,
 } from "trieve-ts-sdk";
 import {
-  countChunks,
-  countChunksWithPagefind,
   groupSearchWithPagefind,
   groupSearchWithTrieve,
   searchWithPagefind,
@@ -275,7 +272,6 @@ const ModalContext = createContext<{
   setSelectedTags: React.Dispatch<React.SetStateAction<TagProp[] | undefined>>;
   currentGroup: ChunkGroup | null;
   setCurrentGroup: React.Dispatch<React.SetStateAction<ChunkGroup | null>>;
-  tagCounts: CountChunkQueryResponseBody[];
   pagefind?: PagefindApi;
   isRecording: boolean;
   setIsRecording: React.Dispatch<React.SetStateAction<boolean>>;
@@ -311,7 +307,6 @@ const ModalContext = createContext<{
   setSelectedTags: () => {},
   currentGroup: null,
   setCurrentGroup: () => {},
-  tagCounts: [],
   setContextProps: () => {},
   pagefind: null,
   isRecording: false,
@@ -346,7 +341,6 @@ const ModalProvider = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState(props.defaultSearchMode || "search");
   const modalRef = useRef<HTMLDivElement>(null);
-  const [tagCounts, setTagCounts] = useState<CountChunkQueryResponseBody[]>([]);
   const [selectedTags, setSelectedTags] = useState(
     props.tags?.filter((t) => t.selected),
   );
@@ -383,7 +377,6 @@ const ModalProvider = ({
           ...(selectedTags?.map((t) => t.tag) ?? []),
           type: props.type,
         });
-
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
           const title = group.chunks[0].chunk.metadata?.title;
@@ -450,44 +443,6 @@ const ModalProvider = ({
       }
     } finally {
       setLoadingResults(false);
-    }
-  };
-
-  const getTagCounts = async (abortController: AbortController) => {
-    if (!query) {
-      setTagCounts([]);
-      return;
-    }
-    if (props.tags?.length) {
-      if (props.usePagefind) {
-        const filterCounts = await countChunksWithPagefind(
-          pagefind,
-          query,
-          props.tags,
-        );
-        setTagCounts(filterCounts);
-      } else {
-        try {
-          const numberOfRecords = await Promise.all(
-            [ALL_TAG, ...props.tags].map((tag) =>
-              countChunks({
-                query: query,
-                trieve: trieve,
-                abortController,
-                ...(tag.tag !== "all" && { tag: tag.tag }),
-              }),
-            ),
-          );
-          setTagCounts(numberOfRecords);
-        } catch (e) {
-          if (
-            e != "AbortError" &&
-            e != "AbortError: signal is aborted without reason"
-          ) {
-            console.error(e);
-          }
-        }
-      }
     }
   };
 
@@ -582,19 +537,6 @@ const ModalProvider = ({
     };
   }, [query, imageUrl, audioBase64, selectedTags, mode]);
 
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    const timeout = setTimeout(() => {
-      getTagCounts(abortController);
-    }, props.debounceMs);
-
-    return () => {
-      clearTimeout(timeout);
-      abortController.abort("AbortError");
-    };
-  }, [query]);
-
   return (
     <ModalContext.Provider
       value={{
@@ -629,7 +571,6 @@ const ModalProvider = ({
         setSelectedTags,
         currentGroup,
         setCurrentGroup,
-        tagCounts,
         isRecording,
         setIsRecording,
         selectedSidebarFilters,

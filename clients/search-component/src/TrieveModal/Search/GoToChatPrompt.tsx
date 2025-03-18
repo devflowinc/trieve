@@ -11,7 +11,7 @@ export const GoToChatPrompt = () => {
       key="chat"
     >
       <button
-        id="tv-px-0"
+        id="trieve-search-item-0"
         className="item start-chat"
         onClick={() => switchToChatAndAskQuestion(query)}
       >

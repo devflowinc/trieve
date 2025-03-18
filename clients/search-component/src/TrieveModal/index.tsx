@@ -85,8 +85,6 @@ const Modal = () => {
       baseUrl: props.baseUrl,
     });
 
-    console.log("sending load event");
-
     try {
       getFingerprint().then((fingerprint) => {
         trieveSDK.sendAnalyticsEvent(
