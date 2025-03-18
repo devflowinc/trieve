@@ -3020,6 +3020,10 @@ export type SearchAnalytics = {
 } | {
     filter?: ((SearchAnalyticsFilter) | null);
     type: 'popular_filters';
+} | {
+    filter?: ((SearchAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'ctr_metrics_over_time';
 };
 
 export type type7 = 'latency_graph';
@@ -3034,7 +3038,7 @@ export type SearchAnalyticsFilter = {
     top_score?: ((FloatRange) | null);
 };
 
-export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse;
+export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse | CTRMetricsOverTimeResponse;
 
 export type SearchCTRMetrics = {
     avg_position_of_click: number;

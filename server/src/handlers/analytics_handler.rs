@@ -176,7 +176,7 @@ pub async fn get_search_analytics(
     _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-) -> Result<HttpResponse, ServiceError> {
+) -> Result<HttpResponse, ServiceError> {    
     let response = match data.into_inner() {
         SearchAnalytics::LatencyGraph {
             filter,
@@ -303,6 +303,19 @@ pub async fn get_search_analytics(
             .await?;
 
             SearchAnalyticsResponse::PopularFilters(popular_filters)
+        }
+        SearchAnalytics::CTRMetricsOverTime {
+            filter,
+            granularity,
+        } => {
+            let ctr_metrics_over_time = get_search_ctr_metrics_over_time_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            SearchAnalyticsResponse::CTRMetricsOverTime(ctr_metrics_over_time)
         }
     };
 
