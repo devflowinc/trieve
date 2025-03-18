@@ -1,6 +1,6 @@
 {
   "name": "trieve-vitepress-adapter",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "type": "module",
   "main": "dist/index.js",
   "bin": "dist/index.js",
@@ -10,7 +10,7 @@
     }
   },
   "private": false,
-  "description": "Trieve adapter for Fern",
+  "description": "Trieve adapter for Vitepress",
   "publishConfig": {
     "access": "public"
   },

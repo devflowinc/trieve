@@ -121,7 +121,9 @@ const extractChunksFromPath = async (
     let chunk_html = `<h3>${heading}</h3>`;
     chunk_html += `<p>${body}</p>`;
 
-    const link = `${rootUrl}/${slug ?? path.replace('.mdx', '').replace('.md', '')}`;
+    const link = `${rootUrl}/${
+      slug ?? path.replace('.mdx', '').replace('.md', '')
+    }`;
     const tag_set = (slug ?? path.replace('.mdx', '').replace('.md', ''))
       .split('/')
       .filter((x) => x);
@@ -145,11 +147,9 @@ const extractChunksFromPath = async (
       metadata['description'] = subtitle;
     }
 
-    const tracking_id =
-      `${slug && slug != path ? slug + '/' : ''}${path.replace('.mdx', '').replace('.md', '')}-${heading}`.replace(
-        /\s/g,
-        '-',
-      );
+    const tracking_id = `${slug && slug != path ? slug + '/' : ''}${path
+      .replace('.mdx', '')
+      .replace('.md', '')}-${heading}`.replace(/\s/g, '-');
 
     const chunk: ChunkReqPayload = {
       chunk_html,
@@ -351,7 +351,9 @@ try {
   } catch (err) {
     console.error('Error clearing dataset', err);
   }
-  while (true) {
+  let retries = 0;
+  let sleep = 1000;
+  while (retries < 10) {
     try {
       console.info('Checking for groups...');
       const groups = await trieve.getGroupsForDataset({
@@ -365,10 +367,14 @@ try {
     } catch (err) {
       console.error('Error getting groups', err);
     }
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, sleep));
+    sleep = Math.min(30000, sleep * 2);
+    retries++;
     console.info('Waiting on groups to clear...');
   }
-  while (true) {
+  retries = 0;
+  sleep = 1000;
+  while (retries < 10) {
     try {
       console.info('Checking for chunks...');
       const scrollResp = await trieve.scroll({});
@@ -380,7 +386,9 @@ try {
     } catch (err) {
       console.error('Error getting groups', err);
     }
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, sleep));
+    sleep = Math.min(30000, sleep * 2);
+    retries++;
     console.info('Waiting on chunks to clear...');
   }
 } catch {
