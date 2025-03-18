@@ -192,7 +192,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               items: ecommerceChunks.map((chunk) => {
                 return chunk.id ?? "";
               }),
-              fingerprint
+              fingerprint,
             });
           }
         }
@@ -536,7 +536,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             use_group_search: props.useGroupSearch,
             filters: filters,
             metadata: {
-              component_props: props
+              component_props: props,
             },
             highlight_options: {
               ...defaultHighlightOptions,

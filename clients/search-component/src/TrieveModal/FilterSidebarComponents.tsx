@@ -257,7 +257,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     setSelectedSidebarFilters,
     selectedSidebarFilters,
   } = useModalState();
-  const { fingerprint } = useModalState()
+  const { fingerprint } = useModalState();
   const { askQuestion, clearConversation } = useChatState();
   const [images, setImages] = useState<Record<string, File>>({});
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
