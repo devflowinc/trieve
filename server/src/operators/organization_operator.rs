@@ -530,6 +530,40 @@ pub async fn get_arbitrary_org_owner_from_org_id(
     ))
 }
 
+pub async fn get_organization_from_dataset_id(
+    dataset_id: uuid::Uuid,
+    pool: &web::Data<Pool>,
+) -> Result<Organization, ServiceError> {
+    use crate::data::schema::datasets::dsl as datasets_columns;
+    use crate::data::schema::organizations::dsl as organization_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    let organization: Organization = datasets_columns::datasets
+        .inner_join(
+            organization_columns::organizations
+                .on(organization_columns::id.eq(datasets_columns::organization_id)),
+        )
+        .filter(organization_columns::deleted.eq(0))
+        .filter(datasets_columns::id.eq(dataset_id))
+        .select(Organization::as_select())
+        .first::<Organization>(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Could not get organization from dataset id in get_organization_from_dataset_id: {:?}",
+                e
+            );
+            ServiceError::BadRequest(
+                "Could not get organization from dataset id".to_string(),
+            )
+        })?;
+
+    Ok(organization)
+}
+
 pub async fn get_arbitrary_org_owner_from_dataset_id(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,

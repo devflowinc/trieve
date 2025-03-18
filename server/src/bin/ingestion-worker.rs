@@ -227,6 +227,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             .send(ClickHouseEvent::WorkerEvent(
                                 WorkerEvent::from_details(
                                     msg.payload.dataset_id,
+                                    Some(dataset.organization_id),
                                     models::EventType::ChunksUploaded {
                                         chunk_ids,
                                         tokens_ingested,

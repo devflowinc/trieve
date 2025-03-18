@@ -7,6 +7,7 @@ use crate::handlers::chunk_handler::ChunkFilter;
 use crate::handlers::dataset_handler::{GetDatasetsPagination, TagsWithCount};
 use crate::operators::chunk_operator::bulk_delete_chunks_query;
 use crate::operators::clickhouse_operator::ClickHouseEvent;
+use crate::operators::organization_operator::get_organization_from_dataset_id;
 use crate::operators::qdrant_operator::{
     delete_points_from_qdrant, get_qdrant_collection_from_dataset_config,
 };
@@ -455,7 +456,7 @@ pub async fn clear_dataset_query(
         ));
     }
 
-    let mut conn = pool.get().await.map_err(|_e| {
+    let mut conn = pool.clone().get().await.map_err(|_e| {
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
@@ -570,6 +571,10 @@ pub async fn clear_dataset_query(
             .send(ClickHouseEvent::WorkerEvent(
                 WorkerEvent::from_details(
                     id,
+                    get_organization_from_dataset_id(id, &pool)
+                        .await
+                        .ok()
+                        .map(|o| o.id),
                     EventType::BulkChunksDeleted {
                         message: format!("Deleted {} chunks", chunk_ids.len()),
                     },

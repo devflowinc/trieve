@@ -225,6 +225,7 @@ pub async fn upload_file_handler(
     let message = FileWorkerMessage {
         file_id,
         dataset_id: dataset_org_plan_sub.dataset.id,
+        organization_id: dataset_org_plan_sub.organization.organization.id,
         upload_file_data: upload_file_data.clone(),
         attempt_number: 0,
     };

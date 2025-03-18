@@ -247,6 +247,7 @@ async fn file_worker(
                         .send(ClickHouseEvent::WorkerEvent(
                             models::WorkerEvent::from_details(
                                 csv_jsonl_worker_message.dataset_id,
+                                None,
                                 models::EventType::CsvJsonlProcessingFailed {
                                     file_id: csv_jsonl_worker_message.file_id,
                                     error: "File was not uploaded to the signed PUT URL within 8600 seconds".to_string(),
