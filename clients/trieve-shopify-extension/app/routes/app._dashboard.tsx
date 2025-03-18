@@ -51,7 +51,10 @@ export default function Dashboard() {
   // Determine selected tab based on current path
   const selected = useMemo(() => {
     if (location.pathname.includes("/settings")) {
-      return 4; // Settings tab index
+      return 5; // Settings tab index
+    }
+    if (location.pathname.includes("/recommendations")) {
+      return 4; // Recommendations tab index
     }
     if (location.pathname.includes("/chat")) {
       return 3; // Settings tab index
@@ -74,8 +77,10 @@ export default function Dashboard() {
       } else if (selectedTabIndex === 2) {
         navigate("/app/search"); // Navigate to search
       } else if (selectedTabIndex === 3) {
-        navigate("/app/chat"); // Navigate to settings
+        navigate("/app/chat"); // Navigate to chat
       } else if (selectedTabIndex === 4) {
+        navigate("/app/recommendations"); // Navigate to recommendations
+      } else if (selectedTabIndex === 5) {
         navigate("/app/settings"); // Navigate to settings
       }
     },
@@ -106,6 +111,12 @@ export default function Dashboard() {
       content: "Chat",
       accessibilityLabel: "chat",
       panelID: "chat",
+    },
+    {
+      id: "recommendations  ",
+      content: "Recommendations",
+      accessibilityLabel: "recommendations",
+      panelID: "recommendations",
     },
     {
       id: "settings",

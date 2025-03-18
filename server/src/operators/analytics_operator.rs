@@ -8,10 +8,12 @@ use crate::{
         RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent,
         RagQueryEventClickhouse, RagQueryRatingsResponse, RecommendationAnalyticsFilter,
         RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse,
-        RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
-        RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
-        SearchAnalyticsFilter, SearchCTRMetrics, SearchCTRMetricsClickhouse, SearchClusterTopics,
-        SearchLatencyGraph, SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
+        RecommendationUsageGraphPoint, RecommendationUsageGraphPointClickhouse,
+        RecommendationUsageGraphResponse, RecommendationsWithClicksCTRResponse,
+        RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
+        RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
+        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
+        SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
         SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopComponents,
@@ -1059,6 +1061,70 @@ pub async fn get_recommendation_queries_query(
         clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
 
     Ok(RecommendationsEventResponse { queries })
+}
+
+pub async fn get_recommendation_usage_graph_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RecommendationAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<RecommendationUsageGraphResponse, ServiceError> {
+    let granularity = granularity.unwrap_or(Granularity::Hour);
+    let interval = match granularity {
+        Granularity::Second => "1 SECOND",
+        Granularity::Minute => "1 MINUTE",
+        Granularity::Hour => "1 HOUR",
+        Granularity::Day => "1 DAY",
+        Granularity::Month => "1 MONTH",
+    };
+
+    let mut query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS timestamp,
+            count(*) AS requests
+        FROM 
+            recommendations
+        WHERE 
+            dataset_id = ?
+        ",
+        interval
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY
+            timestamp
+        ORDER BY
+            timestamp
+        LIMIT
+            1000",
+    );
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<RecommendationUsageGraphPointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let total_requests = clickhouse_query.iter().map(|q| q.requests).sum::<u64>();
+
+    let rps_graph: Vec<RecommendationUsageGraphPoint> = clickhouse_query
+        .into_iter()
+        .map(|q| q.into())
+        .collect::<Vec<_>>();
+
+    Ok(RecommendationUsageGraphResponse {
+        points: rps_graph,
+        total_requests,
+    })
 }
 
 pub async fn send_event_data_query(

@@ -15054,6 +15054,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "RecommendationUsageGraph",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RecommendationAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "recommendation_usage_graph"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -15091,6 +15122,9 @@
           },
           {
             "$ref": "#/components/schemas/RecommendationEvent"
+          },
+          {
+            "$ref": "#/components/schemas/RecommendationUsageGraphResponse"
           }
         ]
       },
@@ -15210,6 +15244,44 @@
           "Chunk",
           "Group"
         ]
+      },
+      "RecommendationUsageGraphPoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "requests"
+        ],
+        "properties": {
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "time_stamp": {
+            "type": "string"
+          }
+        }
+      },
+      "RecommendationUsageGraphResponse": {
+        "type": "object",
+        "title": "RecommendationUsageGraphResponse",
+        "required": [
+          "total_requests",
+          "points"
+        ],
+        "properties": {
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecommendationUsageGraphPoint"
+            }
+          },
+          "total_requests": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
       },
       "RecommendationsEventResponse": {
         "type": "object",
