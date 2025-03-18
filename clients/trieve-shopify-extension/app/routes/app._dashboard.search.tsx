@@ -7,7 +7,7 @@ import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
 import { useState } from "react";
 import { Granularity } from "trieve-ts-sdk";
 import { AllSearchesTable } from "app/components/analytics/search/AllSearchesTable";
-import SearchCTRChart from "app/components/analytics/search/SearchCTR";
+import { SearchCTRChart } from "app/components/analytics/search/SearchCTR";
 
 export default function SearchAnalyticsPage() {
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
@@ -48,8 +48,7 @@ export default function SearchAnalyticsPage() {
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
               <SearchCTRChart filters={filters} granularity={granularity} />
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+              <div className="py-3"></div>
               <HeadQueriesTable filters={filters} />
             </Grid.Cell>
           </Grid>
