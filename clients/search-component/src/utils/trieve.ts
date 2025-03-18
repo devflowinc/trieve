@@ -313,7 +313,7 @@ export const sendCtrData = async ({
   type: CTRType;
   index: number;
   props: ModalProps;
-  fingerprint: string
+  fingerprint: string;
 }) => {
   await trieve.sendAnalyticsEvent({
     event_name: "Click",
@@ -444,15 +444,15 @@ export const getSuggestedQuestions = async ({
       context,
       ...(groupTrackingId &&
         groupTrackingId && {
-        filters: {
-          must: [
-            {
-              field: "group_tracking_ids",
-              match_all: [groupTrackingId],
-            },
-          ],
-        },
-      }),
+          filters: {
+            must: [
+              {
+                field: "group_tracking_ids",
+                match_all: [groupTrackingId],
+              },
+            ],
+          },
+        }),
     },
     abortController?.signal,
   );

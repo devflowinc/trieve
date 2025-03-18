@@ -126,7 +126,7 @@ export const ProductItem = ({
         index: chunk.position,
         requestID: requestID,
         chunkID: chunk.id,
-        fingerprint
+        fingerprint,
       });
     }
 

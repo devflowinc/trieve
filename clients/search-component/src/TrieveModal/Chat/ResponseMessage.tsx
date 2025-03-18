@@ -115,7 +115,7 @@ export const Message = ({
           items: ecommerceChunks.map((chunk) => {
             return chunk.id ?? "";
           }),
-          fingerprint
+          fingerprint,
         });
       }
     }

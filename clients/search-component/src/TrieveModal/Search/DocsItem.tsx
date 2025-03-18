@@ -142,7 +142,7 @@ export const DocsItem = ({ item, requestID, index, className }: Props) => {
         index: chunk.position,
         requestID: requestID,
         chunkID: chunk.id,
-        fingerprint
+        fingerprint,
       });
     }
   };
