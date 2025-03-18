@@ -1,14 +1,13 @@
 use super::chunk_operator::{create_chunk_metadata, get_row_count_for_organization_id_query};
-use super::clickhouse_operator::{ClickHouseEvent, EventQueue};
 use super::group_operator::{create_group_from_file_query, create_groups_query};
 use super::parse_operator::{build_chunking_regex, coarse_doc_chunker};
 use crate::data::models::ChunkGroup;
 use crate::data::models::FileDTO;
-use crate::data::models::{Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, EventType};
+use crate::data::models::{Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration};
+use crate::get_env;
 use crate::handlers::chunk_handler::ChunkReqPayload;
 use crate::handlers::file_handler::UploadFileReqPayload;
 use crate::operators::group_operator::delete_group_by_file_id_query;
-use crate::{data::models::WorkerEvent, get_env};
 use crate::{
     data::models::{File, Pool},
     errors::ServiceError,
@@ -285,7 +284,6 @@ pub async fn create_file_chunks(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     group_id: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
-    event_queue: web::Data<EventQueue>,
     broccoli_queue: BroccoliQueue,
 ) -> Result<(), ServiceError> {
     let name = upload_file_data.file_name.clone();
@@ -423,21 +421,6 @@ pub async fn create_file_chunks(
                 ServiceError::BadRequest("Could not publish message".to_string())
             })?;
     }
-
-    event_queue
-        .send(ClickHouseEvent::WorkerEvent(
-            WorkerEvent::from_details(
-                dataset_org_plan_sub.dataset.id,
-                Some(dataset_org_plan_sub.organization.organization.id),
-                EventType::FileUploaded {
-                    file_id: created_file_id,
-                    file_name: name,
-                    pdf2md_options: upload_file_data.pdf2md_options,
-                },
-            )
-            .into(),
-        ))
-        .await;
 
     Ok(())
 }

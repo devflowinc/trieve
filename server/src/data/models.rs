@@ -2221,6 +2221,7 @@ pub enum EventType {
         file_id: uuid::Uuid,
         file_name: String,
         pdf2md_options: Option<Pdf2MdOptions>,
+        pages: Option<u64>,
     },
     #[display(fmt = "file_upload_failed")]
     FileUploadFailed { file_id: uuid::Uuid, error: String },

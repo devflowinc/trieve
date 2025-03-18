@@ -125,29 +125,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             },
             {
-                move |msg| {
-                    let event_queue = web_event_queue.clone();
-                    async move {
-                        let message = msg.payload;
-                        log::info!("Uploaded file: {:?}", message.file_id);
+                move |msg| async move {
+                    log::info!("Uploaded file: {:?}", msg.payload.file_id);
 
-                        event_queue
-                            .send(ClickHouseEvent::WorkerEvent(
-                                models::WorkerEvent::from_details(
-                                    message.dataset_id,
-                                    Some(message.organization_id),
-                                    models::EventType::FileUploaded {
-                                        file_id: message.file_id,
-                                        file_name: message.upload_file_data.file_name.clone(),
-                                        pdf2md_options: message.upload_file_data.pdf2md_options,
-                                    },
-                                )
-                                .into(),
-                            ))
-                            .await;
-
-                        Ok(())
-                    }
+                    Ok(())
                 }
             },
             {
@@ -168,13 +149,34 @@ async fn file_worker(
     event_queue: actix_web::web::Data<EventQueue>,
     broccoli_queue: BroccoliQueue,
 ) -> Result<(), BroccoliError> {
-    upload_file(
+    match upload_file(
         message.clone(),
         web_pool.clone(),
         event_queue.clone(),
         broccoli_queue.clone(),
     )
     .await
+    {
+        Ok(pages) => {
+            event_queue
+                .send(ClickHouseEvent::WorkerEvent(
+                    models::WorkerEvent::from_details(
+                        message.dataset_id,
+                        Some(message.organization_id),
+                        models::EventType::FileUploaded {
+                            file_id: message.file_id,
+                            file_name: message.upload_file_data.file_name.clone(),
+                            pdf2md_options: message.upload_file_data.pdf2md_options,
+                            pages,
+                        },
+                    )
+                    .into(),
+                ))
+                .await;
+            Ok(())
+        }
+        Err(e) => Err(e),
+    }
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
@@ -221,7 +223,7 @@ async fn upload_file(
     web_pool: actix_web::web::Data<models::Pool>,
     event_queue: actix_web::web::Data<EventQueue>,
     broccoli_queue: BroccoliQueue,
-) -> Result<(), BroccoliError> {
+) -> Result<Option<u64>, BroccoliError> {
     log::info!(
         "Processing file for dataset_id {}",
         file_worker_message.dataset_id
@@ -308,7 +310,7 @@ async fn upload_file(
         .create_chunks
         .is_some_and(|create_chunks_bool| !create_chunks_bool)
     {
-        return Ok(());
+        return Ok(None);
     }
 
     if file_name.ends_with(".pdf")
@@ -386,6 +388,7 @@ async fn upload_file(
         let mut pagination_token: Option<u32> = None;
         let mut completed = false;
         const PAGE_SIZE: u32 = 20;
+        let mut total_pages = 0;
 
         loop {
             if completed {
@@ -436,6 +439,7 @@ async fn upload_file(
             let mut new_chunks = Vec::new();
             if let Some(pages) = task_response.pages {
                 log::info!("Got {} pages from task {}", pages.len(), task_id);
+                total_pages = pages.len();
 
                 for page in pages {
                     let page_id = format!("{}", page.page_num);
@@ -495,7 +499,6 @@ async fn upload_file(
                         dataset_org_plan_sub.clone(),
                         group_id,
                         web_pool.clone(),
-                        event_queue.clone(),
                         broccoli_queue.clone(),
                     )
                     .await?;
@@ -522,7 +525,7 @@ async fn upload_file(
             }
         }
 
-        return Ok(());
+        return Ok(Some(total_pages as u64));
     }
 
     let tika_url = std::env::var("TIKA_URL")
@@ -606,11 +609,10 @@ async fn upload_file(
             dataset_org_plan_sub.clone(),
             group_id,
             web_pool.clone(),
-            event_queue.clone(),
             broccoli_queue.clone(),
         )
         .await?;
-        return Ok(());
+        return Ok(None);
     }
 
     let Ok(chunk_htmls) =
@@ -657,10 +659,9 @@ async fn upload_file(
         dataset_org_plan_sub,
         group_id,
         web_pool.clone(),
-        event_queue.clone(),
         broccoli_queue.clone(),
     )
     .await?;
 
-    Ok(())
+    Ok(None)
 }
