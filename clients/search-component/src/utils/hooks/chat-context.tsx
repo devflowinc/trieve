@@ -68,6 +68,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setImageUrl,
     audioBase64,
     setAudioBase64,
+    fingerprint,
   } = useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
@@ -90,10 +91,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       called.current = true;
       setIsLoading(true);
       setCurrentQuestion("");
-      const fingerprint = await getFingerprint();
       const topic = await trieveSDK.createTopic({
         name: currentQuestion,
-        owner_id: fingerprint.toString(),
+        owner_id: fingerprint,
         metadata: {
           component_props: props,
         },
@@ -192,6 +192,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               items: ecommerceChunks.map((chunk) => {
                 return chunk.id ?? "";
               }),
+              fingerprint
             });
           }
         }

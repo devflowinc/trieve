@@ -36,9 +36,12 @@ export const useKeyboardNavigation = () => {
         }
       }
 
-      if (open && e.key === "Escape") {
-        setOpen(false);
-      } else if (open) {
+      if (open) {
+        if (e.key === "Escape") {
+          setOpen(false);
+          return;
+        }
+
         if (e.key == "ArrowDown") {
           e.preventDefault();
           e.stopPropagation();
