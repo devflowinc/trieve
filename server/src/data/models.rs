@@ -7294,6 +7294,11 @@ pub enum RecommendationAnalytics {
         filter: Option<RecommendationAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "RecommendationsPerUser")]
+    RecommendationsPerUser {
+        filter: Option<RecommendationAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7588,6 +7593,36 @@ pub enum RecommendationAnalyticsResponse {
     QueryDetails(RecommendationEvent),
     #[schema(title = "RecommendationUsageGraph")]
     RecommendationUsageGraph(RecommendationUsageGraphResponse),
+    #[schema(title = "RecommendationsPerUser")]
+    RecommendationsPerUser(RecommendationsPerUserResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RecommendationsPerUserResponse {
+    pub avg_recommendations_per_user: f64,
+    pub points: Vec<RecommendationsPerUserTimePoint>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RecommendationsPerUserTimePoint {
+    pub time_stamp: String,
+    pub recommendations_per_user: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct RecommendationsPerUserTimePointClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub recommendations_per_user: f64,
+}
+
+impl From<RecommendationsPerUserTimePointClickhouse> for RecommendationsPerUserTimePoint {
+    fn from(value: RecommendationsPerUserTimePointClickhouse) -> Self {
+        RecommendationsPerUserTimePoint {
+            time_stamp: value.time_stamp.to_string(),
+            recommendations_per_user: value.recommendations_per_user,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
