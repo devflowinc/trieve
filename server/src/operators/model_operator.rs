@@ -29,6 +29,13 @@ pub struct EmbeddingParameters {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DenseEmbedData {
     pub data: Vec<EmbeddingInner>,
+    pub usage: EmbeddingUsage,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmbeddingUsage {
+    pub prompt_tokens: u64,
+    pub total_tokens: u64,
 }
 
 impl DenseEmbedData {

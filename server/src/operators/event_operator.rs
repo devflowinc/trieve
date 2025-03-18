@@ -25,6 +25,7 @@ pub async fn get_events_query(
         SELECT
             id,
             dataset_id,
+            organization_id,
             event_type,
             event_data,
             created_at
@@ -48,8 +49,8 @@ pub async fn get_events_query(
         .fetch_all()
         .await
         .map_err(|err| {
-            log::error!("Failed to get events {:?}", err);
-            ServiceError::BadRequest("Failed to get events".to_string())
+            log::error!("Failed to get all events and counts {:?}", err);
+            ServiceError::BadRequest("Failed to get all events and counts".to_string())
         })?;
 
     let events = events_and_count

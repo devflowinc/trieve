@@ -6,12 +6,22 @@ import { TrieveFetchClient } from "trieve-ts-sdk";
 export const createUsageQuery = (
   userContext: UserStore,
   trieve: TrieveFetchClient,
+  dateRange?: {
+    startDate: string;
+    endDate: string;
+  },
 ) =>
   createQuery(() => ({
     queryKey: ["org-usage", userContext.selectedOrg().id],
     queryFn: async () => {
-      return trieve.fetch("/api/organization/usage/{organization_id}", "get", {
+      return trieve.fetch("/api/organization/usage/{organization_id}", "post", {
         organizationId: userContext.selectedOrg().id,
+        data: {
+          date_range: {
+            gte: dateRange?.startDate,
+            lte: dateRange?.endDate,
+          },
+        },
       });
     },
   }));

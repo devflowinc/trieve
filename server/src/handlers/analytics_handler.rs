@@ -681,8 +681,10 @@ pub async fn send_ctr_data(
     event_queue: web::Data<EventQueue>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let event_data =
-        EventTypes::from(data.into_inner()).to_event_data(dataset_org_plan_sub.dataset.id, dataset_org_plan_sub.dataset.organization_id);
+    let event_data = EventTypes::from(data.into_inner()).to_event_data(
+        dataset_org_plan_sub.dataset.id,
+        dataset_org_plan_sub.dataset.organization_id,
+    );
 
     if let EventDataTypes::EventDataClickhouse(event_data) = event_data {
         event_queue
@@ -720,9 +722,10 @@ pub async fn send_event_data(
     event_queue: web::Data<EventQueue>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let event_data = data
-        .into_inner()
-        .to_event_data(dataset_org_plan_sub.dataset.id, dataset_org_plan_sub.dataset.organization_id);
+    let event_data = data.into_inner().to_event_data(
+        dataset_org_plan_sub.dataset.id,
+        dataset_org_plan_sub.dataset.organization_id,
+    );
 
     match event_data {
         EventDataTypes::EventDataClickhouse(event_data) => {

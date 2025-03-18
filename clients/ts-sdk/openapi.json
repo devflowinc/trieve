@@ -5964,7 +5964,7 @@
       }
     },
     "/api/organization/usage/{organization_id}": {
-      "get": {
+      "post": {
         "tags": [
           "Organization"
         ],
@@ -5993,13 +5993,24 @@
             }
           }
         ],
+        "requestBody": {
+          "description": "The organization usage timeframe that you want to fetch",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetOrganizationUsageReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "The current usage of the specified organization",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrganizationUsageCount"
+                  "$ref": "#/components/schemas/ExtendedOrganizationUsageCount"
                 }
               }
             }
@@ -11235,6 +11246,7 @@
             "title": "Search",
             "required": [
               "query",
+              "tokens",
               "event_type"
             ],
             "properties": {
@@ -11284,6 +11296,12 @@
                 ],
                 "nullable": true
               },
+              "tokens": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Number of tokens used in the search",
+                "minimum": 0
+              },
               "top_score": {
                 "type": "number",
                 "format": "float",
@@ -11302,6 +11320,7 @@
             "title": "RAG",
             "required": [
               "user_message",
+              "tokens",
               "event_type"
             ],
             "properties": {
@@ -11361,6 +11380,12 @@
                 "format": "uuid",
                 "description": "The search id to associate the RAG event with a search",
                 "nullable": true
+              },
+              "tokens": {
+                "type": "integer",
+                "format": "int64",
+                "description": "The number of tokens used for this chat",
+                "minimum": 0
               },
               "topic_id": {
                 "type": "string",
@@ -11475,6 +11500,87 @@
           "click",
           "filter_clicked"
         ]
+      },
+      "ExtendedOrganizationUsageCount": {
+        "type": "object",
+        "required": [
+          "search_tokens",
+          "message_tokens",
+          "dataset_count",
+          "user_count",
+          "file_storage",
+          "message_count",
+          "search_count",
+          "chunk_count",
+          "bytes_ingested",
+          "tokens_ingested",
+          "ocr_pages_ingested",
+          "website_pages_scraped",
+          "events_ingested"
+        ],
+        "properties": {
+          "bytes_ingested": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "chunk_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dataset_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "events_ingested": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "file_storage": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "message_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "message_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "ocr_pages_ingested": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "search_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "search_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "tokens_ingested": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "user_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "website_pages_scraped": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
       },
       "FieldCondition": {
         "type": "object",
@@ -12188,6 +12294,19 @@
             "items": {
               "type": "string"
             },
+            "nullable": true
+          }
+        }
+      },
+      "GetOrganizationUsageReqPayload": {
+        "type": "object",
+        "properties": {
+          "date_range": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DateRange"
+              }
+            ],
             "nullable": true
           }
         }
@@ -19412,6 +19531,11 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "example": {

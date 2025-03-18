@@ -550,8 +550,10 @@ pub async fn get_rag_chunks_query(
             request_params: serde_json::to_string(&search_groups_data.clone()).unwrap_or_default(),
             id: uuid::Uuid::new_v4(),
             search_type: "rag_groups".to_string(),
+            tokens: count_tokens(&query),
             query: query.clone(),
             dataset_id: dataset.id,
+            organization_id: dataset.organization_id,
             metadata: serde_json::to_string(&create_message_req_payload.metadata.clone())
                 .unwrap_or_default(),
             top_score: result_groups
@@ -654,8 +656,10 @@ pub async fn get_rag_chunks_query(
             request_params: serde_json::to_string(&search_chunk_data.clone()).unwrap_or_default(),
             id: uuid::Uuid::new_v4(),
             search_type: "rag_chunks".to_string(),
+            tokens: count_tokens(&query),
             query: query.clone(),
             dataset_id: dataset.id,
+            organization_id: dataset.organization_id,
             top_score: result_chunks
                 .score_chunks
                 .get(0)

@@ -98,16 +98,19 @@ export const SingleEventQuery = (props: SingleEventQueryProps) => {
                   let link;
                   switch (props.event_data.request_type) {
                     case "search":
-                      link = `/dataset/${dataset.datasetId()}/analytics/query/${props.event_data.request_id
-                        }`;
+                      link = `/dataset/${dataset.datasetId()}/analytics/query/${
+                        props.event_data.request_id
+                      }`;
                       break;
                     case "rag":
-                      link = `/dataset/${dataset.datasetId()}/analytics/rag/${props.event_data.request_id
-                        }`;
+                      link = `/dataset/${dataset.datasetId()}/analytics/rag/${
+                        props.event_data.request_id
+                      }`;
                       break;
                     case "recommendations":
-                      link = `/dataset/${dataset.datasetId()}/analytics/recommendations/${props.event_data.request_id
-                        }`;
+                      link = `/dataset/${dataset.datasetId()}/analytics/recommendations/${
+                        props.event_data.request_id
+                      }`;
                       break;
                     default:
                       break;
@@ -132,10 +135,12 @@ export const SingleEventQuery = (props: SingleEventQueryProps) => {
           <Card title="Items">
             <ProductItem
               chunkId={
-                (JSON.parse(props.event_data.items[0]) as { chunk_id: string }).chunk_id
+                (JSON.parse(props.event_data.items[0]) as { chunk_id: string })
+                  .chunk_id
               }
               position={
-                (JSON.parse(props.event_data.items[0]) as { position: string }).position
+                (JSON.parse(props.event_data.items[0]) as { position: string })
+                  .position
               }
               index={0}
             />

@@ -2744,7 +2744,10 @@ pub async fn get_last_processed_from_clickhouse(
     dataset_id: uuid::Uuid,
 ) -> Result<Option<DatasetLastProcessed>, ServiceError> {
     let query = format!(
-        "SELECT dataset_id, min(last_processed) as last_processed FROM dataset_words_last_processed WHERE dataset_id = '{}' GROUP BY dataset_id LIMIT 1",
+        "SELECT dataset_id, min(last_processed) as last_processed
+        FROM dataset_words_last_processed
+        WHERE dataset_id = '{}'
+        GROUP BY dataset_id LIMIT 1",
         dataset_id
     );
 
