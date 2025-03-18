@@ -1,16 +1,17 @@
 use crate::{
     data::models::{
-        ApiKeyRespBody, Dataset, DatasetConfiguration, Organization, OrganizationApiKey,
+        ApiKeyRespBody, Dataset, DatasetConfiguration, DateRange, Organization, OrganizationApiKey,
         OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, RedisPool, SlimUser, StripePlan,
         StripeSubscription, User, UserApiKey, UserOrganization,
     },
     errors::ServiceError,
-    handlers::organization_handler::CreateApiKeyReqPayload,
+    handlers::organization_handler::{CreateApiKeyReqPayload, ExtendedOrganizationUsageCount},
     operators::dataset_operator::soft_delete_dataset_by_id_query,
     randutil,
 };
 use actix_web::{web, HttpRequest};
 use chrono::NaiveDateTime;
+use clickhouse::Row;
 use dateparser::DateTimeUtc;
 use diesel::{
     prelude::*, result::DatabaseErrorKind, sql_query, ExpressionMethods, JoinOnDsl,
@@ -20,6 +21,7 @@ use diesel_async::RunQueryDsl;
 use itertools::Itertools;
 use rand::{distributions::Alphanumeric, Rng};
 use redis::AsyncCommands;
+use serde::Deserialize;
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
 /// for the user
@@ -439,6 +441,184 @@ pub async fn get_org_usage_by_id_query(
             })?;
 
     Ok(org_usage_count)
+}
+
+#[derive(Row, Deserialize)]
+pub struct SearchTokensRow {
+    search_tokens: u64,
+    search_count: u64,
+}
+
+#[derive(Row, Deserialize)]
+pub struct MessageTokensRow {
+    message_tokens: u64,
+    message_count: u64,
+}
+
+#[derive(Row, Deserialize)]
+pub struct IngestedTokensRow {
+    bytes_ingested: u64,
+    tokens_ingested: u64,
+}
+
+#[derive(Row, Deserialize)]
+pub struct OCRPageCountRow {
+    page_count: u64,
+}
+
+#[derive(Row, Deserialize)]
+pub struct WebpagesScrapedRow {
+    pages_scraped: u64,
+}
+
+#[derive(Row, Deserialize)]
+pub struct EventsIngestedRow {
+    event_count: u64,
+}
+
+pub fn format_with_daterange(query_string: String, date_range: &Option<DateRange>) -> String {
+    let mut query_string = query_string;
+    if let Some(date_range) = date_range {
+        if let Some(gt) = &date_range.gt {
+            query_string.push_str(&format!(" AND created_at > '{}'", gt));
+        }
+        if let Some(lt) = &date_range.lt {
+            query_string.push_str(&format!(" AND created_at < '{}'", lt));
+        }
+        if let Some(gte) = &date_range.gte {
+            query_string.push_str(&format!(" AND created_at >= '{}'", gte));
+        }
+        if let Some(lte) = &date_range.lte {
+            query_string.push_str(&format!(" AND created_at <= '{}'", lte));
+        }
+    }
+
+    query_string
+}
+
+pub async fn get_extended_org_usage_by_id_query(
+    organization_id: uuid::Uuid,
+    date_range: Option<DateRange>,
+    clickhouse_client: &clickhouse::Client,
+    pool: web::Data<Pool>,
+) -> Result<ExtendedOrganizationUsageCount, ServiceError> {
+    let usage = get_org_usage_by_id_query(organization_id, pool).await?;
+
+    let search_tokens = clickhouse_client
+        .query(&format_with_daterange(
+            "
+        SELECT SUM(tokens) as search_tokens, COUNT(*) as search_count
+        FROM search_queries
+        WHERE organization_id = ?
+        "
+            .to_string(),
+            &date_range,
+        ))
+        .bind(organization_id)
+        .fetch_one::<SearchTokensRow>()
+        .await
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!("Error fetching search queries {:?}", e))
+        })?;
+
+    let message_tokens = clickhouse_client
+        .query(&format_with_daterange(
+            "
+        SELECT SUM(tokens) as message_tokens, COUNT(*) as message_count
+        FROM rag_queries
+        WHERE organization_id = ?
+        "
+            .to_string(),
+            &date_range,
+        ))
+        .bind(organization_id)
+        .fetch_one::<MessageTokensRow>()
+        .await
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!("Error fetching message queries {:?}", e))
+        })?;
+
+    let bytes_and_tokens_ingested = clickhouse_client
+        .query(&format_with_daterange(
+            "
+        SELECT SUM(JSONExtractUInt(event_data, 'bytes_ingested')) as bytes_ingested,
+               SUM(JSONExtractUInt(event_data, 'tokens_ingested')) as tokens_ingested
+        FROM dataset_events
+        WHERE event_type  = 'chunks_uploaded' and organization_id = ?"
+                .to_string(),
+            &date_range,
+        ))
+        .bind(organization_id)
+        .fetch_one::<IngestedTokensRow>()
+        .await
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+        })?;
+
+    let ocr_pages = clickhouse_client
+        .query(&format_with_daterange(
+            "
+        SELECT SUM(JSONExtractUInt(event_data, 'pages')) as page_count
+        FROM dataset_events
+        WHERE event_type  = 'file_uploaded' and organization_id = ?"
+                .to_string(),
+            &date_range,
+        ))
+        .bind(organization_id)
+        .fetch_one::<OCRPageCountRow>()
+        .await
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+        })?;
+
+    let website_pages_scraped = clickhouse_client
+        .query(&format_with_daterange(
+            "
+        SELECT SUM(JSONExtractUInt(event_data, 'pages_crawled')) as pages_scraped
+        FROM dataset_events
+        WHERE event_type  = 'crawl_completed' and organization_id = ?"
+                .to_string(),
+            &date_range,
+        ))
+        .bind(organization_id)
+        .fetch_one::<WebpagesScrapedRow>()
+        .await
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+        })?;
+
+    let events_ingested = clickhouse_client
+        .query(&format_with_daterange(
+            "
+            SELECT SUM(tokens) as event_count
+            FROM rag_queries
+            WHERE organization_id = ?
+        "
+            .to_string(),
+            &date_range,
+        ))
+        .bind(organization_id)
+        .fetch_one::<EventsIngestedRow>()
+        .await
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+        })?;
+
+    Ok(ExtendedOrganizationUsageCount {
+        dataset_count: usage.dataset_count,
+        user_count: usage.user_count,
+        chunk_count: usage.chunk_count,
+        file_storage: usage.file_storage,
+        search_tokens: search_tokens.search_tokens,
+        message_tokens: message_tokens.message_tokens,
+        bytes_ingested: bytes_and_tokens_ingested.bytes_ingested,
+        tokens_ingested: bytes_and_tokens_ingested.tokens_ingested,
+        message_count: message_tokens.message_count,
+        search_count: search_tokens.search_count,
+        ocr_pages_ingested: ocr_pages.page_count,
+        website_pages_scraped: website_pages_scraped.pages_scraped,
+        events_ingested: events_ingested.event_count,
+    })
 }
 
 pub async fn get_org_users_by_id_query(

@@ -149,14 +149,7 @@ async fn file_worker(
     event_queue: actix_web::web::Data<EventQueue>,
     broccoli_queue: BroccoliQueue,
 ) -> Result<(), BroccoliError> {
-    match upload_file(
-        message.clone(),
-        web_pool.clone(),
-        event_queue.clone(),
-        broccoli_queue.clone(),
-    )
-    .await
-    {
+    match upload_file(message.clone(), web_pool.clone(), broccoli_queue.clone()).await {
         Ok(pages) => {
             event_queue
                 .send(ClickHouseEvent::WorkerEvent(
@@ -221,7 +214,6 @@ pub struct PdfToMdPage {
 async fn upload_file(
     file_worker_message: FileWorkerMessage,
     web_pool: actix_web::web::Data<models::Pool>,
-    event_queue: actix_web::web::Data<EventQueue>,
     broccoli_queue: BroccoliQueue,
 ) -> Result<Option<u64>, BroccoliError> {
     log::info!(

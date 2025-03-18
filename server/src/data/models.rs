@@ -1,7 +1,6 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
 use super::schema::*;
-use crate::handlers::file_handler::Pdf2MdOptions;
 use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::analytics_handler::CTRDataRequestBody;
@@ -10,6 +9,7 @@ use crate::handlers::chunk_handler::{
     SearchChunksReqPayload, SemanticBoost,
 };
 use crate::handlers::chunk_handler::{CrawlInterval, ScrollChunksReqPayload};
+use crate::handlers::file_handler::Pdf2MdOptions;
 use crate::handlers::file_handler::{
     CreatePresignedUrlForCsvJsonlReqPayload, UploadFileReqPayload,
 };
@@ -2162,6 +2162,7 @@ pub struct WorkerEventClickhouse {
     pub id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid::option")]
     pub organization_id: Option<uuid::Uuid>,
     pub event_type: String,
     pub event_data: String,
@@ -2226,7 +2227,11 @@ pub enum EventType {
     #[display(fmt = "file_upload_failed")]
     FileUploadFailed { file_id: uuid::Uuid, error: String },
     #[display(fmt = "chunks_uploaded")]
-    ChunksUploaded { chunk_ids: Vec<uuid::Uuid>, tokens_ingested: u64, bytes_ingested: u64 },
+    ChunksUploaded {
+        chunk_ids: Vec<uuid::Uuid>,
+        tokens_ingested: u64,
+        bytes_ingested: u64,
+    },
     #[display(fmt = "chunk_updated")]
     ChunkUpdated { chunk_id: uuid::Uuid },
     #[display(fmt = "bulk_chunks_deleted")]
@@ -2330,7 +2335,11 @@ impl EventType {
 }
 
 impl WorkerEvent {
-    pub fn from_details(dataset_id: uuid::Uuid, organization_id: Option<uuid::Uuid>, event_type: EventType) -> Self {
+    pub fn from_details(
+        dataset_id: uuid::Uuid,
+        organization_id: Option<uuid::Uuid>,
+        event_type: EventType,
+    ) -> Self {
         WorkerEvent {
             id: uuid::Uuid::new_v4(),
             created_at: chrono::Utc::now().naive_local().to_string(),
@@ -5384,11 +5393,14 @@ pub struct SearchQueryEventClickhouse {
     pub results: Vec<String>,
     #[serde(with = "clickhouse::serde::uuid")]
     pub dataset_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub organization_id: uuid::Uuid,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub created_at: OffsetDateTime,
     pub metadata: String,
     pub query_rating: String,
     pub user_id: String,
+    pub tokens: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -5580,6 +5592,7 @@ pub struct RagQueryEventClickhouse {
     pub hallucination_score: f64,
     pub detected_hallucinations: Vec<String>,
     pub tokens: u64,
+    #[serde(with = "clickhouse::serde::uuid")]
     pub organization_id: uuid::Uuid,
 }
 
@@ -5627,6 +5640,8 @@ pub struct RecommendationEventClickhouse {
     pub created_at: OffsetDateTime,
     pub metadata: String,
     pub user_id: String,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub organization_id: uuid::Uuid,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, Default)]
@@ -6616,7 +6631,11 @@ pub enum EventDataTypes {
 }
 
 impl EventTypes {
-    pub fn to_event_data(self, dataset_id: uuid::Uuid, organization_id: uuid::Uuid) -> EventDataTypes {
+    pub fn to_event_data(
+        self,
+        dataset_id: uuid::Uuid,
+        organization_id: uuid::Uuid,
+    ) -> EventDataTypes {
         match self {
             EventTypes::AddToCart {
                 event_name,
@@ -6750,12 +6769,14 @@ impl EventTypes {
                 query_rating,
                 user_id,
                 metadata,
+                tokens,
             } => EventDataTypes::SearchQueryEventClickhouse(SearchQueryEventClickhouse {
                 id: uuid::Uuid::new_v4(),
                 search_type: search_type
                     .unwrap_or(ClickhouseSearchTypes::Search)
                     .to_string(),
                 query,
+                tokens,
                 request_params: serde_json::to_string(&request_params).unwrap_or_default(),
                 metadata: serde_json::to_string(&metadata).unwrap_or("".to_string()),
                 latency: latency.unwrap_or(0.0),
@@ -6766,6 +6787,7 @@ impl EventTypes {
                     .map(|r| r.to_string())
                     .collect(),
                 dataset_id,
+                organization_id,
                 created_at: OffsetDateTime::now_utc(),
                 query_rating: serde_json::to_string(&query_rating).unwrap_or("".to_string()),
                 user_id: user_id.unwrap_or_default(),
@@ -6846,6 +6868,7 @@ impl EventTypes {
                 dataset_id,
                 created_at: OffsetDateTime::now_utc(),
                 user_id: user_id.unwrap_or_default(),
+                organization_id,
             }),
         }
     }
@@ -8084,6 +8107,8 @@ pub enum EventTypes {
         metadata: Option<serde_json::Value>,
         /// The user id of the user who made the search
         user_id: Option<String>,
+        /// Number of tokens used in the search
+        tokens: u64,
     },
     #[display(fmt = "rag")]
     #[serde(rename = "rag")]

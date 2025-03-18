@@ -204,6 +204,7 @@ impl Modify for SecurityAddon {
         handlers::user_handler::get_user_api_keys,
         handlers::user_handler::delete_user_api_key,
         handlers::organization_handler::create_organization_api_key,
+        handlers::organization_handler::get_organization_usage,
         handlers::organization_handler::delete_organization_api_key,
         handlers::organization_handler::get_organization_api_keys,
         handlers::group_handler::search_over_groups,
@@ -238,7 +239,6 @@ impl Modify for SecurityAddon {
         handlers::organization_handler::get_organization,
         handlers::organization_handler::update_organization,
         handlers::organization_handler::delete_organization,
-        handlers::organization_handler::get_organization_usage,
         handlers::organization_handler::get_organization_users,
         handlers::organization_handler::update_all_org_dataset_configs,
         handlers::dataset_handler::create_dataset,
@@ -369,6 +369,8 @@ impl Modify for SecurityAddon {
             handlers::user_handler::UpdateUserOrgRoleReqPayload,
             handlers::organization_handler::CreateApiKeyReqPayload,
             handlers::organization_handler::CreateApiKeyResponse,
+            handlers::organization_handler::ExtendedOrganizationUsageCount,
+            handlers::organization_handler::GetOrganizationUsageReqPayload,
             operators::group_operator::GroupsForChunk,
             handlers::file_handler::UploadFileReqPayload,
             handlers::file_handler::UploadFileResponseBody,
@@ -1250,7 +1252,7 @@ pub fn main() -> std::io::Result<()> {
                             web::scope("/organization")
                                 .service(
                                     web::resource("/usage/{organization_id}")
-                                        .route(web::get().to(
+                                        .route(web::post().to(
                                             handlers::organization_handler::get_organization_usage,
                                         )),
                                 )

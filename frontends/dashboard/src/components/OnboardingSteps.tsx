@@ -9,8 +9,9 @@ export const OnboardingSteps = () => {
   const usageQuery = createQuery(() => ({
     queryKey: ["org-usage", userContext.selectedOrg().id],
     queryFn: async () => {
-      return trieve.fetch("/api/organization/usage/{organization_id}", "get", {
+      return trieve.fetch("/api/organization/usage/{organization_id}", "post", {
         organizationId: userContext.selectedOrg().id,
+        data: {},
       });
     },
   }));

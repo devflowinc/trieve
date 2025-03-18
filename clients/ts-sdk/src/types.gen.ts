@@ -1553,6 +1553,10 @@ export type EventTypes = {
     results?: Array<unknown> | null;
     search_type?: ((ClickhouseSearchTypes) | null);
     /**
+     * Number of tokens used in the search
+     */
+    tokens: number;
+    /**
      * The top score of the search
      */
     top_score?: (number) | null;
@@ -1588,6 +1592,10 @@ export type EventTypes = {
      * The search id to associate the RAG event with a search
      */
     search_id?: (string) | null;
+    /**
+     * The number of tokens used for this chat
+     */
+    tokens: number;
     /**
      * The topic id to associate the RAG event with a topic
      */
@@ -1644,6 +1652,22 @@ export type EventTypes = {
 export type event_type = 'view';
 
 export type EventTypesFilter = 'add_to_cart' | 'purchase' | 'view' | 'click' | 'filter_clicked';
+
+export type ExtendedOrganizationUsageCount = {
+    bytes_ingested: number;
+    chunk_count: number;
+    dataset_count: number;
+    events_ingested: number;
+    file_storage: number;
+    message_count: number;
+    message_tokens: number;
+    ocr_pages_ingested: number;
+    search_count: number;
+    search_tokens: number;
+    tokens_ingested: number;
+    user_count: number;
+    website_pages_scraped: number;
+};
 
 /**
  * FieldCondition is a JSON object which can be used to filter chunks by a field. This is useful for when you want to filter chunks by arbitrary metadata. To access fields inside of the metadata that you provide with the card, prefix the field name with `metadata.`.
@@ -1908,6 +1932,10 @@ export type GetEventsResponseBody = {
 export type GetGroupsForChunksReqPayload = {
     chunk_ids?: Array<(string)> | null;
     chunk_tracking_ids?: Array<(string)> | null;
+};
+
+export type GetOrganizationUsageReqPayload = {
+    date_range?: ((DateRange) | null);
 };
 
 export type GetPagefindIndexResponse = {
@@ -4057,6 +4085,7 @@ export type WorkerEvent = {
     event_data: string;
     event_type: string;
     id: string;
+    organization_id?: (string) | null;
 };
 
 export type SendCtrDataData = {
@@ -5333,12 +5362,16 @@ export type GetOrganizationUsageData = {
      */
     organizationId: string;
     /**
+     * The organization usage timeframe that you want to fetch
+     */
+    requestBody: GetOrganizationUsageReqPayload;
+    /**
      * The organization id to use for the request
      */
     trOrganization: string;
 };
 
-export type GetOrganizationUsageResponse = (OrganizationUsageCount);
+export type GetOrganizationUsageResponse = (ExtendedOrganizationUsageCount);
 
 export type GetOrganizationUsersData = {
     /**
@@ -6976,13 +7009,13 @@ export type $OpenApiTs = {
         };
     };
     '/api/organization/usage/{organization_id}': {
-        get: {
+        post: {
             req: GetOrganizationUsageData;
             res: {
                 /**
                  * The current usage of the specified organization
                  */
-                200: OrganizationUsageCount;
+                200: ExtendedOrganizationUsageCount;
                 /**
                  * Service error relating to finding the organization's usage by id
                  */

@@ -1003,16 +1003,15 @@ async fn scrape_worker(
             log::error!("Failed to update crawl status: {:?}", err);
         }
     }
-    let organization_id =
-        get_organization_from_dataset_id(crawl_request.dataset_id, &pool.clone())
-            .await
-            .map_err(|e| {
-                BroccoliError::Job(format!(
-                    "Failed to get organization id from dataset id {:?}",
-                    e,
-                ))
-            })?
-            .id;
+    let organization_id = get_organization_from_dataset_id(crawl_request.dataset_id, &pool.clone())
+        .await
+        .map_err(|e| {
+            BroccoliError::Job(format!(
+                "Failed to get organization id from dataset id {:?}",
+                e,
+            ))
+        })?
+        .id;
 
     event_queue
         .send(ClickHouseEvent::WorkerEvent(

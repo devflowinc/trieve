@@ -1331,9 +1331,12 @@ pub async fn search_chunks(
     let search_id = uuid::Uuid::new_v4();
 
     if !dataset_config.DISABLE_ANALYTICS {
+        log::info!("Sending clickhouse event");
         let clickhouse_event = SearchQueryEventClickhouse {
             id: search_id,
             search_type: String::from("search"),
+            organization_id: dataset_org_plan_sub.dataset.organization_id,
+            tokens: count_tokens(&query),
             query: query.clone(),
             request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
             latency: get_latency_from_header(timer.header_value()),
@@ -1560,6 +1563,7 @@ pub async fn autocomplete(
         let clickhouse_event = SearchQueryEventClickhouse {
             id: search_id,
             search_type: String::from("autocomplete"),
+            tokens: count_tokens(&parsed_query.query),
             query: parsed_query.query.clone(),
             request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
             latency: get_latency_from_header(timer.header_value()),
@@ -1580,6 +1584,7 @@ pub async fn autocomplete(
                 })
                 .collect(),
             dataset_id: dataset_org_plan_sub.dataset.id,
+            organization_id: dataset_org_plan_sub.dataset.organization_id,
             created_at: time::OffsetDateTime::now_utc(),
             query_rating: String::from(""),
             user_id: data.user_id.clone().unwrap_or_default(),
@@ -2437,6 +2442,7 @@ pub async fn get_recommended_chunks(
                 .map(|x| serde_json::to_string(x).unwrap_or_default())
                 .collect(),
             dataset_id: dataset_org_plan_sub.dataset.id,
+            organization_id: dataset_org_plan_sub.dataset.organization_id,
             created_at: time::OffsetDateTime::now_utc(),
             user_id: data.user_id.clone().unwrap_or_default(),
         };

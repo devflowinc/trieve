@@ -1,4 +1,6 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
+use crate::data::models::DateRange;
+use crate::operators::organization_operator::get_extended_org_usage_by_id_query;
 use crate::{
     data::models::{
         ApiKeyRequestParams, OrganizationWithSubAndPlan, Pool, RedisPool, UserOrganization,
@@ -10,7 +12,7 @@ use crate::{
         organization_operator::{
             create_organization_api_key_query, create_organization_query,
             delete_organization_api_keys_query, delete_organization_query, get_org_from_id_query,
-            get_org_usage_by_id_query, get_org_users_by_id_query, get_organization_api_keys_query,
+            get_org_users_by_id_query, get_organization_api_keys_query,
             update_all_org_dataset_configs_query, update_organization_query,
         },
         user_operator::{add_user_to_organization, remove_user_from_org_query},
@@ -215,16 +217,22 @@ pub async fn create_organization(
     Ok(HttpResponse::Ok().json(created_organization))
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct GetOrganizationUsageReqPayload {
+    date_range: Option<DateRange>,
+}
+
 /// Get Organization Usage
 ///
 /// Fetch the current usage specification of an organization by its id. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.
 #[utoipa::path(
-    get,
+    post,
     path = "/organization/usage/{organization_id}",
     context_path = "/api",
     tag = "Organization",
+    request_body(content = GetOrganizationUsageReqPayload, description = "The organization usage timeframe that you want to fetch", content_type = "application/json"),
     responses(
-        (status = 200, description = "The current usage of the specified organization", body = OrganizationUsageCount),
+        (status = 200, description = "The current usage of the specified organization", body = ExtendedOrganizationUsageCount),
         (status = 400, description = "Service error relating to finding the organization's usage by id", body = ErrorResponseBody),
     ),
     params(
@@ -237,18 +245,39 @@ pub async fn create_organization(
 )]
 pub async fn get_organization_usage(
     organization: web::Path<uuid::Uuid>,
+    data: web::Json<GetOrganizationUsageReqPayload>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    _: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if !verify_admin(&user, &organization) {
-        return Ok(HttpResponse::Forbidden().finish());
-    };
-
     let org_id = organization.into_inner();
+    let extended_usage = get_extended_org_usage_by_id_query(
+        org_id,
+        data.date_range.clone(),
+        clickhouse_client.get_ref(),
+        pool,
+    )
+    .await?;
 
-    let usage = get_org_usage_by_id_query(org_id, pool).await?;
+    Ok(HttpResponse::Ok().json(extended_usage))
+}
 
-    Ok(HttpResponse::Ok().json(usage))
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct ExtendedOrganizationUsageCount {
+    pub search_tokens: u64,
+    pub message_tokens: u64,
+    pub dataset_count: i32,
+    pub user_count: i32,
+    pub file_storage: i64,
+    pub message_count: u64,
+    pub search_count: u64,
+    pub chunk_count: i32,
+    pub bytes_ingested: u64,  // For dataset size
+    pub tokens_ingested: u64, // For ingest charge
+    pub ocr_pages_ingested: u64,
+    // website pages scraped
+    pub website_pages_scraped: u64,
+    pub events_ingested: u64,
 }
 
 /// Get Organization Users
