@@ -722,20 +722,20 @@ pub async fn process_crawl_doc(
         ));
     }
 
-    let prev_crawl = get_crawl_by_scrape_id_query(scrape_id, pool.clone())
+    let crawl_req = get_crawl_by_scrape_id_query(scrape_id, pool.clone())
         .await
         .map_err(|e| {
             log::error!("Error getting crawl request: {:?}", e);
             ServiceError::InternalServerError("Error getting crawl request".to_string())
         })?;
 
-    let last_page_num = match prev_crawl.status {
+    let last_page_num = match crawl_req.status {
         CrawlStatus::Processing(page_num) => page_num,
         _ => 0,
     };
 
     update_crawl_status(
-        prev_crawl.id,
+        crawl_req.id,
         CrawlStatus::Processing(last_page_num + 1),
         pool.clone(),
     )
@@ -767,7 +767,8 @@ pub async fn process_crawl_doc(
         .clone()
         .unwrap_or(crawl_doc.metadata.description.unwrap_or_default().clone());
     let page_html = crawl_doc.html.clone().unwrap_or_default();
-    let page_tags = get_tags(page_link.clone());
+    let mut page_tags = get_tags(page_link.clone());
+    page_tags.push(crawl_req.url.clone());
 
     let chunked_html = chunk_html(&page_html.clone(), None, None);
     let mut chunks = vec![];

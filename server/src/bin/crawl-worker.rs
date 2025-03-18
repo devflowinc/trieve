@@ -217,7 +217,7 @@ fn create_shopify_chunk_req_payload(
 
 #[allow(clippy::print_stdout)]
 async fn parse_chunks_with_firecrawl(
-    scrape_request: &CrawlRequest,
+    crawl_req: &CrawlRequest,
     ingest_result: IngestResult,
     spec: Option<oas3::Spec>,
     pool: web::Data<Pool>,
@@ -229,7 +229,7 @@ async fn parse_chunks_with_firecrawl(
 
     log::info!(
         "Got response back from firecrawl for scrape_id: {}",
-        scrape_request.id
+        crawl_req.id
     );
 
     log::info!("Processing {} documents from scrape", data.len());
@@ -238,7 +238,7 @@ async fn parse_chunks_with_firecrawl(
 
     for (page_num, page) in data.into_iter().enumerate() {
         update_crawl_status(
-            scrape_request.id,
+            crawl_req.id,
             CrawlStatus::Processing(page_num as u32),
             pool.clone(),
         )
@@ -280,11 +280,12 @@ async fn parse_chunks_with_firecrawl(
             .clone()
             .unwrap_or(crawl_doc.metadata.description.unwrap_or_default().clone());
         let page_html = crawl_doc.html.clone().unwrap_or_default();
-        let page_tags = get_tags(page_link.clone());
+        let mut page_tags = get_tags(page_link.clone());
+        page_tags.push(crawl_req.url.clone());
 
         if let Some(spec) = &spec {
             if let Some(ScrapeOptions::OpenApi(ref openapi_options)) =
-                scrape_request.crawl_options.scrape_options
+                crawl_req.crawl_options.scrape_options
             {
                 if page_tags.contains(&openapi_options.openapi_tag) {
                     if let Some(last_tag) = page_tags.last() {
@@ -408,7 +409,7 @@ async fn parse_chunks_with_firecrawl(
                                 ))),
                                 upsert_by_tracking_id: Some(true),
                                 group_tracking_ids: Some(vec![page_link.clone()]),
-                                fulltext_boost: if scrape_request
+                                fulltext_boost: if crawl_req
                                     .crawl_options
                                     .boost_titles
                                     .unwrap_or(true)
@@ -420,7 +421,7 @@ async fn parse_chunks_with_firecrawl(
                                 } else {
                                     None
                                 },
-                                semantic_boost: if scrape_request
+                                semantic_boost: if crawl_req
                                     .crawl_options
                                     .boost_titles
                                     .unwrap_or(true)
@@ -446,8 +447,8 @@ async fn parse_chunks_with_firecrawl(
 
         let chunked_html = chunk_html(
             &page_html.clone(),
-            scrape_request.crawl_options.heading_remove_strings.clone(),
-            scrape_request.crawl_options.body_remove_strings.clone(),
+            crawl_req.crawl_options.heading_remove_strings.clone(),
+            crawl_req.crawl_options.body_remove_strings.clone(),
         );
 
         for chunk in chunked_html {
@@ -513,7 +514,7 @@ async fn parse_chunks_with_firecrawl(
                     page_link.clone()
                 }]),
                 fulltext_boost: if !fulltext_boost_phrase.is_empty()
-                    && scrape_request.crawl_options.boost_titles.unwrap_or(true)
+                    && crawl_req.crawl_options.boost_titles.unwrap_or(true)
                 {
                     Some(FullTextBoost {
                         phrase: fulltext_boost_phrase,
@@ -523,7 +524,7 @@ async fn parse_chunks_with_firecrawl(
                     None
                 },
                 semantic_boost: if !semantic_boost_phrase.is_empty()
-                    && scrape_request.crawl_options.boost_titles.unwrap_or(true)
+                    && crawl_req.crawl_options.boost_titles.unwrap_or(true)
                 {
                     Some(SemanticBoost {
                         phrase: semantic_boost_phrase,
@@ -541,7 +542,7 @@ async fn parse_chunks_with_firecrawl(
 
     let chunks_len = chunks.len();
     send_chunks(
-        UnifiedId::TrieveUuid(scrape_request.dataset_id),
+        UnifiedId::TrieveUuid(crawl_req.dataset_id),
         chunks,
         pool.clone(),
         broccoli_queue.clone(),
