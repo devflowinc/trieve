@@ -549,6 +549,19 @@ pub async fn get_recommendation_analytics(
             .await?;
             RecommendationAnalyticsResponse::RecommendationUsageGraph(recommendation_usage_graph)
         }
+        RecommendationAnalytics::RecommendationsPerUser {
+            filter,
+            granularity,
+        } => {
+            let recommendations_per_user = get_recommendations_per_user_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RecommendationAnalyticsResponse::RecommendationsPerUser(recommendations_per_user)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))

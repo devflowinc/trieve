@@ -9,11 +9,12 @@ use crate::{
         RagQueryEventClickhouse, RagQueryRatingsResponse, RecommendationAnalyticsFilter,
         RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse,
         RecommendationUsageGraphPoint, RecommendationUsageGraphPointClickhouse,
-        RecommendationUsageGraphResponse, RecommendationsWithClicksCTRResponse,
-        RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
-        RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
-        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
-        SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
+        RecommendationUsageGraphResponse, RecommendationsPerUserResponse,
+        RecommendationsPerUserTimePoint, RecommendationsPerUserTimePointClickhouse,
+        RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
+        RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
+        SearchAnalyticsFilter, SearchCTRMetrics, SearchCTRMetricsClickhouse, SearchClusterTopics,
+        SearchLatencyGraph, SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
         SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopComponents,
@@ -1124,6 +1125,89 @@ pub async fn get_recommendation_usage_graph_query(
     Ok(RecommendationUsageGraphResponse {
         points: rps_graph,
         total_requests,
+    })
+}
+
+pub async fn get_recommendations_per_user_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RecommendationAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<RecommendationsPerUserResponse, ServiceError> {
+    let granularity = granularity.unwrap_or(Granularity::Hour);
+    let interval = match granularity {
+        Granularity::Second => "1 SECOND",
+        Granularity::Minute => "1 MINUTE",
+        Granularity::Hour => "1 HOUR",
+        Granularity::Day => "1 DAY",
+        Granularity::Month => "1 MONTH",
+    };
+
+    let mut query_string = format!(
+        "WITH recommendations_per_user AS (
+            SELECT 
+                CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS timestamp,
+                user_id,
+                count(*) AS recommendations_per_user
+            FROM 
+                recommendations
+            WHERE 
+                dataset_id = ?
+        ",
+        interval
+    );
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY
+            timestamp,
+            user_id
+        )
+        SELECT
+            timestamp,
+            avg(recommendations_per_user) AS avg_recommendations_per_user
+        FROM
+            recommendations_per_user
+        GROUP BY
+            timestamp
+        ORDER BY
+            timestamp   
+        LIMIT
+            1000",
+    );
+
+    let clickhouse_query = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<RecommendationsPerUserTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let avg_recommendations_per_user = if !clickhouse_query.is_empty() {
+        clickhouse_query
+            .iter()
+            .map(|q| q.recommendations_per_user)
+            .sum::<f64>()
+            / clickhouse_query.len() as f64
+    } else {
+        0.0
+    };
+
+    let rpu_graph: Vec<RecommendationsPerUserTimePoint> = clickhouse_query
+        .into_iter()
+        .map(|q| q.into())
+        .collect::<Vec<_>>();
+
+    Ok(RecommendationsPerUserResponse {
+        avg_recommendations_per_user,
+        points: rpu_graph,
     })
 }
 

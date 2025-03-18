@@ -15085,6 +15085,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "RecommendationsPerUser",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RecommendationAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "recommendations_per_user"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -15125,6 +15156,9 @@
           },
           {
             "$ref": "#/components/schemas/RecommendationUsageGraphResponse"
+          },
+          {
+            "$ref": "#/components/schemas/RecommendationsPerUserResponse"
           }
         ]
       },
@@ -15295,6 +15329,41 @@
             "items": {
               "$ref": "#/components/schemas/RecommendationEvent"
             }
+          }
+        }
+      },
+      "RecommendationsPerUserResponse": {
+        "type": "object",
+        "required": [
+          "avg_recommendations_per_user",
+          "points"
+        ],
+        "properties": {
+          "avg_recommendations_per_user": {
+            "type": "number",
+            "format": "double"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecommendationsPerUserTimePoint"
+            }
+          }
+        }
+      },
+      "RecommendationsPerUserTimePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "recommendations_per_user"
+        ],
+        "properties": {
+          "recommendations_per_user": {
+            "type": "number",
+            "format": "double"
+          },
+          "time_stamp": {
+            "type": "string"
           }
         }
       },
