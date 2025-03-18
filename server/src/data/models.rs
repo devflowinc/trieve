@@ -7289,6 +7289,11 @@ pub enum RecommendationAnalytics {
     },
     #[schema(title = "QueryDetails")]
     QueryDetails { request_id: uuid::Uuid },
+    #[schema(title = "RecommendationUsageGraph")]
+    RecommendationUsageGraph {
+        filter: Option<RecommendationAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7581,6 +7586,37 @@ pub enum RecommendationAnalyticsResponse {
     RecommendationQueries(RecommendationsEventResponse),
     #[schema(title = "QueryDetails")]
     QueryDetails(RecommendationEvent),
+    #[schema(title = "RecommendationUsageGraph")]
+    RecommendationUsageGraph(RecommendationUsageGraphResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "RecommendationUsageGraphResponse")]
+pub struct RecommendationUsageGraphResponse {
+    pub total_requests: u64,
+    pub points: Vec<RecommendationUsageGraphPoint>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RecommendationUsageGraphPoint {
+    pub time_stamp: String,
+    pub requests: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct RecommendationUsageGraphPointClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub requests: u64,
+}
+
+impl From<RecommendationUsageGraphPointClickhouse> for RecommendationUsageGraphPoint {
+    fn from(value: RecommendationUsageGraphPointClickhouse) -> Self {
+        RecommendationUsageGraphPoint {
+            time_stamp: value.time_stamp.to_string(),
+            requests: value.requests,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

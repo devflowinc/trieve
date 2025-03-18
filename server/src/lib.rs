@@ -585,6 +585,8 @@ impl Modify for SecurityAddon {
             data::models::TopicAnalyticsFilter,
             data::models::TopPages,
             data::models::FloatRange,
+            data::models::RecommendationUsageGraphResponse,
+            data::models::RecommendationUsageGraphPoint,
             data::models::TopPagesResponse,
             data::models::TopComponents,
             data::models::TopComponentsResponse,
