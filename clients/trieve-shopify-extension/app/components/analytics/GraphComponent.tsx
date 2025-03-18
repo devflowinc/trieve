@@ -51,7 +51,7 @@ export const GraphComponent = <T,>({
         ) : (
           <Text as="span" variant="heading3xl" fontWeight="bold">
             {dataType === "percentage"
-              ? `${(topLevelMetric ?? 0) * 100}%`
+              ? `${((topLevelMetric ?? 0) * 100).toFixed(2)}%`
               : topLevelMetric}
           </Text>
         )}
