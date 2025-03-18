@@ -331,6 +331,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     .send(ClickHouseEvent::WorkerEvent(
                                         WorkerEvent::from_details(
                                             job.dataset_id,
+                                            None,
                                             EventType::EtlStarted {
                                                 prompt: job.payload.prompt,
                                                 model: job.payload.model,
@@ -347,6 +348,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     .send(ClickHouseEvent::WorkerEvent(
                                         WorkerEvent::from_details(
                                             job.job_id.parse().unwrap(),
+                                            None,
                                             EventType::EtlCompleted,
                                         )
                                         .into(),
@@ -371,6 +373,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     .send(ClickHouseEvent::WorkerEvent(
                                         WorkerEvent::from_details(
                                             job.dataset_id,
+                                            None,
                                             EventType::EtlFailed {
                                                 error: err.to_string(),
                                             },
@@ -384,6 +387,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     .send(ClickHouseEvent::WorkerEvent(
                                         WorkerEvent::from_details(
                                             job.job_id.parse().unwrap(),
+                                            None,
                                             EventType::EtlFailed {
                                                 error: err.to_string(),
                                             },

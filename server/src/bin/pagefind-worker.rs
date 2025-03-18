@@ -216,6 +216,7 @@ async fn process_pagefind_index(
         .send(ClickHouseEvent::WorkerEvent(
             WorkerEvent::from_details(
                 message.dataset_id,
+                None,
                 models::EventType::PagefindIndexingStarted,
             )
             .into(),

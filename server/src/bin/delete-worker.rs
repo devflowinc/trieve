@@ -454,6 +454,7 @@ pub async fn readd_error_to_queue(
             .send(ClickHouseEvent::WorkerEvent(
                 models::WorkerEvent::from_details(
                     payload.dataset_id(),
+                    None,
                     models::EventType::DatasetDeleteFailed {
                         error: error.to_string(),
                     },

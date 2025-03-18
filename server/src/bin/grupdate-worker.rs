@@ -225,6 +225,7 @@ async fn grupdate_worker(
                     .send(ClickHouseEvent::WorkerEvent(
                         WorkerEvent::from_details(
                             group_update_msg.group.dataset_id,
+                            None,
                             models::EventType::GroupChunksUpdated {
                                 group_id: group_update_msg.group.id,
                             },
@@ -289,6 +290,7 @@ pub async fn readd_group_error_to_queue(
             .send(ClickHouseEvent::WorkerEvent(
                 WorkerEvent::from_details(
                     payload.group.dataset_id,
+                    None,
                     models::EventType::GroupChunksActionFailed {
                         group_id: payload.group.id,
                         error: error.to_string(),

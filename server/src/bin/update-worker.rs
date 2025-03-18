@@ -106,6 +106,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             .send(ClickHouseEvent::WorkerEvent(
                                 WorkerEvent::from_details(
                                     msg.payload.dataset_id,
+                                    None,
                                     EventType::ChunkUpdated {
                                         chunk_id: msg.payload.chunk_metadata.id,
                                     },
@@ -125,6 +126,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         .send(ClickHouseEvent::WorkerEvent(
                             WorkerEvent::from_details(
                                 msg.payload.dataset_id,
+                                None,
                                 EventType::ChunkUpdateFailed {
                                     chunk_id: msg.payload.chunk_metadata.id,
                                     message: err.to_string(),

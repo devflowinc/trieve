@@ -16,7 +16,7 @@ use trieve_server::{
         crawl_operator::IngestResult,
         dataset_operator::get_dataset_and_organization_from_dataset_id_query,
         group_operator::create_groups_query,
-        organization_operator::hash_function,
+        organization_operator::{get_organization_from_dataset_id, hash_function},
         video_operator::{get_channel_id, get_channel_video_ids, get_transcript},
     },
 };
@@ -1003,11 +1003,22 @@ async fn scrape_worker(
             log::error!("Failed to update crawl status: {:?}", err);
         }
     }
+    let organization_id =
+        get_organization_from_dataset_id(crawl_request.dataset_id, &pool.clone())
+            .await
+            .map_err(|e| {
+                BroccoliError::Job(format!(
+                    "Failed to get organization id from dataset id {:?}",
+                    e,
+                ))
+            })?
+            .id;
 
     event_queue
         .send(ClickHouseEvent::WorkerEvent(
             WorkerEvent::from_details(
                 crawl_request.dataset_id,
+                Some(organization_id),
                 models::EventType::CrawlStarted {
                     scrape_id: crawl_request.scrape_id,
                     crawl_options: crawl_request.clone().crawl_options,
@@ -1025,6 +1036,7 @@ async fn scrape_worker(
                 .send(ClickHouseEvent::WorkerEvent(
                     WorkerEvent::from_details(
                         crawl_request.dataset_id,
+                        Some(organization_id),
                         models::EventType::CrawlCompleted {
                             scrape_id: scrape_report.request_id,
                             pages_crawled: scrape_report.pages_scraped,
@@ -1056,6 +1068,7 @@ async fn scrape_worker(
                 .send(ClickHouseEvent::WorkerEvent(
                     WorkerEvent::from_details(
                         crawl_request.dataset_id,
+                        Some(organization_id),
                         models::EventType::CrawlFailed {
                             scrape_id: crawl_request.id,
                             crawl_options: crawl_request.crawl_options.clone(),

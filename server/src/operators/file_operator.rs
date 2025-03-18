@@ -291,7 +291,9 @@ pub async fn create_file_chunks(
     let name = upload_file_data.file_name.clone();
 
     if upload_file_data
+        .clone()
         .pdf2md_options
+        .clone()
         .is_some_and(|x| x.split_headings.unwrap_or(false))
     {
         let mut new_chunks = Vec::new();
@@ -426,9 +428,11 @@ pub async fn create_file_chunks(
         .send(ClickHouseEvent::WorkerEvent(
             WorkerEvent::from_details(
                 dataset_org_plan_sub.dataset.id,
+                Some(dataset_org_plan_sub.organization.organization.id),
                 EventType::FileUploaded {
                     file_id: created_file_id,
                     file_name: name,
+                    pdf2md_options: upload_file_data.pdf2md_options,
                 },
             )
             .into(),

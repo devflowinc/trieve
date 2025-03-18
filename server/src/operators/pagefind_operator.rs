@@ -146,6 +146,7 @@ pub async fn build_index_for_dataset_id(
         .send(ClickHouseEvent::WorkerEvent(
             WorkerEvent::from_details(
                 dataset_id,
+                None,
                 models::EventType::PagefindIndexingFinished { total_files },
             )
             .into(),

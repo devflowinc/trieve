@@ -135,9 +135,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             .send(ClickHouseEvent::WorkerEvent(
                                 models::WorkerEvent::from_details(
                                     message.dataset_id,
+                                    Some(message.organization_id),
                                     models::EventType::FileUploaded {
                                         file_id: message.file_id,
                                         file_name: message.upload_file_data.file_name.clone(),
+                                        pdf2md_options: message.upload_file_data.pdf2md_options,
                                     },
                                 )
                                 .into(),
