@@ -3045,7 +3045,7 @@ pub async fn get_distinct_topic_fingerprint_count_query(
 ) -> Result<EventNameAndCounts, ServiceError> {
     let mut query_string = "SELECT
             'start_conversation' as event_name,
-            COUNT(DISTINCT user_id) AS event_count
+            COUNT(DISTINCT owner_id) AS event_count
         FROM
             topics
         WHERE dataset_id = ?
