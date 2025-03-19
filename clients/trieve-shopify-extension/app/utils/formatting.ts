@@ -9,11 +9,7 @@ import {
   isSameMinute,
   subDays,
 } from "date-fns";
-import {
-  EventTypeRequest,
-  Granularity,
-  SearchAnalyticsFilter,
-} from "trieve-ts-sdk";
+import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
 
 export const formatDateForApi = (date: Date) => {
   return date
@@ -281,7 +277,7 @@ export const formatTimeValueForChart = (
   return `${minutes}m ${remainingSeconds}s`;
 };
 
-export type KnownEvents =
+export type KnownEventNames =
   | "trieve-modal_load"
   | "site-add_to_cart"
   | "site-checkout"
@@ -291,7 +287,9 @@ export type KnownEvents =
   | "start_conversation"
   | "trieve-modal_click";
 
-export const formatEventName = (event: KnownEvents | (string & {})): string => {
+export const formatEventName = (
+  event: KnownEventNames | (string & {}),
+): string => {
   // can add outliers here
 
   if (event === "trieve-modal_load") {

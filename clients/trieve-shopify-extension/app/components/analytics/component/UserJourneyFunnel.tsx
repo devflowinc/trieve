@@ -2,7 +2,7 @@ import { Box, Card, SkeletonBodyText, Tooltip, Text } from "@shopify/polaris";
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { eventNamesAndCountsQuery } from "app/queries/analytics/component";
-import { formatEventName, KnownEvents } from "app/utils/formatting";
+import { formatEventName, KnownEventNames } from "app/utils/formatting";
 import { Chart, ChartConfiguration } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { useEffect, useRef, useState } from "react";
@@ -14,7 +14,7 @@ export const UserJourneyFunnel = ({
   filters: ComponentAnalyticsFilter;
 }) => {
   const { trieve } = useTrieve();
-  const [events, setEvents] = useState<KnownEvents[]>([
+  const [events, setEvents] = useState<KnownEventNames[]>([
     "trieve-modal_click",
     "trieve-modal_load",
     "View",
