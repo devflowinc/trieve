@@ -3044,7 +3044,7 @@ pub async fn get_distinct_topic_fingerprint_count_query(
     clickhouse_client: &clickhouse::Client,
 ) -> Result<EventNameAndCounts, ServiceError> {
     let mut query_string = "SELECT
-            'create_chat' as event_name,
+            'start_conversation' as event_name,
             COUNT(DISTINCT user_id) AS event_count
         FROM
             topics
