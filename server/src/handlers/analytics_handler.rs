@@ -317,6 +317,17 @@ pub async fn get_search_analytics(
             .await?;
             SearchAnalyticsResponse::CTRMetricsOverTime(ctr_metrics_over_time)
         }
+        SearchAnalytics::SearchConversionRate { filter, granularity } => {
+            let search_conversion_rate = get_search_conversion_rate_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            SearchAnalyticsResponse::SearchConversionRate(search_conversion_rate)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))

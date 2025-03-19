@@ -40,5 +40,8 @@
     "typedoc-plugin-merge-modules": "^6.0.0",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
+  },
+  "dependencies": {
+    "trieve-ts-sdk": "0.0.62"
   }
 }

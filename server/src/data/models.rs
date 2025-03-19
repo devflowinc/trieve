@@ -7246,6 +7246,12 @@ pub enum SearchAnalytics {
         filter: Option<SearchAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "SearchConversionRate")]
+    #[serde(rename = "search_conversion_rate")]
+    SearchConversionRate {
+        filter: Option<SearchAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7499,6 +7505,18 @@ pub struct CTRMetricsOverTimeResponse {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchConversionRateResponse {
+    pub conversion_rate: f32,
+    pub points: Vec<SearchConversionRatePoint>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchConversionRatePoint {
+    pub time_stamp: String,
+    pub conversion_rate: f32,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct CTRMetricsOverTimePoint {
     pub time_stamp: String,
     pub ctr: f32,
@@ -7616,6 +7634,8 @@ pub enum SearchAnalyticsResponse {
     PopularFilters(PopularFiltersResponse),
     #[schema(title = "CTRMetricsOverTime")]
     CTRMetricsOverTime(CTRMetricsOverTimeResponse),
+    #[schema(title = "SearchConversionRate")]
+    SearchConversionRate(SearchConversionRateResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

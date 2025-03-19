@@ -3029,6 +3029,10 @@ export type SearchAnalytics = {
     filter?: ((SearchAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'ctr_metrics_over_time';
+} | {
+    filter?: ((SearchAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'search_conversion_rate';
 };
 
 export type type7 = 'latency_graph';
@@ -3043,7 +3047,7 @@ export type SearchAnalyticsFilter = {
     top_score?: ((FloatRange) | null);
 };
 
-export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse | CTRMetricsOverTimeResponse;
+export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse | CTRMetricsOverTimeResponse | SearchConversionRateResponse;
 
 export type SearchCTRMetrics = {
     avg_position_of_click: number;
@@ -3119,6 +3123,16 @@ export type SearchClusterTopics = {
     density: number;
     id: string;
     topic: string;
+};
+
+export type SearchConversionRatePoint = {
+    conversion_rate: number;
+    time_stamp: string;
+};
+
+export type SearchConversionRateResponse = {
+    conversion_rate: number;
+    points: Array<SearchConversionRatePoint>;
 };
 
 export type SearchGroupResponseTypes = SearchWithinGroupResponseBody | SearchWithinGroupResults;

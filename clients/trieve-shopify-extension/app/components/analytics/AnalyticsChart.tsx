@@ -214,7 +214,7 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
     chartInstance.data.labels = info.map((point) => point.time);
     chartInstance.data.datasets[0].data = info.map((point) => {
       if (props.dataType === "percentage") {
-        return (point.value ?? 0) * 100;
+        return parseFloat(((point.value ?? 0) * 100).toFixed(2));
       }
       return point.value;
     });
