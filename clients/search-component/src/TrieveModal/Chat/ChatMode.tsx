@@ -48,8 +48,6 @@ export const ChatMode = () => {
         modalRef.current.scrollTop -
         bufferSpace;
 
-      console.log("scrollTo", scrollTo);
-
       handleHeightAddition();
 
       setTimeout(() => {
@@ -89,23 +87,12 @@ export const ChatMode = () => {
       modalRef.current.scrollTop +
       lastUserMessage.scrollHeight;
 
-    console.log("messageRectYDistance", messageRectYDistance);
-
-    console.log("ruler height", rulerRef.current.scrollHeight);
     const redLead = rulerRef.current.scrollHeight - messageRectYDistance;
-    console.log("redLead", redLead);
 
     const targetGap =
       scrollContainerVisibleHeight - lastUserMessage.scrollHeight;
 
     const heightToAdd = targetGap - redLead;
-    console.log(
-      `targetGap: ${targetGap}, redLead: ${redLead}, heightToAdd: ${heightToAdd}`,
-    );
-
-    // subtract the height of the message itself
-    // 40 is the magic number somehow
-    console.log("lastUserMessage.scrollHeight", lastUserMessage.scrollHeight);
     return heightToAdd - 80;
   };
 
