@@ -3,7 +3,7 @@ use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
         ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
-        EventDataTypes, EventTypeAndCounts, EventTypeAndCountsResponse, EventTypes,
+        EventDataTypes, EventNameAndCounts, EventNameAndCountsResponse, EventTypes,
         GetEventsRequestBody, OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
         RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
         SearchAnalyticsResponse, TopDatasetsRequestTypes,
@@ -1014,20 +1014,20 @@ pub async fn get_component_analytics(
             )
             .await?;
 
-            let chat_counts = get_chat_message_counts_query(
+            let all_users = get_distinct_fingerprint_count_query(
                 dataset_org_plan_sub.dataset.id,
                 filter,
                 clickhouse_client.get_ref(),
             )
             .await?;
 
-            event_counts.push(EventTypeAndCounts {
-                event_type: "chat_message".to_string(),
-                event_count: chat_counts.total_queries,
-            });
+            event_counts.push(all_users);
 
-            ComponentAnalyticsResponse::EventTypeAndCounts(EventTypeAndCountsResponse {
-                event_types: event_counts,
+            // Sort by event_count
+            event_counts.sort_by(|a, b| b.event_count.cmp(&a.event_count));
+
+            ComponentAnalyticsResponse::EventTypeAndCounts(EventNameAndCountsResponse {
+                event_names: event_counts,
             })
         }
     };

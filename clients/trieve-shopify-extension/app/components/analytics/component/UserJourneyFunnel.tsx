@@ -1,7 +1,7 @@
 import { Box, Card, SkeletonBodyText, Tooltip, Text } from "@shopify/polaris";
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
-import { eventTypesAndCountsQuery } from "app/queries/analytics/component";
+import { eventNamesAndCountsQuery } from "app/queries/analytics/component";
 import { formatEventName } from "app/utils/formatting";
 import { Chart, ChartConfiguration } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
@@ -14,7 +14,7 @@ export const UserJourneyFunnel = ({
   filters: ComponentAnalyticsFilter;
 }) => {
   const { trieve } = useTrieve();
-  const { data, status } = useQuery(eventTypesAndCountsQuery(trieve, filters));
+  const { data, status } = useQuery(eventNamesAndCountsQuery(trieve, filters));
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
@@ -28,10 +28,10 @@ export const UserJourneyFunnel = ({
       chartInstanceRef.current = new Chart(canvas, {
         type: "funnel",
         data: {
-          labels: data.event_types.map((t) => t.event_type),
+          labels: data.event_names.map((t) => t.event_name),
           datasets: [
             {
-              data: data.event_types.map((t) => t.event_count),
+              data: data.event_names.map((t) => t.event_count),
             },
           ],
         },
@@ -53,8 +53,8 @@ export const UserJourneyFunnel = ({
             legend: { display: false },
             datalabels: {
               formatter(v, context) {
-                const thisOne = data.event_types[context.dataIndex];
-                return formatEventName(thisOne.event_type);
+                const thisOne = data.event_names[context.dataIndex];
+                return formatEventName(thisOne.event_name);
               },
               font: {
                 size: 14,
@@ -111,8 +111,8 @@ export const UserJourneyFunnel = ({
     const chartInstance = chartInstanceRef.current;
 
     // Update the chart data
-    chartInstance.data.labels = data.event_types.map((t) => t.event_type);
-    chartInstance.data.datasets[0].data = data.event_types.map(
+    chartInstance.data.labels = data.event_names.map((t) => t.event_name);
+    chartInstance.data.datasets[0].data = data.event_names.map(
       (t) => t.event_count,
     );
     chartInstance.update();
