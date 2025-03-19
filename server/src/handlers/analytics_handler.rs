@@ -3,8 +3,8 @@ use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
         ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
-        EventDataTypes, EventNameAndCounts, EventNameAndCountsResponse, EventTypes,
-        GetEventsRequestBody, OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
+        EventDataTypes, EventNameAndCountsResponse, EventTypes, GetEventsRequestBody,
+        OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
         RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
         SearchAnalyticsResponse, TopDatasetsRequestTypes,
     },

@@ -14,7 +14,13 @@ export const UserJourneyFunnel = ({
   filters: ComponentAnalyticsFilter;
 }) => {
   const { trieve } = useTrieve();
-  const { data, status } = useQuery(eventNamesAndCountsQuery(trieve, filters));
+  const { data, status } = useQuery(
+    eventNamesAndCountsQuery(trieve, filters, [
+      "trieve-modal_load",
+      "trieve-modal_click",
+      "View",
+    ]),
+  );
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
@@ -28,10 +34,10 @@ export const UserJourneyFunnel = ({
       chartInstanceRef.current = new Chart(canvas, {
         type: "funnel",
         data: {
-          labels: data.event_names.map((t) => t.event_name),
+          labels: data.map((t) => t.event_name),
           datasets: [
             {
-              data: data.event_names.map((t) => t.event_count),
+              data: data.map((t) => t.event_count),
             },
           ],
         },
@@ -53,7 +59,7 @@ export const UserJourneyFunnel = ({
             legend: { display: false },
             datalabels: {
               formatter(v, context) {
-                const thisOne = data.event_names[context.dataIndex];
+                const thisOne = data[context.dataIndex];
                 return formatEventName(thisOne.event_name);
               },
               font: {
@@ -111,10 +117,8 @@ export const UserJourneyFunnel = ({
     const chartInstance = chartInstanceRef.current;
 
     // Update the chart data
-    chartInstance.data.labels = data.event_names.map((t) => t.event_name);
-    chartInstance.data.datasets[0].data = data.event_names.map(
-      (t) => t.event_count,
-    );
+    chartInstance.data.labels = data.map((t) => t.event_name);
+    chartInstance.data.datasets[0].data = data.map((t) => t.event_count);
     chartInstance.update();
 
     // Cleanup function

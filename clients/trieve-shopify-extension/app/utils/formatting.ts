@@ -281,7 +281,7 @@ export const formatTimeValueForChart = (
   return `${minutes}m ${remainingSeconds}s`;
 };
 
-type KnownEvents =
+export type KnownEvents =
   | "trieve-modal_load"
   | "site-add_to_cart"
   | "site-checkout"
@@ -300,6 +300,9 @@ export const formatEventName = (event: KnownEvents | (string & {})): string => {
     return "Checkout";
   } else if (event === "trieve-modal_click") {
     return "Click Modal";
+  } else if (event === "View") {
+    return "View Chat Response";
   }
+
   return toTitleCase(event);
 };
