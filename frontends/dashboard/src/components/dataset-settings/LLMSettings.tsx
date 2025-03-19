@@ -153,142 +153,6 @@ export const LLMSettings = (props: {
             </div>
           </div>
 
-          {/* Penalties and Parameters */}
-          <div class="mt-6">
-            <span>
-              <h2 class="text-lg font-semibold leading-6">
-                Penalties and Parameters
-              </h2>
-              <hr class="mt-2" />
-            </span>
-
-            <div class="mt-4 grid grid-cols-4 gap-x-3 gap-y-6">
-              <div class="col-span-4 sm:col-span-2">
-                <label
-                  for="temperature"
-                  class="block text-sm font-medium leading-6"
-                >
-                  Temperature (HyDE)
-                </label>
-                <input
-                  type="number"
-                  name="temperature"
-                  id="linesBeforeShowMore"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                  value={props.serverConfig().TEMPERATURE ?? 0}
-                  onChange={(e) =>
-                    props.setServerConfig((prev) => {
-                      return {
-                        ...prev,
-                        TEMPERATURE: e.currentTarget.valueAsNumber,
-                      };
-                    })
-                  }
-                />
-              </div>
-
-              <div class="col-span-4 sm:col-span-2">
-                <label
-                  for="presencePenalty"
-                  class="block text-sm font-medium leading-6"
-                >
-                  Presence Penalty (HyDE)
-                </label>
-                <input
-                  type="number"
-                  name="presencePenalty"
-                  id="linesBeforeShowMore"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                  value={props.serverConfig().PRESENCE_PENALTY ?? 0}
-                  onChange={(e) =>
-                    props.setServerConfig((prev) => {
-                      return {
-                        ...prev,
-                        PRESENCE_PENALTY: e.currentTarget.valueAsNumber,
-                      };
-                    })
-                  }
-                />
-              </div>
-
-              <div class="col-span-4 sm:col-span-2">
-                <label
-                  for="frequencyPenalty"
-                  class="block text-sm font-medium leading-6"
-                >
-                  Frequency Penalty (HyDE)
-                </label>
-                <input
-                  type="number"
-                  name="frequencyPenalty"
-                  id="linesBeforeShowMore"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                  value={props.serverConfig().FREQUENCY_PENALTY ?? 0}
-                  onChange={(e) =>
-                    props.setServerConfig((prev) => {
-                      return {
-                        ...prev,
-                        FREQUENCY_PENALTY: e.currentTarget.valueAsNumber,
-                      };
-                    })
-                  }
-                />
-              </div>
-
-              <div class="col-span-4 sm:col-span-2">
-                <label
-                  for="presencePenalty"
-                  class="block text-sm font-medium leading-6"
-                >
-                  Max Tokens
-                </label>
-                <input
-                  type="number"
-                  name="presencePenalty"
-                  id="linesBeforeShowMore"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                  value={props.serverConfig().MAX_TOKENS ?? 0}
-                  onChange={(e) =>
-                    props.setServerConfig((prev) => {
-                      return {
-                        ...prev,
-                        MAX_TOKENS: e.currentTarget.valueAsNumber,
-                      };
-                    })
-                  }
-                />
-              </div>
-              <div class="col-span-4 sm:col-span-2">
-                <label
-                  for="nRetrievalsToInclude"
-                  class="block text-sm font-medium leading-6"
-                >
-                  Documents to include for RAG
-                </label>
-                <input
-                  name="nRetrievalsToInclude"
-                  type="number"
-                  placeholder="Number of retrievals to include for RAG"
-                  id="linesBeforeShowMore"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                  value={props
-                    .serverConfig()
-                    .N_RETRIEVALS_TO_INCLUDE?.toString()}
-                  onChange={(e) =>
-                    props.setServerConfig((prev) => {
-                      return {
-                        ...prev,
-                        N_RETRIEVALS_TO_INCLUDE: parseFloat(
-                          e.currentTarget.value,
-                        ),
-                      };
-                    })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
           {/* RAG Settings */}
           <div class="mt-6">
             <span>
@@ -357,6 +221,178 @@ export const LLMSettings = (props: {
                   class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
               </div>
+
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="stopTokens"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Stop Tokens
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="Stop tokens are used to tell the LLM when to stop generating the query. Set to common stop tokens in your chunks or leave default if you don't have any."
+                  />
+                </label>
+                <textarea
+                  value={props.serverConfig().STOP_TOKENS?.join(",") ?? ""}
+                  onInput={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        STOP_TOKENS: e.currentTarget.value.split(","),
+                      };
+                    })
+                  }
+                  rows="4"
+                  name="ragPrompt"
+                  id="ragPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="temperature"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Temperature
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="The temperature controls the randomness of the generated completions."
+                  />
+                </label>
+                <input
+                  type="number"
+                  name="temperature"
+                  id="linesBeforeShowMore"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  value={props.serverConfig().TEMPERATURE ?? 0}
+                  onChange={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        TEMPERATURE: e.currentTarget.valueAsNumber,
+                      };
+                    })
+                  }
+                />
+              </div>
+
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="presencePenalty"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Presence Penalty
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="The presence penalty penalizes the model for repeating the same information."
+                  />
+                </label>
+                <input
+                  type="number"
+                  name="presencePenalty"
+                  id="linesBeforeShowMore"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  value={props.serverConfig().PRESENCE_PENALTY ?? 0}
+                  onChange={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        PRESENCE_PENALTY: e.currentTarget.valueAsNumber,
+                      };
+                    })
+                  }
+                />
+              </div>
+
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="frequencyPenalty"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Frequency Penalty
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="The frequency penalty penalizes the model for using the same token multiple times."
+                  />
+                </label>
+                <input
+                  type="number"
+                  name="frequencyPenalty"
+                  id="linesBeforeShowMore"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  value={props.serverConfig().FREQUENCY_PENALTY ?? 0}
+                  onChange={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        FREQUENCY_PENALTY: e.currentTarget.valueAsNumber,
+                      };
+                    })
+                  }
+                />
+              </div>
+
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="presencePenalty"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Max Tokens
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="Maximum number of tokens to generate in the completion."
+                  />
+                </label>
+                <input
+                  type="number"
+                  name="presencePenalty"
+                  id="linesBeforeShowMore"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  value={props.serverConfig().MAX_TOKENS ?? 0}
+                  onChange={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        MAX_TOKENS: e.currentTarget.valueAsNumber,
+                      };
+                    })
+                  }
+                />
+              </div>
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="nRetrievalsToInclude"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Search Page Size
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="Number of retrieved chunks to include for RAG."
+                  />
+                </label>
+                <input
+                  name="nRetrievalsToInclude"
+                  type="number"
+                  placeholder="Number of retrievals to include for RAG"
+                  id="linesBeforeShowMore"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  value={props
+                    .serverConfig()
+                    .N_RETRIEVALS_TO_INCLUDE?.toString()}
+                  onChange={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        N_RETRIEVALS_TO_INCLUDE: parseFloat(
+                          e.currentTarget.value,
+                        ),
+                      };
+                    })
+                  }
+                />
+              </div>
             </div>
           </div>
 
@@ -379,7 +415,7 @@ export const LLMSettings = (props: {
                   for="messageToQueryPrompt"
                   class="flex items-center gap-2 text-sm font-medium leading-6"
                 >
-                  Message to Query Prompt (HyDE)
+                  Message to Query Prompt
                   <Tooltip
                     body={<AiOutlineInfoCircle />}
                     tooltipText="Message to Query prompt is used to tell the LLM how to convert the user message into a search query."
@@ -400,34 +436,6 @@ export const LLMSettings = (props: {
                   rows="4"
                   name="messageToQueryPrompt"
                   id="messageToQueryPrompt"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-
-              <div class="col-span-4 sm:col-span-2">
-                <label
-                  for="stopTokens"
-                  class="flex items-center gap-2 text-sm font-medium leading-6"
-                >
-                  Stop Tokens (HyDE)
-                  <Tooltip
-                    body={<AiOutlineInfoCircle />}
-                    tooltipText="Stop tokens are used to tell the LLM when to stop generating the query. Set to common stop tokens in your chunks or leave default if you don't have any."
-                  />
-                </label>
-                <textarea
-                  value={props.serverConfig().STOP_TOKENS?.join(",") ?? ""}
-                  onInput={(e) =>
-                    props.setServerConfig((prev) => {
-                      return {
-                        ...prev,
-                        STOP_TOKENS: e.currentTarget.value.split(","),
-                      };
-                    })
-                  }
-                  rows="4"
-                  name="ragPrompt"
-                  id="ragPrompt"
                   class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
               </div>
