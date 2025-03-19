@@ -15,7 +15,6 @@ export const UserJourneyFunnel = ({
 }) => {
   const { trieve } = useTrieve();
   const [events, setEvents] = useState<KnownEventNames[]>([
-    "trieve-modal_click",
     "trieve-modal_load",
     "View",
     "site-checkout",
