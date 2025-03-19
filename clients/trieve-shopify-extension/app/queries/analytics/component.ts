@@ -1,4 +1,5 @@
 import { QueryOptions } from "@tanstack/react-query";
+import { KnownEvents } from "app/utils/formatting";
 import {
   TrieveSDK,
   ComponentAnalyticsFilter,
@@ -10,6 +11,7 @@ import {
   ComponentInteractionTimeResponse,
   EventTypeAndCountsResponse,
   EventNameAndCountsResponse,
+  EventNameAndCounts,
 } from "trieve-ts-sdk";
 
 export const totalUniqueUsersQuery = (
@@ -104,16 +106,26 @@ export const componentInteractionTimeQuery = (
 export const eventNamesAndCountsQuery = (
   trieve: TrieveSDK,
   filters: ComponentAnalyticsFilter,
+  selectedEvents: (KnownEvents | (string & {}))[],
 ) => {
   return {
     queryKey: ["eventTypesAndCounts", filters],
     queryFn: async () => {
-      const result = await trieve.getComponentAnalytics({
+      const result = (await trieve.getComponentAnalytics({
         filter: filters,
         type: "event_counts",
+      })) as EventNameAndCountsResponse;
+      const selected: Array<EventNameAndCounts> = [];
+      selectedEvents.forEach((event) => {
+        selected.push(
+          result.event_names.find((e) => e.event_name === event) || {
+            event_name: event,
+            event_count: 0,
+          },
+        );
       });
 
-      return result as EventNameAndCountsResponse;
+      return selected;
     },
   } satisfies QueryOptions;
 };
