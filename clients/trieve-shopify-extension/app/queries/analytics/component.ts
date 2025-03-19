@@ -109,19 +109,18 @@ export const eventNamesAndCountsQuery = (
   selectedEvents: (KnownEvents | (string & {}))[],
 ) => {
   return {
-    queryKey: ["eventTypesAndCounts", filters],
+    queryKey: ["eventTypesAndCounts", filters, selectedEvents],
     queryFn: async () => {
       const result = (await trieve.getComponentAnalytics({
         filter: filters,
         type: "event_counts",
       })) as EventNameAndCountsResponse;
-      const selected: Array<EventNameAndCounts> = [];
-      selectedEvents.forEach((event) => {
-        selected.push(
+      const selected = selectedEvents.map((event) => {
+        return (
           result.event_names.find((e) => e.event_name === event) || {
             event_name: event,
-            event_count: 0,
-          },
+            event_count: 20,
+          }
         );
       });
 

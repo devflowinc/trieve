@@ -2,10 +2,10 @@ import { Box, Card, SkeletonBodyText, Tooltip, Text } from "@shopify/polaris";
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { eventNamesAndCountsQuery } from "app/queries/analytics/component";
-import { formatEventName } from "app/utils/formatting";
+import { formatEventName, KnownEvents } from "app/utils/formatting";
 import { Chart, ChartConfiguration } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
 
 export const UserJourneyFunnel = ({
@@ -14,12 +14,15 @@ export const UserJourneyFunnel = ({
   filters: ComponentAnalyticsFilter;
 }) => {
   const { trieve } = useTrieve();
+  const [events, setEvents] = useState<KnownEvents[]>([
+    "trieve-modal_click",
+    "trieve-modal_load",
+    "View",
+    "site-checkout",
+  ]);
+
   const { data, status } = useQuery(
-    eventNamesAndCountsQuery(trieve, filters, [
-      "trieve-modal_load",
-      "trieve-modal_click",
-      "View",
-    ]),
+    eventNamesAndCountsQuery(trieve, filters, events),
   );
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -58,7 +61,7 @@ export const UserJourneyFunnel = ({
           plugins: {
             legend: { display: false },
             datalabels: {
-              formatter(v, context) {
+              formatter(_, context) {
                 const thisOne = data[context.dataIndex];
                 return formatEventName(thisOne.event_name);
               },
@@ -68,18 +71,18 @@ export const UserJourneyFunnel = ({
             },
             tooltip: {
               callbacks: {
-                footer(item) {
-                  const index = item[0].dataIndex;
-                  return JSON.stringify(item.at(0)?.dataIndex);
-                },
-                label(tooltipItem) {
-                  const index = tooltipItem.dataIndex;
-                  return JSON.stringify(tooltipItem.dataIndex);
-                },
-                title(tooltipItem) {
-                  const index = tooltipItem[0].dataIndex;
-                  return "TITLE";
-                },
+                // footer(item) {
+                //   const index = item[0].dataIndex;
+                //   return JSON.stringify(item.at(0)?.dataIndex);
+                // },
+                // label(tooltipItem) {
+                //   const index = tooltipItem.dataIndex;
+                //   return JSON.stringify(tooltipItem.dataIndex);
+                // },
+                // title(tooltipItem) {
+                //   const index = tooltipItem[0].dataIndex;
+                //   return "TITLE";
+                // },
               },
               backgroundColor: "rgba(128, 0, 128, 0.9)",
               titleColor: "white",
