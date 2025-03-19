@@ -24,7 +24,8 @@ use crate::{
         TopPagesResponse, TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse,
         TopicDetailsResponse, TopicQueriesResponse, TopicQueryClickhouse, TopicTimePointClickhouse,
         TopicsOverTimeResponse, TotalUniqueUsersResponse, TotalUniqueUsersTimePointClickhouse,
-        UsageGraphPoint, UsageGraphPointClickhouse,
+        UsageGraphPoint, UsageGraphPointClickhouse, SearchConversionRateResponse,
+        SearchConversionRatePoint,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
@@ -2349,6 +2350,129 @@ pub async fn get_messages_per_user(
     Ok(MessagesPerUserResponse {
         avg_messages_per_user,
         points: chats_over_time.into_iter().map(|x| x.into()).collect(),
+    })
+}
+
+#[derive(Debug, Row, Serialize, Deserialize)]
+struct ConversionRateTimePointClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    time_stamp: OffsetDateTime,
+    count: i64,
+}
+
+pub async fn get_search_conversion_rate_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<SearchAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<SearchConversionRateResponse, ServiceError> {
+    let granularity = granularity.unwrap_or(Granularity::Hour);
+    let interval = match granularity {
+        Granularity::Second => "1 SECOND",
+        Granularity::Minute => "1 MINUTE",
+        Granularity::Hour => "1 HOUR",
+        Granularity::Day => "1 DAY",
+        Granularity::Month => "1 MONTH",
+    };
+
+    let mut interactions_query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            count(*) as count
+        FROM events
+        WHERE dataset_id = ?
+        AND request_type = 'search'",
+        interval
+    );
+
+    if let Some(filter) = &filter {
+        interactions_query_string = filter.add_to_query(interactions_query_string);
+    }
+
+    interactions_query_string.push_str(
+        "
+        GROUP BY time_stamp
+        ORDER BY time_stamp
+        LIMIT 1000"
+    );
+
+    let mut conversions_query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            count(*) as count
+        FROM events
+        WHERE dataset_id = ?
+        AND request_type = 'search'
+        AND event_type IN ('add_to_cart', 'purchase')
+        AND is_conversion = true",
+        interval
+    );
+
+    if let Some(filter) = &filter {
+        conversions_query_string = filter.add_to_query(conversions_query_string);
+    }
+
+    conversions_query_string.push_str(
+        "
+        GROUP BY time_stamp
+        ORDER BY time_stamp
+        LIMIT 1000"
+    );
+
+    let interactions = clickhouse_client
+        .query(interactions_query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<ConversionRateTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching interactions: {:?}", e);
+            ServiceError::InternalServerError("Error fetching interactions".to_string())
+        })?;
+
+    let conversions = clickhouse_client
+        .query(conversions_query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<ConversionRateTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching conversions: {:?}", e);
+            ServiceError::InternalServerError("Error fetching conversions".to_string())
+        })?;
+
+    let total_interactions: i64 = interactions.iter().map(|p| p.count).sum();
+    let total_conversions: i64 = conversions.iter().map(|p| p.count).sum();
+    
+    let conversion_rate = if total_interactions > 0 {
+        total_conversions as f32 / total_interactions as f32
+    } else {
+        0.0
+    };
+
+    let points: Vec<SearchConversionRatePoint> = interactions
+        .into_iter()
+        .map(|interaction| {
+            let conversion_count = conversions
+                .iter()
+                .find(|c| c.time_stamp == interaction.time_stamp)
+                .map(|c| c.count)
+                .unwrap_or(0);
+            
+            let point_conversion_rate = if interaction.count > 0 {
+                conversion_count as f32 / interaction.count as f32
+            } else {
+                0.0
+            };
+
+            SearchConversionRatePoint {
+                time_stamp: interaction.time_stamp.to_string(),
+                conversion_rate: point_conversion_rate,
+            }
+        })
+        .collect();
+
+    Ok(SearchConversionRateResponse {
+        conversion_rate,
+        points,
     })
 }
 

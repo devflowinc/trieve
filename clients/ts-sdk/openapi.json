@@ -16282,6 +16282,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "SearchConversionRate",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SearchAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "search_conversion_rate"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -16375,6 +16406,9 @@
           },
           {
             "$ref": "#/components/schemas/CTRMetricsOverTimeResponse"
+          },
+          {
+            "$ref": "#/components/schemas/SearchConversionRateResponse"
           }
         ]
       },
@@ -16632,6 +16666,41 @@
           },
           "topic": {
             "type": "string"
+          }
+        }
+      },
+      "SearchConversionRatePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "conversion_rate"
+        ],
+        "properties": {
+          "conversion_rate": {
+            "type": "number",
+            "format": "float"
+          },
+          "time_stamp": {
+            "type": "string"
+          }
+        }
+      },
+      "SearchConversionRateResponse": {
+        "type": "object",
+        "required": [
+          "conversion_rate",
+          "points"
+        ],
+        "properties": {
+          "conversion_rate": {
+            "type": "number",
+            "format": "float"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchConversionRatePoint"
+            }
           }
         }
       },

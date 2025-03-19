@@ -9,6 +9,7 @@ import {
   SearchUsageGraphResponse,
   TrieveSDK,
   CTRMetricsOverTimeResponse,
+  SearchConversionRateResponse,
 } from "trieve-ts-sdk";
 import { subDays } from "date-fns";
 import { formatDateForApi } from "../../utils/formatting";
@@ -111,6 +112,24 @@ export const searchCTRQuery = (
         granularity: granularity,
       });
       return result as unknown as CTRMetricsOverTimeResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const searchConversionRateQuery = (
+  trieve: TrieveSDK,
+  filters: SearchAnalyticsFilter,
+  granularity: Granularity,
+) => {
+  return {
+    queryKey: ["search_conversion_rate", filters, granularity],
+    queryFn: async () => {
+      const result = await trieve.getSearchAnalytics({
+        filter: filters,
+        type: "search_conversion_rate",
+        granularity,
+      });
+      return result as SearchConversionRateResponse;
     },
   } satisfies QueryOptions;
 };
