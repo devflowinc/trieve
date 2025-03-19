@@ -5,8 +5,10 @@ import {
   DatePicker,
   InlineGrid,
   InlineStack,
+  Label,
   OptionList,
   Popover,
+  Text,
   Scrollable,
   Select,
   TextField,
@@ -470,7 +472,7 @@ export function DateRangePicker({
   return (
     <div>
       <Box>
-        <div className="text-sm text-neutral-600">{label}</div>
+        <Text as="legend">Date Range</Text>
       </Box>
       <Popover
         active={popoverActive}
@@ -481,13 +483,21 @@ export function DateRangePicker({
         sectioned={false}
         fullHeight
         activator={
-          <Button
-            size="slim"
-            onClick={() => setPopoverActive(!popoverActive)}
-            fullWidth
+          <Box
+            background="input-bg-surface"
+            borderWidth="0165"
+            borderRadius="200"
+            borderColor="input-border"
           >
-            {buttonLabel}
-          </Button>
+            <Button
+              size="slim"
+              variant="tertiary"
+              onClick={() => setPopoverActive(!popoverActive)}
+              fullWidth
+            >
+              {buttonLabel}
+            </Button>
+          </Box>
         }
         onClose={() => setPopoverActive(false)}
       >
