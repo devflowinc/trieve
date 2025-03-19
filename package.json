@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "dev": "turbo dev --filter=\"./frontends/**\"",
-    "build": "turbo build --filter=\"./frontends/**\"",
+    "build": "turbo build",
+    "build:all": "turbo build --filter=\"./frontends/**\"",
     "build:clean-client": "./convenience.sh -c",
     "lint": "turbo lint --filter=\"./frontends/**\"",
     "lint:CI": "turbo lint:CI --filter=\"./frontends/**\"",
