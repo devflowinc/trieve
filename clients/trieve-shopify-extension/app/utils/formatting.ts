@@ -287,6 +287,8 @@ export type KnownEvents =
   | "site-checkout"
   | "Click"
   | "View"
+  | "send_message"
+  | "start_conversation"
   | "trieve-modal_click";
 
 export const formatEventName = (event: KnownEvents | (string & {})): string => {
