@@ -9,6 +9,7 @@ import {
   ComponentNamesResponse,
   ComponentInteractionTimeResponse,
   EventTypeAndCountsResponse,
+  EventNameAndCountsResponse,
 } from "trieve-ts-sdk";
 
 export const totalUniqueUsersQuery = (
@@ -100,7 +101,7 @@ export const componentInteractionTimeQuery = (
   } satisfies QueryOptions;
 };
 
-export const eventTypesAndCountsQuery = (
+export const eventNamesAndCountsQuery = (
   trieve: TrieveSDK,
   filters: ComponentAnalyticsFilter,
 ) => {
@@ -112,7 +113,7 @@ export const eventTypesAndCountsQuery = (
         type: "event_counts",
       });
 
-      return result as EventTypeAndCountsResponse;
+      return result as EventNameAndCountsResponse;
     },
   } satisfies QueryOptions;
 };
