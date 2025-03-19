@@ -9,7 +9,11 @@ import {
   isSameMinute,
   subDays,
 } from "date-fns";
-import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
+import {
+  EventTypeRequest,
+  Granularity,
+  SearchAnalyticsFilter,
+} from "trieve-ts-sdk";
 
 export const formatDateForApi = (date: Date) => {
   return date
@@ -165,7 +169,9 @@ export const fillDate = <T>({
   granularity: Granularity;
   defaultValue?: number | null;
 }) => {
-  const startDate = date_range?.gte ? new Date(date_range.gte + "Z") : subDays(new Date(), 7);
+  const startDate = date_range?.gte
+    ? new Date(date_range.gte + "Z")
+    : subDays(new Date(), 7);
   const endDate = date_range?.lte ? new Date(date_range.lte + "Z") : new Date();
   console.log(startDate, endDate);
 
@@ -260,16 +266,29 @@ export const toTitleCase = (str: string) => {
   return str.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-
-export const formatTimeValueForChart = (seconds: number | undefined): string => {
+export const formatTimeValueForChart = (
+  seconds: number | undefined,
+): string => {
   if (seconds === undefined) return "0s";
-  
+
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = (seconds % 60).toFixed(1);
-  
+
   if (minutes === 0) {
     return `${remainingSeconds}s`;
   }
-  
+
   return `${minutes}m ${remainingSeconds}s`;
+};
+
+type KnownEvents =
+  | "view"
+  | "click"
+  | "chat_message"
+  | "add_to_cart"
+  | "purchase";
+
+export const formatEventName = (event: KnownEvents | (string & {})): string => {
+  // can add outliers here
+  return toTitleCase(event);
 };

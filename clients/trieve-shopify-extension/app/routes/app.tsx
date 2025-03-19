@@ -16,7 +16,6 @@ import "../routes/_index/tailwind.css";
 import { MustLoginPage } from "app/components/MustLoginPage";
 import { LinearScale, CategoryScale } from "chart.js";
 import { FunnelController, TrapezoidElement } from "chartjs-chart-funnel";
-import ChartDataLabels from "chartjs-plugin-datalabels";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -36,7 +35,6 @@ export default function App() {
     LinearScale,
     CategoryScale,
   );
-  Chart.register(ChartDataLabels);
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
