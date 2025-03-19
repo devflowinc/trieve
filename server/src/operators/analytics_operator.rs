@@ -3003,3 +3003,71 @@ pub async fn get_distinct_fingerprint_count_query(
 
     Ok(result)
 }
+
+pub async fn get_distinct_message_fingerprint_count_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<EventAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<EventNameAndCounts, ServiceError> {
+    let mut query_string = "SELECT
+            'send_message' as event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            rag_queries
+        WHERE dataset_id = ?
+    "
+    .to_string();
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string).map_err(|e| {
+            log::error!("Error adding filter to query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+    }
+
+    let result = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_one::<EventNameAndCounts>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching event counts: {:?}", e);
+            ServiceError::InternalServerError("Error fetching event counts".to_string())
+        })?;
+
+    Ok(result)
+}
+
+pub async fn get_distinct_topic_fingerprint_count_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<EventAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<EventNameAndCounts, ServiceError> {
+    let mut query_string = "SELECT
+            'create_chat' as event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            topics
+        WHERE dataset_id = ?
+    "
+    .to_string();
+
+    if let Some(filter) = filter {
+        query_string = filter.add_to_query(query_string).map_err(|e| {
+            log::error!("Error adding filter to query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+    }
+
+    let result = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_one::<EventNameAndCounts>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching event counts: {:?}", e);
+            ServiceError::InternalServerError("Error fetching event counts".to_string())
+        })?;
+
+    Ok(result)
+}

@@ -1016,12 +1016,28 @@ pub async fn get_component_analytics(
 
             let all_users = get_distinct_fingerprint_count_query(
                 dataset_org_plan_sub.dataset.id,
+                filter.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            let message_count = get_distinct_message_fingerprint_count_query(
+                dataset_org_plan_sub.dataset.id,
+                filter.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            let topic_count = get_distinct_topic_fingerprint_count_query(
+                dataset_org_plan_sub.dataset.id,
                 filter,
                 clickhouse_client.get_ref(),
             )
             .await?;
 
             event_counts.push(all_users);
+            event_counts.push(topic_count);
+            event_counts.push(message_count);
 
             // Sort by event_count
             event_counts.sort_by(|a, b| b.event_count.cmp(&a.event_count));
