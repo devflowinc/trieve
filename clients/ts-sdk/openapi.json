@@ -9023,7 +9023,7 @@
             "$ref": "#/components/schemas/ComponentInteractionTimeResponse"
           },
           {
-            "$ref": "#/components/schemas/EventTypeAndCountsResponse"
+            "$ref": "#/components/schemas/EventNameAndCountsResponse"
           }
         ]
       },
@@ -11061,6 +11061,36 @@
           "user_id": "user1"
         }
       },
+      "EventNameAndCounts": {
+        "type": "object",
+        "required": [
+          "event_name",
+          "event_count"
+        ],
+        "properties": {
+          "event_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "event_name": {
+            "type": "string"
+          }
+        }
+      },
+      "EventNameAndCountsResponse": {
+        "type": "object",
+        "required": [
+          "event_names"
+        ],
+        "properties": {
+          "event_names": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventNameAndCounts"
+            }
+          }
+        }
+      },
       "EventReturn": {
         "type": "object",
         "required": [
@@ -11084,36 +11114,6 @@
           "page_count": {
             "type": "integer",
             "format": "int32"
-          }
-        }
-      },
-      "EventTypeAndCounts": {
-        "type": "object",
-        "required": [
-          "event_type",
-          "event_count"
-        ],
-        "properties": {
-          "event_count": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "event_type": {
-            "type": "string"
-          }
-        }
-      },
-      "EventTypeAndCountsResponse": {
-        "type": "object",
-        "required": [
-          "event_types"
-        ],
-        "properties": {
-          "event_types": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventTypeAndCounts"
-            }
           }
         }
       },

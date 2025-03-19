@@ -564,7 +564,7 @@ export type ComponentAnalyticsFilter = {
     date_range?: ((DateRange) | null);
 };
 
-export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse | ComponentInteractionTimeResponse | EventTypeAndCountsResponse;
+export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse | ComponentInteractionTimeResponse | EventNameAndCountsResponse;
 
 export type ComponentInteractionTimeResponse = {
     avg_interaction_time: number;
@@ -1417,19 +1417,19 @@ export type EventData = {
     user_id?: (string) | null;
 };
 
+export type EventNameAndCounts = {
+    event_count: number;
+    event_name: string;
+};
+
+export type EventNameAndCountsResponse = {
+    event_names: Array<EventNameAndCounts>;
+};
+
 export type EventReturn = {
     event_types: Array<(string)>;
     events: Array<WorkerEvent>;
     page_count: number;
-};
-
-export type EventTypeAndCounts = {
-    event_count: number;
-    event_type: string;
-};
-
-export type EventTypeAndCountsResponse = {
-    event_types: Array<EventTypeAndCounts>;
 };
 
 export type EventTypeRequest = 'file_uploaded' | 'file_upload_failed' | 'chunks_uploaded' | 'chunk_action_failed' | 'chunk_updated' | 'bulk_chunks_deleted' | 'chunk_update_failed' | 'dataset_delete_failed' | 'qdrant_upload_failed' | 'bulk_chunk_upload_failed' | 'group_chunks_updated' | 'group_chunks_action_failed' | 'crawl_completed' | 'crawl_failed' | 'crawl_started' | 'csv_jsonl_processing_failed' | 'csv_jsonl_processing_checkpoint' | 'csv_jsonl_processing_completed' | 'video_uploaded' | 'pagefind_indexing_started' | 'pagefind_indexing_finished' | 'etl_started' | 'etl_completed' | 'etl_failed';

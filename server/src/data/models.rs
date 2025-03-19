@@ -7569,8 +7569,8 @@ pub struct MessagesPerUserResponse {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct EventTypeAndCounts {
-    pub event_type: String,
+pub struct EventNameAndCounts {
+    pub event_name: String,
     pub event_count: i64,
 }
 
@@ -7580,8 +7580,8 @@ pub struct ChatMessageCount {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct EventTypeAndCountsResponse {
-    pub event_types: Vec<EventTypeAndCounts>,
+pub struct EventNameAndCountsResponse {
+    pub event_names: Vec<EventNameAndCounts>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
@@ -7848,7 +7848,7 @@ pub enum ComponentAnalyticsResponse {
     #[schema(title = "ComponentInteractionTime")]
     ComponentInteractionTime(ComponentInteractionTimeResponse),
     #[schema(title = "EventTypeAndCounts")]
-    EventTypeAndCounts(EventTypeAndCountsResponse),
+    EventTypeAndCounts(EventNameAndCountsResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
