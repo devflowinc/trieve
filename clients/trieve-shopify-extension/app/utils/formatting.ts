@@ -282,13 +282,24 @@ export const formatTimeValueForChart = (
 };
 
 type KnownEvents =
-  | "view"
-  | "click"
-  | "chat_message"
-  | "add_to_cart"
-  | "purchase";
+  | "trieve-modal_load"
+  | "site-add_to_cart"
+  | "site-checkout"
+  | "Click"
+  | "View"
+  | "trieve-modal_click";
 
 export const formatEventName = (event: KnownEvents | (string & {})): string => {
   // can add outliers here
+
+  if (event === "trieve-modal_load") {
+    return "Load Modal";
+  } else if (event === "site-add_to_cart") {
+    return "Add to Cart";
+  } else if (event === "site-checkout") {
+    return "Checkout";
+  } else if (event === "trieve-modal_click") {
+    return "Click Modal";
+  }
   return toTitleCase(event);
 };
