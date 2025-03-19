@@ -1,5 +1,5 @@
 import { QueryOptions } from "@tanstack/react-query";
-import { KnownEvents } from "app/utils/formatting";
+import { KnownEventNames } from "app/utils/formatting";
 import {
   TrieveSDK,
   ComponentAnalyticsFilter,
@@ -106,7 +106,7 @@ export const componentInteractionTimeQuery = (
 export const eventNamesAndCountsQuery = (
   trieve: TrieveSDK,
   filters: ComponentAnalyticsFilter,
-  selectedEvents: (KnownEvents | (string & {}))[],
+  selectedEvents: (KnownEventNames | (string & {}))[],
 ) => {
   return {
     queryKey: ["eventTypesAndCounts", filters, selectedEvents],
