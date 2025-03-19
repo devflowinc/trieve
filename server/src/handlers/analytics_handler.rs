@@ -4,10 +4,9 @@ use crate::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
         ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
         EventDataTypes, EventTypeAndCounts, EventTypeAndCountsResponse, EventTypes,
-        GetEventCountsRequestBody, GetEventsRequestBody, OrganizationWithSubAndPlan, Pool,
-        RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
-        RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
-        TopDatasetsRequestTypes,
+        GetEventsRequestBody, OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
+        RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
+        SearchAnalyticsResponse, TopDatasetsRequestTypes,
     },
     errors::ServiceError,
     operators::{
