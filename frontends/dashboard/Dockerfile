@@ -1,4 +1,4 @@
-FROM node:20 as build
+FROM node:22 AS build
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY turbo.json .
 COPY frontends ./frontends
 COPY clients/ts-sdk ./clients/ts-sdk
 
-RUN yarn install
+RUN yarn install --frozen-lockfile
 RUN yarn run build --filter dashboard
 
 FROM nginx:1.25.4-alpine-slim

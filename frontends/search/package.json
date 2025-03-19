@@ -21,7 +21,7 @@
     "solid-headless": "^0.13.1",
     "solid-icons": "^1.0.4",
     "solid-js": "^1.4.3",
-    "trieve-ts-sdk": "file:../../clients/ts-sdk"
+    "trieve-ts-sdk": "*"
   },
   "devDependencies": {
     "config": "*",

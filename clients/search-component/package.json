@@ -82,7 +82,7 @@
     "react-pdf-spotlight": "0.0.16",
     "react-snap-carousel": "^0.5.0",
     "tailwind-merge": "^2.6.0",
-    "trieve-ts-sdk": "0.0.62"
+    "trieve-ts-sdk": "0.0.64"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.0.0-rc",
