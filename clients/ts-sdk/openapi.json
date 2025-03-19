@@ -15005,6 +15005,10 @@
                 ],
                 "nullable": true
               },
+              "has_clicks": {
+                "type": "boolean",
+                "nullable": true
+              },
               "page": {
                 "type": "integer",
                 "format": "int32",
@@ -15014,7 +15018,7 @@
               "sort_by": {
                 "allOf": [
                   {
-                    "$ref": "#/components/schemas/SearchSortBy"
+                    "$ref": "#/components/schemas/RecommendationSortBy"
                   }
                 ],
                 "nullable": true
@@ -15156,6 +15160,10 @@
       "RecommendationAnalyticsFilter": {
         "type": "object",
         "properties": {
+          "component_name": {
+            "type": "string",
+            "nullable": true
+          },
           "date_range": {
             "allOf": [
               {
@@ -15168,6 +15176,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/RecommendationType"
+              }
+            ],
+            "nullable": true
+          },
+          "top_score": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FloatRange"
               }
             ],
             "nullable": true
@@ -15297,6 +15313,13 @@
             "type": "string"
           }
         }
+      },
+      "RecommendationSortBy": {
+        "type": "string",
+        "enum": [
+          "created_at",
+          "top_score"
+        ]
       },
       "RecommendationStrategy": {
         "type": "string",

@@ -591,6 +591,7 @@ impl Modify for SecurityAddon {
             data::models::RecommendationsPerUserTimePoint,
             data::models::RecommendationsCTRRateResponse,
             data::models::RecommendationsCTRRateTimePoint,
+            data::models::RecommendationSortBy,
             data::models::TopPagesResponse,
             data::models::TopComponents,
             data::models::TopComponentsResponse,

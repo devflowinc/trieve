@@ -6242,6 +6242,8 @@ pub enum RecommendationType {
 pub struct RecommendationAnalyticsFilter {
     pub date_range: Option<DateRange>,
     pub recommendation_type: Option<RecommendationType>,
+    pub component_name: Option<String>,
+    pub top_score: Option<FloatRange>,
 }
 
 impl RecommendationAnalyticsFilter {
@@ -6266,6 +6268,25 @@ impl RecommendationAnalyticsFilter {
                 " AND recommendation_type = '{}'",
                 recommendation_type
             ));
+        }
+
+        if let Some(component_name) = &self.component_name {
+            query_string.push_str(&format!(" AND component_name = '{}'", component_name));
+        }
+
+        if let Some(top_score) = &self.top_score {
+            if let Some(gt) = &top_score.gt {
+                query_string.push_str(&format!(" AND top_score > {}", gt));
+            }
+            if let Some(lt) = &top_score.lt {
+                query_string.push_str(&format!(" AND top_score < {}", lt));
+            }
+            if let Some(gte) = &top_score.gte {
+                query_string.push_str(&format!(" AND top_score >= {}", gte));
+            }
+            if let Some(lte) = &top_score.lte {
+                query_string.push_str(&format!(" AND top_score <= {}", lte));
+            }
         }
 
         query_string
@@ -7139,6 +7160,15 @@ pub enum RAGSortBy {
     CreatedAt,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum RecommendationSortBy {
+    #[display(fmt = "created_at")]
+    CreatedAt,
+    #[display(fmt = "top_score")]
+    TopScore,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum SortOrder {
@@ -7290,7 +7320,8 @@ pub enum RecommendationAnalytics {
     RecommendationQueries {
         filter: Option<RecommendationAnalyticsFilter>,
         page: Option<u32>,
-        sort_by: Option<SearchSortBy>,
+        has_clicks: Option<bool>,
+        sort_by: Option<RecommendationSortBy>,
         sort_order: Option<SortOrder>,
     },
     #[schema(title = "QueryDetails")]
