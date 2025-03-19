@@ -46,6 +46,7 @@ export interface AdvancedTableComponentProps {
   setSelected: (selected: number) => void;
   sortableColumns?: boolean[];
   onSort?: (index: number, direction: "ascending" | "descending") => void;
+  disableSearch?: boolean;
 }
 
 export const AdvancedTableComponent = ({
@@ -70,6 +71,7 @@ export const AdvancedTableComponent = ({
   sortOptions,
   sortSelected,
   setSortSelected,
+  disableSearch,
 }: AdvancedTableComponentProps) => {
   const { mode, setMode } = useSetIndexFiltersMode();
 
@@ -113,6 +115,7 @@ export const AdvancedTableComponent = ({
           onSelect={setSelected}
           loading={loading}
           canCreateNewView={false}
+          hideQueryField={disableSearch}
         />
         <IndexTable
           hasZebraStriping

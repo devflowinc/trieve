@@ -526,6 +526,7 @@ pub async fn get_recommendation_analytics(
         RecommendationAnalytics::RecommendationQueries {
             filter,
             page,
+            has_clicks,
             sort_by,
             sort_order,
         } => {
@@ -534,6 +535,7 @@ pub async fn get_recommendation_analytics(
                 filter,
                 sort_by,
                 sort_order,
+                has_clicks,
                 page,
                 clickhouse_client.get_ref(),
             )

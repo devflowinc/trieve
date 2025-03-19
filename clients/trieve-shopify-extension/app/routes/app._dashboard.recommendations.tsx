@@ -10,6 +10,7 @@ import { AllSearchesTable } from "app/components/analytics/search/AllSearchesTab
 import { RecommendationsUsageChart } from "app/components/analytics/recommendations/RecommendationsUsageChart";
 import { RecommendationsPerUser } from "app/components/analytics/recommendations/RecommendationsPerUser";
 import { RecommendationsCTRRate } from "app/components/analytics/recommendations/RecommendationsCTRRate";
+import { AllRecommendationsTable } from "app/components/analytics/recommendations/AllRecommendationsTable";
 
 export default function SearchAnalyticsPage() {
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
@@ -22,12 +23,12 @@ export default function SearchAnalyticsPage() {
         <Tabs
           tabs={[
             {
-              id: "search-usage",
-              content: "Search Overview",
+              id: "recommendations-usage",
+              content: "Recommendations Overview",
             },
             {
-              id: "all-searches",
-              content: "All Searches",
+              id: "all-recommendations",
+              content: "All Recommendations",
             },
           ]}
           selected={selectedTab}
@@ -55,7 +56,7 @@ export default function SearchAnalyticsPage() {
           </Grid>
         </>
       )}
-      {selectedTab === 1 && <AllSearchesTable />}
+      {selectedTab === 1 && <AllRecommendationsTable />}
     </>
   );
 }

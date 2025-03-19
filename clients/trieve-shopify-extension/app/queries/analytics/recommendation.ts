@@ -1,5 +1,5 @@
 import { QueryOptions } from "@tanstack/react-query";
-import { TrieveSDK, RecommendationAnalyticsFilter, Granularity, RecommendationUsageGraphResponse, RecommendationsPerUserResponse, RecommendationsCTRRateResponse } from "trieve-ts-sdk";
+import { TrieveSDK, RecommendationAnalyticsFilter, Granularity, RecommendationUsageGraphResponse, RecommendationsPerUserResponse, RecommendationsCTRRateResponse, RecommendationSortBy, RecommendationsEventResponse, SortOrder } from "trieve-ts-sdk";
 
 export const recommendationsUsageQuery = (
   trieve: TrieveSDK,
@@ -57,3 +57,26 @@ export const recommendationsCTRRateQuery = (
   } satisfies QueryOptions;
 };
     
+export const allRecommendationsQuery = (
+  trieve: TrieveSDK,
+  filters: RecommendationAnalyticsFilter,
+  page: number,
+  has_clicks?: boolean,
+  sort_by?: RecommendationSortBy,
+  sort_order?: SortOrder,
+) => {
+  return {
+    queryKey: ["all_recommendations", filters, page, has_clicks, sort_by, sort_order],
+    queryFn: async () => {
+      const result = await trieve.getRecommendationAnalytics({
+        filter: filters,
+        type: "recommendation_queries",
+        page: page,
+        has_clicks,
+        sort_by,
+        sort_order,
+      });
+      return result as RecommendationsEventResponse;
+    },
+  } satisfies QueryOptions;
+};

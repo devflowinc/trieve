@@ -8,14 +8,15 @@ use crate::{
         RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent,
         RagQueryEventClickhouse, RagQueryRatingsResponse, RecommendationAnalyticsFilter,
         RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse,
-        RecommendationUsageGraphPoint, RecommendationUsageGraphPointClickhouse,
-        RecommendationUsageGraphResponse, RecommendationsCTRRateResponse,
-        RecommendationsCTRRateTimePoint, RecommendationsPerUserResponse,
-        RecommendationsPerUserTimePoint, RecommendationsPerUserTimePointClickhouse,
-        RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
-        RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
-        SearchAnalyticsFilter, SearchCTRMetrics, SearchCTRMetricsClickhouse, SearchClusterTopics,
-        SearchLatencyGraph, SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
+        RecommendationSortBy, RecommendationUsageGraphPoint,
+        RecommendationUsageGraphPointClickhouse, RecommendationUsageGraphResponse,
+        RecommendationsCTRRateResponse, RecommendationsCTRRateTimePoint,
+        RecommendationsPerUserResponse, RecommendationsPerUserTimePoint,
+        RecommendationsPerUserTimePointClickhouse, RecommendationsWithClicksCTRResponse,
+        RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
+        RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
+        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchLatencyGraph,
+        SearchLatencyGraphClickhouse, SearchQueriesWithClicksCTRResponse,
         SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
         SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
         SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder, TopComponents,
@@ -1021,8 +1022,9 @@ pub async fn get_recommendation_query(
 pub async fn get_recommendation_queries_query(
     dataset_id: uuid::Uuid,
     filter: Option<RecommendationAnalyticsFilter>,
-    sort_by: Option<SearchSortBy>,
+    sort_by: Option<RecommendationSortBy>,
     sort_order: Option<SortOrder>,
+    has_clicks: Option<bool>,
     page: Option<u32>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RecommendationsEventResponse, ServiceError> {
@@ -1031,8 +1033,21 @@ pub async fn get_recommendation_queries_query(
             ?fields
         FROM 
             recommendations
-        WHERE dataset_id = ?",
+        ",
     );
+
+    if let Some(has_clicks) = has_clicks {
+        if has_clicks {
+            query_string
+                .push_str("JOIN events ON toUUID(events.request_id) = recommendations.id AND events.event_type = 'click'")
+        } else {
+            query_string.push_str(
+                "LEFT ANTI JOIN events ON  toUUID(events.request_id) = recommendations.id AND events.event_type = 'click'",
+            )
+        }
+    }
+
+    query_string.push_str("WHERE dataset_id = ?");
 
     if let Some(filter) = filter {
         query_string = filter.add_to_query(query_string);
@@ -1044,7 +1059,7 @@ pub async fn get_recommendation_queries_query(
         {} {}
         LIMIT 10
         OFFSET ?",
-        sort_by.clone().unwrap_or(SearchSortBy::CreatedAt),
+        sort_by.clone().unwrap_or(RecommendationSortBy::CreatedAt),
         sort_order.clone().unwrap_or(SortOrder::Desc)
     ));
 

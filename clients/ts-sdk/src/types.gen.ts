@@ -2742,8 +2742,9 @@ export type RecommendationAnalytics = {
     type: 'low_confidence_recommendations';
 } | {
     filter?: ((RecommendationAnalyticsFilter) | null);
+    has_clicks?: (boolean) | null;
     page?: (number) | null;
-    sort_by?: ((SearchSortBy) | null);
+    sort_by?: ((RecommendationSortBy) | null);
     sort_order?: ((SortOrder) | null);
     type: 'recommendation_queries';
 } | {
@@ -2766,8 +2767,10 @@ export type RecommendationAnalytics = {
 export type type5 = 'low_confidence_recommendations';
 
 export type RecommendationAnalyticsFilter = {
+    component_name?: (string) | null;
     date_range?: ((DateRange) | null);
     recommendation_type?: ((RecommendationType) | null);
+    top_score?: ((FloatRange) | null);
 };
 
 export type RecommendationAnalyticsResponse = RecommendationsEventResponse | RecommendationEvent | RecommendationUsageGraphResponse | RecommendationsPerUserResponse | RecommendationsCTRRateResponse;
@@ -2794,6 +2797,8 @@ export type RecommendationEvent = {
     top_score: number;
     user_id: string;
 };
+
+export type RecommendationSortBy = 'created_at' | 'top_score';
 
 /**
  * Strategy to use for recommendations, either "average_vector" or "best_score". The default is "average_vector". The "average_vector" strategy will construct a single average vector from the positive and negative samples then use it to perform a pseudo-search. The "best_score" strategy is more advanced and navigates the HNSW with a heuristic of picking edges where the point is closer to the positive samples than it is the negatives.
