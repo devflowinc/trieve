@@ -1,7 +1,8 @@
-import { Box, Card, SkeletonBodyText } from "@shopify/polaris";
+import { Box, Card, SkeletonBodyText, Tooltip, Text } from "@shopify/polaris";
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { eventTypesAndCountsQuery } from "app/queries/analytics/component";
+import { formatEventName } from "app/utils/formatting";
 import { Chart, ChartConfiguration } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { useEffect, useRef } from "react";
@@ -53,13 +54,27 @@ export const UserJourneyFunnel = ({
             datalabels: {
               formatter(v, context) {
                 const thisOne = data.event_types[context.dataIndex];
-                return thisOne.event_type;
+                return formatEventName(thisOne.event_type);
               },
               font: {
                 size: 14,
               },
             },
             tooltip: {
+              callbacks: {
+                footer(item) {
+                  const index = item[0].dataIndex;
+                  return JSON.stringify(item.at(0)?.dataIndex);
+                },
+                label(tooltipItem) {
+                  const index = tooltipItem.dataIndex;
+                  return JSON.stringify(tooltipItem.dataIndex);
+                },
+                title(tooltipItem) {
+                  const index = tooltipItem[0].dataIndex;
+                  return "TITLE";
+                },
+              },
               backgroundColor: "rgba(128, 0, 128, 0.9)",
               titleColor: "white",
               bodyColor: "white",
@@ -113,6 +128,13 @@ export const UserJourneyFunnel = ({
 
   return (
     <Card>
+      <div className="pb-2">
+        <Tooltip content={"TODO"} hasUnderline>
+          <Text as="span" variant="bodyLg" fontWeight="bold">
+            User Journey
+          </Text>
+        </Tooltip>
+      </div>
       <Box minHeight="150px">
         {status === "pending" ? (
           <div className="pl-2">
