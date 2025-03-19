@@ -3,7 +3,9 @@ import fs from "node:fs";
 
 const main = async () => {
   await createClient({
-    client: "fetch",
+    client: {
+      name: "legacy/fetch",
+    },
     types: true,
     schemas: false,
     services: false,
