@@ -6319,50 +6319,6 @@ pub struct HeadQueries {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct UsageGraphPointClickhouse {
-    #[serde(with = "clickhouse::serde::time::datetime")]
-    pub time_stamp: OffsetDateTime,
-    pub requests: i64,
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct UsageGraphPoint {
-    pub time_stamp: String,
-    pub requests: i64,
-}
-
-impl From<UsageGraphPointClickhouse> for UsageGraphPoint {
-    fn from(graph: UsageGraphPointClickhouse) -> Self {
-        UsageGraphPoint {
-            time_stamp: graph.time_stamp.to_string(),
-            requests: graph.requests,
-        }
-    }
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct SearchLatencyGraphClickhouse {
-    #[serde(with = "clickhouse::serde::time::datetime")]
-    pub time_stamp: OffsetDateTime,
-    pub average_latency: f64,
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct SearchLatencyGraph {
-    pub time_stamp: String,
-    pub average_latency: f64,
-}
-
-impl From<SearchLatencyGraphClickhouse> for SearchLatencyGraph {
-    fn from(graph: SearchLatencyGraphClickhouse) -> Self {
-        SearchLatencyGraph {
-            time_stamp: graph.time_stamp.to_string(),
-            average_latency: graph.average_latency,
-        }
-    }
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct SearchCTRMetricsClickhouse {
     pub searches_with_clicks: i64,
     pub percent_searches_with_clicks: f64,
@@ -7348,6 +7304,12 @@ pub enum RecommendationAnalytics {
         filter: Option<RecommendationAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "RecommendationConversionRate")]
+    #[serde(rename = "recommendation_conversion_rate")]
+    RecommendationConversionRate {
+        filter: Option<RecommendationAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7433,7 +7395,7 @@ pub struct RAGUsageResponse {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(title = "RAGUsageGraphResponse")]
 pub struct RAGUsageGraphResponse {
-    pub points: Vec<UsageGraphPoint>,
+    pub points: Vec<IntegerTimePoint>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
@@ -7473,53 +7435,19 @@ pub enum RAGAnalyticsResponse {
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct MessagesPerUserResponse {
     pub avg_messages_per_user: f64,
-    pub points: Vec<MessagesPerUserTimePoint>,
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct MessagesPerUserTimePoint {
-    pub time_stamp: String,
-    pub messages_per_user: f64,
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct MessagesPerUserTimePointClickhouse {
-    #[serde(with = "clickhouse::serde::time::datetime")]
-    pub time_stamp: OffsetDateTime,
-    pub messages_per_user: f64,
-}
-
-impl From<MessagesPerUserTimePointClickhouse> for MessagesPerUserTimePoint {
-    fn from(value: MessagesPerUserTimePointClickhouse) -> Self {
-        MessagesPerUserTimePoint {
-            time_stamp: value.time_stamp.to_string(),
-            messages_per_user: value.messages_per_user,
-        }
-    }
+    pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct CTRMetricsOverTimeResponse {
-    pub total_ctr: f32,
-    pub points: Vec<CTRMetricsOverTimePoint>,
+    pub total_ctr: f64,
+    pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct SearchConversionRateResponse {
-    pub conversion_rate: f32,
-    pub points: Vec<SearchConversionRatePoint>,
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct SearchConversionRatePoint {
-    pub time_stamp: String,
-    pub conversion_rate: f32,
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct CTRMetricsOverTimePoint {
-    pub time_stamp: String,
-    pub ctr: f32,
+    pub conversion_rate: f64,
+    pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -7584,29 +7512,7 @@ pub struct TopicDetailsResponse {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TopicsOverTimeResponse {
     pub total_topics: i64,
-    pub points: Vec<TopicTimePoint>,
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct TopicTimePointClickhouse {
-    #[serde(with = "clickhouse::serde::time::datetime")]
-    pub time_stamp: OffsetDateTime,
-    pub topic_count: i64,
-}
-
-impl From<TopicTimePointClickhouse> for TopicTimePoint {
-    fn from(value: TopicTimePointClickhouse) -> Self {
-        TopicTimePoint {
-            time_stamp: value.time_stamp.to_string(),
-            topic_count: value.topic_count,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct TopicTimePoint {
-    pub time_stamp: String,
-    pub topic_count: i64,
+    pub points: Vec<IntegerTimePoint>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7662,44 +7568,68 @@ pub enum RecommendationAnalyticsResponse {
     RecommendationsPerUser(RecommendationsPerUserResponse),
     #[schema(title = "RecommendationsCTRRate")]
     RecommendationsCTRRate(RecommendationsCTRRateResponse),
+    #[schema(title = "RecommendationConversionRate")]
+    RecommendationConversionRate(RecommendationsConversionRateResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RecommendationsConversionRateResponse {
+    pub conversion_rate: f64,
+    pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct RecommendationsCTRRateResponse {
-    pub total_ctr: f32,
-    pub points: Vec<RecommendationsCTRRateTimePoint>,
+    pub total_ctr: f64,
+    pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct RecommendationsCTRRateTimePoint {
+pub struct FloatTimePoint {
     pub time_stamp: String,
-    pub ctr: f32,
+    pub point: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct RecommendationsPerUserResponse {
     pub avg_recommendations_per_user: f64,
-    pub points: Vec<RecommendationsPerUserTimePoint>,
-}
-
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct RecommendationsPerUserTimePoint {
-    pub time_stamp: String,
-    pub recommendations_per_user: f64,
+    pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
-pub struct RecommendationsPerUserTimePointClickhouse {
+pub struct FloatTimePointClickhouse {
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub time_stamp: OffsetDateTime,
-    pub recommendations_per_user: f64,
+    pub point: f64,
 }
 
-impl From<RecommendationsPerUserTimePointClickhouse> for RecommendationsPerUserTimePoint {
-    fn from(value: RecommendationsPerUserTimePointClickhouse) -> Self {
-        RecommendationsPerUserTimePoint {
+impl From<FloatTimePointClickhouse> for FloatTimePoint {
+    fn from(value: FloatTimePointClickhouse) -> Self {
+        FloatTimePoint {
             time_stamp: value.time_stamp.to_string(),
-            recommendations_per_user: value.recommendations_per_user,
+            point: value.point,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct IntegerTimePoint {
+    pub time_stamp: String,
+    pub point: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
+pub struct IntegerTimePointClickhouse {
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub time_stamp: OffsetDateTime,
+    pub point: i64,
+}
+
+impl From<IntegerTimePointClickhouse> for IntegerTimePoint {
+    fn from(value: IntegerTimePointClickhouse) -> Self {
+        IntegerTimePoint {
+            time_stamp: value.time_stamp.to_string(),
+            point: value.point,
         }
     }
 }
@@ -7708,29 +7638,7 @@ impl From<RecommendationsPerUserTimePointClickhouse> for RecommendationsPerUserT
 #[schema(title = "RecommendationUsageGraphResponse")]
 pub struct RecommendationUsageGraphResponse {
     pub total_requests: u64,
-    pub points: Vec<RecommendationUsageGraphPoint>,
-}
-
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct RecommendationUsageGraphPoint {
-    pub time_stamp: String,
-    pub requests: u64,
-}
-
-#[derive(Debug, Serialize, Deserialize, Row, ToSchema)]
-pub struct RecommendationUsageGraphPointClickhouse {
-    #[serde(with = "clickhouse::serde::time::datetime")]
-    pub time_stamp: OffsetDateTime,
-    pub requests: u64,
-}
-
-impl From<RecommendationUsageGraphPointClickhouse> for RecommendationUsageGraphPoint {
-    fn from(value: RecommendationUsageGraphPointClickhouse) -> Self {
-        RecommendationUsageGraphPoint {
-            time_stamp: value.time_stamp.to_string(),
-            requests: value.requests,
-        }
-    }
+    pub points: Vec<IntegerTimePoint>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7782,7 +7690,7 @@ pub struct ComponentNamesResponse {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TotalUniqueUsersResponse {
     pub total_unique_users: u64,
-    pub points: Vec<TotalUniqueUsersTimePoint>,
+    pub points: Vec<IntegerTimePoint>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7794,28 +7702,6 @@ pub struct TopPagesResponse {
 pub struct TopPages {
     pub page: String,
     pub count: u64,
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct TotalUniqueUsersTimePointClickhouse {
-    #[serde(with = "clickhouse::serde::time::datetime")]
-    pub time_stamp: OffsetDateTime,
-    pub unique_users: u64,
-}
-
-impl From<TotalUniqueUsersTimePointClickhouse> for TotalUniqueUsersTimePoint {
-    fn from(value: TotalUniqueUsersTimePointClickhouse) -> Self {
-        TotalUniqueUsersTimePoint {
-            time_stamp: value.time_stamp.to_string(),
-            unique_users: value.unique_users,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct TotalUniqueUsersTimePoint {
-    pub time_stamp: String,
-    pub unique_users: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Display, Clone, PartialEq)]

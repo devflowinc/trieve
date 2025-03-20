@@ -57,7 +57,7 @@ export const RAGUsageGraph = (props: RAGUsageProps) => {
             date_range={props.params.filter.date_range}
             yLabel="Requests"
             wholeUnits
-            yAxis="requests"
+            yAxis="point"
             xAxis="time_stamp"
           />
         </>

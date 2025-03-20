@@ -1,43 +1,36 @@
 use crate::{
     data::models::{
-        CTRMetricsOverTimePoint, CTRMetricsOverTimeResponse, ClusterAnalyticsFilter,
-        ClusterTopicsClickhouse, ComponentAnalyticsFilter, ComponentNamesResponse,
-        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse,
-        GetEventsResponseBody, Granularity, HeadQueries, MessagesPerUserResponse,
-        MessagesPerUserTimePointClickhouse, Pool, PopularFilters, PopularFiltersClickhouse,
-        RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent,
-        RagQueryEventClickhouse, RagQueryRatingsResponse, RecommendationAnalyticsFilter,
-        RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse,
-        RecommendationSortBy, RecommendationUsageGraphPoint,
-        RecommendationUsageGraphPointClickhouse, RecommendationUsageGraphResponse,
-        RecommendationsCTRRateResponse, RecommendationsCTRRateTimePoint,
-        RecommendationsPerUserResponse, RecommendationsPerUserTimePoint,
-        RecommendationsPerUserTimePointClickhouse, RecommendationsWithClicksCTRResponse,
+        CTRMetricsOverTimeResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse,
+        ComponentAnalyticsFilter, ComponentNamesResponse, DatasetAnalytics, EventAnalyticsFilter,
+        EventData, EventDataClickhouse, FloatTimePoint, FloatTimePointClickhouse,
+        GetEventsResponseBody, Granularity, HeadQueries, IntegerTimePoint,
+        IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularFilters,
+        PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse,
+        RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse, RagQueryRatingsResponse,
+        RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
+        RecommendationEventClickhouse, RecommendationSortBy, RecommendationUsageGraphResponse,
+        RecommendationsCTRRateResponse, RecommendationsConversionRateResponse,
+        RecommendationsPerUserResponse, RecommendationsWithClicksCTRResponse,
         RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
         RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
-        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchConversionRatePoint,
-        SearchConversionRateResponse, SearchLatencyGraph, SearchLatencyGraphClickhouse,
+        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchConversionRateResponse,
         SearchQueriesWithClicksCTRResponse, SearchQueriesWithClicksCTRResponseClickhouse,
         SearchQueriesWithoutClicksCTRResponse, SearchQueriesWithoutClicksCTRResponseClickhouse,
         SearchQueryEvent, SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder,
         TopComponents, TopComponentsResponse, TopDatasetsResponse, TopDatasetsResponseClickhouse,
         TopPages, TopPagesResponse, TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse,
-        TopicDetailsResponse, TopicQueriesResponse, TopicQueryClickhouse, TopicTimePointClickhouse,
-        TopicsOverTimeResponse, TotalUniqueUsersResponse, TotalUniqueUsersTimePointClickhouse,
-        UsageGraphPoint, UsageGraphPointClickhouse,
+        TopicDetailsResponse, TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse,
+        TotalUniqueUsersResponse,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
 };
 use actix_web::web;
-
-use clickhouse::Row;
 use diesel::{ExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
 use futures::future::join_all;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -618,7 +611,7 @@ pub async fn get_popular_filter_values_query(
 #[schema(title = "SearchUsageGraphResponse")]
 pub struct SearchUsageGraphResponse {
     pub total_searches: i64,
-    pub points: Vec<UsageGraphPoint>,
+    pub points: Vec<IntegerTimePoint>,
 }
 
 pub async fn get_search_usage_graph_query(
@@ -666,19 +659,19 @@ pub async fn get_search_usage_graph_query(
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<UsageGraphPointClickhouse>()
+        .fetch_all::<IntegerTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching query: {:?}", e);
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let rps_graph: Vec<UsageGraphPoint> = clickhouse_query
+    let rps_graph: Vec<IntegerTimePoint> = clickhouse_query
         .into_iter()
         .map(|q| q.into())
         .collect::<Vec<_>>();
 
-    let total_searches = rps_graph.iter().map(|q| q.requests).sum();
+    let total_searches = rps_graph.iter().map(|q| q.point).sum();
 
     Ok(SearchUsageGraphResponse {
         total_searches,
@@ -689,7 +682,7 @@ pub async fn get_search_usage_graph_query(
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[schema(title = "LatencyGraphResponse")]
 pub struct LatencyGraphResponse {
-    pub points: Vec<SearchLatencyGraph>,
+    pub points: Vec<FloatTimePoint>,
 }
 
 pub async fn get_latency_graph_query(
@@ -743,14 +736,14 @@ pub async fn get_latency_graph_query(
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<SearchLatencyGraphClickhouse>()
+        .fetch_all::<FloatTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching query: {:?}", e);
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let latency_query: Vec<SearchLatencyGraph> = clickhouse_query
+    let latency_query: Vec<FloatTimePoint> = clickhouse_query
         .into_iter()
         .map(|q| q.into())
         .collect::<Vec<_>>();
@@ -900,14 +893,14 @@ pub async fn get_rag_usage_graph_query(
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<UsageGraphPointClickhouse>()
+        .fetch_all::<IntegerTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching query: {:?}", e);
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let rps_graph: Vec<UsageGraphPoint> = clickhouse_query
+    let rps_graph: Vec<IntegerTimePoint> = clickhouse_query
         .into_iter()
         .map(|q| q.into())
         .collect::<Vec<_>>();
@@ -1124,16 +1117,16 @@ pub async fn get_recommendation_usage_graph_query(
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<RecommendationUsageGraphPointClickhouse>()
+        .fetch_all::<IntegerTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching query: {:?}", e);
             ServiceError::InternalServerError("Error fetching query".to_string())
         })?;
 
-    let total_requests = clickhouse_query.iter().map(|q| q.requests).sum::<u64>();
+    let total_requests = clickhouse_query.iter().map(|q| q.point as u64).sum();
 
-    let rps_graph: Vec<RecommendationUsageGraphPoint> = clickhouse_query
+    let rps_graph: Vec<IntegerTimePoint> = clickhouse_query
         .into_iter()
         .map(|q| q.into())
         .collect::<Vec<_>>();
@@ -1199,7 +1192,7 @@ pub async fn get_recommendations_per_user_query(
     let clickhouse_query = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<RecommendationsPerUserTimePointClickhouse>()
+        .fetch_all::<FloatTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching query: {:?}", e);
@@ -1207,16 +1200,12 @@ pub async fn get_recommendations_per_user_query(
         })?;
 
     let avg_recommendations_per_user = if !clickhouse_query.is_empty() {
-        clickhouse_query
-            .iter()
-            .map(|q| q.recommendations_per_user)
-            .sum::<f64>()
-            / clickhouse_query.len() as f64
+        clickhouse_query.iter().map(|q| q.point).sum::<f64>() / clickhouse_query.len() as f64
     } else {
         0.0
     };
 
-    let rpu_graph: Vec<RecommendationsPerUserTimePoint> = clickhouse_query
+    let rpu_graph: Vec<FloatTimePoint> = clickhouse_query
         .into_iter()
         .map(|q| q.into())
         .collect::<Vec<_>>();
@@ -1275,7 +1264,7 @@ pub async fn get_recommendations_ctr_rate_query(
     let clicks_over_time = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<ClicksOverTime>()
+        .fetch_all::<IntegerTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching query: {:?}", e);
@@ -1290,14 +1279,14 @@ pub async fn get_recommendations_ctr_rate_query(
     let ctr_metrics = clicks_over_time
         .iter()
         .zip(recs_over_time.iter())
-        .map(|(click, rec)| RecommendationsCTRRateTimePoint {
+        .map(|(click, rec)| FloatTimePoint {
             time_stamp: click.time_stamp.to_string(),
-            ctr: click.clicks as f32 / rec.requests as f32,
+            point: click.point as f64 / rec.point as f64,
         })
         .collect::<Vec<_>>();
 
     let total_ctr = if !ctr_metrics.is_empty() {
-        ctr_metrics.iter().map(|q| q.ctr).sum::<f32>() / ctr_metrics.len() as f32
+        ctr_metrics.iter().map(|q| q.point).sum::<f64>() / ctr_metrics.len() as f64
     } else {
         0.0
     };
@@ -2003,14 +1992,14 @@ pub async fn get_topics_over_time_query(
     let time_points = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<TopicTimePointClickhouse>()
+        .fetch_all::<IntegerTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching time points: {:?}", e);
             ServiceError::InternalServerError("Error fetching time points".to_string())
         })?;
 
-    let total_topics = time_points.iter().map(|x| x.topic_count).sum();
+    let total_topics = time_points.iter().map(|x| x.point).sum();
 
     Ok(TopicsOverTimeResponse {
         total_topics,
@@ -2061,14 +2050,14 @@ pub async fn get_total_unique_users_query(
     let time_points = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<TotalUniqueUsersTimePointClickhouse>()
+        .fetch_all::<IntegerTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching time points: {:?}", e);
             ServiceError::InternalServerError("Error fetching time points".to_string())
         })?;
 
-    let total_unique_users = time_points.iter().map(|t| t.unique_users).sum();
+    let total_unique_users = time_points.iter().map(|t| t.point as u64).sum();
 
     Ok(TotalUniqueUsersResponse {
         total_unique_users,
@@ -2188,13 +2177,6 @@ pub async fn get_component_names_query(
     Ok(ComponentNamesResponse { component_names })
 }
 
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct ClicksOverTime {
-    #[serde(with = "clickhouse::serde::time::datetime")]
-    pub time_stamp: OffsetDateTime,
-    pub clicks: i64,
-}
-
 pub async fn get_ctr_metrics_over_time_query(
     dataset_id: uuid::Uuid,
     filter: Option<RAGAnalyticsFilter>,
@@ -2241,7 +2223,7 @@ pub async fn get_ctr_metrics_over_time_query(
     let clicks_over_time = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<ClicksOverTime>()
+        .fetch_all::<IntegerTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching ctr metrics over time: {:?}", e);
@@ -2253,18 +2235,18 @@ pub async fn get_ctr_metrics_over_time_query(
             .await?
             .points;
 
-    let ctr_metrics_over_time: Vec<CTRMetricsOverTimePoint> = clicks_over_time
+    let ctr_metrics_over_time: Vec<FloatTimePoint> = clicks_over_time
         .iter()
         .zip(chats_over_time.iter())
-        .map(|(x, y)| CTRMetricsOverTimePoint {
+        .map(|(x, y)| FloatTimePoint {
             time_stamp: x.time_stamp.to_string(),
-            ctr: x.clicks as f32 / y.requests as f32,
+            point: x.point as f64 / y.point as f64,
         })
         .collect();
 
     let total_ctr = if !ctr_metrics_over_time.is_empty() {
-        ctr_metrics_over_time.iter().map(|x| x.ctr).sum::<f32>()
-            / ctr_metrics_over_time.len() as f32
+        ctr_metrics_over_time.iter().map(|x| x.point).sum::<f64>()
+            / ctr_metrics_over_time.len() as f64
     } else {
         0.0
     };
@@ -2329,7 +2311,7 @@ pub async fn get_messages_per_user(
     let chats_over_time = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<MessagesPerUserTimePointClickhouse>()
+        .fetch_all::<FloatTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching ctr metrics over time: {:?}", e);
@@ -2337,11 +2319,7 @@ pub async fn get_messages_per_user(
         })?;
 
     let avg_messages_per_user = if !chats_over_time.is_empty() {
-        chats_over_time
-            .iter()
-            .map(|x| x.messages_per_user)
-            .sum::<f64>()
-            / chats_over_time.len() as f64
+        chats_over_time.iter().map(|x| x.point).sum::<f64>() / chats_over_time.len() as f64
     } else {
         0.0
     };
@@ -2350,13 +2328,6 @@ pub async fn get_messages_per_user(
         avg_messages_per_user,
         points: chats_over_time.into_iter().map(|x| x.into()).collect(),
     })
-}
-
-#[derive(Debug, Row, Serialize, Deserialize)]
-struct ConversionRateTimePointClickhouse {
-    #[serde(with = "clickhouse::serde::time::datetime")]
-    time_stamp: OffsetDateTime,
-    count: i64,
 }
 
 pub async fn get_search_conversion_rate_query(
@@ -2405,28 +2376,28 @@ pub async fn get_search_conversion_rate_query(
     let conversions = clickhouse_client
         .query(conversions_query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<ConversionRateTimePointClickhouse>()
+        .fetch_all::<IntegerTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching conversions: {:?}", e);
             ServiceError::InternalServerError("Error fetching conversions".to_string())
         })?;
 
-    let total_interactions: i64 = interactions.iter().map(|p| p.requests).sum();
-    let total_conversions: i64 = conversions.iter().map(|p| p.count).sum();
+    let total_interactions: i64 = interactions.iter().map(|p| p.point).sum();
+    let total_conversions: i64 = conversions.iter().map(|p| p.point).sum();
 
     let conversion_rate = if total_interactions > 0 {
-        total_conversions as f32 / total_interactions as f32
+        total_conversions as f64 / total_interactions as f64
     } else {
         0.0
     };
 
-    let points: Vec<SearchConversionRatePoint> = interactions
+    let points: Vec<FloatTimePoint> = interactions
         .into_iter()
         .zip(conversions.into_iter())
-        .map(|(interaction, conversion)| SearchConversionRatePoint {
+        .map(|(interaction, conversion)| FloatTimePoint {
             time_stamp: interaction.time_stamp.to_string(),
-            conversion_rate: conversion.count as f32 / interaction.requests as f32,
+            point: conversion.point as f64 / interaction.point as f64,
         })
         .collect();
 
@@ -2482,7 +2453,7 @@ pub async fn get_search_ctr_metrics_over_time_query(
     let clicks_over_time = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_all::<ClicksOverTime>()
+        .fetch_all::<IntegerTimePointClickhouse>()
         .await
         .map_err(|e| {
             log::error!("Error fetching ctr metrics over time: {:?}", e);
@@ -2494,18 +2465,18 @@ pub async fn get_search_ctr_metrics_over_time_query(
             .await?
             .points;
 
-    let ctr_metrics_over_time: Vec<CTRMetricsOverTimePoint> = clicks_over_time
+    let ctr_metrics_over_time: Vec<FloatTimePoint> = clicks_over_time
         .iter()
         .zip(searches_over_time.iter())
-        .map(|(x, y)| CTRMetricsOverTimePoint {
+        .map(|(x, y)| FloatTimePoint {
             time_stamp: x.time_stamp.to_string(),
-            ctr: x.clicks as f32 / y.requests as f32,
+            point: x.point as f64 / y.point as f64,
         })
         .collect();
 
     let total_ctr = if !ctr_metrics_over_time.is_empty() {
-        ctr_metrics_over_time.iter().map(|x| x.ctr).sum::<f32>()
-            / ctr_metrics_over_time.len() as f32
+        ctr_metrics_over_time.iter().map(|x| x.point).sum::<f64>()
+            / ctr_metrics_over_time.len() as f64
     } else {
         0.0
     };
@@ -2513,5 +2484,82 @@ pub async fn get_search_ctr_metrics_over_time_query(
     Ok(CTRMetricsOverTimeResponse {
         total_ctr,
         points: ctr_metrics_over_time,
+    })
+}
+
+pub async fn get_recommendation_conversion_rate_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RecommendationAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<RecommendationsConversionRateResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut conversions_query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            count(*) as count
+        FROM events
+        WHERE dataset_id = ?
+        AND request_type = 'recommendation'
+        AND event_type IN ('add_to_cart', 'purchase')
+        AND is_conversion = true",
+        interval
+    );
+
+    if let Some(filter) = &filter {
+        conversions_query_string = filter.add_to_query(conversions_query_string);
+    }
+
+    conversions_query_string.push_str(
+        "
+        GROUP BY time_stamp
+        ORDER BY time_stamp
+        LIMIT 1000",
+    );
+
+    let interactions =
+        get_recommendation_usage_graph_query(dataset_id, filter, granularity, clickhouse_client)
+            .await?
+            .points;
+
+    let conversions = clickhouse_client
+        .query(conversions_query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<IntegerTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching conversions: {:?}", e);
+            ServiceError::InternalServerError("Error fetching conversions".to_string())
+        })?;
+
+    let total_interactions: i64 = interactions.iter().map(|p| p.point).sum();
+    let total_conversions: i64 = conversions.iter().map(|p| p.point).sum();
+
+    let conversion_rate = if total_interactions > 0 {
+        total_conversions as f64 / total_interactions as f64
+    } else {
+        0.0
+    };
+
+    let points: Vec<FloatTimePoint> = interactions
+        .into_iter()
+        .zip(conversions.into_iter())
+        .map(|(interaction, conversion)| FloatTimePoint {
+            time_stamp: interaction.time_stamp.to_string(),
+            point: conversion.point as f64 / interaction.point as f64,
+        })
+        .collect();
+
+    Ok(RecommendationsConversionRateResponse {
+        conversion_rate,
+        points,
     })
 }

@@ -1,5 +1,5 @@
 import { QueryOptions } from "@tanstack/react-query";
-import { TrieveSDK, RecommendationAnalyticsFilter, Granularity, RecommendationUsageGraphResponse, RecommendationsPerUserResponse, RecommendationsCTRRateResponse, RecommendationSortBy, RecommendationsEventResponse, SortOrder } from "trieve-ts-sdk";
+import { TrieveSDK, RecommendationAnalyticsFilter, Granularity, RecommendationUsageGraphResponse, RecommendationsPerUserResponse, RecommendationsCTRRateResponse, RecommendationSortBy, RecommendationsEventResponse, SortOrder, RecommendationsConversionRateResponse } from "trieve-ts-sdk";
 
 export const recommendationsUsageQuery = (
   trieve: TrieveSDK,
@@ -77,6 +77,24 @@ export const allRecommendationsQuery = (
         sort_order,
       });
       return result as RecommendationsEventResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const recommendationConversionRateQuery = (
+  trieve: TrieveSDK,
+  filters: RecommendationAnalyticsFilter,
+  granularity: Granularity,
+) => {
+  return {
+    queryKey: ["recommendationConversionRate", filters, granularity],
+    queryFn: async () => {
+      const result = await trieve.getRecommendationAnalytics({
+        filter: filters,
+        type: "recommendation_conversion_rate",
+        granularity: granularity,
+      });
+      return result as RecommendationsConversionRateResponse;
     },
   } satisfies QueryOptions;
 };

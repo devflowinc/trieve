@@ -25,7 +25,7 @@ export const RecommendationsUsageChart = ({
       granularity={granularity}
       date_range={filters.date_range}
       xAxis={"time_stamp"}
-      yAxis={"requests"}
+      yAxis={"point"}
       label="Recommendations Usage"
       tooltipContent="The total number of recommendations made by users."
     />

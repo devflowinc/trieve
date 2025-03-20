@@ -1,7 +1,6 @@
 import {
   AnalyticsParams,
   HeadQuery,
-  LatencyDatapoint,
   RagQueryEvent,
   RAGUsageResponse,
   SearchQueryEvent,
@@ -15,13 +14,13 @@ import {
   RAGAnalyticsFilter,
   RAGSortBy,
   SortOrder,
-  UsageDatapoint,
   UsageGraphResponse,
   RecommendationEvent,
   EventData,
   DateRangeFilter,
   SearchMetricsResponse,
   RagQueryRatingResponse,
+  GraphDatapoint,
 } from "shared/types";
 import { transformAnalyticsFilter } from "../utils/formatDate";
 
@@ -31,7 +30,7 @@ export const getLatency = async (
   filters: AnalyticsFilter,
   granularity: AnalyticsParams["granularity"],
   datasetId: string,
-): Promise<LatencyDatapoint[]> => {
+): Promise<GraphDatapoint[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
     credentials: "include",
     method: "POST",
@@ -60,7 +59,7 @@ export const getRpsUsageGraph = async (
   filters: AnalyticsFilter,
   granularity: AnalyticsParams["granularity"],
   datasetId: string,
-): Promise<UsageDatapoint[]> => {
+): Promise<GraphDatapoint[]> => {
   const response = await fetch(`${apiHost}/analytics/search`, {
     credentials: "include",
     method: "POST",
@@ -203,7 +202,7 @@ export const getRagUsageGraph = async (
   filters: RAGAnalyticsFilter,
   granularity: AnalyticsParams["granularity"],
   datasetId: string,
-): Promise<UsageDatapoint[]> => {
+): Promise<GraphDatapoint[]> => {
   const response = await fetch(`${apiHost}/analytics/rag`, {
     credentials: "include",
     method: "POST",

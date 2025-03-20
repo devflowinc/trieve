@@ -7692,22 +7692,6 @@
           }
         }
       },
-      "CTRMetricsOverTimePoint": {
-        "type": "object",
-        "required": [
-          "time_stamp",
-          "ctr"
-        ],
-        "properties": {
-          "ctr": {
-            "type": "number",
-            "format": "float"
-          },
-          "time_stamp": {
-            "type": "string"
-          }
-        }
-      },
       "CTRMetricsOverTimeResponse": {
         "type": "object",
         "required": [
@@ -7718,12 +7702,12 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CTRMetricsOverTimePoint"
+              "$ref": "#/components/schemas/FloatTimePoint"
             }
           },
           "total_ctr": {
             "type": "number",
-            "format": "float"
+            "format": "double"
           }
         }
       },
@@ -11763,6 +11747,22 @@
           }
         }
       },
+      "FloatTimePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "point"
+        ],
+        "properties": {
+          "point": {
+            "type": "number",
+            "format": "double"
+          },
+          "time_stamp": {
+            "type": "string"
+          }
+        }
+      },
       "FullTextBoost": {
         "type": "object",
         "description": "Boost the presence of certain tokens for fulltext (SPLADE) and keyword (BM25) search. I.e. boosting title phrases to priortize title matches or making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).",
@@ -12621,6 +12621,22 @@
           "use_images": true
         }
       },
+      "IntegerTimePoint": {
+        "type": "object",
+        "required": [
+          "time_stamp",
+          "point"
+        ],
+        "properties": {
+          "point": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "time_stamp": {
+            "type": "string"
+          }
+        }
+      },
       "Invitation": {
         "type": "object",
         "required": [
@@ -12770,7 +12786,7 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SearchLatencyGraph"
+              "$ref": "#/components/schemas/FloatTimePoint"
             }
           }
         }
@@ -12931,24 +12947,8 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MessagesPerUserTimePoint"
+              "$ref": "#/components/schemas/FloatTimePoint"
             }
-          }
-        }
-      },
-      "MessagesPerUserTimePoint": {
-        "type": "object",
-        "required": [
-          "time_stamp",
-          "messages_per_user"
-        ],
-        "properties": {
-          "messages_per_user": {
-            "type": "number",
-            "format": "double"
-          },
-          "time_stamp": {
-            "type": "string"
           }
         }
       },
@@ -14480,7 +14480,7 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UsageGraphPoint"
+              "$ref": "#/components/schemas/IntegerTimePoint"
             }
           }
         }
@@ -15151,6 +15151,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "RecommendationConversionRate",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RecommendationAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "recommendation_conversion_rate"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -15209,6 +15240,9 @@
           },
           {
             "$ref": "#/components/schemas/RecommendationsCTRRateResponse"
+          },
+          {
+            "$ref": "#/components/schemas/RecommendationsConversionRateResponse"
           }
         ]
       },
@@ -15336,23 +15370,6 @@
           "Group"
         ]
       },
-      "RecommendationUsageGraphPoint": {
-        "type": "object",
-        "required": [
-          "time_stamp",
-          "requests"
-        ],
-        "properties": {
-          "requests": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "time_stamp": {
-            "type": "string"
-          }
-        }
-      },
       "RecommendationUsageGraphResponse": {
         "type": "object",
         "title": "RecommendationUsageGraphResponse",
@@ -15364,7 +15381,7 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RecommendationUsageGraphPoint"
+              "$ref": "#/components/schemas/IntegerTimePoint"
             }
           },
           "total_requests": {
@@ -15384,28 +15401,31 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RecommendationsCTRRateTimePoint"
+              "$ref": "#/components/schemas/FloatTimePoint"
             }
           },
           "total_ctr": {
             "type": "number",
-            "format": "float"
+            "format": "double"
           }
         }
       },
-      "RecommendationsCTRRateTimePoint": {
+      "RecommendationsConversionRateResponse": {
         "type": "object",
         "required": [
-          "time_stamp",
-          "ctr"
+          "conversion_rate",
+          "points"
         ],
         "properties": {
-          "ctr": {
+          "conversion_rate": {
             "type": "number",
-            "format": "float"
+            "format": "double"
           },
-          "time_stamp": {
-            "type": "string"
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FloatTimePoint"
+            }
           }
         }
       },
@@ -15438,24 +15458,8 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RecommendationsPerUserTimePoint"
+              "$ref": "#/components/schemas/FloatTimePoint"
             }
-          }
-        }
-      },
-      "RecommendationsPerUserTimePoint": {
-        "type": "object",
-        "required": [
-          "time_stamp",
-          "recommendations_per_user"
-        ],
-        "properties": {
-          "recommendations_per_user": {
-            "type": "number",
-            "format": "double"
-          },
-          "time_stamp": {
-            "type": "string"
           }
         }
       },
@@ -16669,22 +16673,6 @@
           }
         }
       },
-      "SearchConversionRatePoint": {
-        "type": "object",
-        "required": [
-          "time_stamp",
-          "conversion_rate"
-        ],
-        "properties": {
-          "conversion_rate": {
-            "type": "number",
-            "format": "float"
-          },
-          "time_stamp": {
-            "type": "string"
-          }
-        }
-      },
       "SearchConversionRateResponse": {
         "type": "object",
         "required": [
@@ -16694,12 +16682,12 @@
         "properties": {
           "conversion_rate": {
             "type": "number",
-            "format": "float"
+            "format": "double"
           },
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SearchConversionRatePoint"
+              "$ref": "#/components/schemas/FloatTimePoint"
             }
           }
         }
@@ -16713,22 +16701,6 @@
             "$ref": "#/components/schemas/SearchWithinGroupResults"
           }
         ]
-      },
-      "SearchLatencyGraph": {
-        "type": "object",
-        "required": [
-          "time_stamp",
-          "average_latency"
-        ],
-        "properties": {
-          "average_latency": {
-            "type": "number",
-            "format": "double"
-          },
-          "time_stamp": {
-            "type": "string"
-          }
-        }
       },
       "SearchMethod": {
         "type": "string",
@@ -17185,7 +17157,7 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UsageGraphPoint"
+              "$ref": "#/components/schemas/IntegerTimePoint"
             }
           },
           "total_searches": {
@@ -18546,22 +18518,6 @@
           }
         }
       },
-      "TopicTimePoint": {
-        "type": "object",
-        "required": [
-          "time_stamp",
-          "topic_count"
-        ],
-        "properties": {
-          "time_stamp": {
-            "type": "string"
-          },
-          "topic_count": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
       "TopicsOverTimeResponse": {
         "type": "object",
         "required": [
@@ -18572,7 +18528,7 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TopicTimePoint"
+              "$ref": "#/components/schemas/IntegerTimePoint"
             }
           },
           "total_topics": {
@@ -18591,27 +18547,10 @@
           "points": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TotalUniqueUsersTimePoint"
+              "$ref": "#/components/schemas/IntegerTimePoint"
             }
           },
           "total_unique_users": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          }
-        }
-      },
-      "TotalUniqueUsersTimePoint": {
-        "type": "object",
-        "required": [
-          "time_stamp",
-          "unique_users"
-        ],
-        "properties": {
-          "time_stamp": {
-            "type": "string"
-          },
-          "unique_users": {
             "type": "integer",
             "format": "int64",
             "minimum": 0
@@ -19254,22 +19193,6 @@
           "scrapeId": {
             "type": "string",
             "format": "uuid"
-          }
-        }
-      },
-      "UsageGraphPoint": {
-        "type": "object",
-        "required": [
-          "time_stamp",
-          "requests"
-        ],
-        "properties": {
-          "requests": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "time_stamp": {
-            "type": "string"
           }
         }
       },

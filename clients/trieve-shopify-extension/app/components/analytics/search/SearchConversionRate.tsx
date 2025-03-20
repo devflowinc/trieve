@@ -26,7 +26,7 @@ export const SearchConversionRate = ({
       date_range={filters.date_range}
       dataType="percentage"
       xAxis={"time_stamp"}
-      yAxis={"conversion_rate"}
+      yAxis={"point"}
       label="Search Conversion Rate"
       tooltipContent="The percentage of searches that led to cart additions or purchases."
     />

@@ -25,7 +25,7 @@ export const RecommendationsPerUser = ({
       granularity={granularity}
       date_range={filters.date_range}
       xAxis={"time_stamp"}
-      yAxis={"recommendations_per_user"}
+      yAxis={"point"}
       label="Recommendations Per User"
       tooltipContent="The average number of recommendations a user receives in one session."
     />

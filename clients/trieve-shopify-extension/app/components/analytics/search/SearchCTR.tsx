@@ -26,9 +26,9 @@ export const SearchCTRChart = ({
       date_range={filters.date_range}
       dataType="percentage"
       xAxis={"time_stamp"}
-      yAxis={"ctr"}
-      label="CTR Rate"
-      tooltipContent="The rate at which users click on products within the chat sessions."
+      yAxis={"point"}
+      label="Search CTR Rate"
+      tooltipContent="The rate at which users click on products within the search sessions."
     />
   );
-}
+};

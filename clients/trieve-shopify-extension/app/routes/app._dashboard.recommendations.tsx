@@ -11,6 +11,7 @@ import { RecommendationsUsageChart } from "app/components/analytics/recommendati
 import { RecommendationsPerUser } from "app/components/analytics/recommendations/RecommendationsPerUser";
 import { RecommendationsCTRRate } from "app/components/analytics/recommendations/RecommendationsCTRRate";
 import { AllRecommendationsTable } from "app/components/analytics/recommendations/AllRecommendationsTable";
+import { RecommendationConversionRate } from "app/components/analytics/recommendations/RecommnedationConversionRate";
 
 export default function SearchAnalyticsPage() {
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
@@ -18,7 +19,6 @@ export default function SearchAnalyticsPage() {
   const [selectedTab, setSelectedTab] = useState(0);
   return (
     <>
-
       <div className="-ml-2">
         <Tabs
           tabs={[
@@ -46,12 +46,26 @@ export default function SearchAnalyticsPage() {
           />
           <Grid>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-              <RecommendationsUsageChart filters={filters} granularity={granularity} />
+              <RecommendationsUsageChart
+                filters={filters}
+                granularity={granularity}
+              />
               <div className="py-3"></div>
-              <RecommendationsPerUser filters={filters} granularity={granularity} />
+              <RecommendationsPerUser
+                filters={filters}
+                granularity={granularity}
+              />
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-              <RecommendationsCTRRate filters={filters} granularity={granularity} />
+              <RecommendationsCTRRate
+                filters={filters}
+                granularity={granularity}
+              />
+              <div className="py-3"></div>
+              <RecommendationConversionRate
+                filters={filters}
+                granularity={granularity}
+              />
             </Grid.Cell>
           </Grid>
         </>

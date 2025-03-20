@@ -38,7 +38,7 @@ export const SearchUsageGraph = (props: SearchUsageProps) => {
             granularity={props.params.granularity}
             date_range={props.params.filter.date_range}
             yLabel="Requests"
-            yAxis="requests"
+            yAxis="point"
             xAxis="time_stamp"
             xLabel="Timestamp"
           />
