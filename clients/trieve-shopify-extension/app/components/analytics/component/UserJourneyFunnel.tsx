@@ -1,4 +1,12 @@
-import { Box, Card, SkeletonBodyText, Tooltip, Text } from "@shopify/polaris";
+import {
+  Box,
+  Card,
+  SkeletonBodyText,
+  Tooltip,
+  Text,
+  ColumnContentType,
+  Select,
+} from "@shopify/polaris";
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { eventNamesAndCountsQuery } from "app/queries/analytics/component";
@@ -7,6 +15,12 @@ import { Chart, ChartConfiguration } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { useEffect, useRef, useState } from "react";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
+import { BasicTableComponent } from "../BasicTableComponent";
+import {
+  chatEvents,
+  EventPathSelector,
+  searchEvents,
+} from "../EventPathSelector";
 
 export const UserJourneyFunnel = ({
   filters,
@@ -14,11 +28,9 @@ export const UserJourneyFunnel = ({
   filters: ComponentAnalyticsFilter;
 }) => {
   const { trieve } = useTrieve();
-  const [events, setEvents] = useState<KnownEventNames[]>([
-    "trieve-modal_load",
-    "View",
-    "site-checkout",
-  ]);
+  const [events, setEvents] = useState<KnownEventNames[]>(chatEvents);
+
+  const [modeSelect, setModeSelect] = useState<"chat" | "search">("chat");
 
   const { data, status } = useQuery(
     eventNamesAndCountsQuery(trieve, filters, events),
@@ -26,6 +38,20 @@ export const UserJourneyFunnel = ({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
+
+  // Filter the events only to those which belong in the category
+  const selectMode = (mode: "chat" | "search") => {
+    setModeSelect(mode);
+    if (mode === "chat") {
+      setEvents((prevEvents) => {
+        return prevEvents.filter((event) => chatEvents.includes(event));
+      });
+    } else {
+      setEvents((prevEvents) => {
+        return prevEvents.filter((event) => searchEvents.includes(event));
+      });
+    }
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -70,18 +96,10 @@ export const UserJourneyFunnel = ({
             },
             tooltip: {
               callbacks: {
-                // footer(item) {
-                //   const index = item[0].dataIndex;
-                //   return JSON.stringify(item.at(0)?.dataIndex);
-                // },
-                // label(tooltipItem) {
-                //   const index = tooltipItem.dataIndex;
-                //   return JSON.stringify(tooltipItem.dataIndex);
-                // },
-                // title(tooltipItem) {
-                //   const index = tooltipItem[0].dataIndex;
-                //   return "TITLE";
-                // },
+                title(tooltipItem) {
+                  const index = tooltipItem[0].dataIndex;
+                  return formatEventName(data[index].event_name);
+                },
               },
               backgroundColor: "rgba(128, 0, 128, 0.9)",
               titleColor: "white",
@@ -132,24 +150,64 @@ export const UserJourneyFunnel = ({
     };
   }, [data]);
 
+  const tableData = data
+    ? data.map((item) => [
+        formatEventName(item.event_name),
+        item.event_count.toString(),
+      ])
+    : [];
+  const tableHeadings = ["Event Name", "Count"];
+  const tableContentTypes: ColumnContentType[] = ["text", "numeric"];
+  const [page, setPage] = useState(1);
+  const hasNext = false;
+
   return (
     <Card>
-      <div className="pb-2">
-        <Tooltip content={"TODO"} hasUnderline>
-          <Text as="span" variant="bodyLg" fontWeight="bold">
-            User Journey
-          </Text>
-        </Tooltip>
+      <div className="pb-2 w-full flex justify-between">
+        <div>
+          <Tooltip content={"TODO"} hasUnderline>
+            <Text as="span" variant="bodyLg" fontWeight="bold">
+              User Journey
+            </Text>
+          </Tooltip>
+        </div>
+        <Select
+          label="Mode Selection"
+          labelHidden
+          value={modeSelect}
+          onChange={(e) => {
+            selectMode(e as "chat" | "search");
+          }}
+          options={[
+            { label: "Chat", value: "chat" },
+            { label: "Search", value: "search" },
+          ]}
+        />
       </div>
-      <Box minHeight="150px">
+      <EventPathSelector
+        events={events}
+        mode={modeSelect}
+        setEvents={setEvents}
+      />
+      <Box paddingBlockStart="800" minHeight="150px">
         {status === "pending" ? (
           <div className="pl-2">
             <SkeletonBodyText lines={10} />
           </div>
         ) : (
-          <canvas ref={canvasRef} className="max-h-[300px] w-full" />
+          <canvas ref={canvasRef} className="max-h-[200px] w-full" />
         )}
       </Box>
+      <div className="py-2"></div>
+      <BasicTableComponent
+        hidePagination
+        data={tableData}
+        page={page}
+        setPage={setPage}
+        tableContentTypes={tableContentTypes}
+        tableHeadings={tableHeadings}
+        hasNext={hasNext}
+      />
     </Card>
   );
 };

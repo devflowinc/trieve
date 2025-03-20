@@ -124,7 +124,13 @@ export const eventNamesAndCountsQuery = (
         );
       });
 
-      return selected;
+      // Return in the same order of selectedEvents
+      return selected.sort((a, b) => {
+        return (
+          selectedEvents.indexOf(a.event_name) -
+          selectedEvents.indexOf(b.event_name)
+        );
+      });
     },
   } satisfies QueryOptions;
 };

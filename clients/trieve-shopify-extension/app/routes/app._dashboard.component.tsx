@@ -28,11 +28,11 @@ export default function ComponentAnalyticsPage() {
           </div>
         </Grid.Cell>
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col pb-8 gap-4">
+            <UserJourneyFunnel filters={filters} />
             <TopPages filters={filters} />
             <TopComponents filters={filters} />
             <TopComponents filters={filters} />
-            <UserJourneyFunnel filters={filters} />
           </div>
         </Grid.Cell>
       </Grid>
