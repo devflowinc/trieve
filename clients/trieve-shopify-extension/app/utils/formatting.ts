@@ -43,10 +43,8 @@ export const parseCustomDateString = (dateString: string) => {
   wholeSec = wholeSec.padStart(2, "0");
 
   const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}Z`;
-
-  var date = new Date(isoString);
-  var userTimezoneOffset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() + userTimezoneOffset);
+  console.log(new Date(isoString));
+  return new Date(isoString);
 };
 
 export const formatStringDateRangeToDates = (
@@ -167,8 +165,9 @@ export const fillDate = <T>({
   granularity: Granularity;
   defaultValue?: number | null;
 }) => {
-  const startDate = date_range?.gte || subDays(new Date(), 7);
-  const endDate = date_range?.lte || new Date();
+  const startDate = date_range?.gte ? new Date(date_range.gte + "Z") : subDays(new Date(), 7);
+  const endDate = date_range?.lte ? new Date(date_range.lte + "Z") : new Date();
+  console.log(startDate, endDate);
 
   let info: { time: Date; value: number | null }[] = [];
   if (granularity == "day") {
@@ -261,3 +260,16 @@ export const toTitleCase = (str: string) => {
   return str.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
+
+export const formatTimeValueForChart = (seconds: number | undefined): string => {
+  if (seconds === undefined) return "0s";
+  
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = (seconds % 60).toFixed(1);
+  
+  if (minutes === 0) {
+    return `${remainingSeconds}s`;
+  }
+  
+  return `${minutes}m ${remainingSeconds}s`;
+};

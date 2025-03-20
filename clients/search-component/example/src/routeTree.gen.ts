@@ -8,118 +8,118 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
 
 // Import Routes
 
-import { Route as rootRoute } from "./routes/__root";
-import { Route as SearchpageImport } from "./routes/searchpage";
-import { Route as RecsImport } from "./routes/recs";
-import { Route as EcommerceImport } from "./routes/ecommerce";
+import { Route as rootRoute } from './routes/__root'
+import { Route as SearchpageImport } from './routes/searchpage'
+import { Route as RecsImport } from './routes/recs'
+import { Route as EcommerceImport } from './routes/ecommerce'
 
 // Create Virtual Routes
 
-const IndexLazyImport = createFileRoute("/")();
+const IndexLazyImport = createFileRoute('/')()
 
 // Create/Update Routes
 
 const SearchpageRoute = SearchpageImport.update({
-  id: "/searchpage",
-  path: "/searchpage",
+  id: '/searchpage',
+  path: '/searchpage',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const RecsRoute = RecsImport.update({
-  id: "/recs",
-  path: "/recs",
+  id: '/recs',
+  path: '/recs',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const EcommerceRoute = EcommerceImport.update({
-  id: "/ecommerce",
-  path: "/ecommerce",
+  id: '/ecommerce',
+  path: '/ecommerce',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const IndexLazyRoute = IndexLazyImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRoute,
-} as any).lazy(() => import("./routes/index.lazy").then((d) => d.Route));
+} as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
 
 // Populate the FileRoutesByPath interface
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexLazyImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/ecommerce": {
-      id: "/ecommerce";
-      path: "/ecommerce";
-      fullPath: "/ecommerce";
-      preLoaderRoute: typeof EcommerceImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/recs": {
-      id: "/recs";
-      path: "/recs";
-      fullPath: "/recs";
-      preLoaderRoute: typeof RecsImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/searchpage": {
-      id: "/searchpage";
-      path: "/searchpage";
-      fullPath: "/searchpage";
-      preLoaderRoute: typeof SearchpageImport;
-      parentRoute: typeof rootRoute;
-    };
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexLazyImport
+      parentRoute: typeof rootRoute
+    }
+    '/ecommerce': {
+      id: '/ecommerce'
+      path: '/ecommerce'
+      fullPath: '/ecommerce'
+      preLoaderRoute: typeof EcommerceImport
+      parentRoute: typeof rootRoute
+    }
+    '/recs': {
+      id: '/recs'
+      path: '/recs'
+      fullPath: '/recs'
+      preLoaderRoute: typeof RecsImport
+      parentRoute: typeof rootRoute
+    }
+    '/searchpage': {
+      id: '/searchpage'
+      path: '/searchpage'
+      fullPath: '/searchpage'
+      preLoaderRoute: typeof SearchpageImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
 // Create and export the route tree
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexLazyRoute;
-  "/ecommerce": typeof EcommerceRoute;
-  "/recs": typeof RecsRoute;
-  "/searchpage": typeof SearchpageRoute;
+  '/': typeof IndexLazyRoute
+  '/ecommerce': typeof EcommerceRoute
+  '/recs': typeof RecsRoute
+  '/searchpage': typeof SearchpageRoute
 }
 
 export interface FileRoutesByTo {
-  "/": typeof IndexLazyRoute;
-  "/ecommerce": typeof EcommerceRoute;
-  "/recs": typeof RecsRoute;
-  "/searchpage": typeof SearchpageRoute;
+  '/': typeof IndexLazyRoute
+  '/ecommerce': typeof EcommerceRoute
+  '/recs': typeof RecsRoute
+  '/searchpage': typeof SearchpageRoute
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
-  "/": typeof IndexLazyRoute;
-  "/ecommerce": typeof EcommerceRoute;
-  "/recs": typeof RecsRoute;
-  "/searchpage": typeof SearchpageRoute;
+  __root__: typeof rootRoute
+  '/': typeof IndexLazyRoute
+  '/ecommerce': typeof EcommerceRoute
+  '/recs': typeof RecsRoute
+  '/searchpage': typeof SearchpageRoute
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/ecommerce" | "/recs" | "/searchpage";
-  fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/ecommerce" | "/recs" | "/searchpage";
-  id: "__root__" | "/" | "/ecommerce" | "/recs" | "/searchpage";
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/ecommerce' | '/recs' | '/searchpage'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/ecommerce' | '/recs' | '/searchpage'
+  id: '__root__' | '/' | '/ecommerce' | '/recs' | '/searchpage'
+  fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexLazyRoute: typeof IndexLazyRoute;
-  EcommerceRoute: typeof EcommerceRoute;
-  RecsRoute: typeof RecsRoute;
-  SearchpageRoute: typeof SearchpageRoute;
+  IndexLazyRoute: typeof IndexLazyRoute
+  EcommerceRoute: typeof EcommerceRoute
+  RecsRoute: typeof RecsRoute
+  SearchpageRoute: typeof SearchpageRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -127,11 +127,11 @@ const rootRouteChildren: RootRouteChildren = {
   EcommerceRoute: EcommerceRoute,
   RecsRoute: RecsRoute,
   SearchpageRoute: SearchpageRoute,
-};
+}
 
 export const routeTree = rootRoute
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
 /* ROUTE_MANIFEST_START
 {

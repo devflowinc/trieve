@@ -89,7 +89,7 @@ const Modal = () => {
       getFingerprint().then((fingerprint) => {
         trieveSDK.sendAnalyticsEvent(
           {
-            event_name: `trieve-modal_load`,
+            event_name: `component_load`,
             event_type: "view",
             items: [],
             user_id: fingerprint,
@@ -187,7 +187,7 @@ const Modal = () => {
     }
 
     return () => {
-      abortController.abort("AbortError trieve-modal_load");
+      abortController.abort("AbortError component_load");
     };
   }, []);
 

@@ -6,10 +6,10 @@ import {
   SkeletonDisplayText,
   SkeletonBodyText,
 } from "@shopify/polaris";
-import { useTrieve } from "app/context/trieveContext";
 import { AnalyticsChart } from "./AnalyticsChart";
 import { Granularity } from "trieve-ts-sdk";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
+import { formatTimeValueForChart } from "app/utils/formatting";
 
 interface GraphComponentProps<T> {
   topLevelMetric: number | undefined;
@@ -21,7 +21,7 @@ interface GraphComponentProps<T> {
   label: string;
   date_range: ComponentAnalyticsFilter["date_range"];
   tooltipContent: string;
-  dataType?: "number" | "percentage" | "currency";
+  dataType?: "number" | "percentage" | "currency" | "time";
 }
 
 export const GraphComponent = <T,>({
@@ -50,11 +50,15 @@ export const GraphComponent = <T,>({
           <SkeletonDisplayText size="large" />
         ) : (
           <Text as="span" variant="heading3xl" fontWeight="bold">
-            {dataType === "percentage"
-              ? `${((topLevelMetric ?? 0) * 100).toFixed(2)}%`
-              : topLevelMetric?.toLocaleString("en-US", {
+            {dataType === "percentage" ? (
+              `${((topLevelMetric ?? 0) * 100).toFixed(2)}%`
+            ) : dataType === "time" ? (
+              formatTimeValueForChart(topLevelMetric)
+            ) : (
+              topLevelMetric?.toLocaleString("en-US", {
                 maximumFractionDigits: 2,
-              })}
+              })
+            )}
           </Text>
         )}
       </div>

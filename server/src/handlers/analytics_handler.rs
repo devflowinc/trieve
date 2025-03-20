@@ -966,6 +966,20 @@ pub async fn get_component_analytics(
 
             ComponentAnalyticsResponse::ComponentNames(component_names)
         }
+        ComponentAnalytics::ComponentInteractionTime {
+            filter,
+            granularity,
+        } => {
+            let component_interaction_time = get_component_interaction_time_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            ComponentAnalyticsResponse::ComponentInteractionTime(component_interaction_time)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))

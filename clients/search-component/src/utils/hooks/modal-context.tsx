@@ -145,10 +145,10 @@ export type ModalProps = {
   zIndex?: number;
   showFloatingButton?: boolean;
   floatingButtonPosition?:
-    | "top-left"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-right";
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
   floatingSearchIconPosition?: "left" | "right";
   showFloatingSearchIcon?: boolean;
   disableFloatingSearchIconClick?: boolean;
@@ -284,7 +284,7 @@ const ModalContext = createContext<{
   >;
 }>({
   props: defaultProps,
-  trieveSDK: (() => {}) as unknown as TrieveSDK,
+  trieveSDK: (() => { }) as unknown as TrieveSDK,
   query: "",
   imageUrl: "",
   audioBase64: "",
@@ -296,28 +296,28 @@ const ModalContext = createContext<{
   modalRef: { current: null },
   mode: "search",
   fingerprint: "",
-  setFingerprint: () => {},
-  setMode: () => {},
-  setOpen: () => {},
-  setQuery: () => {},
-  setImageUrl: () => {},
-  setAudioBase64: () => {},
-  setUploadingImage: () => {},
-  setResults: () => {},
+  setFingerprint: () => { },
+  setMode: () => { },
+  setOpen: () => { },
+  setQuery: () => { },
+  setImageUrl: () => { },
+  setAudioBase64: () => { },
+  setUploadingImage: () => { },
+  setResults: () => { },
   requestID: "",
-  setRequestID: () => {},
-  setLoadingResults: () => {},
+  setRequestID: () => { },
+  setLoadingResults: () => { },
   selectedTags: [],
-  setSelectedTags: () => {},
+  setSelectedTags: () => { },
   currentGroup: null,
-  setCurrentGroup: () => {},
-  setContextProps: () => {},
+  setCurrentGroup: () => { },
+  setContextProps: () => { },
   pagefind: null,
   isRecording: false,
-  setIsRecording: () => {},
+  setIsRecording: () => { },
   // sidebar filter specific state
   selectedSidebarFilters: {},
-  setSelectedSidebarFilters: () => {},
+  setSelectedSidebarFilters: () => { },
 });
 
 const ModalProvider = ({
@@ -464,7 +464,7 @@ const ModalProvider = ({
         import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
           // @vite-ignore
           setPagefind(pagefind);
-          pagefind.filters().then(() => {});
+          pagefind.filters().then(() => { });
         });
       });
     }
@@ -488,7 +488,29 @@ const ModalProvider = ({
         getFingerprint().then((fingerprint) => {
           trieve.sendAnalyticsEvent(
             {
-              event_name: `trieve-modal_click`,
+              event_name: `component_open`,
+              event_type: "click",
+              clicked_items: null,
+              user_id: fingerprint,
+              location: window.location.href,
+              metadata: {
+                component_props: props,
+              },
+            },
+            abortController.signal,
+          );
+        });
+      } catch (e) {
+        console.log("error on click event", e);
+      }
+    }
+
+    if (!open && props.analytics) {
+      try {
+        getFingerprint().then((fingerprint) => {
+          trieve.sendAnalyticsEvent(
+            {
+              event_name: `component_close`,
               event_type: "click",
               clicked_items: null,
               user_id: fingerprint,
@@ -506,7 +528,7 @@ const ModalProvider = ({
     }
 
     return () => {
-      abortController.abort("AbortError trieve-modal_click");
+      abortController.abort("AbortError component_open");
     };
   }, [open, props.analytics, props]);
 
