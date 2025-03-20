@@ -7308,6 +7308,11 @@ pub enum RAGAnalytics {
         filter: Option<RAGAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[serde(rename = "chat_average_rating")]
+    ChatAverageRating {
+        filter: Option<RAGAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7472,6 +7477,14 @@ pub enum RAGAnalyticsResponse {
     CTRMetricsOverTime(CTRMetricsOverTimeResponse),
     #[schema(title = "MessagesPerUser")]
     MessagesPerUser(MessagesPerUserResponse),
+    #[schema(title = "ChatAverageRating")]
+    ChatAverageRating(ChatAverageRatingResponse),
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct ChatAverageRatingResponse {
+    pub avg_chat_rating: f64,
+    pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]

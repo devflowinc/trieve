@@ -1,27 +1,27 @@
 use crate::{
     data::models::{
-        CTRMetricsOverTimeResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse,
-        ComponentAnalyticsFilter, ComponentNamesResponse, DatasetAnalytics, EventAnalyticsFilter,
-        EventData, EventDataClickhouse, FloatTimePoint, FloatTimePointClickhouse,
-        GetEventsResponseBody, Granularity, HeadQueries, IntegerTimePoint,
-        IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularFilters,
-        PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse,
-        RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse, RagQueryRatingsResponse,
-        RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent,
-        RecommendationEventClickhouse, RecommendationSortBy, RecommendationUsageGraphResponse,
-        RecommendationsCTRRateResponse, RecommendationsConversionRateResponse,
-        RecommendationsPerUserResponse, RecommendationsWithClicksCTRResponse,
-        RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse,
-        RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchCTRMetrics,
-        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchConversionRateResponse,
-        SearchQueriesWithClicksCTRResponse, SearchQueriesWithClicksCTRResponseClickhouse,
-        SearchQueriesWithoutClicksCTRResponse, SearchQueriesWithoutClicksCTRResponseClickhouse,
-        SearchQueryEvent, SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount,
-        SearchesPerUserResponse, SortOrder, TopComponents, TopComponentsResponse,
-        TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages, TopPagesResponse,
-        TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse, TopicDetailsResponse,
-        TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse,
-        TotalUniqueUsersResponse,
+        CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ClusterAnalyticsFilter,
+        ClusterTopicsClickhouse, ComponentAnalyticsFilter, ComponentNamesResponse,
+        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, FloatTimePoint,
+        FloatTimePointClickhouse, GetEventsResponseBody, Granularity, HeadQueries,
+        IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool,
+        PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
+        RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
+        RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
+        RecommendationEvent, RecommendationEventClickhouse, RecommendationSortBy,
+        RecommendationUsageGraphResponse, RecommendationsCTRRateResponse,
+        RecommendationsConversionRateResponse, RecommendationsPerUserResponse,
+        RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
+        RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
+        SearchAnalyticsFilter, SearchCTRMetrics, SearchCTRMetricsClickhouse, SearchClusterTopics,
+        SearchConversionRateResponse, SearchQueriesWithClicksCTRResponse,
+        SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
+        SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
+        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SearchesPerUserResponse,
+        SortOrder, TopComponents, TopComponentsResponse, TopDatasetsResponse,
+        TopDatasetsResponseClickhouse, TopPages, TopPagesResponse, TopicAnalyticsFilter,
+        TopicAnalyticsSummaryClickhouse, TopicDetailsResponse, TopicQueriesResponse,
+        TopicQueryClickhouse, TopicsOverTimeResponse, TotalUniqueUsersResponse,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
@@ -2635,5 +2635,65 @@ pub async fn get_searches_per_user_query(
     Ok(SearchesPerUserResponse {
         avg_searches_per_user,
         points: searches_over_time.into_iter().map(|x| x.into()).collect(),
+    })
+}
+
+pub async fn get_chat_average_rating_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RAGAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<ChatAverageRatingResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            avg(JSONExtract(rag_queries.query_rating, 'rating', 'Float64')) as avg_rating
+        FROM rag_queries
+        WHERE dataset_id = ? AND rag_queries.query_rating != ''
+        ",
+        interval,
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            time_stamp
+        ORDER BY 
+            time_stamp
+        LIMIT 1000",
+    );
+
+    let chat_average_rating = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<FloatTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching chat average rating: {:?}", e);
+            ServiceError::InternalServerError("Error fetching chat average rating".to_string())
+        })?;
+
+    let avg_chat_rating = if !chat_average_rating.is_empty() {
+        chat_average_rating.iter().map(|x| x.point).sum::<f64>() / chat_average_rating.len() as f64
+    } else {
+        0.0
+    };
+
+    Ok(ChatAverageRatingResponse {
+        avg_chat_rating,
+        points: chat_average_rating.into_iter().map(|x| x.into()).collect(),
     })
 }

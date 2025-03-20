@@ -500,6 +500,19 @@ pub async fn get_rag_analytics(
             .await?;
             RAGAnalyticsResponse::MessagesPerUser(messages_per_user)
         }
+        RAGAnalytics::ChatAverageRating {
+            filter,
+            granularity,
+        } => {
+            let chat_average_rating = get_chat_average_rating_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::ChatAverageRating(chat_average_rating)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))

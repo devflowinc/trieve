@@ -10,6 +10,7 @@ import {
   SortOrder,
   RagQueryResponse,
   TopicQueriesResponse,
+  ChatAverageRatingResponse,
 } from "trieve-ts-sdk";
 
 export const topicsUsageQuery = (
@@ -89,6 +90,24 @@ export const allChatsQuery = (
         sort_order,
       });
       return result as TopicQueriesResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const chatAverageRatingQuery = (
+  trieve: TrieveSDK,
+  filters: RAGAnalyticsFilter,
+  granularity: Granularity,
+) => {
+  return {
+    queryKey: ["chatAverageRating", filters, granularity],
+    queryFn: async () => {
+      const result = await trieve.getRagAnalytics({
+        filter: filters,
+        type: "chat_average_rating",
+        granularity: granularity,
+      });
+      return result as ChatAverageRatingResponse;
     },
   } satisfies QueryOptions;
 };
