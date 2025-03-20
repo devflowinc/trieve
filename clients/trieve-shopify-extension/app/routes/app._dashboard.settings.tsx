@@ -1,5 +1,5 @@
 import { Box } from "@shopify/polaris";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { DatasetSettings as DatasetSettings } from "app/components/DatasetSettings";
 import { useTrieve } from "app/context/trieveContext";
 import { Loader } from "app/loaders";
@@ -19,7 +19,7 @@ export const clientLoader = createClientLoader(load);
 
 export default function Dataset() {
   const { trieve } = useTrieve();
-  const { data: shopDataset } = useQuery(shopDatasetQuery(trieve));
+  const { data: shopDataset } = useSuspenseQuery(shopDatasetQuery(trieve));
   const { data: crawlOptions } = useSuspenseQuery(scrapeOptionsQuery(trieve));
 
   return (
