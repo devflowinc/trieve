@@ -288,8 +288,8 @@ export const AfMessage = (props: AfMessageProps) => {
                 when={!editing()}
               >
                 <SolidMarkdown
-                  remarkPlugins={[remarkBreaks, remarkGfm]}
-                  rehypePlugins={[rehypeSanitize]}
+                  remarkPlugins={[remarkBreaks as any, remarkGfm as any]}
+                  rehypePlugins={[rehypeSanitize as any]}
                   class="w-full max-w-[full] select-text space-y-2 overflow-hidden"
                   components={{
                     h1: (props) => {
