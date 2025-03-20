@@ -7250,6 +7250,11 @@ pub enum SearchAnalytics {
         filter: Option<SearchAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "SearchAverageRating")]
+    SearchAverageRating {
+        filter: Option<SearchAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7512,6 +7517,12 @@ pub struct SearchesPerUserResponse {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchAverageRatingResponse {
+    pub avg_search_rating: f64,
+    pub points: Vec<FloatTimePoint>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct TopicQueriesResponse {
     pub topics: Vec<TopicAnalyticsSummary>,
 }
@@ -7605,6 +7616,8 @@ pub enum SearchAnalyticsResponse {
     SearchConversionRate(SearchConversionRateResponse),
     #[schema(title = "SearchesPerUser")]
     SearchesPerUser(SearchesPerUserResponse),
+    #[schema(title = "SearchAverageRating")]
+    SearchAverageRating(SearchAverageRatingResponse)
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7615,6 +7628,7 @@ pub enum ClusterAnalyticsResponse {
     #[schema(title = "ClusterQueries")]
     ClusterQueries(SearchQueryResponse),
 }
+
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]

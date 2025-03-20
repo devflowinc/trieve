@@ -344,6 +344,19 @@ pub async fn get_search_analytics(
             .await?;
             SearchAnalyticsResponse::SearchesPerUser(searches_per_user)
         }
+        SearchAnalytics::SearchAverageRating {
+            filter,
+            granularity,
+        } => {
+            let search_average_rating = get_search_average_rating_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            SearchAnalyticsResponse::SearchAverageRating(search_average_rating)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))
