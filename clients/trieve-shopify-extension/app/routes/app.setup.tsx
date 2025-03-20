@@ -9,37 +9,38 @@ import { authenticate } from "app/shopify.server";
 import { TrieveKey } from "app/types";
 import { TrieveSDK } from "trieve-ts-sdk";
 
-const startCrawl = async (
-  crawlOptions: ExtendedCrawlOptions,
-  datasetId: string,
-  session: { shop: string },
-  trieveKey: TrieveKey,
-  admin: any,
-) => {
-  await prisma.crawlSettings.upsert({
-    create: {
-      datasetId: datasetId,
-      shop: session.shop,
-      crawlSettings: crawlOptions,
-    },
-    update: {
-      crawlSettings: crawlOptions,
-    },
-    where: {
-      datasetId_shop: {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const startCrawl = async (
+    crawlOptions: ExtendedCrawlOptions,
+    datasetId: string,
+    session: { shop: string },
+    trieveKey: TrieveKey,
+    admin: any,
+  ) => {
+    await prisma.crawlSettings.upsert({
+      create: {
         datasetId: datasetId,
         shop: session.shop,
+        crawlSettings: crawlOptions,
       },
-    },
-  });
+      update: {
+        crawlSettings: crawlOptions,
+      },
+      where: {
+        datasetId_shop: {
+          datasetId: datasetId,
+          shop: session.shop,
+        },
+      },
+    });
 
-  sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions).catch(
-    console.error,
-  );
-};
+    sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions).catch(
+      console.error,
+    );
+  };
 
-const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
-  const response = await admin.graphql(`
+  const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
+    const response = await admin.graphql(`
       #graphql
       query {
         currentAppInstallation {
@@ -48,11 +49,12 @@ const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
       }
       `);
 
-  const appId = (await response.json()) as {
-    data: { currentAppInstallation: { id: string } };
-  };
-  await admin.graphql(
-    `
+    const appId = (await response.json()) as {
+      data: { currentAppInstallation: { id: string } };
+    };
+
+    await admin.graphql(
+      `
     #graphql
     mutation CreateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
         metafieldsSet(metafields: $metafieldsSetInput) {
@@ -68,30 +70,28 @@ const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
         }
       }
     `,
-    {
-      variables: {
-        metafieldsSetInput: [
-          {
-            namespace: "trieve",
-            key: "dataset_id",
-            value: trieveKey.currentDatasetId,
-            type: "single_line_text_field",
-            ownerId: appId.data.currentAppInstallation.id,
-          },
-          {
-            namespace: "trieve",
-            key: "api_key",
-            value: trieveKey.key,
-            type: "single_line_text_field",
-            ownerId: appId.data.currentAppInstallation.id,
-          },
-        ],
+      {
+        variables: {
+          metafieldsSetInput: [
+            {
+              namespace: "trieve",
+              key: "dataset_id",
+              value: trieveKey.currentDatasetId,
+              type: "single_line_text_field",
+              ownerId: appId.data.currentAppInstallation.id,
+            },
+            {
+              namespace: "trieve",
+              key: "api_key",
+              value: trieveKey.key,
+              type: "single_line_text_field",
+              ownerId: appId.data.currentAppInstallation.id,
+            },
+          ],
+        },
       },
-    },
-  );
-};
-
-export const loader = async (args: LoaderFunctionArgs) => {
+    );
+  };
   // You've been redirected here from app._dashboard.tsx because your trieve <-> shopify connection doesn't have a database
   const { admin, session, sessionToken } = await authenticate.admin(
     args.request,
@@ -148,9 +148,9 @@ export const loader = async (args: LoaderFunctionArgs) => {
       });
     }
 
-    if (key.currentDatasetId && key.key) {
-      setAppMetafields(admin, key);
-    }
+    // if (key.currentDatasetId && key.key) {
+    //   setAppMetafields(admin, key);
+    // }
   }
   datasetId = shopDataset?.id;
   if (!datasetId) {
@@ -159,7 +159,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     });
   }
 
-  startCrawl(defaultCrawlOptions, datasetId, session, key, admin);
+  // startCrawl(defaultCrawlOptions, datasetId, session, key, admin);
 
   trieve.datasetId = datasetId;
 
