@@ -61,6 +61,41 @@ use super::search_operator::{
     search_over_groups_query, ParsedQuery, ParsedQueryTypes,
 };
 
+pub fn parse_text_into_docs_message(
+    text: &str,
+    score_chunks: Vec<ScoreChunk>,
+) -> Result<(String, Vec<ScoreChunk>), ServiceError> {
+    let parsed: serde_json::Value = serde_json::from_str(text).map_err(|_| {
+        log::error!("Invalid JSON response when trying to fetch used documents array");
+        ServiceError::BadRequest(
+            "Invalid JSON response when trying to fetch used documents array".to_string(),
+        )
+    })?;
+
+    let used_docs = parsed["documents"].as_array().ok_or_else(|| {
+        log::error!("Missing documents array");
+        ServiceError::BadRequest("Missing documents array".to_string())
+    })?;
+
+    let rag_message = parsed["message"].as_str().ok_or_else(|| {
+        log::error!("Missing message");
+        ServiceError::BadRequest("Missing message".to_string())
+    })?;
+
+    // Filter chunk_metadatas to only include used documents
+    let filtered_chunks: Vec<_> = used_docs
+        .iter()
+        .filter_map(|doc_idx| {
+            doc_idx
+                .as_u64()
+                .and_then(|idx| score_chunks.get(idx as usize - 1))
+                .cloned()
+        })
+        .collect();
+
+    Ok((rag_message.to_string(), filtered_chunks))
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChatCompletionDTO {
     pub completion_message: Message,
@@ -1000,32 +1035,20 @@ pub async fn stream_response(
                 content: Some(ChatMessageContent::Text(text)),
                 ..
             }) => {
-                let parsed: serde_json::Value = serde_json::from_str(text)
-                    .map_err(|_| ServiceError::BadRequest("Invalid JSON response".to_string()))?;
-
-                let used_docs = parsed["documents"].as_array().ok_or_else(|| {
-                    ServiceError::BadRequest("Missing documents array".to_string())
-                })?;
-
-                let rag_message = parsed["message"]
-                    .as_str()
-                    .ok_or_else(|| ServiceError::BadRequest("Missing message".to_string()))?;
-
-                // Filter chunk_metadatas to only include used documents
-                let filtered_chunks: Vec<_> = used_docs
-                    .iter()
-                    .filter_map(|doc_idx| {
-                        doc_idx
-                            .as_u64()
-                            .and_then(|idx| score_chunks.get(idx as usize - 1))
-                            .cloned()
-                    })
-                    .collect();
-
-                (rag_message.to_string(), filtered_chunks)
+                if create_message_req_payload
+                    .only_include_docs_used
+                    .unwrap_or(false)
+                {
+                    match parse_text_into_docs_message(text, score_chunks.clone()) {
+                        Ok((response_text, filtered_chunks)) => (response_text, filtered_chunks),
+                        Err(_) => (text.clone(), vec![]),
+                    }
+                } else {
+                    (text.clone(), score_chunks.clone())
+                }
             }
             _ => {
-                return Err(ServiceError::BadRequest("Invalid response format".to_string()).into())
+                return Err(ServiceError::BadRequest("Invalid response format, did not receive text on the assistant message from the LLM provider".to_string()).into())
             }
         };
 

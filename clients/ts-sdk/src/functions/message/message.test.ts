@@ -1,47 +1,112 @@
 import { beforeAll, describe, expect, expectTypeOf } from "vitest";
 import { TrieveSDK } from "../../sdk";
 import { Message } from "../../types.gen";
-import { EXAMPLE_TOPIC_ID, TRIEVE } from "../../__tests__/constants";
+import { TRIEVE } from "../../__tests__/constants";
 import { test } from "../../__tests__/utils";
 
 describe("Message Tests", async () => {
   let trieve: TrieveSDK;
-  beforeAll(() => {
+  let topicIdStreamFalse: string;
+  let topicIdStreamTrue: string;
+  beforeAll(async () => {
     trieve = TRIEVE;
+    const topicDataStreamFalse = await trieve.createTopic({
+      owner_id: "test",
+      name: "test",
+    });
+    topicIdStreamFalse = topicDataStreamFalse.id;
+
+    const topicDataStreamTrue = await trieve.createTopic({
+      owner_id: "test",
+      name: "test",
+    });
+    topicIdStreamTrue = topicDataStreamTrue.id;
   });
 
-  test("createMessage", async () => {
+  test("createMessage stream_response true", async () => {
     const data = await trieve.createMessage({
-      topic_id: EXAMPLE_TOPIC_ID,
+      topic_id: topicIdStreamTrue,
       new_message_content: "test",
+      llm_options: {
+        stream_response: true,
+      },
     });
-
     expectTypeOf(data).toEqualTypeOf<string>();
   });
 
-  test("editMessage", async () => {
+  test("editMessage stream_response true", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+
     const data = await trieve.editMessage({
       message_sort_order: 0,
       new_message_content: "test2",
-      topic_id: EXAMPLE_TOPIC_ID,
+      topic_id: topicIdStreamTrue,
+      llm_options: {
+        stream_response: true,
+      },
     });
 
     expectTypeOf(data).toEqualTypeOf<string>();
   });
 
-  test("regenerateMessage", async () => {
+  test("regenerateMessage stream_response true", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+
     const data = await trieve.regenerateMessage({
-      topic_id: EXAMPLE_TOPIC_ID,
+      topic_id: topicIdStreamTrue,
       search_query: "test",
       search_type: "fulltext",
+      llm_options: {
+        stream_response: true,
+      },
+    });
+
+    expectTypeOf(data).toEqualTypeOf<string>();
+  });
+
+  test("createMessage stream_response false", async () => {
+    const data = await trieve.createMessage({
+      topic_id: topicIdStreamFalse,
+      new_message_content: "test",
+      llm_options: {
+        stream_response: false,
+      },
+    });
+
+    expectTypeOf(data).toEqualTypeOf<string>();
+  });
+
+  test("editMessage stream_response false", async () => {
+    const data = await trieve.editMessage({
+      message_sort_order: 0,
+      new_message_content: "test2",
+      topic_id: topicIdStreamFalse,
+      llm_options: {
+        stream_response: false,
+      },
+    });
+
+    expectTypeOf(data).toEqualTypeOf<string>();
+  });
+
+  test("regenerateMessage stream_response false", async () => {
+    const data = await trieve.regenerateMessage({
+      topic_id: topicIdStreamFalse,
+      search_query: "test",
+      search_type: "fulltext",
+      llm_options: {
+        stream_response: false,
+      },
     });
 
     expectTypeOf(data).toEqualTypeOf<string>();
   });
 
   test("getAllMessagesForTopic", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+
     const data = await trieve.getAllMessagesForTopic({
-      messagesTopicId: EXAMPLE_TOPIC_ID,
+      messagesTopicId: topicIdStreamFalse,
     });
 
     expectTypeOf(data).toEqualTypeOf<Message[]>();
