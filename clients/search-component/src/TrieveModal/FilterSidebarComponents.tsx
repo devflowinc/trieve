@@ -804,74 +804,84 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               }
               data-completed={completedSteps[step.title] ? "true" : "false"}
             >
-              <div className="trieve-inference-filters-step-tags">
-                {filterOptions[step.filterSidebarSectionKey ?? ""]?.map(
-                  (tag) => (
-                    <button
-                      className="trieve-inference-filters-step-tag"
-                      key={tag}
-                      data-active={
-                        Object.keys(selectedSidebarFilters ?? {}).includes(
-                          step.filterSidebarSectionKey ?? "",
-                        ) &&
+              <div
+                className="trieve-inference-filters-step-tags"
+                data-prev-complete={
+                  index == 0 || completedSteps[steps[index - 1].title]
+                    ? "true"
+                    : "false"
+                }
+              >
+                <p className="trieve-inference-filters-step-tags-section-title">
+                  {props.searchPageProps?.filterSidebarProps?.sections.find(
+                    (section) => section.key === step.filterSidebarSectionKey,
+                  )?.title ?? ""}
+                </p>
+                <div className="trieve-inference-filters-step-row">
+                  {filterOptions[step.filterSidebarSectionKey ?? ""]?.map(
+                    (tag) => {
+                      const currentFilterOption =
+                        props.searchPageProps?.filterSidebarProps?.sections
+                          .find(
+                            (section) =>
+                              section.key === step.filterSidebarSectionKey,
+                          )
+                          ?.options?.find((option) => option.tag === tag);
+
+                      return (
+                        <FilterButton
+                          sectionKey={step.filterSidebarSectionKey ?? ""}
+                          filterKey={tag}
+                          label={currentFilterOption?.label ?? tag}
+                          type={"single"}
+                        />
+                      );
+                    },
+                  )}
+                </div>
+                <div className="trieve-inference-filters-step-row">
+                  {filterOptions[step.filterSidebarSectionKey ?? ""]?.map(
+                    (tag) => {
+                      const active =
                         selectedSidebarFilters[
                           step.filterSidebarSectionKey ?? ""
-                        ]?.includes(tag)
-                          ? "true"
-                          : "false"
-                      }
-                      onClick={() => {
-                        setSelectedSidebarFilters((prev) => {
-                          const selectedTags =
-                            prev[step.filterSidebarSectionKey ?? ""];
-                          const tagCurrentlySelected =
-                            selectedTags?.includes(tag);
+                        ]?.includes(tag);
 
-                          if (
-                            props.searchPageProps?.filterSidebarProps?.sections.find(
-                              (section) =>
-                                section.key === step.filterSidebarSectionKey,
-                            )?.selectionType === "single"
-                          ) {
-                            if (tagCurrentlySelected) {
-                              return {
-                                ...prev,
-                                [step.filterSidebarSectionKey ?? ""]: [],
-                              };
-                            }
+                      const currentFilterOption =
+                        props.searchPageProps?.filterSidebarProps?.sections
+                          .find(
+                            (section) =>
+                              section.key === step.filterSidebarSectionKey,
+                          )
+                          ?.options?.find((option) => option.tag === tag);
 
-                            return {
-                              ...prev,
-                              [step.filterSidebarSectionKey ?? ""]: [tag],
-                            };
-                          } else {
-                            if (tagCurrentlySelected) {
-                              return {
-                                ...prev,
-                                [step.filterSidebarSectionKey ?? ""]:
-                                  selectedTags.filter((t) => t !== tag),
-                              };
-                            }
-
-                            return {
-                              ...prev,
-                              [step.filterSidebarSectionKey ?? ""]: [
-                                ...(prev[step.filterSidebarSectionKey ?? ""] ??
-                                  []),
-                                tag,
-                              ],
-                            };
-                          }
-                        });
-                      }}
-                    >
-                      <span>{tag}</span>
-                      <i className="trieve-checkbox-icon">
-                        <CheckIcon />
-                      </i>
-                    </button>
-                  ),
-                )}
+                      return (
+                        <div
+                          data-active={active ? "true" : "false"}
+                          className="trieve-inference-filters-step-tags-children"
+                        >
+                          <p className="trieve-inference-filters-step-tags-section-title">
+                            {currentFilterOption?.child?.title ?? ""}
+                          </p>
+                          <div className="trieve-inference-filters-step-row">
+                            {currentFilterOption?.child?.options?.map(
+                              (child) => (
+                                <FilterButton
+                                  sectionKey={
+                                    step.filterSidebarSectionKey ?? ""
+                                  }
+                                  filterKey={child.tag}
+                                  label={child.label ?? child.tag}
+                                  type={"multiple"}
+                                />
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      );
+                    },
+                  )}
+                </div>
               </div>
 
               {step.inputLabel && (

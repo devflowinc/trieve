@@ -58,6 +58,7 @@ export interface TagProp {
   iconClassName?: string;
   icon?: () => JSX.Element;
   description?: string;
+  child?: FilterSidebarSection;
 }
 
 export interface FilterSidebarSection {
@@ -66,7 +67,6 @@ export interface FilterSidebarSection {
   selectionType: "single" | "multiple";
   filterType: "match_any" | "match_all";
   options: TagProp[];
-  child?: FilterSidebarSection;
 }
 
 export interface FilterSidebarProps {

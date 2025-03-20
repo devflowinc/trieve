@@ -19,7 +19,7 @@
       "import": "./dist/vanilla/index.js"
     }
   },
-  "version": "0.4.42",
+  "version": "0.4.43",
   "license": "MIT",
   "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/search-component",
   "scripts": {
@@ -80,8 +80,9 @@
     "react-intersection-observer-hook": "^3.0.1",
     "react-markdown": "^9.0.1",
     "react-pdf-spotlight": "0.0.16",
+    "react-scan": "^0.3.2",
     "react-snap-carousel": "^0.5.0",
-    "tailwind-merge": "^2.6.0",
+    "tailwind-merge": "^3.0.2",
     "trieve-ts-sdk": "0.0.64"
   },
   "peerDependencies": {
