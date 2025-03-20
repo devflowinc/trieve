@@ -96,7 +96,7 @@ export const UserJourneyFunnel = ({
           responsive: true,
           elements: {
             trapezoid: {
-              backgroundColor: "rgba(128, 0, 128, 0.56)",
+              backgroundColor: "rgba(128, 0, 128, 0.26)",
             },
           },
           aspectRatio: 1,
@@ -112,8 +112,15 @@ export const UserJourneyFunnel = ({
                 const thisOne = filteredData[context.dataIndex];
                 return formatEventName(thisOne.event_name);
               },
+              color(context) {
+                const thisOne = filteredData[context.dataIndex];
+                if (thisOne.event_count === 0) {
+                  return "rgba(128, 0, 128, 0.26)";
+                }
+                return "rgba(58, 0, 58, 0.76)";
+              },
               font: {
-                size: 14,
+                size: 12,
               },
             },
             tooltip: {
@@ -180,9 +187,8 @@ export const UserJourneyFunnel = ({
         item.event_count.toString(),
       ])
     : [];
-  const tableHeadings = ["Event Name", "Count"];
+  const tableHeadings = ["Event Name", "Unique Users"];
   const tableContentTypes: ColumnContentType[] = ["text", "numeric"];
-  const [page, setPage] = useState(1);
   const hasNext = false;
 
   return (
@@ -232,8 +238,8 @@ export const UserJourneyFunnel = ({
             noCard
             hidePagination
             data={tableData}
-            page={page}
-            setPage={setPage}
+            page={1}
+            setPage={() => {}}
             tableContentTypes={tableContentTypes}
             tableHeadings={tableHeadings}
             hasNext={hasNext}
