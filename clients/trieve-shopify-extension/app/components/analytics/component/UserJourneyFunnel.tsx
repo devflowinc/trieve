@@ -181,8 +181,8 @@ export const UserJourneyFunnel = ({
     };
   }, [filteredData]);
 
-  const tableData = data
-    ? data.map((item) => [
+  const tableData = filteredData
+    ? filteredData.map((item) => [
         formatEventName(item.event_name),
         item.event_count.toString(),
       ])
