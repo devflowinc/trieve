@@ -1050,3 +1050,23 @@ pub async fn get_assumed_user_by_organization_api_key(
 
     Ok((user, api_key.into()))
 }
+
+pub async fn get_all_organization_ids(
+    pool: web::Data<Pool>,
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
+    use crate::data::schema::organizations::dsl as organizations_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let organizations = organizations_columns::organizations
+        .select(organizations_columns::id)
+        .filter(organizations_columns::deleted.eq(0))
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Could not get organizations".to_string()))?;
+
+    Ok(organizations)
+}

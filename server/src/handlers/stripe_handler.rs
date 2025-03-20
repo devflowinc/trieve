@@ -426,9 +426,9 @@ pub struct CreateSetupCheckoutSessionResPayload {
     pub url: String,
 }
 
-/// Create checkout session setup
+/// Update Payment Method
 ///
-/// Create a checkout session (setup)
+/// Update a your payment method to a new one
 #[utoipa::path(
     post,
     path = "/stripe/checkout/setup/{organization_id}",
@@ -445,7 +445,7 @@ pub struct CreateSetupCheckoutSessionResPayload {
         ("ApiKey" = ["owner"]),
     )
 )]
-pub async fn create_setup_checkout_session(
+pub async fn update_payment_method(
     pool: web::Data<Pool>,
     _user: OwnerOnly,
     path_data: web::Path<uuid::Uuid>,

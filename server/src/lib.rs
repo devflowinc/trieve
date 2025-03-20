@@ -258,7 +258,7 @@ impl Modify for SecurityAddon {
         handlers::stripe_handler::update_subscription_plan,
         handlers::stripe_handler::get_all_plans,
         handlers::stripe_handler::get_all_invoices,
-        handlers::stripe_handler::create_setup_checkout_session,
+        handlers::stripe_handler::update_payment_method,
         handlers::analytics_handler::get_cluster_analytics,
         handlers::analytics_handler::get_rag_analytics,
         handlers::analytics_handler::get_search_analytics,
@@ -1362,7 +1362,7 @@ pub fn main() -> std::io::Result<()> {
                                 )
                                 .service(
                                     web::resource("/checkout/setup/{organization_id}")
-                                        .route(web::post().to(handlers::stripe_handler::create_setup_checkout_session)),
+                                        .route(web::post().to(handlers::stripe_handler::update_payment_method)),
                                 ),
                         )
                         .service(
