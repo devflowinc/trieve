@@ -10,6 +10,8 @@ import { Granularity } from "trieve-ts-sdk";
 import { AllSearchesTable } from "app/components/analytics/search/AllSearchesTable";
 import { SearchCTRChart } from "app/components/analytics/search/SearchCTR";
 import { SearchesPerUser } from "app/components/analytics/search/SearchesPerUser";
+import { SearchAverageRating } from "app/components/analytics/search/SearchAverageRating";
+
 export default function SearchAnalyticsPage() {
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
   const [granularity, setGranularity] = useState<Granularity>("day");
@@ -46,8 +48,12 @@ export default function SearchAnalyticsPage() {
               <div className="flex flex-col gap-4">
                 <SearchUsageChart filters={filters} granularity={granularity} />
                 <SearchConversionRate
-                filters={filters}
-                granularity={granularity}
+                  filters={filters}
+                  granularity={granularity}
+                />
+                <SearchAverageRating
+                  filters={filters}
+                  granularity={granularity}
                 />
                 <NoResultQueriesTable filters={filters} />
               </div>
@@ -56,8 +62,8 @@ export default function SearchAnalyticsPage() {
               <div className="flex flex-col gap-4">
                 <SearchCTRChart filters={filters} granularity={granularity} />
                 <SearchesPerUser
-                filters={filters}
-                granularity={granularity}
+                  filters={filters}
+                  granularity={granularity}
                 />
                 <HeadQueriesTable filters={filters} />
               </div>

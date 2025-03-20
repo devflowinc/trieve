@@ -11,6 +11,7 @@ import {
   CTRMetricsOverTimeResponse,
   SearchConversionRateResponse,
   SearchesPerUserResponse,
+  SearchAverageRatingResponse,
 } from "trieve-ts-sdk";
 import { subDays } from "date-fns";
 import { formatDateForApi } from "../../utils/formatting";
@@ -149,6 +150,24 @@ export const searchesPerUserQuery = (
         granularity,
       });
       return result as SearchesPerUserResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const searchAverageRatingQuery = (
+  trieve: TrieveSDK,
+  filters: SearchAnalyticsFilter,
+  granularity: Granularity,
+) => {
+  return {
+    queryKey: ["search_average_rating", filters, granularity],
+    queryFn: async () => {
+      const result = await trieve.getSearchAnalytics({
+        filter: filters,
+        type: "search_average_rating",
+        granularity,
+      });
+      return result as SearchAverageRatingResponse;
     },
   } satisfies QueryOptions;
 };

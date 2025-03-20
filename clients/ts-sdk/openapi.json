@@ -16519,6 +16519,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "SearchAverageRating",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SearchAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "search_average_rating"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -16618,8 +16649,30 @@
           },
           {
             "$ref": "#/components/schemas/SearchesPerUserResponse"
+          },
+          {
+            "$ref": "#/components/schemas/SearchAverageRatingResponse"
           }
         ]
+      },
+      "SearchAverageRatingResponse": {
+        "type": "object",
+        "required": [
+          "avg_search_rating",
+          "points"
+        ],
+        "properties": {
+          "avg_search_rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FloatTimePoint"
+            }
+          }
+        }
       },
       "SearchCTRMetrics": {
         "type": "object",

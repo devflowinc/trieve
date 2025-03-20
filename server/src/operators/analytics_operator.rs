@@ -13,15 +13,16 @@ use crate::{
         RecommendationsConversionRateResponse, RecommendationsPerUserResponse,
         RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
         RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
-        SearchAnalyticsFilter, SearchCTRMetrics, SearchCTRMetricsClickhouse, SearchClusterTopics,
-        SearchConversionRateResponse, SearchQueriesWithClicksCTRResponse,
-        SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse,
-        SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent,
-        SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SearchesPerUserResponse,
-        SortOrder, TopComponents, TopComponentsResponse, TopDatasetsResponse,
-        TopDatasetsResponseClickhouse, TopPages, TopPagesResponse, TopicAnalyticsFilter,
-        TopicAnalyticsSummaryClickhouse, TopicDetailsResponse, TopicQueriesResponse,
-        TopicQueryClickhouse, TopicsOverTimeResponse, TotalUniqueUsersResponse,
+        SearchAnalyticsFilter, SearchAverageRatingResponse, SearchCTRMetrics,
+        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchConversionRateResponse,
+        SearchQueriesWithClicksCTRResponse, SearchQueriesWithClicksCTRResponseClickhouse,
+        SearchQueriesWithoutClicksCTRResponse, SearchQueriesWithoutClicksCTRResponseClickhouse,
+        SearchQueryEvent, SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount,
+        SearchesPerUserResponse, SortOrder, TopComponents, TopComponentsResponse,
+        TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages, TopPagesResponse,
+        TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse, TopicDetailsResponse,
+        TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse,
+        TotalUniqueUsersResponse,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
@@ -2695,5 +2696,69 @@ pub async fn get_chat_average_rating_query(
     Ok(ChatAverageRatingResponse {
         avg_chat_rating,
         points: chat_average_rating.into_iter().map(|x| x.into()).collect(),
+    })
+}
+
+pub async fn get_search_average_rating_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<SearchAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<SearchAverageRatingResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            avg(JSONExtract(search_queries.query_rating, 'rating', 'Float64')) as avg_rating
+        FROM search_queries
+        WHERE dataset_id = ? AND search_queries.query_rating != ''
+        ",
+        interval,
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+        GROUP BY 
+            time_stamp
+        ORDER BY 
+            time_stamp
+        LIMIT 1000",
+    );
+
+    let search_average_rating = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<FloatTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching search average rating: {:?}", e);
+            ServiceError::InternalServerError("Error fetching search average rating".to_string())
+        })?;
+
+    let avg_search_rating = if !search_average_rating.is_empty() {
+        search_average_rating.iter().map(|x| x.point).sum::<f64>()
+            / search_average_rating.len() as f64
+    } else {
+        0.0
+    };
+
+    Ok(SearchAverageRatingResponse {
+        avg_search_rating,
+        points: search_average_rating
+            .into_iter()
+            .map(|x| x.into())
+            .collect(),
     })
 }
