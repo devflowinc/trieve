@@ -85,6 +85,10 @@ path = "src/bin/pagefind-worker.rs"
 name = "backfill-qdrant-from-pg"
 path = "src/bin/backfill-qdrant-from-pg.rs"
 
+[[bin]]
+name = "send-stripe-billing"
+path = "src/bin/send-stripe-billing.rs"
+
 [dependencies]
 actix-identity = { version = "0.7.1" }
 actix-session = { version = "0.9.0", features = [
