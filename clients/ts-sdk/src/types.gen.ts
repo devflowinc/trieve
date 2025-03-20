@@ -213,6 +213,11 @@ export type ChatAverageRatingResponse = {
     points: Array<FloatTimePoint>;
 };
 
+export type ChatConversionRateResponse = {
+    conversion_rate: number;
+    points: Array<FloatTimePoint>;
+};
+
 export type ChatMessageProxy = {
     content: string;
     role: RoleProxy;
@@ -2596,6 +2601,10 @@ export type RAGAnalytics = {
     filter?: ((RAGAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'chat_average_rating';
+} | {
+    filter?: ((TopicAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'chat_conversion_rate';
 };
 
 export type type4 = 'rag_queries';
@@ -2608,7 +2617,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at';
 

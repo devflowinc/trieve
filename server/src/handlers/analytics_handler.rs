@@ -526,6 +526,19 @@ pub async fn get_rag_analytics(
             .await?;
             RAGAnalyticsResponse::ChatAverageRating(chat_average_rating)
         }
+        RAGAnalytics::ChatConversionRate {
+            filter,
+            granularity,
+        } => {
+            let chat_conversion_rate = get_chat_conversion_rate_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::ChatConversionRate(chat_conversion_rate)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))

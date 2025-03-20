@@ -7809,6 +7809,25 @@
           }
         }
       },
+      "ChatConversionRateResponse": {
+        "type": "object",
+        "required": [
+          "conversion_rate",
+          "points"
+        ],
+        "properties": {
+          "conversion_rate": {
+            "type": "number",
+            "format": "double"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FloatTimePoint"
+            }
+          }
+        }
+      },
       "ChatMessageProxy": {
         "type": "object",
         "required": [
@@ -14553,6 +14572,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "ChatConversionRate",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/TopicAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "chat_conversion_rate"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -14630,6 +14680,9 @@
           },
           {
             "$ref": "#/components/schemas/ChatAverageRatingResponse"
+          },
+          {
+            "$ref": "#/components/schemas/ChatConversionRateResponse"
           }
         ]
       },

@@ -11,6 +11,7 @@ import {
   RagQueryResponse,
   TopicQueriesResponse,
   ChatAverageRatingResponse,
+  ChatConversionRateResponse,
 } from "trieve-ts-sdk";
 
 export const topicsUsageQuery = (
@@ -108,6 +109,24 @@ export const chatAverageRatingQuery = (
         granularity: granularity,
       });
       return result as ChatAverageRatingResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const chatConversionRateQuery = (
+  trieve: TrieveSDK,
+  filters: RAGAnalyticsFilter,
+  granularity: Granularity,
+) => {
+  return {
+    queryKey: ["chatConversionRate", filters, granularity],
+    queryFn: async () => {
+      const result = await trieve.getRagAnalytics({
+        filter: filters,
+        type: "chat_conversion_rate",
+        granularity: granularity,
+      });
+      return result as ChatConversionRateResponse;
     },
   } satisfies QueryOptions;
 };
