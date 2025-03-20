@@ -1,14 +1,17 @@
 use std::{collections::HashMap, str::FromStr};
 
 use crate::{
-    data::models::{Pool, StripeInvoice, StripePlan, StripeSubscription},
+    data::models::{DateRange, Pool, StripeInvoice, StripePlan, StripeSubscription},
     errors::ServiceError,
     get_env,
 };
 use actix_web::web;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+
+use super::organization_operator::{get_extended_org_usage_by_id_query, hash_function};
 
 pub fn get_stripe_client() -> stripe::Client {
     let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
@@ -535,6 +538,113 @@ pub async fn set_subscription_payment_method(
     )
     .await
     .map_err(|_| ServiceError::BadRequest("Failed to update payment method".to_string()))?;
+
+    Ok(())
+}
+
+pub async fn get_stripe_customer_id_from_org_query(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<String, ServiceError> {
+    use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+
+    let mut conn = pool.get().await.map_err(|e| {
+        ServiceError::BadRequest(format!("Failed to get connection from pool: {}", e))
+    })?;
+
+    let subscription_id: String = stripe_subscriptions_columns::stripe_subscriptions
+        .filter(stripe_subscriptions_columns::organization_id.eq(organization_id))
+        .select(stripe_subscriptions_columns::stripe_id)
+        .first(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to get stripe subscription: {}", e);
+            ServiceError::BadRequest("Failed to get stripe subscription".to_string())
+        })?;
+
+    let reqwest_client = reqwest::Client::new();
+    let response = reqwest_client
+        .get(format!(
+            "https://api.stripe.com/v1/subscriptions/{}",
+            subscription_id
+        ))
+        .send()
+        .await;
+
+    log::info!("Response: {:#?}", response);
+
+    Ok("cus_RyWesvPgzCNiRj".to_string())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StripeBillingMetricsResponse {}
+
+pub async fn send_stripe_billing(
+    last_processed_time: chrono::DateTime<chrono::Utc>,
+    organization_id: uuid::Uuid,
+    clickhouse_client: &clickhouse::Client,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    let now_minus_1_hour = chrono::Utc::now() - chrono::Duration::hours(1);
+
+    let date_range = Some(DateRange {
+        gt: Some(last_processed_time.to_rfc3339()),
+        lt: Some(now_minus_1_hour.to_rfc3339()),
+        ..Default::default()
+    });
+
+    let usage = get_extended_org_usage_by_id_query(
+        organization_id,
+        date_range,
+        clickhouse_client,
+        pool.clone(),
+    )
+    .await?;
+
+    let stripe_customer_id = get_stripe_customer_id_from_org_query(organization_id, pool).await?;
+
+    // Send to stripe meters
+    let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
+    let reqwest_client = reqwest::Client::new();
+
+    let identifier = hash_function(&format!(
+        "{:?}||{:?}",
+        now_minus_1_hour.to_rfc3339(),
+        stripe_customer_id,
+    ));
+
+    let events: Vec<(&str, String)> = vec![
+        ("search_tokens", usage.search_tokens.to_string()),
+        ("message_tokens", usage.message_tokens.to_string()),
+        ("bytes_ingested", usage.bytes_ingested.to_string()),
+        ("tokens_ingested", usage.tokens_ingested.to_string()),
+        (
+            "website_pages_scraped",
+            usage.website_pages_scraped.to_string(),
+        ),
+        ("ocr_pages_ingested", usage.ocr_pages_ingested.to_string()),
+        ("events_ingested", usage.events_ingested.to_string()),
+    ];
+
+    for (event_name, event_value) in events {
+        let response = reqwest_client
+            .post("https://api.stripe.com/v1/billing/meter_events")
+            .basic_auth(stripe_secret, Option::<&str>::None)
+            .form(&[
+                ("event_name", event_name),
+                ("timestamp", "timestamp"),
+                ("identifier", &identifier),
+                ("payload[stripe_customer_id]", &stripe_customer_id),
+                ("payload[value]", &event_value),
+            ])
+            .send()
+            .await
+            .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+        let stripe_billing_response = response.json::<StripeBillingMetricsResponse>().await;
+
+        log::info!("Stripe billing response: {:?}", stripe_billing_response);
+    }
 
     Ok(())
 }
