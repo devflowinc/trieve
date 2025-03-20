@@ -106,31 +106,15 @@ export const componentInteractionTimeQuery = (
 export const eventNamesAndCountsQuery = (
   trieve: TrieveSDK,
   filters: ComponentAnalyticsFilter,
-  selectedEvents: (KnownEventNames | (string & {}))[],
 ) => {
   return {
-    queryKey: ["eventTypesAndCounts", filters, selectedEvents],
+    queryKey: ["eventTypesAndCounts", filters],
     queryFn: async () => {
       const result = (await trieve.getComponentAnalytics({
         filter: filters,
         type: "event_counts",
       })) as EventNameAndCountsResponse;
-      const selected = selectedEvents.map((event) => {
-        return (
-          result.event_names.find((e) => e.event_name === event) || {
-            event_name: event,
-            event_count: 20,
-          }
-        );
-      });
-
-      // Return in the same order of selectedEvents
-      return selected.sort((a, b) => {
-        return (
-          selectedEvents.indexOf(a.event_name) -
-          selectedEvents.indexOf(b.event_name)
-        );
-      });
+      return result.event_names;
     },
   } satisfies QueryOptions;
 };

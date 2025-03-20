@@ -20,6 +20,7 @@ export interface TableComponentProps {
   sortableColumns?: boolean[];
   onSort?: (index: number, direction: "ascending" | "descending") => void;
   hidePagination?: boolean;
+  noCard?: boolean;
 }
 
 export const BasicTableComponent = ({
@@ -34,9 +35,10 @@ export const BasicTableComponent = ({
   sortableColumns,
   onSort,
   hidePagination,
+  noCard = false,
 }: TableComponentProps) => {
-  return (
-    <Card>
+  const tableContent = (
+    <>
       <div className="pb-2">
         {label && (
           <Tooltip content={tooltipContent} hasUnderline>
@@ -72,6 +74,11 @@ export const BasicTableComponent = ({
           </div>
         )}
       </Box>
-    </Card>
+    </>
+  );
+  return noCard ? (
+    <div className="w-full">{tableContent}</div>
+  ) : (
+    <Card>{tableContent}</Card>
   );
 };
