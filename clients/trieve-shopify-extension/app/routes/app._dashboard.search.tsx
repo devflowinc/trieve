@@ -43,24 +43,24 @@ export default function SearchAnalyticsPage() {
           />
           <Grid>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-              <SearchUsageChart filters={filters} granularity={granularity} />
-              <div className="py-3"></div>
-              <SearchConversionRate
+              <div className="flex flex-col gap-4">
+                <SearchUsageChart filters={filters} granularity={granularity} />
+                <SearchConversionRate
                 filters={filters}
                 granularity={granularity}
-              />
-              <div className="py-3"></div>
-              <NoResultQueriesTable filters={filters} />
+                />
+                <NoResultQueriesTable filters={filters} />
+              </div>
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-              <SearchCTRChart filters={filters} granularity={granularity} />
-              <div className="py-3"></div>
-              <SearchesPerUser
+              <div className="flex flex-col gap-4">
+                <SearchCTRChart filters={filters} granularity={granularity} />
+                <SearchesPerUser
                 filters={filters}
                 granularity={granularity}
-              />
-              <div className="py-3"></div>
-              <HeadQueriesTable filters={filters} />
+                />
+                <HeadQueriesTable filters={filters} />
+              </div>
             </Grid.Cell>
           </Grid>
         </>

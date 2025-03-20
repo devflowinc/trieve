@@ -208,6 +208,11 @@ export type CTRSearchQueryWithoutClicksResponse = {
 
 export type CTRType = 'search' | 'rag' | 'recommendation';
 
+export type ChatAverageRatingResponse = {
+    avg_chat_rating: number;
+    points: Array<FloatTimePoint>;
+};
+
 export type ChatMessageProxy = {
     content: string;
     role: RoleProxy;
@@ -2587,6 +2592,10 @@ export type RAGAnalytics = {
     filter?: ((RAGAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'messages_per_user';
+} | {
+    filter?: ((RAGAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'chat_average_rating';
 };
 
 export type type4 = 'rag_queries';
@@ -2599,7 +2608,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at';
 

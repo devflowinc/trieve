@@ -46,26 +46,28 @@ export default function SearchAnalyticsPage() {
           />
           <Grid>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-              <RecommendationsUsageChart
-                filters={filters}
-                granularity={granularity}
-              />
-              <div className="py-3"></div>
-              <RecommendationsPerUser
-                filters={filters}
-                granularity={granularity}
-              />
+              <div className="flex flex-col gap-4">
+                <RecommendationsUsageChart
+                  filters={filters}
+                  granularity={granularity}
+                />
+                <RecommendationsPerUser
+                  filters={filters}
+                  granularity={granularity}
+                />
+              </div>
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-              <RecommendationsCTRRate
-                filters={filters}
-                granularity={granularity}
-              />
-              <div className="py-3"></div>
-              <RecommendationConversionRate
-                filters={filters}
-                granularity={granularity}
-              />
+              <div className="flex flex-col gap-4">
+                <RecommendationsCTRRate
+                  filters={filters}
+                  granularity={granularity}
+                />
+                <RecommendationConversionRate
+                  filters={filters}
+                  granularity={granularity}
+                />
+              </div>
             </Grid.Cell>
           </Grid>
         </>

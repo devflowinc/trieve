@@ -7790,6 +7790,25 @@
           "recommendation"
         ]
       },
+      "ChatAverageRatingResponse": {
+        "type": "object",
+        "required": [
+          "avg_chat_rating",
+          "points"
+        ],
+        "properties": {
+          "avg_chat_rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FloatTimePoint"
+            }
+          }
+        }
+      },
       "ChatMessageProxy": {
         "type": "object",
         "required": [
@@ -14504,6 +14523,36 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "chat_average_rating"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -14578,6 +14627,9 @@
           },
           {
             "$ref": "#/components/schemas/MessagesPerUserResponse"
+          },
+          {
+            "$ref": "#/components/schemas/ChatAverageRatingResponse"
           }
         ]
       },
