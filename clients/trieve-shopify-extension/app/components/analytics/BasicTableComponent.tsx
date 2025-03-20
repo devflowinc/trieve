@@ -12,13 +12,14 @@ export interface TableComponentProps {
   data: any[][];
   page: number;
   setPage: (page: (page: number) => number) => void;
-  label: string;
+  label?: string;
   tableContentTypes: ColumnContentType[];
   tableHeadings: string[];
-  tooltipContent: string;
+  tooltipContent?: string;
   hasNext: boolean;
   sortableColumns?: boolean[];
   onSort?: (index: number, direction: "ascending" | "descending") => void;
+  hidePagination?: boolean;
 }
 
 export const BasicTableComponent = ({
@@ -32,15 +33,18 @@ export const BasicTableComponent = ({
   hasNext,
   sortableColumns,
   onSort,
+  hidePagination,
 }: TableComponentProps) => {
   return (
     <Card>
       <div className="pb-2">
-        <Tooltip content={tooltipContent} hasUnderline>
-          <Text as="span" variant="bodyLg" fontWeight="bold">
-            {label}
-          </Text>
-        </Tooltip>
+        {label && (
+          <Tooltip content={tooltipContent} hasUnderline>
+            <Text as="span" variant="bodyLg" fontWeight="bold">
+              {label}
+            </Text>
+          </Tooltip>
+        )}
       </div>
       <Box minHeight="14px">
         <DataTable
@@ -52,18 +56,21 @@ export const BasicTableComponent = ({
           columnContentTypes={tableContentTypes}
           headings={tableHeadings}
         />
-        <div className="flex justify-end mt-2">
-          <Pagination
-            type="page"
-            onNext={() => {
-              setPage((prevPage) => prevPage + 1);
-            }}
-            onPrevious={() => {
-              setPage((prevPage) => prevPage - 1);
-            }}
-            hasPrevious={page > 1}
-            hasNext={hasNext}></Pagination>
-        </div>
+        {!hidePagination && (
+          <div className="flex justify-end mt-2">
+            <Pagination
+              type="page"
+              onNext={() => {
+                setPage((prevPage) => prevPage + 1);
+              }}
+              onPrevious={() => {
+                setPage((prevPage) => prevPage - 1);
+              }}
+              hasPrevious={page > 1}
+              hasNext={hasNext}
+            ></Pagination>
+          </div>
+        )}
       </Box>
     </Card>
   );
