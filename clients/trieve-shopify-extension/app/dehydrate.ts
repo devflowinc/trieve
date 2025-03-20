@@ -15,5 +15,6 @@ export const useDehydratedState = (): DehydratedState => {
         (accumulator, currentValue) => merge(accumulator, currentValue),
         {},
       )
-    : undefined;
+    : // @ts-ignore
+      undefined;
 };

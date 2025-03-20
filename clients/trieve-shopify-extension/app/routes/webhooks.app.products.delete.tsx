@@ -1,12 +1,11 @@
-import { data, type ActionFunctionArgs } from "@remix-run/node";
+import { type ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
-import { ProductWebhook, TrieveKey } from "app/types";
+import { TrieveKey } from "app/types";
 import { deleteChunkFromTrieve } from "app/processors/getProducts";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { payload, topic, shop } =
-    await authenticate.webhook(request);
+  const { payload, topic, shop } = await authenticate.webhook(request);
   console.log(`Received ${topic} webhook for ${shop}`);
 
   const current = payload as { id: string };
@@ -19,7 +18,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return new Response();
   }
 
-  const trieveKey: TrieveKey = {
+  const trieveKey: TrieveKey & { [key: string]: any } = {
     createdAt: new Date(apiKey.createdAt).toISOString(),
     id: apiKey.id,
     key: apiKey.key,

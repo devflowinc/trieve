@@ -46,7 +46,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     trieveKey.currentDatasetId ?? "",
     admin,
     session,
-    crawlSettings.crawlSettings as ExtendedCrawlOptions
+    crawlSettings.crawlSettings as ExtendedCrawlOptions,
   );
 
   return new Response();
