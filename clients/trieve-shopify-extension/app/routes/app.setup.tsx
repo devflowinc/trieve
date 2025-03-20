@@ -4,6 +4,8 @@ import {
   ExtendedCrawlOptions,
 } from "app/components/DatasetSettings";
 import { getTrieveBaseUrlEnv } from "app/env.server";
+import { AdminApiCaller } from "app/loaders";
+import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 import { sendChunks } from "app/processors/getProducts";
 import { authenticate } from "app/shopify.server";
 import { TrieveKey } from "app/types";
@@ -15,7 +17,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     datasetId: string,
     session: { shop: string },
     trieveKey: TrieveKey,
-    admin: any,
+    adminApi: AdminApiCaller,
   ) => {
     await prisma.crawlSettings.upsert({
       create: {
@@ -34,13 +36,24 @@ export const loader = async (args: LoaderFunctionArgs) => {
       },
     });
 
-    sendChunks(datasetId ?? "", trieveKey, admin, session, crawlOptions).catch(
-      console.error,
-    );
+    sendChunks(
+      datasetId ?? "",
+      trieveKey,
+      adminApi,
+      session,
+      crawlOptions,
+    ).catch(console.error);
   };
 
-  const setAppMetafields = async (admin: any, trieveKey: TrieveKey) => {
-    const response = await admin.graphql(`
+  type AppInstallData = {
+    currentAppInstallation: { id: string };
+  };
+
+  const setAppMetafields = async (
+    adminApi: AdminApiCaller,
+    trieveKey: TrieveKey,
+  ) => {
+    const response = await adminApi<AppInstallData>(`
       #graphql
       query {
         currentAppInstallation {
@@ -49,11 +62,13 @@ export const loader = async (args: LoaderFunctionArgs) => {
       }
       `);
 
-    const appId = (await response.json()) as {
-      data: { currentAppInstallation: { id: string } };
-    };
+    if (response.error) {
+      throw response.error;
+    }
 
-    await admin.graphql(
+    const appId = response.data;
+
+    await adminApi(
       `
     #graphql
     mutation CreateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
@@ -78,14 +93,14 @@ export const loader = async (args: LoaderFunctionArgs) => {
               key: "dataset_id",
               value: trieveKey.currentDatasetId,
               type: "single_line_text_field",
-              ownerId: appId.data.currentAppInstallation.id,
+              ownerId: appId.currentAppInstallation.id,
             },
             {
               namespace: "trieve",
               key: "api_key",
               value: trieveKey.key,
               type: "single_line_text_field",
-              ownerId: appId.data.currentAppInstallation.id,
+              ownerId: appId.currentAppInstallation.id,
             },
           ],
         },
@@ -128,6 +143,11 @@ export const loader = async (args: LoaderFunctionArgs) => {
       return null;
     });
 
+  const fetcher = buildAdminApiFetcherForServer(
+    session.shop,
+    session.accessToken!,
+  );
+
   if ((!datasetId || !shopDataset) && trieve.organizationId) {
     if (!shopDataset) {
       shopDataset = await trieve.createDataset({
@@ -148,9 +168,9 @@ export const loader = async (args: LoaderFunctionArgs) => {
       });
     }
 
-    // if (key.currentDatasetId && key.key) {
-    //   setAppMetafields(admin, key);
-    // }
+    if (key.currentDatasetId && key.key && session) {
+      setAppMetafields(fetcher, key);
+    }
   }
   datasetId = shopDataset?.id;
   if (!datasetId) {
@@ -159,7 +179,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     });
   }
 
-  // startCrawl(defaultCrawlOptions, datasetId, session, key, admin);
+  startCrawl(defaultCrawlOptions, datasetId, session, key, fetcher);
 
   trieve.datasetId = datasetId;
 

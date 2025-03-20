@@ -1,6 +1,5 @@
 import { Box } from "@shopify/polaris";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useTrieve } from "app/context/trieveContext";
+import { useQuery } from "@tanstack/react-query";
 import { Loader } from "app/loaders";
 import {
   createClientLoader,

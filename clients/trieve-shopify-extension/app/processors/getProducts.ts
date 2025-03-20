@@ -1,5 +1,6 @@
 import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
 import { getTrieveBaseUrlEnv } from "app/env.server";
+import { AdminApiCaller } from "app/loaders";
 import {
   Product,
   TrieveKey,
@@ -260,12 +261,12 @@ export async function sendChunksFromWebhook(
   product: ProductWebhook,
   key: TrieveKey,
   datasetId: string,
-  admin: any,
+  adminApi: AdminApiCaller,
   session: any,
   crawlOptions: ExtendedCrawlOptions,
 ) {
   const dataChunks = product.variants.map(async (variant) => {
-    let response = await admin?.graphql(
+    let response = await adminApi(
       `#graphql
       query{
           productVariant(id: "${variant.admin_graphql_api_id}") {
@@ -279,7 +280,10 @@ export async function sendChunksFromWebhook(
         }
     `,
     );
-    let data = (await response?.json()) as {
+    if (response.error) {
+      throw response.error;
+    }
+    let data = response.data as {
       data: {
         productVariant: {
           metafields: { nodes: { key: string; value: string }[] };
@@ -341,18 +345,19 @@ export async function deleteChunkFromTrieve(
 export const sendChunks = async (
   datasetId: string,
   key: TrieveKey,
-  admin: any,
+  adminApiFetcher: AdminApiCaller,
   session: any,
   crawlOptions: ExtendedCrawlOptions,
 ) => {
-  let next_page = null;
+  let next_page: string | null = null;
   let started = false;
   const chunks: ChunkReqPayload[] = [];
 
   while (next_page != null || !started) {
     started = true;
-    let next_page_query = next_page ? `after: "${next_page}"` : "";
-    const response = await admin.graphql(
+    let next_page_query: string = next_page ? `after: "${next_page}"` : "";
+
+    const response = await adminApiFetcher<ProductsResponse>(
       `#graphql
       query {
         products(first: 120 ${next_page_query}) {
@@ -401,9 +406,11 @@ export const sendChunks = async (
       }`,
     );
 
-    const { data } = (await response.json()) as { data: ProductsResponse };
+    if (response.error) {
+      throw response.error;
+    }
 
-    const dataChunks: ChunkReqPayload[] = data.products.nodes
+    const dataChunks: ChunkReqPayload[] = response.data.products.nodes
       .filter((node) => node.status == "ACTIVE")
       .flatMap((product) =>
         product.variants.nodes.map((variant) =>
@@ -420,8 +427,8 @@ export const sendChunks = async (
       sendChunksToTrieve(batch, key, datasetId ?? "");
     }
 
-    next_page = data.products.pageInfo.hasNextPage
-      ? data.products.pageInfo.endCursor
+    next_page = response.data.products.pageInfo.hasNextPage
+      ? response.data.products.pageInfo.endCursor
       : null;
   }
 

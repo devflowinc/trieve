@@ -4,11 +4,22 @@ import db from "../db.server";
 import { ProductWebhook, TrieveKey } from "app/types";
 import { sendChunksFromWebhook } from "app/processors/getProducts";
 import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
+import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, payload, session, topic, shop } =
     await authenticate.webhook(request);
   console.log(`Received ${topic} webhook for ${shop}`);
+
+  if (!session) {
+    console.error(`No session found for ${shop}`);
+    throw new Error("No session found");
+  }
+
+  const adminApi = buildAdminApiFetcherForServer(
+    session.shop,
+    session?.accessToken!,
+  );
 
   const current = payload as ProductWebhook;
   const apiKey = await db.apiKey.findFirst({
@@ -44,7 +55,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     current,
     trieveKey,
     trieveKey.currentDatasetId ?? "",
-    admin,
+    adminApi,
     session,
     crawlSettings.crawlSettings as ExtendedCrawlOptions,
   );
