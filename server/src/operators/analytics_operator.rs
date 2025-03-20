@@ -16,10 +16,11 @@ use crate::{
         SearchCTRMetricsClickhouse, SearchClusterTopics, SearchConversionRateResponse,
         SearchQueriesWithClicksCTRResponse, SearchQueriesWithClicksCTRResponseClickhouse,
         SearchQueriesWithoutClicksCTRResponse, SearchQueriesWithoutClicksCTRResponseClickhouse,
-        SearchQueryEvent, SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount, SortOrder,
-        TopComponents, TopComponentsResponse, TopDatasetsResponse, TopDatasetsResponseClickhouse,
-        TopPages, TopPagesResponse, TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse,
-        TopicDetailsResponse, TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse,
+        SearchQueryEvent, SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount,
+        SearchesPerUserResponse, SortOrder, TopComponents, TopComponentsResponse,
+        TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages, TopPagesResponse,
+        TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse, TopicDetailsResponse,
+        TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse,
         TotalUniqueUsersResponse,
     },
     errors::ServiceError,
@@ -2561,5 +2562,78 @@ pub async fn get_recommendation_conversion_rate_query(
     Ok(RecommendationsConversionRateResponse {
         conversion_rate,
         points,
+    })
+}
+
+pub async fn get_searches_per_user_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<SearchAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<SearchesPerUserResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut query_string = format!(
+        "WITH user_daily_searches AS (
+            SELECT
+                toStartOfInterval(created_at, INTERVAL {}) AS time_stamp,
+                user_id,
+                COUNT(*) AS search_count
+            FROM
+                search_queries
+            WHERE
+                dataset_id = ?
+        ",
+        interval,
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        "
+           GROUP BY
+                time_stamp,
+                user_id
+        )
+        SELECT
+            time_stamp,
+            AVG(search_count) AS avg_searches_per_user
+        FROM
+            user_daily_searches
+        GROUP BY
+            time_stamp
+        ORDER BY
+            time_stamp
+        LIMIT 1000",
+    );
+
+    let searches_over_time = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<FloatTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching ctr metrics over time: {:?}", e);
+            ServiceError::InternalServerError("Error fetching ctr metrics over time".to_string())
+        })?;
+
+    let avg_searches_per_user = if !searches_over_time.is_empty() {
+        searches_over_time.iter().map(|x| x.point).sum::<f64>() / searches_over_time.len() as f64
+    } else {
+        0.0
+    };
+
+    Ok(SearchesPerUserResponse {
+        avg_searches_per_user,
+        points: searches_over_time.into_iter().map(|x| x.into()).collect(),
     })
 }

@@ -3027,6 +3027,10 @@ export type SearchAnalytics = {
     filter?: ((SearchAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'search_conversion_rate';
+} | {
+    filter?: ((SearchAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'searches_per_user';
 };
 
 export type type7 = 'latency_graph';
@@ -3041,7 +3045,7 @@ export type SearchAnalyticsFilter = {
     top_score?: ((FloatRange) | null);
 };
 
-export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse | CTRMetricsOverTimeResponse | SearchConversionRateResponse;
+export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse | CTRMetricsOverTimeResponse | SearchConversionRateResponse | SearchesPerUserResponse;
 
 export type SearchCTRMetrics = {
     avg_position_of_click: number;
@@ -3334,6 +3338,11 @@ export type SearchWithinGroupResults = {
     corrected_query?: (string) | null;
     group: ChunkGroupAndFileId;
     total_pages: number;
+};
+
+export type SearchesPerUserResponse = {
+    avg_searches_per_user: number;
+    points: Array<FloatTimePoint>;
 };
 
 /**

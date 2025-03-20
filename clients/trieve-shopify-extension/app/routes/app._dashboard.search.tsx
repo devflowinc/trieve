@@ -9,7 +9,7 @@ import { useState } from "react";
 import { Granularity } from "trieve-ts-sdk";
 import { AllSearchesTable } from "app/components/analytics/search/AllSearchesTable";
 import { SearchCTRChart } from "app/components/analytics/search/SearchCTR";
-
+import { SearchesPerUser } from "app/components/analytics/search/SearchesPerUser";
 export default function SearchAnalyticsPage() {
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
   const [granularity, setGranularity] = useState<Granularity>("day");
@@ -54,6 +54,11 @@ export default function SearchAnalyticsPage() {
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
               <SearchCTRChart filters={filters} granularity={granularity} />
+              <div className="py-3"></div>
+              <SearchesPerUser
+                filters={filters}
+                granularity={granularity}
+              />
               <div className="py-3"></div>
               <HeadQueriesTable filters={filters} />
             </Grid.Cell>
