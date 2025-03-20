@@ -2939,133 +2939,92 @@ pub async fn get_event_counts_by_type_query(
     filter: Option<EventAnalyticsFilter>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<Vec<EventNameAndCounts>, ServiceError> {
-    let mut query_string = "SELECT
+    // Build filter clauses for each table
+    let (events_filter, rag_filter, topics_filter) = if let Some(filter) = &filter {
+        let events_base = "dataset_id = ?".to_string();
+        let rag_base = "dataset_id = ?".to_string();
+        let topics_base = "dataset_id = ?".to_string();
+
+        let events_filter = filter.add_to_query(events_base).map_err(|e| {
+            log::error!("Error adding filter to events query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+
+        let rag_filter = filter.add_to_query(rag_base).map_err(|e| {
+            log::error!("Error adding filter to rag query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+
+        let topics_filter = filter.add_to_query(topics_base).map_err(|e| {
+            log::error!("Error adding filter to topics query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+
+        (events_filter, rag_filter, topics_filter)
+    } else {
+        (
+            "dataset_id = ?".to_string(),
+            "dataset_id = ?".to_string(),
+            "dataset_id = ?".to_string(),
+        )
+    };
+
+    let query_string = format!(
+        "
+        -- Event counts by type
+        SELECT
             event_name,
             COUNT(DISTINCT user_id) AS event_count
         FROM
             events
-        WHERE dataset_id = ?
-    "
-    .to_string();
-
-    if let Some(filter) = filter {
-        query_string = filter.add_to_query(query_string).map_err(|e| {
-            log::error!("Error adding filter to query: {:?}", e);
-            ServiceError::InternalServerError("Error adding filter to query".to_string())
-        })?;
-    }
-
-    query_string.push_str(" GROUP BY event_name ORDER BY event_count DESC");
-
-    let result = clickhouse_client
-        .query(query_string.as_str())
-        .bind(dataset_id)
-        .fetch_all::<EventNameAndCounts>()
-        .await
-        .map_err(|e| {
-            log::error!("Error fetching event counts: {:?}", e);
-            ServiceError::InternalServerError("Error fetching event counts".to_string())
-        })?;
-
-    Ok(result)
-}
-
-pub async fn get_distinct_fingerprint_count_query(
-    dataset_id: uuid::Uuid,
-    filter: Option<EventAnalyticsFilter>,
-    clickhouse_client: &clickhouse::Client,
-) -> Result<EventNameAndCounts, ServiceError> {
-    let mut query_string = "SELECT
+        WHERE {}
+        GROUP BY event_name
+        
+        UNION ALL
+        
+        -- All users 
+        SELECT
             'all_users' as event_name,
             COUNT(DISTINCT user_id) AS event_count
         FROM
             events
-        WHERE dataset_id = ?
-    "
-    .to_string();
-
-    if let Some(filter) = filter {
-        query_string = filter.add_to_query(query_string).map_err(|e| {
-            log::error!("Error adding filter to query: {:?}", e);
-            ServiceError::InternalServerError("Error adding filter to query".to_string())
-        })?;
-    }
-
-    let result = clickhouse_client
-        .query(query_string.as_str())
-        .bind(dataset_id)
-        .fetch_one::<EventNameAndCounts>()
-        .await
-        .map_err(|e| {
-            log::error!("Error fetching event counts: {:?}", e);
-            ServiceError::InternalServerError("Error fetching event counts".to_string())
-        })?;
-
-    Ok(result)
-}
-
-pub async fn get_distinct_message_fingerprint_count_query(
-    dataset_id: uuid::Uuid,
-    filter: Option<EventAnalyticsFilter>,
-    clickhouse_client: &clickhouse::Client,
-) -> Result<EventNameAndCounts, ServiceError> {
-    let mut query_string = "SELECT
+        WHERE {}
+        
+        UNION ALL
+        
+        -- messages sent
+        SELECT
             'send_message' as event_name,
             COUNT(DISTINCT user_id) AS event_count
         FROM
             rag_queries
-        WHERE dataset_id = ?
-    "
-    .to_string();
-
-    if let Some(filter) = filter {
-        query_string = filter.add_to_query(query_string).map_err(|e| {
-            log::error!("Error adding filter to query: {:?}", e);
-            ServiceError::InternalServerError("Error adding filter to query".to_string())
-        })?;
-    }
-
-    let result = clickhouse_client
-        .query(query_string.as_str())
-        .bind(dataset_id)
-        .fetch_one::<EventNameAndCounts>()
-        .await
-        .map_err(|e| {
-            log::error!("Error fetching event counts: {:?}", e);
-            ServiceError::InternalServerError("Error fetching event counts".to_string())
-        })?;
-
-    Ok(result)
-}
-
-pub async fn get_distinct_topic_fingerprint_count_query(
-    dataset_id: uuid::Uuid,
-    filter: Option<EventAnalyticsFilter>,
-    clickhouse_client: &clickhouse::Client,
-) -> Result<EventNameAndCounts, ServiceError> {
-    let mut query_string = "SELECT
+        WHERE {}
+        
+        UNION ALL
+        
+        -- topics created
+        SELECT
             'start_conversation' as event_name,
             COUNT(DISTINCT owner_id) AS event_count
         FROM
             topics
-        WHERE dataset_id = ?
-    "
-    .to_string();
-
-    if let Some(filter) = filter {
-        query_string = filter.add_to_query(query_string).map_err(|e| {
-            log::error!("Error adding filter to query: {:?}", e);
-            ServiceError::InternalServerError("Error adding filter to query".to_string())
-        })?;
-    }
+        WHERE {}
+        
+        ORDER BY event_count DESC
+    ",
+        events_filter, events_filter, rag_filter, topics_filter
+    );
 
     let result = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
-        .fetch_one::<EventNameAndCounts>()
+        .bind(dataset_id)
+        .bind(dataset_id)
+        .bind(dataset_id)
+        .fetch_all::<EventNameAndCounts>()
         .await
         .map_err(|e| {
-            log::error!("Error fetching event counts: {:?}", e);
+            log::error!("Error fetching combined event counts: {:?}", e);
             ServiceError::InternalServerError("Error fetching event counts".to_string())
         })?;
 
