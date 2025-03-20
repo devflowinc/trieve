@@ -34,7 +34,7 @@ export const EventPathSelector = (props: EventPathSelectorProps) => {
   }, [props.mode]);
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-2">
       {availableOptions.map((eventName) => {
         return (
           <div className="flex" key={eventName}>
