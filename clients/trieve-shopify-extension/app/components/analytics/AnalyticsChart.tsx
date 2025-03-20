@@ -2,7 +2,7 @@ import "chartjs-adapter-date-fns";
 import { useEffect, useRef } from "react";
 import { Chart } from "chart.js";
 import { enUS } from "date-fns/locale";
-import { fillDate } from "app/utils/formatting";
+import { fillDate, formatTimeValueForChart } from "app/utils/formatting";
 import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
 import Crosshair from "chartjs-plugin-crosshair";
 
@@ -16,7 +16,7 @@ interface AnalyticsChartProps<T> {
   xAxis: keyof T;
   label: string;
   wholeUnits?: boolean;
-  dataType?: "number" | "percentage" | "currency";
+  dataType?: "number" | "percentage" | "currency" | "time";
 }
 
 export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
@@ -99,7 +99,12 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
                 },
                 label: (context) => {
                   const value = context.parsed.y;
-                  return `${props.label}: ${value}${props.dataType === "percentage" ? "%" : ""}`;
+                  if (props.dataType === "percentage") {
+                    return `${props.label}: ${value}%`;
+                  } else if (props.dataType === "time") {
+                    return `${props.label}: ${formatTimeValueForChart(value)}`;
+                  }
+                  return `${props.label}: ${value}`;
                 },
               },
             },
@@ -132,22 +137,16 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
                 drawTicks: false,
               },
               beginAtZero: true,
-              ticks: props.wholeUnits
-                ? {
-                    precision: 0,
-                    ...(props.dataType === "percentage" && {
-                      callback: function (tickValue: number | string) {
-                        return `${tickValue}%`;
-                      },
-                    }),
+              ticks: {
+                callback: function (tickValue: number | string) {
+                  if (props.dataType === "percentage") {
+                    return `${tickValue}%`;
+                  } else if (props.dataType === "time") {
+                    return formatTimeValueForChart(Number(tickValue));
                   }
-                : props.dataType === "percentage"
-                  ? {
-                      callback: function (tickValue: number | string) {
-                        return `${tickValue}%`;
-                      },
-                    }
-                  : undefined,
+                  return props.wholeUnits ? Math.round(Number(tickValue)) : tickValue;
+                },
+              },
               max: props.dataType === "percentage" ? 100 : undefined,
             },
             x: {
@@ -216,6 +215,7 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
       if (props.dataType === "percentage") {
         return parseFloat(((point.value ?? 0) * 100).toFixed(2));
       }
+      // For time data, we use seconds directly for the chart
       return point.value;
     });
     chartInstance.update();

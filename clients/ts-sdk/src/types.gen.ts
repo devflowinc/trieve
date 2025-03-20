@@ -543,6 +543,10 @@ export type ComponentAnalytics = {
 } | {
     page?: (number) | null;
     type: 'component_names';
+} | {
+    filter?: ((ComponentAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'component_interaction_time';
 };
 
 export type type3 = 'total_unique_users';
@@ -552,7 +556,12 @@ export type ComponentAnalyticsFilter = {
     date_range?: ((DateRange) | null);
 };
 
-export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse;
+export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse | ComponentInteractionTimeResponse;
+
+export type ComponentInteractionTimeResponse = {
+    avg_interaction_time: number;
+    points: Array<FloatTimePoint>;
+};
 
 export type ComponentNamesResponse = {
     component_names: Array<(string)>;

@@ -7442,6 +7442,11 @@ pub enum ComponentAnalytics {
     },
     #[schema(title = "ComponentNames")]
     ComponentNames { page: Option<u32> },
+    #[schema(title = "ComponentInteractionTime")]
+    ComponentInteractionTime {
+        filter: Option<ComponentAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
@@ -7759,6 +7764,14 @@ pub enum ComponentAnalyticsResponse {
     TopComponents(TopComponentsResponse),
     #[schema(title = "ComponentNames")]
     ComponentNames(ComponentNamesResponse),
+    #[schema(title = "ComponentInteractionTime")]
+    ComponentInteractionTime(ComponentInteractionTimeResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ComponentInteractionTimeResponse {
+    pub avg_interaction_time: f64,
+    pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

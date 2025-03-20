@@ -2,14 +2,15 @@ use crate::{
     data::models::{
         CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ChatConversionRateResponse,
         ClusterAnalyticsFilter, ClusterTopicsClickhouse, ComponentAnalyticsFilter,
-        ComponentNamesResponse, DatasetAnalytics, EventAnalyticsFilter, EventData,
-        EventDataClickhouse, FloatTimePoint, FloatTimePointClickhouse, GetEventsResponseBody,
-        Granularity, HeadQueries, IntegerTimePoint, IntegerTimePointClickhouse,
-        MessagesPerUserResponse, Pool, PopularFilters, PopularFiltersClickhouse,
-        RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent,
-        RagQueryEventClickhouse, RagQueryRatingsResponse, RecommendationAnalyticsFilter,
-        RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse,
-        RecommendationSortBy, RecommendationUsageGraphResponse, RecommendationsCTRRateResponse,
+        ComponentInteractionTimeResponse, ComponentNamesResponse, DatasetAnalytics,
+        EventAnalyticsFilter, EventData, EventDataClickhouse, FloatTimePoint,
+        FloatTimePointClickhouse, GetEventsResponseBody, Granularity, HeadQueries,
+        IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool,
+        PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
+        RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
+        RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
+        RecommendationEvent, RecommendationEventClickhouse, RecommendationSortBy,
+        RecommendationUsageGraphResponse, RecommendationsCTRRateResponse,
         RecommendationsConversionRateResponse, RecommendationsPerUserResponse,
         RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
         RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
@@ -2841,5 +2842,99 @@ pub async fn get_chat_conversion_rate_query(
     Ok(ChatConversionRateResponse {
         conversion_rate,
         points,
+    })
+}
+
+pub async fn get_component_interaction_time_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<ComponentAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<ComponentInteractionTimeResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut query_string = String::from(
+        "WITH all_events AS (
+            SELECT
+                created_at,
+                event_name,
+                sum(if(event_name = 'component_open', 1, 0)) OVER (
+                    PARTITION BY user_id 
+                    ORDER BY created_at
+                    ROWS UNBOUNDED PRECEDING
+                ) AS session_id
+            FROM events
+            WHERE 
+                event_name IN ('component_open', 'component_close')
+                AND dataset_id = ?
+        ",
+    );
+
+    if let Some(filter_params) = &filter {
+        query_string = filter_params.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        format!(
+            "
+            ),
+            session_times AS (
+                SELECT
+                    session_id,
+                    min(if(event_name = 'component_open', created_at, NULL)) AS open_time,
+                    min(if(event_name = 'component_close', created_at, NULL)) AS close_time
+                FROM all_events
+                GROUP BY session_id
+                HAVING open_time IS NOT NULL AND close_time IS NOT NULL AND close_time > open_time
+            )
+            SELECT 
+                CAST(toStartOfInterval(open_time, INTERVAL {}) AS DateTime) AS time_stamp,
+                CAST(AVG(dateDiff('second', open_time, close_time)), 'Float64') AS avg_time_seconds
+            FROM session_times
+            GROUP BY 
+                time_stamp
+            ORDER BY 
+                time_stamp
+            LIMIT 1000",
+            interval,
+        )
+        .as_str(),
+    );
+
+    let component_interaction_time = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<FloatTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching component interaction time: {:?}", e);
+            ServiceError::InternalServerError(
+                "Error fetching component interaction time".to_string(),
+            )
+        })?;
+
+    let avg_interaction_time = if !component_interaction_time.is_empty() {
+        component_interaction_time
+            .iter()
+            .map(|x| x.point)
+            .sum::<f64>()
+            / component_interaction_time.len() as f64
+    } else {
+        0.0
+    };
+
+    Ok(ComponentInteractionTimeResponse {
+        avg_interaction_time,
+        points: component_interaction_time
+            .into_iter()
+            .map(|x| x.into())
+            .collect(),
     })
 }

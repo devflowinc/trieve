@@ -7,6 +7,7 @@ import {
   TopPagesResponse,
   TopComponentsResponse,
   ComponentNamesResponse,
+  ComponentInteractionTimeResponse,
 } from "trieve-ts-sdk";
 
 export const totalUniqueUsersQuery = (
@@ -75,6 +76,25 @@ export const componentNamesQuery = (trieve: TrieveSDK) => {
       });
 
       return result as ComponentNamesResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const componentInteractionTimeQuery = (
+  trieve: TrieveSDK,
+  filters: ComponentAnalyticsFilter,
+  granularity: Granularity,
+) => {
+  return {
+    queryKey: ["componentInteractionTime", filters, granularity],
+    queryFn: async () => {
+      const result = await trieve.getComponentAnalytics({
+        filter: filters,
+        type: "component_interaction_time",
+        granularity: granularity,
+      });
+
+      return result as ComponentInteractionTimeResponse;
     },
   } satisfies QueryOptions;
 };
