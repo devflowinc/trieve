@@ -47,7 +47,17 @@ const buildClientAdminApiFetcher = () => {
         };
       }
 
-      return parsed as Success<T>;
+      if (parsed.data.data) {
+        return {
+          data: parsed.data.data,
+          error: null,
+        };
+      } else {
+        return {
+          data: null,
+          error: new Error("No data in response"),
+        };
+      }
     }
   };
 };
