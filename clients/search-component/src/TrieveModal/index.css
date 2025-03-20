@@ -1614,7 +1614,27 @@ body {
           }
 
           .trieve-inference-filters-step-tags {
-            @apply tv-flex tv-flex-wrap tv-gap-2 tv-mt-4;
+            display: none;
+
+            &[data-prev-complete="true"] {
+              display: block;
+            }
+            
+            .trieve-inference-filters-step-tags-section-title {
+              @apply tv-text-lg tv-mb-2 tv-mt-3;
+            }
+
+            .trieve-inference-filters-step-row {
+              @apply tv-flex tv-flex-wrap tv-gap-2 tv-mt-4;
+            }
+
+            .trieve-inference-filters-step-tags-children  {
+              display: none;
+
+              &[data-active="true"] {
+                display: block;
+              }
+            }
 
             button.trieve-inference-filters-step-tag {
               @apply tv-flex tv-items-center tv-gap-x-1 tv-py-1 tv-px-2 tv-rounded-lg tv-cursor-pointer tv-bg-zinc-100;
