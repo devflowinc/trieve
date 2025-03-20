@@ -11,7 +11,7 @@ import { RecommendationsUsageChart } from "app/components/analytics/recommendati
 import { RecommendationsPerUser } from "app/components/analytics/recommendations/RecommendationsPerUser";
 import { RecommendationsCTRRate } from "app/components/analytics/recommendations/RecommendationsCTRRate";
 import { AllRecommendationsTable } from "app/components/analytics/recommendations/AllRecommendationsTable";
-import { RecommendationConversionRate } from "app/components/analytics/recommendations/RecommnedationConversionRate";
+import { RecommendationConversionRate } from "app/components/analytics/recommendations/RecommendationConversionRate";
 
 export default function SearchAnalyticsPage() {
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);

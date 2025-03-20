@@ -7318,6 +7318,12 @@ pub enum RAGAnalytics {
         filter: Option<RAGAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "ChatConversionRate")]
+    #[serde(rename = "chat_conversion_rate")]
+    ChatConversionRate {
+        filter: Option<TopicAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7484,6 +7490,14 @@ pub enum RAGAnalyticsResponse {
     MessagesPerUser(MessagesPerUserResponse),
     #[schema(title = "ChatAverageRating")]
     ChatAverageRating(ChatAverageRatingResponse),
+    #[schema(title = "ChatConversionRate")]
+    ChatConversionRate(ChatConversionRateResponse),
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct ChatConversionRateResponse {
+    pub conversion_rate: f64,
+    pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -7617,7 +7631,7 @@ pub enum SearchAnalyticsResponse {
     #[schema(title = "SearchesPerUser")]
     SearchesPerUser(SearchesPerUserResponse),
     #[schema(title = "SearchAverageRating")]
-    SearchAverageRating(SearchAverageRatingResponse)
+    SearchAverageRating(SearchAverageRatingResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7628,7 +7642,6 @@ pub enum ClusterAnalyticsResponse {
     #[schema(title = "ClusterQueries")]
     ClusterQueries(SearchQueryResponse),
 }
-
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]

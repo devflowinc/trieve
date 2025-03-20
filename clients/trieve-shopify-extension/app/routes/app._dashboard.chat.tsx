@@ -1,6 +1,7 @@
 import { Grid, Tabs } from "@shopify/polaris";
 import { AllChatsTable } from "app/components/analytics/chat/AllChatsTable";
 import { ChatAverageRating } from "app/components/analytics/chat/ChatAverageRating";
+import { ChatConversionRate } from "app/components/analytics/chat/ChatConversionRate";
 import { MessagesPerUser } from "app/components/analytics/chat/MessagesPerUser";
 import { TopicCTRRate } from "app/components/analytics/chat/TopicCTRRate";
 import { TopicsUsage } from "app/components/analytics/chat/TopicsGraph";
@@ -44,6 +45,7 @@ export default function ChatAnalyticsPage() {
               <div className="flex flex-col gap-4">
                 <TopicsUsage filters={filters} granularity={granularity} />
                 <MessagesPerUser filters={filters} granularity={granularity} />
+                <ChatConversionRate filters={filters} granularity={granularity} />
               </div>
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>

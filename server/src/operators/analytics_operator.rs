@@ -1,15 +1,15 @@
 use crate::{
     data::models::{
-        CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ClusterAnalyticsFilter,
-        ClusterTopicsClickhouse, ComponentAnalyticsFilter, ComponentNamesResponse,
-        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, FloatTimePoint,
-        FloatTimePointClickhouse, GetEventsResponseBody, Granularity, HeadQueries,
-        IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool,
-        PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
-        RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
-        RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
-        RecommendationEvent, RecommendationEventClickhouse, RecommendationSortBy,
-        RecommendationUsageGraphResponse, RecommendationsCTRRateResponse,
+        CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ChatConversionRateResponse,
+        ClusterAnalyticsFilter, ClusterTopicsClickhouse, ComponentAnalyticsFilter,
+        ComponentNamesResponse, DatasetAnalytics, EventAnalyticsFilter, EventData,
+        EventDataClickhouse, FloatTimePoint, FloatTimePointClickhouse, GetEventsResponseBody,
+        Granularity, HeadQueries, IntegerTimePoint, IntegerTimePointClickhouse,
+        MessagesPerUserResponse, Pool, PopularFilters, PopularFiltersClickhouse,
+        RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent,
+        RagQueryEventClickhouse, RagQueryRatingsResponse, RecommendationAnalyticsFilter,
+        RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse,
+        RecommendationSortBy, RecommendationUsageGraphResponse, RecommendationsCTRRateResponse,
         RecommendationsConversionRateResponse, RecommendationsPerUserResponse,
         RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
         RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
@@ -2352,6 +2352,7 @@ pub async fn get_search_conversion_rate_query(
             CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
             count(*) as count
         FROM events
+        JOIN search_queries ON toUUID(events.request_id) = search_queries.id
         WHERE dataset_id = ?
         AND request_type = 'search'
         AND event_type IN ('add_to_cart', 'purchase')
@@ -2509,6 +2510,7 @@ pub async fn get_recommendation_conversion_rate_query(
             CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
             count(*) as count
         FROM events
+        JOIN recommendations ON toUUID(events.request_id) = recommendations.id
         WHERE dataset_id = ?
         AND request_type = 'recommendation'
         AND event_type IN ('add_to_cart', 'purchase')
@@ -2760,5 +2762,84 @@ pub async fn get_search_average_rating_query(
             .into_iter()
             .map(|x| x.into())
             .collect(),
+    })
+}
+
+pub async fn get_chat_conversion_rate_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<TopicAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<ChatConversionRateResponse, ServiceError> {
+    let interval = match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    };
+
+    let mut conversions_query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(topics.created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            count(*) as count
+        FROM events
+        JOIN topics ON toUUID(events.request_id) = topics.topic_id
+        JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
+        WHERE topics.dataset_id = ?
+        AND request_type = 'chat'
+        AND event_type IN ('add_to_cart', 'purchase')
+        AND is_conversion = true",
+        interval
+    );
+
+    if let Some(filter) = &filter {
+        conversions_query_string = filter.add_to_query(conversions_query_string);
+    }
+
+    conversions_query_string.push_str(
+        "
+        GROUP BY time_stamp
+        ORDER BY time_stamp
+        LIMIT 1000",
+    );
+
+    let interactions =
+        get_topics_over_time_query(dataset_id, filter, granularity, clickhouse_client)
+            .await?
+            .points;
+
+    let conversions = clickhouse_client
+        .query(conversions_query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<IntegerTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching conversions: {:?}", e);
+            ServiceError::InternalServerError("Error fetching conversions".to_string())
+        })?;
+
+    let total_interactions: i64 = interactions.iter().map(|p| p.point).sum();
+    let total_conversions: i64 = conversions.iter().map(|p| p.point).sum();
+
+    let conversion_rate = if total_interactions > 0 {
+        total_conversions as f64 / total_interactions as f64
+    } else {
+        0.0
+    };
+
+    let points: Vec<FloatTimePoint> = interactions
+        .into_iter()
+        .zip(conversions.into_iter())
+        .map(|(interaction, conversion)| FloatTimePoint {
+            time_stamp: interaction.time_stamp.to_string(),
+            point: conversion.point as f64 / interaction.point as f64,
+        })
+        .collect();
+
+    Ok(ChatConversionRateResponse {
+        conversion_rate,
+        points,
     })
 }
