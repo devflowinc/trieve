@@ -7208,6 +7208,11 @@ pub enum SearchAnalytics {
         filter: Option<SearchAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "SearchesPerUser")]
+    SearchesPerUser {
+        filter: Option<SearchAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7451,6 +7456,12 @@ pub struct SearchConversionRateResponse {
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchesPerUserResponse {
+    pub avg_searches_per_user: f64,
+    pub points: Vec<FloatTimePoint>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct TopicQueriesResponse {
     pub topics: Vec<TopicAnalyticsSummary>,
 }
@@ -7542,6 +7553,8 @@ pub enum SearchAnalyticsResponse {
     CTRMetricsOverTime(CTRMetricsOverTimeResponse),
     #[schema(title = "SearchConversionRate")]
     SearchConversionRate(SearchConversionRateResponse),
+    #[schema(title = "SearchesPerUser")]
+    SearchesPerUser(SearchesPerUserResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

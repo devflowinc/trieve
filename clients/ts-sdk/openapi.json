@@ -16317,6 +16317,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "SearchesPerUser",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SearchAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "searches_per_user"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -16413,6 +16444,9 @@
           },
           {
             "$ref": "#/components/schemas/SearchConversionRateResponse"
+          },
+          {
+            "$ref": "#/components/schemas/SearchesPerUserResponse"
           }
         ]
       },
@@ -17332,6 +17366,25 @@
           "total_pages": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "SearchesPerUserResponse": {
+        "type": "object",
+        "required": [
+          "avg_searches_per_user",
+          "points"
+        ],
+        "properties": {
+          "avg_searches_per_user": {
+            "type": "number",
+            "format": "double"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FloatTimePoint"
+            }
           }
         }
       },

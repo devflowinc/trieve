@@ -8198,7 +8198,7 @@ tr46@~0.0.3:
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
 
 trieve-ts-sdk@../ts-sdk:
-  version "0.0.62"
+  version "0.0.64"
 
 trim-lines@^3.0.0:
   version "3.0.1"

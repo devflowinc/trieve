@@ -331,6 +331,19 @@ pub async fn get_search_analytics(
 
             SearchAnalyticsResponse::SearchConversionRate(search_conversion_rate)
         }
+        SearchAnalytics::SearchesPerUser {
+            filter,
+            granularity,
+        } => {
+            let searches_per_user = get_searches_per_user_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            SearchAnalyticsResponse::SearchesPerUser(searches_per_user)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))
