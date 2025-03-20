@@ -36,7 +36,7 @@ export const LatencyGraph = (props: LatencyGraphProps) => {
           granularity={props.params.granularity}
           date_range={props.params.filter.date_range}
           yLabel="Latency (ms)"
-          yAxis="average_latency"
+          yAxis="point"
           xAxis="time_stamp"
         />
       )}

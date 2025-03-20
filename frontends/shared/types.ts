@@ -157,7 +157,7 @@ export interface SetUserApiKeyResponse {
 }
 
 export const isComboboxValues = (
-  values: unknown
+  values: unknown,
 ): values is ComboboxSection[] => {
   if (!Array.isArray(values)) {
     return false;
@@ -486,13 +486,8 @@ export interface AnalyticsParams {
   granularity: "minute" | "second" | "hour" | "day" | "month";
 }
 
-export interface LatencyDatapoint {
-  average_latency: number;
-  time_stamp: string;
-}
-
-export interface UsageDatapoint {
-  requests: number;
+export interface GraphDatapoint {
+  point: number;
   time_stamp: string;
 }
 
@@ -533,7 +528,7 @@ export interface ScoreChunkDTO {
 }
 
 export function isGroupScoreChunkDTO(
-  data: unknown
+  data: unknown,
 ): data is GroupScoreChunkDTO {
   if (typeof data !== "object" || data === null) {
     return false;
@@ -705,11 +700,11 @@ export interface SearchClusterResponse {
 }
 
 export interface UsageGraphResponse {
-  points: UsageDatapoint[];
+  points: GraphDatapoint[];
 }
 
 export interface LatencyGraphResponse {
-  points: LatencyDatapoint[];
+  points: GraphDatapoint[];
 }
 
 export interface RagQueryResponse {

@@ -26,7 +26,7 @@ export const SearchUsageChart = ({
       granularity={granularity}
       date_range={filters.date_range}
       xAxis={"time_stamp"}
-      yAxis={"requests"}
+      yAxis={"point"}
       label="Search Usage"
       tooltipContent="The total number of searches made by users."
     />

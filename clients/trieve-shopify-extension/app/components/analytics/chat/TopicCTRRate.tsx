@@ -26,7 +26,7 @@ export const TopicCTRRate = ({
       date_range={filters.date_range}
       dataType="percentage"
       xAxis={"time_stamp"}
-      yAxis={"ctr"}
+      yAxis={"point"}
       label="CTR Rate"
       tooltipContent="The rate at which users click on products within the chat sessions."
     />

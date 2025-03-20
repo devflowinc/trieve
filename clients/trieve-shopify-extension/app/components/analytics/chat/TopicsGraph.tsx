@@ -13,7 +13,9 @@ export const TopicsUsage = ({
   granularity: Granularity;
 }) => {
   const { trieve } = useTrieve();
-  const { data, isLoading } = useQuery(topicsUsageQuery(trieve, filters, granularity));
+  const { data, isLoading } = useQuery(
+    topicsUsageQuery(trieve, filters, granularity),
+  );
 
   return (
     <GraphComponent
@@ -23,7 +25,7 @@ export const TopicsUsage = ({
       granularity={granularity}
       date_range={filters.date_range}
       xAxis={"time_stamp"}
-      yAxis={"topic_count"}
+      yAxis={"point"}
       label="Chat Sessions Created"
       tooltipContent="The total number of chat sessions that were created by users."
     />

@@ -185,13 +185,8 @@ export type CTRDataRequestBody = {
     request_id: string;
 };
 
-export type CTRMetricsOverTimePoint = {
-    ctr: number;
-    time_stamp: string;
-};
-
 export type CTRMetricsOverTimeResponse = {
-    points: Array<CTRMetricsOverTimePoint>;
+    points: Array<FloatTimePoint>;
     total_ctr: number;
 };
 
@@ -1713,6 +1708,11 @@ export type FloatRange = {
     lte?: (number) | null;
 };
 
+export type FloatTimePoint = {
+    point: number;
+    time_stamp: string;
+};
+
 /**
  * Boost the presence of certain tokens for fulltext (SPLADE) and keyword (BM25) search. I.e. boosting title phrases to priortize title matches or making sure that the listing for AirBNB itself ranks higher than companies who make software for AirBNB hosts by boosting the in-document-frequency of the AirBNB token (AKA word) for its official listing. Conceptually it multiples the in-document-importance second value in the tuples of the SPLADE or BM25 sparse vector of the chunk_html innerText for all tokens present in the boost phrase by the boost factor like so: (token, in-document-importance) -> (token, in-document-importance*boost_factor).
  */
@@ -2084,6 +2084,11 @@ export type ImageConfig = {
     use_images?: (boolean) | null;
 };
 
+export type IntegerTimePoint = {
+    point: number;
+    time_stamp: string;
+};
+
 export type Invitation = {
     created_at: string;
     email: string;
@@ -2153,7 +2158,7 @@ export type LLMOptions = {
 };
 
 export type LatencyGraphResponse = {
-    points: Array<SearchLatencyGraph>;
+    points: Array<FloatTimePoint>;
 };
 
 export type LocationBoundingBox = {
@@ -2189,12 +2194,7 @@ export type Message = {
 
 export type MessagesPerUserResponse = {
     avg_messages_per_user: number;
-    points: Array<MessagesPerUserTimePoint>;
-};
-
-export type MessagesPerUserTimePoint = {
-    messages_per_user: number;
-    time_stamp: string;
+    points: Array<FloatTimePoint>;
 };
 
 export type Metadata = {
@@ -2576,7 +2576,7 @@ export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsag
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at';
 
 export type RAGUsageGraphResponse = {
-    points: Array<UsageGraphPoint>;
+    points: Array<IntegerTimePoint>;
 };
 
 export type RAGUsageResponse = {
@@ -2762,6 +2762,10 @@ export type RecommendationAnalytics = {
     filter?: ((RecommendationAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'recommendations_ctr_rate';
+} | {
+    filter?: ((RecommendationAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'recommendation_conversion_rate';
 };
 
 export type type5 = 'low_confidence_recommendations';
@@ -2773,7 +2777,7 @@ export type RecommendationAnalyticsFilter = {
     top_score?: ((FloatRange) | null);
 };
 
-export type RecommendationAnalyticsResponse = RecommendationsEventResponse | RecommendationEvent | RecommendationUsageGraphResponse | RecommendationsPerUserResponse | RecommendationsCTRRateResponse;
+export type RecommendationAnalyticsResponse = RecommendationsEventResponse | RecommendationEvent | RecommendationUsageGraphResponse | RecommendationsPerUserResponse | RecommendationsCTRRateResponse | RecommendationsConversionRateResponse;
 
 export type RecommendationCTRMetrics = {
     avg_position_of_click: number;
@@ -2807,24 +2811,19 @@ export type RecommendationStrategy = 'average_vector' | 'best_score';
 
 export type RecommendationType = 'Chunk' | 'Group';
 
-export type RecommendationUsageGraphPoint = {
-    requests: number;
-    time_stamp: string;
-};
-
 export type RecommendationUsageGraphResponse = {
-    points: Array<RecommendationUsageGraphPoint>;
+    points: Array<IntegerTimePoint>;
     total_requests: number;
 };
 
 export type RecommendationsCTRRateResponse = {
-    points: Array<RecommendationsCTRRateTimePoint>;
+    points: Array<FloatTimePoint>;
     total_ctr: number;
 };
 
-export type RecommendationsCTRRateTimePoint = {
-    ctr: number;
-    time_stamp: string;
+export type RecommendationsConversionRateResponse = {
+    conversion_rate: number;
+    points: Array<FloatTimePoint>;
 };
 
 export type RecommendationsEventResponse = {
@@ -2833,12 +2832,7 @@ export type RecommendationsEventResponse = {
 
 export type RecommendationsPerUserResponse = {
     avg_recommendations_per_user: number;
-    points: Array<RecommendationsPerUserTimePoint>;
-};
-
-export type RecommendationsPerUserTimePoint = {
-    recommendations_per_user: number;
-    time_stamp: string;
+    points: Array<FloatTimePoint>;
 };
 
 export type RecommendationsWithClicksCTRResponse = {
@@ -3125,22 +3119,12 @@ export type SearchClusterTopics = {
     topic: string;
 };
 
-export type SearchConversionRatePoint = {
-    conversion_rate: number;
-    time_stamp: string;
-};
-
 export type SearchConversionRateResponse = {
     conversion_rate: number;
-    points: Array<SearchConversionRatePoint>;
+    points: Array<FloatTimePoint>;
 };
 
 export type SearchGroupResponseTypes = SearchWithinGroupResponseBody | SearchWithinGroupResults;
-
-export type SearchLatencyGraph = {
-    average_latency: number;
-    time_stamp: string;
-};
 
 export type SearchMethod = 'fulltext' | 'semantic' | 'hybrid' | 'bm25';
 
@@ -3277,7 +3261,7 @@ export type SearchTypeCount = {
 };
 
 export type SearchUsageGraphResponse = {
-    points: Array<UsageGraphPoint>;
+    points: Array<IntegerTimePoint>;
     total_searches: number;
 };
 
@@ -3679,24 +3663,14 @@ export type TopicQuery = {
     updated_at: string;
 };
 
-export type TopicTimePoint = {
-    time_stamp: string;
-    topic_count: number;
-};
-
 export type TopicsOverTimeResponse = {
-    points: Array<TopicTimePoint>;
+    points: Array<IntegerTimePoint>;
     total_topics: number;
 };
 
 export type TotalUniqueUsersResponse = {
-    points: Array<TotalUniqueUsersTimePoint>;
+    points: Array<IntegerTimePoint>;
     total_unique_users: number;
-};
-
-export type TotalUniqueUsersTimePoint = {
-    time_stamp: string;
-    unique_users: number;
 };
 
 /**
@@ -4017,11 +3991,6 @@ export type UploadHtmlPageReqPayload = {
     data: Document;
     metadata: unknown;
     scrapeId: string;
-};
-
-export type UsageGraphPoint = {
-    requests: number;
-    time_stamp: string;
 };
 
 export type UserApiKey = {
