@@ -183,5 +183,5 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
   trieve.datasetId = datasetId;
 
-  return redirect("/app/settings");
+  return redirect("/app");
 };
