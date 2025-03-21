@@ -24,6 +24,7 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use sanitize_html::rules;
 use sanitize_html::sanitize_str;
 use serde::{Deserialize, Serialize};
+use simple_server_timing_header::Timer;
 use utoipa::ToSchema;
 
 /// Get Organization
@@ -275,15 +276,23 @@ pub async fn get_organization_usage(
             }
         }))
     } else {
+        let mut usage_timer = Some(Timer::new());
+
         let extended_usage = get_extended_org_usage_by_id_query(
             org_id,
             data.date_range.clone(),
             clickhouse_client.get_ref(),
             pool,
+            &mut usage_timer,
         )
         .await?;
 
-        Ok(HttpResponse::Ok().json(extended_usage))
+        Ok(HttpResponse::Ok()
+            .insert_header((
+                Timer::header_key(),
+                usage_timer.expect("Timer should exist").header_value(),
+            ))
+            .json(extended_usage))
     }
 }
 
