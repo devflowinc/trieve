@@ -394,7 +394,7 @@ pub async fn remove_user_from_org(
         "LOCKED": false,
         "SYSTEM_PROMPT": "You are a helpful assistant",
         "MAX_LIMIT": 10000,
-        "TASK_DEFINITION":"Your task is to grade the relevance of context document(s) against the specified user query."
+        "AIMON_RERANKER_TASK_DEFINITION":"Your task is to grade the relevance of context document(s) against the specified user query."
     }
 }))]
 pub struct UpdateAllOrgDatasetConfigsReqPayload {

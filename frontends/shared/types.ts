@@ -136,7 +136,7 @@ export interface ServerEnvsConfiguration {
   BM25_B?: number;
   BM25_K?: number;
   BM25_AVG_LEN?: number;
-  TASK_DEFINITION?: string;
+  AIMON_RERANKER_TASK_DEFINITION?: string;
 }
 
 export interface DefaultError {
