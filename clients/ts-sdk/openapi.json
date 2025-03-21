@@ -12406,6 +12406,10 @@
               }
             ],
             "nullable": true
+          },
+          "v1_usage": {
+            "type": "boolean",
+            "nullable": true
           }
         }
       },

@@ -1956,6 +1956,7 @@ export type GetGroupsForChunksReqPayload = {
 
 export type GetOrganizationUsageReqPayload = {
     date_range?: ((DateRange) | null);
+    v1_usage?: (boolean) | null;
 };
 
 export type GetPagefindIndexResponse = {

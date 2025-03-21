@@ -21,6 +21,7 @@ export const createUsageQuery = (
             gte: dateRange?.startDate,
             lte: dateRange?.endDate,
           },
+          v1_usage: true,
         },
       });
     },
