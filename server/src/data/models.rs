@@ -2413,7 +2413,7 @@ pub struct DatasetEventCount {
         "LOCKED": false,
         "SYSTEM_PROMPT": "You are a helpful assistant",
         "MAX_LIMIT": 10000,
-        "TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
+        "AIMON_RERANKER_TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
     },
 }))]
 #[diesel(table_name = datasets)]
@@ -2582,7 +2582,7 @@ pub enum DistanceMetric {
     "LOCKED": false,
     "SYSTEM_PROMPT": "You are a helpful assistant",
     "MAX_LIMIT": 10000,
-    "TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
+    "AIMON_RERANKER_TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
 }))]
 #[allow(non_snake_case)]
 pub struct DatasetConfiguration {
@@ -2622,7 +2622,7 @@ pub struct DatasetConfiguration {
     pub PUBLIC_DATASET: PublicDatasetOptions,
     pub DISABLE_ANALYTICS: bool,
     pub PAGEFIND_ENABLED: bool,
-    pub TASK_DEFINITION: String,
+    pub AIMON_RERANKER_TASK_DEFINITION: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -2662,7 +2662,7 @@ pub struct PublicDatasetOptions {
     "LOCKED": false,
     "SYSTEM_PROMPT": "You are a helpful assistant",
     "MAX_LIMIT": 10000,
-    "TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
+    "AIMON_RERANKER_TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
 }))]
 #[allow(non_snake_case)]
 /// Lets you specify the configuration for a dataset
@@ -2738,7 +2738,7 @@ pub struct DatasetConfigurationDTO {
     /// Whether to enable pagefind indexing
     pub PAGEFIND_ENABLED: Option<bool>,
 
-    pub TASK_DEFINITION: Option<String>,
+    pub AIMON_RERANKER_TASK_DEFINITION: Option<String>,
 }
 
 impl From<DatasetConfigurationDTO> for DatasetConfiguration {
@@ -2783,7 +2783,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             },
             DISABLE_ANALYTICS: dto.DISABLE_ANALYTICS.unwrap_or(false),
             PAGEFIND_ENABLED: dto.PAGEFIND_ENABLED.unwrap_or(false),
-            TASK_DEFINITION: dto.TASK_DEFINITION.unwrap_or("Your task is to grade the relevance of context document(s) against the specified user query.".to_string()),
+            AIMON_RERANKER_TASK_DEFINITION: dto.AIMON_RERANKER_TASK_DEFINITION.unwrap_or("Your task is to grade the relevance of context document(s) against the specified user query.".to_string()),
         }
     }
 }
@@ -2834,7 +2834,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
             }),
             DISABLE_ANALYTICS: Some(config.DISABLE_ANALYTICS),
             PAGEFIND_ENABLED: Some(config.PAGEFIND_ENABLED),
-            TASK_DEFINITION: Some(config.TASK_DEFINITION),
+            AIMON_RERANKER_TASK_DEFINITION: Some(config.AIMON_RERANKER_TASK_DEFINITION),
         }
     }
 }
@@ -2880,7 +2880,7 @@ impl Default for DatasetConfiguration {
             },
             DISABLE_ANALYTICS: false,
             PAGEFIND_ENABLED: false,
-            TASK_DEFINITION: "Your task is to grade the relevance of context document(s) against the specified user query.".to_string(),
+            AIMON_RERANKER_TASK_DEFINITION: "Your task is to grade the relevance of context document(s) against the specified user query.".to_string(),
         }
     }
 }
@@ -3172,8 +3172,8 @@ impl DatasetConfiguration {
                 .unwrap_or(&json!(false))
                 .as_bool()
                 .unwrap_or(false),
-            TASK_DEFINITION: configuration
-            .get("TASK_DEFINITION")
+            AIMON_RERANKER_TASK_DEFINITION: configuration
+            .get("AIMON_RERANKER_TASK_DEFINITION")
             .unwrap_or(&json!("Your task is to grade the relevance of context document(s) against the specified user query.".to_string()))
             .as_str()
             .map(|s| {
@@ -3227,7 +3227,7 @@ impl DatasetConfiguration {
             },
             "DISABLE_ANALYTICS": self.DISABLE_ANALYTICS,
             "PAGEFIND_ENABLED": self.PAGEFIND_ENABLED,
-            "TASK_DEFINITION": self.TASK_DEFINITION,
+            "AIMON_RERANKER_TASK_DEFINITION": self.AIMON_RERANKER_TASK_DEFINITION,
         })
     }
 }
@@ -3521,11 +3521,10 @@ impl DatasetConfigurationDTO {
             PAGEFIND_ENABLED: self
                 .PAGEFIND_ENABLED
                 .unwrap_or(curr_dataset_config.PAGEFIND_ENABLED),
-            TASK_DEFINITION: self
-            .TASK_DEFINITION
-            .clone()
-            .unwrap_or(curr_dataset_config.TASK_DEFINITION),
-                
+            AIMON_RERANKER_TASK_DEFINITION: self
+                .AIMON_RERANKER_TASK_DEFINITION
+                .clone()
+                .unwrap_or(curr_dataset_config.AIMON_RERANKER_TASK_DEFINITION),
         }
     }
 }

@@ -9728,6 +9728,7 @@
           "dataset_name": "My Dataset",
           "organization_id": "00000000-0000-0000-0000-000000000000",
           "server_configuration": {
+            "AIMON_RERANKER_TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
             "BM25_AVG_LEN": 256.0,
             "BM25_B": 0.75,
             "BM25_ENABLED": true,
@@ -9756,8 +9757,7 @@
             ],
             "SYSTEM_PROMPT": "You are a helpful assistant",
             "TEMPERATURE": 0.5,
-            "USE_MESSAGE_TO_QUERY_PROMPT": false,
-            "TASK_DEFINITION":"Your task is to grade the relevance of context document(s) against the specified user query."
+            "USE_MESSAGE_TO_QUERY_PROMPT": false
           }
         }
       },
@@ -10191,6 +10191,7 @@
           "name": "Trieve",
           "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "server_configuration": {
+            "AIMON_RERANKER_TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
             "BM25_AVG_LEN": 256.0,
             "BM25_B": 0.75,
             "BM25_ENABLED": true,
@@ -10219,8 +10220,7 @@
             ],
             "SYSTEM_PROMPT": "You are a helpful assistant",
             "TEMPERATURE": 0.5,
-            "USE_MESSAGE_TO_QUERY_PROMPT": false,
-            "TASK_DEFINITION":"Your task is to grade the relevance of context document(s) against the specified user query."
+            "USE_MESSAGE_TO_QUERY_PROMPT": false
           },
           "tracking_id": "foobar-dataset",
           "updated_at": "2021-01-01 00:00:00.000"
@@ -10310,6 +10310,10 @@
         "type": "object",
         "description": "Lets you specify the configuration for a dataset",
         "properties": {
+          "AIMON_RERANKER_TASK_DEFINITION": {
+            "type": "string",
+            "nullable": true
+          },
           "BM25_AVG_LEN": {
             "type": "number",
             "format": "float",
@@ -10490,14 +10494,10 @@
             "type": "boolean",
             "description": "Whether to use the message to query prompt",
             "nullable": true
-          },
-          "TASK_DEFINITION": {
-            "type": "string",
-            "description": "The task definition for AIMon reranker.",
-            "nullable": true
           }
         },
         "example": {
+          "AIMON_RERANKER_TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
           "BM25_AVG_LEN": 256.0,
           "BM25_B": 0.75,
           "BM25_ENABLED": true,
@@ -10526,8 +10526,7 @@
           ],
           "SYSTEM_PROMPT": "You are a helpful assistant",
           "TEMPERATURE": 0.5,
-          "USE_MESSAGE_TO_QUERY_PROMPT": false,
-          "TASK_DEFINITION":"Your task is to grade the relevance of context document(s) against the specified user query."
+          "USE_MESSAGE_TO_QUERY_PROMPT": false
         }
       },
       "DatasetDTO": {
@@ -19023,6 +19022,7 @@
         "example": {
           "organization_id": "00000000-0000-0000-0000-000000000000",
           "server_configuration": {
+            "AIMON_RERANKER_TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
             "BM25_AVG_LEN": 256.0,
             "BM25_B": 0.75,
             "BM25_ENABLED": true,
@@ -19050,8 +19050,7 @@
             ],
             "SYSTEM_PROMPT": "You are a helpful assistant",
             "TEMPERATURE": 0.5,
-            "USE_MESSAGE_TO_QUERY_PROMPT": false,
-            "TASK_DEFINITION":"Your task is to grade the relevance of context document(s) against the specified user query."
+            "USE_MESSAGE_TO_QUERY_PROMPT": false
           }
         }
       },
@@ -19334,6 +19333,7 @@
           "dataset_id": "00000000-0000-0000-0000-000000000000",
           "dataset_name": "My Dataset",
           "server_configuration": {
+            "AIMON_RERANKER_TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
             "BM25_AVG_LEN": 256.0,
             "BM25_B": 0.75,
             "BM25_ENABLED": true,
@@ -19361,8 +19361,7 @@
             ],
             "SYSTEM_PROMPT": "You are a helpful assistant",
             "TEMPERATURE": 0.5,
-            "USE_MESSAGE_TO_QUERY_PROMPT": false,
-            "TASK_DEFINITION":"Your task is to grade the relevance of context document(s) against the specified user query."
+            "USE_MESSAGE_TO_QUERY_PROMPT": false
           }
         }
       },

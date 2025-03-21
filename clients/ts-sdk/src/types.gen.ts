@@ -1080,6 +1080,7 @@ export type DatasetAndUsage = {
  * Lets you specify the configuration for a dataset
  */
 export type DatasetConfigurationDTO = {
+    AIMON_RERANKER_TASK_DEFINITION?: (string) | null;
     /**
      * The average length of the chunks in the index for BM25
      */
@@ -1202,11 +1203,6 @@ export type DatasetConfigurationDTO = {
      * Whether to use the message to query prompt
      */
     USE_MESSAGE_TO_QUERY_PROMPT?: (boolean) | null;
-    /**
-     * Task definition for AIMon reranker
-     */
-    TASK_DEFINITION?: (string) | null;
-
 };
 
 export type DatasetDTO = {

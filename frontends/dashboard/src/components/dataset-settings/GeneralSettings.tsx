@@ -109,10 +109,10 @@ export const GeneralServerSettings = (props: {
                 />
               </div>
               <select
-                id="embeddingSize"
+                id="rerankerModel"
                 aria-readonly
-                title="Embedding Model is only editable on creation"
-                name="embeddingSize"
+                title="Reranker Model is used as a sorty_by reranker or for every hybrid search."
+                name="rerankerModel"
                 class="col-span-2 block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={
                   availableRerankerModels.find(
@@ -121,16 +121,16 @@ export const GeneralServerSettings = (props: {
                   )?.name ?? availableRerankerModels[0].name
                 }
                 onChange={(e) => {
-                  const selectedModel = availableRerankerModels.find(
+                  const selectedRerankerModel = availableRerankerModels.find(
                     (model) => model.name === e.currentTarget.value,
                   );
 
-                  const url = selectedModel?.url ?? "";
+                  const url = selectedRerankerModel?.url ?? "";
 
                   props.setServerConfig((prev) => {
                     return {
                       ...prev,
-                      RERANKER_MODEL_NAME: selectedModel?.id,
+                      RERANKER_MODEL_NAME: selectedRerankerModel?.id,
                       RERANKER_BASE_URL: url,
                     };
                   });
@@ -149,7 +149,7 @@ export const GeneralServerSettings = (props: {
                   for="rerankerApiKey"
                   class="block text-sm font-medium leading-6"
                 >
-                  API Key (for either the AIMon reranker or the Cohere reranker)
+                  Reranker API Key (for either AIMon or Cohere)
                 </label>
                 <Tooltip
                   body={<AiOutlineInfoCircle />}
@@ -227,14 +227,14 @@ export const GeneralServerSettings = (props: {
                   id="taskDefinition"
                   class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                   value={
-                    props.serverConfig().TASK_DEFINITION ||
+                    props.serverConfig().AIMON_RERANKER_TASK_DEFINITION ||
                     "Your task is to grade the relevance of context document(s) against the specified user query."
                   }
                   onInput={(e) =>
                     props.setServerConfig((prev) => {
                       return {
                         ...prev,
-                        TASK_DEFINITION: e.currentTarget.value,
+                        AIMON_RERANKER_TASK_DEFINITION: e.currentTarget.value,
                       };
                     })
                   }
@@ -242,7 +242,6 @@ export const GeneralServerSettings = (props: {
                 />
               </div>
             )}
-
           </div>
         </div>
       </div>

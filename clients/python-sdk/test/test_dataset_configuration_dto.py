@@ -65,7 +65,7 @@ class TestDatasetConfigurationDTO(unittest.TestCase):
                 system_prompt = '',
                 temperature = 1.337,
                 use_message_to_query_prompt = True,
-                task_definition = ''
+                aimon_reranker_task_definition = ''
             )
         else:
             return DatasetConfigurationDTO(

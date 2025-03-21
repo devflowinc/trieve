@@ -34,5 +34,5 @@ export const defaultServerEnvsConfiguration: DatasetConfig = {
     enabled: false,
     api_key: "",
   },
-  TASK_DEFINITION: "",
+  AIMON_RERANKER_TASK_DEFINITION: "",
 };

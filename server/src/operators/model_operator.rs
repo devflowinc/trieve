@@ -969,7 +969,7 @@ pub async fn cross_encoder(
             let reranker_model_name = dataset_config.RERANKER_MODEL_NAME.clone();
             if reranker_model_name == "aimon-rerank" {
                 let aimon_body = vec![AIMonRequestBody {
-                    task_definition: dataset_config.TASK_DEFINITION.clone(),
+                    task_definition: dataset_config.AIMON_RERANKER_TASK_DEFINITION.clone(),
                     context: common_request_docs.clone(),
                     user_query: query.clone(),
                     config: AIMonConfig {
@@ -980,6 +980,7 @@ pub async fn cross_encoder(
                 }];
 
                 let resp = ureq::post(&server_origin)
+                    .timeout(std::time::Duration::from_secs(5))
                     .set(
                         "Authorization",
                         &format!("Bearer {}", reranker_api_key.clone()),
@@ -1112,7 +1113,9 @@ pub async fn cross_encoder(
                         if reranker_model_name == "aimon-rerank" {
                             // --- AIMon Integration for larger chunks ---
                             let aimon_body = vec![AIMonRequestBody {
-                                task_definition: dataset_config.TASK_DEFINITION.clone(),
+                                task_definition: dataset_config
+                                    .AIMON_RERANKER_TASK_DEFINITION
+                                    .clone(),
                                 context: request_docs.clone(),
                                 user_query: query.clone(),
                                 config: AIMonConfig {
@@ -1206,6 +1209,7 @@ pub async fn cross_encoder(
                         };
                         let embeddings_resp = cur_client
                             .post(&url)
+                            .timeout(std::time::Duration::from_secs(5))
                             .header("Authorization", &format!("Bearer {}", reranker_api_key))
                             .header("api-key", reranker_api_key.to_string())
                             .header("Content-Type", "application/json")
