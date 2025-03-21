@@ -1,6 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::data::models::DateRange;
-use crate::operators::organization_operator::get_extended_org_usage_by_id_query;
+use crate::operators::organization_operator::{
+    get_extended_org_usage_by_id_query, get_org_usage_by_id_query,
+};
 use crate::{
     data::models::{
         ApiKeyRequestParams, OrganizationWithSubAndPlan, Pool, RedisPool, UserOrganization,
@@ -220,6 +222,7 @@ pub async fn create_organization(
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct GetOrganizationUsageReqPayload {
     date_range: Option<DateRange>,
+    v1_usage: Option<bool>,
 }
 
 /// Get Organization Usage
@@ -251,15 +254,37 @@ pub async fn get_organization_usage(
     _: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let org_id = organization.into_inner();
-    let extended_usage = get_extended_org_usage_by_id_query(
-        org_id,
-        data.date_range.clone(),
-        clickhouse_client.get_ref(),
-        pool,
-    )
-    .await?;
 
-    Ok(HttpResponse::Ok().json(extended_usage))
+    if data.v1_usage.unwrap_or(false) {
+        let usage = get_org_usage_by_id_query(org_id, pool).await?;
+        Ok(HttpResponse::Ok().json({
+            ExtendedOrganizationUsageCount {
+                dataset_count: usage.dataset_count,
+                user_count: usage.user_count,
+                file_storage: usage.file_storage,
+                message_count: usage.message_count as u64,
+                chunk_count: usage.chunk_count,
+                search_tokens: 0,
+                message_tokens: 0,
+                search_count: 0,
+                bytes_ingested: 0,
+                tokens_ingested: 0,
+                ocr_pages_ingested: 0,
+                website_pages_scraped: 0,
+                events_ingested: 0,
+            }
+        }))
+    } else {
+        let extended_usage = get_extended_org_usage_by_id_query(
+            org_id,
+            data.date_range.clone(),
+            clickhouse_client.get_ref(),
+            pool,
+        )
+        .await?;
+
+        Ok(HttpResponse::Ok().json(extended_usage))
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]

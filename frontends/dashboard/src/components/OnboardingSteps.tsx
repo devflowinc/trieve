@@ -11,7 +11,9 @@ export const OnboardingSteps = () => {
     queryFn: async () => {
       return trieve.fetch("/api/organization/usage/{organization_id}", "post", {
         organizationId: userContext.selectedOrg().id,
-        data: {},
+        data: {
+          v1_usage: true,
+        },
       });
     },
   }));
