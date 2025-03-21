@@ -16,6 +16,19 @@ import {
 import { RefreshIcon } from "@shopify/polaris-icons";
 import { usageQuery } from "app/queries/usage";
 import { useQuery } from "@tanstack/react-query";
+import { Onboarding } from "app/components/Onboarding";
+import { Loader } from "app/loaders";
+import { lastStepIdQuery } from "app/queries/onboarding";
+import { createServerLoader } from "app/loaders/serverLoader";
+import { createClientLoader } from "app/loaders/clientLoader";
+
+const load: Loader = async ({ adminApiFetcher, queryClient }) => {
+  await queryClient.ensureQueryData(lastStepIdQuery(adminApiFetcher));
+  return;
+};
+
+export const loader = createServerLoader(load);
+export const clientLoader = createClientLoader(load);
 
 export default function Dashboard() {
   const { dataset, organization, trieve } = useTrieve();
@@ -81,16 +94,7 @@ export default function Dashboard() {
 
   return (
     <BlockStack gap="400">
-      <Banner
-        title={`Welcome to ${dataset?.name || "your dataset"}`}
-        tone="info"
-      >
-        <p>
-          This is your dataset dashboard where you can manage and search through
-          your data.
-        </p>
-      </Banner>
-
+      <Onboarding />
       <Grid>
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
           <Card>
