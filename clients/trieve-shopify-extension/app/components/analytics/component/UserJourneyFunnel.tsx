@@ -16,11 +16,7 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
 import { BasicTableComponent } from "../BasicTableComponent";
-import {
-  chatEvents,
-  EventPathSelector,
-  searchEvents,
-} from "../EventPathSelector";
+import { chatEvents, searchEvents } from "../EventPathSelector";
 
 export const UserJourneyFunnel = ({
   filters,
@@ -41,13 +37,9 @@ export const UserJourneyFunnel = ({
   const selectMode = (mode: "chat" | "search") => {
     setModeSelect(mode);
     if (mode === "chat") {
-      setEvents((prevEvents) => {
-        return prevEvents.filter((event) => chatEvents.includes(event));
-      });
+      setEvents(chatEvents);
     } else {
-      setEvents((prevEvents) => {
-        return prevEvents.filter((event) => searchEvents.includes(event));
-      });
+      setEvents(searchEvents);
     }
   };
 
@@ -217,11 +209,6 @@ export const UserJourneyFunnel = ({
           ]}
         />
       </div>
-      <EventPathSelector
-        events={events}
-        mode={modeSelect}
-        setEvents={setEvents}
-      />
       {events.length > 0 ? (
         <>
           <Box paddingBlockStart="800" minHeight="150px">
