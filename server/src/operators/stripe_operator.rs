@@ -546,27 +546,18 @@ pub async fn get_stripe_customer_id_from_org_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<String, ServiceError> {
-    use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+    let subscription =
+        get_option_subscription_by_organization_id_query(organization_id, pool).await?;
 
-    let mut conn = pool.get().await.map_err(|e| {
-        ServiceError::BadRequest(format!("Failed to get connection from pool: {}", e))
-    })?;
-
-    let subscription_id: String = stripe_subscriptions_columns::stripe_subscriptions
-        .filter(stripe_subscriptions_columns::organization_id.eq(organization_id))
-        .select(stripe_subscriptions_columns::stripe_id)
-        .first(&mut conn)
-        .await
-        .map_err(|e| {
-            log::error!("Failed to get stripe subscription: {}", e);
-            ServiceError::BadRequest("Failed to get stripe subscription".to_string())
-        })?;
+    if subscription.is_none() {
+        return Err(ServiceError::NotFound("Subscription not found".to_string()));
+    }
 
     let reqwest_client = reqwest::Client::new();
     let response = reqwest_client
         .get(format!(
             "https://api.stripe.com/v1/subscriptions/{}",
-            subscription_id
+            subscription.unwrap().stripe_id
         ))
         .send()
         .await;
