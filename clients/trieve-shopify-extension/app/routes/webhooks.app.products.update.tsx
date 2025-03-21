@@ -4,6 +4,7 @@ import db from "../db.server";
 import { ProductWebhook, TrieveKey } from "app/types";
 import { sendChunksFromWebhook } from "app/processors/getProducts";
 import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
+import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, payload, session, topic, shop } =
@@ -40,13 +41,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return new Response();
   }
 
+  if (!session) {
+    throw new Response("Unauthorized", { status: 401 });
+  }
+
+  const fetcher = buildAdminApiFetcherForServer(
+    session.shop,
+    session.accessToken!,
+  );
+
   sendChunksFromWebhook(
     current,
     trieveKey,
     trieveKey.currentDatasetId ?? "",
-    admin,
+    fetcher,
     session,
-    crawlSettings.crawlSettings as ExtendedCrawlOptions
+    crawlSettings.crawlSettings as ExtendedCrawlOptions,
   );
 
   return new Response();
