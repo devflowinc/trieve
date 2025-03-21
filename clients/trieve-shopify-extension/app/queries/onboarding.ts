@@ -1,5 +1,5 @@
 import { QueryOptions } from "@tanstack/react-query";
-import { AdminApiCaller } from "app/loaders";
+import { AdminApiCaller, getMetafield } from "app/loaders";
 
 export const themeSettingsQuery = (fetcher: AdminApiCaller) => {
   return {
@@ -36,4 +36,18 @@ query GetStoreThemes {
       return result.data;
     },
   } satisfies QueryOptions;
+};
+
+export const testStringQuery = (fetcher: AdminApiCaller) => {
+  return {
+    queryKey: ["test_string"],
+    queryFn: async () => {
+      const result = await getMetafield(fetcher, "test-field");
+      if (result.error) {
+        console.error(result.error);
+        throw result.error;
+      }
+      return result.data || "";
+    },
+  };
 };
