@@ -31,7 +31,7 @@ api_version = "2025-01"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,read_products"
+scopes = "write_products,read_products,read_themes"
 
 [auth]
 redirect_urls = [
@@ -39,6 +39,10 @@ redirect_urls = [
   "https://sector-dan-discretion-verde.trycloudflare.com/auth/shopify/callback",
   "https://sector-dan-discretion-verde.trycloudflare.com/api/auth/callback"
 ]
+
+[access.admin]
+direct_api_mode = "online"
+embedded_app_direct_api_access = true
 
 [pos]
 embedded = false
