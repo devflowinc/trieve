@@ -1,10 +1,10 @@
 use crate::{
     data::models::{
         CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ChatConversionRateResponse,
-        ClusterAnalyticsFilter, ClusterTopicsClickhouse, ComponentAnalyticsFilter,
-        ComponentInteractionTimeResponse, ComponentNamesResponse, DatasetAnalytics,
-        EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts, FloatTimePoint,
-        FloatTimePointClickhouse, GetEventsResponseBody, Granularity, HeadQueries,
+        ChatRevenueResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse,
+        ComponentAnalyticsFilter, ComponentInteractionTimeResponse, ComponentNamesResponse,
+        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts,
+        FloatTimePoint, FloatTimePointClickhouse, GetEventsResponseBody, Granularity, HeadQueries,
         IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool,
         PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
         RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
