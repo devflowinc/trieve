@@ -2079,7 +2079,9 @@ pub async fn get_top_pages_query(
             location,
             count(*) as count
         FROM events
-        WHERE dataset_id = ? AND location != ''",
+        WHERE dataset_id = ? AND location != ''
+        AND event_name NOT LIKE '%_load'
+        ",
     );
 
     if let Some(filter_params) = &filter {
@@ -2121,7 +2123,7 @@ pub async fn get_top_components_query(
             JSONExtractString(metadata, 'component_props', 'componentName') as componentName,
             count(*) as count
         FROM events
-        WHERE dataset_id = ? AND componentName != ''",
+        WHERE dataset_id = ? AND componentName != '' AND event_name NOT LIKE '%_load'",
     );
 
     if let Some(filter_params) = &filter {
