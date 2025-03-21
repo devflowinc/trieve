@@ -2031,7 +2031,7 @@ pub async fn get_total_unique_users_query(
         FROM 
             events
         WHERE 
-            dataset_id = ? AND user_id != ''
+            dataset_id = ? AND user_id != '' AND event_name NOT LIKE '%_load'
         ",
         interval,
     );
