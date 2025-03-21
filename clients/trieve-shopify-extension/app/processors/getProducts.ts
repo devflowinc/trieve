@@ -285,13 +285,13 @@ export async function sendChunksFromWebhook(
     }
     let data = response.data as {
       data: {
-        productVariant: {
+        productVariant?: {
           metafields: { nodes: { key: string; value: string }[] };
         };
       };
     };
 
-    variant.metafields = data?.data.productVariant.metafields.nodes;
+    variant.metafields = data?.data.productVariant?.metafields.nodes ?? [];
     return createChunkFromProductWebhook(
       product,
       variant,
