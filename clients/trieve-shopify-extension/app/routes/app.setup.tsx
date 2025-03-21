@@ -11,6 +11,10 @@ import { authenticate } from "app/shopify.server";
 import { TrieveKey } from "app/types";
 import { TrieveSDK } from "trieve-ts-sdk";
 
+export type AppInstallData = {
+  currentAppInstallation: { id: string };
+};
+
 export const loader = async (args: LoaderFunctionArgs) => {
   const startCrawl = async (
     crawlOptions: ExtendedCrawlOptions,
@@ -45,10 +49,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
     ).catch(console.error);
   };
 
-  type AppInstallData = {
-    currentAppInstallation: { id: string };
-  };
-
   const setAppMetafields = async (
     adminApi: AdminApiCaller,
     trieveKey: TrieveKey,
@@ -69,8 +69,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     const appId = response.data;
 
     await adminApi(
-      `
-    #graphql
+      `#graphql
     mutation CreateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
         metafieldsSet(metafields: $metafieldsSetInput) {
           metafields {
