@@ -501,6 +501,7 @@ pub async fn get_extended_org_usage_by_id_query(
     date_range: Option<DateRange>,
     clickhouse_client: &clickhouse::Client,
     pool: web::Data<Pool>,
+    timer: &mut Option<simple_server_timing_header::Timer>,
 ) -> Result<ExtendedOrganizationUsageCount, ServiceError> {
     let usage = get_org_usage_by_id_query(organization_id, pool).await?;
 
@@ -521,6 +522,10 @@ pub async fn get_extended_org_usage_by_id_query(
             ServiceError::InternalServerError(format!("Error fetching search queries {:?}", e))
         })?;
 
+    if let Some(timer) = timer {
+        timer.add("fetched search_count");
+    }
+
     let message_tokens = clickhouse_client
         .query(&format_with_daterange(
             "
@@ -537,6 +542,10 @@ pub async fn get_extended_org_usage_by_id_query(
         .map_err(|e| {
             ServiceError::InternalServerError(format!("Error fetching message queries {:?}", e))
         })?;
+
+    if let Some(timer) = timer {
+        timer.add("fetched message_count");
+    }
 
     let bytes_and_tokens_ingested = clickhouse_client
         .query(&format_with_daterange(
@@ -555,6 +564,10 @@ pub async fn get_extended_org_usage_by_id_query(
             ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
         })?;
 
+    if let Some(timer) = timer {
+        timer.add("fetched bytes_ingested and tokens_ingested");
+    }
+
     let ocr_pages = clickhouse_client
         .query(&format_with_daterange(
             "
@@ -570,6 +583,10 @@ pub async fn get_extended_org_usage_by_id_query(
         .map_err(|e| {
             ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
         })?;
+
+    if let Some(timer) = timer {
+        timer.add("fetched ocr_pages");
+    }
 
     let website_pages_scraped = clickhouse_client
         .query(&format_with_daterange(
@@ -587,6 +604,10 @@ pub async fn get_extended_org_usage_by_id_query(
             ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
         })?;
 
+    if let Some(timer) = timer {
+        timer.add("fetched website_pages_scraped");
+    }
+
     let events_ingested = clickhouse_client
         .query(&format_with_daterange(
             "
@@ -603,6 +624,10 @@ pub async fn get_extended_org_usage_by_id_query(
         .map_err(|e| {
             ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
         })?;
+
+    if let Some(timer) = timer {
+        timer.add("fetched events_ingested");
+    }
 
     Ok(ExtendedOrganizationUsageCount {
         dataset_count: usage.dataset_count,
