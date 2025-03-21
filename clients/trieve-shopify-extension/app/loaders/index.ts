@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
+import { AppInstallData } from "app/routes/app.setup";
 import { TrieveSDK } from "trieve-ts-sdk";
 
 interface TrieveServerLoaderCtx {
@@ -36,3 +37,111 @@ export type AdminApiCaller = <T>(
 ) => Promise<Result<T, Error>>;
 
 export type Loader = (ctx: TrieveServerLoaderCtx) => Promise<void>;
+
+export const setMetafield = async (
+  caller: AdminApiCaller,
+  key: string,
+  value: string,
+): Promise<Result<unknown>> => {
+  const response = await caller<AppInstallData>(`
+      #graphql
+      query {
+        currentAppInstallation {
+          id
+        }
+      }
+      `);
+
+  if (response.error) {
+    return response;
+  }
+
+  const appId = response.data;
+
+  const insertResult = await caller(
+    `#graphql
+    mutation CreateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafieldsSetInput) {
+          metafields {
+            id
+            namespace
+            key
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `,
+    {
+      variables: {
+        metafieldsSetInput: [
+          {
+            namespace: "trieve",
+            key: key,
+            value: value,
+            type: "single_line_text_field",
+            ownerId: appId.currentAppInstallation.id,
+          },
+        ],
+      },
+    },
+  );
+
+  return insertResult;
+};
+
+export const getMetafield = async (
+  caller: AdminApiCaller,
+  key: string,
+): Promise<Result<string | null>> => {
+  const response = await caller<AppInstallData>(`
+      #graphql
+      query {
+        currentAppInstallation {
+          id
+        }
+      }
+      `);
+
+  if (response.error) {
+    return response;
+  }
+
+  const appId = response.data;
+
+  const queryResult = await caller<{
+    appInstallation: {
+      metafield: { value: string; updatedAt: string } | null;
+    };
+  }>(
+    `#graphql
+query GetAppDataMetafield($key: String!) {
+  appInstallation {
+    metafield(namespace: "trieve", key: $key) {
+      value
+      updatedAt
+    }
+  }
+}`,
+    {
+      variables: {
+        key: key,
+      },
+    },
+  );
+
+  if (queryResult.error) {
+    return queryResult;
+  }
+
+  const value = queryResult.data.appInstallation.metafield
+    ? queryResult.data.appInstallation.metafield.value
+    : null;
+
+  return {
+    data: value,
+    error: null,
+  };
+};
