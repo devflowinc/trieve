@@ -2356,7 +2356,6 @@ pub async fn get_search_conversion_rate_query(
         JOIN search_queries ON toUUID(events.request_id) = search_queries.id
         WHERE dataset_id = ?
         AND request_type = 'search'
-        AND event_type IN ('add_to_cart', 'purchase')
         AND is_conversion = true",
         interval
     );
@@ -2514,7 +2513,6 @@ pub async fn get_recommendation_conversion_rate_query(
         JOIN recommendations ON toUUID(events.request_id) = recommendations.id
         WHERE dataset_id = ?
         AND request_type = 'recommendation'
-        AND event_type IN ('add_to_cart', 'purchase')
         AND is_conversion = true",
         interval
     );
@@ -2790,7 +2788,6 @@ pub async fn get_chat_conversion_rate_query(
         JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
         WHERE topics.dataset_id = ?
         AND request_type = 'chat'
-        AND event_type IN ('add_to_cart', 'purchase')
         AND is_conversion = true",
         interval
     );
