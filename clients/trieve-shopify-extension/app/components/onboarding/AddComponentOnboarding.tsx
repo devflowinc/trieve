@@ -20,7 +20,7 @@ export const AddComponentOnboarding: OnboardingBody = ({
 
   const complete = useMemo(() => {
     const stringified = JSON.stringify(data);
-    if (stringified.includes("trieve")) return true;
+    if (stringified.includes("trieve.ai")) return true;
     return false;
   }, [data]);
 
@@ -58,8 +58,6 @@ export const AddComponentOnboarding: OnboardingBody = ({
   return (
     <div className="grid w-full py-4 min-h-[100px] place-items-center">
       <div className="flex flex-col gap-1 items-center">
-        <div>{shopname}</div>
-        {getDeeplink()}
         <Text as="h2" variant="headingMd">
           {complete === true ? "Component Added" : "Add the search component"}
         </Text>
