@@ -165,7 +165,9 @@ export const fillDate = <T>({
   granularity: Granularity;
   defaultValue?: number | null;
 }) => {
-  const startDate = date_range?.gte ? new Date(date_range.gte + "Z") : subDays(new Date(), 7);
+  const startDate = date_range?.gte
+    ? new Date(date_range.gte + "Z")
+    : subDays(new Date(), 7);
   const endDate = date_range?.lte ? new Date(date_range.lte + "Z") : new Date();
   console.log(startDate, endDate);
 
@@ -260,16 +262,47 @@ export const toTitleCase = (str: string) => {
   return str.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-
-export const formatTimeValueForChart = (seconds: number | undefined): string => {
+export const formatTimeValueForChart = (
+  seconds: number | undefined,
+): string => {
   if (seconds === undefined) return "0s";
-  
+
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = (seconds % 60).toFixed(1);
-  
+
   if (minutes === 0) {
     return `${remainingSeconds}s`;
   }
-  
+
   return `${minutes}m ${remainingSeconds}s`;
+};
+
+export type KnownEventNames =
+  | "trieve-modal_load"
+  | "site-add_to_cart"
+  | "site-checkout"
+  | "Click"
+  | "View"
+  | "send_message"
+  | "start_conversation"
+  | "trieve-modal_click";
+
+export const formatEventName = (
+  event: KnownEventNames | (string & {}),
+): string => {
+  // can add outliers here
+
+  if (event === "trieve-modal_load") {
+    return "Load Modal";
+  } else if (event === "site-add_to_cart") {
+    return "Add to Cart";
+  } else if (event === "site-checkout") {
+    return "Checkout";
+  } else if (event === "trieve-modal_click") {
+    return "Click Modal";
+  } else if (event === "View") {
+    return "View Chat Response";
+  }
+
+  return toTitleCase(event);
 };

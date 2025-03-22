@@ -547,6 +547,9 @@ export type ComponentAnalytics = {
     filter?: ((ComponentAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'component_interaction_time';
+} | {
+    filter?: ((EventAnalyticsFilter) | null);
+    type: 'event_counts';
 };
 
 export type type3 = 'total_unique_users';
@@ -556,7 +559,7 @@ export type ComponentAnalyticsFilter = {
     date_range?: ((DateRange) | null);
 };
 
-export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse | ComponentInteractionTimeResponse;
+export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse | ComponentInteractionTimeResponse | EventNameAndCountsResponse;
 
 export type ComponentInteractionTimeResponse = {
     avg_interaction_time: number;
@@ -1409,6 +1412,15 @@ export type EventData = {
     user_id?: (string) | null;
 };
 
+export type EventNameAndCounts = {
+    event_count: number;
+    event_name: string;
+};
+
+export type EventNameAndCountsResponse = {
+    event_names: Array<EventNameAndCounts>;
+};
+
 export type EventReturn = {
     event_types: Array<(string)>;
     events: Array<WorkerEvent>;
@@ -1917,6 +1929,10 @@ export type GetCrawlRequestsReqPayload = {
 export type GetDatasetsPagination = {
     limit?: (number) | null;
     offset?: (number) | null;
+};
+
+export type GetEventCountsRequestBody = {
+    filter?: ((EventAnalyticsFilter) | null);
 };
 
 export type GetEventsData = {

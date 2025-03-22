@@ -14,6 +14,8 @@ import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import "../routes/_index/tailwind.css";
 import { MustLoginPage } from "app/components/MustLoginPage";
+import { LinearScale, CategoryScale } from "chart.js";
+import { FunnelController, TrapezoidElement } from "chartjs-chart-funnel";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -27,6 +29,12 @@ export const loader = async () => {
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
   Chart.register(...registerables);
+  Chart.register(
+    FunnelController,
+    TrapezoidElement,
+    LinearScale,
+    CategoryScale,
+  );
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>

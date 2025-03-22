@@ -3,7 +3,7 @@ use crate::{
         CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ChatConversionRateResponse,
         ClusterAnalyticsFilter, ClusterTopicsClickhouse, ComponentAnalyticsFilter,
         ComponentInteractionTimeResponse, ComponentNamesResponse, DatasetAnalytics,
-        EventAnalyticsFilter, EventData, EventDataClickhouse, FloatTimePoint,
+        EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts, FloatTimePoint,
         FloatTimePointClickhouse, GetEventsResponseBody, Granularity, HeadQueries,
         IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool,
         PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
@@ -2491,7 +2491,6 @@ pub async fn get_search_ctr_metrics_over_time_query(
         points: ctr_metrics_over_time,
     })
 }
-
 pub async fn get_recommendation_conversion_rate_query(
     dataset_id: uuid::Uuid,
     filter: Option<RecommendationAnalyticsFilter>,
@@ -2936,4 +2935,101 @@ pub async fn get_component_interaction_time_query(
             .map(|x| x.into())
             .collect(),
     })
+}
+
+pub async fn get_event_counts_by_type_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<EventAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<Vec<EventNameAndCounts>, ServiceError> {
+    // Build filter clauses for each table
+    let (events_filter, rag_filter, topics_filter) = if let Some(filter) = &filter {
+        let events_base = "dataset_id = ?".to_string();
+        let rag_base = "dataset_id = ?".to_string();
+        let topics_base = "dataset_id = ?".to_string();
+
+        let events_filter = filter.add_to_query(events_base).map_err(|e| {
+            log::error!("Error adding filter to events query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+
+        let rag_filter = filter.add_to_query(rag_base).map_err(|e| {
+            log::error!("Error adding filter to rag query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+
+        let topics_filter = filter.add_to_query(topics_base).map_err(|e| {
+            log::error!("Error adding filter to topics query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+
+        (events_filter, rag_filter, topics_filter)
+    } else {
+        (
+            "dataset_id = ?".to_string(),
+            "dataset_id = ?".to_string(),
+            "dataset_id = ?".to_string(),
+        )
+    };
+
+    let query_string = format!(
+        "
+        -- Event counts by type
+        SELECT
+            event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            events
+        WHERE {}
+        GROUP BY event_name
+        
+        UNION ALL
+        
+        -- All users 
+        SELECT
+            'all_users' as event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            events
+        WHERE {}
+        
+        UNION ALL
+        
+        -- messages sent
+        SELECT
+            'send_message' as event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            rag_queries
+        WHERE {}
+        
+        UNION ALL
+        
+        -- topics created
+        SELECT
+            'start_conversation' as event_name,
+            COUNT(DISTINCT owner_id) AS event_count
+        FROM
+            topics
+        WHERE {}
+        
+        ORDER BY event_count DESC
+    ",
+        events_filter, events_filter, rag_filter, topics_filter
+    );
+
+    let result = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind(dataset_id)
+        .bind(dataset_id)
+        .bind(dataset_id)
+        .fetch_all::<EventNameAndCounts>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching combined event counts: {:?}", e);
+            ServiceError::InternalServerError("Error fetching event counts".to_string())
+        })?;
+
+    Ok(result)
 }

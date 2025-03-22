@@ -8940,6 +8940,29 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "EventCounts",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EventAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "event_counts"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -8979,6 +9002,9 @@
           },
           {
             "$ref": "#/components/schemas/ComponentInteractionTimeResponse"
+          },
+          {
+            "$ref": "#/components/schemas/EventNameAndCountsResponse"
           }
         ]
       },
@@ -11016,6 +11042,36 @@
           "user_id": "user1"
         }
       },
+      "EventNameAndCounts": {
+        "type": "object",
+        "required": [
+          "event_name",
+          "event_count"
+        ],
+        "properties": {
+          "event_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "event_name": {
+            "type": "string"
+          }
+        }
+      },
+      "EventNameAndCountsResponse": {
+        "type": "object",
+        "required": [
+          "event_names"
+        ],
+        "properties": {
+          "event_names": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventNameAndCounts"
+            }
+          }
+        }
+      },
       "EventReturn": {
         "type": "object",
         "required": [
@@ -12305,6 +12361,19 @@
           "offset": {
             "type": "integer",
             "format": "int64",
+            "nullable": true
+          }
+        }
+      },
+      "GetEventCountsRequestBody": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventAnalyticsFilter"
+              }
+            ],
             "nullable": true
           }
         }

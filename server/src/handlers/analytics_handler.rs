@@ -3,10 +3,10 @@ use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
         ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
-        EventDataTypes, EventTypes, GetEventsRequestBody, OrganizationWithSubAndPlan, Pool,
-        RAGAnalytics, RAGAnalyticsResponse, RecommendationAnalytics,
-        RecommendationAnalyticsResponse, SearchAnalytics, SearchAnalyticsResponse,
-        TopDatasetsRequestTypes,
+        EventDataTypes, EventNameAndCountsResponse, EventTypes, GetEventsRequestBody,
+        OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
+        RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
+        SearchAnalyticsResponse, TopDatasetsRequestTypes,
     },
     errors::ServiceError,
     operators::{
@@ -979,6 +979,21 @@ pub async fn get_component_analytics(
             .await?;
 
             ComponentAnalyticsResponse::ComponentInteractionTime(component_interaction_time)
+        }
+        ComponentAnalytics::EventCounts { filter } => {
+            let mut event_counts = get_event_counts_by_type_query(
+                dataset_org_plan_sub.dataset.id,
+                filter.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            // Sort by event_count
+            event_counts.sort_by(|a, b| b.event_count.cmp(&a.event_count));
+
+            ComponentAnalyticsResponse::EventTypeAndCounts(EventNameAndCountsResponse {
+                event_names: event_counts,
+            })
         }
     };
 
