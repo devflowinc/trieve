@@ -447,7 +447,6 @@ export const sendChunks = async (
   }
 
   await Promise.all(chunkSendPromises);
-  await new Promise((resolve) => setTimeout(resolve, 4000));
   setMetafield(
     adminApiFetcher,
     "crawlStatus",

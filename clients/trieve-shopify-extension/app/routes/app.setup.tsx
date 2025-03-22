@@ -48,9 +48,13 @@ export const loader = async (args: LoaderFunctionArgs) => {
       },
     });
 
-    sendChunks(datasetId ?? "", trieveKey, adminApi, session, crawlOptions)
-      .then(() => {})
-      .catch(console.error);
+    sendChunks(
+      datasetId ?? "",
+      trieveKey,
+      adminApi,
+      session,
+      crawlOptions,
+    ).catch(console.error);
   };
 
   const setAppMetafields = async (
