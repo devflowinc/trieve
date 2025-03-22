@@ -1,6 +1,6 @@
 import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
 import { getTrieveBaseUrlEnv } from "app/env.server";
-import { AdminApiCaller } from "app/loaders";
+import { AdminApiCaller, setMetafield } from "app/loaders";
 import {
   Product,
   TrieveKey,
@@ -352,6 +352,9 @@ export const sendChunks = async (
   let next_page: string | null = null;
   let started = false;
   const chunks: ChunkReqPayload[] = [];
+  // Streamed to onboarding frontend
+  let chunkCount = 0;
+  let chunkSendPromises = new Array<Promise<void>>();
 
   while (next_page != null || !started) {
     started = true;
@@ -424,14 +427,35 @@ export const sendChunks = async (
       );
 
     for (const batch of chunk_to_size(dataChunks, 120)) {
-      sendChunksToTrieve(batch, key, datasetId ?? "");
+      const sendPromise = sendChunksToTrieve(batch, key, datasetId ?? "");
+      chunkSendPromises.push(sendPromise);
     }
+
+    chunkCount += dataChunks.length;
+    setMetafield(
+      adminApiFetcher,
+      "crawlStatus",
+      JSON.stringify({
+        chunkCount,
+        done: false,
+      }),
+    );
 
     next_page = response.data.products.pageInfo.hasNextPage
       ? response.data.products.pageInfo.endCursor
       : null;
   }
 
+  await Promise.all(chunkSendPromises);
+  await new Promise((resolve) => setTimeout(resolve, 4000));
+  setMetafield(
+    adminApiFetcher,
+    "crawlStatus",
+    JSON.stringify({
+      chunkCount,
+      done: true,
+    }),
+  );
   return chunks;
 };
 

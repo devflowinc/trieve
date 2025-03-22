@@ -4,7 +4,7 @@ import {
   ExtendedCrawlOptions,
 } from "app/components/DatasetSettings";
 import { getTrieveBaseUrlEnv } from "app/env.server";
-import { AdminApiCaller } from "app/loaders";
+import { AdminApiCaller, setMetafield } from "app/loaders";
 import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 import { sendChunks } from "app/processors/getProducts";
 import { authenticate } from "app/shopify.server";
@@ -23,6 +23,14 @@ export const loader = async (args: LoaderFunctionArgs) => {
     trieveKey: TrieveKey,
     adminApi: AdminApiCaller,
   ) => {
+    await setMetafield(
+      adminApi,
+      "crawlStatus",
+      JSON.stringify({
+        chunkCount: 0,
+        done: false,
+      }),
+    );
     await prisma.crawlSettings.upsert({
       create: {
         datasetId: datasetId,
@@ -40,13 +48,9 @@ export const loader = async (args: LoaderFunctionArgs) => {
       },
     });
 
-    sendChunks(
-      datasetId ?? "",
-      trieveKey,
-      adminApi,
-      session,
-      crawlOptions,
-    ).catch(console.error);
+    sendChunks(datasetId ?? "", trieveKey, adminApi, session, crawlOptions)
+      .then(() => {})
+      .catch(console.error);
   };
 
   const setAppMetafields = async (

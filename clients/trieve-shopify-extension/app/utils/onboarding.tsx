@@ -3,6 +3,8 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { AddComponentOnboarding } from "app/components/onboarding/AddComponentOnboarding";
+import { WelcomeOnboarding } from "app/components/onboarding/WelcomeOnboarding";
 import { setMetafield } from "app/loaders";
 import { useClientAdminApi } from "app/loaders/clientLoader";
 import {
@@ -11,44 +13,40 @@ import {
 } from "app/queries/onboarding";
 import { FC, ReactNode, useCallback, useMemo, useState } from "react";
 
+export type OnboardingBody = FC<{
+  goToNextStep?: () => void;
+  goToPreviousStep?: () => void;
+  broadcastCompletion?: () => void;
+}>;
+
 type OnboardingStep = {
   id: string;
   title: string;
   description: string;
   icon: ReactNode;
   defaultComplete?: boolean;
-  body: FC<{
-    goToNextStep?: () => void;
-    goToPreviousStep?: () => void;
-    broadcastCompletion?: () => void;
-  }>;
+  body: OnboardingBody;
+  nextButtonText?: string;
+  hideNextButton?: boolean;
 };
 
 export const onboardingSteps: OnboardingStep[] = [
   {
     id: "welcome-message",
     title: "Welcome to Trieve!",
-    defaultComplete: true,
+    defaultComplete: false,
     description: "Let's get you set up",
     icon: <>👋</>,
-    body: ({ goToNextStep }) => (
-      <div>
-        Welcome to Trieve!
-        <button onClick={goToNextStep}>Next</button>
-      </div>
-    ),
+    body: WelcomeOnboarding,
+    nextButtonText: "Setup Component",
   },
   {
     // Name in a way that changing the step + adding more will not require id rename
     id: "after-welcome",
-    title: "Second task",
+    title: "Add the Trieve Search Component to your site",
     description: "Second task",
     icon: <>👋</>,
-    body: ({ goToPreviousStep }) => (
-      <div>
-        <button onClick={goToPreviousStep}>previous</button>
-      </div>
-    ),
+    body: AddComponentOnboarding,
   },
 ];
 

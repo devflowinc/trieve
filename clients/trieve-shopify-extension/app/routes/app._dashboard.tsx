@@ -40,6 +40,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     key: key as StrongTrieveKey,
     dataset,
     organization,
+    shopDomain: session.shop,
   };
 };
 
@@ -160,7 +161,8 @@ export default function Dashboard() {
                 queryClient={queryClient}
                 dataset={dataset as Dataset}
                 organization={organization as OrganizationWithSubAndPlan}
-                trieveKey={key}>
+                trieveKey={key}
+              >
                 <QueryClientProvider client={queryClient}>
                   <ReactQueryDevtools initialIsOpen={false} />
                   <HydrationBoundary state={dehydratedState}>
