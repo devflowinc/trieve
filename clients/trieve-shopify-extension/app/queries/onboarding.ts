@@ -1,4 +1,4 @@
-import { QueryOptions } from "@tanstack/react-query";
+import { queryOptions, QueryOptions } from "@tanstack/react-query";
 import { AdminApiCaller, getMetafield } from "app/loaders";
 import { onboardingSteps } from "app/utils/onboarding";
 
@@ -60,7 +60,6 @@ export const lastStepIdQuery = (fetcher: AdminApiCaller) => {
     queryKey: ["last_step_id"],
     queryFn: async () => {
       const result = await getMetafield(fetcher, ONBOARD_STEP_META_FIELD);
-      console.log("RESULT OF LAST STEP ID QUERY", result);
       if (!result || result.error || !result.data) {
         return onboardingSteps[0].id;
       }
@@ -70,4 +69,27 @@ export const lastStepIdQuery = (fetcher: AdminApiCaller) => {
       return result.data;
     },
   };
+};
+
+export const crawlStatusOnboardQuery = (fetcher: AdminApiCaller) => {
+  return {
+    queryKey: ["initial_ingest_onboard"],
+    queryFn: async () => {
+      const result = await getMetafield(fetcher, "crawlStatus");
+      if (result.error) {
+        console.error(result.error);
+        throw result.error;
+      }
+      if (!result.data)
+        return {
+          chunkCount: 0,
+          done: false,
+        };
+      const crawlStatus = (await JSON.parse(result.data)) as {
+        chunkCount: number;
+        done: boolean;
+      };
+      return crawlStatus;
+    },
+  } satisfies QueryOptions;
 };
