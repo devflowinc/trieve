@@ -3,10 +3,14 @@ import { createContext, useContext, useEffect, useMemo } from "react";
 import { Dataset, OrganizationWithSubAndPlan, TrieveSDK } from "trieve-ts-sdk";
 import { StrongTrieveKey } from "app/types";
 import { QueryClient } from "@tanstack/react-query";
-import { setQueryClientAndTrieveSDK } from "app/loaders/clientLoader";
+import {
+  setQueryClientAndTrieveSDK,
+  useClientAdminApi,
+} from "app/loaders/clientLoader";
 import { shopDatasetQuery } from "app/queries/shopDataset";
 import { scrapeOptionsQuery } from "app/queries/scrapeOptions";
 import { useEnvs } from "./useEnvs";
+import { lastStepIdQuery } from "app/queries/onboarding";
 
 export const TrieveContext = createContext<{
   trieve: TrieveSDK;
@@ -50,10 +54,15 @@ export const TrieveProvider = ({
     setQueryClientAndTrieveSDK(queryClient, trieve);
   }, []);
 
+  const adminApi = useClientAdminApi();
+
   // Prefetches for everything
   useEffect(() => {
     queryClient.prefetchQuery(shopDatasetQuery(trieve));
     queryClient.prefetchQuery(scrapeOptionsQuery(trieve));
+    queryClient.prefetchQuery(scrapeOptionsQuery(trieve));
+    // Onboarding prefetch
+    queryClient.prefetchQuery(lastStepIdQuery(adminApi));
   }, []);
 
   return (

@@ -21,6 +21,7 @@ export const loader = async () => {
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
     trieveAuthUrl: process.env.TRIEVE_AUTH_URL!,
+    shopifyThemeAppExtensionUuid: process.env.SHOPIFY_THEME_APP_EXTENSION_UUID,
   };
 };
 
