@@ -169,6 +169,72 @@ pub async fn create_stripe_payment_link(
     Ok(payment_link.to_string())
 }
 
+pub async fn create_usage_based_stripe_payment_link(
+    organization_id: uuid::Uuid,
+) -> Result<String, ServiceError> {
+    let admin_dashboard_url = get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
+    let stripe_client = get_stripe_client();
+    // let payment_link_create_request = reqwest::Client::new()
+    //     .post("https://api.stripe.com/v1/payment_links")
+    //     .header("Authorization", format!("Bearer {}", stripe_secret));
+    //
+    let line_item_ids = [
+        "price_1R5LEZBrdfrLlospuaUecIaf", // Ingested Tokens
+        "price_1R5lCIBrdfrLlospJSadU7ds", // Search Tokens
+        "price_1R5kzyBrdfrLlosp0VlrTIWA", // OCR Pages
+        "price_1R5l1JBrdfrLlospdGMrlh89", // Bytes Ingested
+        "price_1R5l2xBrdfrLlospsjdQB1YH", // Message Tokens
+        "price_1R5l7QBrdfrLlospflKU209l", // Analitics
+    ];
+
+    let session = stripe::CheckoutSession::create(
+        &stripe_client,
+        stripe::CreateCheckoutSession {
+            mode: Some(stripe::CheckoutSessionMode::Subscription),
+            setup_intent_data: None,
+            currency: Some(stripe::Currency::USD),
+            success_url: Some(
+                format!(
+                    "{}/dashboard/{}/billing?session_id={{CHECKOUT_SESSION_ID}}",
+                    admin_dashboard_url, organization_id
+                )
+                .as_str(),
+            ),
+            cancel_url: Some(
+                format!(
+                    "{}/dashboard/{}/billing?session_id={{CHECKOUT_SESSION_ID}}",
+                    admin_dashboard_url, organization_id
+                )
+                .as_str(),
+            ),
+            line_items: Some(
+                line_item_ids
+                    .iter()
+                    .map(|id| stripe::CreateCheckoutSessionLineItems {
+                        price: Some(id.to_string()),
+                        ..Default::default()
+                    })
+                    .collect(),
+            ),
+            metadata: Some(HashMap::from([(
+                "organization_id".to_string(),
+                organization_id.to_string(),
+            )])),
+            ..Default::default()
+        },
+    )
+    .await
+    .map_err(|err| {
+        ServiceError::BadRequest(format!("Failed to create setup checkout session {:?}", err))
+    })?;
+    if session.url.is_none() {
+        return Err(ServiceError::BadRequest(
+            "Failed to get setup checkout session url".to_string(),
+        ));
+    }
+    Ok(session.url.unwrap().to_string())
+}
+
 pub async fn get_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     pool: web::Data<Pool>,
