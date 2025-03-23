@@ -1004,7 +1004,7 @@ pub async fn cross_encoder(
                     if let Some(scores) = relevance.get(0) {
                         for (i, score) in scores.iter().enumerate() {
                             if let Some(result) = results.get_mut(i) {
-                                result.score = *score;
+                                result.score = *score / 100.0;
                             }
                         }
                     }
@@ -1154,7 +1154,7 @@ pub async fn cross_encoder(
                                 if let Some(scores) = relevance.get(0) {
                                     for (i, score) in scores.iter().enumerate() {
                                         if let Some(result) = docs_chunk.get_mut(i) {
-                                            result.score = *score;
+                                            result.score = *score / 100.0;
                                         }
                                     }
                                 }

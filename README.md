@@ -119,6 +119,8 @@ cargo install cargo-watch
 
 ### Setup env's
 
+You might need to create the `analytics` directory in ./frontends
+
 ```
 cp .env.analytics ./frontends/analytics/.env
 cp .env.chat ./frontends/chat/.env
@@ -145,7 +147,9 @@ The PAGEFIND_CDN_BASE_URL and S3_SECRET_KEY_CSVJSONL could be set to a random li
 export OPENAI_API_KEY="your_OpenAI_api_key" \
 LLM_API_KEY="your_OpenAI_api_key" \
 PAGEFIND_CDN_BASE_URL="lZP8X4h0Q5Sj2ZmV,aAmu1W92T6DbFUkJ,DZ5pMvz8P1kKNH0r,QAqwvKh8rI5sPmuW,YMwgsBz7jLfN0oX8" \
-S3_SECRET_KEY_CSVJSONL="Gq6wzS3mjC5kL7i4KwexnL3gP8Z1a5Xv,V2c4ZnL0uHqBzFvR2NcN8Pb1g6CjmX9J,TfA1h8LgI5zYkH9A9p7NvWlL0sZzF9p8N,pKr81pLq5n6MkNzT1X09R7Qb0Vn5cFr0d,DzYwz82FQiW6T3u9A4z9h7HLOlJb7L2V1"
+S3_SECRET_KEY_CSVJSONL="Gq6wzS3mjC5kL7i4KwexnL3gP8Z1a5Xv,V2c4ZnL0uHqBzFvR2NcN8Pb1g6CjmX9J,TfA1h8LgI5zYkH9A9p7NvWlL0sZzF9p8N,pKr81pLq5n6MkNzT1X09R7Qb0Vn5cFr0d,DzYwz82FQiW6T3u9A4z9h7HLOlJb7L2V1" \
+GROQ_API_KEY="GROQ_API_KEY_if_applicable"
+
 ```
 
 ### Start docker container services needed for local dev
@@ -158,8 +162,6 @@ cat .env.chat .env.search .env.server .env.docker-compose > .env
 
 ### Start services for local dev
 
-We recommend managing this through [tmuxp, see the guide here](https://gist.github.com/skeptrunedev/101c7a13bb9b9242999830655470efac) or terminal tabs.
-
 ```
 cd clients/ts-sdk
 yarn build
@@ -170,6 +172,9 @@ cd frontends
 yarn
 yarn dev
 ```
+
+We recommend managing this through [tmuxp, see the guide here](https://gist.github.com/skeptrunedev/101c7a13bb9b9242999830655470efac) or terminal tabs.
+
 
 ```
 cd server
