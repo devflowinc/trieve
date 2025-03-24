@@ -10,7 +10,7 @@ use crate::{
             create_stripe_plan_query, create_stripe_setup_checkout_session,
             create_stripe_subscription_query, create_usage_based_stripe_payment_link,
             create_usage_stripe_subscription_query, delete_subscription_by_id_query,
-            get_all_plans_query, get_invoices_for_org_query,
+            get_all_plans_query, get_all_usage_plans_query, get_invoices_for_org_query,
             get_option_subscription_by_organization_id_query, get_plan_by_id_query,
             get_stripe_client, get_subscription_by_id_query, get_usage_based_plan_query,
             set_stripe_subscription_current_period_end, set_subscription_payment_method,
@@ -413,6 +413,27 @@ pub async fn update_subscription_plan(
 )]
 pub async fn get_all_plans(pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
     let stripe_plans = get_all_plans_query(pool)
+        .await
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+    Ok(HttpResponse::Ok().json(stripe_plans))
+}
+
+/// Get All Usage Plans
+///
+/// Get a list of all usage_based plans
+#[utoipa::path(
+    get,
+    path = "/stripe/usage_plans",
+    context_path = "/api",
+    tag = "Stripe",
+    responses(
+        (status = 200, description = "List of all plans", body = Vec<StripeUsageBasedPlan>),
+        (status = 400, description = "Service error relating to getting all plans", body = ErrorResponseBody),
+    ),
+)]
+pub async fn get_all_usage_plans(pool: web::Data<Pool>) -> Result<HttpResponse, actix_web::Error> {
+    let stripe_plans = get_all_usage_plans_query(pool)
         .await
         .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
