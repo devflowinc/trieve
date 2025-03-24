@@ -2,7 +2,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use crate::{
     data::models::{
-        DateRange, Pool, StripeInvoice, StripePlan, StripeSubscription,
+        DateRange, Pool, StripeInvoice, StripePlan, StripeSubscription, StripeUsageBasedPlan,
         UsageBasedStripeSubscription,
     },
     errors::ServiceError,
@@ -126,6 +126,7 @@ pub async fn get_plan_by_id_query(
         .get()
         .await
         .expect("Failed to get connection from pool");
+
     let stripe_plan: StripePlan = stripe_plans_columns::stripe_plans
         .filter(stripe_plans_columns::id.eq(plan_id))
         .first(&mut conn)
@@ -134,6 +135,30 @@ pub async fn get_plan_by_id_query(
             log::error!("Failed to get stripe plan: {}", e);
             ServiceError::BadRequest("Failed to get stripe plan".to_string())
         })?;
+
+    Ok(stripe_plan)
+}
+
+pub async fn get_usage_based_plan_query(
+    plan_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<StripeUsageBasedPlan, ServiceError> {
+    use crate::data::schema::stripe_usage_based_plans::dsl as stripe_usage_based_plans_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    let stripe_plan: StripeUsageBasedPlan =
+        stripe_usage_based_plans_columns::stripe_usage_based_plans
+            .filter(stripe_usage_based_plans_columns::id.eq(plan_id))
+            .first(&mut conn)
+            .await
+            .map_err(|e| {
+                log::error!("Failed to get stripe plan: {}", e);
+                ServiceError::BadRequest("Failed to get stripe plan".to_string())
+            })?;
 
     Ok(stripe_plan)
 }
@@ -204,22 +229,13 @@ pub async fn create_stripe_payment_link(
 }
 
 pub async fn create_usage_based_stripe_payment_link(
+    plan: StripeUsageBasedPlan,
     organization_id: uuid::Uuid,
 ) -> Result<String, ServiceError> {
     let admin_dashboard_url = get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
     let stripe_client = get_stripe_client();
-    // let payment_link_create_request = reqwest::Client::new()
-    //     .post("https://api.stripe.com/v1/payment_links")
-    //     .header("Authorization", format!("Bearer {}", stripe_secret));
-    //
-    let line_item_ids = [
-        "price_1R5LEZBrdfrLlospuaUecIaf", // Ingested Tokens
-        "price_1R5lCIBrdfrLlospJSadU7ds", // Search Tokens
-        "price_1R5kzyBrdfrLlosp0VlrTIWA", // OCR Pages
-        "price_1R5l1JBrdfrLlospdGMrlh89", // Bytes Ingested
-        "price_1R5l2xBrdfrLlospsjdQB1YH", // Message Tokens
-        "price_1R5l7QBrdfrLlospflKU209l", // Analitics
-    ];
+
+    let line_item_ids = plan.line_item_ids();
 
     let session = stripe::CheckoutSession::create(
         &stripe_client,

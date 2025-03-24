@@ -258,6 +258,22 @@ diesel::table! {
 }
 
 diesel::table! {
+    stripe_usage_based_plans (id) {
+        id -> Uuid,
+        name -> Text,
+        visible -> Bool,
+        ingest_tokens_price_id -> Text,
+        bytes_ingested_price_id -> Text,
+        search_tokens_price_id -> Text,
+        message_tokens_price_id -> Text,
+        analytics_events_price_id -> Text,
+        ocr_pages_price_id -> Text,
+        pages_crawls_price_id -> Text,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     topics (id) {
         id -> Uuid,
         name -> Text,
@@ -370,6 +386,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     stripe_invoices,
     stripe_plans,
     stripe_subscriptions,
+    stripe_usage_based_plans,
     topics,
     usage_based_stripe_subscriptions,
     user_api_key,
