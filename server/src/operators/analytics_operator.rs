@@ -1,9 +1,9 @@
 use crate::{
     data::models::{
         CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ChatConversionRateResponse,
-        ClusterAnalyticsFilter, ClusterTopicsClickhouse, ComponentAnalyticsFilter,
-        ComponentInteractionTimeResponse, ComponentNamesResponse, DatasetAnalytics,
-        EventAnalyticsFilter, EventData, EventDataClickhouse, FloatTimePoint,
+        ChatRevenueResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse,
+        ComponentAnalyticsFilter, ComponentInteractionTimeResponse, ComponentNamesResponse,
+        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, FloatTimePoint,
         FloatTimePointClickhouse, GetEventsResponseBody, Granularity, HeadQueries,
         IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool,
         PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
@@ -18,8 +18,8 @@ use crate::{
         SearchCTRMetricsClickhouse, SearchClusterTopics, SearchConversionRateResponse,
         SearchQueriesWithClicksCTRResponse, SearchQueriesWithClicksCTRResponseClickhouse,
         SearchQueriesWithoutClicksCTRResponse, SearchQueriesWithoutClicksCTRResponseClickhouse,
-        SearchQueryEvent, SearchQueryEventClickhouse, SearchSortBy, SearchTypeCount,
-        SearchesPerUserResponse, SortOrder, TopComponents, TopComponentsResponse,
+        SearchQueryEvent, SearchQueryEventClickhouse, SearchRevenueResponse, SearchSortBy,
+        SearchTypeCount, SearchesPerUserResponse, SortOrder, TopComponents, TopComponentsResponse,
         TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages, TopPagesResponse,
         TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse, TopicDetailsResponse,
         TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse,
@@ -858,14 +858,7 @@ pub async fn get_rag_usage_graph_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RAGUsageGraphResponse, ServiceError> {
-    let granularity = granularity.unwrap_or(Granularity::Hour);
-    let interval = match granularity {
-        Granularity::Second => "1 SECOND",
-        Granularity::Minute => "1 MINUTE",
-        Granularity::Hour => "1 HOUR",
-        Granularity::Day => "1 DAY",
-        Granularity::Month => "1 MONTH",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = format!(
         "SELECT 
@@ -1082,14 +1075,7 @@ pub async fn get_recommendation_usage_graph_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RecommendationUsageGraphResponse, ServiceError> {
-    let granularity = granularity.unwrap_or(Granularity::Hour);
-    let interval = match granularity {
-        Granularity::Second => "1 SECOND",
-        Granularity::Minute => "1 MINUTE",
-        Granularity::Hour => "1 HOUR",
-        Granularity::Day => "1 DAY",
-        Granularity::Month => "1 MONTH",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = format!(
         "SELECT 
@@ -1146,14 +1132,7 @@ pub async fn get_recommendations_per_user_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RecommendationsPerUserResponse, ServiceError> {
-    let granularity = granularity.unwrap_or(Granularity::Hour);
-    let interval = match granularity {
-        Granularity::Second => "1 SECOND",
-        Granularity::Minute => "1 MINUTE",
-        Granularity::Hour => "1 HOUR",
-        Granularity::Day => "1 DAY",
-        Granularity::Month => "1 MONTH",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = format!(
         "WITH recommendations_per_user AS (
@@ -1957,14 +1936,7 @@ pub async fn get_topics_over_time_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<TopicsOverTimeResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = format!(
         "SELECT 
@@ -2016,14 +1988,7 @@ pub async fn get_total_unique_users_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<TotalUniqueUsersResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
     let mut query_string = format!(
         "SELECT 
             CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
@@ -2188,14 +2153,7 @@ pub async fn get_ctr_metrics_over_time_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<CTRMetricsOverTimeResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = format!(
         "SELECT 
@@ -2268,14 +2226,7 @@ pub async fn get_messages_per_user(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<MessagesPerUserResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = format!(
         "WITH user_daily_messages AS (
@@ -2341,14 +2292,7 @@ pub async fn get_search_conversion_rate_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchConversionRateResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut conversions_query_string = format!(
         "SELECT 
@@ -2418,14 +2362,7 @@ pub async fn get_search_ctr_metrics_over_time_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<CTRMetricsOverTimeResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = format!(
         "SELECT 
@@ -2498,14 +2435,7 @@ pub async fn get_recommendation_conversion_rate_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<RecommendationsConversionRateResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut conversions_query_string = format!(
         "SELECT 
@@ -2575,14 +2505,7 @@ pub async fn get_searches_per_user_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchesPerUserResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = format!(
         "WITH user_daily_searches AS (
@@ -2648,14 +2571,7 @@ pub async fn get_chat_average_rating_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<ChatAverageRatingResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = format!(
         "SELECT 
@@ -2708,14 +2624,7 @@ pub async fn get_search_average_rating_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchAverageRatingResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = format!(
         "SELECT 
@@ -2772,14 +2681,7 @@ pub async fn get_chat_conversion_rate_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<ChatConversionRateResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut conversions_query_string = format!(
         "SELECT 
@@ -2789,7 +2691,7 @@ pub async fn get_chat_conversion_rate_query(
         JOIN topics ON toUUID(events.request_id) = topics.topic_id
         JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
         WHERE topics.dataset_id = ?
-        AND request_type = 'chat'
+        AND request_type = 'rag'
         AND is_conversion = true",
         interval
     );
@@ -2850,14 +2752,7 @@ pub async fn get_component_interaction_time_query(
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<ComponentInteractionTimeResponse, ServiceError> {
-    let interval = match granularity {
-        Some(Granularity::Second) => "1 SECOND",
-        Some(Granularity::Minute) => "1 MINUTE",
-        Some(Granularity::Hour) => "1 HOUR",
-        Some(Granularity::Day) => "1 DAY",
-        Some(Granularity::Month) => "1 MONTH",
-        None => "1 HOUR",
-    };
+    let interval = get_interval_string(&granularity);
 
     let mut query_string = String::from(
         "WITH all_events AS (
@@ -2935,5 +2830,108 @@ pub async fn get_component_interaction_time_query(
             .into_iter()
             .map(|x| x.into())
             .collect(),
+    })
+}
+
+fn get_interval_string(granularity: &Option<Granularity>) -> &str {
+    match granularity {
+        Some(Granularity::Second) => "1 SECOND",
+        Some(Granularity::Minute) => "1 MINUTE",
+        Some(Granularity::Hour) => "1 HOUR",
+        Some(Granularity::Day) => "1 DAY",
+        Some(Granularity::Month) => "1 MONTH",
+        None => "1 HOUR",
+    }
+}
+
+pub async fn get_search_revenue_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<SearchAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<SearchRevenueResponse, ServiceError> {
+    let interval = get_interval_string(&granularity);
+
+    let mut query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            avg(arraySum(arrayMap(x -> JSONExtract(x, 'revenue', 'Float64'), JSONExtractArrayRaw(items)))) as avg_revenue
+        FROM events
+        WHERE dataset_id = ?
+        AND event_name = 'purchase' 
+        AND items != '[]' AND request_type = 'search'
+        ",
+        interval,
+    );
+
+    if let Some(filter) = &filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    let search_revenue = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<FloatTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching search revenue: {:?}", e);
+            ServiceError::InternalServerError("Error fetching search revenue".to_string())
+        })?;
+
+    let avg_search_revenue = if !search_revenue.is_empty() {
+        search_revenue.iter().map(|x| x.point).sum::<f64>() / search_revenue.len() as f64
+    } else {
+        0.0
+    };
+
+    Ok(SearchRevenueResponse {
+        avg_search_revenue,
+        points: search_revenue.into_iter().map(|x| x.into()).collect(),
+    })
+}
+
+pub async fn get_chat_revenue_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RAGAnalyticsFilter>,
+    granularity: Option<Granularity>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<ChatRevenueResponse, ServiceError> {
+    let interval = get_interval_string(&granularity);
+
+    let mut query_string = format!(
+        "SELECT 
+            CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+            avg(arraySum(arrayMap(x -> JSONExtract(x, 'revenue', 'Float64'), JSONExtractArrayRaw(items)))) as avg_revenue
+        FROM events
+        WHERE dataset_id = ?
+        AND event_name = 'purchase' 
+        AND items != '[]' AND request_type = 'rag'
+        ",
+        interval,
+    );
+
+    if let Some(filter) = &filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    let chat_revenue = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<FloatTimePointClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching chat revenue: {:?}", e);
+            ServiceError::InternalServerError("Error fetching chat revenue".to_string())
+        })?;
+
+    let avg_chat_revenue = if !chat_revenue.is_empty() {
+        chat_revenue.iter().map(|x| x.point).sum::<f64>() / chat_revenue.len() as f64
+    } else {
+        0.0
+    };
+
+    Ok(ChatRevenueResponse {
+        avg_chat_revenue,
+        points: chat_revenue.into_iter().map(|x| x.into()).collect(),
     })
 }

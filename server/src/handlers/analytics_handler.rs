@@ -357,6 +357,19 @@ pub async fn get_search_analytics(
             .await?;
             SearchAnalyticsResponse::SearchAverageRating(search_average_rating)
         }
+        SearchAnalytics::SearchRevenue {
+            filter,
+            granularity,
+        } => {
+            let search_revenue = get_search_revenue_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            SearchAnalyticsResponse::SearchRevenue(search_revenue)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))
@@ -538,6 +551,19 @@ pub async fn get_rag_analytics(
             )
             .await?;
             RAGAnalyticsResponse::ChatConversionRate(chat_conversion_rate)
+        }
+        RAGAnalytics::ChatRevenue {
+            filter,
+            granularity,
+        } => {
+            let chat_revenue = get_chat_revenue_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                granularity,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::ChatRevenue(chat_revenue)
         }
     };
 

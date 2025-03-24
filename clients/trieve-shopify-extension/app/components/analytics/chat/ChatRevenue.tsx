@@ -1,33 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
-import { RAGAnalyticsFilter, SearchAnalyticsFilter, TopicAnalyticsFilter } from "trieve-ts-sdk";
+import { RAGAnalyticsFilter } from "trieve-ts-sdk";
 import { Granularity } from "trieve-ts-sdk";
 import { GraphComponent } from "../GraphComponent";
-import { searchesPerUserQuery } from "app/queries/analytics/search";
+import { chatRevenueQuery } from "app/queries/analytics/chat";
 
-export const SearchesPerUser = ({
+export const ChatRevenue = ({
   filters,
   granularity,
 }: {
-  filters: SearchAnalyticsFilter;
+  filters: RAGAnalyticsFilter;
   granularity: Granularity;
 }) => {
   const { trieve } = useTrieve();
   const { data, isLoading } = useQuery(
-    searchesPerUserQuery(trieve, filters, granularity),
+    chatRevenueQuery(trieve, filters, granularity),
   );
 
   return (
     <GraphComponent
       loading={isLoading}
-      topLevelMetric={data?.avg_searches_per_user}
+      topLevelMetric={data?.avg_search_revenue}
       graphData={data?.points}
       granularity={granularity}
       date_range={filters.date_range}
+      dataType="currency"
       xAxis={"time_stamp"}
       yAxis={"point"}
-      label="Searches Per User"
-      tooltipContent="The average number of searches a user performs in one session."
+      label="Average Search Revenue"
+      tooltipContent="The average revenue that users spend on the search."
     />
   );
 };

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
-import { RAGAnalyticsFilter } from "trieve-ts-sdk";
+import { SearchAnalyticsFilter } from "trieve-ts-sdk";
 import { Granularity } from "trieve-ts-sdk";
 import { GraphComponent } from "../GraphComponent";
 import { searchAverageRatingQuery } from "app/queries/analytics/search";
@@ -9,7 +9,7 @@ export const SearchAverageRating = ({
   filters,
   granularity,
 }: {
-  filters: RAGAnalyticsFilter;
+  filters: SearchAnalyticsFilter;
   granularity: Granularity;
 }) => {
   const { trieve } = useTrieve();
