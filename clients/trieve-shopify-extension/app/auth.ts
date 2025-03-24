@@ -17,11 +17,27 @@ export const validateTrieveAuth = async <S extends boolean = true>(
   });
 
   if (!key) {
-    throw json({ message: "No Key" }, 401);
+    throw new Response(
+      JSON.stringify({ message: "No key matching the current user" }),
+      {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        status: 401,
+      },
+    );
   }
 
   if (strict && !key.currentDatasetId) {
-    throw json({ message: "No dataset selected" }, 401);
+    throw new Response(
+      JSON.stringify({ message: "No dataset selected" }),
+      {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        status: 401,
+      },
+    );
   }
 
   return {
