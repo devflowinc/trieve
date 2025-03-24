@@ -361,9 +361,22 @@ const Modal = () => {
         )}
         {(props.displayModal ?? true) && <ModalContainer />}
       </>
-      {props.showFloatingSearchIcon && <FloatingSearchIcon />}
-      {props.showFloatingButton && <FloatingActionButton />}
-      {props.showFloatingInput && <FloatingSearchInput />}
+      {props.showFloatingSearchIcon &&
+        props.usePortal &&
+        createPortal(<FloatingSearchIcon />, document.body)}
+      {props.showFloatingSearchIcon && !props.usePortal && (
+        <FloatingSearchIcon />
+      )}
+
+      {props.showFloatingButton &&
+        props.usePortal &&
+        createPortal(<FloatingActionButton />, document.body)}
+      {props.showFloatingButton && !props.usePortal && <FloatingActionButton />}
+
+      {props.showFloatingInput &&
+        props.usePortal &&
+        createPortal(<FloatingSearchInput />, document.body)}
+      {props.showFloatingInput && !props.usePortal && <FloatingSearchInput />}
     </>
   );
 };

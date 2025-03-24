@@ -50,5 +50,11 @@ export const ModalContainer = () => {
     );
   }, [props, mode, open, fullscreenPdfState, componentClass]);
 
-  return <>{props.inline ? component :  createPortal(component, document.body)}</>;
+  return (
+    <>
+      {props.inline || !props.usePortal
+        ? component
+        : createPortal(component, document.body)}
+    </>
+  );
 };
