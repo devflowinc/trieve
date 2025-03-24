@@ -1573,7 +1573,7 @@ body {
             @apply tv-w-full tv-mt-4;
 
             .trieve-text-input-label {
-              @apply tv-block tv-text-sm/6 tv-font-medium tv-ml-1 tv-text-gray-700;
+              @apply tv-block tv-ml-1 tv-text-gray-700 tv-text-lg;
             }
 
             .trieve-text-input-textarea-container {
@@ -1601,6 +1601,16 @@ body {
                 @apply tv-outline tv-outline-2 tv-outline-offset-2;
 
                 outline-color: var(--tv-prop-brand-color);
+              }
+
+              &[disabled] {
+                @apply tv-cursor-not-allowed tv-opacity-50;
+                background-color: var(--tv-zinc-300);
+                color: var(--tv-zinc-50);
+                cursor: not-allowed;
+                pointer-events: none;
+                outline: none;
+                box-shadow: none;
               }
             }
           }

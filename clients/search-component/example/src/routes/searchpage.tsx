@@ -10,13 +10,13 @@ export const Route = createFileRoute("/searchpage")({
 
 const options: TagProp[] = [
   {
-    label: "Wallpaper",
-    tag: "Wallpaper",
+    label: "Wallcovering",
+    tag: "Wallcovering",
     child: {
-      key: "wallpaperChild",
-      title: "Wallpaper Options",
-      selectionType: "multiple",
-      filterType: "match_any",
+      key: "wallcoveringChild",
+      title: "Subcategory (Optional)",
+      selectionType: "single",
+      filterType: "match_all",
       options: [
         {
           label: "Natural",
@@ -38,13 +38,13 @@ const options: TagProp[] = [
     },
   },
   {
-    label: "Countertops & Stone",
-    tag: "Countertops & Stone",
+    label: "Countertops",
+    tag: "Countertops",
     child: {
       key: "countertopsChild",
-      title: "Countertops & Stone Options",
-      selectionType: "multiple",
-      filterType: "match_any",
+      title: "Subcategory (Optional)",
+      selectionType: "single",
+      filterType: "match_all",
       options: [
         {
           label: "Engineered & Composite",
@@ -68,19 +68,43 @@ const options: TagProp[] = [
   {
     label: "Tile",
     tag: "Tile",
-  },
-  {
-    label: "Wood Flooring",
-    tag: "Wood Flooring",
-  },
-  {
-    label: "LVT & Specialty Flooring",
-    tag: "LVT & Specialty Flooring",
     child: {
-      key: "lvtFlooringChild",
-      title: "LVT & Specialty Flooring Options",
-      selectionType: "multiple",
-      filterType: "match_any",
+      key: "tileChild",
+      title: "Subcategory (Optional)",
+      selectionType: "single",
+      filterType: "match_all",
+      options: [
+        {
+          label: "Backsplash",
+          tag: "Backsplash",
+        },
+        {
+          label: "Shower Flooring",
+          tag: "Shower Flooring",
+        },
+        {
+          label: "Shower Wall",
+          tag: "Shower Wall",
+        },
+        {
+          label: "Bathroom Flooring",
+          tag: "Bathroom Flooring",
+        },
+        {
+          label: "Bathroom Wall",
+          tag: "Bathroom Wall",
+        },
+      ],
+    },
+  },
+  {
+    label: "Flooring",
+    tag: "Flooring",
+    child: {
+      key: "flooringChild",
+      title: "Subcategory (Optional)",
+      selectionType: "single",
+      filterType: "match_all",
       options: [
         {
           label: "Laminate",
@@ -91,8 +115,8 @@ const options: TagProp[] = [
           tag: "Luxury Vinyl Tile",
         },
         {
-          label: "Resilient",
-          tag: "Resilient",
+          label: "Wood",
+          tag: "Wood",
         },
       ],
     },
@@ -102,17 +126,17 @@ const options: TagProp[] = [
     tag: "Paint",
   },
   {
-    label: "Carpet & Carpet Tile",
-    tag: "Carpet & Carpet Tile",
+    label: "Carpet",
+    tag: "Carpet",
   },
   {
-    label: "Fabric & Leather",
-    tag: "Fabric & Leather",
+    label: "Fabric",
+    tag: "Fabric",
     child: {
-      key: "fabricLeatherChild",
-      title: "Fabric & Leather Options",
-      selectionType: "multiple",
-      filterType: "match_any",
+      key: "fabricChild",
+      title: "Subcategory (Optional)",
+      selectionType: "single",
+      filterType: "match_all",
       options: [
         {
           label: "Cotton",
@@ -136,7 +160,7 @@ const options: TagProp[] = [
         },
         {
           label: "Velvet",
-          tag: "Velvet",
+          tag: "Velvet|DesignShop",
         },
         {
           label: "Wool",
@@ -150,14 +174,10 @@ const options: TagProp[] = [
     tag: "Paneling",
     child: {
       key: "panelingChild",
-      title: "Paneling Options",
-      selectionType: "multiple",
-      filterType: "match_any",
+      title: "Subcategory (Optional)",
+      selectionType: "single",
+      filterType: "match_all",
       options: [
-        {
-          label: "Decorative",
-          tag: "Decorative",
-        },
         {
           label: "Cork",
           tag: "Cork",
@@ -184,86 +204,6 @@ const options: TagProp[] = [
   {
     label: "Faucets",
     tag: "Faucets",
-    child: {
-      key: "fixtureTypeChild",
-      title: "Faucets Type Options",
-      selectionType: "multiple",
-      filterType: "match_any",
-      options: [
-        {
-          label: "Accessories",
-          tag: "Accessories",
-        },
-        {
-          label: "Bar Faucets",
-          tag: "Bar Faucets",
-        },
-        {
-          label: "Bath Faucets",
-          tag: "Bath Faucets",
-        },
-        {
-          label: "Claw Foot Tubs",
-          tag: "Claw Foot Tubs",
-        },
-        {
-          label: "Console Sink",
-          tag: "Console Sink",
-        },
-        {
-          label: "Drop In Tubs",
-          tag: "Drop In Tubs",
-        },
-        {
-          label: "Drop-In Sink",
-          tag: "Drop-In Sink",
-        },
-        {
-          label: "Freestanding Tubs",
-          tag: "Freestanding Tubs",
-        },
-        {
-          label: "Kitchen Faucets",
-          tag: "Kitchen Faucets",
-        },
-        {
-          label: "Pedestal Sink",
-          tag: "Pedestal Sink",
-        },
-        {
-          label: "Pot Fillers",
-          tag: "Pot Fillers",
-        },
-        {
-          label: "Semi-Recessed Sink",
-          tag: "Semi-Recessed Sink",
-        },
-        {
-          label: "Shower & Tub Trim",
-          tag: "Shower & Tub Trim",
-        },
-        {
-          label: "Shower Only Trim",
-          tag: "Shower Only Trim",
-        },
-        {
-          label: "Undermount Sink",
-          tag: "Undermount Sink",
-        },
-        {
-          label: "Vessel Sink",
-          tag: "Vessel Sink",
-        },
-        {
-          label: "Wall Hung Vanity Cabinet",
-          tag: "Wall Hung Vanity Cabinet",
-        },
-        {
-          label: "Wall-Mounted Sink",
-          tag: "Wall-Mounted Sink",
-        },
-      ],
-    },
   },
   {
     label: "Cabinets",
@@ -271,46 +211,57 @@ const options: TagProp[] = [
   },
   {
     label: "Decking",
-    tag: "Decking",
+    tag: "Floor & Deck",
   },
   {
     label: "Area Rugs",
     tag: "Area Rugs",
   },
   {
-    label: "Blinds & Shades",
-    tag: "Blinds & Shades",
+    label: "Window Shade",
+    tag: "Window Shade",
   },
   {
     label: "Ceiling",
     tag: "Ceiling",
-    child: {
-      key: "ceilingChild",
-      title: "Ceiling Options",
-      selectionType: "multiple",
-      filterType: "match_any",
-      options: [
-        {
-          label: "Panel",
-          tag: "Panel",
-        },
-        {
-          label: "Tile",
-          tag: "Tile",
-        },
-      ],
-    },
   },
 ];
 
 export default function ECommerce() {
   const baseUrl = import.meta.env.VITE_API_BASE_URL;
   const datasetId = import.meta.env.VITE_DATASET_ID;
+  const tutorialUrl = import.meta.env.VITE_TUTORIAL_URL;
   const apiKey = import.meta.env.VITE_API_KEY;
 
   return (
     <>
-      <div className="min-w-screen min-h-screen relative">
+      <div className="min-w-screen max-w-[96rem] mx-auto min-h-screen relative p-2">
+        <div className="w-full flex justify-between my-2 py-4 px-2 border-b">
+          <p className="text-3xl font-semibold">Design Muse</p>
+          <a
+            href={tutorialUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-slot="button"
+            className="cursor-pointer justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg:not([class*='size-'])]:size-4 shrink-0 [&amp;_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 rounded-md px-3 has-[>svg]:px-2.5 flex items-center gap-1 hover:bg-neutral-100"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path>
+              <rect x="2" y="6" width="14" height="12" rx="2"></rect>
+            </svg>
+            Watch Tutorial
+          </a>
+        </div>
         <div className="w-full">
           <TrieveModalSearch
             displayModal={false}
@@ -334,7 +285,7 @@ export default function ECommerce() {
                     key: "categories",
                     title: "Category",
                     selectionType: "single",
-                    filterType: "match_any",
+                    filterType: "match_all",
                     options,
                   },
                 ],

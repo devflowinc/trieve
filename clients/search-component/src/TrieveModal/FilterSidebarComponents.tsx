@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo } from "react";
 import { useState } from "react";
 import {
@@ -15,7 +14,6 @@ import {
 } from "../utils/hooks/modal-context";
 import { toBase64 } from "./Search/UploadImage";
 import { getPresignedUrl, uploadFile } from "../utils/trieve";
-import { ToolFunctionParameter } from "trieve-ts-sdk";
 import { ModalContainer } from "./ModalContainer";
 import { useChatState } from "../utils/hooks/chat-context";
 import convert from "heic-convert/browser";
@@ -156,6 +154,7 @@ export interface FilterButtonProps {
   type: "single" | "multiple";
   description?: string;
   onClick?: () => void;
+  isChild?: boolean;
 }
 
 export const FilterButton = ({
@@ -165,6 +164,7 @@ export const FilterButton = ({
   description,
   type,
   onClick,
+  isChild,
 }: FilterButtonProps) => {
   const { selectedSidebarFilters, setSelectedSidebarFilters } = useModalState();
 
@@ -179,14 +179,41 @@ export const FilterButton = ({
   const handleClick = () => {
     if (type === "single") {
       if (active) {
-        setSelectedSidebarFilters({
-          ...selectedSidebarFilters,
-          [sectionKey]: [],
+        setSelectedSidebarFilters((prev) => {
+          if (isChild) {
+            return {
+              ...prev,
+              [sectionKey]: prev[sectionKey].filter(
+                (item) => item !== filterKey,
+              ),
+            };
+          }
+
+          return {
+            ...prev,
+            [sectionKey]: [],
+          };
         });
       } else {
-        setSelectedSidebarFilters({
-          ...selectedSidebarFilters,
-          [sectionKey]: [filterKey],
+        setSelectedSidebarFilters((prev) => {
+          if (isChild) {
+            const currentFilters = prev[sectionKey] || [];
+            const newFilters = [];
+            if (currentFilters.length > 0) {
+              newFilters.push(currentFilters[0]);
+            }
+            newFilters.push(filterKey);
+
+            return {
+              ...prev,
+              [sectionKey]: newFilters,
+            };
+          }
+
+          return {
+            ...selectedSidebarFilters,
+            [sectionKey]: [filterKey],
+          };
         });
       }
     } else {
@@ -258,7 +285,8 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
     selectedSidebarFilters,
   } = useModalState();
   const { fingerprint } = useModalState();
-  const { askQuestion, clearConversation } = useChatState();
+  const { askQuestion, clearConversation, stopGeneratingMessage } =
+    useChatState();
   const [images, setImages] = useState<Record<string, File>>({});
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [textFields, setTextFields] = useState<Record<string, TextFieldState>>(
@@ -295,77 +323,16 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
         continue;
       }
 
-      let prevImageUrl = "";
-      let prevInferenceText = "";
-      let prevInputText = "";
-      if (prevStep.type === "text") {
-        prevInferenceText = textFields[prevStep.title]?.inferenceValue ?? "";
-        prevInputText = textFields[prevStep.title]?.inputValue ?? "";
-      }
-      if (prevStep.type === "image") {
-        prevImageUrl = imageUrls[prevStep.title] ?? "";
-      }
-      let promptDescription =
-        "Decide on which materials might be applicable based on the information provided. Err on the side of caution and include materials that you are only somewhat sure apply. Follow instructions in parameter descriptions for marking their values.";
-      if (prevStep.type === "text") {
-        promptDescription += `\n\n[Context for the existing space]:\n${prevInferenceText}`;
-        if (prevInputText) {
-          promptDescription += `\n\n[User's goal for the space]:\n${prevInputText}`;
-        }
-      }
-
       (async () => {
-        setSelectedSidebarFilters((prev) => {
-          return {
-            ...prev,
-            [steps[i].filterSidebarSectionKey ?? ""]: [],
-          };
-        });
+        const match_all_tags: string[] = [];
+        if (match_all_tags.length === 0) {
+          match_all_tags.push(...correspondingFilter.options.map((t) => t.tag));
+        }
 
-        setLoadingStates((prev) => ({
-          ...prev,
-          [steps[i].title]: "Detecting materials present in the image...",
-        }));
-        const filterParamsResp = await trieveSDK.getToolCallFunctionParams(
-          {
-            user_message_text: steps[i].prompt ?? "",
-            image_url: prevImageUrl ? prevImageUrl : null,
-            tool_function: {
-              name: "get_applicable_materials",
-              description: promptDescription,
-              parameters:
-                correspondingFilter.options?.map((tag) => {
-                  return {
-                    name: tag.label,
-                    parameter_type: "boolean",
-                    description: tag.description ?? "",
-                  } as ToolFunctionParameter;
-                }) ?? [],
-            },
-          },
-          toolCallAbortController.signal,
-        );
-        const match_any_tags: string[] = [];
-        for (const key of Object.keys(filterParamsResp.parameters ?? {})) {
-          const filterParam = (filterParamsResp.parameters as any)[
-            key as keyof typeof filterParamsResp.parameters
-          ];
-          if (typeof filterParam === "boolean" && filterParam) {
-            const tag = correspondingFilter.options?.find(
-              (t) => t.label === key,
-            )?.tag;
-            if (tag) {
-              match_any_tags.push(tag);
-            }
-          }
-        }
-        if (match_any_tags.length === 0) {
-          match_any_tags.push(...correspondingFilter.options.map((t) => t.tag));
-        }
         setFilterOptions((prev) => {
           const newFilterOptions = {
             ...prev,
-            [steps[i].filterSidebarSectionKey ?? ""]: match_any_tags,
+            [steps[i].filterSidebarSectionKey ?? ""]: match_all_tags,
           };
 
           return newFilterOptions;
@@ -402,6 +369,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             ...prev,
             [steps[i].title]: "Figuring out what will look good...",
           }));
+          stopGeneratingMessage();
           clearConversation();
 
           const prevStep = i > 0 ? steps[i - 1] : null;
@@ -530,7 +498,6 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 ...prev,
                 [steps[i].title]: "idle",
               }));
-              askQuestion(textInStream, undefined, undefined);
               setTextFields((prev) => ({
                 ...prev,
                 [steps[i].title]: {
@@ -601,6 +568,31 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               onDrop={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                stopGeneratingMessage();
+                clearConversation();
+                setCompletedSteps((prev) => {
+                  const newCompletedSteps = { ...prev };
+                  for (let j = index; j < steps.length; j++) {
+                    newCompletedSteps[steps[j].title] = false;
+                  }
+                  return newCompletedSteps;
+                });
+                setSelectedSidebarFilters({});
+                setTextFields((prev) => {
+                  const newTextFields = { ...prev };
+                  for (let j = index; j < steps.length; j++) {
+                    newTextFields[steps[j].title] = {
+                      inferenceValue: "",
+                      inputValue: "",
+                      loading: false,
+                    };
+                  }
+                  return newTextFields;
+                });
+                setImageUrls((prev) => ({
+                  ...prev,
+                  [step.title]: "",
+                }));
                 const files = e.dataTransfer.files;
                 setImages((prev) => ({
                   ...prev,
@@ -614,6 +606,32 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 input.capture = "environment";
                 input.multiple = false;
                 input.onchange = async (e) => {
+                  stopGeneratingMessage();
+                  clearConversation();
+                  setCompletedSteps((prev) => {
+                    const newCompletedSteps = { ...prev };
+                    for (let j = index; j < steps.length; j++) {
+                      newCompletedSteps[steps[j].title] = false;
+                    }
+                    return newCompletedSteps;
+                  });
+                  setSelectedSidebarFilters((prev) => {
+                    for (let j = index; j < steps.length; j++) {
+                      prev[steps[j].filterSidebarSectionKey ?? ""] = [];
+                    }
+                    return prev;
+                  });
+                  setTextFields((prev) => {
+                    const newTextFields = { ...prev };
+                    for (let j = index; j < steps.length; j++) {
+                      newTextFields[steps[j].title] = {
+                        inferenceValue: "",
+                        inputValue: "",
+                        loading: false,
+                      };
+                    }
+                    return newTextFields;
+                  });
                   const files = (e.target as HTMLInputElement).files;
                   let processedFile =
                     (files?.length ?? 1) > 0 ? files?.[0] : null;
@@ -834,6 +852,17 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                           filterKey={tag}
                           label={currentFilterOption?.label ?? tag}
                           type={"single"}
+                          onClick={() => {
+                            stopGeneratingMessage();
+                            clearConversation();
+                            setCompletedSteps((prev) => {
+                              const newCompletedSteps = { ...prev };
+                              for (let j = index; j < steps.length; j++) {
+                                newCompletedSteps[steps[j].title] = false;
+                              }
+                              return newCompletedSteps;
+                            });
+                          }}
                         />
                       );
                     },
@@ -865,14 +894,34 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                           </p>
                           <div className="trieve-inference-filters-step-row">
                             {currentFilterOption?.child?.options?.map(
-                              (child) => (
+                              (childTagProp) => (
                                 <FilterButton
                                   sectionKey={
                                     step.filterSidebarSectionKey ?? ""
                                   }
-                                  filterKey={child.tag}
-                                  label={child.label ?? child.tag}
-                                  type={"multiple"}
+                                  filterKey={childTagProp.tag}
+                                  label={childTagProp.label ?? childTagProp.tag}
+                                  type={
+                                    currentFilterOption?.child?.selectionType ??
+                                    "single"
+                                  }
+                                  isChild={true}
+                                  onClick={() => {
+                                    stopGeneratingMessage();
+                                    clearConversation();
+                                    setCompletedSteps((prev) => {
+                                      const newCompletedSteps = { ...prev };
+                                      for (
+                                        let j = index;
+                                        j < steps.length;
+                                        j++
+                                      ) {
+                                        newCompletedSteps[steps[j].title] =
+                                          false;
+                                      }
+                                      return newCompletedSteps;
+                                    });
+                                  }}
                                 />
                               ),
                             )}
@@ -918,6 +967,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 <button
                   type="button"
                   className="trieve-text-input-button"
+                  disabled={!textFields[step.title]?.inputValue}
                   onClick={() => {
                     setCompletedSteps((prev) => ({
                       ...prev,
@@ -942,9 +992,11 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
               }
               data-input-field-type={step.type}
             >
-              <div className="trieve-inference-filters-search-modal">
-                <ModalContainer />
-              </div>
+              {step.type === "search_modal" && (
+                <div className="trieve-inference-filters-search-modal">
+                  <ModalContainer />
+                </div>
+              )}
             </div>
           </div>
           <div
