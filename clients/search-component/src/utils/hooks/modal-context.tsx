@@ -175,6 +175,7 @@ export type ModalProps = {
     productId: string;
     filter?: ChunkFilter;
   };
+  usePortal?: boolean;
 };
 
 const defaultProps = {
@@ -240,6 +241,7 @@ const defaultProps = {
       sections: [],
     } as FilterSidebarProps,
   } as SearchPageProps,
+  usePortal: true,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
@@ -505,6 +507,14 @@ const ModalProvider = ({
       }
     }
 
+    return () => {
+      abortController.abort("AbortError on component_open");
+    };
+  }, [open, props.analytics, props]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
     if (!open && props.analytics) {
       try {
         getFingerprint().then((fingerprint) => {
@@ -528,7 +538,7 @@ const ModalProvider = ({
     }
 
     return () => {
-      abortController.abort("AbortError component_open");
+      abortController.abort("AbortError on component_close");
     };
   }, [open, props.analytics, props]);
 

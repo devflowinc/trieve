@@ -1629,7 +1629,7 @@ body {
             &[data-prev-complete="true"] {
               display: block;
             }
-            
+
             .trieve-inference-filters-step-tags-section-title {
               @apply tv-text-lg tv-mb-2 tv-mt-3;
             }
@@ -1638,7 +1638,7 @@ body {
               @apply tv-flex tv-flex-wrap tv-gap-2 tv-mt-4;
             }
 
-            .trieve-inference-filters-step-tags-children  {
+            .trieve-inference-filters-step-tags-children {
               display: none;
 
               &[data-active="true"] {

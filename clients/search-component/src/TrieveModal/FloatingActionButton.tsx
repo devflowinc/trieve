@@ -1,7 +1,6 @@
 import React, { startTransition } from "react";
 import { useModalState } from "../utils/hooks/modal-context";
 import { SparklesIcon } from "./icons";
-import { createPortal } from "react-dom";
 
 export const FloatingActionButton = () => {
   const { props, setOpen, setMode } = useModalState();
@@ -22,32 +21,25 @@ export const FloatingActionButton = () => {
   };
 
   return (
-    <>
-      {createPortal(
-        <button
-          onClick={() => {
-            startTransition(() => {
-              setOpen(true);
-              setMode("chat");
-            });
-          }}
-          className={`floating-action-button${props.theme === "dark" ? " dark" : ""}`}
-          style={{
-            ...setButtonPosition(
-              props.floatingButtonPosition || "bottom-right",
-            ),
-            zIndex: (props.zIndex ?? 1000) - 1,
-          }}
-        >
-          {props.brandLogoImgSrcUrl ? (
-            <img src={props.brandLogoImgSrcUrl} alt="Brand Logo" />
-          ) : (
-            <SparklesIcon width={20} height={20} />
-          )}
-          Ask AI
-        </button>,
-        document.body,
+    <button
+      onClick={() => {
+        startTransition(() => {
+          setOpen(true);
+          setMode("chat");
+        });
+      }}
+      className={`floating-action-button${props.theme === "dark" ? " dark" : ""}`}
+      style={{
+        ...setButtonPosition(props.floatingButtonPosition || "bottom-right"),
+        zIndex: (props.zIndex ?? 1000) - 1,
+      }}
+    >
+      {props.brandLogoImgSrcUrl ? (
+        <img src={props.brandLogoImgSrcUrl} alt="Brand Logo" />
+      ) : (
+        <SparklesIcon width={20} height={20} />
       )}
-    </>
+      Ask AI
+    </button>
   );
 };
