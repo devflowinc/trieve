@@ -49,7 +49,7 @@ export const GraphComponent = <T extends Record<string, any>>({
         {loading ? (
           <SkeletonDisplayText size="large" />
         ) : (
-          <Text as="span" variant="heading3xl" fontWeight="bold">
+          <Text as="span" variant="heading2xl" fontWeight="bold">
             {dataType === "percentage" ? (
               `${((topLevelMetric ?? 0) * 100).toFixed(2)}%`
             ) : dataType === "time" ? (

@@ -1,12 +1,7 @@
 // dashboard.tsx
 import { LoaderFunctionArgs, redirect } from "@remix-run/node";
-import {
-  Outlet,
-  useLoaderData,
-  useLocation,
-  useNavigate,
-} from "@remix-run/react";
-import { Page, Tabs, Layout, SkeletonBodyText, Frame } from "@shopify/polaris";
+import { Outlet, useLoaderData } from "@remix-run/react";
+import { Page, Layout, SkeletonBodyText, Frame } from "@shopify/polaris";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
 import {
   QueryClient,
@@ -26,6 +21,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(args.request);
   const key = await validateTrieveAuth(args.request, false);
   if (!key.currentDatasetId) {
+    console.log("No dataset selected, redirecting to /app/setup");
     throw redirect("/app/setup");
   }
 
@@ -45,91 +41,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 };
 
 export default function Dashboard() {
-  const location = useLocation();
-  const navigate = useNavigate();
   const { dataset, organization, key } = useLoaderData<typeof loader>();
-
-  // Determine selected tab based on current path
-  const selected = useMemo(() => {
-    if (location.pathname.includes("/settings")) {
-      return 5; // Settings tab index
-    }
-    if (location.pathname.includes("/recommendations")) {
-      return 4; // Recommendations tab index
-    }
-    if (location.pathname.includes("/chat")) {
-      return 3; // Settings tab index
-    }
-    if (location.pathname.includes("/search")) {
-      return 2; // Search tab index
-    }
-    if (location.pathname.includes("/component")) {
-      return 1; // Component tab index
-    }
-    return 0; // Homepage tab index (default)
-  }, [location.pathname]);
-
-  const handleTabChange = useCallback(
-    (selectedTabIndex: number) => {
-      if (selectedTabIndex === 0) {
-        navigate("/app/"); // Navigate to homepage
-      } else if (selectedTabIndex === 1) {
-        navigate("/app/component"); // Navigate to component
-      } else if (selectedTabIndex === 2) {
-        navigate("/app/search"); // Navigate to search
-      } else if (selectedTabIndex === 3) {
-        navigate("/app/chat"); // Navigate to chat
-      } else if (selectedTabIndex === 4) {
-        navigate("/app/recommendations"); // Navigate to recommendations
-      } else if (selectedTabIndex === 5) {
-        navigate("/app/settings"); // Navigate to settings
-      }
-    },
-    [navigate],
-  );
-
-  const tabs = [
-    {
-      id: "homepage",
-      content: "Home",
-      accessibilityLabel: "Homepage",
-      panelID: "homepage-panel",
-    },
-    {
-      id: "component",
-      content: "Component",
-      accessibilityLabel: "Component",
-      panelID: "component-panel",
-    },
-    {
-      id: "search",
-      content: "Search",
-      accessibilityLabel: "Search",
-      panelID: "search",
-    },
-    {
-      id: "chat",
-      content: "Chat",
-      accessibilityLabel: "chat",
-      panelID: "chat",
-    },
-    {
-      id: "recommendations  ",
-      content: "Recommendations",
-      accessibilityLabel: "recommendations",
-      panelID: "recommendations",
-    },
-    {
-      id: "settings",
-      content: "Settings",
-      accessibilityLabel: "Settings",
-      panelID: "settings-panel",
-    },
-  ];
-
-  // Get current tab title for page title
-  const currentTabName =
-    tabs[selected]?.id.charAt(0).toUpperCase() + tabs[selected]?.id.slice(1);
 
   const [queryClient] = useState(
     () =>
@@ -146,36 +58,28 @@ export default function Dashboard() {
   const dehydratedState = useDehydratedState();
 
   return (
-    <Frame>
-      <Page fullWidth title={`Hi ${organization.organization.name} 👋`}>
-        <Tabs
-          fitted
-          tabs={tabs}
-          selected={selected}
-          onSelect={handleTabChange}
-        />
-        <Layout>
-          <Layout.Section>
-            <Suspense fallback={<SkeletonBodyText lines={3} />}>
-              <TrieveProvider
-                queryClient={queryClient}
-                dataset={dataset as Dataset}
-                organization={organization as OrganizationWithSubAndPlan}
-                trieveKey={key}
-              >
-                <QueryClientProvider client={queryClient}>
-                  <ReactQueryDevtools initialIsOpen={false} />
-                  <HydrationBoundary state={dehydratedState}>
-                    <div style={{ minHeight: "300px" }}>
-                      <Outlet />
-                    </div>
-                  </HydrationBoundary>
-                </QueryClientProvider>
-              </TrieveProvider>
-            </Suspense>
-          </Layout.Section>
-        </Layout>
-      </Page>
-    </Frame>
+    <Page fullWidth>
+      <Layout>
+        <Layout.Section>
+          <Suspense fallback={<SkeletonBodyText lines={3} />}>
+            <TrieveProvider
+              queryClient={queryClient}
+              dataset={dataset as Dataset}
+              organization={organization as OrganizationWithSubAndPlan}
+              trieveKey={key}
+            >
+              <QueryClientProvider client={queryClient}>
+                <ReactQueryDevtools initialIsOpen={false} />
+                <HydrationBoundary state={dehydratedState}>
+                  <div style={{ minHeight: "300px" }}>
+                    <Outlet />
+                  </div>
+                </HydrationBoundary>
+              </QueryClientProvider>
+            </TrieveProvider>
+          </Suspense>
+        </Layout.Section>
+      </Layout>
+    </Page>
   );
 }

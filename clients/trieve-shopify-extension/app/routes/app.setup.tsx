@@ -114,10 +114,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       },
     );
   };
-  // You've been redirected here from app._dashboard.tsx because your trieve <-> shopify connection doesn't have a database
-  const { admin, session, sessionToken } = await authenticate.admin(
-    args.request,
-  );
+  const { session, sessionToken } = await authenticate.admin(args.request);
 
   let key = await prisma.apiKey.findFirst({
     where: {
@@ -125,13 +122,32 @@ export const loader = async (args: LoaderFunctionArgs) => {
     },
   });
   if (!key) {
-    throw json({ message: "No Key" }, 401);
+    throw new Response(
+      JSON.stringify({
+        message: "No key matching the current user (sessionToken.sub)",
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        status: 401,
+      },
+    );
   }
 
   if (!key.organizationId) {
-    throw new Response("Unautorized, no organization tied to user session", {
-      status: 401,
-    });
+    throw new Response(
+      JSON.stringify({
+        message:
+          "No organization matching the current key (key.organizationId)",
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        status: 401,
+      },
+    );
   }
 
   const trieve = new TrieveSDK({
@@ -162,6 +178,18 @@ export const loader = async (args: LoaderFunctionArgs) => {
         tracking_id: session.shop,
       });
 
+      key = await prisma.apiKey.update({
+        data: {
+          currentDatasetId: shopDataset.id,
+        },
+        where: {
+          userId_shop: {
+            userId: sessionToken.sub as string,
+            shop: `https://${session.shop}`,
+          },
+        },
+      });
+    } else {
       key = await prisma.apiKey.update({
         data: {
           currentDatasetId: shopDataset.id,
