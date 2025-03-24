@@ -20,10 +20,10 @@ export const ChatRevenue = ({
   return (
     <GraphComponent
       loading={isLoading}
-      topLevelMetric={data?.avg_chat_revenue}
+      topLevelMetric={data?.avg_revenue}
       graphData={data?.points}
       granularity={granularity}
-      date_range={filters.date_range}
+      dateRange={filters.date_range}
       dataType="currency"
       xAxis={"time_stamp"}
       yAxis={"point"}

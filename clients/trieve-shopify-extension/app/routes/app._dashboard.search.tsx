@@ -11,6 +11,7 @@ import { AllSearchesTable } from "app/components/analytics/search/AllSearchesTab
 import { SearchCTRChart } from "app/components/analytics/search/SearchCTR";
 import { SearchesPerUser } from "app/components/analytics/search/SearchesPerUser";
 import { SearchAverageRating } from "app/components/analytics/search/SearchAverageRating";
+import { SearchUserJourneyFunnel } from "app/components/analytics/search/SearchUserJourneyFunnel";
 
 export default function SearchAnalyticsPage() {
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
@@ -60,12 +61,12 @@ export default function SearchAnalyticsPage() {
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
               <div className="flex flex-col gap-4">
+                <SearchUserJourneyFunnel filters={filters} />
                 <SearchCTRChart filters={filters} granularity={granularity} />
                 <SearchesPerUser
                   filters={filters}
                   granularity={granularity}
-                />
-                <HeadQueriesTable filters={filters} />
+                />                <HeadQueriesTable filters={filters} />
               </div>
             </Grid.Cell>
           </Grid>

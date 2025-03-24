@@ -8,10 +8,10 @@ import Crosshair from "chartjs-plugin-crosshair";
 
 Chart.register(Crosshair);
 
-interface AnalyticsChartProps<T> {
+interface AnalyticsChartProps<T extends Record<string, any>> {
   data: T[] | null | undefined;
   granularity: Granularity;
-  date_range?: SearchAnalyticsFilter["date_range"];
+  dateRange?: SearchAnalyticsFilter["date_range"];
   yAxis: keyof T;
   xAxis: keyof T;
   label: string;
@@ -19,7 +19,7 @@ interface AnalyticsChartProps<T> {
   dataType?: "number" | "percentage" | "currency" | "time";
 }
 
-export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
+export const AnalyticsChart = <T extends Record<string, any>>(props: AnalyticsChartProps<T>) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
@@ -205,9 +205,9 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
       chartInstance.options.scales["x"].time.round = undefined;
     }
 
-    const info = fillDate({
+    const info = fillDate<T>({
       data,
-      date_range: props.date_range,
+      dateRange: props.dateRange,
       granularity: props.granularity,
       dataKey: props.yAxis,
       timestampKey: props.xAxis,
@@ -234,7 +234,7 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
   }, [
     props.data,
     props.granularity,
-    props.date_range,
+    props.dateRange,
     props.yAxis,
     props.xAxis,
     props.label,

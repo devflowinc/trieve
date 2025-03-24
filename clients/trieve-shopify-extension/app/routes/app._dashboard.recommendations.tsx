@@ -1,17 +1,14 @@
 import { Grid, Tabs } from "@shopify/polaris";
-import { HeadQueriesTable } from "app/components/analytics/search/HeadQueriesTable";
-import { NoResultQueriesTable } from "app/components/analytics/search/NoResultQueriesTable";
 import { SearchFilterBar } from "app/components/analytics/FilterBar";
-import { SearchUsageChart } from "app/components/analytics/search/SearchUsageChart";
 import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
 import { useState } from "react";
 import { Granularity } from "trieve-ts-sdk";
-import { AllSearchesTable } from "app/components/analytics/search/AllSearchesTable";
 import { RecommendationsUsageChart } from "app/components/analytics/recommendations/RecommendationsUsageChart";
 import { RecommendationsPerUser } from "app/components/analytics/recommendations/RecommendationsPerUser";
 import { RecommendationsCTRRate } from "app/components/analytics/recommendations/RecommendationsCTRRate";
 import { AllRecommendationsTable } from "app/components/analytics/recommendations/AllRecommendationsTable";
 import { RecommendationConversionRate } from "app/components/analytics/recommendations/RecommendationConversionRate";
+import { RecommendationUserJourneyFunnel } from "app/components/analytics/recommendations/RecommendationUserJourneyFunnel";
 
 export default function SearchAnalyticsPage() {
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
@@ -59,6 +56,7 @@ export default function SearchAnalyticsPage() {
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
               <div className="flex flex-col gap-4">
+                <RecommendationUserJourneyFunnel filters={filters} />
                 <RecommendationsCTRRate
                   filters={filters}
                   granularity={granularity}

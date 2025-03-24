@@ -43,7 +43,6 @@ export const parseCustomDateString = (dateString: string) => {
   wholeSec = wholeSec.padStart(2, "0");
 
   const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}Z`;
-  console.log(new Date(isoString));
   return new Date(isoString);
 };
 
@@ -154,22 +153,21 @@ export const fillDate = <T>({
   dataKey,
   timestampKey,
   data,
-  date_range,
+  dateRange,
   granularity,
   defaultValue = 0,
 }: {
   dataKey: keyof T;
   timestampKey: keyof T;
   data: T[];
-  date_range: SearchAnalyticsFilter["date_range"] | undefined;
+  dateRange: SearchAnalyticsFilter["date_range"] | undefined;
   granularity: Granularity;
   defaultValue?: number | null;
 }) => {
-  const startDate = date_range?.gte
-    ? new Date(date_range.gte + "Z")
+  const startDate = dateRange?.gte
+    ? new Date(dateRange.gte + "Z")
     : subDays(new Date(), 7);
-  const endDate = date_range?.lte ? new Date(date_range.lte + "Z") : new Date();
-  console.log(startDate, endDate);
+  const endDate = dateRange?.lte ? new Date(dateRange.lte + "Z") : new Date();
 
   let info: { time: Date; value: number | null }[] = [];
   if (granularity == "day") {
@@ -278,27 +276,28 @@ export const formatTimeValueForChart = (
 };
 
 export type KnownEventNames =
-  | "trieve-modal_load"
+  | "component_load"
   | "site-add_to_cart"
   | "site-checkout"
   | "Click"
   | "View"
-  | "send_message"
-  | "start_conversation"
-  | "trieve-modal_click";
+  | "searched"
+  | "recommendation_created"
+  | "conversation_started"
+  | "component_click";
 
 export const formatEventName = (
   event: KnownEventNames | (string & {}),
 ): string => {
   // can add outliers here
 
-  if (event === "trieve-modal_load") {
+  if (event === "component_load") {
     return "Load Modal";
   } else if (event === "site-add_to_cart") {
     return "Add to Cart";
   } else if (event === "site-checkout") {
     return "Checkout";
-  } else if (event === "trieve-modal_click") {
+  } else if (event === "component_click") {
     return "Click Modal";
   } else if (event === "View") {
     return "View Chat Response";

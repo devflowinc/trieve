@@ -13,6 +13,7 @@ import {
   ChatAverageRatingResponse,
   ChatConversionRateResponse,
   ChatRevenueResponse,
+  EventNameAndCountsResponse,
 } from "trieve-ts-sdk";
 
 export const topicsUsageQuery = (
@@ -146,6 +147,22 @@ export const chatRevenueQuery = (
         granularity: granularity,
       });
       return result as ChatRevenueResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const chatEventFunnelQuery = (
+  trieve: TrieveSDK,
+  filters: RAGAnalyticsFilter,
+) => {
+  return {
+    queryKey: ["chatEventFunnel", filters],
+    queryFn: async () => {
+      const result = await trieve.getRagAnalytics({
+        filter: filters,
+        type: "event_funnel",
+      });
+      return result as EventNameAndCountsResponse;
     },
   } satisfies QueryOptions;
 };
