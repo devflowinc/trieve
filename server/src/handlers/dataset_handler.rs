@@ -144,8 +144,8 @@ pub async fn create_dataset(
         if dataset_count
             >= organization_sub_plan
                 .plan
-                .unwrap_or(StripePlan::default())
-                .dataset_count
+                .unwrap_or_default()
+                .dataset_count()
         {
             return Ok(HttpResponse::UpgradeRequired().json(
                 json!({"message": "Your plan must be upgraded to create additional datasets"}),

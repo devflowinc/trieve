@@ -1,4 +1,4 @@
-use crate::data::models::{Organization, RedisPool, StripePlan, UserRole};
+use crate::data::models::{Organization, RedisPool, UserRole};
 use crate::get_env;
 use crate::operators::dittofeed_operator::{get_user_ditto_identity, send_user_ditto_identity};
 use crate::operators::invitation_operator::check_inv_valid;
@@ -200,8 +200,8 @@ pub async fn create_account(
     if user_org_count
         >= org_plan_sub
             .plan
-            .unwrap_or(StripePlan::default())
-            .user_count
+            .unwrap_or_default()
+            .user_count()
     {
         return Err(ServiceError::BadRequest(
             "User limit reached for organization, must upgrade plan to add more users".to_string(),

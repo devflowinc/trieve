@@ -3961,8 +3961,87 @@ impl StripeSubscription {
 }))]
 pub struct OrganizationWithSubAndPlan {
     pub organization: Organization,
-    pub plan: Option<StripePlan>,
-    pub subscription: Option<StripeSubscription>,
+    pub plan: Option<TrievePlan>,
+    pub subscription: Option<TrieveSubscription>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub enum TrievePlan {
+    Flat(StripePlan),
+    UsageBased(StripeUsageBasedPlan),
+}
+
+impl Default for TrievePlan {
+    fn default() -> Self {
+        TrievePlan::Flat(StripePlan::default())
+    }
+}
+
+impl TrievePlan {
+    pub fn chunk_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.chunk_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+
+    pub fn file_storage(&self) -> i64 {
+        match self {
+            TrievePlan::Flat(plan) => plan.file_storage,
+            TrievePlan::UsageBased(_) => i64::MAX,
+        }
+    }
+    
+    pub fn user_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.user_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+
+    pub fn dataset_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.dataset_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+
+    pub fn message_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.message_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+}
+
+impl From<StripePlan> for TrievePlan {
+    fn from(plan: StripePlan) -> Self {
+        TrievePlan::Flat(plan)
+    }
+}
+
+impl From<StripeUsageBasedPlan> for TrievePlan {
+    fn from(plan: StripeUsageBasedPlan) -> Self {
+        TrievePlan::UsageBased(plan)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub enum TrieveSubscription {
+    Flat(StripeSubscription),
+    UsageBased(UsageBasedStripeSubscription),
+}
+
+impl From<StripeSubscription> for TrieveSubscription {
+    fn from(subscription: StripeSubscription) -> Self {
+        TrieveSubscription::Flat(subscription)
+    }
+}
+
+impl From<UsageBasedStripeSubscription> for TrieveSubscription {
+    fn from(subscription: UsageBasedStripeSubscription) -> Self {
+        TrieveSubscription::UsageBased(subscription)
+    }
 }
 
 impl OrganizationWithSubAndPlan {
@@ -3973,15 +4052,15 @@ impl OrganizationWithSubAndPlan {
     ) -> Self {
         OrganizationWithSubAndPlan {
             organization: organization.with_complete_partner_config(),
-            plan,
-            subscription,
+            plan: plan.map(|p| p.into()),
+            subscription: subscription.map(|s| s.into()),
         }
     }
 
     pub fn with_defaults(&self) -> Self {
         OrganizationWithSubAndPlan {
             organization: self.organization.with_complete_partner_config(),
-            plan: Some(self.plan.clone().unwrap_or_default()),
+            plan: self.plan.clone(),
             subscription: self.subscription.clone(),
         }
     }

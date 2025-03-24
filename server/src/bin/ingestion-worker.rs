@@ -319,7 +319,7 @@ pub async fn bulk_upload_chunks(
                 .organization
                 .plan
                 .unwrap_or_default()
-                .chunk_count as usize
+                .chunk_count() as usize
         {
             log::info!("Chunk count exceeds plan limit");
             return Err(BroccoliError::Job(
