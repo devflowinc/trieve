@@ -3849,6 +3849,48 @@ impl Default for StripePlan {
         }
     }
 }
+
+#[derive(
+    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
+)]
+#[schema(example=json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "stripe_id": "sub_123",
+    "plan_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
+    "current_period_end": "2021-01-01 00:00:00.000",
+}))]
+#[diesel(table_name = stripe_usage_based_plans)]
+pub struct StripeUsageBasedPlan {
+    id: uuid::Uuid,
+    name: String,
+    visible: bool,
+    ingest_tokens_price_id: String,
+    bytes_ingested_price_id: String,
+    search_tokens_price_id: String,
+    message_tokens_price_id: String,
+    analytics_events_price_id: String,
+    ocr_pages_price_id: String,
+    pages_crawls_price_id: String,
+    created_at: chrono::NaiveDateTime,
+}
+
+impl StripeUsageBasedPlan {
+    pub fn line_item_ids(&self) -> Vec<String> {
+        vec![
+            self.ingest_tokens_price_id.clone(),
+            self.bytes_ingested_price_id.clone(),
+            self.search_tokens_price_id.clone(),
+            self.message_tokens_price_id.clone(),
+            self.analytics_events_price_id.clone(),
+            self.ocr_pages_price_id.clone(),
+            self.pages_crawls_price_id.clone(),
+        ]
+    }
+}
+
 #[derive(
     Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
 )]

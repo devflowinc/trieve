@@ -12,7 +12,7 @@ use crate::{
             create_usage_stripe_subscription_query, delete_subscription_by_id_query,
             get_all_plans_query, get_invoices_for_org_query,
             get_option_subscription_by_organization_id_query, get_plan_by_id_query,
-            get_stripe_client, get_subscription_by_id_query,
+            get_stripe_client, get_subscription_by_id_query, get_usage_based_plan_query,
             set_stripe_subscription_current_period_end, set_subscription_payment_method,
             update_stripe_subscription, update_stripe_subscription_plan_query,
         },
@@ -246,6 +246,11 @@ pub struct GetDirectPaymentLinkData {
     pub organization_id: uuid::Uuid,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CreateDirectPaymentLinkQueryParams {
+    pub usage_based: Option<bool>,
+}
+
 /// Checkout
 ///
 /// Get a 303 SeeOther redirect link to the stripe checkout page for the plan and organization
@@ -265,6 +270,7 @@ pub struct GetDirectPaymentLinkData {
 )]
 pub async fn direct_to_payment_link(
     path_data: web::Path<GetDirectPaymentLinkData>,
+    query_params: web::Query<CreateDirectPaymentLinkQueryParams>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_pool = pool.clone();
@@ -282,11 +288,18 @@ pub async fn direct_to_payment_link(
     let organization_id = path_data.organization_id;
     let organization_id_clone = path_data.organization_id;
     let _org_plan_sub = get_org_from_id_query(organization_id_clone, organization_pool).await?;
-    //
-    // let plan = get_plan_by_id_query(plan_id, pool).await?;
+    let plan_id = path_data.plan_id;
 
-    // let payment_link = create_stripe_payment_link(plan, organization_id).await?;
-    let payment_link = create_usage_based_stripe_payment_link(organization_id).await?;
+    let payment_link = match query_params.usage_based {
+        Some(true) => {
+            let usage_based_plan = get_usage_based_plan_query(plan_id, pool).await?;
+            create_usage_based_stripe_payment_link(usage_based_plan, organization_id).await?
+        }
+        _ => {
+            let plan = get_plan_by_id_query(plan_id, pool).await?;
+            create_stripe_payment_link(plan, organization_id).await?
+        }
+    };
 
     Ok(HttpResponse::SeeOther()
         .insert_header(("Location", payment_link))
