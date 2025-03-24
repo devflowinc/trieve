@@ -270,6 +270,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    usage_based_stripe_subscriptions (id) {
+        id -> Uuid,
+        organization_id -> Uuid,
+        stripe_subscription_id -> Text,
+        last_recorded_meter -> Timestamp,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     user_api_key (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -333,6 +343,7 @@ diesel::joinable!(stripe_invoices -> organizations (org_id));
 diesel::joinable!(stripe_subscriptions -> organizations (organization_id));
 diesel::joinable!(stripe_subscriptions -> stripe_plans (plan_id));
 diesel::joinable!(topics -> datasets (dataset_id));
+diesel::joinable!(usage_based_stripe_subscriptions -> organizations (organization_id));
 diesel::joinable!(user_api_key -> users (user_id));
 diesel::joinable!(user_organizations -> organizations (organization_id));
 diesel::joinable!(user_organizations -> users (user_id));
@@ -360,6 +371,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     stripe_plans,
     stripe_subscriptions,
     topics,
+    usage_based_stripe_subscriptions,
     user_api_key,
     user_organizations,
     users,

@@ -8,9 +8,11 @@ use crate::{
         stripe_operator::{
             cancel_stripe_subscription, create_invoice_query, create_stripe_payment_link,
             create_stripe_plan_query, create_stripe_setup_checkout_session,
-            create_stripe_subscription_query, delete_subscription_by_id_query, get_all_plans_query,
-            get_invoices_for_org_query, get_option_subscription_by_organization_id_query,
-            get_plan_by_id_query, get_stripe_client, get_subscription_by_id_query,
+            create_stripe_subscription_query, create_usage_based_stripe_payment_link,
+            create_usage_stripe_subscription_query, delete_subscription_by_id_query,
+            get_all_plans_query, get_invoices_for_org_query,
+            get_option_subscription_by_organization_id_query, get_plan_by_id_query,
+            get_stripe_client, get_subscription_by_id_query,
             set_stripe_subscription_current_period_end, set_subscription_payment_method,
             update_stripe_subscription, update_stripe_subscription_plan_query,
         },
@@ -110,17 +112,6 @@ pub async fn webhook(
                                 ),
                             )?;
 
-                            let plan_id = metadata
-                                .get("plan_id")
-                                .ok_or(ServiceError::BadRequest(
-                                    "Checkout session must have a plan_id metadata".to_string(),
-                                ))?
-                                .parse::<uuid::Uuid>()
-                                .map_err(|_| {
-                                    ServiceError::BadRequest(
-                                        "plan_id metadata must be a uuid".to_string(),
-                                    )
-                                })?;
                             let organization_id = metadata
                                 .get("organization_id")
                                 .ok_or(ServiceError::BadRequest(
@@ -134,37 +125,60 @@ pub async fn webhook(
                                     )
                                 })?;
 
-                            let fetch_subscription_organization_id = organization_id;
+                            let plan_id = metadata.get("plan_id");
 
-                            let optional_existing_subscription =
-                                get_option_subscription_by_organization_id_query(
-                                    fetch_subscription_organization_id,
-                                    optional_subscription_pool,
-                                )
-                                .await?;
+                            match plan_id {
+                                Some(plan_id) => {
+                                    let plan_id = plan_id.parse::<uuid::Uuid>().map_err(|_| {
+                                        ServiceError::BadRequest(
+                                            "plan_id metadata must be a uuid".to_string(),
+                                        )
+                                    })?;
 
-                            if let Some(existing_subscription) = optional_existing_subscription {
-                                let delete_subscription_pool = pool.clone();
+                                    let optional_existing_subscription =
+                                        get_option_subscription_by_organization_id_query(
+                                            organization_id,
+                                            optional_subscription_pool,
+                                        )
+                                        .await?;
 
-                                delete_subscription_by_id_query(
-                                    existing_subscription.id,
-                                    delete_subscription_pool,
-                                )
-                                .await?;
-                            }
+                                    if let Some(existing_subscription) =
+                                        optional_existing_subscription
+                                    {
+                                        let delete_subscription_pool = pool.clone();
 
-                            create_stripe_subscription_query(
-                                subscription_stripe_id,
-                                plan_id,
-                                organization_id,
-                                pool.clone(),
-                            )
-                            .await?;
+                                        delete_subscription_by_id_query(
+                                            existing_subscription.id,
+                                            delete_subscription_pool,
+                                        )
+                                        .await?;
+                                    }
 
-                            let invoice = checkout_session.clone().invoice;
-                            if invoice.is_some() {
-                                let invoice_id = invoice.unwrap().id();
-                                create_invoice_query(organization_id, invoice_id, pool).await?;
+                                    create_stripe_subscription_query(
+                                        subscription_stripe_id,
+                                        plan_id,
+                                        organization_id,
+                                        pool.clone(),
+                                    )
+                                    .await?;
+
+                                    let invoice = checkout_session.clone().invoice;
+                                    if invoice.is_some() {
+                                        let invoice_id = invoice.unwrap().id();
+                                        create_invoice_query(organization_id, invoice_id, pool)
+                                            .await?;
+                                    }
+                                }
+                                None => {
+                                    log::info!("Creating usage based stripe subscription");
+                                    // This is a usage based query
+                                    create_usage_stripe_subscription_query(
+                                        subscription_stripe_id,
+                                        organization_id,
+                                        pool.clone(),
+                                    )
+                                    .await?;
+                                }
                             }
                         }
                     }
@@ -265,14 +279,14 @@ pub async fn direct_to_payment_link(
         return Ok(HttpResponse::Conflict().finish());
     }
 
-    let plan_id = path_data.plan_id;
     let organization_id = path_data.organization_id;
     let organization_id_clone = path_data.organization_id;
     let _org_plan_sub = get_org_from_id_query(organization_id_clone, organization_pool).await?;
+    //
+    // let plan = get_plan_by_id_query(plan_id, pool).await?;
 
-    let plan = get_plan_by_id_query(plan_id, pool).await?;
-
-    let payment_link = create_stripe_payment_link(plan, organization_id).await?;
+    // let payment_link = create_stripe_payment_link(plan, organization_id).await?;
+    let payment_link = create_usage_based_stripe_payment_link(organization_id).await?;
 
     Ok(HttpResponse::SeeOther()
         .insert_header(("Location", payment_link))
