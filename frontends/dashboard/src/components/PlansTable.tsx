@@ -13,6 +13,7 @@ import {
 } from "../utils/formatters";
 import { AiOutlineWarning } from "solid-icons/ai";
 import { createToast } from "./ShowToasts";
+import { StripeUsageBasedPlan } from "trieve-ts-sdk";
 
 interface CreateSetupCheckoutSessionResPayload {
   url: string;

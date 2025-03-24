@@ -3608,6 +3608,20 @@ export type StripeSubscription = {
     updated_at: string;
 };
 
+export type StripeUsageBasedPlan = {
+    analytics_events_price_id: string;
+    bytes_ingested_price_id: string;
+    created_at: string;
+    id: string;
+    ingest_tokens_price_id: string;
+    message_tokens_price_id: string;
+    name: string;
+    ocr_pages_price_id: string;
+    pages_crawls_price_id: string;
+    search_tokens_price_id: string;
+    visible: boolean;
+};
+
 export type SuggestType = 'question' | 'keyword' | 'semantic';
 
 export type SuggestedQueriesReqPayload = {
@@ -5460,14 +5474,14 @@ export type PublicPageData = {
 
 export type PublicPageResponse = (unknown);
 
-export type CreateSetupCheckoutSessionData = {
+export type UpdatePaymentMethodData = {
     /**
      * The id of the organization to create setup checkout session for.
      */
     organizationId: string;
 };
 
-export type CreateSetupCheckoutSessionResponse = (CreateSetupCheckoutSessionResPayload);
+export type UpdatePaymentMethodResponse = (CreateSetupCheckoutSessionResPayload);
 
 export type GetAllInvoicesData = {
     /**
@@ -5520,6 +5534,8 @@ export type UpdateSubscriptionPlanData = {
 };
 
 export type UpdateSubscriptionPlanResponse = (unknown);
+
+export type GetAllUsagePlansResponse = (Array<StripeUsageBasedPlan>);
 
 export type CreateTopicData = {
     /**
@@ -7130,7 +7146,7 @@ export type $OpenApiTs = {
     };
     '/api/stripe/checkout/setup/{organization_id}': {
         post: {
-            req: CreateSetupCheckoutSessionData;
+            req: UpdatePaymentMethodData;
             res: {
                 /**
                  * Checkout session (setup) response
@@ -7212,6 +7228,20 @@ export type $OpenApiTs = {
                 200: unknown;
                 /**
                  * Service error relating to updating the subscription to the new plan
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/stripe/usage_plans': {
+        get: {
+            res: {
+                /**
+                 * List of all plans
+                 */
+                200: Array<StripeUsageBasedPlan>;
+                /**
+                 * Service error relating to getting all plans
                  */
                 400: ErrorResponseBody;
             };
