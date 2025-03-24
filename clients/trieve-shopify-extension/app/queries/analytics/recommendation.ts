@@ -1,5 +1,5 @@
 import { QueryOptions } from "@tanstack/react-query";
-import { TrieveSDK, RecommendationAnalyticsFilter, Granularity, RecommendationUsageGraphResponse, RecommendationsPerUserResponse, RecommendationsCTRRateResponse, RecommendationSortBy, RecommendationsEventResponse, SortOrder, RecommendationsConversionRateResponse } from "trieve-ts-sdk";
+import { TrieveSDK, RecommendationAnalyticsFilter, Granularity, RecommendationUsageGraphResponse, RecommendationsPerUserResponse, RecommendationsCTRRateResponse, RecommendationSortBy, RecommendationsEventResponse, SortOrder, RecommendationsConversionRateResponse, EventNameAndCountsResponse } from "trieve-ts-sdk";
 
 export const recommendationsUsageQuery = (
   trieve: TrieveSDK,
@@ -95,6 +95,22 @@ export const recommendationConversionRateQuery = (
         granularity: granularity,
       });
       return result as RecommendationsConversionRateResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const recommendationEventFunnelQuery = (
+  trieve: TrieveSDK,
+  filters: RecommendationAnalyticsFilter,
+) => {
+  return {
+    queryKey: ["recommendationEventFunnel", filters],
+    queryFn: async () => {
+      const result = await trieve.getRecommendationAnalytics({
+        filter: filters,
+        type: "event_funnel",
+      });
+      return result as EventNameAndCountsResponse;
     },
   } satisfies QueryOptions;
 };

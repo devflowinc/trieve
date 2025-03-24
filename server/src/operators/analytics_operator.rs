@@ -2877,14 +2877,14 @@ pub async fn get_search_revenue_query(
             ServiceError::InternalServerError("Error fetching search revenue".to_string())
         })?;
 
-    let avg_search_revenue = if !search_revenue.is_empty() {
+    let avg_revenue = if !search_revenue.is_empty() {
         search_revenue.iter().map(|x| x.point).sum::<f64>() / search_revenue.len() as f64
     } else {
         0.0
     };
 
     Ok(SearchRevenueResponse {
-        avg_search_revenue,
+        avg_revenue,
         points: search_revenue.into_iter().map(|x| x.into()).collect(),
     })
 }
@@ -2923,50 +2923,39 @@ pub async fn get_chat_revenue_query(
             ServiceError::InternalServerError("Error fetching chat revenue".to_string())
         })?;
 
-    let avg_chat_revenue = if !chat_revenue.is_empty() {
+    let avg_revenue = if !chat_revenue.is_empty() {
         chat_revenue.iter().map(|x| x.point).sum::<f64>() / chat_revenue.len() as f64
     } else {
         0.0
     };
 
     Ok(ChatRevenueResponse {
-        avg_chat_revenue,
+        avg_revenue,
         points: chat_revenue.into_iter().map(|x| x.into()).collect(),
     })
 }
-pub async fn get_event_counts_by_type_query(
+
+pub async fn get_search_event_counts_query(
     dataset_id: uuid::Uuid,
-    filter: Option<EventAnalyticsFilter>,
+    filter: Option<SearchAnalyticsFilter>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<Vec<EventNameAndCounts>, ServiceError> {
     // Build filter clauses for each table
-    let (events_filter, rag_filter, topics_filter) = if let Some(filter) = &filter {
+    let (events_filter, search_filter) = if let Some(filter) = &filter {
         let events_base = "dataset_id = ?".to_string();
-        let rag_base = "dataset_id = ?".to_string();
-        let topics_base = "dataset_id = ?".to_string();
+        let search_base = "dataset_id = ?".to_string();
+        let event_filter: EventAnalyticsFilter = filter.clone().into();
 
-        let events_filter = filter.add_to_query(events_base).map_err(|e| {
+        let events_filter = event_filter.add_to_query(events_base).map_err(|e| {
             log::error!("Error adding filter to events query: {:?}", e);
             ServiceError::InternalServerError("Error adding filter to query".to_string())
         })?;
 
-        let rag_filter = filter.add_to_query(rag_base).map_err(|e| {
-            log::error!("Error adding filter to rag query: {:?}", e);
-            ServiceError::InternalServerError("Error adding filter to query".to_string())
-        })?;
+        let search_filter = filter.add_to_query(search_base);
 
-        let topics_filter = filter.add_to_query(topics_base).map_err(|e| {
-            log::error!("Error adding filter to topics query: {:?}", e);
-            ServiceError::InternalServerError("Error adding filter to query".to_string())
-        })?;
-
-        (events_filter, rag_filter, topics_filter)
+        (events_filter, search_filter)
     } else {
-        (
-            "dataset_id = ?".to_string(),
-            "dataset_id = ?".to_string(),
-            "dataset_id = ?".to_string(),
-        )
+        ("dataset_id = ?".to_string(), "dataset_id = ?".to_string())
     };
 
     let query_string = format!(
@@ -2994,30 +2983,170 @@ pub async fn get_event_counts_by_type_query(
         
         -- messages sent
         SELECT
-            'send_message' as event_name,
+            'searched' as event_name,
             COUNT(DISTINCT user_id) AS event_count
         FROM
-            rag_queries
+            search_queries
         WHERE {}
         
-        UNION ALL
-        
-        -- topics created
-        SELECT
-            'start_conversation' as event_name,
-            COUNT(DISTINCT owner_id) AS event_count
-        FROM
-            topics
-        WHERE {}
         
         ORDER BY event_count DESC
     ",
-        events_filter, events_filter, rag_filter, topics_filter
+        events_filter, events_filter, search_filter
     );
 
     let result = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
+        .bind(dataset_id)
+        .bind(dataset_id)
+        .fetch_all::<EventNameAndCounts>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching combined event counts: {:?}", e);
+            ServiceError::InternalServerError("Error fetching event counts".to_string())
+        })?;
+
+    Ok(result)
+}
+
+pub async fn get_rag_event_counts_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<TopicAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<Vec<EventNameAndCounts>, ServiceError> {
+    // Build filter clauses for each table
+    let (events_filter, topics_filter) = if let Some(filter) = &filter {
+        let events_base = "dataset_id = ?".to_string();
+        let topics_base = "dataset_id = ?".to_string();
+        let event_filter: EventAnalyticsFilter = filter.clone().into();
+
+        let events_filter = event_filter.add_to_query(events_base).map_err(|e| {
+            log::error!("Error adding filter to events query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+
+        let topics_filter = filter.add_to_query(topics_base);
+
+        (events_filter, topics_filter)
+    } else {
+        ("dataset_id = ?".to_string(), "dataset_id = ?".to_string())
+    };
+
+    let query_string = format!(
+        "
+        -- Event counts by type
+        SELECT
+            event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            events
+        WHERE {}
+        GROUP BY event_name
+        
+        UNION ALL
+        
+        -- All users 
+        SELECT
+            'all_users' as event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            events
+        WHERE {}
+        
+        UNION ALL
+        
+        -- messages sent
+        SELECT
+            'conversation_started' as event_name,
+            COUNT(DISTINCT owner_id) AS event_count
+        FROM
+            topics
+        WHERE {}
+        
+        
+        ORDER BY event_count DESC
+    ",
+        events_filter, events_filter, topics_filter
+    );
+
+    let result = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .bind(dataset_id)
+        .bind(dataset_id)
+        .fetch_all::<EventNameAndCounts>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching combined event counts: {:?}", e);
+            ServiceError::InternalServerError("Error fetching event counts".to_string())
+        })?;
+
+    Ok(result)
+}
+
+pub async fn get_recommendation_event_counts_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<RecommendationAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<Vec<EventNameAndCounts>, ServiceError> {
+    // Build filter clauses for each table
+    let (events_filter, recommendations_filter) = if let Some(filter) = &filter {
+        let events_base = "dataset_id = ?".to_string();
+        let recommendations_base = "dataset_id = ?".to_string();
+        let event_filter: EventAnalyticsFilter = filter.clone().into();
+
+        let events_filter = event_filter.add_to_query(events_base).map_err(|e| {
+            log::error!("Error adding filter to events query: {:?}", e);
+            ServiceError::InternalServerError("Error adding filter to query".to_string())
+        })?;
+
+        let recommendations_filter = filter.add_to_query(recommendations_base);
+
+        (events_filter, recommendations_filter)
+    } else {
+        ("dataset_id = ?".to_string(), "dataset_id = ?".to_string())
+    };
+
+    let query_string = format!(
+        "
+        -- Event counts by type
+        SELECT
+            event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            events
+        WHERE {}
+        GROUP BY event_name
+        
+        UNION ALL
+        
+        -- All users 
+        SELECT
+            'all_users' as event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            events
+        WHERE {}
+        
+        UNION ALL
+        
+        -- messages sent
+        SELECT
+            'recommendation_created' as event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            recommendations
+        WHERE {}
+        
+        
+        ORDER BY event_count DESC
+    ",
+        events_filter, events_filter, recommendations_filter
+    );
+
+    let result = clickhouse_client
+        .query(query_string.as_str())
         .bind(dataset_id)
         .bind(dataset_id)
         .bind(dataset_id)

@@ -19,7 +19,7 @@ interface GraphComponentProps<T extends Record<string, any>> {
   xAxis: keyof T;
   yAxis: keyof T;
   label: string;
-  date_range: ComponentAnalyticsFilter["date_range"];
+  dateRange: ComponentAnalyticsFilter["date_range"];
   tooltipContent: string;
   dataType?: "number" | "percentage" | "currency" | "time";
 }
@@ -32,7 +32,7 @@ export const GraphComponent = <T extends Record<string, any>>({
   xAxis,
   yAxis,
   label,
-  date_range,
+  dateRange,
   tooltipContent,
   dataType = "number",
 }: GraphComponentProps<T>) => {
@@ -80,7 +80,7 @@ export const GraphComponent = <T extends Record<string, any>>({
             yAxis={yAxis}
             granularity={granularity}
             label={label}
-            date_range={date_range}
+            dateRange={dateRange}
           />
         )}
       </Box>

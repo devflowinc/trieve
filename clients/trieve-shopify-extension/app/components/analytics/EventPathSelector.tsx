@@ -1,17 +1,25 @@
 import { KnownEventNames } from "app/utils/formatting";
 
 export const chatEvents: KnownEventNames[] = [
-  "trieve-modal_load",
-  "trieve-modal_click",
-  "start_conversation",
-  "send_message",
+  "component_load",
+  "component_click",
+  "conversation_started",
   "site-add_to_cart",
   "site-checkout",
 ];
 
 export const searchEvents: KnownEventNames[] = [
-  "trieve-modal_load",
-  "trieve-modal_click",
+  "component_load",
+  "component_click",
+  "searched",
+  "site-add_to_cart",
+  "site-checkout",
+];
+
+export const recommendationEvents: KnownEventNames[] = [
+  "component_load",
+  "component_click",
+  "recommendation_created",
   "site-add_to_cart",
   "site-checkout",
 ];

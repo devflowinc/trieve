@@ -7850,11 +7850,11 @@
       "ChatRevenueResponse": {
         "type": "object",
         "required": [
-          "avg_chat_revenue",
+          "avg_revenue",
           "points"
         ],
         "properties": {
-          "avg_chat_revenue": {
+          "avg_revenue": {
             "type": "number",
             "format": "double"
           },
@@ -8959,29 +8959,6 @@
                 ]
               }
             }
-          },
-          {
-            "type": "object",
-            "title": "EventCounts",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "filter": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/EventAnalyticsFilter"
-                  }
-                ],
-                "nullable": true
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "event_counts"
-                ]
-              }
-            }
           }
         ],
         "discriminator": {
@@ -9021,9 +8998,6 @@
           },
           {
             "$ref": "#/components/schemas/ComponentInteractionTimeResponse"
-          },
-          {
-            "$ref": "#/components/schemas/EventNameAndCountsResponse"
           }
         ]
       },
@@ -14774,6 +14748,29 @@
           },
           {
             "type": "object",
+            "title": "EventFunnel",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/TopicAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "event_funnel"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
             "title": "ChatRevenue",
             "required": [
               "type"
@@ -14882,6 +14879,9 @@
           },
           {
             "$ref": "#/components/schemas/ChatConversionRateResponse"
+          },
+          {
+            "$ref": "#/components/schemas/EventNameAndCountsResponse"
           },
           {
             "$ref": "#/components/schemas/ChatRevenueResponse"
@@ -15608,6 +15608,29 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "EventFunnel",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RecommendationAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "event_funnel"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -15669,6 +15692,9 @@
           },
           {
             "$ref": "#/components/schemas/RecommendationsConversionRateResponse"
+          },
+          {
+            "$ref": "#/components/schemas/EventNameAndCountsResponse"
           }
         ]
       },
@@ -16808,6 +16834,29 @@
           },
           {
             "type": "object",
+            "title": "EventFunnel",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SearchAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "event_funnel"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
             "title": "SearchRevenue",
             "required": [
               "type"
@@ -16938,6 +16987,9 @@
           },
           {
             "$ref": "#/components/schemas/SearchAverageRatingResponse"
+          },
+          {
+            "$ref": "#/components/schemas/EventNameAndCountsResponse"
           },
           {
             "$ref": "#/components/schemas/SearchRevenueResponse"
@@ -17655,11 +17707,11 @@
       "SearchRevenueResponse": {
         "type": "object",
         "required": [
-          "avg_search_revenue",
+          "avg_revenue",
           "points"
         ],
         "properties": {
-          "avg_search_revenue": {
+          "avg_revenue": {
             "type": "number",
             "format": "double"
           },

@@ -13,6 +13,7 @@ import {
   SearchesPerUserResponse,
   SearchAverageRatingResponse,
   SearchRevenueResponse,
+  EventNameAndCountsResponse,
 } from "trieve-ts-sdk";
 import { subDays } from "date-fns";
 import { formatDateForApi } from "../../utils/formatting";
@@ -187,6 +188,22 @@ export const searchRevenueQuery = (
         granularity,
       });
       return result as SearchRevenueResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const searchEventFunnelQuery = (
+  trieve: TrieveSDK,
+  filters: SearchAnalyticsFilter,
+) => {
+  return {
+    queryKey: ["search_event_funnel", filters],
+    queryFn: async () => {
+      const result = await trieve.getSearchAnalytics({
+        filter: filters,
+        type: "event_funnel",
+      });
+      return result as EventNameAndCountsResponse;
     },
   } satisfies QueryOptions;
 };

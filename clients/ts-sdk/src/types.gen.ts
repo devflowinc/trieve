@@ -224,7 +224,7 @@ export type ChatMessageProxy = {
 };
 
 export type ChatRevenueResponse = {
-    avg_chat_revenue: number;
+    avg_revenue: number;
     points: Array<FloatTimePoint>;
 };
 
@@ -552,9 +552,6 @@ export type ComponentAnalytics = {
     filter?: ((ComponentAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'component_interaction_time';
-} | {
-    filter?: ((EventAnalyticsFilter) | null);
-    type: 'event_counts';
 };
 
 export type type3 = 'total_unique_users';
@@ -564,7 +561,7 @@ export type ComponentAnalyticsFilter = {
     date_range?: ((DateRange) | null);
 };
 
-export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse | ComponentInteractionTimeResponse | EventNameAndCountsResponse;
+export type ComponentAnalyticsResponse = TotalUniqueUsersResponse | TopPagesResponse | TopComponentsResponse | ComponentNamesResponse | ComponentInteractionTimeResponse;
 
 export type ComponentInteractionTimeResponse = {
     avg_interaction_time: number;
@@ -2643,6 +2640,9 @@ export type RAGAnalytics = {
     granularity?: ((Granularity) | null);
     type: 'chat_conversion_rate';
 } | {
+    filter?: ((TopicAnalyticsFilter) | null);
+    type: 'event_funnel';
+} | {
     filter?: ((RAGAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'chat_revenue';
@@ -2658,7 +2658,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse | ChatRevenueResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse | EventNameAndCountsResponse | ChatRevenueResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at';
 
@@ -2853,6 +2853,9 @@ export type RecommendationAnalytics = {
     filter?: ((RecommendationAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'recommendation_conversion_rate';
+} | {
+    filter?: ((RecommendationAnalyticsFilter) | null);
+    type: 'event_funnel';
 };
 
 export type type5 = 'low_confidence_recommendations';
@@ -2864,7 +2867,7 @@ export type RecommendationAnalyticsFilter = {
     top_score?: ((FloatRange) | null);
 };
 
-export type RecommendationAnalyticsResponse = RecommendationsEventResponse | RecommendationEvent | RecommendationUsageGraphResponse | RecommendationsPerUserResponse | RecommendationsCTRRateResponse | RecommendationsConversionRateResponse;
+export type RecommendationAnalyticsResponse = RecommendationsEventResponse | RecommendationEvent | RecommendationUsageGraphResponse | RecommendationsPerUserResponse | RecommendationsCTRRateResponse | RecommendationsConversionRateResponse | EventNameAndCountsResponse;
 
 export type RecommendationCTRMetrics = {
     avg_position_of_click: number;
@@ -3124,6 +3127,9 @@ export type SearchAnalytics = {
     type: 'search_average_rating';
 } | {
     filter?: ((SearchAnalyticsFilter) | null);
+    type: 'event_funnel';
+} | {
+    filter?: ((SearchAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'search_revenue';
 };
@@ -3140,7 +3146,7 @@ export type SearchAnalyticsFilter = {
     top_score?: ((FloatRange) | null);
 };
 
-export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse | CTRMetricsOverTimeResponse | SearchConversionRateResponse | SearchesPerUserResponse | SearchAverageRatingResponse | SearchRevenueResponse;
+export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse | CTRMetricsOverTimeResponse | SearchConversionRateResponse | SearchesPerUserResponse | SearchAverageRatingResponse | EventNameAndCountsResponse | SearchRevenueResponse;
 
 export type SearchAverageRatingResponse = {
     avg_search_rating: number;
@@ -3355,7 +3361,7 @@ export type SearchResponseTypes = SearchResponseBody | SearchChunkQueryResponseB
 export type SearchResultType = ScoreChunkDTO | GroupScoreChunk;
 
 export type SearchRevenueResponse = {
-    avg_search_revenue: number;
+    avg_revenue: number;
     points: Array<FloatTimePoint>;
 };
 

@@ -9,9 +9,7 @@ import {
   TopComponentsResponse,
   ComponentNamesResponse,
   ComponentInteractionTimeResponse,
-  EventTypeAndCountsResponse,
   EventNameAndCountsResponse,
-  EventNameAndCounts,
 } from "trieve-ts-sdk";
 
 export const totalUniqueUsersQuery = (
@@ -99,22 +97,6 @@ export const componentInteractionTimeQuery = (
       });
 
       return result as ComponentInteractionTimeResponse;
-    },
-  } satisfies QueryOptions;
-};
-
-export const eventNamesAndCountsQuery = (
-  trieve: TrieveSDK,
-  filters: ComponentAnalyticsFilter,
-) => {
-  return {
-    queryKey: ["eventTypesAndCounts", filters],
-    queryFn: async () => {
-      const result = (await trieve.getComponentAnalytics({
-        filter: filters,
-        type: "event_counts",
-      })) as EventNameAndCountsResponse;
-      return result.event_names;
     },
   } satisfies QueryOptions;
 };

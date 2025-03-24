@@ -357,6 +357,21 @@ pub async fn get_search_analytics(
             .await?;
             SearchAnalyticsResponse::SearchAverageRating(search_average_rating)
         }
+        SearchAnalytics::EventFunnel { filter } => {
+            let mut event_counts = get_search_event_counts_query(
+                dataset_org_plan_sub.dataset.id,
+                filter.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            // Sort by event_count
+            event_counts.sort_by(|a, b| b.event_count.cmp(&a.event_count));
+
+            SearchAnalyticsResponse::EventFunnel(EventNameAndCountsResponse {
+                event_names: event_counts,
+            })
+        }
         SearchAnalytics::SearchRevenue {
             filter,
             granularity,
@@ -368,6 +383,7 @@ pub async fn get_search_analytics(
                 clickhouse_client.get_ref(),
             )
             .await?;
+
             SearchAnalyticsResponse::SearchRevenue(search_revenue)
         }
     };
@@ -552,6 +568,18 @@ pub async fn get_rag_analytics(
             .await?;
             RAGAnalyticsResponse::ChatConversionRate(chat_conversion_rate)
         }
+        RAGAnalytics::EventFunnel { filter } => {
+            let event_counts = get_rag_event_counts_query(
+                dataset_org_plan_sub.dataset.id,
+                filter.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            RAGAnalyticsResponse::EventFunnel(EventNameAndCountsResponse {
+                event_names: event_counts,
+            })
+        }
         RAGAnalytics::ChatRevenue {
             filter,
             granularity,
@@ -563,6 +591,7 @@ pub async fn get_rag_analytics(
                 clickhouse_client.get_ref(),
             )
             .await?;
+
             RAGAnalyticsResponse::ChatRevenue(chat_revenue)
         }
     };
@@ -696,6 +725,20 @@ pub async fn get_recommendation_analytics(
             RecommendationAnalyticsResponse::RecommendationConversionRate(
                 recommendation_conversion_rate,
             )
+        }
+        RecommendationAnalytics::EventFunnel { filter } => {
+            let mut event_counts = get_recommendation_event_counts_query(
+                dataset_org_plan_sub.dataset.id,
+                filter.clone(),
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            event_counts.sort_by(|a, b| b.event_count.cmp(&a.event_count));
+
+            RecommendationAnalyticsResponse::EventFunnel(EventNameAndCountsResponse {
+                event_names: event_counts,
+            })
         }
     };
 
@@ -1005,21 +1048,6 @@ pub async fn get_component_analytics(
             .await?;
 
             ComponentAnalyticsResponse::ComponentInteractionTime(component_interaction_time)
-        }
-        ComponentAnalytics::EventCounts { filter } => {
-            let mut event_counts = get_event_counts_by_type_query(
-                dataset_org_plan_sub.dataset.id,
-                filter.clone(),
-                clickhouse_client.get_ref(),
-            )
-            .await?;
-
-            // Sort by event_count
-            event_counts.sort_by(|a, b| b.event_count.cmp(&a.event_count));
-
-            ComponentAnalyticsResponse::EventTypeAndCounts(EventNameAndCountsResponse {
-                event_names: event_counts,
-            })
         }
     };
 

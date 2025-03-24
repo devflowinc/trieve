@@ -9,45 +9,34 @@ import {
 } from "@shopify/polaris";
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
-import { eventNamesAndCountsQuery } from "app/queries/analytics/component";
 import { formatEventName, KnownEventNames } from "app/utils/formatting";
 import { Chart, ChartConfiguration } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
+import { useEffect, useMemo, useRef } from "react";
+import { ComponentAnalyticsFilter, EventNameAndCounts } from "trieve-ts-sdk";
 import { BasicTableComponent } from "../BasicTableComponent";
-import { chatEvents, searchEvents } from "../EventPathSelector";
+import { chatEvents } from "../EventPathSelector";
+import { chatEventFunnelQuery } from "app/queries/analytics/chat";
 
-export const UserJourneyFunnel = ({
+export const ChatUserJourneyFunnel = ({
   filters,
 }: {
   filters: ComponentAnalyticsFilter;
 }) => {
   const { trieve } = useTrieve();
-  const [events, setEvents] = useState<KnownEventNames[]>(chatEvents);
+  const events = chatEvents;
 
-  const [modeSelect, setModeSelect] = useState<"chat" | "search">("chat");
-
-  const { data, status } = useQuery(eventNamesAndCountsQuery(trieve, filters));
+  const { data, status } = useQuery(chatEventFunnelQuery(trieve, filters));
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
-  // Filter the events only to those which belong in the category
-  const selectMode = (mode: "chat" | "search") => {
-    setModeSelect(mode);
-    if (mode === "chat") {
-      setEvents(chatEvents);
-    } else {
-      setEvents(searchEvents);
-    }
-  };
 
   const filteredData = useMemo(() => {
     if (!data) return [];
     const selected = events.map((event) => {
       return (
-        data.find((e) => e.event_name === event) || {
+        data.event_names.find((e: EventNameAndCounts) => e.event_name === event) || {
           event_name: event,
           event_count: 0,
         }
@@ -175,9 +164,9 @@ export const UserJourneyFunnel = ({
 
   const tableData = filteredData
     ? filteredData.map((item) => [
-        formatEventName(item.event_name),
-        item.event_count.toString(),
-      ])
+      formatEventName(item.event_name),
+      item.event_count.toString(),
+    ])
     : [];
   const tableHeadings = ["Event Name", "Unique Users"];
   const tableContentTypes: ColumnContentType[] = ["text", "numeric"];
@@ -196,18 +185,6 @@ export const UserJourneyFunnel = ({
             </Text>
           </Tooltip>
         </div>
-        <Select
-          label="Mode Selection"
-          labelHidden
-          value={modeSelect}
-          onChange={(e) => {
-            selectMode(e as "chat" | "search");
-          }}
-          options={[
-            { label: "Chat", value: "chat" },
-            { label: "Search", value: "search" },
-          ]}
-        />
       </div>
       {events.length > 0 ? (
         <>
@@ -226,7 +203,7 @@ export const UserJourneyFunnel = ({
             hidePagination
             data={tableData}
             page={1}
-            setPage={() => {}}
+            setPage={() => { }}
             tableContentTypes={tableContentTypes}
             tableHeadings={tableHeadings}
             hasNext={hasNext}

@@ -5855,6 +5855,15 @@ pub struct SearchAnalyticsFilter {
     pub query: Option<String>,
 }
 
+impl From<SearchAnalyticsFilter> for EventAnalyticsFilter {
+    fn from(filter: SearchAnalyticsFilter) -> Self {
+        EventAnalyticsFilter {
+            date_range: filter.date_range,
+            ..Default::default()
+        }
+    }
+}
+
 impl SearchAnalyticsFilter {
     pub fn add_to_query(&self, mut query_string: String) -> String {
         if let Some(date_range) = &self.date_range {
@@ -6112,6 +6121,15 @@ pub struct TopicAnalyticsFilter {
     pub query: Option<String>,
 }
 
+impl From<TopicAnalyticsFilter> for EventAnalyticsFilter {
+    fn from(filter: TopicAnalyticsFilter) -> Self {
+        EventAnalyticsFilter {
+            date_range: filter.date_range,
+            ..Default::default()
+        }
+    }
+}
+
 impl TopicAnalyticsFilter {
     pub fn add_to_query(&self, mut query_string: String) -> String {
         if let Some(date_range) = &self.date_range {
@@ -6295,6 +6313,15 @@ pub struct RecommendationAnalyticsFilter {
     pub recommendation_type: Option<RecommendationType>,
     pub component_name: Option<String>,
     pub top_score: Option<FloatRange>,
+}
+
+impl From<RecommendationAnalyticsFilter> for EventAnalyticsFilter {
+    fn from(filter: RecommendationAnalyticsFilter) -> Self {
+        EventAnalyticsFilter {
+            date_range: filter.date_range,
+            ..Default::default()
+        }
+    }
 }
 
 impl RecommendationAnalyticsFilter {
@@ -6898,7 +6925,7 @@ impl From<EventDataClickhouse> for EventData {
 }
 
 /// Filter to apply to the events when querying for them
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
 #[schema(example = json!({
     "date_range": {
         "gt": "2021-08-10T00:00:00Z",
@@ -7283,6 +7310,10 @@ pub enum SearchAnalytics {
         filter: Option<SearchAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "EventFunnel")]
+    EventFunnel {
+        filter: Option<SearchAnalyticsFilter>,
+    },
     #[schema(title = "SearchRevenue")]
     SearchRevenue {
         filter: Option<SearchAnalyticsFilter>,
@@ -7357,6 +7388,10 @@ pub enum RAGAnalytics {
         filter: Option<TopicAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "EventFunnel")]
+    EventFunnel {
+        filter: Option<TopicAnalyticsFilter>,
+    },
     #[schema(title = "ChatRevenue")]
     #[serde(rename = "chat_revenue")]
     ChatRevenue {
@@ -7406,6 +7441,10 @@ pub enum RecommendationAnalytics {
     RecommendationConversionRate {
         filter: Option<RecommendationAnalyticsFilter>,
         granularity: Option<Granularity>,
+    },
+    #[schema(title = "EventFunnel")]
+    EventFunnel {
+        filter: Option<RecommendationAnalyticsFilter>,
     },
 }
 
@@ -7486,10 +7525,6 @@ pub enum ComponentAnalytics {
         filter: Option<ComponentAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
-    #[schema(title = "EventCounts")]
-    EventCounts {
-        filter: Option<EventAnalyticsFilter>,
-    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Row)]
@@ -7540,19 +7575,21 @@ pub enum RAGAnalyticsResponse {
     ChatAverageRating(ChatAverageRatingResponse),
     #[schema(title = "ChatConversionRate")]
     ChatConversionRate(ChatConversionRateResponse),
+    #[schema(title = "EventFunnel")]
+    EventFunnel(EventNameAndCountsResponse),
     #[schema(title = "ChatRevenue")]
     ChatRevenue(ChatRevenueResponse),
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct ChatRevenueResponse {
-    pub avg_chat_revenue: f64,
+pub struct ChatConversionRateResponse {
+    pub conversion_rate: f64,
     pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct ChatConversionRateResponse {
-    pub conversion_rate: f64,
+pub struct ChatRevenueResponse {
+    pub avg_revenue: f64,
     pub points: Vec<FloatTimePoint>,
 }
 
@@ -7584,6 +7621,12 @@ pub struct EventNameAndCountsResponse {
     pub event_names: Vec<EventNameAndCounts>,
 }
 
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchRevenueResponse {
+    pub avg_revenue: f64,
+    pub points: Vec<FloatTimePoint>,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct GetEventCountsRequestBody {
     /// Filter to apply to the events
@@ -7611,12 +7654,6 @@ pub struct SearchesPerUserResponse {
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct SearchAverageRatingResponse {
     pub avg_search_rating: f64,
-    pub points: Vec<FloatTimePoint>,
-}
-
-#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
-pub struct SearchRevenueResponse {
-    pub avg_search_revenue: f64,
     pub points: Vec<FloatTimePoint>,
 }
 
@@ -7716,6 +7753,8 @@ pub enum SearchAnalyticsResponse {
     SearchesPerUser(SearchesPerUserResponse),
     #[schema(title = "SearchAverageRating")]
     SearchAverageRating(SearchAverageRatingResponse),
+    #[schema(title = "EventFunnel")]
+    EventFunnel(EventNameAndCountsResponse),
     #[schema(title = "SearchRevenue")]
     SearchRevenue(SearchRevenueResponse),
 }
@@ -7746,6 +7785,8 @@ pub enum RecommendationAnalyticsResponse {
     RecommendationsCTRRate(RecommendationsCTRRateResponse),
     #[schema(title = "RecommendationConversionRate")]
     RecommendationConversionRate(RecommendationsConversionRateResponse),
+    #[schema(title = "EventFunnel")]
+    EventFunnel(EventNameAndCountsResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7847,8 +7888,6 @@ pub enum ComponentAnalyticsResponse {
     ComponentNames(ComponentNamesResponse),
     #[schema(title = "ComponentInteractionTime")]
     ComponentInteractionTime(ComponentInteractionTimeResponse),
-    #[schema(title = "EventTypeAndCounts")]
-    EventTypeAndCounts(EventNameAndCountsResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
