@@ -9462,3 +9462,15 @@ pub struct DummyHallucinationScore {
     pub total_score: f64,
     pub detected_hallucinations: Vec<String>,
 }
+
+#[derive(
+    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
+)]
+#[diesel(table_name = usage_based_stripe_subscriptions)]
+pub struct UsageBasedStripeSubscription {
+    pub id: uuid::Uuid,
+    pub organization_id: uuid::Uuid,
+    pub stripe_subscription_id: String,
+    pub last_recorded_meter: chrono::NaiveDateTime,
+    pub created_at: chrono::NaiveDateTime,
+}

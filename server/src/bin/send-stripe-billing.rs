@@ -44,13 +44,29 @@ async fn main() -> Result<(), ServiceError> {
     let organization_ids = organization_operator::get_all_organization_ids(pool.clone()).await?;
 
     for organization_id in organization_ids {
-        stripe_operator::send_stripe_billing(
-            // TODO
-            last_updted_time,
-            organization_id,
-            &clickhouse_client,
-            pool.clone())
+        let usage_based_subscription =
+            stripe_operator::get_option_usage_based_subscription_by_organization_id_query(
+                organization_id,
+                pool.clone(),
+            )
             .await?;
+
+        if let Some(usage_based_subscription) = usage_based_subscription {
+            let result = stripe_operator::send_stripe_billing(
+                usage_based_subscription,
+                &clickhouse_client,
+                pool.clone(),
+            )
+            .await;
+
+            if let Err(e) = result {
+                log::error!(
+                    "Failed to send stripe billing for organization_id: {}: {}",
+                    organization_id,
+                    e
+                );
+            }
+        }
     }
 
     Ok(())
