@@ -1,4 +1,3 @@
-import { Box, Card, Text, Spinner } from "@shopify/polaris";
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { SearchAnalyticsFilter, Granularity } from "trieve-ts-sdk";

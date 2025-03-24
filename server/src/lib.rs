@@ -599,6 +599,9 @@ impl Modify for SecurityAddon {
             data::models::SearchAverageRatingResponse,
             data::models::ChatConversionRateResponse,
             data::models::ComponentInteractionTimeResponse,
+            data::models::SearchRevenueResponse,
+            data::models::ChatRevenueResponse,
+            data::models::PurchaseItem,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
         )

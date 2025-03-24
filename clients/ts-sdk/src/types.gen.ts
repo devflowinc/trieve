@@ -223,6 +223,11 @@ export type ChatMessageProxy = {
     role: RoleProxy;
 };
 
+export type ChatRevenueResponse = {
+    avg_chat_revenue: number;
+    points: Array<FloatTimePoint>;
+};
+
 /**
  * ChunkFilter is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
  */
@@ -1504,7 +1509,7 @@ export type EventTypes = {
     /**
      * The items that were purchased
      */
-    items: Array<(string)>;
+    items: Array<PurchaseItem>;
     /**
      * The location of the event
      */
@@ -2529,6 +2534,11 @@ export type PublicPageTag = {
 
 export type PublicPageTheme = 'light' | 'dark';
 
+export type PurchaseItem = {
+    revenue: number;
+    tracking_id: string;
+};
+
 export type QdrantChunkMetadata = {
     chunk_html?: (string) | null;
     dataset_id: string;
@@ -2616,6 +2626,10 @@ export type RAGAnalytics = {
     filter?: ((TopicAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'chat_conversion_rate';
+} | {
+    filter?: ((RAGAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'chat_revenue';
 };
 
 export type type4 = 'rag_queries';
@@ -2628,7 +2642,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse | ChatRevenueResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at';
 
@@ -3092,6 +3106,10 @@ export type SearchAnalytics = {
     filter?: ((SearchAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'search_average_rating';
+} | {
+    filter?: ((SearchAnalyticsFilter) | null);
+    granularity?: ((Granularity) | null);
+    type: 'search_revenue';
 };
 
 export type type7 = 'latency_graph';
@@ -3106,7 +3124,7 @@ export type SearchAnalyticsFilter = {
     top_score?: ((FloatRange) | null);
 };
 
-export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse | CTRMetricsOverTimeResponse | SearchConversionRateResponse | SearchesPerUserResponse | SearchAverageRatingResponse;
+export type SearchAnalyticsResponse = LatencyGraphResponse | SearchUsageGraphResponse | DatasetAnalytics | HeadQueryResponse | SearchQueryResponse | QueryCountResponse | SearchQueryEvent | PopularFiltersResponse | CTRMetricsOverTimeResponse | SearchConversionRateResponse | SearchesPerUserResponse | SearchAverageRatingResponse | SearchRevenueResponse;
 
 export type SearchAverageRatingResponse = {
     avg_search_rating: number;
@@ -3319,6 +3337,11 @@ export type SearchResponseBody = {
 export type SearchResponseTypes = SearchResponseBody | SearchChunkQueryResponseBody;
 
 export type SearchResultType = ScoreChunkDTO | GroupScoreChunk;
+
+export type SearchRevenueResponse = {
+    avg_search_revenue: number;
+    points: Array<FloatTimePoint>;
+};
 
 export type SearchSortBy = 'created_at' | 'latency' | 'top_score';
 

@@ -103,6 +103,8 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
                     return `${props.label}: ${value}%`;
                   } else if (props.dataType === "time") {
                     return `${props.label}: ${formatTimeValueForChart(value)}`;
+                  } else if (props.dataType === "currency") {
+                    return `${props.label}: $${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   }
                   return `${props.label}: ${value}`;
                 },
@@ -143,6 +145,8 @@ export const AnalyticsChart = <T,>(props: AnalyticsChartProps<T>) => {
                     return `${tickValue}%`;
                   } else if (props.dataType === "time") {
                     return formatTimeValueForChart(Number(tickValue));
+                  } else if (props.dataType === "currency") {
+                    return `$${Number(tickValue).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
                   }
                   return props.wholeUnits ? Math.round(Number(tickValue)) : tickValue;
                 },

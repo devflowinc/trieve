@@ -12,6 +12,7 @@ import {
   SearchConversionRateResponse,
   SearchesPerUserResponse,
   SearchAverageRatingResponse,
+  SearchRevenueResponse,
 } from "trieve-ts-sdk";
 import { subDays } from "date-fns";
 import { formatDateForApi } from "../../utils/formatting";
@@ -168,6 +169,24 @@ export const searchAverageRatingQuery = (
         granularity,
       });
       return result as SearchAverageRatingResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const searchRevenueQuery = (
+  trieve: TrieveSDK,
+  filters: SearchAnalyticsFilter,
+  granularity: Granularity,
+) => {
+  return {
+    queryKey: ["search_revenue", filters, granularity],
+    queryFn: async () => {
+      const result = await trieve.getSearchAnalytics({
+        filter: filters,
+        type: "search_revenue",
+        granularity,
+      });
+      return result as SearchRevenueResponse;
     },
   } satisfies QueryOptions;
 };

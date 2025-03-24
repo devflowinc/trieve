@@ -6655,7 +6655,10 @@ impl EventTypes {
                 event_name,
                 request_id: request.clone().unwrap_or_default().request_id.to_string(),
                 request_type: request.unwrap_or_default().request_type.to_string(),
-                items,
+                items: items
+                    .iter()
+                    .map(|item| serde_json::to_string(item).unwrap_or_default())
+                    .collect(),
                 user_id: user_id.unwrap_or_default(),
                 metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
                 is_conversion: is_conversion.unwrap_or(true),
@@ -7280,6 +7283,11 @@ pub enum SearchAnalytics {
         filter: Option<SearchAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "SearchRevenue")]
+    SearchRevenue {
+        filter: Option<SearchAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7347,6 +7355,12 @@ pub enum RAGAnalytics {
     #[serde(rename = "chat_conversion_rate")]
     ChatConversionRate {
         filter: Option<TopicAnalyticsFilter>,
+        granularity: Option<Granularity>,
+    },
+    #[schema(title = "ChatRevenue")]
+    #[serde(rename = "chat_revenue")]
+    ChatRevenue {
+        filter: Option<RAGAnalyticsFilter>,
         granularity: Option<Granularity>,
     },
 }
@@ -7522,6 +7536,14 @@ pub enum RAGAnalyticsResponse {
     ChatAverageRating(ChatAverageRatingResponse),
     #[schema(title = "ChatConversionRate")]
     ChatConversionRate(ChatConversionRateResponse),
+    #[schema(title = "ChatRevenue")]
+    ChatRevenue(ChatRevenueResponse),
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct ChatRevenueResponse {
+    pub avg_chat_revenue: f64,
+    pub points: Vec<FloatTimePoint>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -7563,6 +7585,12 @@ pub struct SearchesPerUserResponse {
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct SearchAverageRatingResponse {
     pub avg_search_rating: f64,
+    pub points: Vec<FloatTimePoint>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct SearchRevenueResponse {
+    pub avg_search_revenue: f64,
     pub points: Vec<FloatTimePoint>,
 }
 
@@ -7662,6 +7690,8 @@ pub enum SearchAnalyticsResponse {
     SearchesPerUser(SearchesPerUserResponse),
     #[schema(title = "SearchAverageRating")]
     SearchAverageRating(SearchAverageRatingResponse),
+    #[schema(title = "SearchRevenue")]
+    SearchRevenue(SearchRevenueResponse),
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7973,6 +8003,12 @@ pub struct RequestInfo {
     pub request_id: uuid::Uuid,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct PurchaseItem {
+    pub tracking_id: String,
+    pub revenue: f64,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Display)]
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "event_type")]
@@ -8037,7 +8073,7 @@ pub enum EventTypes {
         /// The request id of the event to associate it with a request
         request: Option<RequestInfo>,
         /// The items that were purchased
-        items: Vec<String>,
+        items: Vec<PurchaseItem>,
         /// The user id of the user who purchased the items
         user_id: Option<String>,
         /// Any other metadata associated with the event

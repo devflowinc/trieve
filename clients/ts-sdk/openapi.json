@@ -7847,6 +7847,25 @@
           "role": "user"
         }
       },
+      "ChatRevenueResponse": {
+        "type": "object",
+        "required": [
+          "avg_chat_revenue",
+          "points"
+        ],
+        "properties": {
+          "avg_chat_revenue": {
+            "type": "number",
+            "format": "double"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FloatTimePoint"
+            }
+          }
+        }
+      },
       "ChunkFilter": {
         "type": "object",
         "description": "ChunkFilter is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.",
@@ -11260,7 +11279,7 @@
               "items": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/PurchaseItem"
                 },
                 "description": "The items that were purchased"
               },
@@ -14147,6 +14166,22 @@
           "dark"
         ]
       },
+      "PurchaseItem": {
+        "type": "object",
+        "required": [
+          "tracking_id",
+          "revenue"
+        ],
+        "properties": {
+          "revenue": {
+            "type": "number",
+            "format": "double"
+          },
+          "tracking_id": {
+            "type": "string"
+          }
+        }
+      },
       "QdrantChunkMetadata": {
         "type": "object",
         "required": [
@@ -14667,6 +14702,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "ChatRevenue",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "chat_revenue"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -14747,6 +14813,9 @@
           },
           {
             "$ref": "#/components/schemas/ChatConversionRateResponse"
+          },
+          {
+            "$ref": "#/components/schemas/ChatRevenueResponse"
           }
         ]
       },
@@ -16667,6 +16736,37 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "SearchRevenue",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SearchAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "granularity": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Granularity"
+                  }
+                ],
+                "nullable": true
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "search_revenue"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -16769,6 +16869,9 @@
           },
           {
             "$ref": "#/components/schemas/SearchAverageRatingResponse"
+          },
+          {
+            "$ref": "#/components/schemas/SearchRevenueResponse"
           }
         ]
       },
@@ -17479,6 +17582,25 @@
             "$ref": "#/components/schemas/GroupScoreChunk"
           }
         ]
+      },
+      "SearchRevenueResponse": {
+        "type": "object",
+        "required": [
+          "avg_search_revenue",
+          "points"
+        ],
+        "properties": {
+          "avg_search_revenue": {
+            "type": "number",
+            "format": "double"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FloatTimePoint"
+            }
+          }
+        }
       },
       "SearchSortBy": {
         "type": "string",
