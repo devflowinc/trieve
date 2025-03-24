@@ -27,7 +27,7 @@ export const SearchRevenue = ({
       dataType="currency"
       xAxis={"time_stamp"}
       yAxis={"point"}
-      label="Average Search Revenue"
+      label="Average Revenue"
       tooltipContent="The average revenue generated from user search requests."
     />
   );
