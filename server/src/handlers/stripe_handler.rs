@@ -125,59 +125,66 @@ pub async fn webhook(
                                     )
                                 })?;
 
-                            let plan_id = metadata.get("plan_id");
+                            let plan_type =
+                                metadata.get("plan_type").ok_or(ServiceError::BadRequest(
+                                    "Checkout session must have an plan_type metadata".to_string(),
+                                ))?;
 
-                            match plan_id {
-                                Some(plan_id) => {
-                                    let plan_id = plan_id.parse::<uuid::Uuid>().map_err(|_| {
-                                        ServiceError::BadRequest(
-                                            "plan_id metadata must be a uuid".to_string(),
-                                        )
-                                    })?;
+                            let plan_id = metadata
+                                .get("plan_id")
+                                .ok_or(ServiceError::BadRequest(
+                                    "Checkout session must have an organization_id metadata"
+                                        .to_string(),
+                                ))?
+                                .parse::<uuid::Uuid>()
+                                .map_err(|_| {
+                                    ServiceError::BadRequest(
+                                        "organization_id metadata must be a uuid".to_string(),
+                                    )
+                                })?;
 
-                                    let optional_existing_subscription =
-                                        get_option_subscription_by_organization_id_query(
-                                            organization_id,
-                                            optional_subscription_pool,
-                                        )
-                                        .await?;
-
-                                    if let Some(existing_subscription) =
-                                        optional_existing_subscription
-                                    {
-                                        let delete_subscription_pool = pool.clone();
-
-                                        delete_subscription_by_id_query(
-                                            existing_subscription.id,
-                                            delete_subscription_pool,
-                                        )
-                                        .await?;
-                                    }
-
-                                    create_stripe_subscription_query(
-                                        subscription_stripe_id,
-                                        plan_id,
+                            if plan_type == "usage-based" {
+                                log::info!("Creating usage based stripe subscription");
+                                // This is a usage based query
+                                create_usage_stripe_subscription_query(
+                                    subscription_stripe_id,
+                                    plan_id,
+                                    organization_id,
+                                    pool.clone(),
+                                )
+                                .await?;
+                                create_snapshot_and_diff();
+                            } else if plan_type == "flat" {
+                                let optional_existing_subscription =
+                                    get_option_subscription_by_organization_id_query(
                                         organization_id,
-                                        pool.clone(),
+                                        optional_subscription_pool,
                                     )
                                     .await?;
 
-                                    let invoice = checkout_session.clone().invoice;
-                                    if invoice.is_some() {
-                                        let invoice_id = invoice.unwrap().id();
-                                        create_invoice_query(organization_id, invoice_id, pool)
-                                            .await?;
-                                    }
+                                if let Some(existing_subscription) = optional_existing_subscription
+                                {
+                                    let delete_subscription_pool = pool.clone();
+
+                                    delete_subscription_by_id_query(
+                                        existing_subscription.id,
+                                        delete_subscription_pool,
+                                    )
+                                    .await?;
                                 }
-                                None => {
-                                    log::info!("Creating usage based stripe subscription");
-                                    // This is a usage based query
-                                    create_usage_stripe_subscription_query(
-                                        subscription_stripe_id,
-                                        organization_id,
-                                        pool.clone(),
-                                    )
-                                    .await?;
+
+                                create_stripe_subscription_query(
+                                    subscription_stripe_id,
+                                    plan_id,
+                                    organization_id,
+                                    pool.clone(),
+                                )
+                                .await?;
+
+                                let invoice = checkout_session.clone().invoice;
+                                if invoice.is_some() {
+                                    let invoice_id = invoice.unwrap().id();
+                                    create_invoice_query(organization_id, invoice_id, pool).await?;
                                 }
                             }
                         }
@@ -192,6 +199,13 @@ pub async fn webhook(
                     ))?;
 
                     create_stripe_plan_query(plan_id, plan_amount, pool).await?;
+                }
+            }
+            EventType::InvoiceUpcoming => {
+                if let EventObject::Invoice(invoice) = event.data.object {
+                    let invoice_id = invoice.id();
+                    // TODO 
+                    create_snapshot_and_diff();
                 }
             }
             EventType::CustomerSubscriptionDeleted => {

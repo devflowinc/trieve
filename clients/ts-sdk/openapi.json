@@ -13603,7 +13603,7 @@
           "plan": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/StripePlan"
+                "$ref": "#/components/schemas/TrievePlan"
               }
             ],
             "nullable": true
@@ -13611,7 +13611,7 @@
           "subscription": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/StripeSubscription"
+                "$ref": "#/components/schemas/TrieveSubscription"
               }
             ],
             "nullable": true
@@ -18841,6 +18841,42 @@
           "updated_at": "2021-01-01 00:00:00.000"
         }
       },
+      "StripeUsageBasedSubscription": {
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "stripe_subscription_id",
+          "last_recorded_meter",
+          "usage_based_plan_id",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "last_recorded_meter": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stripe_subscription_id": {
+            "type": "string"
+          },
+          "usage_based_plan_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "SuggestType": {
         "type": "string",
         "enum": [
@@ -19381,6 +19417,104 @@
             "format": "int64",
             "minimum": 0
           }
+        }
+      },
+      "TrievePlan": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StripePlan"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "flat"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StripeUsageBasedPlan"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "usage_based"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type"
+        }
+      },
+      "TrieveSubscription": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StripeSubscription"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "flat"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StripeUsageBasedSubscription"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "usage_based"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type"
         }
       },
       "TypoOptions": {

@@ -340,7 +340,7 @@ pub async fn create_chunk(
                 .plan
                 .clone()
                 .unwrap_or_default()
-                .chunk_count as usize
+                .chunk_count() as usize
         {
             return Ok(HttpResponse::UpgradeRequired()
                 .json(json!({"message": "Must upgrade your plan to add more chunks"})));

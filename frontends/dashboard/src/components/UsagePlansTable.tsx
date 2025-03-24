@@ -7,6 +7,7 @@ import {
 } from "shared/types";
 import { AiOutlineWarning } from "solid-icons/ai";
 import { StripeUsageBasedPlan } from "trieve-ts-sdk";
+import { ActiveTag } from "./PlansTable";
 
 interface CreateSetupCheckoutSessionResPayload {
   url: string;
@@ -22,7 +23,7 @@ export const UsagePlansTable = (props: PlansTableProps) => {
   const [availableUsagePlans, setAvailableUsagePlans] = createSignal<
     StripeUsageBasedPlan[]
   >([]);
-  const [currentPlan, setCurrentPlan] = createSignal<StripePlan | null>(null);
+  const [currentPlan, setCurrentPlan] = createSignal<StripePlan | StripeUsageBasedPlan | null>(null);
   const [currentSubscription, setCurrentSubscription] =
     createSignal<StripeSubscription | null>(null);
 
@@ -83,7 +84,7 @@ export const UsagePlansTable = (props: PlansTableProps) => {
   };
 
   return (
-    <div class="flex flex-col gap-8 my-8">
+    <div class="my-8 flex flex-col gap-8">
       <div class="space-y-2">
         <div class="flex w-full flex-row items-start justify-between">
           <div>
@@ -137,15 +138,18 @@ export const UsagePlansTable = (props: PlansTableProps) => {
               <For each={availableUsagePlans()}>
                 {(plan: StripeUsageBasedPlan) => {
                   const curPlan = currentPlan();
+                  let actionButton = <ActiveTag text="Current Tier" />;
 
-                  const actionButton = (
-                    <a
-                      href={`${apiHost}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}?usage_based=true`}
-                      class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
-                    >
-                      Subscribe
-                    </a>
-                  );
+                  if (plan.id !== curPlan?.id) {
+                    actionButton = (
+                      <a
+                        href={`${apiHost}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}?usage_based=true`}
+                        class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
+                      >
+                        Subscribe
+                      </a>
+                    );
+                  }
 
                   if (!plan.visible && plan.id != curPlan?.id) {
                     return null;
