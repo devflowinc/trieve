@@ -20,15 +20,15 @@ export const ChatRevenue = ({
   return (
     <GraphComponent
       loading={isLoading}
-      topLevelMetric={data?.avg_search_revenue}
+      topLevelMetric={data?.avg_chat_revenue}
       graphData={data?.points}
       granularity={granularity}
       date_range={filters.date_range}
       dataType="currency"
       xAxis={"time_stamp"}
       yAxis={"point"}
-      label="Average Search Revenue"
-      tooltipContent="The average revenue that users spend on the search."
+      label="Average Chat Revenue"
+      tooltipContent="The average revenue generated from user chat requests."
     />
   );
 };
