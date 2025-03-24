@@ -44,17 +44,17 @@ const ChatContext = createContext<{
   isDoneReading?: boolean;
   rateChatCompletion: (isPositive: boolean, queryId: string | null) => void;
 }>({
-  askQuestion: async () => { },
+  askQuestion: async () => {},
   currentQuestion: "",
   isLoading: false,
   messages: [],
-  setCurrentQuestion: () => { },
-  cancelGroupChat: () => { },
-  clearConversation: () => { },
-  chatWithGroup: () => { },
-  switchToChatAndAskQuestion: async () => { },
-  stopGeneratingMessage: () => { },
-  rateChatCompletion: () => { },
+  setCurrentQuestion: () => {},
+  cancelGroupChat: () => {},
+  clearConversation: () => {},
+  chatWithGroup: () => {},
+  switchToChatAndAskQuestion: async () => {},
+  stopGeneratingMessage: () => {},
+  rateChatCompletion: () => {},
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
@@ -83,9 +83,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const createTopic = async ({
     question,
     defaultMatchAnyTags,
+    defaultMatchAllTags,
   }: {
     question: string;
-    defaultMatchAnyTags: string[];
+    defaultMatchAnyTags?: string[];
+    defaultMatchAllTags?: string[];
   }) => {
     if (!currentTopic) {
       called.current = true;
@@ -99,7 +101,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         },
       });
       setCurrentTopic(topic.id);
-      createQuestion({ id: topic.id, question: question, defaultMatchAnyTags });
+      createQuestion({
+        id: topic.id,
+        question: question,
+        defaultMatchAnyTags,
+        defaultMatchAllTags,
+      });
     }
   };
 
@@ -249,11 +256,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     question,
     group,
     defaultMatchAnyTags,
+    defaultMatchAllTags,
   }: {
     id?: string;
     question?: string;
     group?: ChunkGroup;
     defaultMatchAnyTags?: string[];
+    defaultMatchAllTags?: string[];
   }) => {
     setIsLoading(true);
     let curAudioBase64 = audioBase64;
@@ -383,13 +392,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               user_message_text:
                 questionProp || currentQuestion
                   ? `Get filters from the following messages: ${messages
-                    .slice(0, -1)
-                    .filter((message) => {
-                      return message.type == "user";
-                    })
-                    .map(
-                      (message) => `\n\n${message.text}`,
-                    )} \n\n ${questionProp || currentQuestion}`
+                      .slice(0, -1)
+                      .filter((message) => {
+                        return message.type == "user";
+                      })
+                      .map(
+                        (message) => `\n\n${message.text}`,
+                      )} \n\n ${questionProp || currentQuestion}`
                   : null,
               image_url: imageUrl ? imageUrl : null,
               audio_input: curAudioBase64 ? curAudioBase64 : null,
@@ -483,6 +492,15 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       filters.should.push({
         field: "tag_set",
         match_any: defaultMatchAnyTags,
+      });
+    }
+    if (defaultMatchAllTags?.length) {
+      if (!filters.should) {
+        filters.should = [];
+      }
+      filters.should.push({
+        field: "tag_set",
+        match_all: defaultMatchAllTags,
       });
     }
     if (
@@ -702,19 +720,19 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
     scrollToBottomOfChatModalWrapper();
 
-    const defaultMatchAnyTags = Object.keys(selectedSidebarFilters)
+    const defaultMatchAllTags = Object.keys(selectedSidebarFilters)
       .map((key) => selectedSidebarFilters[key])
       .flat();
     if (!currentTopic) {
       await createTopic({
         question: questionProp || currentQuestion,
-        defaultMatchAnyTags,
+        defaultMatchAllTags,
       });
     } else {
       await createQuestion({
         question: questionProp || currentQuestion,
         group,
-        defaultMatchAnyTags,
+        defaultMatchAllTags,
       });
     }
   };
