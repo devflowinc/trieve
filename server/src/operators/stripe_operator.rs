@@ -163,6 +163,28 @@ pub async fn get_usage_based_plan_query(
     Ok(stripe_plan)
 }
 
+pub async fn get_all_usage_plans_query(
+    pool: web::Data<Pool>,
+) -> Result<Vec<StripeUsageBasedPlan>, ServiceError> {
+    use crate::data::schema::stripe_usage_based_plans::dsl as stripe_usage_based_plans_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    let stripe_plans: Vec<StripeUsageBasedPlan> =
+        stripe_usage_based_plans_columns::stripe_usage_based_plans
+            .load(&mut conn)
+            .await
+            .map_err(|e| {
+                log::error!("Failed to get stripe plans: {}", e);
+                ServiceError::BadRequest("Failed to get stripe plans".to_string())
+            })?;
+
+    Ok(stripe_plans)
+}
+
 pub async fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan>, ServiceError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
@@ -720,9 +742,6 @@ pub async fn send_stripe_billing(
         chrono::Utc,
     );
 
-    log::info!("Last recorded: {:?}", last_recorded);
-    log::info!("Now minus 1 hour: {:?}", now_minus_1_hour);
-
     let date_range = Some(DateRange {
         gt: Some(last_recorded.format("%Y-%m-%d %H:%M:%S").to_string()),
         lt: Some(now_minus_1_hour.format("%Y-%m-%d %H:%M:%S").to_string()),
@@ -734,6 +753,7 @@ pub async fn send_stripe_billing(
         date_range,
         clickhouse_client,
         pool.clone(),
+        &mut None,
     )
     .await?;
 

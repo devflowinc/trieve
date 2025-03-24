@@ -6271,9 +6271,9 @@
         "tags": [
           "Stripe"
         ],
-        "summary": "Create checkout session setup",
-        "description": "Create a checkout session (setup)",
-        "operationId": "create_setup_checkout_session",
+        "summary": "Update Payment Method",
+        "description": "Update a your payment method to a new one",
+        "operationId": "update_payment_method",
         "parameters": [
           {
             "name": "organization_id",
@@ -6569,6 +6569,41 @@
             ]
           }
         ]
+      }
+    },
+    "/api/stripe/usage_plans": {
+      "get": {
+        "tags": [
+          "Stripe"
+        ],
+        "summary": "Get All Usage Plans",
+        "description": "Get a list of all usage_based plans",
+        "operationId": "get_all_usage_plans",
+        "responses": {
+          "200": {
+            "description": "List of all plans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StripeUsageBasedPlan"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting all plans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/topic": {
@@ -18732,6 +18767,68 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        },
+        "example": {
+          "created_at": "2021-01-01 00:00:00.000",
+          "current_period_end": "2021-01-01 00:00:00.000",
+          "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "plan_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "stripe_id": "sub_123",
+          "updated_at": "2021-01-01 00:00:00.000"
+        }
+      },
+      "StripeUsageBasedPlan": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "visible",
+          "ingest_tokens_price_id",
+          "bytes_ingested_price_id",
+          "search_tokens_price_id",
+          "message_tokens_price_id",
+          "analytics_events_price_id",
+          "ocr_pages_price_id",
+          "pages_crawls_price_id",
+          "created_at"
+        ],
+        "properties": {
+          "analytics_events_price_id": {
+            "type": "string"
+          },
+          "bytes_ingested_price_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ingest_tokens_price_id": {
+            "type": "string"
+          },
+          "message_tokens_price_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ocr_pages_price_id": {
+            "type": "string"
+          },
+          "pages_crawls_price_id": {
+            "type": "string"
+          },
+          "search_tokens_price_id": {
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
           }
         },
         "example": {
