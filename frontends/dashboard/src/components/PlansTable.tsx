@@ -13,7 +13,6 @@ import {
 } from "../utils/formatters";
 import { AiOutlineWarning } from "solid-icons/ai";
 import { createToast } from "./ShowToasts";
-import { StripeUsageBasedPlan } from "trieve-ts-sdk";
 
 interface CreateSetupCheckoutSessionResPayload {
   url: string;
@@ -23,7 +22,7 @@ interface ActiveTagProps {
   text: string;
 }
 
-const ActiveTag = (props: ActiveTagProps) => {
+export const ActiveTag = (props: ActiveTagProps) => {
   return (
     <p class="w-fit rounded-lg px-4 py-2 font-semibold text-magenta-500">
       {props.text}

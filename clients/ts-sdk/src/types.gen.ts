@@ -2376,8 +2376,8 @@ export type OrganizationUsageCount = {
 
 export type OrganizationWithSubAndPlan = {
     organization: Organization;
-    plan?: ((StripePlan) | null);
-    subscription?: ((StripeSubscription) | null);
+    plan?: ((TrievePlan) | null);
+    subscription?: ((TrieveSubscription) | null);
 };
 
 export type PartnerConfiguration = {
@@ -3660,6 +3660,15 @@ export type StripeUsageBasedPlan = {
     visible: boolean;
 };
 
+export type StripeUsageBasedSubscription = {
+    created_at: string;
+    id: string;
+    last_recorded_meter: string;
+    organization_id: string;
+    stripe_subscription_id: string;
+    usage_based_plan_id: string;
+};
+
 export type SuggestType = 'question' | 'keyword' | 'semantic';
 
 export type SuggestedQueriesReqPayload = {
@@ -3823,6 +3832,20 @@ export type TotalUniqueUsersResponse = {
     points: Array<IntegerTimePoint>;
     total_unique_users: number;
 };
+
+export type TrievePlan = (StripePlan & {
+    type: 'flat';
+}) | (StripeUsageBasedPlan & {
+    type: 'usage_based';
+});
+
+export type type8 = 'flat';
+
+export type TrieveSubscription = (StripeSubscription & {
+    type: 'flat';
+}) | (StripeUsageBasedSubscription & {
+    type: 'usage_based';
+});
 
 /**
  * Typo Options lets you specify different methods to correct typos in the query. If not specified, typos will not be corrected.

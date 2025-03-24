@@ -3864,17 +3864,17 @@ impl Default for StripePlan {
 }))]
 #[diesel(table_name = stripe_usage_based_plans)]
 pub struct StripeUsageBasedPlan {
-    id: uuid::Uuid,
-    name: String,
-    visible: bool,
-    ingest_tokens_price_id: String,
-    bytes_ingested_price_id: String,
-    search_tokens_price_id: String,
-    message_tokens_price_id: String,
-    analytics_events_price_id: String,
-    ocr_pages_price_id: String,
-    pages_crawls_price_id: String,
-    created_at: chrono::NaiveDateTime,
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub visible: bool,
+    pub ingest_tokens_price_id: String,
+    pub bytes_ingested_price_id: String,
+    pub search_tokens_price_id: String,
+    pub message_tokens_price_id: String,
+    pub analytics_events_price_id: String,
+    pub ocr_pages_price_id: String,
+    pub pages_crawls_price_id: String,
+    pub created_at: chrono::NaiveDateTime,
 }
 
 impl StripeUsageBasedPlan {
@@ -3967,19 +3967,126 @@ impl StripeSubscription {
 }))]
 pub struct OrganizationWithSubAndPlan {
     pub organization: Organization,
-    pub plan: Option<StripePlan>,
-    pub subscription: Option<StripeSubscription>,
+    pub plan: Option<TrievePlan>,
+    pub subscription: Option<TrieveSubscription>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum TrievePlan {
+    Flat(StripePlan),
+    UsageBased(StripeUsageBasedPlan),
+}
+
+impl TrievePlan {
+    pub fn from_flat(
+        stripe_plan: Option<StripePlan>,
+        stripe_usage_based_plan: Option<StripeUsageBasedPlan>,
+    ) -> Option<Self> {
+        if let Some(usage_plan) = stripe_usage_based_plan {
+            Some(TrievePlan::UsageBased(usage_plan))
+        } else { stripe_plan.map(TrievePlan::Flat) }
+    }
+}
+
+impl Default for TrievePlan {
+    fn default() -> Self {
+        TrievePlan::Flat(StripePlan::default())
+    }
+}
+
+impl TrievePlan {
+    pub fn chunk_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.chunk_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+
+    pub fn file_storage(&self) -> i64 {
+        match self {
+            TrievePlan::Flat(plan) => plan.file_storage,
+            TrievePlan::UsageBased(_) => i64::MAX,
+        }
+    }
+
+    pub fn user_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.user_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+
+    pub fn dataset_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.dataset_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+
+    pub fn message_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.message_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+}
+
+impl From<StripePlan> for TrievePlan {
+    fn from(plan: StripePlan) -> Self {
+        TrievePlan::Flat(plan)
+    }
+}
+
+impl From<StripeUsageBasedPlan> for TrievePlan {
+    fn from(plan: StripeUsageBasedPlan) -> Self {
+        TrievePlan::UsageBased(plan)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum TrieveSubscription {
+    Flat(StripeSubscription),
+    UsageBased(StripeUsageBasedSubscription),
+}
+
+impl TrieveSubscription {
+    pub fn from_flat(
+        stripe_subscription: Option<StripeSubscription>,
+        stripe_usage_based_subscription: Option<StripeUsageBasedSubscription>,
+    ) -> Option<Self> {
+        if let Some(usage_subscription) = stripe_usage_based_subscription {
+            Some(TrieveSubscription::UsageBased(usage_subscription))
+        } else if let Some(subscription) = stripe_subscription {
+            Some(TrieveSubscription::Flat(subscription))
+        } else {
+            None
+        }
+    }
+}
+
+impl From<StripeSubscription> for TrieveSubscription {
+    fn from(subscription: StripeSubscription) -> Self {
+        TrieveSubscription::Flat(subscription)
+    }
+}
+
+impl From<StripeUsageBasedSubscription> for TrieveSubscription {
+    fn from(subscription: StripeUsageBasedSubscription) -> Self {
+        TrieveSubscription::UsageBased(subscription)
+    }
 }
 
 impl OrganizationWithSubAndPlan {
     pub fn from_components(
         organization: Organization,
-        plan: Option<StripePlan>,
-        subscription: Option<StripeSubscription>,
+        plan: Option<TrievePlan>,
+        subscription: Option<TrieveSubscription>,
     ) -> Self {
         OrganizationWithSubAndPlan {
             organization: organization.with_complete_partner_config(),
-            plan,
+            plan: Some(plan.unwrap_or_default()),
             subscription,
         }
     }
@@ -3987,7 +4094,7 @@ impl OrganizationWithSubAndPlan {
     pub fn with_defaults(&self) -> Self {
         OrganizationWithSubAndPlan {
             organization: self.organization.with_complete_partner_config(),
-            plan: Some(self.plan.clone().unwrap_or_default()),
+            plan: self.plan.clone(),
             subscription: self.subscription.clone(),
         }
     }
@@ -9508,11 +9615,12 @@ pub struct DummyHallucinationScore {
 #[derive(
     Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
 )]
-#[diesel(table_name = usage_based_stripe_subscriptions)]
-pub struct UsageBasedStripeSubscription {
+#[diesel(table_name = stripe_usage_based_subscriptions)]
+pub struct StripeUsageBasedSubscription {
     pub id: uuid::Uuid,
     pub organization_id: uuid::Uuid,
     pub stripe_subscription_id: String,
     pub last_recorded_meter: chrono::NaiveDateTime,
+    pub usage_based_plan_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
 }

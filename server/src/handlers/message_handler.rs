@@ -177,7 +177,7 @@ pub async fn create_message(
             .organization
             .plan
             .unwrap_or_default()
-            .message_count
+            .message_count()
     {
         return Ok(HttpResponse::UpgradeRequired().json(json!({
             "message": "To create more message completions, you must upgrade your plan" })));

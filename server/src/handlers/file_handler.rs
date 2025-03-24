@@ -157,7 +157,7 @@ pub async fn upload_file_handler(
             .organization
             .plan
             .unwrap_or_default()
-            .file_storage
+            .file_storage()
     {
         return Err(ServiceError::BadRequest("File size limit reached".to_string()).into());
     }
