@@ -94,6 +94,7 @@ function createChunkFromProduct(
       src: media.preview.image.url,
     })),
     tags: product.tags,
+    status: product.status,
     title: product.title,
     variant_inventory: groupVariants
       ? variant.inventoryQuantity
