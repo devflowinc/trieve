@@ -9,15 +9,13 @@ import { FollowupQueries } from "./FollowupQueries";
 import { UserMessage } from "./UserMessage";
 import { InlineChatHeader } from "./InlineChatHeader";
 import { ChatInput } from "./ChatInput";
-import { useChatHeight } from "../../utils/hooks/useChatHeight";
 
 export const ChatMode = () => {
-  const { modalRef } = useModalState();
+  const { modalRef, minHeight, resetHeight, addHeight } = useModalState();
   const { messages } = useChatState();
 
   const actualChatRef = useRef<HTMLDivElement>(null);
   const rulerRef = useRef<HTMLDivElement>(null);
-  const { minHeight, resetHeight, addHeight } = useChatHeight(actualChatRef); // Get contentHeight from the hook
 
   const [ref, { entry }] = useIntersectionObserver();
   const isOnScreen = entry && entry.isIntersecting;

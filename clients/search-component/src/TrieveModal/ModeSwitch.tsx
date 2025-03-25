@@ -3,7 +3,6 @@ import { useModalState } from "../utils/hooks/modal-context";
 import { SparklesIcon } from "./icons";
 import { useChatState } from "../utils/hooks/chat-context";
 import { cn } from "../utils/styles";
-import { useChatHeight } from "../utils/hooks/useChatHeight";
 
 export const ChatModeSwitch = () => {
   const { props, mode, query, setOpen } = useModalState();
@@ -55,8 +54,7 @@ export const ModeSwitch = () => {
 };
 
 export const PopupChatCloseButton = () => {
-  const { props, setOpen } = useModalState();
-  const { resetHeight } = useChatHeight();
+  const { props, setOpen, resetHeight } = useModalState();
 
   const { messages, isDoneReading, stopGeneratingMessage, clearConversation } =
     useChatState();

@@ -28,14 +28,19 @@ export const FloatingActionButton = () => {
           setMode("chat");
         });
       }}
-      className={`floating-action-button${props.theme === "dark" ? " dark" : ""}`}
+      className={`floating-action-button${props.theme === "dark" ? " dark" : ""}${props.floatingButtonVersion ? ` ${props.floatingButtonVersion}` : ""}`}
       style={{
         ...setButtonPosition(props.floatingButtonPosition || "bottom-right"),
         zIndex: (props.zIndex ?? 1000) - 1,
       }}
     >
-      {props.brandLogoImgSrcUrl ? (
-        <img src={props.brandLogoImgSrcUrl} alt="Brand Logo" />
+      {props.brandLogoImgSrcUrl &&
+      (props.floatingButtonVersion ?? "brand-logo") == "brand-logo" ? (
+        <img
+          src={props.brandLogoImgSrcUrl}
+          alt="Brand Logo"
+          className="tv-w-auto tv-h-auto"
+        />
       ) : (
         <SparklesIcon width={20} height={20} />
       )}

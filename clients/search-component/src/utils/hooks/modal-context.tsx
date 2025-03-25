@@ -149,6 +149,7 @@ export type ModalProps = {
     | "top-right"
     | "bottom-left"
     | "bottom-right";
+  floatingButtonVersion?: "brand-logo" | "brand-color";
   floatingSearchIconPosition?: "left" | "right";
   showFloatingSearchIcon?: boolean;
   disableFloatingSearchIconClick?: boolean;
@@ -215,6 +216,7 @@ const defaultProps = {
     | "top-right"
     | "bottom-left"
     | "bottom-right",
+  floatingButtonVersion: "brand-logo" as "brand-logo" | "brand-color",
   floatingSearchIconPosition: "right" as "left" | "right",
   showFloatingSearchIcon: false,
   disableFloatingSearchIconClick: false,
@@ -284,6 +286,9 @@ const ModalContext = createContext<{
   setSelectedSidebarFilters: React.Dispatch<
     React.SetStateAction<Record<string, string[]>>
   >;
+  minHeight: number;
+  resetHeight: () => void;
+  addHeight: (height: number) => void;
 }>({
   props: defaultProps,
   trieveSDK: (() => {}) as unknown as TrieveSDK,
@@ -320,6 +325,10 @@ const ModalContext = createContext<{
   // sidebar filter specific state
   selectedSidebarFilters: {},
   setSelectedSidebarFilters: () => {},
+  minHeight: 0,
+  resetHeight: () => {},
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  addHeight: (height: number) => {},
 });
 
 const ModalProvider = ({
@@ -356,6 +365,9 @@ const ModalProvider = ({
   const [selectedSidebarFilters, setSelectedSidebarFilters] = useState<
     Record<string, string[]>
   >({});
+  const [minHeight, setMinHeight] = useState(0);
+  const [chatHeight, setChatHeight] = useState(0);
+  const [enabled, setEnabled] = useState(true);
 
   const trieve = new TrieveSDK({
     baseUrl: props.baseUrl,
@@ -580,6 +592,39 @@ const ModalProvider = ({
     };
   }, [query, imageUrl, audioBase64, selectedTags, mode]);
 
+  useEffect(() => {
+    if (!modalRef || !modalRef.current) {
+      return;
+    }
+    const ref = modalRef.current;
+    const observer = new ResizeObserver((entries) => {
+      setChatHeight(entries[0].contentRect.height);
+    });
+
+    observer.observe(ref);
+    return () => {
+      observer.disconnect();
+    };
+  }, [modalRef]);
+
+  useEffect(() => {
+    if (chatHeight > minHeight && enabled) {
+      setMinHeight(chatHeight);
+    }
+  }, [chatHeight, minHeight, enabled]);
+
+  const resetHeight = useCallback(() => {
+    setMinHeight(0);
+    setEnabled(false);
+    setTimeout(() => {
+      setEnabled(true);
+    }, 200);
+  }, []);
+
+  const addHeight = useCallback((height: number) => {
+    setMinHeight((prev) => prev + height);
+  }, []);
+
   return (
     <ModalContext.Provider
       value={{
@@ -620,6 +665,9 @@ const ModalProvider = ({
         setSelectedSidebarFilters,
         fingerprint,
         setFingerprint,
+        minHeight,
+        resetHeight,
+        addHeight,
       }}
     >
       {children}

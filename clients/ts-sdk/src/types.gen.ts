@@ -2448,6 +2448,7 @@ export type PublicPageParameters = {
     defaultSearchMode?: (string) | null;
     defaultSearchQueries?: Array<(string)> | null;
     floatingButtonPosition?: (string) | null;
+    floatingButtonVersion?: (string) | null;
     floatingSearchIconPosition?: (string) | null;
     followupQuestions?: (boolean) | null;
     forBrandName?: (string) | null;
