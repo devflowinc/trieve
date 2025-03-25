@@ -24,6 +24,7 @@ export const defaultCrawlOptions: ExtendedCrawlOptions = {
   boost_titles: true,
   interval: "daily",
   limit: 1000,
+  include_metafields: ["state_coverage_list"],
   scrape_options: {
     type: "shopify",
     group_variants: true,
