@@ -33,6 +33,7 @@
     "@shopify/polaris": "^12.0.0",
     "@shopify/shopify-app-remix": "^3.4.0",
     "@shopify/shopify-app-session-storage-prisma": "^5.1.5",
+    "@shopify/ui-extensions-react": "^2025.1.3",
     "@tanstack/react-query": "5.66.9",
     "@tanstack/react-query-devtools": "^5.66.9",
     "autoprefixer": "^10.4.20",

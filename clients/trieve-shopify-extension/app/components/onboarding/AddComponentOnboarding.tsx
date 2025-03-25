@@ -20,7 +20,7 @@ export const AddComponentOnboarding: OnboardingBody = ({
 
   const complete = useMemo(() => {
     const stringified = JSON.stringify(data);
-    if (stringified.includes("trieve.ai")) return true;
+    if (stringified?.includes("trieve.ai")) return true;
     return false;
   }, [data]);
 
