@@ -269,6 +269,11 @@ diesel::table! {
         analytics_events_price_id -> Text,
         ocr_pages_price_id -> Text,
         pages_crawls_price_id -> Text,
+        search_component_loads_price_id -> Text,
+        datasets_price_id -> Text,
+        users_price_id -> Text,
+        chunks_stored_price_id -> Text,
+        files_storage_price_id -> Text,
         created_at -> Timestamp,
     }
 }
@@ -278,9 +283,13 @@ diesel::table! {
         id -> Uuid,
         organization_id -> Uuid,
         stripe_subscription_id -> Text,
-        last_recorded_meter -> Timestamp,
         usage_based_plan_id -> Uuid,
         created_at -> Timestamp,
+        last_recorded_meter -> Timestamp,
+        dataset_count -> Int4,
+        users_count -> Int4,
+        chunks_stored_bytes -> Int4,
+        files_storage_mb -> Int4,
     }
 }
 

@@ -153,6 +153,7 @@ pub async fn webhook(
                                     pool.clone(),
                                 )
                                 .await?;
+                                create_snapshot_and_diff();
                             } else if plan_type == "flat" {
                                 let optional_existing_subscription =
                                     get_option_subscription_by_organization_id_query(
@@ -198,6 +199,13 @@ pub async fn webhook(
                     ))?;
 
                     create_stripe_plan_query(plan_id, plan_amount, pool).await?;
+                }
+            }
+            EventType::InvoiceUpcoming => {
+                if let EventObject::Invoice(invoice) = event.data.object {
+                    let invoice_id = invoice.id();
+                    // TODO 
+                    create_snapshot_and_diff();
                 }
             }
             EventType::CustomerSubscriptionDeleted => {

@@ -139,18 +139,11 @@ export const UsagePlansTable = (props: PlansTableProps) => {
                 {(plan: StripeUsageBasedPlan) => {
                   const curPlan = currentPlan();
                   let actionButton = <ActiveTag text="Current Tier" />;
-                  //   (
-                  //   <a
-                  //     href={`${apiHost}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}?usage_based=true`}
-                  //     class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
-                  //   >
-                  //     Subscribe
-                  //   </a>
-                  // );
+
                   if (plan.id !== curPlan?.id) {
                     actionButton = (
                       <a
-                        href={`${apiHost}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}`}
+                        href={`${apiHost}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}?usage_based=true`}
                         class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
                       >
                         Subscribe
