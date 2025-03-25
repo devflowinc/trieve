@@ -13859,6 +13859,10 @@
             "type": "string",
             "nullable": true
           },
+          "floatingButtonVersion": {
+            "type": "string",
+            "nullable": true
+          },
           "floatingSearchIconPosition": {
             "type": "string",
             "nullable": true

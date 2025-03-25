@@ -651,6 +651,28 @@ const PublicPageControls = () => {
                   ]}
                 />
               </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Floating Chat Button Version
+                  </label>
+                  <Tooltip
+                    tooltipText="Either top-right, bottom-right, top-left, or bottom-left"
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <Select
+                  display={(option) => option ?? "brand-logo"}
+                  onSelected={(option) => {
+                    setExtraParams("floatingButtonVersion", option);
+                  }}
+                  class="bg-white py-1"
+                  selected={extraParams.floatingButtonVersion}
+                  options={["brand-logo", "brand-color"]}
+                />
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">

@@ -88,14 +88,17 @@
       {% if params.showFloatingButton -%}
       showFloatingButton: "{{ params.showFloatingButton }}",
       {% endif -%}
+      {% if params.floatingButtonPosition -%}
+      floatingButtonPosition: "{{ params.floatingButtonPosition }}",
+      {% endif -%}
+      {% if params.floatingButtonVersion -%}
+      floatingButtonVersion: "{{ params.floatingButtonVersion }}",
+      {% endif -%}
       {% if params.showFloatingInput -%}
       showFloatingInput: "{{ params.showFloatingInput }}",
       {% endif -%}
       {% if params.showFloatingSearchIcon -%}
       showFloatingSearchIcon: "{{ params.showFloatingSearchIcon }}",
-      {% endif -%}
-      {% if params.floatingButtongPosition -%}
-      floatingButtongPosition: "{{ params.floatingButtongPosition }}",
       {% endif -%}
       {% if params.floatingSearchIconPosition -%}
       floatingSearchIconPosition: "{{ params.floatingSearchIconPosition }}",
