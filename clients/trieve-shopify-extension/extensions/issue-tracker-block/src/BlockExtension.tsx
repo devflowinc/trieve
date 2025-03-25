@@ -1,14 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AdminBlock,
-  Box,
-  Button,
-  Divider,
-  Form,
-  Icon,
+  Banner,
   InlineStack,
   ProgressIndicator,
-  Select,
   Text,
   reactExtension,
   useApi,
@@ -183,101 +178,10 @@ function App() {
       <ProgressIndicator size="large-100" />
     </InlineStack>
   ) : (
-    <AdminBlock
-      // Translate the block title with the i18n API, which uses the strings in the locale files
-      title={i18n.translate("name")}
-    >
-      <Text>Issues</Text>
-      <Form id={`issues-form`} onSubmit={onSubmit} onReset={onReset}>
-        {issues.length ? (
-          <>
-            {paginatedIssues.map(
-              ({ id, title, description, completed }: any, index: any) => {
-                return (
-                  <>
-                    {index > 0 && <Divider />}
-                    <Box key={id} padding="base small">
-                      <InlineStack
-                        blockAlignment="center"
-                        inlineSize="100%"
-                        gap="large"
-                      >
-                        <Box inlineSize="53%">
-                          <Box inlineSize="100%">
-                            <Text fontWeight="bold" textOverflow="ellipsis">
-                              {title}
-                            </Text>
-                          </Box>
-
-                          <Box inlineSize="100%">
-                            <Text textOverflow="ellipsis">{description}</Text>
-                          </Box>
-                        </Box>
-                        <Box inlineSize="22%">
-                          <Select
-                            label="Status"
-                            name="status"
-                            value={completed ? "completed" : "todo"}
-                            onChange={(value: any) => handleChange(id, value)}
-                            options={[
-                              { label: "Todo", value: "todo" },
-                              {
-                                label: "Completed",
-                                value: "completed",
-                              },
-                            ]}
-                          />
-                        </Box>
-                        <Box inlineSize="25%">
-                          <InlineStack inlineSize="100%" inlineAlignment="end">
-                            <Button
-                              onPress={() => handleDelete(id)}
-                              variant="tertiary"
-                            >
-                              <Icon name="DeleteMinor" />
-                            </Button>
-                          </InlineStack>
-                        </Box>
-                      </InlineStack>
-                    </Box>
-                  </>
-                );
-              },
-            )}
-            <InlineStack
-              paddingBlockStart="large"
-              blockAlignment="center"
-              inlineAlignment="center"
-            >
-              <Button
-                onPress={() => setCurrentPage((prev) => prev - 1)}
-                disabled={currentPage === 1}
-              >
-                <Icon name="ChevronLeftMinor" />
-              </Button>
-              <InlineStack
-                inlineSize={25}
-                blockAlignment="center"
-                inlineAlignment="center"
-              >
-                <Text>{currentPage}</Text>
-              </InlineStack>
-              <Button
-                onPress={() => setCurrentPage((prev) => prev + 1)}
-                disabled={currentPage >= totalPages}
-              >
-                <Icon name="ChevronRightMinor" />
-              </Button>
-            </InlineStack>
-          </>
-        ) : (
-          <>
-            <Box paddingBlockEnd="large">
-              <Text fontWeight="bold">No issues for this product</Text>
-            </Box>
-          </>
-        )}
-      </Form>
+    <AdminBlock title={i18n.translate("name")}>
+      <Banner tone="info">
+        <Text>{i18n.translate("description")}</Text>
+      </Banner>
     </AdminBlock>
   );
 }
