@@ -3,7 +3,6 @@ use crate::{
     data::models::{
         Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, DatasetConfigurationDTO,
         DatasetDTO, OrganizationWithSubAndPlan, PagefindIndexWorkerMessage, Pool, RedisPool,
-        StripePlan,
     },
     errors::ServiceError,
     get_env,

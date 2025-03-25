@@ -1,11 +1,4 @@
 -- Your SQL goes here
-CREATE TABLE usage_based_stripe_subscriptions (
-    id UUID PRIMARY KEY,
-    organization_id UUID NOT NULL REFERENCES organizations(id),
-    stripe_subscription_id TEXT NOT NULL,
-    last_recorded_meter TIMESTAMP NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
 
 create TABLE stripe_usage_based_plans (
     id UUID PRIMARY KEY,
@@ -18,5 +11,14 @@ create TABLE stripe_usage_based_plans (
     analytics_events_price_id TEXT NOT NULL,
     ocr_pages_price_id TEXT NOT NULL,
     pages_crawls_price_id TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE stripe_usage_based_subscriptions (
+    id UUID PRIMARY KEY,
+    organization_id UUID NOT NULL REFERENCES organizations(id),
+    stripe_subscription_id TEXT NOT NULL,
+    last_recorded_meter TIMESTAMP NOT NULL DEFAULT NOW(),
+    usage_based_plan_id UUID NOT NULL REFERENCES stripe_usage_based_plans(id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

@@ -3,7 +3,7 @@ use std::{collections::HashMap, str::FromStr};
 use crate::{
     data::models::{
         DateRange, Pool, StripeInvoice, StripePlan, StripeSubscription, StripeUsageBasedPlan,
-        UsageBasedStripeSubscription,
+        StripeUsageBasedSubscription,
     },
     errors::ServiceError,
     get_env,
@@ -24,16 +24,18 @@ pub fn get_stripe_client() -> stripe::Client {
 
 pub async fn create_usage_stripe_subscription_query(
     stripe_subscription_id: String,
+    usage_based_plan_id: uuid::Uuid,
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::usage_based_stripe_subscriptions::dsl as usage_based_stripe_subscriptions_columns;
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
 
-    let usage_based_stripe_subscription = UsageBasedStripeSubscription {
+    let stripe_usage_based_subscription = StripeUsageBasedSubscription {
         id: uuid::Uuid::new_v4(),
         organization_id,
         stripe_subscription_id,
-        last_recorded_meter: chrono::Utc::now().naive_utc(),
+        last_recorded_meter: (chrono::Utc::now() - chrono::Duration::days(30)).naive_utc(),
+        usage_based_plan_id,
         created_at: chrono::Utc::now().naive_utc(),
     };
 
@@ -41,8 +43,8 @@ pub async fn create_usage_stripe_subscription_query(
         .get()
         .await
         .expect("Failed to get connection from pool");
-    diesel::insert_into(usage_based_stripe_subscriptions_columns::usage_based_stripe_subscriptions)
-        .values(&usage_based_stripe_subscription)
+    diesel::insert_into(stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions)
+        .values(&stripe_usage_based_subscription)
         .execute(&mut conn)
         .await
         .map_err(|e| {
@@ -221,6 +223,7 @@ pub async fn create_stripe_payment_link(
         "after_completion[redirect][url]": format!("{}/dashboard/{}/billing", admin_dashboard_url, organization_id),
         "after_completion[type]": "redirect",
         "metadata[organization_id]": organization_id.to_string(),
+        "metadata[plan_type]": "flat",
         "metadata[plan_id]": plan.id.to_string()
     });
 
@@ -251,13 +254,13 @@ pub async fn create_stripe_payment_link(
 }
 
 pub async fn create_usage_based_stripe_payment_link(
-    plan: StripeUsageBasedPlan,
+    usage_based_plan: StripeUsageBasedPlan,
     organization_id: uuid::Uuid,
 ) -> Result<String, ServiceError> {
     let admin_dashboard_url = get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
     let stripe_client = get_stripe_client();
 
-    let line_item_ids = plan.line_item_ids();
+    let line_item_ids = usage_based_plan.line_item_ids();
 
     let session = stripe::CheckoutSession::create(
         &stripe_client,
@@ -291,6 +294,7 @@ pub async fn create_usage_based_stripe_payment_link(
             metadata: Some(HashMap::from([
                 ("organization_id".to_string(), organization_id.to_string()),
                 ("plan_type".to_string(), "usage-based".to_string()),
+                ("plan_id".to_string(), usage_based_plan.id.to_string()),
             ])),
             ..Default::default()
         },
@@ -357,23 +361,23 @@ pub async fn delete_subscription_by_id_query(
 pub async fn get_option_usage_based_subscription_by_organization_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<Option<UsageBasedStripeSubscription>, ServiceError> {
-    use crate::data::schema::usage_based_stripe_subscriptions::dsl as usage_based_stripe_subscriptions_columns;
+) -> Result<Option<StripeUsageBasedSubscription>, ServiceError> {
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
 
     let mut conn = pool
         .get()
         .await
         .expect("Failed to get connection from pool");
 
-    let usage_based_stripe_subscriptions =
-        usage_based_stripe_subscriptions_columns::usage_based_stripe_subscriptions
-            .select(UsageBasedStripeSubscription::as_select())
-            .filter(usage_based_stripe_subscriptions_columns::organization_id.eq(organization_id))
-            .first::<UsageBasedStripeSubscription>(&mut conn)
+    let stripe_usage_based_subscriptions =
+        stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+            .select(StripeUsageBasedSubscription::as_select())
+            .filter(stripe_usage_based_subscriptions_columns::organization_id.eq(organization_id))
+            .first::<StripeUsageBasedSubscription>(&mut conn)
             .await
             .optional()?;
 
-    Ok(usage_based_stripe_subscriptions)
+    Ok(stripe_usage_based_subscriptions)
 }
 
 pub async fn get_option_subscription_by_organization_id_query(
@@ -731,7 +735,7 @@ pub struct StripeErrorMessage {
 }
 
 pub async fn send_stripe_billing(
-    usage_based_subscription: UsageBasedStripeSubscription,
+    usage_based_subscription: StripeUsageBasedSubscription,
     clickhouse_client: &clickhouse::Client,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
@@ -810,7 +814,7 @@ pub async fn send_stripe_billing(
         }
     }
 
-    update_usage_based_stripe_subscription(
+    update_stripe_usage_based_subscription(
         usage_based_subscription.id,
         now_minus_1_hour.naive_utc(),
         pool.clone(),
@@ -830,12 +834,12 @@ pub async fn send_stripe_billing(
     Ok(())
 }
 
-pub async fn update_usage_based_stripe_subscription(
+pub async fn update_stripe_usage_based_subscription(
     usage_based_subscription_id: uuid::Uuid,
     last_recorded_meter: chrono::NaiveDateTime,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
-    use crate::data::schema::usage_based_stripe_subscriptions::dsl as usage_based_stripe_subscriptions_columns;
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
 
     let mut conn = pool
         .get()
@@ -843,10 +847,10 @@ pub async fn update_usage_based_stripe_subscription(
         .expect("Failed to get connection from pool");
 
     diesel::update(
-        usage_based_stripe_subscriptions_columns::usage_based_stripe_subscriptions
-            .filter(usage_based_stripe_subscriptions_columns::id.eq(usage_based_subscription_id)),
+        stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+            .filter(stripe_usage_based_subscriptions_columns::id.eq(usage_based_subscription_id)),
     )
-    .set(usage_based_stripe_subscriptions_columns::last_recorded_meter.eq(last_recorded_meter))
+    .set(stripe_usage_based_subscriptions_columns::last_recorded_meter.eq(last_recorded_meter))
     .execute(&mut conn)
     .await
     .map_err(|e| {

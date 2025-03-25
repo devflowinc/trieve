@@ -1,6 +1,7 @@
 use crate::data::models::{
     DatasetAndOrgWithSubAndPlan, DatasetAndUsage, DatasetConfiguration, DatasetUsageCount,
-    Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription, UnifiedId,
+    Organization, OrganizationWithSubAndPlan, RedisPool, StripePlan, StripeSubscription,
+    StripeUsageBasedPlan, StripeUsageBasedSubscription, TrievePlan, TrieveSubscription, UnifiedId,
     WordDataset,
 };
 use crate::handlers::chunk_handler::ChunkFilter;
@@ -239,6 +240,8 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
     use crate::data::schema::organizations::dsl as organizations_columns;
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+    use crate::data::schema::stripe_usage_based_plans::dsl as stripe_usage_based_plans_columns;
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
 
     let mut conn = pool
         .get()
@@ -255,10 +258,20 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
             stripe_plans_columns::stripe_plans
                 .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
         )
+        .left_outer_join(
+            stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+                .on(stripe_usage_based_subscriptions_columns::organization_id
+                    .eq(organizations_columns::id)),
+        )
+        .left_outer_join(
+            stripe_usage_based_plans_columns::stripe_usage_based_plans
+                .on(stripe_usage_based_plans_columns::id
+                    .eq(stripe_usage_based_subscriptions_columns::usage_based_plan_id)),
+        )
         .filter(datasets_columns::deleted.eq(0))
         .into_boxed();
 
-    let (dataset, organization, stripe_plan, stripe_subscription) = match id {
+    let (dataset, organization, stripe_plan, stripe_subscription, usage_plan, usage_subscription) = match id {
         UnifiedId::TrieveUuid(id) => query
             .filter(datasets_columns::id.eq(id))
             .filter(datasets_columns::deleted.eq(0))
@@ -267,12 +280,16 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
                 organizations_columns::organizations::all_columns(),
                 stripe_plans_columns::stripe_plans::all_columns().nullable(),
                 stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
+                stripe_usage_based_plans_columns::stripe_usage_based_plans::all_columns().nullable(),
+                stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions::all_columns().nullable(),
             ))
             .first::<(
                 Dataset,
                 Organization,
                 Option<StripePlan>,
                 Option<StripeSubscription>,
+                Option<StripeUsageBasedPlan>,
+                Option<StripeUsageBasedSubscription>,
             )>(&mut conn)
             .await
             .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
@@ -285,19 +302,26 @@ pub async fn get_dataset_and_organization_from_dataset_id_query(
                 organizations_columns::organizations::all_columns(),
                 stripe_plans_columns::stripe_plans::all_columns().nullable(),
                 stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
+                stripe_usage_based_plans_columns::stripe_usage_based_plans::all_columns().nullable(),
+                stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions::all_columns().nullable()
             ))
             .first::<(
                 Dataset,
                 Organization,
                 Option<StripePlan>,
                 Option<StripeSubscription>,
+                Option<StripeUsageBasedPlan>,
+                Option<StripeUsageBasedSubscription>,
             )>(&mut conn)
             .await
             .map_err(|_| ServiceError::NotFound("Could not find dataset".to_string()))?,
     };
 
-    let org_with_plan_sub: OrganizationWithSubAndPlan =
-        OrganizationWithSubAndPlan::from_components(organization, stripe_plan, stripe_subscription);
+    let org_with_plan_sub: OrganizationWithSubAndPlan = OrganizationWithSubAndPlan::from_components(
+        organization,
+        TrievePlan::from_flat(stripe_plan, usage_plan),
+        TrieveSubscription::from_flat(stripe_subscription, usage_subscription),
+    );
 
     Ok(DatasetAndOrgWithSubAndPlan::from_components(
         dataset,
