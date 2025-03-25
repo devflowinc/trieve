@@ -963,6 +963,13 @@ pub async fn cross_encoder(
 
     let mut results = results.clone();
 
+    let ureq_agent = ureq::AgentBuilder::new()
+        .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
+            ServiceError::InternalServerError("Failed to acquire tls connection".to_string())
+        })?))
+        .timeout(std::time::Duration::from_secs(5))
+        .build();
+
     if results.len() <= 20 {
         let reranker_api_key = dataset_config.RERANKER_API_KEY.clone();
         if server_origin != default_server_origin {
@@ -979,8 +986,8 @@ pub async fn cross_encoder(
                     },
                 }];
 
-                let resp = ureq::post(&server_origin)
-                    .timeout(std::time::Duration::from_secs(5))
+                let resp = ureq_agent
+                    .post(&server_origin)
                     .set(
                         "Authorization",
                         &format!("Bearer {}", reranker_api_key.clone()),
@@ -1011,14 +1018,7 @@ pub async fn cross_encoder(
                 }
             } else {
                 // Assume Cohere integration for small batch.
-                let resp = ureq::AgentBuilder::new()
-                    .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
-                        ServiceError::InternalServerError(
-                            "Failed to acquire tls connection".to_string(),
-                        )
-                    })?))
-                    .timeout(std::time::Duration::from_secs(5))
-                    .build()
+                let resp = ureq_agent
                     .post(&embedding_server_call)
                     .set("Content-Type", "application/json")
                     .set(
@@ -1048,14 +1048,7 @@ pub async fn cross_encoder(
                 });
             }
         } else {
-            let resp = ureq::AgentBuilder::new()
-                .tls_connector(Arc::new(native_tls::TlsConnector::new().map_err(|_| {
-                    ServiceError::InternalServerError(
-                        "Failed to acquire tls connection".to_string(),
-                    )
-                })?))
-                .timeout(std::time::Duration::from_secs(5))
-                .build()
+            let resp = ureq_agent
                 .post(&embedding_server_call)
                 .set("Content-Type", "application/json")
                 .set(
