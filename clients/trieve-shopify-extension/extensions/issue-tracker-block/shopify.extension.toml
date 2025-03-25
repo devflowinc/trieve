@@ -3,7 +3,7 @@ api_version = "2025-01"
 [[extensions]]
 # Change the merchant-facing name of the extension in locales/en.default.json
 name = "t:name"
-handle = "issue-tracker-block"
+handle = "trieve-pdp-questions"
 type = "ui_extension"
 [[extensions.targeting]]
 module = "./src/BlockExtension.tsx"

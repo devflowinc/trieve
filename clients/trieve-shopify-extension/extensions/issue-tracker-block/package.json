@@ -1,8 +1,8 @@
 {
-  "name": "issue-tracker-block",
+  "name": "trieve-pdp-questions",
   "private": true,
   "version": "1.0.0",
-  "license": "UNLICENSED",
+  "license": "BSL-1.0",
   "dependencies": {
     "react": "^18.0.0",
     "@shopify/ui-extensions": "2025.1.x",
