@@ -106,7 +106,7 @@ export const AnalyticsChart = <T extends Record<string, any>>(props: AnalyticsCh
                   } else if (props.dataType === "currency") {
                     return `${props.label}: $${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   }
-                  return `${props.label}: ${value}`;
+                  return `${props.label}: ${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
                 },
               },
             },

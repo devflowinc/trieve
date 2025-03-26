@@ -44,9 +44,9 @@ export const AllChatsTable = () => {
       return [
         query.name,
         query.message_count,
-        query.avg_top_score,
-        query.avg_hallucination_score,
-        query.avg_query_rating ?? "N/A",
+        query.avg_top_score?.toLocaleString('en-US', { maximumFractionDigits: 2 }),
+        query.avg_hallucination_score?.toLocaleString('en-US', { maximumFractionDigits: 2 }),
+        query.avg_query_rating?.toLocaleString('en-US', { maximumFractionDigits: 2 }),
         parseCustomDateString(query.created_at).toLocaleString(),
       ];
     }) ?? [];
@@ -365,10 +365,10 @@ export const AllChatsTable = () => {
       tableHeadings={[
         { heading: "Name", tooltip: "The name created by the chatbot to represent the chat session." },
         { heading: "Message Count", tooltip: "The number of messages in the chat session." },
-        { heading: "Avg Top Score", tooltip: "The average top score of the chat session." },
-        { heading: "Avg Hallucination Score", tooltip: "The average hallucination score of the chat session." },
+        { heading: "Avg Top Score", tooltip: "The average top score of the chat session.", sortCol: "top_score" },
+        { heading: "Avg Hallucination Score", tooltip: "The average hallucination score of the chat session.", sortCol: "hallucination_score" },
         { heading: "Avg Query Rating", tooltip: "The average query rating of the chat session." },
-        { heading: "Created At", tooltip: "The date and time the chat session was created." },
+        { heading: "Created At", tooltip: "The date and time the chat session was created.", sortCol: "created_at" },
       ]}
       hasNext={data?.topics.length == 10}
       tabs={tabs}

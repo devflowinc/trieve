@@ -1847,7 +1847,8 @@ pub async fn get_topic_queries_query(
         }
     }
 
-    query_string.push_str("WHERE topics.dataset_id = ? ");
+    query_string
+        .push_str("WHERE topics.dataset_id = ? AND topics.name != '' AND topics.name != ' '");
 
     if let Some(ref filter) = filter {
         query_string = filter.add_to_query(query_string);
@@ -1879,8 +1880,6 @@ pub async fn get_topic_queries_query(
         sort_direction,
         (page.unwrap_or(1) - 1) * 10
     ));
-
-    println!("{}", query_string);
 
     let topics = clickhouse_client
         .query(query_string.as_str())
@@ -2164,7 +2163,7 @@ pub async fn get_ctr_metrics_over_time_query(
         WHERE 
             dataset_id = ? 
             AND event_type = 'click' 
-            AND event_name = 'Click'
+            AND (event_name = 'Click' OR event_name = 'click')
             AND request_type = 'rag'
         ",
         interval,
@@ -2687,9 +2686,9 @@ pub async fn get_chat_conversion_rate_query(
             CAST(toStartOfInterval(topics.created_at, INTERVAL {}) AS DateTime) AS time_stamp,
             count(*) as count
         FROM events
-        JOIN topics ON toUUID(events.request_id) = topics.topic_id
-        JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
-        WHERE topics.dataset_id = ?
+        JOIN rag_queries ON toUUID(events.request_id) = rag_queries.id
+        JOIN topics ON rag_queries.topic_id = topics.topic_id
+        WHERE events.dataset_id = ?
         AND request_type = 'rag'
         AND is_conversion = true",
         interval
@@ -2846,6 +2845,7 @@ fn get_interval_string(granularity: &Option<Granularity>) -> &str {
 pub async fn get_search_revenue_query(
     dataset_id: uuid::Uuid,
     filter: Option<SearchAnalyticsFilter>,
+    direct: Option<bool>,
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<SearchRevenueResponse, ServiceError> {
@@ -2854,14 +2854,24 @@ pub async fn get_search_revenue_query(
     let mut query_string = format!(
         "SELECT 
             CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
-            avg(arraySum(arrayMap(x -> JSONExtract(x, 'revenue', 'Float64'), JSONExtractArrayRaw(items)))) as avg_revenue
+            sum(arraySum(arrayMap(x -> JSONExtract(x, 'revenue', 'Float64'), items))) as revenue
         FROM events
         WHERE dataset_id = ?
-        AND event_name = 'purchase' 
-        AND items != '[]' AND request_type = 'search'
+        AND event_type = 'purchase' 
+        AND items != '[]'
         ",
         interval,
     );
+
+    if let Some(direct) = direct {
+        if direct {
+            query_string.push_str(" AND request_type = 'search' AND request_id != '00000000-0000-0000-0000-000000000000'")
+        } else {
+            query_string.push_str("AND request_id == '00000000-0000-0000-0000-000000000000'")
+        }
+    } else {
+        query_string.push_str("AND request_id == '00000000-0000-0000-0000-000000000000'")
+    }
 
     if let Some(filter) = &filter {
         query_string = filter.add_to_query(query_string);
@@ -2901,7 +2911,7 @@ pub async fn get_chat_revenue_query(
     let mut query_string = format!(
         "SELECT 
             CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
-            avg(arraySum(arrayMap(x -> JSONExtract(x, 'revenue', 'Float64'), items))) as avg_revenue
+            sum(arraySum(arrayMap(x -> JSONExtract(x, 'revenue', 'Float64'), items))) as revenue
         FROM events
         WHERE dataset_id = ?
         AND event_type = 'purchase' 

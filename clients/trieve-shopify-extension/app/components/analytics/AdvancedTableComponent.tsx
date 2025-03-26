@@ -12,9 +12,14 @@ import {
   TabProps,
   useBreakpoints,
   IndexFiltersProps,
+  Icon,
 } from "@shopify/polaris";
 import { IndexTableHeading } from "@shopify/polaris/build/ts/src/components/IndexTable";
 import { NonEmptyArray } from "@shopify/polaris/build/ts/src/types";
+import {
+  ChevronUpIcon,
+  ChevronDownIcon,
+} from '@shopify/polaris-icons';
 
 
 export interface Filter {
@@ -30,7 +35,7 @@ export interface AdvancedTableComponentProps {
   setPage: (page: (page: number) => number) => void;
   tabs: string[];
   label: string;
-  tableHeadings: { heading: string, tooltip: string }[];
+  tableHeadings: { heading: string, tooltip: string, sortCol?: string }[];
   sortOptions: IndexFiltersProps['sortOptions'];
   sortSelected: string[];
   setSortSelected: (sortSelected: string[]) => void;
@@ -128,11 +133,29 @@ export const AdvancedTableComponent = ({
             tableHeadings.map((heading, index) => {
               return {
                 title: (
-                  <Tooltip content={heading.tooltip} hasUnderline>
-                    <Text as="span" variant="bodyMd" fontWeight="bold">
-                      {heading.heading}
-                    </Text>
-                  </Tooltip>
+                  <div onClick={() => {
+                    if (heading.sortCol) {
+                      setSortSelected([`${heading.sortCol} ${sortSelected[0].split(" ")[0] === heading.sortCol ? (sortSelected[0].split(" ")[1] === "asc" ? "desc" : "asc") : "asc"}`]);
+                    }
+                  }} className={`${heading.sortCol ? "cursor-pointer" : ""}`}>
+                    <div className="flex flex-row items-center">
+                      <Tooltip content={heading.tooltip} hasUnderline>
+                        <Text as="span" variant="bodyMd" fontWeight="bold">
+                          {heading.heading}
+                        </Text>
+                      </Tooltip>
+                      {heading.sortCol && (
+                        <span className="ml-1">{sortSelected[0].split(" ")[0] === heading.sortCol ? (sortSelected[0].split(" ")[1] === "asc" ? <Icon
+                          source={ChevronUpIcon}
+                          tone="base"
+                        /> : <Icon
+                          source={ChevronDownIcon}
+                          tone="base"
+                        />) : ""}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 ),
                 id: index.toString(),
               };
@@ -152,7 +175,12 @@ export const AdvancedTableComponent = ({
             return (
               <IndexTable.Row key={index} id={index.toString()} position={index}>
                 {row.map((cell, innerIndex) => (
-                  <IndexTable.Cell key={innerIndex}>{cell}</IndexTable.Cell>
+                  <IndexTable.Cell
+                    key={innerIndex}
+                    className="max-w-[200px] truncate"
+                  >
+                    {cell}
+                  </IndexTable.Cell>
                 ))}
               </IndexTable.Row>
             );
