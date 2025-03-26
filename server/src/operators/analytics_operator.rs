@@ -3058,11 +3058,22 @@ pub async fn get_rag_event_counts_query(
             COUNT(DISTINCT user_id) AS event_count
         FROM
             events
-        WHERE {}
+        WHERE {} AND event_name != 'site-checkout'
         GROUP BY event_name
         
         UNION ALL
-        
+
+        -- Checkout events
+        SELECT
+            event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            events
+        WHERE {} AND event_name = 'site-checkout' AND items != '[]'
+        GROUP BY event_name
+
+        UNION ALL
+
         -- All users 
         SELECT
             'all_users' as event_name,
@@ -3084,11 +3095,12 @@ pub async fn get_rag_event_counts_query(
         
         ORDER BY event_count DESC
     ",
-        events_filter, events_filter, topics_filter
+        events_filter, events_filter, events_filter, topics_filter
     );
 
     let result = clickhouse_client
         .query(query_string.as_str())
+        .bind(dataset_id)
         .bind(dataset_id)
         .bind(dataset_id)
         .bind(dataset_id)
