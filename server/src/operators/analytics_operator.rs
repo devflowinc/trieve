@@ -2940,14 +2940,14 @@ pub async fn get_chat_revenue_query(
             ServiceError::InternalServerError("Error fetching chat revenue".to_string())
         })?;
 
-    let avg_revenue = if !chat_revenue.is_empty() {
-        chat_revenue.iter().map(|x| x.point).sum::<f64>() / chat_revenue.len() as f64
+    let revenue = if !chat_revenue.is_empty() {
+        chat_revenue.iter().map(|x| x.point).sum::<f64>()
     } else {
         0.0
     };
 
     Ok(ChatRevenueResponse {
-        avg_revenue,
+        revenue,
         points: chat_revenue.into_iter().map(|x| x.into()).collect(),
     })
 }

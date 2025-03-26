@@ -7593,7 +7593,7 @@ pub struct ChatConversionRateResponse {
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct ChatRevenueResponse {
-    pub avg_revenue: f64,
+    pub revenue: f64,
     pub points: Vec<FloatTimePoint>,
 }
 
