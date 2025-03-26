@@ -46,7 +46,7 @@ export const AllChatsTable = () => {
         query.message_count,
         query.avg_top_score?.toLocaleString('en-US', { maximumFractionDigits: 2 }),
         query.avg_hallucination_score?.toLocaleString('en-US', { maximumFractionDigits: 2 }),
-        query.avg_query_rating?.toLocaleString('en-US', { maximumFractionDigits: 2 }),
+        query.avg_query_rating ? query.avg_query_rating.toLocaleString('en-US', { maximumFractionDigits: 2 }) : "N/A",
         parseCustomDateString(query.created_at).toLocaleString(),
       ];
     }) ?? [];

@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 {
   "openapi": "3.0.3",
   "info": {
@@ -16871,6 +16870,10 @@
               "type"
             ],
             "properties": {
+              "direct": {
+                "type": "boolean",
+                "nullable": true
+              },
               "filter": {
                 "allOf": [
                   {
@@ -20107,5 +20110,3 @@
     }
   ]
 }
-=======
->>>>>>> Stashed changes
