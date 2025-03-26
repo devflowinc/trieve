@@ -8,7 +8,7 @@ export const useSuggestedQuestions = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
     SuggestedQueriesResponse["queries"]
-  >([]);
+  >(props.defaultAiQuestions ?? []);
 
   const getQuestions = async () => {
     setIsLoading(true);

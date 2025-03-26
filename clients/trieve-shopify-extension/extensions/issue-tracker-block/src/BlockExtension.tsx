@@ -85,7 +85,7 @@ export async function updateTrievePDPQuestions(
         id: $id
         metafields: [
           {
-            namespace: "$app:trievePDPQuestions"
+            namespace: "trieve"
             key: "trievePDPQuestions"
             value: $value
             type: "json"
@@ -93,7 +93,7 @@ export async function updateTrievePDPQuestions(
         ]
       }) {
         product {
-          metafield(namespace: "$app:trievePDPQuestions", key: "trievePDPQuestions") {
+          metafield(namespace: "trieve", key: "trievePDPQuestions") {
             value
             type
           }
@@ -119,7 +119,7 @@ export async function getTrievePDPQuestions(productId: string) {
         title
         description
         productType
-        metafield(namespace: "$app:trievePDPQuestions", key:"trievePDPQuestions") {
+        metafield(namespace: "trieve", key:"trievePDPQuestions") {
           value
         }
         variants(first: 2) {
@@ -281,7 +281,7 @@ function App() {
 
     getTrievePDPQuestions(productId).then((productData) => {
       let pdpQuestions = JSON.parse(
-        productData.data.product.metafield.value ?? "[]",
+        productData.data.product.metafield?.value ?? "[]",
       );
       if (!pdpQuestions) {
         pdpQuestions = [];

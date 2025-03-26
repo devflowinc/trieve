@@ -10,7 +10,18 @@
   import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
 
   const inlineRoot = document.querySelector(".trieve-inline-root");
-  console.log("root", inlineRoot,"please", "metafields {{ app.metafields }}", "{{ block.settings.product.id }}", "{{ block.settings.product.metafields }}");
+  const appMetafieldTrieve = {{ app.metafields.trieve | json }};
+
+  const blockSettings = {{ block.settings | json }};
+  const productMetafieldTrieve = {{ product.metafields.trieve | json }};
+  let trievePDPQuestions = null;
+  if (productMetafieldTrieve && Object.keys(productMetafieldTrieve).includes("trievePDPQuestions")) {
+    trievePDPQuestions = productMetafieldTrieve.trievePDPQuestions;
+  }
+  let defaultAiQuestions = null;
+  if (trievePDPQuestions && trievePDPQuestions.length > 0) {
+    defaultAiQuestions = trievePDPQuestions.map((question) => question.text);
+  }
 
   const toBool = (value) => value === 'true';
   const getValue = (value, defaultValue) => {
@@ -20,33 +31,40 @@
     return value;
   };
 
-  renderToDiv(inlineRoot, {
-    inline: true,
-    apiKey: getValue("{{ app.metafields.trieve.api_key }}", ""),
-    datasetId: getValue("{{ app.metafields.trieve.dataset_id }}", ""),
-    baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
-    type: "ecommerce",
-    useGroupSearch: true,
-    allowSwitchingModes: toBool(getValue("{{ block.settings.allow_switching_modes }}", true)),
-    zIndex: Number(getValue("{{ block.settings.z_index }}", 21474830000000)),
-    scaleRem: true,
-    defaultSearchMode: getValue("{{ block.settings.default_search_mode }}", "chat"),
-    brandName: getValue("{{ block.settings.brand_name }}", ""),
-    brandColor: getValue("{{ block.settings.brand_color }}", ""),
-    placeholder: getValue("{{ block.settings.placeholder }}", "Search..."),
-    chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask Anything..."),
-    suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
-    followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
-    numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
-    theme: getValue("{{ block.settings.theme }}", "light"),
-    inlineHeader: "{{ block.settings.inline_header }} ",
-    onAddToCart: (chunk) => {
-      addToCart(parseInt(chunk.tracking_id))
-    },
-    getCartQuantity: (trackingId) => {
-      return checkCartQuantity(parseInt(trackingId));
-    },
-  });
+  if (!appMetafieldTrieve.dataset_id || !appMetafieldTrieve.api_key) {
+    console.error("Trieve: Cannut render inline Triece comopnent due to missing dataset_id or api_key in the app metafields");
+  } else {
+    console.log("Trieve: Found dataset_id and api_key in the app metafields", appMetafieldTrieve.dataset_id, appMetafieldTrieve.api_key, defaultAiQuestions);
+
+    renderToDiv(inlineRoot, {
+      inline: true,
+      apiKey: appMetafieldTrieve.api_key,
+      datasetId: appMetafieldTrieve.dataset_id,
+      baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
+      type: "ecommerce",
+      useGroupSearch: true,
+      allowSwitchingModes: toBool(getValue("{{ block.settings.allow_switching_modes }}", true)),
+      zIndex: Number(getValue("{{ block.settings.z_index }}", 2147483645)),
+      scaleRem: true,
+      defaultSearchMode: getValue("{{ block.settings.default_search_mode }}", "chat"),
+      brandName: getValue("{{ block.settings.brand_name }}", ""),
+      brandColor: getValue("{{ block.settings.brand_color }}", ""),
+      placeholder: getValue("{{ block.settings.placeholder }}", "Search..."),
+      chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask Anything..."),
+      suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
+      followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
+      numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
+      defaultAiQuestions,
+      theme: getValue("{{ block.settings.theme }}", "light"),
+      inlineHeader: "{{ block.settings.inline_header }} ",
+      onAddToCart: (chunk) => {
+        addToCart(parseInt(chunk.tracking_id))
+      },
+      getCartQuantity: (trackingId) => {
+        return checkCartQuantity(parseInt(trackingId));
+      },
+    });
+  }
 </script>
 
 {% comment %}
@@ -57,102 +75,6 @@
 {% schema %}
 {
   "name": "Trieve Product Chat",
-  "target": "section",
-  "settings": [
-    {
-      "type": "text",
-      "id": "base_url",
-      "label": "Base URL",
-      "default": "https://api.trieve.ai"
-    },
-    {
-      "type": "select",
-      "id": "default_search_mode",
-      "label": "Default Search Mode",
-      "options": [
-        { "label": "Search", "value": "search" },
-        { "label": "Chat", "value": "chat" }
-      ],
-      "default": "chat"
-    },
-    {
-      "type": "text",
-      "id": "placeholder",
-      "label": "Search Placeholder Text",
-      "default": "Search..."
-    },
-    {
-      "type": "text",
-      "id": "chat_placeholder",
-      "label": "Chat Placeholder Text",
-      "default": "Ask Anything..."
-    },
-    {
-      "type": "select",
-      "id": "theme",
-      "label": "Theme",
-      "options": [
-        { "label": "Light", "value": "light" },
-        { "label": "Dark", "value": "dark" }
-      ],
-      "default": "light"
-    },
-    {
-      "type": "color",
-      "id": "brand_color",
-      "label": "Brand Color",
-      "default": "#ff0000"
-    },
-    {
-      "type": "text",
-      "id": "brand_name",
-      "label": "Brand Name",
-      "default": "TrieveAi"
-    },
-    {
-      "type": "checkbox",
-      "id": "suggested_queries",
-      "label": "Show Suggested Queries",
-      "default": true
-    },
-    {
-      "type": "number",
-      "id": "number_of_suggestions",
-      "label": "Number of Suggestions",
-      "default": 3
-    },
-    {
-      "type": "select",
-      "id": "type",
-      "label": "Modal Type",
-      "options": [
-        { "label": "Docs", "value": "docs" },
-        { "label": "E-commerce", "value": "ecommerce" }
-      ],
-      "default": "docs"
-    },
-    {
-      "type": "checkbox",
-      "id": "allow_switching_modes",
-      "label": "Allow Switching Modes",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "open_links_new_tab",
-      "label": "Open Links in New Tab",
-      "default": false
-    },
-    {
-      "type": "text",
-      "id": "inline_header",
-      "label": "Inline Header"
-    },
-    {
-      "type": "number",
-      "id": "z_index",
-      "label": "Z-Index"
-    }
-  ]
+  "target": "section"
 }
 {% endschema %}
