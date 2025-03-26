@@ -7850,19 +7850,19 @@
       "ChatRevenueResponse": {
         "type": "object",
         "required": [
-          "avg_revenue",
+          "revenue",
           "points"
         ],
         "properties": {
-          "avg_revenue": {
-            "type": "number",
-            "format": "double"
-          },
           "points": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FloatTimePoint"
             }
+          },
+          "revenue": {
+            "type": "number",
+            "format": "double"
           }
         }
       },

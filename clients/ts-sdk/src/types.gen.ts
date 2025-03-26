@@ -224,8 +224,8 @@ export type ChatMessageProxy = {
 };
 
 export type ChatRevenueResponse = {
-    avg_revenue: number;
     points: Array<FloatTimePoint>;
+    revenue: number;
 };
 
 /**
