@@ -162,18 +162,20 @@ cat .env.chat .env.search .env.server .env.docker-compose > .env
 
 ### Start services for local dev
 
-```
-cd clients/ts-sdk
-yarn build
-```
+It is recommend to manage services through [tmuxp, see the guide here](https://gist.github.com/skeptrunedev/101c7a13bb9b9242999830655470efac) or terminal tabs.
 
 ```
 cd frontends
 yarn
 yarn dev
 ```
+close and `cd ..`
 
-We recommend managing this through [tmuxp, see the guide here](https://gist.github.com/skeptrunedev/101c7a13bb9b9242999830655470efac) or terminal tabs.
+```
+cd clients/ts-sdk
+yarn build
+```
+close and `cd ../..`
 
 
 ```

@@ -897,26 +897,13 @@ pub struct CohereScorePair {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct AIMonRequestBody {
+    queries: Vec<String>,
+    context_docs: Vec<String>,
     task_definition: String,
-    context: Vec<String>,
-    user_query: String,
-    config: AIMonConfig,
+    model_type: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct AIMonConfig {
-    retrieval_relevance: AIMonRetrievalRelevance,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct AIMonRetrievalRelevance {
-    detector_name: String,
-}
-
-#[derive(Deserialize, Debug)]
-struct AIMonResponseBody {
-    retrieval_relevance: Option<Vec<Vec<f64>>>,
-}
+type AIMonResponseBody = Vec<Vec<f64>>;
 
 pub async fn cross_encoder(
     query: String,
@@ -975,16 +962,12 @@ pub async fn cross_encoder(
         if server_origin != default_server_origin {
             let reranker_model_name = dataset_config.RERANKER_MODEL_NAME.clone();
             if reranker_model_name == "aimon-rerank" {
-                let aimon_body = vec![AIMonRequestBody {
+                let aimon_body = AIMonRequestBody {
+                    queries: vec![query.clone()],
+                    context_docs: common_request_docs.clone(),
                     task_definition: dataset_config.AIMON_RERANKER_TASK_DEFINITION.clone(),
-                    context: common_request_docs.clone(),
-                    user_query: query.clone(),
-                    config: AIMonConfig {
-                        retrieval_relevance: AIMonRetrievalRelevance {
-                            detector_name: "rr".to_string(),
-                        },
-                    },
-                }];
+                    model_type: "rre-1".to_string(),
+                };
 
                 let resp = ureq_agent
                     .post(&server_origin)
@@ -993,26 +976,22 @@ pub async fn cross_encoder(
                         &format!("Bearer {}", reranker_api_key.clone()),
                     )
                     .set("Content-Type", "application/json")
-                    .send_json(serde_json::to_value(aimon_body).unwrap())
+                    .send_json(&aimon_body)
                     .map_err(|err| {
                         ServiceError::BadRequest(format!(
                             "Failed making call to AIMon reranker: {:?}",
                             err
                         ))
                     })?;
-                let aimon_response: Vec<AIMonResponseBody> = resp.into_json().map_err(|err| {
+
+                let aimon_response: AIMonResponseBody = resp.into_json().map_err(|err| {
                     ServiceError::BadRequest(format!("Failed parsing AIMon response: {:?}", err))
                 })?;
-                // Assume the first element’s first inner vector holds the scores.
-                if let Some(relevance) = aimon_response
-                    .get(0)
-                    .and_then(|r| r.retrieval_relevance.as_ref())
-                {
-                    if let Some(scores) = relevance.get(0) {
-                        for (i, score) in scores.iter().enumerate() {
-                            if let Some(result) = results.get_mut(i) {
-                                result.score = *score / 100.0;
-                            }
+
+                if let Some(scores) = aimon_response.get(0) {
+                    for (i, score) in scores.iter().enumerate() {
+                        if let Some(result) = results.get_mut(i) {
+                            result.score = *score / 100.0;
                         }
                     }
                 }
@@ -1105,18 +1084,16 @@ pub async fn cross_encoder(
                         let reranker_model_name = dataset_config.RERANKER_MODEL_NAME.clone();
                         if reranker_model_name == "aimon-rerank" {
                             // --- AIMon Integration for larger chunks ---
-                            let aimon_body = vec![AIMonRequestBody {
+
+                            let aimon_body = AIMonRequestBody {
+                                queries: vec![query.clone()],
+                                context_docs: request_docs.clone(),
                                 task_definition: dataset_config
                                     .AIMON_RERANKER_TASK_DEFINITION
                                     .clone(),
-                                context: request_docs.clone(),
-                                user_query: query.clone(),
-                                config: AIMonConfig {
-                                    retrieval_relevance: AIMonRetrievalRelevance {
-                                        detector_name: "rr".to_string(),
-                                    },
-                                },
-                            }];
+                                model_type: "rre-1".to_string(),
+                            };
+
                             let resp = cur_client
                                 .post(&server_origin)
                                 .header(
@@ -1133,22 +1110,19 @@ pub async fn cross_encoder(
                                         err
                                     ))
                                 })?;
-                            let aimon_response: Vec<AIMonResponseBody> =
+
+                            let aimon_response: Vec<Vec<f64>> =
                                 resp.json().await.map_err(|err| {
                                     ServiceError::BadRequest(format!(
                                         "Failed parsing AIMon response: {:?}",
                                         err
                                     ))
                                 })?;
-                            if let Some(relevance) = aimon_response
-                                .get(0)
-                                .and_then(|r| r.retrieval_relevance.as_ref())
-                            {
-                                if let Some(scores) = relevance.get(0) {
-                                    for (i, score) in scores.iter().enumerate() {
-                                        if let Some(result) = docs_chunk.get_mut(i) {
-                                            result.score = *score / 100.0;
-                                        }
+
+                            if let Some(scores) = aimon_response.get(0) {
+                                for (i, score) in scores.iter().enumerate() {
+                                    if let Some(result) = docs_chunk.get_mut(i) {
+                                        result.score = *score / 100.0;
                                     }
                                 }
                             }
