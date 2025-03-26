@@ -2904,7 +2904,7 @@ pub async fn get_chat_revenue_query(
             avg(arraySum(arrayMap(x -> JSONExtract(x, 'revenue', 'Float64'), items))) as avg_revenue
         FROM events
         WHERE dataset_id = ?
-        AND event_name = 'purchase' 
+        AND event_type = 'purchase' 
         AND items != '[]'
         ",
         interval,
