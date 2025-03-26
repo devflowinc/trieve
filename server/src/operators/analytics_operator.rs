@@ -2892,6 +2892,7 @@ pub async fn get_search_revenue_query(
 pub async fn get_chat_revenue_query(
     dataset_id: uuid::Uuid,
     filter: Option<RAGAnalyticsFilter>,
+    direct: Option<bool>,
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<ChatRevenueResponse, ServiceError> {
@@ -2900,18 +2901,34 @@ pub async fn get_chat_revenue_query(
     let mut query_string = format!(
         "SELECT 
             CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
-            avg(arraySum(arrayMap(x -> JSONExtract(x, 'revenue', 'Float64'), JSONExtractArrayRaw(items)))) as avg_revenue
+            avg(arraySum(arrayMap(x -> JSONExtract(x, 'revenue', 'Float64'), items))) as avg_revenue
         FROM events
         WHERE dataset_id = ?
         AND event_name = 'purchase' 
-        AND items != '[]' AND request_type = 'rag'
+        AND items != '[]'
         ",
         interval,
     );
 
+    if let Some(direct) = direct {
+        if direct {
+            query_string.push_str(" AND request_type = 'rag' AND request_id != '00000000-0000-0000-0000-000000000000'")
+        } else {
+            query_string.push_str("AND request_id == '00000000-0000-0000-0000-000000000000'")
+        }
+    } else {
+        query_string.push_str("AND request_id == '00000000-0000-0000-0000-000000000000'")
+    }
+
     if let Some(filter) = &filter {
         query_string = filter.add_to_query(query_string);
     }
+
+    query_string.push_str(
+        " GROUP BY time_stamp
+        ORDER BY time_stamp
+        LIMIT 1000",
+    );
 
     let chat_revenue = clickhouse_client
         .query(query_string.as_str())

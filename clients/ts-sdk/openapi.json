@@ -14780,6 +14780,10 @@
               "type"
             ],
             "properties": {
+              "direct": {
+                "type": "boolean",
+                "nullable": true
+              },
               "filter": {
                 "allOf": [
                   {

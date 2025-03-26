@@ -137,14 +137,16 @@ export const chatRevenueQuery = (
   trieve: TrieveSDK,
   filters: RAGAnalyticsFilter,
   granularity: Granularity,
+  direct: boolean,
 ) => {
   return {
-    queryKey: ["chatRevenue", filters, granularity],
+    queryKey: ["chatRevenue", filters, granularity, direct],
     queryFn: async () => {
       const result = await trieve.getRagAnalytics({
         filter: filters,
         type: "chat_revenue",
         granularity: granularity,
+        direct,
       });
       return result as ChatRevenueResponse;
     },

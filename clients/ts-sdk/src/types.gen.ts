@@ -2644,6 +2644,7 @@ export type RAGAnalytics = {
     filter?: ((TopicAnalyticsFilter) | null);
     type: 'event_funnel';
 } | {
+    direct?: (boolean) | null;
     filter?: ((RAGAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'chat_revenue';

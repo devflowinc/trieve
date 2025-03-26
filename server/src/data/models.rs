@@ -7399,6 +7399,7 @@ pub enum RAGAnalytics {
     #[serde(rename = "chat_revenue")]
     ChatRevenue {
         filter: Option<RAGAnalyticsFilter>,
+        direct: Option<bool>,
         granularity: Option<Granularity>,
     },
 }

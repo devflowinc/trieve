@@ -2,7 +2,7 @@ import { KnownEventNames } from "app/utils/formatting";
 
 export const chatEvents: KnownEventNames[] = [
   "component_load",
-  "component_click",
+  "component_open",
   "conversation_started",
   "site-add_to_cart",
   "site-checkout",
@@ -10,7 +10,7 @@ export const chatEvents: KnownEventNames[] = [
 
 export const searchEvents: KnownEventNames[] = [
   "component_load",
-  "component_click",
+  "component_open",
   "searched",
   "site-add_to_cart",
   "site-checkout",
@@ -18,7 +18,7 @@ export const searchEvents: KnownEventNames[] = [
 
 export const recommendationEvents: KnownEventNames[] = [
   "component_load",
-  "component_click",
+  "component_open",
   "recommendation_created",
   "site-add_to_cart",
   "site-checkout",

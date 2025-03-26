@@ -7,14 +7,16 @@ import { chatRevenueQuery } from "app/queries/analytics/chat";
 
 export const ChatRevenue = ({
   filters,
+  direct,
   granularity,
 }: {
   filters: RAGAnalyticsFilter;
+  direct: boolean;
   granularity: Granularity;
 }) => {
   const { trieve } = useTrieve();
   const { data, isLoading } = useQuery(
-    chatRevenueQuery(trieve, filters, granularity),
+    chatRevenueQuery(trieve, filters, granularity, direct),
   );
 
   return (
@@ -27,8 +29,8 @@ export const ChatRevenue = ({
       dataType="currency"
       xAxis={"time_stamp"}
       yAxis={"point"}
-      label="Average Chat Revenue"
-      tooltipContent="The average revenue generated from user chat requests."
+      label={direct ? "Average Chat Revenue (Direct)" : "Average Chat Revenue"}
+      tooltipContent={direct ? "The average revenue directly generated from user chat requests." : "The average revenue indirectly generated from user chat requests."}
     />
   );
 };
