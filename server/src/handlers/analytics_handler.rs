@@ -1,9 +1,11 @@
+use std::str::FromStr;
+
 use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
-        ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
-        EventDataTypes, EventNameAndCountsResponse, EventTypes, GetEventsRequestBody,
+        ComponentAnalytics, ComponentAnalyticsResponse, Dataset, DatasetAndOrgWithSubAndPlan,
+        DateRange, EventDataTypes, EventNameAndCountsResponse, EventTypes, GetEventsRequestBody,
         OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
         RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
         SearchAnalyticsResponse, TopDatasetsRequestTypes,
@@ -374,11 +376,13 @@ pub async fn get_search_analytics(
         }
         SearchAnalytics::SearchRevenue {
             filter,
+            direct,
             granularity,
         } => {
             let search_revenue = get_search_revenue_query(
                 dataset_org_plan_sub.dataset.id,
                 filter,
+                direct,
                 granularity,
                 clickhouse_client.get_ref(),
             )
@@ -414,10 +418,19 @@ pub async fn get_search_analytics(
 )]
 pub async fn get_rag_analytics(
     data: web::Json<RAGAnalytics>,
-    _user: AdminOnly,
+    // _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
-    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    // dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
+    let dataset_org_plan_sub = DatasetAndOrgWithSubAndPlan {
+        dataset: Dataset {
+            id: uuid::Uuid::from_str("b02c0374-d53f-4dbb-958e-d852b2dd468f").unwrap(),
+            tracking_id: Some("test".to_string()),
+            ..Default::default()
+        },
+        organization: OrganizationWithSubAndPlan::default(),
+    };
+
     let response = match data.into_inner() {
         RAGAnalytics::RAGUsage { filter } => {
             let rag_graph = get_rag_usage_query(

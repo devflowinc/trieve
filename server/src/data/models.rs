@@ -2378,6 +2378,7 @@ pub struct DatasetEventCount {
     ToSchema,
     QueryableByName,
     AsChangeset,
+    Default,
 )]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -3655,7 +3656,9 @@ impl From<serde_json::Value> for PartnerConfiguration {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema)]
+#[derive(
+    Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone, ToSchema, Default,
+)]
 #[schema(example = json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
@@ -3888,7 +3891,7 @@ impl StripeSubscription {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[schema(example = json!({
     "organization": {
         "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -7320,6 +7323,7 @@ pub enum SearchAnalytics {
     #[schema(title = "SearchRevenue")]
     SearchRevenue {
         filter: Option<SearchAnalyticsFilter>,
+        direct: Option<bool>,
         granularity: Option<Granularity>,
     },
 }

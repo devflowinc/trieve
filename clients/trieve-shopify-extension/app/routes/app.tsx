@@ -46,14 +46,8 @@ export default function App() {
         <Link to="/app/component" rel="component">
           Component
         </Link>
-        <Link to="/app/search" rel="search">
-          Search
-        </Link>
         <Link to="/app/chat" rel="chat">
           Chat
-        </Link>
-        <Link to="/app/recommendations" rel="recommendations">
-          Recommendations
         </Link>
         <Link to="/app/settings" rel="settings">
           Settings

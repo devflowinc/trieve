@@ -26,15 +26,15 @@ export const SearchFilterBar = (props: SearchFilterBarProps) => {
           value={formatStringDateRangeToDates(props.filters.date_range)}
           onChange={(s) => {
             if (
-              (s.lte || new Date()).getTime() -
-                (s.gte || new Date()).getTime() <=
-              3.6e6
+              s.lte &&
+              s.gte &&
+              s.lte.getTime() - s.gte.getTime() <= 3.6e6
             ) {
               props.setGranularity("minute");
             } else if (
-              (s.lte || new Date()).getTime() -
-                (s.gte || new Date()).getTime() <=
-              8.64e7
+              s.lte &&
+              s.gte &&
+              s.lte.getTime() - s.gte.getTime() <= 8.64e7
             ) {
               props.setGranularity("hour");
             }
