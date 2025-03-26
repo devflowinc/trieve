@@ -1,17 +1,16 @@
 <link
   rel="stylesheet"
   href="https://cdn.trieve.ai/beta/search-component/index.css"
-/>
+>
 
-<div class="trieve-inline-root">
-</div>
+<div class="trieve-inline-root"></div>
 
 <script type="module">
   import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
   import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
 
   const inlineRoot = document.querySelector(".trieve-inline-root");
-  console.log("root", inlineRoot,"please", "{{ block.settings.product.title }}", "{{ block.settings.product.id }}");
+  console.log("root", inlineRoot,"please", "metafields {{ app.metafields }}", "{{ block.settings.product.id }}", "{{ block.settings.product.metafields }}");
 
   const toBool = (value) => value === 'true';
   const getValue = (value, defaultValue) => {
@@ -48,9 +47,7 @@
       return checkCartQuantity(parseInt(trackingId));
     },
   });
-
 </script>
-
 
 {% comment %}
   see more about the schema section here. https://shopify.dev/docs/storefronts/themes/architecture/sections/section-schema#schema
@@ -73,8 +70,8 @@
       "id": "default_search_mode",
       "label": "Default Search Mode",
       "options": [
-        {"label": "Search", "value": "search"},
-        {"label": "Chat", "value": "chat"}
+        { "label": "Search", "value": "search" },
+        { "label": "Chat", "value": "chat" }
       ],
       "default": "chat"
     },
@@ -95,8 +92,8 @@
       "id": "theme",
       "label": "Theme",
       "options": [
-        {"label": "Light", "value": "light"},
-        {"label": "Dark", "value": "dark"}
+        { "label": "Light", "value": "light" },
+        { "label": "Dark", "value": "dark" }
       ],
       "default": "light"
     },
@@ -129,8 +126,8 @@
       "id": "type",
       "label": "Modal Type",
       "options": [
-        {"label": "Docs", "value": "docs"},
-        {"label": "E-commerce", "value": "ecommerce"}
+        { "label": "Docs", "value": "docs" },
+        { "label": "E-commerce", "value": "ecommerce" }
       ],
       "default": "docs"
     },
@@ -149,12 +146,12 @@
     {
       "type": "text",
       "id": "inline_header",
-      "label": "Inline Header",
+      "label": "Inline Header"
     },
     {
       "type": "number",
       "id": "z_index",
-      "label": "Z-Index",
+      "label": "Z-Index"
     }
   ]
 }

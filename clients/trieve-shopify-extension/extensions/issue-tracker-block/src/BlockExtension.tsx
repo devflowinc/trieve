@@ -11,6 +11,7 @@ import {
   Box,
   Divider,
   BlockStack,
+  TextField,
 } from "@shopify/ui-extensions-react/admin";
 import { SuggestedQueriesResponse, TrieveSDK } from "trieve-ts-sdk";
 
@@ -181,6 +182,9 @@ function App() {
   );
   const [loading, setLoading] = useState(true);
   const [PDPQuestions, setPDPQuestions] = useState<TrievePDPQuestion[]>([]);
+  const [indexBeingEdited, setIndexBeingEdited] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const productId = data.selected[0].id;
 
@@ -194,7 +198,6 @@ function App() {
         return;
       }
 
-      // write a context that describes the product and the type of questions you want to generate
       let context = `Suggest short questions limited to 3-6 words which someone might have about the following product: \n\n`;
       if (curProductDetails.title) {
         context += `The product is titled "${curProductDetails.title}"`;
@@ -309,13 +312,19 @@ function App() {
     });
   }, [PDPQuestions, productDetails, loading]);
 
+  useEffect(() => {
+    if (PDPQuestions.length) {
+      setTotalPages(Math.ceil(PDPQuestions.length / 3));
+    }
+  }, [PDPQuestions]);
+
   return loading ? (
     <InlineStack blockAlignment="center" inlineAlignment="center">
       <ProgressIndicator size="large-100" />
     </InlineStack>
   ) : (
     <AdminBlock title={i18n.translate("name")}>
-      <BlockStack gap="base">
+      <BlockStack gap="small small">
         <InlineStack blockAlignment="center" inlineAlignment="space-between">
           <Box inlineSize="40%">
             <Text fontWeight="bold">{i18n.translate("title")}</Text>
@@ -341,7 +350,22 @@ function App() {
                 </Text>
               </InlineStack>
             </Button>
-            <Button>
+            <Button
+              onClick={() => {
+                setPDPQuestions((prevPDPQuestions) => [
+                  {
+                    id: "0",
+                    text: "",
+                  },
+                  ...prevPDPQuestions.map((question, i) => ({
+                    ...question,
+                    id: (i + 1).toString(),
+                  })),
+                ]);
+                setIndexBeingEdited(0);
+                setCurrentPage(1);
+              }}
+            >
               <InlineStack blockAlignment="center" gap="small small">
                 <Icon name="PlusMinor" />
                 <Text>Add Question</Text>
@@ -352,6 +376,10 @@ function App() {
         <Box inlineSize="100%">
           <>
             {PDPQuestions.map(({ id, text }, index) => {
+              if (index < (currentPage - 1) * 3 || index >= currentPage * 3) {
+                return null;
+              }
+
               return (
                 <>
                   {index > 0 && <Divider />}
@@ -363,20 +391,65 @@ function App() {
                       gap="large"
                     >
                       <Box inlineSize="100%">
-                        <Text textOverflow="ellipsis">{text}</Text>
-                      </Box>
-                      <Box inlineSize="25%">
-                        <InlineStack inlineSize="100%" inlineAlignment="end">
-                          <Button
-                            onPress={() => {
+                        {index === indexBeingEdited ? (
+                          <TextField
+                            label=""
+                            value={text}
+                            onChange={(value) => {
                               setPDPQuestions((prevPDPQuestions) =>
-                                prevPDPQuestions.filter((_, i) => i !== index),
+                                prevPDPQuestions.map((question, i) =>
+                                  i === index
+                                    ? { ...question, text: value }
+                                    : question,
+                                ),
                               );
                             }}
-                            variant="tertiary"
-                          >
-                            <Icon name="DeleteMinor" />
-                          </Button>
+                          />
+                        ) : (
+                          <Text textOverflow="ellipsis">{text}</Text>
+                        )}
+                      </Box>
+                      <Box inlineSize="25%">
+                        <InlineStack
+                          inlineSize="100%"
+                          inlineAlignment="end"
+                          blockAlignment="center"
+                        >
+                          {index === indexBeingEdited ? (
+                            <>
+                              <Button
+                                onClick={() => {
+                                  setIndexBeingEdited(null);
+                                }}
+                                variant="primary"
+                              >
+                                <Text>Finish</Text>
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                onClick={() => {
+                                  setIndexBeingEdited(index);
+                                }}
+                                variant="tertiary"
+                              >
+                                <Icon name="EditMinor" />
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  setPDPQuestions((prevPDPQuestions) =>
+                                    prevPDPQuestions.filter(
+                                      (_, i) => i !== index,
+                                    ),
+                                  );
+                                }}
+                                variant="tertiary"
+                              >
+                                <Icon name="DeleteMinor" />
+                              </Button>
+                            </>
+                          )}
                         </InlineStack>
                       </Box>
                     </InlineStack>
@@ -386,6 +459,31 @@ function App() {
             })}
           </>
         </Box>
+        <InlineStack
+          paddingBlockStart="large"
+          blockAlignment="center"
+          inlineAlignment="center"
+        >
+          <Button
+            onPress={() => setCurrentPage((prev) => prev - 1)}
+            disabled={currentPage === 1}
+          >
+            <Icon name="ChevronLeftMinor" />
+          </Button>
+          <InlineStack
+            inlineSize={25}
+            blockAlignment="center"
+            inlineAlignment="center"
+          >
+            <Text>{currentPage}</Text>
+          </InlineStack>
+          <Button
+            onPress={() => setCurrentPage((prev) => prev + 1)}
+            disabled={currentPage >= totalPages}
+          >
+            <Icon name="ChevronRightMinor" />
+          </Button>
+        </InlineStack>
       </BlockStack>
     </AdminBlock>
   );
