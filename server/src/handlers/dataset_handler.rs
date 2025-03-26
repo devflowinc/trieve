@@ -3,7 +3,6 @@ use crate::{
     data::models::{
         Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, DatasetConfigurationDTO,
         DatasetDTO, OrganizationWithSubAndPlan, PagefindIndexWorkerMessage, Pool, RedisPool,
-        StripePlan,
     },
     errors::ServiceError,
     get_env,
@@ -144,8 +143,8 @@ pub async fn create_dataset(
         if dataset_count
             >= organization_sub_plan
                 .plan
-                .unwrap_or(StripePlan::default())
-                .dataset_count
+                .unwrap_or_default()
+                .dataset_count()
         {
             return Ok(HttpResponse::UpgradeRequired().json(
                 json!({"message": "Your plan must be upgraded to create additional datasets"}),

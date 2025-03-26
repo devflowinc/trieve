@@ -258,6 +258,43 @@ diesel::table! {
 }
 
 diesel::table! {
+    stripe_usage_based_plans (id) {
+        id -> Uuid,
+        name -> Text,
+        visible -> Bool,
+        ingest_tokens_price_id -> Text,
+        bytes_ingested_price_id -> Text,
+        search_tokens_price_id -> Text,
+        message_tokens_price_id -> Text,
+        analytics_events_price_id -> Text,
+        ocr_pages_price_id -> Text,
+        pages_crawls_price_id -> Text,
+        datasets_price_id -> Text,
+        users_price_id -> Text,
+        chunks_stored_price_id -> Text,
+        files_storage_price_id -> Text,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    stripe_usage_based_subscriptions (id) {
+        id -> Uuid,
+        organization_id -> Uuid,
+        stripe_subscription_id -> Text,
+        usage_based_plan_id -> Uuid,
+        created_at -> Timestamp,
+        last_recorded_meter -> Timestamp,
+        last_cycle_timestamp -> Timestamp,
+        last_cycle_dataset_count -> Int8,
+        last_cycle_users_count -> Int4,
+        last_cycle_chunks_stored_mb -> Int8,
+        last_cycle_files_storage_mb -> Int8,
+        current_period_end -> Nullable<Timestamp>,
+    }
+}
+
+diesel::table! {
     topics (id) {
         id -> Uuid,
         name -> Text,
@@ -332,6 +369,8 @@ diesel::joinable!(organization_usage_counts -> organizations (org_id));
 diesel::joinable!(stripe_invoices -> organizations (org_id));
 diesel::joinable!(stripe_subscriptions -> organizations (organization_id));
 diesel::joinable!(stripe_subscriptions -> stripe_plans (plan_id));
+diesel::joinable!(stripe_usage_based_subscriptions -> organizations (organization_id));
+diesel::joinable!(stripe_usage_based_subscriptions -> stripe_usage_based_plans (usage_based_plan_id));
 diesel::joinable!(topics -> datasets (dataset_id));
 diesel::joinable!(user_api_key -> users (user_id));
 diesel::joinable!(user_organizations -> organizations (organization_id));
@@ -359,6 +398,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     stripe_invoices,
     stripe_plans,
     stripe_subscriptions,
+    stripe_usage_based_plans,
+    stripe_usage_based_subscriptions,
     topics,
     user_api_key,
     user_organizations,

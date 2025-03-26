@@ -257,8 +257,9 @@ impl Modify for SecurityAddon {
         handlers::stripe_handler::cancel_subscription,
         handlers::stripe_handler::update_subscription_plan,
         handlers::stripe_handler::get_all_plans,
+        handlers::stripe_handler::get_all_usage_plans,
         handlers::stripe_handler::get_all_invoices,
-        handlers::stripe_handler::create_setup_checkout_session,
+        handlers::stripe_handler::update_payment_method,
         handlers::analytics_handler::get_cluster_analytics,
         handlers::analytics_handler::get_rag_analytics,
         handlers::analytics_handler::get_search_analytics,
@@ -543,8 +544,12 @@ impl Modify for SecurityAddon {
             data::models::DatasetUsageCount,
             data::models::DatasetDTO,
             data::models::DatasetUsageCount,
+            data::models::TrievePlan,
             data::models::StripePlan,
+            data::models::StripeUsageBasedPlan,
             data::models::StripeInvoice,
+            data::models::TrieveSubscription,
+            data::models::StripeUsageBasedSubscription,
             data::models::StripeSubscription,
             data::models::SlimChunkMetadata,
             data::models::RangeCondition,
@@ -1355,12 +1360,16 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::get().to(handlers::stripe_handler::get_all_plans)),
                                 )
                                 .service(
+                                    web::resource("/usage_plans")
+                                        .route(web::get().to(handlers::stripe_handler::get_all_usage_plans)),
+                                )
+                                .service(
                                     web::resource("/invoices/{organization_id}")
                                         .route(web::get().to(handlers::stripe_handler::get_all_invoices)),
                                 )
                                 .service(
                                     web::resource("/checkout/setup/{organization_id}")
-                                        .route(web::post().to(handlers::stripe_handler::create_setup_checkout_session)),
+                                        .route(web::post().to(handlers::stripe_handler::update_payment_method)),
                                 ),
                         )
                         .service(

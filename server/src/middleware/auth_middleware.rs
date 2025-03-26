@@ -343,7 +343,6 @@ async fn auth_with_api_key(
             return Ok((Some(user), Some(api_key)));
         }
 
-        //TODO: Cache the api key in redis
         if let Ok((user, api_key)) =
             get_user_from_api_key_query(authen_header.as_str(), pool.clone()).await
         {

@@ -3849,6 +3849,56 @@ impl Default for StripePlan {
         }
     }
 }
+
+#[derive(
+    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
+)]
+#[schema(example=json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "stripe_id": "sub_123",
+    "plan_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "organization_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
+    "current_period_end": "2021-01-01 00:00:00.000",
+}))]
+#[diesel(table_name = stripe_usage_based_plans)]
+pub struct StripeUsageBasedPlan {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub visible: bool,
+    pub ingest_tokens_price_id: String,
+    pub bytes_ingested_price_id: String,
+    pub search_tokens_price_id: String,
+    pub message_tokens_price_id: String,
+    pub analytics_events_price_id: String,
+    pub ocr_pages_price_id: String,
+    pub pages_crawls_price_id: String,
+    pub datasets_price_id: String,
+    pub users_price_id: String,
+    pub chunks_stored_price_id: String,
+    pub files_storage_price_id: String,
+    pub created_at: chrono::NaiveDateTime,
+}
+
+impl StripeUsageBasedPlan {
+    pub fn line_item_ids(&self) -> Vec<String> {
+        vec![
+            self.ingest_tokens_price_id.clone(),
+            self.bytes_ingested_price_id.clone(),
+            self.search_tokens_price_id.clone(),
+            self.message_tokens_price_id.clone(),
+            self.analytics_events_price_id.clone(),
+            self.ocr_pages_price_id.clone(),
+            self.pages_crawls_price_id.clone(),
+            self.datasets_price_id.clone(),
+            self.users_price_id.clone(),
+            self.chunks_stored_price_id.clone(),
+            self.files_storage_price_id.clone(),
+        ]
+    }
+}
+
 #[derive(
     Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
 )]
@@ -3925,19 +3975,153 @@ impl StripeSubscription {
 }))]
 pub struct OrganizationWithSubAndPlan {
     pub organization: Organization,
-    pub plan: Option<StripePlan>,
-    pub subscription: Option<StripeSubscription>,
+    pub plan: Option<TrievePlan>,
+    pub subscription: Option<TrieveSubscription>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum TrievePlan {
+    Flat(StripePlan),
+    UsageBased(StripeUsageBasedPlan),
+}
+
+impl TrievePlan {
+    pub fn from_flat(
+        stripe_plan: Option<StripePlan>,
+        stripe_usage_based_plan: Option<StripeUsageBasedPlan>,
+    ) -> Option<Self> {
+        if let Some(usage_plan) = stripe_usage_based_plan {
+            Some(TrievePlan::UsageBased(usage_plan))
+        } else if let Some(flat_plan) = stripe_plan {
+            Some(TrievePlan::Flat(flat_plan))
+        } else {
+            None
+        }
+    }
+}
+
+impl Default for TrievePlan {
+    fn default() -> Self {
+        TrievePlan::Flat(StripePlan::default())
+    }
+}
+
+impl TrievePlan {
+    pub fn chunk_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.chunk_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+
+    pub fn file_storage(&self) -> i64 {
+        match self {
+            TrievePlan::Flat(plan) => plan.file_storage,
+            TrievePlan::UsageBased(_) => i64::MAX,
+        }
+    }
+
+    pub fn user_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.user_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+
+    pub fn dataset_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.dataset_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+
+    pub fn message_count(&self) -> i32 {
+        match self {
+            TrievePlan::Flat(plan) => plan.message_count,
+            TrievePlan::UsageBased(_) => i32::MAX,
+        }
+    }
+}
+
+impl From<StripePlan> for TrievePlan {
+    fn from(plan: StripePlan) -> Self {
+        TrievePlan::Flat(plan)
+    }
+}
+
+impl From<StripeUsageBasedPlan> for TrievePlan {
+    fn from(plan: StripeUsageBasedPlan) -> Self {
+        TrievePlan::UsageBased(plan)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum TrieveSubscription {
+    Flat(StripeSubscription),
+    UsageBased(StripeUsageBasedSubscription),
+}
+
+impl TrieveSubscription {
+    pub fn from_flat(
+        stripe_subscription: Option<StripeSubscription>,
+        stripe_usage_based_subscription: Option<StripeUsageBasedSubscription>,
+    ) -> Option<Self> {
+        if let Some(usage_subscription) = stripe_usage_based_subscription {
+            Some(TrieveSubscription::UsageBased(usage_subscription))
+        } else if let Some(subscription) = stripe_subscription {
+            Some(TrieveSubscription::Flat(subscription))
+        } else {
+            None
+        }
+    }
+
+    pub fn id(&self) -> uuid::Uuid {
+        match self {
+            TrieveSubscription::Flat(subscription) => subscription.id,
+            TrieveSubscription::UsageBased(subscription) => subscription.id,
+        }
+    }
+
+    pub fn organization_id(&self) -> uuid::Uuid {
+        match self {
+            TrieveSubscription::Flat(subscription) => subscription.organization_id,
+            TrieveSubscription::UsageBased(subscription) => subscription.organization_id,
+        }
+    }
+
+    pub fn stripe_subscription_id(&self) -> String {
+        match self {
+            TrieveSubscription::Flat(subscription) => subscription.stripe_id.clone(),
+            TrieveSubscription::UsageBased(subscription) => {
+                subscription.stripe_subscription_id.clone()
+            }
+        }
+    }
+}
+
+impl From<StripeSubscription> for TrieveSubscription {
+    fn from(subscription: StripeSubscription) -> Self {
+        TrieveSubscription::Flat(subscription)
+    }
+}
+
+impl From<StripeUsageBasedSubscription> for TrieveSubscription {
+    fn from(subscription: StripeUsageBasedSubscription) -> Self {
+        TrieveSubscription::UsageBased(subscription)
+    }
 }
 
 impl OrganizationWithSubAndPlan {
     pub fn from_components(
         organization: Organization,
-        plan: Option<StripePlan>,
-        subscription: Option<StripeSubscription>,
+        plan: Option<TrievePlan>,
+        subscription: Option<TrieveSubscription>,
     ) -> Self {
         OrganizationWithSubAndPlan {
             organization: organization.with_complete_partner_config(),
-            plan,
+            plan: Some(plan.unwrap_or_default()),
             subscription,
         }
     }
@@ -3945,7 +4129,7 @@ impl OrganizationWithSubAndPlan {
     pub fn with_defaults(&self) -> Self {
         OrganizationWithSubAndPlan {
             organization: self.organization.with_complete_partner_config(),
-            plan: Some(self.plan.clone().unwrap_or_default()),
+            plan: self.plan.clone(),
             subscription: self.subscription.clone(),
         }
     }
@@ -9439,4 +9623,23 @@ impl From<CrawlOptions> for FirecrawlCrawlRequest {
 pub struct DummyHallucinationScore {
     pub total_score: f64,
     pub detected_hallucinations: Vec<String>,
+}
+
+#[derive(
+    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
+)]
+#[diesel(table_name = stripe_usage_based_subscriptions)]
+pub struct StripeUsageBasedSubscription {
+    pub id: uuid::Uuid,
+    pub organization_id: uuid::Uuid,
+    pub stripe_subscription_id: String,
+    pub usage_based_plan_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub last_recorded_meter: chrono::NaiveDateTime,
+    pub last_cycle_timestamp: chrono::NaiveDateTime,
+    pub last_cycle_dataset_count: i64,
+    pub last_cycle_users_count: i32,
+    pub last_cycle_chunks_stored_mb: i64,
+    pub last_cycle_files_storage_mb: i64,
+    pub current_period_end: Option<chrono::NaiveDateTime>,
 }

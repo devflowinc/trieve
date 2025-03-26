@@ -2,7 +2,8 @@ use crate::{
     data::models::{
         ApiKeyRespBody, Dataset, DatasetConfiguration, DateRange, Organization, OrganizationApiKey,
         OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, RedisPool, SlimUser, StripePlan,
-        StripeSubscription, User, UserApiKey, UserOrganization,
+        StripeSubscription, StripeUsageBasedPlan, StripeUsageBasedSubscription, TrievePlan,
+        TrieveSubscription, User, UserApiKey, UserOrganization,
     },
     errors::ServiceError,
     handlers::organization_handler::{CreateApiKeyReqPayload, ExtendedOrganizationUsageCount},
@@ -248,28 +249,45 @@ pub async fn get_org_id_from_subscription_id_query(
 ) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
 
     let mut conn = pool
         .get()
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let org = organizations_columns::organizations
+    let org_from_flat_subscription: Option<uuid::Uuid> = organizations_columns::organizations
         .inner_join(
             stripe_subscriptions_columns::stripe_subscriptions
                 .on(stripe_subscriptions_columns::organization_id.eq(organizations_columns::id)),
         )
-        .filter(stripe_subscriptions_columns::stripe_id.eq(subscription_id))
+        .filter(stripe_subscriptions_columns::stripe_id.eq(subscription_id.clone()))
         .select(organizations_columns::id)
         .first::<uuid::Uuid>(&mut conn)
         .await
-        .map_err(|_| {
-            ServiceError::NotFound(
-                "Could not find an organization with this subscription id".to_string(),
-            )
-        })?;
+        .optional()?;
 
-    Ok(org)
+    let org_from_usage_based_subscription: Option<uuid::Uuid> =
+        organizations_columns::organizations
+            .inner_join(
+                stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+                    .on(stripe_usage_based_subscriptions_columns::organization_id
+                        .eq(organizations_columns::id)),
+            )
+            .filter(
+                stripe_usage_based_subscriptions_columns::stripe_subscription_id
+                    .eq(subscription_id),
+            )
+            .select(organizations_columns::id)
+            .first::<uuid::Uuid>(&mut conn)
+            .await
+            .optional()?;
+
+    let org_id = org_from_flat_subscription
+        .or(org_from_usage_based_subscription)
+        .ok_or(ServiceError::NotFound("Organization not found".to_string()))?;
+
+    Ok(org_id)
 }
 
 pub async fn get_org_from_id_query(
@@ -279,6 +297,8 @@ pub async fn get_org_from_id_query(
     use crate::data::schema::organizations::dsl as organizations_columns;
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+    use crate::data::schema::stripe_usage_based_plans::dsl as stripe_usage_based_plans_columns;
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
 
     let mut conn = pool
         .get()
@@ -291,17 +311,41 @@ pub async fn get_org_from_id_query(
             stripe_plans_columns::stripe_plans
                 .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
         )
+        .left_outer_join(
+            stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+                .on(stripe_usage_based_subscriptions_columns::organization_id
+                    .eq(organizations_columns::id)),
+        )
+        .left_outer_join(
+            stripe_usage_based_plans_columns::stripe_usage_based_plans
+                .on(stripe_usage_based_plans_columns::id
+                    .eq(stripe_usage_based_subscriptions_columns::usage_based_plan_id)),
+        )
         .select((
             organizations_columns::organizations::all_columns(),
             stripe_plans_columns::stripe_plans::all_columns().nullable(),
             stripe_subscriptions_columns::stripe_subscriptions::all_columns().nullable(),
+            stripe_usage_based_plans_columns::stripe_usage_based_plans::all_columns().nullable(),
+            stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions::all_columns().nullable()
         ))
         .into_boxed();
 
-    let org_plan_sub: (Organization, Option<StripePlan>, Option<StripeSubscription>) = query
+    let (organization, stripe_plan, stripe_subscription, usage_plan, usage_subscription): (
+        Organization,
+        Option<StripePlan>,
+        Option<StripeSubscription>,
+        Option<StripeUsageBasedPlan>,
+        Option<StripeUsageBasedSubscription>,
+    ) = query
         .filter(organizations_columns::id.eq(organization_id))
         .filter(organizations_columns::deleted.eq(0))
-        .first::<(Organization, Option<StripePlan>, Option<StripeSubscription>)>(&mut conn)
+        .first::<(
+            Organization,
+            Option<StripePlan>,
+            Option<StripeSubscription>,
+            Option<StripeUsageBasedPlan>,
+            Option<StripeUsageBasedSubscription>,
+        )>(&mut conn)
         .await
         .map_err(|e| {
             log::error!(
@@ -312,8 +356,11 @@ pub async fn get_org_from_id_query(
             ServiceError::NotFound("Organization not found".to_string())
         })?;
 
-    let org_with_plan_sub: OrganizationWithSubAndPlan =
-        OrganizationWithSubAndPlan::from_components(org_plan_sub.0, org_plan_sub.1, org_plan_sub.2);
+    let org_with_plan_sub: OrganizationWithSubAndPlan = OrganizationWithSubAndPlan::from_components(
+        organization,
+        TrievePlan::from_flat(stripe_plan, usage_plan),
+        TrieveSubscription::from_flat(stripe_subscription, usage_subscription),
+    );
 
     Ok(org_with_plan_sub)
 }
@@ -699,7 +746,7 @@ pub async fn get_arbitrary_org_owner_from_org_id(
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
-    let user_orgs_orgs: (User, UserOrganization, Organization) = users_columns::users
+    let (user, user_organization, organization): (User, UserOrganization, Organization) = users_columns::users
         .inner_join(user_organizations_columns::user_organizations)
         .inner_join(
             organization_columns::organizations
@@ -729,9 +776,9 @@ pub async fn get_arbitrary_org_owner_from_org_id(
     )?;
 
     Ok(SlimUser::from_details(
-        user_orgs_orgs.0,
-        vec![user_orgs_orgs.1],
-        vec![user_orgs_orgs.2.with_complete_partner_config()],
+        user,
+        vec![user_organization],
+        vec![organization.with_complete_partner_config()],
     ))
 }
 
@@ -1049,4 +1096,24 @@ pub async fn get_assumed_user_by_organization_api_key(
     };
 
     Ok((user, api_key.into()))
+}
+
+pub async fn get_all_organization_ids(
+    pool: web::Data<Pool>,
+) -> Result<Vec<uuid::Uuid>, ServiceError> {
+    use crate::data::schema::organizations::dsl as organizations_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let organizations = organizations_columns::organizations
+        .select(organizations_columns::id)
+        .filter(organizations_columns::deleted.eq(0))
+        .load::<uuid::Uuid>(&mut conn)
+        .await
+        .map_err(|_| ServiceError::NotFound("Could not get organizations".to_string()))?;
+
+    Ok(organizations)
 }

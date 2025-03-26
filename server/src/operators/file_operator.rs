@@ -375,7 +375,7 @@ pub async fn create_file_chunks(
             .plan
             .clone()
             .unwrap_or_default()
-            .chunk_count as usize
+            .chunk_count() as usize
     {
         log::error!(
             "Chunk count {} exceeds plan limit {}",
@@ -384,7 +384,7 @@ pub async fn create_file_chunks(
                 .organization
                 .plan
                 .unwrap_or_default()
-                .chunk_count
+                .chunk_count() 
         );
         return Err(ServiceError::BadRequest(
             "Chunk count exceeds plan limit".to_string(),

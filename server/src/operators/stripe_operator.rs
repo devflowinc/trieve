@@ -1,19 +1,177 @@
 use std::{collections::HashMap, str::FromStr};
 
 use crate::{
-    data::models::{Pool, StripeInvoice, StripePlan, StripeSubscription},
+    data::models::{
+        DateRange, OrganizationUsageCount, Pool, StripeInvoice, StripePlan, StripeSubscription,
+        StripeUsageBasedPlan, StripeUsageBasedSubscription, TrievePlan, TrieveSubscription,
+    },
     errors::ServiceError,
     get_env,
+    operators::chunk_operator::get_storage_mb_from_chunk_count,
 };
 use actix_web::web;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+
+use super::organization_operator::{
+    get_extended_org_usage_by_id_query, get_org_usage_by_id_query, hash_function,
+};
 
 pub fn get_stripe_client() -> stripe::Client {
     let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
 
     stripe::Client::new(stripe_secret)
+}
+
+pub async fn create_usage_stripe_subscription_query(
+    stripe_subscription_id: String,
+    current_usage: OrganizationUsageCount,
+    usage_based_plan_id: uuid::Uuid,
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
+
+    let stripe_usage_based_subscription = StripeUsageBasedSubscription {
+        id: uuid::Uuid::new_v4(),
+        organization_id,
+        stripe_subscription_id,
+        last_recorded_meter: (chrono::Utc::now() - chrono::Duration::days(30)).naive_utc(),
+        usage_based_plan_id,
+        created_at: chrono::Utc::now().naive_utc(),
+
+        last_cycle_timestamp: chrono::Utc::now().naive_utc(),
+        last_cycle_dataset_count: current_usage.dataset_count as i64,
+        last_cycle_users_count: current_usage.user_count,
+        last_cycle_chunks_stored_mb: get_storage_mb_from_chunk_count(current_usage.chunk_count),
+        last_cycle_files_storage_mb: current_usage.file_storage,
+
+        current_period_end: None,
+    };
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+    diesel::insert_into(stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions)
+        .values(&stripe_usage_based_subscription)
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to insert stripe subscription: {}", e);
+            ServiceError::BadRequest("Failed to insert stripe subscription".to_string())
+        })?;
+
+    Ok(())
+}
+
+pub async fn update_static_stripe_meters(
+    stripe_subscription_id: String,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    let usage_based_subscription = get_option_usage_based_subscription_by_subscription_id_query(
+        stripe_subscription_id,
+        pool.clone(),
+    )
+    .await?;
+
+    if let Some(usage_based_subscription) = usage_based_subscription {
+        let timestamp_now = chrono::Utc::now();
+
+        // Check if within 4 days
+        if usage_based_subscription
+            .last_cycle_timestamp
+            .date()
+            .signed_duration_since(timestamp_now.naive_utc().date())
+            .num_days()
+            > 4
+        {
+            // Prevent double metering
+            return Ok(());
+        }
+
+        let usage =
+            get_org_usage_by_id_query(usage_based_subscription.organization_id, pool.clone())
+                .await?;
+
+        let static_events: Vec<(&str, String)> = vec![
+            (
+                "chunk_storage_mb",
+                get_storage_mb_from_chunk_count(usage.chunk_count).to_string(),
+            ),
+            ("file_storage_mb", usage.file_storage.to_string()),
+            ("users", usage.user_count.to_string()),
+            ("dataset_count", usage.dataset_count.to_string()),
+        ];
+
+        let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
+        let reqwest_client = reqwest::Client::new();
+
+        let stripe_customer_id = get_stripe_customer_id_from_subscription(
+            usage_based_subscription.stripe_subscription_id.clone(),
+        )
+        .await?;
+
+        for (event_name, event_value) in static_events {
+            let identifier = hash_function(&format!(
+                "{:?}||{:?}||{:?}||{:?}",
+                stripe_customer_id,
+                timestamp_now.to_string(),
+                event_name,
+                usage_based_subscription.organization_id
+            ));
+
+            let response = reqwest_client
+                .post("https://api.stripe.com/v1/billing/meter_events")
+                .basic_auth(stripe_secret, Option::<&str>::None)
+                .form(&[
+                    ("event_name", event_name),
+                    ("timestamp", &timestamp_now.timestamp().to_string()),
+                    ("identifier", &identifier),
+                    ("payload[stripe_customer_id]", &stripe_customer_id),
+                    ("payload[value]", &event_value),
+                ])
+                .send()
+                .await
+                .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+            let stripe_billing_response = response
+                .json::<StripeBillingMetricsResponse>()
+                .await
+                .unwrap();
+
+            if let Some(error) = stripe_billing_response.error {
+                log::error!("Failed to send stripe billing: {}", error.message);
+            }
+        }
+
+        use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
+        let mut conn = pool
+            .get()
+            .await
+            .expect("Failed to get connection from pool");
+
+        diesel::update(
+            stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions.filter(
+                stripe_usage_based_subscriptions_columns::stripe_subscription_id
+                    .eq(usage_based_subscription.stripe_subscription_id),
+            ),
+        )
+        .set(
+            stripe_usage_based_subscriptions_columns::last_cycle_timestamp
+                .eq(timestamp_now.naive_utc()),
+        )
+        .execute(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to update usage based stripe subscription: {}", e);
+            ServiceError::BadRequest("Failed to update usage based stripe subscription".to_string())
+        })?;
+    }
+
+    Ok(())
 }
 
 pub async fn create_stripe_subscription_query(
@@ -79,6 +237,17 @@ pub async fn create_stripe_plan_query(
     Ok(created_stripe_plan)
 }
 
+pub async fn get_trieve_plan_by_id_query(
+    plan_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<TrievePlan, ServiceError> {
+    let stripe_plan = get_plan_by_id_query(plan_id, pool.clone()).await.ok();
+    let stripe_usage_based_plan = get_usage_based_plan_query(plan_id, pool).await.ok();
+
+    TrievePlan::from_flat(stripe_plan, stripe_usage_based_plan)
+        .ok_or(ServiceError::NotFound("TrievePlan not found".to_string()))
+}
+
 pub async fn get_plan_by_id_query(
     plan_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -89,6 +258,7 @@ pub async fn get_plan_by_id_query(
         .get()
         .await
         .expect("Failed to get connection from pool");
+
     let stripe_plan: StripePlan = stripe_plans_columns::stripe_plans
         .filter(stripe_plans_columns::id.eq(plan_id))
         .first(&mut conn)
@@ -99,6 +269,52 @@ pub async fn get_plan_by_id_query(
         })?;
 
     Ok(stripe_plan)
+}
+
+pub async fn get_usage_based_plan_query(
+    plan_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<StripeUsageBasedPlan, ServiceError> {
+    use crate::data::schema::stripe_usage_based_plans::dsl as stripe_usage_based_plans_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    let stripe_plan: StripeUsageBasedPlan =
+        stripe_usage_based_plans_columns::stripe_usage_based_plans
+            .filter(stripe_usage_based_plans_columns::id.eq(plan_id))
+            .first(&mut conn)
+            .await
+            .map_err(|e| {
+                log::error!("Failed to get stripe plan: {}", e);
+                ServiceError::BadRequest("Failed to get stripe plan".to_string())
+            })?;
+
+    Ok(stripe_plan)
+}
+
+pub async fn get_all_usage_plans_query(
+    pool: web::Data<Pool>,
+) -> Result<Vec<StripeUsageBasedPlan>, ServiceError> {
+    use crate::data::schema::stripe_usage_based_plans::dsl as stripe_usage_based_plans_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    let stripe_plans: Vec<StripeUsageBasedPlan> =
+        stripe_usage_based_plans_columns::stripe_usage_based_plans
+            .load(&mut conn)
+            .await
+            .map_err(|e| {
+                log::error!("Failed to get stripe plans: {}", e);
+                ServiceError::BadRequest("Failed to get stripe plans".to_string())
+            })?;
+
+    Ok(stripe_plans)
 }
 
 pub async fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan>, ServiceError> {
@@ -137,6 +353,7 @@ pub async fn create_stripe_payment_link(
         "after_completion[redirect][url]": format!("{}/dashboard/{}/billing", admin_dashboard_url, organization_id),
         "after_completion[type]": "redirect",
         "metadata[organization_id]": organization_id.to_string(),
+        "metadata[plan_type]": "flat",
         "metadata[plan_id]": plan.id.to_string()
     });
 
@@ -166,27 +383,102 @@ pub async fn create_stripe_payment_link(
     Ok(payment_link.to_string())
 }
 
-pub async fn get_subscription_by_id_query(
+pub async fn create_usage_based_stripe_payment_link(
+    usage_based_plan: StripeUsageBasedPlan,
+    organization_id: uuid::Uuid,
+) -> Result<String, ServiceError> {
+    let admin_dashboard_url = get_env!("ADMIN_DASHBOARD_URL", "ADMIN_DASHBOARD_URL must be set");
+    let stripe_client = get_stripe_client();
+
+    let line_item_ids = usage_based_plan.line_item_ids();
+
+    let session = stripe::CheckoutSession::create(
+        &stripe_client,
+        stripe::CreateCheckoutSession {
+            mode: Some(stripe::CheckoutSessionMode::Subscription),
+            setup_intent_data: None,
+            currency: Some(stripe::Currency::USD),
+            success_url: Some(
+                format!(
+                    "{}/dashboard/{}/billing?session_id={{CHECKOUT_SESSION_ID}}",
+                    admin_dashboard_url, organization_id
+                )
+                .as_str(),
+            ),
+            cancel_url: Some(
+                format!(
+                    "{}/dashboard/{}/billing?session_id={{CHECKOUT_SESSION_ID}}",
+                    admin_dashboard_url, organization_id
+                )
+                .as_str(),
+            ),
+            line_items: Some(
+                line_item_ids
+                    .iter()
+                    .map(|id| stripe::CreateCheckoutSessionLineItems {
+                        price: Some(id.to_string()),
+                        ..Default::default()
+                    })
+                    .collect(),
+            ),
+            metadata: Some(HashMap::from([
+                ("organization_id".to_string(), organization_id.to_string()),
+                ("plan_type".to_string(), "usage-based".to_string()),
+                ("plan_id".to_string(), usage_based_plan.id.to_string()),
+            ])),
+            ..Default::default()
+        },
+    )
+    .await
+    .map_err(|err| {
+        ServiceError::BadRequest(format!("Failed to create setup checkout session {:?}", err))
+    })?;
+    if session.url.is_none() {
+        return Err(ServiceError::BadRequest(
+            "Failed to get setup checkout session url".to_string(),
+        ));
+    }
+    Ok(session.url.unwrap().to_string())
+}
+
+pub async fn get_trieve_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     pool: web::Data<Pool>,
-) -> Result<StripeSubscription, ServiceError> {
+) -> Result<TrieveSubscription, ServiceError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
 
     let mut conn = pool
         .get()
         .await
         .expect("Failed to get connection from pool");
-    let stripe_subscription: StripeSubscription =
+
+    let stripe_subscription: Option<StripeSubscription> =
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::id.eq(subscription_id))
             .first(&mut conn)
             .await
+            .optional()
             .map_err(|e| {
                 log::error!("Failed to get stripe subscription: {}", e);
                 ServiceError::BadRequest("Failed to get stripe subscription".to_string())
             })?;
 
-    Ok(stripe_subscription)
+    let stripe_usage_based_subscription: Option<StripeUsageBasedSubscription> =
+        stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+            .filter(stripe_usage_based_subscriptions_columns::id.eq(subscription_id))
+            .first(&mut conn)
+            .await
+            .optional()
+            .map_err(|e| {
+                log::error!("Failed to get stripe usage based subscription: {}", e);
+                ServiceError::BadRequest(
+                    "Failed to get stripe usage based subscription".to_string(),
+                )
+            })?;
+
+    TrieveSubscription::from_flat(stripe_subscription, stripe_usage_based_subscription)
+        .ok_or(ServiceError::NotFound("Subscription not found".to_string()))
 }
 
 pub async fn delete_subscription_by_id_query(
@@ -211,6 +503,53 @@ pub async fn delete_subscription_by_id_query(
     })?;
 
     Ok(())
+}
+
+pub async fn get_option_usage_based_subscription_by_organization_id_query(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<Option<StripeUsageBasedSubscription>, ServiceError> {
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    let stripe_usage_based_subscriptions =
+        stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+            .select(StripeUsageBasedSubscription::as_select())
+            .filter(stripe_usage_based_subscriptions_columns::organization_id.eq(organization_id))
+            .first::<StripeUsageBasedSubscription>(&mut conn)
+            .await
+            .optional()?;
+
+    Ok(stripe_usage_based_subscriptions)
+}
+
+pub async fn get_option_usage_based_subscription_by_subscription_id_query(
+    stripe_subscription_id: String,
+    pool: web::Data<Pool>,
+) -> Result<Option<StripeUsageBasedSubscription>, ServiceError> {
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    let stripe_usage_based_subscriptions =
+        stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+            .select(StripeUsageBasedSubscription::as_select())
+            .filter(
+                stripe_usage_based_subscriptions_columns::stripe_subscription_id
+                    .eq(stripe_subscription_id),
+            )
+            .first::<StripeUsageBasedSubscription>(&mut conn)
+            .await
+            .optional()?;
+
+    Ok(stripe_usage_based_subscriptions)
 }
 
 pub async fn get_option_subscription_by_organization_id_query(
@@ -242,18 +581,37 @@ pub async fn set_stripe_subscription_current_period_end(
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+    // usage based
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
 
     let mut conn = pool
         .get()
         .await
         .expect("Failed to get connection from pool");
+
     diesel::update(
         stripe_subscriptions_columns::stripe_subscriptions
-            .filter(stripe_subscriptions_columns::stripe_id.eq(stripe_subscription_id)),
+            .filter(stripe_subscriptions_columns::stripe_id.eq(stripe_subscription_id.clone())),
     )
     .set(stripe_subscriptions_columns::current_period_end.eq(current_period_end))
     .execute(&mut conn)
     .await
+    .optional()
+    .map_err(|e| {
+        log::error!("Failed to update stripe subscription: {}", e);
+        ServiceError::BadRequest("Failed to update stripe subscription".to_string())
+    })?;
+
+    diesel::update(
+        stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions.filter(
+            stripe_usage_based_subscriptions_columns::stripe_subscription_id
+                .eq(stripe_subscription_id),
+        ),
+    )
+    .set(stripe_usage_based_subscriptions_columns::current_period_end.eq(current_period_end))
+    .execute(&mut conn)
+    .await
+    .optional()
     .map_err(|e| {
         log::error!("Failed to update stripe subscription: {}", e);
         ServiceError::BadRequest("Failed to update stripe subscription".to_string())
@@ -310,7 +668,65 @@ pub async fn update_stripe_subscription_plan_query(
     Ok(())
 }
 
-pub async fn update_stripe_subscription(
+pub async fn update_to_usage_based_stripe_subscription(
+    subscription_stripe_id: String,
+    usage_plan: StripeUsageBasedPlan,
+) -> Result<(), ServiceError> {
+    let stripe_client = get_stripe_client();
+
+    let stripe_subscription_id: stripe::SubscriptionId =
+        subscription_stripe_id.parse().map_err(|_| {
+            ServiceError::BadRequest("Failed to parse stripe subscription id".to_string())
+        })?;
+    let list_sub_items = stripe::generated::billing::subscription_item::ListSubscriptionItems::new(
+        stripe_subscription_id.clone(),
+    );
+    let subscription_items = stripe::SubscriptionItem::list(&stripe_client, &list_sub_items)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to list stripe subscription items: {}", e);
+            ServiceError::BadRequest("Failed to list stripe subscription items".to_string())
+        })?;
+
+    let mut update_subscription_items: Vec<stripe::UpdateSubscriptionItems> = vec![];
+    let mut deleted_item = stripe::UpdateSubscriptionItems::default();
+    for stripe_item in subscription_items.data.iter() {
+        deleted_item.id = Some(stripe_item.id.to_string());
+        deleted_item.deleted = Some(true);
+        update_subscription_items.push(deleted_item.clone());
+    }
+
+    let mut new_items = usage_plan
+        .line_item_ids()
+        .iter()
+        .map(|id| stripe::UpdateSubscriptionItems {
+            price: Some(id.to_string()),
+            ..Default::default()
+        })
+        .collect::<Vec<stripe::UpdateSubscriptionItems>>();
+
+    update_subscription_items.append(&mut new_items);
+
+    let update_subscription = stripe::UpdateSubscription::<'_> {
+        items: Some(update_subscription_items),
+        ..Default::default()
+    };
+
+    stripe::Subscription::update(
+        &stripe_client,
+        &stripe_subscription_id.clone(),
+        update_subscription,
+    )
+    .await
+    .map_err(|e| {
+        log::error!("Failed to update stripe subscription: {}", e);
+        ServiceError::BadRequest("Failed to update stripe subscription".to_string())
+    })?;
+
+    Ok(())
+}
+
+pub async fn update_to_flat_stripe_subscription(
     subscription_stripe_id: String,
     plan_stripe_id: String,
 ) -> Result<(), ServiceError> {
@@ -535,6 +951,189 @@ pub async fn set_subscription_payment_method(
     )
     .await
     .map_err(|_| ServiceError::BadRequest("Failed to update payment method".to_string()))?;
+
+    Ok(())
+}
+
+pub async fn get_stripe_customer_id_from_subscription(
+    stripe_subscription_id: String,
+) -> Result<String, ServiceError> {
+    let stripe_client = get_stripe_client();
+
+    let response = stripe::Subscription::retrieve(
+        &stripe_client,
+        &stripe::SubscriptionId::from_str(stripe_subscription_id.as_str())
+            .map_err(|_| ServiceError::BadRequest("Invalid subscription id".to_string()))?,
+        &[],
+    )
+    .await
+    .map_err(|_| ServiceError::BadRequest("Failed to get subscription".to_string()))?;
+
+    let stripe_customer_id = response.customer.id();
+    Ok(stripe_customer_id.as_str().to_string())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StripeBillingMetricsResponse {
+    pub error: Option<StripeErrorMessage>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StripeErrorMessage {
+    pub message: String,
+}
+
+pub async fn send_stripe_billing(
+    usage_based_subscription: StripeUsageBasedSubscription,
+    clickhouse_client: &clickhouse::Client,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    let now_minus_1_hour = chrono::Utc::now() - chrono::Duration::hours(1);
+
+    let last_recorded = chrono::DateTime::<chrono::Utc>::from_utc(
+        usage_based_subscription.last_recorded_meter,
+        chrono::Utc,
+    );
+
+    let date_range = Some(DateRange {
+        gt: Some(last_recorded.format("%Y-%m-%d %H:%M:%S").to_string()),
+        lt: Some(now_minus_1_hour.format("%Y-%m-%d %H:%M:%S").to_string()),
+        ..Default::default()
+    });
+
+    let usage = get_extended_org_usage_by_id_query(
+        usage_based_subscription.organization_id,
+        date_range,
+        clickhouse_client,
+        pool.clone(),
+        &mut None,
+    )
+    .await?;
+
+    let stripe_customer_id =
+        get_stripe_customer_id_from_subscription(usage_based_subscription.stripe_subscription_id)
+            .await?;
+
+    let events: Vec<(&str, String)> = vec![
+        ("search_tokens", usage.search_tokens.to_string()),
+        ("message_tokens", usage.message_tokens.to_string()),
+        ("bytes_ingested", usage.bytes_ingested.to_string()),
+        ("tokens_ingested", usage.tokens_ingested.to_string()),
+        ("pages_crawled", usage.website_pages_scraped.to_string()),
+        ("ocr_pages", usage.ocr_pages_ingested.to_string()),
+        ("analytics_events", usage.events_ingested.to_string()),
+    ];
+
+    // Send to stripe meters
+    let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
+    let reqwest_client = reqwest::Client::new();
+
+    log::info!("Sending events for customer {:?}", stripe_customer_id);
+    for (event_name, event_value) in events {
+        log::info!("Sending event: {} -> {}", event_name, event_value);
+
+        let identifier = hash_function(&format!(
+            "{:?}||{:?}||{:?}||{:?}",
+            event_name,
+            now_minus_1_hour.to_rfc3339(),
+            stripe_customer_id,
+            usage_based_subscription.organization_id
+        ));
+
+        let response = reqwest_client
+            .post("https://api.stripe.com/v1/billing/meter_events")
+            .basic_auth(stripe_secret, Option::<&str>::None)
+            .form(&[
+                ("event_name", event_name),
+                ("timestamp", &now_minus_1_hour.timestamp().to_string()),
+                ("identifier", &identifier),
+                ("payload[stripe_customer_id]", &stripe_customer_id),
+                ("payload[value]", &event_value),
+            ])
+            .send()
+            .await
+            .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+        let stripe_billing_response = response
+            .json::<StripeBillingMetricsResponse>()
+            .await
+            .unwrap();
+
+        if let Some(error) = stripe_billing_response.error {
+            log::error!("Failed to send stripe billing: {}", error.message);
+        }
+    }
+
+    update_stripe_usage_based_subscription(
+        usage_based_subscription.id,
+        now_minus_1_hour.naive_utc(),
+        pool.clone(),
+    )
+    .await
+    .map_err(|e| {
+        log::error!("Failed to update usage based stripe subscription: {}", e);
+        ServiceError::BadRequest("Failed to update usage based stripe subscription".to_string())
+    })?;
+
+    log::info!(
+        "Updated usage based stripe subscription {:?} last recorded meter to {:?}",
+        usage_based_subscription.id,
+        now_minus_1_hour.naive_utc()
+    );
+
+    Ok(())
+}
+
+pub async fn update_stripe_usage_based_subscription_plan_query(
+    subscription_id: uuid::Uuid,
+    plan_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    diesel::update(
+        stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+            .filter(stripe_usage_based_subscriptions_columns::id.eq(subscription_id)),
+    )
+    .set(stripe_usage_based_subscriptions_columns::usage_based_plan_id.eq(plan_id))
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to update usage based stripe subscription: {}", e);
+        ServiceError::BadRequest("Failed to update usage based stripe subscription".to_string())
+    })?;
+
+    Ok(())
+}
+
+pub async fn update_stripe_usage_based_subscription(
+    usage_based_subscription_id: uuid::Uuid,
+    last_recorded_meter: chrono::NaiveDateTime,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    diesel::update(
+        stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+            .filter(stripe_usage_based_subscriptions_columns::id.eq(usage_based_subscription_id)),
+    )
+    .set(stripe_usage_based_subscriptions_columns::last_recorded_meter.eq(last_recorded_meter))
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to update usage based stripe subscription: {}", e);
+        ServiceError::BadRequest("Failed to update usage based stripe subscription".to_string())
+    })?;
 
     Ok(())
 }

@@ -909,7 +909,7 @@ async fn send_chunks(
             .organization
             .plan
             .unwrap_or_default()
-            .chunk_count as usize
+            .chunk_count() as usize
     {
         return Err(ServiceError::InternalServerError(
             "Chunk count exceeds plan limit".to_string(),

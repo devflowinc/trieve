@@ -2376,8 +2376,8 @@ export type OrganizationUsageCount = {
 
 export type OrganizationWithSubAndPlan = {
     organization: Organization;
-    plan?: ((StripePlan) | null);
-    subscription?: ((StripeSubscription) | null);
+    plan?: ((TrievePlan) | null);
+    subscription?: ((TrieveSubscription) | null);
 };
 
 export type PartnerConfiguration = {
@@ -3633,6 +3633,29 @@ export type StripeSubscription = {
     updated_at: string;
 };
 
+export type StripeUsageBasedPlan = {
+    analytics_events_price_id: string;
+    bytes_ingested_price_id: string;
+    created_at: string;
+    id: string;
+    ingest_tokens_price_id: string;
+    message_tokens_price_id: string;
+    name: string;
+    ocr_pages_price_id: string;
+    pages_crawls_price_id: string;
+    search_tokens_price_id: string;
+    visible: boolean;
+};
+
+export type StripeUsageBasedSubscription = {
+    created_at: string;
+    id: string;
+    last_recorded_meter: string;
+    organization_id: string;
+    stripe_subscription_id: string;
+    usage_based_plan_id: string;
+};
+
 export type SuggestType = 'question' | 'keyword' | 'semantic';
 
 export type SuggestedQueriesReqPayload = {
@@ -3795,6 +3818,20 @@ export type TotalUniqueUsersResponse = {
     points: Array<IntegerTimePoint>;
     total_unique_users: number;
 };
+
+export type TrievePlan = (StripePlan & {
+    type: 'flat';
+}) | (StripeUsageBasedPlan & {
+    type: 'usage_based';
+});
+
+export type type8 = 'flat';
+
+export type TrieveSubscription = (StripeSubscription & {
+    type: 'flat';
+}) | (StripeUsageBasedSubscription & {
+    type: 'usage_based';
+});
 
 /**
  * Typo Options lets you specify different methods to correct typos in the query. If not specified, typos will not be corrected.
@@ -5485,14 +5522,14 @@ export type PublicPageData = {
 
 export type PublicPageResponse = (unknown);
 
-export type CreateSetupCheckoutSessionData = {
+export type UpdatePaymentMethodData = {
     /**
      * The id of the organization to create setup checkout session for.
      */
     organizationId: string;
 };
 
-export type CreateSetupCheckoutSessionResponse = (CreateSetupCheckoutSessionResPayload);
+export type UpdatePaymentMethodResponse = (CreateSetupCheckoutSessionResPayload);
 
 export type GetAllInvoicesData = {
     /**
@@ -5545,6 +5582,8 @@ export type UpdateSubscriptionPlanData = {
 };
 
 export type UpdateSubscriptionPlanResponse = (unknown);
+
+export type GetAllUsagePlansResponse = (Array<StripeUsageBasedPlan>);
 
 export type CreateTopicData = {
     /**
@@ -7155,7 +7194,7 @@ export type $OpenApiTs = {
     };
     '/api/stripe/checkout/setup/{organization_id}': {
         post: {
-            req: CreateSetupCheckoutSessionData;
+            req: UpdatePaymentMethodData;
             res: {
                 /**
                  * Checkout session (setup) response
@@ -7237,6 +7276,20 @@ export type $OpenApiTs = {
                 200: unknown;
                 /**
                  * Service error relating to updating the subscription to the new plan
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/stripe/usage_plans': {
+        get: {
+            res: {
+                /**
+                 * List of all plans
+                 */
+                200: Array<StripeUsageBasedPlan>;
+                /**
+                 * Service error relating to getting all plans
                  */
                 400: ErrorResponseBody;
             };
