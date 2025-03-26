@@ -1,11 +1,9 @@
-use std::str::FromStr;
-
 use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
-        ComponentAnalytics, ComponentAnalyticsResponse, Dataset, DatasetAndOrgWithSubAndPlan,
-        DateRange, EventDataTypes, EventNameAndCountsResponse, EventTypes, GetEventsRequestBody,
+        ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
+        EventDataTypes, EventNameAndCountsResponse, EventTypes, GetEventsRequestBody,
         OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
         RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
         SearchAnalyticsResponse, TopDatasetsRequestTypes,
