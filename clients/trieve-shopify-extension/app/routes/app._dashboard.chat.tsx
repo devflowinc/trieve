@@ -45,18 +45,18 @@ export default function ChatAnalyticsPage() {
           <Grid>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
               <div className="flex flex-col gap-4">
+                <ChatRevenue filters={filters} granularity={granularity} direct={false} />
                 <TopicsUsage filters={filters} granularity={granularity} />
                 <MessagesPerUser filters={filters} granularity={granularity} />
                 <ChatConversionRate filters={filters} granularity={granularity} />
-                <ChatRevenue filters={filters} granularity={granularity} direct={false} />
               </div>
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
               <div className="flex flex-col gap-4">
+                <ChatRevenue filters={filters} granularity={granularity} direct={true} />
                 <ChatUserJourneyFunnel filters={filters} />
                 <TopicCTRRate filters={filters} granularity={granularity} />
                 <ChatAverageRating filters={filters} granularity={granularity} />
-                <ChatRevenue filters={filters} granularity={granularity} direct={true} />
               </div>
             </Grid.Cell>
           </Grid>
