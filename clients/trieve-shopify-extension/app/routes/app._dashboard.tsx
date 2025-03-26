@@ -13,10 +13,9 @@ import { authenticate } from "app/shopify.server";
 import { useDehydratedState } from "app/dehydrate";
 import { StrongTrieveKey } from "app/types";
 import { Dataset, OrganizationWithSubAndPlan } from "trieve-ts-sdk";
-import { useCallback, useMemo, useState, Suspense, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
-// Validates that user has a connected dataset, if not redirects to /app/setup and then right back
 export const loader = async (args: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(args.request);
   const key = await validateTrieveAuth(args.request, false);

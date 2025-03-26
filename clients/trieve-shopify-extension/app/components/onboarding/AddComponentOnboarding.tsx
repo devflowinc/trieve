@@ -1,5 +1,5 @@
 import { useMatches, useRouteLoaderData } from "@remix-run/react";
-import { Button, Link, Text } from "@shopify/polaris";
+import { Button, Text } from "@shopify/polaris";
 import { CheckIcon } from "@shopify/polaris-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useClientAdminApi } from "app/loaders/clientLoader";

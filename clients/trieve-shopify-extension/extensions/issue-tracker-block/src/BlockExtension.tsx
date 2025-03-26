@@ -1,65 +1,38 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AdminBlock,
-  Banner,
   InlineStack,
   ProgressIndicator,
   Text,
   reactExtension,
   useApi,
+  Icon,
+  Button,
+  Box,
+  Divider,
+  BlockStack,
 } from "@shopify/ui-extensions-react/admin";
+import { SuggestedQueriesResponse, TrieveSDK } from "trieve-ts-sdk";
 
-export async function updateIssues(id: any, newIssues: any) {
-  // This example uses metafields to store the data. For more information, refer to https://shopify.dev/docs/apps/custom-data/metafields.
-  return await makeGraphQLQuery(
-    `mutation SetMetafield($namespace: String!, $ownerId: ID!, $key: String!, $type: String!, $value: String!) {
-    metafieldDefinitionCreate(
-      definition: {namespace: $namespace, key: $key, name: "Tracked Issues", ownerType: PRODUCT, type: $type, access: {admin: MERCHANT_READ_WRITE}}
-    ) {
-      createdDefinition {
-        id
-      }
-    }
-    metafieldsSet(metafields: [{ownerId:$ownerId, namespace:$namespace, key:$key, type:$type, value:$value}]) {
-      userErrors {
-        field
-        message
-        code
-      }
-    }
-  }
-  `,
-    {
-      ownerId: id,
-      namespace: "$app:issues",
-      key: "issues",
-      type: "json",
-      value: JSON.stringify(newIssues),
-    },
-  );
-}
+export type TrieveKey = {
+  id?: string;
+  userId?: string;
+  organizationId?: string;
+  currentDatasetId: string | null;
+  key: string;
+};
 
-export async function getIssues(productId: any) {
-  // This example uses metafields to store the data. For more information, refer to https://shopify.dev/docs/apps/custom-data/metafields.
-  return await makeGraphQLQuery(
-    `query Product($id: ID!) {
-      product(id: $id) {
-        metafield(namespace: "$app:issues", key:"issues") {
-          value
-        }
-        variants(first: 2) {
-          edges {
-            node {
-              id
-            }
-          }
-        }
-      }
-    }
-  `,
-    { id: productId },
-  );
-}
+export const sdkFromKey = (key: TrieveKey): TrieveSDK => {
+  const trieve = new TrieveSDK({
+    baseUrl: "https://api.trieve.ai",
+    apiKey: key.key,
+    datasetId: key.currentDatasetId ? key.currentDatasetId : undefined,
+    organizationId: key.organizationId,
+    omitCredentials: true,
+  });
+
+  return trieve;
+};
 
 async function makeGraphQLQuery(
   query: string,
@@ -70,6 +43,7 @@ async function makeGraphQLQuery(
     type?: string;
     value?: string;
     id?: any;
+    appId?: string;
   },
 ) {
   const graphQLQuery = {
@@ -89,89 +63,251 @@ async function makeGraphQLQuery(
   return await res.json();
 }
 
+export interface TrievePDPQuestion {
+  id: string;
+  text: string;
+}
+
+export interface ProductDetails {
+  title: string;
+  description: string;
+  productType: string;
+}
+
+export async function updateTrievePDPQuestions(
+  productId: string,
+  newTrievePdpQuestions: TrievePDPQuestion[],
+) {
+  return await makeGraphQLQuery(
+    `mutation UpdateProductMetafield($id: ID!, $value: String!) {
+      productUpdate(input: {
+        id: $id
+        metafields: [
+          {
+            namespace: "$app:trievePDPQuestions"
+            key: "trievePDPQuestions"
+            value: $value
+            type: "json"
+          }
+        ]
+      }) {
+        product {
+          metafield(namespace: "$app:trievePDPQuestions", key: "trievePDPQuestions") {
+            value
+            type
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `,
+    {
+      id: productId,
+      value: JSON.stringify(newTrievePdpQuestions),
+    },
+  );
+}
+
+export async function getTrievePDPQuestions(productId: string) {
+  return await makeGraphQLQuery(
+    `query Product($id: ID!) {
+      product(id: $id) {
+        title
+        description
+        productType
+        metafield(namespace: "$app:trievePDPQuestions", key:"trievePDPQuestions") {
+          value
+        }
+        variants(first: 2) {
+          edges {
+            node {
+              id
+            }
+          }
+        }
+      }
+    }
+  `,
+    { id: productId },
+  );
+}
+
+export async function getAppId() {
+  return await makeGraphQLQuery(
+    `query {
+      currentAppInstallation {
+        id
+      }
+    }
+  `,
+    {},
+  );
+}
+
+export async function getTrieveApiKeyDatasetId(appId: string) {
+  return await makeGraphQLQuery(
+    `query GetAppMetafields($appId: ID!) {
+      appInstallation(id: $appId) {
+        id
+        metafields(first: 10, namespace: "trieve") {
+          edges {
+            node {
+              id
+              namespace
+              key
+              value
+              type
+            }
+          }
+        }
+      }
+    }`,
+    { appId },
+  );
+}
+
 // The target used here must match the target used in the extension's .toml file at ./shopify.extension.toml
 const TARGET = "admin.product-details.block.render";
 export default reactExtension(TARGET, () => <App />);
 
-const PAGE_SIZE = 3;
-
 function App() {
   const { data, i18n } = useApi(TARGET);
+  const [trieveSdk, setTrieveSdk] = useState<TrieveSDK | null>(null);
+  const [productDetails, setProductDetails] = useState<ProductDetails | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
-  const [initialValues, setInitialValues] = useState([]);
-  const [issues, setIssues] = useState<any>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [PDPQuestions, setPDPQuestions] = useState<TrievePDPQuestion[]>([]);
 
   const productId = data.selected[0].id;
-  const issuesCount = issues.length;
-  const totalPages = issuesCount / PAGE_SIZE;
+
+  const generateSuggestedQuestions = useCallback(
+    ({ curProductDetails }: { curProductDetails: ProductDetails | null }) => {
+      if (!trieveSdk || !curProductDetails) {
+        console.error("Trieve SDK or product details not available", {
+          curProductDetails,
+          trieveSdk,
+        });
+        return;
+      }
+
+      // write a context that describes the product and the type of questions you want to generate
+      let context = `Suggest short questions limited to 3-6 words which someone might have about the following product: \n\n`;
+      if (curProductDetails.title) {
+        context += `The product is titled "${curProductDetails.title}"`;
+      }
+      if (curProductDetails.productType) {
+        context += ` and is of type "${curProductDetails.productType}"`;
+      }
+      if (curProductDetails.description) {
+        context += ` and has the description "${curProductDetails.description}"`;
+      }
+      context += `.`;
+
+      (async () => {
+        let retries = 0;
+        let suggestedQuestionsResp: SuggestedQueriesResponse = {
+          queries: [],
+        };
+        while (retries < 3) {
+          try {
+            suggestedQuestionsResp = await trieveSdk.suggestedQueries({
+              suggestion_type: "question",
+              search_type: "hybrid",
+              suggestions_to_create: 3,
+              is_followup: true,
+              context,
+            });
+            break;
+          } catch (error) {
+            console.error("Error fetching suggested questions:", error);
+            retries++;
+          }
+        }
+        setPDPQuestions((prevPDPQuestions) => {
+          if (prevPDPQuestions.length > 0) {
+            return [
+              {
+                id: prevPDPQuestions.length.toString(),
+                text: suggestedQuestionsResp.queries[0],
+              },
+              ...prevPDPQuestions,
+            ];
+          } else {
+            return suggestedQuestionsResp.queries
+              .map((query: string, i) => ({
+                id: i.toString(),
+                text: query,
+              }))
+              .concat(prevPDPQuestions);
+          }
+        });
+        setLoading(false);
+      })();
+    },
+    [trieveSdk],
+  );
 
   useEffect(() => {
-    (async function getProductInfo() {
-      // Load the product's metafield of type issues
-      const productData = await getIssues(productId);
+    getAppId().then((appId) => {
+      getTrieveApiKeyDatasetId(appId.data.currentAppInstallation.id).then(
+        (trieveMetafields) => {
+          const trieveKey: TrieveKey = {
+            key: trieveMetafields.data.appInstallation.metafields.edges.find(
+              (edge: any) => edge.node.key === "api_key",
+            ).node.value,
+            currentDatasetId:
+              trieveMetafields.data.appInstallation.metafields.edges.find(
+                (edge: any) => edge.node.key === "dataset_id",
+              ).node.value,
+          };
 
-      setLoading(false);
-      if (productData?.data?.product?.metafield?.value) {
-        const parsedIssues = JSON.parse(
-          productData.data.product.metafield.value,
-        );
-        setInitialValues(
-          parsedIssues.map(({ completed }: any) => Boolean(completed)),
-        );
-        setIssues(parsedIssues);
-      }
-    })();
-  }, [productId]);
+          setTrieveSdk(sdkFromKey(trieveKey));
+        },
+      );
+    });
+  }, []);
 
-  const paginatedIssues = useMemo(() => {
-    if (issuesCount <= PAGE_SIZE) {
-      // It's not necessary to paginate if there are fewer issues than the page size
-      return issues;
+  useEffect(() => {
+    if (!trieveSdk) {
+      return;
     }
 
-    // Slice the array after the last item of the previous page
-    return [...issues].slice(
-      (currentPage - 1) * PAGE_SIZE,
-      currentPage * PAGE_SIZE,
-    );
-  }, [issuesCount, issues, currentPage]);
-
-  const handleChange = async (id: any, value: string) => {
-    // Update the local state of the extension to reflect changes
-    setIssues((currentIssues: any) => {
-      // Create a copy of the array so that you don't mistakenly mutate the state
-      const newIssues: any[] = [...currentIssues];
-      // Find the index of the issue that you're interested in
-      const editingIssueIndex = newIssues.findIndex(
-        (listIssue) => listIssue.id == id,
+    getTrievePDPQuestions(productId).then((productData) => {
+      let pdpQuestions = JSON.parse(
+        productData.data.product.metafield.value ?? "[]",
       );
-      // Overwrite that item with the new value
-      newIssues[editingIssueIndex] = {
-        // Spread the previous item to retain the values that you're not changing
-        ...newIssues[editingIssueIndex],
-        // Update the completed value
-        completed: value === "completed" ? true : false,
+      if (!pdpQuestions) {
+        pdpQuestions = [];
+      }
+
+      const curProductDetails = {
+        title: productData.data.product.title,
+        description: productData.data.product.description,
+        productType: productData.data.product.productType,
       };
-      return newIssues;
+      setProductDetails(curProductDetails);
+      if (pdpQuestions.length) {
+        setPDPQuestions(pdpQuestions);
+        setLoading(false);
+      } else {
+        generateSuggestedQuestions({ curProductDetails });
+      }
     });
-  };
+  }, [productId, trieveSdk]);
 
-  const handleDelete = async (id: any) => {
-    // Create a new array of issues, leaving out the one that you're deleting
-    const newIssues = issues.filter((issue: any) => issue.id !== id);
-    // Save to the local state
-    setIssues(newIssues);
-    // Commit changes to the database
-    await updateIssues(productId, newIssues);
-  };
+  useEffect(() => {
+    if (!productDetails || loading) {
+      return;
+    }
 
-  const onSubmit = async () => {
-    // Commit changes to the database
-    await updateIssues(productId, issues);
-  };
-
-  const onReset = () => {};
+    updateTrievePDPQuestions(productId, PDPQuestions).catch((error) => {
+      console.error("Error updating product info:", error);
+    });
+  }, [PDPQuestions, productDetails, loading]);
 
   return loading ? (
     <InlineStack blockAlignment="center" inlineAlignment="center">
@@ -179,9 +315,78 @@ function App() {
     </InlineStack>
   ) : (
     <AdminBlock title={i18n.translate("name")}>
-      <Banner tone="info">
-        <Text>{i18n.translate("description")}</Text>
-      </Banner>
+      <BlockStack gap="base">
+        <InlineStack blockAlignment="center" inlineAlignment="space-between">
+          <Box inlineSize="40%">
+            <Text fontWeight="bold">{i18n.translate("title")}</Text>
+          </Box>
+          <InlineStack
+            blockAlignment="center"
+            inlineAlignment="end"
+            gap="base base"
+          >
+            <Button
+              onClick={() =>
+                generateSuggestedQuestions({
+                  curProductDetails: productDetails,
+                })
+              }
+            >
+              <InlineStack blockAlignment="center" gap="small small">
+                <Icon name="WandMinor" />
+                <Text>
+                  {PDPQuestions.length
+                    ? "Generate Example Question"
+                    : "Generate Example Questions"}
+                </Text>
+              </InlineStack>
+            </Button>
+            <Button>
+              <InlineStack blockAlignment="center" gap="small small">
+                <Icon name="PlusMinor" />
+                <Text>Add Question</Text>
+              </InlineStack>
+            </Button>
+          </InlineStack>
+        </InlineStack>
+        <Box inlineSize="100%">
+          <>
+            {PDPQuestions.map(({ id, text }, index) => {
+              return (
+                <>
+                  {index > 0 && <Divider />}
+                  <Box key={id} padding="base small">
+                    <InlineStack
+                      blockAlignment="center"
+                      inlineAlignment="space-between"
+                      inlineSize="100%"
+                      gap="large"
+                    >
+                      <Box inlineSize="100%">
+                        <Text textOverflow="ellipsis">{text}</Text>
+                      </Box>
+                      <Box inlineSize="25%">
+                        <InlineStack inlineSize="100%" inlineAlignment="end">
+                          <Button
+                            onPress={() => {
+                              setPDPQuestions((prevPDPQuestions) =>
+                                prevPDPQuestions.filter((_, i) => i !== index),
+                              );
+                            }}
+                            variant="tertiary"
+                          >
+                            <Icon name="DeleteMinor" />
+                          </Button>
+                        </InlineStack>
+                      </Box>
+                    </InlineStack>
+                  </Box>
+                </>
+              );
+            })}
+          </>
+        </Box>
+      </BlockStack>
     </AdminBlock>
   );
 }

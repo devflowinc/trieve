@@ -45,7 +45,7 @@ export const setMetafield = async (
 ): Promise<Result<unknown>> => {
   const response = await caller<AppInstallData>(`
       #graphql
-      query {
+      query GetAppId {
         currentAppInstallation {
           id
         }
