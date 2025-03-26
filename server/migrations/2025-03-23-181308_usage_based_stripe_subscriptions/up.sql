@@ -32,5 +32,7 @@ CREATE TABLE stripe_usage_based_subscriptions (
     last_cycle_dataset_count BIGINT NOT NULL DEFAULT 0,
     last_cycle_users_count INTEGER NOT NULL DEFAULT 0,
     last_cycle_chunks_stored_mb BIGINT NOT NULL DEFAULT 0,
-    last_cycle_files_storage_mb BIGINT NOT NULL DEFAULT 0
+    last_cycle_files_storage_mb BIGINT NOT NULL DEFAULT 0,
+
+    current_period_end TIMESTAMP DEFAULT NULL
 );

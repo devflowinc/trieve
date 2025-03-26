@@ -3993,8 +3993,10 @@ impl TrievePlan {
     ) -> Option<Self> {
         if let Some(usage_plan) = stripe_usage_based_plan {
             Some(TrievePlan::UsageBased(usage_plan))
+        } else if let Some(flat_plan) = stripe_plan {
+            Some(TrievePlan::Flat(flat_plan))
         } else {
-            stripe_plan.map(TrievePlan::Flat)
+            None
         }
     }
 }
@@ -4072,6 +4074,29 @@ impl TrieveSubscription {
             Some(TrieveSubscription::Flat(subscription))
         } else {
             None
+        }
+    }
+
+    pub fn id(&self) -> uuid::Uuid {
+        match self {
+            TrieveSubscription::Flat(subscription) => subscription.id,
+            TrieveSubscription::UsageBased(subscription) => subscription.id,
+        }
+    }
+
+    pub fn organization_id(&self) -> uuid::Uuid {
+        match self {
+            TrieveSubscription::Flat(subscription) => subscription.organization_id,
+            TrieveSubscription::UsageBased(subscription) => subscription.organization_id,
+        }
+    }
+
+    pub fn stripe_subscription_id(&self) -> String {
+        match self {
+            TrieveSubscription::Flat(subscription) => subscription.stripe_id.clone(),
+            TrieveSubscription::UsageBased(subscription) => {
+                subscription.stripe_subscription_id.clone()
+            }
         }
     }
 }
@@ -9638,4 +9663,5 @@ pub struct StripeUsageBasedSubscription {
     pub last_cycle_users_count: i32,
     pub last_cycle_chunks_stored_mb: i64,
     pub last_cycle_files_storage_mb: i64,
+    pub current_period_end: Option<chrono::NaiveDateTime>,
 }
