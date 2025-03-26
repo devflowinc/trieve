@@ -142,11 +142,22 @@ const Modal = () => {
               );
 
               checkout.addEventListener("click", () => {
+                let itemIds = Array.from(itemsElem?.outerHTML.matchAll(/\b\d{14}\b/g) ?? [])
+                let prices = Array.from(itemsElem?.outerHTML.matchAll(/\$\d+(?:\.\d{2})?/g) ?? [])
+                let items = itemIds.map((itemId, index) => {
+                  return {
+                    tracking_id: itemId[0],
+                    revenue: parseFloat(prices[index][0].replace(/\$/, ''))
+                  }
+                }).filter((item, index, self) =>
+                  index === self.findIndex((t) => t.tracking_id === item.tracking_id)
+                );
+
                 trieveSDK.sendAnalyticsEvent(
                   {
                     event_name: `site-checkout`,
                     event_type: "purchase",
-                    items: [],
+                    items,
                     is_conversion: true,
                     user_id: fingerprint,
                     location: window.location.href,
@@ -411,7 +422,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);

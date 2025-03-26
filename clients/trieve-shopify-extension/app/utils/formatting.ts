@@ -284,7 +284,7 @@ export type KnownEventNames =
   | "searched"
   | "recommendation_created"
   | "conversation_started"
-  | "component_click";
+  | "component_open";
 
 export const formatEventName = (
   event: KnownEventNames | (string & {}),
@@ -297,10 +297,10 @@ export const formatEventName = (
     return "Add to Cart";
   } else if (event === "site-checkout") {
     return "Checkout";
-  } else if (event === "component_click") {
-    return "Click Modal";
+  } else if (event === "component_open") {
+    return "Open Modal";
   } else if (event === "View") {
-    return "View Chat Response";
+    return "View Product";
   }
 
   return toTitleCase(event);

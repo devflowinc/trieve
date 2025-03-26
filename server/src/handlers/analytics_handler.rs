@@ -582,11 +582,13 @@ pub async fn get_rag_analytics(
         }
         RAGAnalytics::ChatRevenue {
             filter,
+            direct,
             granularity,
         } => {
             let chat_revenue = get_chat_revenue_query(
                 dataset_org_plan_sub.dataset.id,
                 filter,
+                direct,
                 granularity,
                 clickhouse_client.get_ref(),
             )
