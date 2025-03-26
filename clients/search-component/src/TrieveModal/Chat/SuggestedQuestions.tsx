@@ -4,7 +4,7 @@ import { useChatState } from "../../utils/hooks/chat-context";
 import { useModalState } from "../../utils/hooks/modal-context";
 import { cn } from "../../utils/styles";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { SparklesIcon } from "../icons";
+import { ArrowRotateRightIcon, SparklesIcon } from "../icons";
 import { AIInitialMessage } from "./AIInitalMessage";
 
 export const SuggestedQuestions = ({
@@ -44,7 +44,7 @@ export const SuggestedQuestions = ({
             className="suggested-question tv-cursor-pointer tv-border tv-rounded-md tv-p-1 tv-text-xs disabled:tv-cursor-not-allowed tv-text-center"
             title="Refresh suggested questions"
           >
-            <i className="fa-solid fa-arrow-rotate-right"></i>
+            <ArrowRotateRightIcon height={15} width={15} />
           </button>{" "}
           {!suggestedQuestions.length && (
             <span className="suggested-question tv-text-nowrap empty-state-loading">
