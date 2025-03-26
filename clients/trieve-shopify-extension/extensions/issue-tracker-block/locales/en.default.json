@@ -1,5 +1,6 @@
 {
-  "name": "Trieve PDP Questions",
+  "name": "Trieve",
+  "title": "PDP Starter Questions",
   "description": "Setup the default AI questions for the Trieve PDP widget",
-  "welcome": "Welcome to the {{TARGET}} extension!"
+  "addQuestionButtonText": "Add Question"
 }

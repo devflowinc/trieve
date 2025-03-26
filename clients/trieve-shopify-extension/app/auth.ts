@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, json } from "@remix-run/node";
+import { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
 import { StrongTrieveKey, TrieveKey } from "./types";
 import { TrieveSDK } from "trieve-ts-sdk";

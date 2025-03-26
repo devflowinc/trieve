@@ -1,7 +1,7 @@
 export type TrieveKey = {
-  id: string;
-  userId: string;
-  organizationId: string;
+  id?: string;
+  userId?: string;
+  organizationId?: string;
   currentDatasetId: string | null;
   key: string;
 };
