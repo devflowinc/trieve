@@ -23,7 +23,9 @@ export const UsagePlansTable = (props: PlansTableProps) => {
   const [availableUsagePlans, setAvailableUsagePlans] = createSignal<
     StripeUsageBasedPlan[]
   >([]);
-  const [currentPlan, setCurrentPlan] = createSignal<StripePlan | StripeUsageBasedPlan | null>(null);
+  const [currentPlan, setCurrentPlan] = createSignal<
+    StripePlan | StripeUsageBasedPlan | null
+  >(null);
   const [currentSubscription, setCurrentSubscription] =
     createSignal<StripeSubscription | null>(null);
 
@@ -53,6 +55,25 @@ export const UsagePlansTable = (props: PlansTableProps) => {
       availablePlansAbortController.abort();
     });
   });
+
+  const updatePlan = async (plan: StripeUsageBasedPlan) => {
+    const resp = await fetch(
+      `${apiHost}/stripe/subscription_plan/${
+        props.currentOrgSubPlan?.subscription?.id ?? ""
+      }/${plan.id}`,
+      {
+        credentials: "include",
+        method: "PATCH",
+        headers: {
+          "TR-Organization": props.currentOrgSubPlan?.organization.id ?? "",
+        },
+      },
+    );
+
+    if (resp.ok) {
+      setCurrentPlan(plan);
+    }
+  };
 
   const createStripeSetupCheckoutSession = () => {
     if (!props.currentOrgSubPlan?.subscription) {
@@ -141,14 +162,31 @@ export const UsagePlansTable = (props: PlansTableProps) => {
                   let actionButton = <ActiveTag text="Current Tier" />;
 
                   if (plan.id !== curPlan?.id) {
-                    actionButton = (
-                      <a
-                        href={`${apiHost}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}?usage_based=true`}
-                        class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
-                      >
-                        Subscribe
-                      </a>
-                    );
+                    if (
+                      curPlan?.id !== "00000000-0000-0000-0000-000000000000"
+                    ) {
+                      console.log("We have id", plan.id);
+                      actionButton = (
+                        <button
+                          onClick={() => void updatePlan(plan)}
+                          classList={{
+                            "w-fit px-4 py-2 bg-magenta-500 text-white font-semibold rounded-lg shadow-sm shadow-magenta-100/40":
+                              true,
+                          }}
+                        >
+                          Upgrade
+                        </button>
+                      );
+                    } else {
+                      actionButton = (
+                        <a
+                          href={`${apiHost}/stripe/payment_link/${plan.id}/${props.currentOrgSubPlan?.organization.id}?usage_based=true`}
+                          class="w-fit rounded-lg bg-magenta-500 px-4 py-2 font-semibold text-white shadow-sm shadow-magenta-100/40"
+                        >
+                          Subscribe
+                        </a>
+                      );
+                    }
                   }
 
                   if (!plan.visible && plan.id != curPlan?.id) {

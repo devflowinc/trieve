@@ -290,6 +290,7 @@ diesel::table! {
         last_cycle_users_count -> Int4,
         last_cycle_chunks_stored_mb -> Int8,
         last_cycle_files_storage_mb -> Int8,
+        current_period_end -> Nullable<Timestamp>,
     }
 }
 
