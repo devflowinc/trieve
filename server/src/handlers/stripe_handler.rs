@@ -4,7 +4,9 @@ use crate::{
     get_env,
     middleware::auth_middleware::verify_owner,
     operators::{
-        organization_operator::{get_org_from_id_query, get_org_id_from_subscription_id_query},
+        organization_operator::{
+            get_org_from_id_query, get_org_id_from_subscription_id_query, get_org_usage_by_id_query,
+        },
         stripe_operator::{
             cancel_stripe_subscription, create_invoice_query, create_stripe_payment_link,
             create_stripe_plan_query, create_stripe_setup_checkout_session,
@@ -14,7 +16,8 @@ use crate::{
             get_option_subscription_by_organization_id_query, get_plan_by_id_query,
             get_stripe_client, get_subscription_by_id_query, get_usage_based_plan_query,
             set_stripe_subscription_current_period_end, set_subscription_payment_method,
-            update_stripe_subscription, update_stripe_subscription_plan_query,
+            update_static_stripe_meters, update_stripe_subscription,
+            update_stripe_subscription_plan_query,
         },
     },
 };
@@ -145,15 +148,19 @@ pub async fn webhook(
 
                             if plan_type == "usage-based" {
                                 log::info!("Creating usage based stripe subscription");
+                                // record current usage
+                                let usage =
+                                    get_org_usage_by_id_query(organization_id, pool.clone())
+                                        .await?;
                                 // This is a usage based query
                                 create_usage_stripe_subscription_query(
                                     subscription_stripe_id,
+                                    usage,
                                     plan_id,
                                     organization_id,
                                     pool.clone(),
                                 )
                                 .await?;
-                                create_snapshot_and_diff();
                             } else if plan_type == "flat" {
                                 let optional_existing_subscription =
                                     get_option_subscription_by_organization_id_query(
@@ -203,9 +210,10 @@ pub async fn webhook(
             }
             EventType::InvoiceUpcoming => {
                 if let EventObject::Invoice(invoice) = event.data.object {
-                    let invoice_id = invoice.id();
-                    // TODO 
-                    create_snapshot_and_diff();
+                    let subscription_stripe_id = invoice.subscription.unwrap().id().to_string();
+
+                    update_static_stripe_meters(subscription_stripe_id, pool)
+                        .await?;
                 }
             }
             EventType::CustomerSubscriptionDeleted => {
