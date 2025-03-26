@@ -66,7 +66,8 @@ export default function SearchAnalyticsPage() {
                 <SearchesPerUser
                   filters={filters}
                   granularity={granularity}
-                />                <HeadQueriesTable filters={filters} />
+                />{" "}
+                <HeadQueriesTable filters={filters} />
               </div>
             </Grid.Cell>
           </Grid>

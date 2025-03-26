@@ -4,6 +4,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { AddComponentOnboarding } from "app/components/onboarding/AddComponentOnboarding";
+import { DoChatOnboarding } from "app/components/onboarding/DoChatOnboarding";
 import { WelcomeOnboarding } from "app/components/onboarding/WelcomeOnboarding";
 import { setMetafield } from "app/loaders";
 import { useClientAdminApi } from "app/loaders/clientLoader";
@@ -22,12 +23,12 @@ export type OnboardingBody = FC<{
 type OnboardingStep = {
   id: string;
   title: string;
-  description: string;
-  icon: ReactNode;
+  description?: string;
   defaultComplete?: boolean;
   body: OnboardingBody;
   nextButtonText?: string;
   hideNextButton?: boolean;
+  hidden?: boolean;
 };
 
 export const onboardingSteps: OnboardingStep[] = [
@@ -36,7 +37,6 @@ export const onboardingSteps: OnboardingStep[] = [
     title: "Welcome to Trieve!",
     defaultComplete: false,
     description: "Let's get you set up",
-    icon: <>👋</>,
     body: WelcomeOnboarding,
     nextButtonText: "Setup Component",
   },
@@ -45,8 +45,22 @@ export const onboardingSteps: OnboardingStep[] = [
     id: "after-welcome",
     title: "Add the Trieve Search Component to your site",
     description: "Second task",
-    icon: <>👋</>,
     body: AddComponentOnboarding,
+  },
+  {
+    id: "after-add-component",
+    title: "Chat with your products",
+    description: "Complete a chat conversation using a widget",
+    body: DoChatOnboarding,
+    nextButtonText: "Finish",
+  },
+  {
+    id: "after-chat",
+    title: "Finished",
+    body: () => {
+      return <div></div>;
+    },
+    hidden: true,
   },
 ];
 
