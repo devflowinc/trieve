@@ -603,7 +603,6 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 const input = document.createElement("input");
                 input.type = "file";
                 input.accept = "image/*, .heic, .HEIC";
-                input.capture = "environment";
                 input.multiple = false;
                 input.onchange = async (e) => {
                   stopGeneratingMessage();
