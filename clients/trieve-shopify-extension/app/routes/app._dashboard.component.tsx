@@ -23,7 +23,6 @@ export default function ComponentAnalyticsPage() {
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
           <div className="flex flex-col gap-4">
             <TotalUniqueVisitors filters={filters} granularity={granularity} />
-            <AverageInteractionTime filters={filters} granularity={granularity} />
           </div>
         </Grid.Cell>
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>

@@ -3131,6 +3131,7 @@ export type SearchAnalytics = {
     filter?: ((SearchAnalyticsFilter) | null);
     type: 'event_funnel';
 } | {
+    direct?: (boolean) | null;
     filter?: ((SearchAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'search_revenue';

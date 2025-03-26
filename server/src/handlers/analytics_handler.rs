@@ -418,19 +418,10 @@ pub async fn get_search_analytics(
 )]
 pub async fn get_rag_analytics(
     data: web::Json<RAGAnalytics>,
-    // _user: AdminOnly,
+    _user: AdminOnly,
     clickhouse_client: web::Data<clickhouse::Client>,
-    // dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    let dataset_org_plan_sub = DatasetAndOrgWithSubAndPlan {
-        dataset: Dataset {
-            id: uuid::Uuid::from_str("b02c0374-d53f-4dbb-958e-d852b2dd468f").unwrap(),
-            tracking_id: Some("test".to_string()),
-            ..Default::default()
-        },
-        organization: OrganizationWithSubAndPlan::default(),
-    };
-
     let response = match data.into_inner() {
         RAGAnalytics::RAGUsage { filter } => {
             let rag_graph = get_rag_usage_query(
