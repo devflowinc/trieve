@@ -4,6 +4,10 @@ import { useOnboarding } from "app/utils/onboarding";
 export const Onboarding = () => {
   const onboarding = useOnboarding();
 
+  if (onboarding.currentStep.hidden) {
+    return null;
+  }
+
   return (
     <Banner
       title={onboarding.currentStep.title}
