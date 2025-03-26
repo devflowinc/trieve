@@ -1,6 +1,9 @@
 use crate::{
     data::models::{
-        ApiKeyRespBody, Dataset, DatasetConfiguration, DateRange, Organization, OrganizationApiKey, OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, RedisPool, SlimUser, StripePlan, StripeSubscription, StripeUsageBasedPlan, StripeUsageBasedSubscription, TrievePlan, TrieveSubscription, User, UserApiKey, UserOrganization
+        ApiKeyRespBody, Dataset, DatasetConfiguration, DateRange, Organization, OrganizationApiKey,
+        OrganizationUsageCount, OrganizationWithSubAndPlan, Pool, RedisPool, SlimUser, StripePlan,
+        StripeSubscription, StripeUsageBasedPlan, StripeUsageBasedSubscription, TrievePlan,
+        TrieveSubscription, User, UserApiKey, UserOrganization,
     },
     errors::ServiceError,
     handlers::organization_handler::{CreateApiKeyReqPayload, ExtendedOrganizationUsageCount},
@@ -246,28 +249,45 @@ pub async fn get_org_id_from_subscription_id_query(
 ) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::organizations::dsl as organizations_columns;
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
 
     let mut conn = pool
         .get()
         .await
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
-    let org = organizations_columns::organizations
+    let org_from_flat_subscription: Option<uuid::Uuid> = organizations_columns::organizations
         .inner_join(
             stripe_subscriptions_columns::stripe_subscriptions
                 .on(stripe_subscriptions_columns::organization_id.eq(organizations_columns::id)),
         )
-        .filter(stripe_subscriptions_columns::stripe_id.eq(subscription_id))
+        .filter(stripe_subscriptions_columns::stripe_id.eq(subscription_id.clone()))
         .select(organizations_columns::id)
         .first::<uuid::Uuid>(&mut conn)
         .await
-        .map_err(|_| {
-            ServiceError::NotFound(
-                "Could not find an organization with this subscription id".to_string(),
-            )
-        })?;
+        .optional()?;
 
-    Ok(org)
+    let org_from_usage_based_subscription: Option<uuid::Uuid> =
+        organizations_columns::organizations
+            .inner_join(
+                stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+                    .on(stripe_usage_based_subscriptions_columns::organization_id
+                        .eq(organizations_columns::id)),
+            )
+            .filter(
+                stripe_usage_based_subscriptions_columns::stripe_subscription_id
+                    .eq(subscription_id),
+            )
+            .select(organizations_columns::id)
+            .first::<uuid::Uuid>(&mut conn)
+            .await
+            .optional()?;
+
+    let org_id = org_from_flat_subscription
+        .or(org_from_usage_based_subscription)
+        .ok_or(ServiceError::NotFound("Organization not found".to_string()))?;
+
+    Ok(org_id)
 }
 
 pub async fn get_org_from_id_query(

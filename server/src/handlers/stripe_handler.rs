@@ -1,5 +1,5 @@
 use crate::{
-    data::models::Pool,
+    data::models::{Pool, TrievePlan, TrieveSubscription},
     errors::ServiceError,
     get_env,
     middleware::auth_middleware::verify_owner,
@@ -13,11 +13,14 @@ use crate::{
             create_stripe_subscription_query, create_usage_based_stripe_payment_link,
             create_usage_stripe_subscription_query, delete_subscription_by_id_query,
             get_all_plans_query, get_all_usage_plans_query, get_invoices_for_org_query,
-            get_option_subscription_by_organization_id_query, get_plan_by_id_query,
-            get_stripe_client, get_subscription_by_id_query, get_usage_based_plan_query,
-            set_stripe_subscription_current_period_end, set_subscription_payment_method,
-            update_static_stripe_meters, update_stripe_subscription,
+            get_option_subscription_by_organization_id_query,
+            get_option_usage_based_subscription_by_organization_id_query, get_plan_by_id_query,
+            get_stripe_client, get_trieve_plan_by_id_query, get_trieve_subscription_by_id_query,
+            get_usage_based_plan_query, set_stripe_subscription_current_period_end,
+            set_subscription_payment_method, update_static_stripe_meters,
             update_stripe_subscription_plan_query,
+            update_stripe_usage_based_subscription_plan_query, update_to_flat_stripe_subscription,
+            update_to_usage_based_stripe_subscription,
         },
     },
 };
@@ -212,8 +215,7 @@ pub async fn webhook(
                 if let EventObject::Invoice(invoice) = event.data.object {
                     let subscription_stripe_id = invoice.subscription.unwrap().id().to_string();
 
-                    update_static_stripe_meters(subscription_stripe_id, pool)
-                        .await?;
+                    update_static_stripe_meters(subscription_stripe_id, pool).await?;
                 }
             }
             EventType::CustomerSubscriptionDeleted => {
@@ -355,13 +357,13 @@ pub async fn cancel_subscription(
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_sub_pool = pool.clone();
     let subscription =
-        get_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool).await?;
+        get_trieve_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool).await?;
 
-    if !verify_owner(&user, &subscription.organization_id) {
+    if !verify_owner(&user, &subscription.organization_id()) {
         return Err(ServiceError::Forbidden.into());
     };
 
-    cancel_stripe_subscription(subscription.stripe_id).await?;
+    cancel_stripe_subscription(subscription.stripe_subscription_id()).await?;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -398,25 +400,72 @@ pub async fn update_subscription_plan(
     user: OwnerOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let get_subscription_pool = pool.clone();
-    let get_plan_pool = pool.clone();
-    let update_subscription_plan_pool = pool.clone();
+    let current_subscription_id = path_data.subscription_id;
+    let new_plan_id = path_data.plan_id;
 
-    let subscription_id = path_data.subscription_id;
-    let subscription = get_subscription_by_id_query(subscription_id, get_subscription_pool).await?;
+    let trieve_subscription =
+        get_trieve_subscription_by_id_query(current_subscription_id, pool.clone()).await?;
 
-    if !verify_owner(&user, &subscription.organization_id) {
+    let trieve_plan = get_trieve_plan_by_id_query(new_plan_id, pool.clone()).await?;
+
+    if !verify_owner(&user, &trieve_subscription.organization_id()) {
         return Err(ServiceError::Forbidden.into());
     };
 
-    let plan_id = path_data.plan_id;
-    let plan = get_plan_by_id_query(plan_id, get_plan_pool).await?;
+    match trieve_plan {
+        TrievePlan::Flat(flat_plan) => {
+            update_to_flat_stripe_subscription(
+                trieve_subscription.stripe_subscription_id(),
+                flat_plan.stripe_id,
+            )
+            .await?;
 
-    update_stripe_subscription(subscription.stripe_id, plan.stripe_id).await?;
+            update_stripe_subscription_plan_query(
+                trieve_subscription.id(),
+                flat_plan.id,
+                pool.clone(),
+            )
+            .await?;
+        }
+        TrievePlan::UsageBased(stripe_usage_based_plan) => {
+            update_to_usage_based_stripe_subscription(
+                trieve_subscription.stripe_subscription_id(),
+                stripe_usage_based_plan.clone(),
+            )
+            .await?;
 
-    update_stripe_subscription_plan_query(subscription.id, plan.id, update_subscription_plan_pool)
-        .await?;
+            match trieve_subscription {
+                TrieveSubscription::UsageBased(_) => {
+                    update_stripe_usage_based_subscription_plan_query(
+                        trieve_subscription.id(),
+                        stripe_usage_based_plan.id,
+                        pool.clone(),
+                    )
+                    .await?;
+                }
+                TrieveSubscription::Flat(_) => {
+                    // Old was flat, create a new one
+                    let current_usage = get_org_usage_by_id_query(
+                        trieve_subscription.organization_id(),
+                        pool.clone(),
+                    )
+                    .await?;
 
+                    create_usage_stripe_subscription_query(
+                        trieve_subscription.stripe_subscription_id(),
+                        current_usage,
+                        stripe_usage_based_plan.id,
+                        trieve_subscription.organization_id(),
+                        pool.clone(),
+                    )
+                    .await?;
+
+                    // delete old subscription
+                    delete_subscription_by_id_query(trieve_subscription.id(), pool.clone()).await?
+                }
+            }
+        }
+    }
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -522,18 +571,24 @@ pub async fn update_payment_method(
 ) -> Result<HttpResponse, actix_web::Error> {
     let org_id = path_data.into_inner();
     let subscription_id =
-        match get_option_subscription_by_organization_id_query(org_id, pool).await? {
-            Some(sub_id) => sub_id,
+        match get_option_subscription_by_organization_id_query(org_id, pool.clone()).await? {
+            Some(subscription) => subscription.stripe_id,
             None => {
-                return Err(ServiceError::BadRequest(
-                    "Organization does not have an active subscription".to_string(),
-                )
-                .into())
+                match get_option_usage_based_subscription_by_organization_id_query(org_id, pool)
+                    .await?
+                {
+                    Some(usage_subscription) => usage_subscription.stripe_subscription_id,
+                    None => {
+                        return Err(ServiceError::BadRequest(
+                            "Organization does not have an active subscription".to_string(),
+                        )
+                        .into())
+                    }
+                }
             }
         };
 
-    let checkout_link =
-        create_stripe_setup_checkout_session(subscription_id.stripe_id, org_id).await?;
+    let checkout_link = create_stripe_setup_checkout_session(subscription_id, org_id).await?;
 
     Ok(HttpResponse::Ok().json(CreateSetupCheckoutSessionResPayload { url: checkout_link }))
 }
