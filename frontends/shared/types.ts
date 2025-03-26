@@ -310,7 +310,7 @@ export const availableRerankerModels = [
   {
     id: "aimon-rerank",
     name: "AIMon Reranker (with AIMon API key)",
-    url: "https://pbe-api.aimon.ai/v2/detect",
+    url: "https://pbe-api.aimon.ai/v1/rerank-icl",
   },
   {
     id: "rerank-v3.5",
