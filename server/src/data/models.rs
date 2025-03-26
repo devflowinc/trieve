@@ -3874,6 +3874,10 @@ pub struct StripeUsageBasedPlan {
     pub analytics_events_price_id: String,
     pub ocr_pages_price_id: String,
     pub pages_crawls_price_id: String,
+    pub datasets_price_id: String,
+    pub users_price_id: String,
+    pub chunks_stored_price_id: String,
+    pub files_storage_price_id: String,
     pub created_at: chrono::NaiveDateTime,
 }
 
@@ -3887,6 +3891,10 @@ impl StripeUsageBasedPlan {
             self.analytics_events_price_id.clone(),
             self.ocr_pages_price_id.clone(),
             self.pages_crawls_price_id.clone(),
+            self.datasets_price_id.clone(),
+            self.users_price_id.clone(),
+            self.chunks_stored_price_id.clone(),
+            self.files_storage_price_id.clone(),
         ]
     }
 }
@@ -3985,7 +3993,9 @@ impl TrievePlan {
     ) -> Option<Self> {
         if let Some(usage_plan) = stripe_usage_based_plan {
             Some(TrievePlan::UsageBased(usage_plan))
-        } else { stripe_plan.map(TrievePlan::Flat) }
+        } else {
+            stripe_plan.map(TrievePlan::Flat)
+        }
     }
 }
 
@@ -9622,7 +9632,12 @@ pub struct StripeUsageBasedSubscription {
     pub id: uuid::Uuid,
     pub organization_id: uuid::Uuid,
     pub stripe_subscription_id: String,
-    pub last_recorded_meter: chrono::NaiveDateTime,
     pub usage_based_plan_id: uuid::Uuid,
     pub created_at: chrono::NaiveDateTime,
+    pub last_recorded_meter: chrono::NaiveDateTime,
+    pub last_cycle_timestamp: chrono::NaiveDateTime,
+    pub last_cycle_dataset_count: i64,
+    pub last_cycle_users_count: i32,
+    pub last_cycle_chunks_stored_mb: i64,
+    pub last_cycle_files_storage_mb: i64,
 }

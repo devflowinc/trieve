@@ -11,7 +11,6 @@ create TABLE stripe_usage_based_plans (
     analytics_events_price_id TEXT NOT NULL,
     ocr_pages_price_id TEXT NOT NULL,
     pages_crawls_price_id TEXT NOT NULL,
-    search_component_loads_price_id TEXT NOT NULL,
     datasets_price_id TEXT NOT NULL,
     users_price_id TEXT NOT NULL,
     chunks_stored_price_id TEXT NOT NULL,
@@ -29,8 +28,9 @@ CREATE TABLE stripe_usage_based_subscriptions (
     last_recorded_meter TIMESTAMP NOT NULL DEFAULT NOW(),
 
     -- Per Billing Cycle Metrics
-    dataset_count INTEGER NOT NULL DEFAULT 0,
-    users_count INTEGER NOT NULL DEFAULT 0,
-    chunks_stored_bytes INTEGER NOT NULL DEFAULT 0,
-    files_storage_mb INTEGER NOT NULL DEFAULT 0,
+    last_cycle_timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
+    last_cycle_dataset_count BIGINT NOT NULL DEFAULT 0,
+    last_cycle_users_count INTEGER NOT NULL DEFAULT 0,
+    last_cycle_chunks_stored_mb BIGINT NOT NULL DEFAULT 0,
+    last_cycle_files_storage_mb BIGINT NOT NULL DEFAULT 0
 );
