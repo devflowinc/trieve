@@ -1,4 +1,5 @@
 // app/routes/app.chat.$id.tsx
+import { ChatIcon, PlusIcon } from "@shopify/polaris-icons";
 import { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import {
@@ -15,6 +16,10 @@ import "trieve-search-component/styles";
 import { useTrieve } from "app/context/trieveContext";
 import styles from "../styles/chatview-styles.css?url";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
+import {
+  MessageEventTimeline,
+  SidebarEvent,
+} from "app/components/chat/MessageEventTimeline";
 
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: styles }];
@@ -35,15 +40,42 @@ export default function ChatRoute() {
   const { topicId, messages } = useLoaderData<typeof loader>();
   const { dataset, trieveKey } = useTrieve();
 
+  const getEventLog = () => {
+    const events: SidebarEvent[] = [];
+    // create a "new chat" event
+    if (messages.length > 0) {
+      events.push({
+        date: new Date(messages.at(0)!.created_at),
+        type: "New Chat",
+        icon: <PlusIcon width={20} fill="#000" height={20} />,
+      });
+    }
+
+    messages.forEach((message) => {
+      if (message.role === "user") {
+        events.push({
+          date: new Date(message.created_at),
+          type: "User Message",
+          icon: <ChatIcon width={20} fill="#000" height={20} />,
+        });
+      }
+    });
+
+    return events;
+  };
+
+  const events = getEventLog();
+
   return (
     <Page
       title="Chat Thread"
+      fullWidth
       backAction={{
         content: "All Chats",
         url: "/app/chats",
       }}
     >
-      <InlineGrid columns={{ xs: 1, md: "3fr 1fr" }} gap="400">
+      <InlineGrid columns={{ md: 1, xl: "2fr 1fr" }} gap="400">
         <BlockStack align="space-between" gap="300">
           <InlineStack align="space-between" gap="300">
             <Suspense fallback={null}>
@@ -70,7 +102,7 @@ export default function ChatRoute() {
           </InlineStack>
         </BlockStack>
         <BlockStack>
-          <Card>
+          <Card padding={"300"}>
             <BlockStack align="space-between" gap="300">
               <Text variant="headingLg" as="h2">
                 Metadata
@@ -84,6 +116,7 @@ export default function ChatRoute() {
                   }{" "}
                 </Text>
               </Text>
+              <MessageEventTimeline events={events} />
             </BlockStack>
           </Card>
         </BlockStack>
