@@ -9311,10 +9311,10 @@ tr46@~0.0.3:
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
 
-trieve-search-component@0.4.48:
-  version "0.4.48"
-  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.4.48.tgz#4cae47b33661da3920ca20713848fbd4eaaa9cee"
-  integrity sha512-WOl63TzELwurHkgRQFfyDrR4ibTL8QL0VoZI3J0ha+NY6RDb/U7SWNmOZLXTzvOM2l2QoOPCN/Y83AxgyDj55w==
+trieve-search-component@0.4.50:
+  version "0.4.50"
+  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.4.50.tgz#65fbdf04e66fd568d0e7c0a8a7e520c81d8ac7cc"
+  integrity sha512-6i0pEniz6h6wjix3LPF93OhMR1zREDwHZg525TKDMzB9KI5xrlMNADoaFYnQ6bEjeiuhk7fVkDL9+ESEXrufJg==
   dependencies:
     "@formkit/auto-animate" "^0.8.2"
     "@r2wc/react-to-web-component" "^2.0.3"

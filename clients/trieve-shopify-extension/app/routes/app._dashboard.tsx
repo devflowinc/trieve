@@ -1,7 +1,7 @@
 // dashboard.tsx
 import { LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { Outlet, useLoaderData } from "@remix-run/react";
-import { Page, Layout, SkeletonBodyText, Frame } from "@shopify/polaris";
+import { Page, Layout, SkeletonBodyText } from "@shopify/polaris";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
 import {
   QueryClient,

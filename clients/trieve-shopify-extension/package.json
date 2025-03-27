@@ -52,7 +52,7 @@
     "tailwindcss": "^3.4.17",
     "trieve-ts-sdk": "*",
     "vite-tsconfig-paths": "^5.0.1",
-    "trieve-search-component": "0.4.48"
+    "trieve-search-component": "0.4.50"
   },
   "devDependencies": {
     "@remix-run/eslint-config": "^2.7.1",

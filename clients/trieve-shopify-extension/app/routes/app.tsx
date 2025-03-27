@@ -47,7 +47,10 @@ export default function App() {
           Component
         </Link>
         <Link to="/app/chat" rel="chat">
-          Chat
+          Chat Overview
+        </Link>
+        <Link to="/app/chats" rel="chat">
+          Chat Sessions
         </Link>
         <Link to="/app/settings" rel="settings">
           Settings
