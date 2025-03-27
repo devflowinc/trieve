@@ -2654,7 +2654,7 @@ export type RAGAnalytics = {
     type: 'event_funnel';
 } | {
     direct?: (boolean) | null;
-    filter?: ((RAGAnalyticsFilter) | null);
+    filter?: ((EventAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'chat_revenue';
 } | {
