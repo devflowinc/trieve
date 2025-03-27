@@ -3,13 +3,13 @@ import { useTrieve } from "app/context/trieveContext";
 import { useEffect, useMemo, useState } from "react";
 import { RAGSortBy, SortOrder, TopicAnalyticsFilter, RagTypes } from "trieve-ts-sdk";
 import { formatStringDateRangeToDates, parseCustomDateString, toTitleCase, transformDateParams } from "app/utils/formatting";
-import { AdvancedTableCell, AdvancedTableComponent, Filter } from "../AdvancedTableComponent";
+import { AdvancedTableCell, AdvancedTableComponent, Filter } from "../components/analytics/AdvancedTableComponent";
 import { Checkbox, ChoiceList, IndexFiltersProps, RangeSlider } from "@shopify/polaris";
-import { DateRangePicker } from "../DateRangePicker";
-import { ComponentNameSelect } from "../ComponentNameSelect";
+import { DateRangePicker } from "../components/analytics/DateRangePicker";
+import { ComponentNameSelect } from "../components/analytics/ComponentNameSelect";
 import { allChatsQuery } from "app/queries/analytics/chat";
 
-export const AllChatsTable = () => {
+export default function ChatsPage() {
   const { trieve } = useTrieve();
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(0);
@@ -389,4 +389,4 @@ export const AllChatsTable = () => {
       setSortSelected={setSortSelected}
     />
   );
-};
+}

@@ -89,7 +89,7 @@ export default function Dashboard() {
       },
       {
         term: "Message Limit",
-        description: organization?.plan?.message_count || "N/A",
+        description: organization?.plan?.message_count.toLocaleString() || "N/A",
       }
     )
   }

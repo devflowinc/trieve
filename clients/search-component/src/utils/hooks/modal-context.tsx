@@ -499,7 +499,7 @@ const ModalProvider = ({
   useEffect(() => {
     const abortController = new AbortController();
 
-    if (open && props.analytics) {
+    if (open && props.analytics && props.previewTopicId === undefined) {
       try {
         getFingerprint().then((fingerprint) => {
           trieve.sendAnalyticsEvent(
@@ -529,7 +529,7 @@ const ModalProvider = ({
   useEffect(() => {
     const abortController = new AbortController();
 
-    if (!open && props.analytics) {
+    if (!open && props.analytics && props.previewTopicId === undefined) {
       try {
         getFingerprint().then((fingerprint) => {
           trieve.sendAnalyticsEvent(

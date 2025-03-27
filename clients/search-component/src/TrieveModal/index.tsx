@@ -86,121 +86,123 @@ const Modal = () => {
     });
 
     try {
-      getFingerprint().then((fingerprint) => {
-        trieveSDK.sendAnalyticsEvent(
-          {
-            event_name: `component_load`,
-            event_type: "view",
-            items: [],
-            user_id: fingerprint,
-            location: window.location.href,
-            metadata: {
-              component_props: props,
+      if (props.previewTopicId == undefined) {
+        getFingerprint().then((fingerprint) => {
+          trieveSDK.sendAnalyticsEvent(
+            {
+              event_name: `component_load`,
+              event_type: "view",
+              items: [],
+              user_id: fingerprint,
+              location: window.location.href,
+              metadata: {
+                component_props: props,
+              },
             },
-          },
-          abortController.signal,
-        );
+            abortController.signal,
+          );
 
-        const addToCart = props.analyticsSelectors?.addToCart;
-        if (addToCart) {
-          const addCarts = document.querySelectorAll(addToCart.querySelector);
+          const addToCart = props.analyticsSelectors?.addToCart;
+          if (addToCart) {
+            const addCarts = document.querySelectorAll(addToCart.querySelector);
 
-          addCarts.forEach((cart) => {
-            cart.addEventListener("click", () => {
-              trieveSDK.sendAnalyticsEvent(
-                {
-                  event_name: `site-add_to_cart`,
-                  event_type: "add_to_cart",
-                  items: [],
-                  user_id: fingerprint,
-                  location: window.location.href,
-                  metadata: {
-                    component_props: props,
-                    elementHtml: cart.outerHTML,
-                  },
-                },
-                abortController.signal,
-              );
-            });
-          });
-        }
-
-        const checkoutSelector = props.analyticsSelectors?.checkout;
-        if (checkoutSelector) {
-          const setCheckoutEventListener = () => {
-            const checkouts = document.querySelectorAll(
-              checkoutSelector.querySelector,
-            );
-
-            checkouts.forEach((checkout) => {
-              if (checkout.getAttribute("data-tr-checkout") === "true") {
-                return;
-              }
-
-              const itemsElem = document.querySelector(
-                checkoutSelector.containerSelector,
-              );
-
-              checkout.addEventListener("click", () => {
-                const itemIds = Array.from(
-                  itemsElem?.outerHTML.matchAll(/\b\d{14}\b/g) ?? [],
-                );
-                const prices = Array.from(
-                  itemsElem?.outerHTML.matchAll(/\$\d+(?:\.\d{2})?/g) ?? [],
-                );
-                const items = itemIds
-                  .map((itemId, index) => {
-                    return {
-                      tracking_id: itemId[0],
-                      revenue: parseFloat(prices[index][0].replace(/\$/, "")),
-                    };
-                  })
-                  .filter(
-                    (item, index, self) =>
-                      index ===
-                      self.findIndex((t) => t.tracking_id === item.tracking_id),
-                  );
-
+            addCarts.forEach((cart) => {
+              cart.addEventListener("click", () => {
                 trieveSDK.sendAnalyticsEvent(
                   {
-                    event_name: `site-checkout`,
-                    event_type: "purchase",
-                    items,
-                    is_conversion: true,
+                    event_name: `site-add_to_cart`,
+                    event_type: "add_to_cart",
+                    items: [],
                     user_id: fingerprint,
                     location: window.location.href,
                     metadata: {
                       component_props: props,
-                      itemsElem: itemsElem?.outerHTML,
+                      elementHtml: cart.outerHTML,
                     },
                   },
                   abortController.signal,
                 );
               });
-
-              checkout.setAttribute("data-tr-checkout", "true");
             });
-          };
+          }
 
-          setCheckoutEventListener();
+          const checkoutSelector = props.analyticsSelectors?.checkout;
+          if (checkoutSelector) {
+            const setCheckoutEventListener = () => {
+              const checkouts = document.querySelectorAll(
+                checkoutSelector.querySelector,
+              );
 
-          if (checkoutSelector.watchSelectorToRefreshListener) {
-            const checkoutElemToObserve = document.querySelector(
-              checkoutSelector.watchSelectorToRefreshListener,
-            );
-            if (checkoutElemToObserve) {
-              const observer = new MutationObserver(() => {
-                setCheckoutEventListener();
+              checkouts.forEach((checkout) => {
+                if (checkout.getAttribute("data-tr-checkout") === "true") {
+                  return;
+                }
+
+                const itemsElem = document.querySelector(
+                  checkoutSelector.containerSelector,
+                );
+
+                checkout.addEventListener("click", () => {
+                  const itemIds = Array.from(
+                    itemsElem?.outerHTML.matchAll(/\b\d{14}\b/g) ?? [],
+                  );
+                  const prices = Array.from(
+                    itemsElem?.outerHTML.matchAll(/\$\d+(?:\.\d{2})?/g) ?? [],
+                  );
+                  const items = itemIds
+                    .map((itemId, index) => {
+                      return {
+                        tracking_id: itemId[0],
+                        revenue: parseFloat(prices[index][0].replace(/\$/, "")),
+                      };
+                    })
+                    .filter(
+                      (item, index, self) =>
+                        index ===
+                        self.findIndex((t) => t.tracking_id === item.tracking_id),
+                    );
+
+                  trieveSDK.sendAnalyticsEvent(
+                    {
+                      event_name: `site-checkout`,
+                      event_type: "purchase",
+                      items,
+                      is_conversion: true,
+                      user_id: fingerprint,
+                      location: window.location.href,
+                      metadata: {
+                        component_props: props,
+                        itemsElem: itemsElem?.outerHTML,
+                      },
+                    },
+                    abortController.signal,
+                  );
+                });
+
+                checkout.setAttribute("data-tr-checkout", "true");
               });
-              observer.observe(checkoutElemToObserve, {
-                attributes: true,
-                childList: true,
-                subtree: true,
-              });
+            };
+
+            setCheckoutEventListener();
+
+            if (checkoutSelector.watchSelectorToRefreshListener) {
+              const checkoutElemToObserve = document.querySelector(
+                checkoutSelector.watchSelectorToRefreshListener,
+              );
+              if (checkoutElemToObserve) {
+                const observer = new MutationObserver(() => {
+                  setCheckoutEventListener();
+                });
+                observer.observe(checkoutElemToObserve, {
+                  attributes: true,
+                  childList: true,
+                  subtree: true,
+                });
+              }
             }
           }
-        }
-      });
+        });
+      }
     } catch (e) {
       console.log("error on load event", e);
     }
@@ -430,7 +432,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);

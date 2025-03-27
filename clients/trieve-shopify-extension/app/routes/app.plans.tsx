@@ -15,7 +15,7 @@ import {
 } from "@shopify/polaris";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
 import { useEnvs } from "app/context/useEnvs";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const key = await validateTrieveAuth(args.request, false);
@@ -25,7 +25,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
   }
 
   const availablePlans = await trieve.getStripePlans();
-  const organization = await trieve.getOrganizationById(key.organizationId);
+  const organization = await trieve.getOrganizationById(key.organizationId!);
 
   return { availablePlans, organization };
 };

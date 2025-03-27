@@ -17,24 +17,20 @@ interface SearchFilterBarProps {
 export const SearchFilterBar = (props: SearchFilterBarProps) => {
   return (
     <div className="flex py-4 justify-between">
-      <ComponentNameSelect
-        filters={props.filters}
-        setFilters={props.setFilters}
-      />
       <Box maxWidth="200">
         <DateRangePicker
           value={formatStringDateRangeToDates(props.filters.date_range)}
           onChange={(s) => {
             if (
               s.lte &&
-              s.gte &&
-              s.lte.getTime() - s.gte.getTime() <= 3.6e6
+                s.gte &&
+                s.lte.getTime() - s.gte.getTime() <= 3.6e6
             ) {
               props.setGranularity("minute");
             } else if (
               s.lte &&
-              s.gte &&
-              s.lte.getTime() - s.gte.getTime() <= 8.64e7
+                s.gte &&
+                s.lte.getTime() - s.gte.getTime() <= 8.64e7
             ) {
               props.setGranularity("hour");
             }
@@ -46,6 +42,10 @@ export const SearchFilterBar = (props: SearchFilterBarProps) => {
           }}
         />
       </Box>
+      <ComponentNameSelect
+        filters={props.filters}
+        setFilters={props.setFilters}
+      />
     </div>
   );
 };
