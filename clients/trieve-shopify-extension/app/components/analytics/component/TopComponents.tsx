@@ -1,14 +1,11 @@
-import { Card, Text, Tooltip } from "@shopify/polaris";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
-import {
-  topComponentsQuery,
-  topPagesQuery,
-} from "app/queries/analytics/component";
+import { topComponentsQuery } from "app/queries/analytics/component";
 import { useState } from "react";
 import { useEffect } from "react";
 import { ComponentAnalyticsFilter } from "trieve-ts-sdk";
 import { BasicTableComponent } from "../BasicTableComponent";
+
 export const TopComponents = ({
   filters,
 }: {
@@ -32,10 +29,10 @@ export const TopComponents = ({
       data={mappedData}
       page={page}
       setPage={setPage}
-      label="Top Components"
-      tooltipContent="The top components that were interacted with on your site."
+      label="Top Components by Interactions"
+      tooltipContent="The top components with messages sent, products viewed, and other interactions."
       tableContentTypes={["text", "numeric"]}
-      tableHeadings={["Component Name", "Count"]}
+      tableHeadings={["Component Name", "Interactions"]}
       hasNext={data?.top_components.length == 10}
     />
   );

@@ -13,39 +13,47 @@ interface SearchFilterBarProps {
   setGranularity: (granularity: Granularity) => void;
   filters: SearchAnalyticsFilter;
   setFilters: (filters: SearchAnalyticsFilter) => void;
+  options?: {
+    hideDateRange?: boolean;
+    hideComponentName?: boolean;
+  };
 }
 export const SearchFilterBar = (props: SearchFilterBarProps) => {
   return (
     <div className="flex py-4 justify-between">
-      <Box maxWidth="200">
-        <DateRangePicker
-          value={formatStringDateRangeToDates(props.filters.date_range)}
-          onChange={(s) => {
-            if (
-              s.lte &&
+      {!props.options?.hideDateRange && (
+        <Box maxWidth="200">
+          <DateRangePicker
+            value={formatStringDateRangeToDates(props.filters.date_range)}
+            onChange={(s) => {
+              if (
+                s.lte &&
                 s.gte &&
                 s.lte.getTime() - s.gte.getTime() <= 3.6e6
-            ) {
-              props.setGranularity("minute");
-            } else if (
-              s.lte &&
+              ) {
+                props.setGranularity("minute");
+              } else if (
+                s.lte &&
                 s.gte &&
                 s.lte.getTime() - s.gte.getTime() <= 8.64e7
-            ) {
-              props.setGranularity("hour");
-            }
+              ) {
+                props.setGranularity("hour");
+              }
 
-            props.setFilters({
-              ...props.filters,
-              date_range: transformDateParams(s),
-            });
-          }}
+              props.setFilters({
+                ...props.filters,
+                date_range: transformDateParams(s),
+              });
+            }}
+          />
+        </Box>
+      )}
+      {!props.options?.hideComponentName && (
+        <ComponentNameSelect
+          filters={props.filters}
+          setFilters={props.setFilters}
         />
-      </Box>
-      <ComponentNameSelect
-        filters={props.filters}
-        setFilters={props.setFilters}
-      />
+      )}
     </div>
   );
 };
