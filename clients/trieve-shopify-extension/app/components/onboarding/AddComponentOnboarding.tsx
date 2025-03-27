@@ -1,10 +1,11 @@
-import { useMatches, useRouteLoaderData } from "@remix-run/react";
+import { useRouteLoaderData } from "@remix-run/react";
 import { Button, Text } from "@shopify/polaris";
 import { CheckIcon } from "@shopify/polaris-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useClientAdminApi } from "app/loaders/clientLoader";
 import { themeSettingsQuery } from "app/queries/onboarding";
 import { OnboardingBody } from "app/utils/onboarding";
+import { useShopName } from "app/utils/useShopName";
 import { useEffect, useMemo } from "react";
 
 export const AddComponentOnboarding: OnboardingBody = ({
@@ -24,10 +25,7 @@ export const AddComponentOnboarding: OnboardingBody = ({
     return false;
   }, [data]);
 
-  const matches = useMatches();
-  const shopname: string | null =
-    (matches.find((m) => m.pathname == "/app/")?.data as any).shopDomain ||
-    null;
+  const shopname = useShopName();
 
   const { shopifyThemeAppExtensionUuid } = useRouteLoaderData("routes/app") as {
     shopifyThemeAppExtensionUuid?: string;

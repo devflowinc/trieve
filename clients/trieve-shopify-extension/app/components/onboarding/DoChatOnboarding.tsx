@@ -4,15 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { allChatsQuery } from "app/queries/analytics/chat";
 import { OnboardingBody } from "app/utils/onboarding";
+import { useShopName } from "app/utils/useShopName";
 import { useEffect } from "react";
 
 export const DoChatOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
   const { trieve } = useTrieve();
 
   const { data: chats } = useQuery(allChatsQuery(trieve, {}, 1));
-  const shopUrl = shopify?.config?.shop
-    ? `https://${shopify.config.shop}`
-    : null;
+  const shopname = useShopName();
+  const shopUrl = shopname ? `https://${shopname}` : null;
 
   useEffect(() => {
     if (chats && chats.topics.length > 0) {
@@ -20,7 +20,7 @@ export const DoChatOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
         broadcastCompletion();
       }
     }
-  });
+  }, [chats]);
 
   const complete =
     chats?.topics.length !== undefined && chats?.topics.length > 0;
