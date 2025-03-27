@@ -605,6 +605,8 @@ impl Modify for SecurityAddon {
             data::models::SearchRevenueResponse,
             data::models::ChatRevenueResponse,
             data::models::PurchaseItem,
+            data::models::PopularChatsResponse,
+            data::models::PopularChat,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
         )

@@ -14,6 +14,8 @@ import {
   ChatConversionRateResponse,
   ChatRevenueResponse,
   EventNameAndCountsResponse,
+  TopicAnalyticsFilter,
+  PopularChatsResponse,
 } from "trieve-ts-sdk";
 
 export const topicsUsageQuery = (
@@ -165,6 +167,24 @@ export const chatEventFunnelQuery = (
         type: "event_funnel",
       });
       return result as EventNameAndCountsResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const popularChatsQuery = (
+  trieve: TrieveSDK,
+  filters: TopicAnalyticsFilter,
+  page: number,
+) => {
+  return {
+    queryKey: ["popularChats", filters, page],
+    queryFn: async () => {
+      const result = await trieve.getRagAnalytics({
+        filter: filters,
+        type: "popular_chats",
+        page: page,
+      });
+      return result as PopularChatsResponse;
     },
   } satisfies QueryOptions;
 };

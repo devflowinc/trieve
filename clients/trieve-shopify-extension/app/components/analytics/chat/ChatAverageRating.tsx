@@ -24,6 +24,7 @@ export const ChatAverageRating = ({
       graphData={data?.points}
       granularity={granularity}
       dateRange={filters.date_range}
+      dataType="percentage"
       xAxis={"time_stamp"}
       yAxis={"point"}
       label="Average Chat Rating"

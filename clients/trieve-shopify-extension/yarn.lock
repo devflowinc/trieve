@@ -8436,9 +8436,9 @@ tr46@~0.0.3:
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
 
 trieve-ts-sdk@*:
-  version "0.0.68"
-  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.68.tgz#c87716893522ca327e882094568daf2f0c3627b4"
-  integrity sha512-8taBpJs9/XLMzm/gEwFgTc21o4SPDlhcCKX5thwYBcWSU329B55p09gKC0Tnpafx5EY0fHtLxHpvpZLagIu8Tw==
+  version "0.0.69"
+  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.69.tgz#837f21890faf7658157a65fdf9069246ee59d81a"
+  integrity sha512-I1QOndfsCBcNwPEi7gtO8SNHdt8LZvEAWPNmY38HhEE1Dnxx5lmMmVfjqGogirVaOdS0ZS4JxZ1vlfIjAPgGZg==
 
 trim-lines@^3.0.0:
   version "3.0.1"
