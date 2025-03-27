@@ -598,6 +598,16 @@ pub async fn get_rag_analytics(
 
             RAGAnalyticsResponse::ChatRevenue(chat_revenue)
         }
+        RAGAnalytics::PopularChats { filter, page } => {
+            let most_popular_chats = get_most_popular_chats_query(
+                dataset_org_plan_sub.dataset.id,
+                filter,
+                page,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+            RAGAnalyticsResponse::PopularChats(most_popular_chats)
+        }
     };
 
     Ok(HttpResponse::Ok().json(response))

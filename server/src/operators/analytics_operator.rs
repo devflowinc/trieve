@@ -5,9 +5,9 @@ use crate::{
         ComponentAnalyticsFilter, ComponentInteractionTimeResponse, ComponentNamesResponse,
         DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts,
         FloatTimePoint, FloatTimePointClickhouse, GetEventsResponseBody, Granularity, HeadQueries,
-        IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool,
-        PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy,
-        RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
+        IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularChat,
+        PopularChatsResponse, PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter,
+        RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
         RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
         RecommendationEvent, RecommendationEventClickhouse, RecommendationSortBy,
         RecommendationUsageGraphResponse, RecommendationsCTRRateResponse,
@@ -2204,6 +2204,7 @@ pub async fn get_ctr_metrics_over_time_query(
             time_stamp: x.time_stamp.to_string(),
             point: x.point as f64 / y.point as f64,
         })
+        .filter(|x| x.point <= 1.0)
         .collect();
 
     let total_ctr = if !ctr_metrics_over_time.is_empty() {
@@ -2858,14 +2859,14 @@ pub async fn get_search_revenue_query(
         FROM events
         WHERE dataset_id = ?
         AND event_type = 'purchase' 
-        AND items != '[]'
+        AND items != '[]' AND request_type = 'search'
         ",
         interval,
     );
 
     if let Some(direct) = direct {
         if direct {
-            query_string.push_str(" AND request_type = 'search' AND request_id != '00000000-0000-0000-0000-000000000000'")
+            query_string.push_str(" AND request_id != '00000000-0000-0000-0000-000000000000'")
         } else {
             query_string.push_str("AND request_id == '00000000-0000-0000-0000-000000000000'")
         }
@@ -2915,19 +2916,19 @@ pub async fn get_chat_revenue_query(
         FROM events
         WHERE dataset_id = ?
         AND event_type = 'purchase' 
-        AND items != '[]'
+        AND items != '[]' AND request_type = 'rag' 
         ",
         interval,
     );
 
     if let Some(direct) = direct {
         if direct {
-            query_string.push_str(" AND request_type = 'rag' AND request_id != '00000000-0000-0000-0000-000000000000'")
+            query_string.push_str(" AND request_id != '00000000-0000-0000-0000-000000000000'")
         } else {
-            query_string.push_str("AND request_id == '00000000-0000-0000-0000-000000000000'")
+            query_string.push_str(" AND request_id == '00000000-0000-0000-0000-000000000000'")
         }
     } else {
-        query_string.push_str("AND request_id == '00000000-0000-0000-0000-000000000000'")
+        query_string.push_str(" AND request_id == '00000000-0000-0000-0000-000000000000'")
     }
 
     if let Some(filter) = &filter {
@@ -3068,7 +3069,7 @@ pub async fn get_rag_event_counts_query(
             COUNT(DISTINCT user_id) AS event_count
         FROM
             events
-        WHERE {} AND event_name != 'site-checkout'
+        WHERE {} AND event_name != 'site-checkout' AND event_name != 'site-add_to_cart'
         GROUP BY event_name
         
         UNION ALL
@@ -3080,6 +3081,17 @@ pub async fn get_rag_event_counts_query(
         FROM
             events
         WHERE {} AND event_name = 'site-checkout' AND items != '[]'
+        GROUP BY event_name
+
+        UNION ALL
+
+        -- Add to cart events
+        SELECT
+            event_name,
+            COUNT(DISTINCT user_id) AS event_count
+        FROM
+            events
+        WHERE {} AND event_name = 'site-add_to_cart' AND items != '[]'
         GROUP BY event_name
 
         UNION ALL
@@ -3105,11 +3117,12 @@ pub async fn get_rag_event_counts_query(
         
         ORDER BY event_count DESC
     ",
-        events_filter, events_filter, events_filter, topics_filter
+        events_filter, events_filter, events_filter, events_filter, topics_filter
     );
 
     let result = clickhouse_client
         .query(query_string.as_str())
+        .bind(dataset_id)
         .bind(dataset_id)
         .bind(dataset_id)
         .bind(dataset_id)
@@ -3197,4 +3210,44 @@ pub async fn get_recommendation_event_counts_query(
         })?;
 
     Ok(result)
+}
+
+pub async fn get_most_popular_chats_query(
+    dataset_id: uuid::Uuid,
+    filter: Option<TopicAnalyticsFilter>,
+    page: Option<u32>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<PopularChatsResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT
+            name,
+            COUNT(*) AS count
+        FROM
+            topics
+        WHERE dataset_id = ? AND name != '' AND name != ' ' ",
+    );
+
+    if let Some(filter) = &filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(
+        format!(
+            "GROUP BY name ORDER BY count DESC LIMIT 10 OFFSET {}",
+            (page.unwrap_or(1) - 1) * 10,
+        )
+        .as_str(),
+    );
+
+    let result = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<PopularChat>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching most popular chats: {:?}", e);
+            ServiceError::InternalServerError("Error fetching most popular chats".to_string())
+        })?;
+
+    Ok(PopularChatsResponse { chats: result })
 }

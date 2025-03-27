@@ -2407,6 +2407,15 @@ export type Pdf2MdOptions = {
     use_pdf2md_ocr: boolean;
 };
 
+export type PopularChat = {
+    count: number;
+    name: string;
+};
+
+export type PopularChatsResponse = {
+    chats: Array<PopularChat>;
+};
+
 export type PopularFilters = {
     clause: string;
     common_values: {
@@ -2648,6 +2657,10 @@ export type RAGAnalytics = {
     filter?: ((RAGAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
     type: 'chat_revenue';
+} | {
+    filter?: ((TopicAnalyticsFilter) | null);
+    page?: (number) | null;
+    type: 'popular_chats';
 };
 
 export type type4 = 'rag_queries';
@@ -2660,7 +2673,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse | EventNameAndCountsResponse | ChatRevenueResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse | EventNameAndCountsResponse | ChatRevenueResponse | PopularChatsResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at';
 

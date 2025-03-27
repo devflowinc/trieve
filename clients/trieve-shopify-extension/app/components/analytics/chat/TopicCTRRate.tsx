@@ -27,7 +27,7 @@ export const TopicCTRRate = ({
       dataType="percentage"
       xAxis={"time_stamp"}
       yAxis={"point"}
-      label="CTR Rate"
+      label="Click Through Rate"
       tooltipContent="The rate at which users click on products within the chat sessions."
     />
   );

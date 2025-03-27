@@ -13684,6 +13684,36 @@
           }
         }
       },
+      "PopularChat": {
+        "type": "object",
+        "required": [
+          "name",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PopularChatsResponse": {
+        "type": "object",
+        "required": [
+          "chats"
+        ],
+        "properties": {
+          "chats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PopularChat"
+            }
+          }
+        }
+      },
       "PopularFilters": {
         "type": "object",
         "required": [
@@ -14807,6 +14837,35 @@
                 ]
               }
             }
+          },
+          {
+            "type": "object",
+            "title": "PopularChats",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/TopicAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "page": {
+                "type": "integer",
+                "format": "int32",
+                "nullable": true,
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "popular_chats"
+                ]
+              }
+            }
           }
         ],
         "discriminator": {
@@ -14893,6 +14952,9 @@
           },
           {
             "$ref": "#/components/schemas/ChatRevenueResponse"
+          },
+          {
+            "$ref": "#/components/schemas/PopularChatsResponse"
           }
         ]
       },

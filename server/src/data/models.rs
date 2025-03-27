@@ -3533,7 +3533,7 @@ impl DatasetConfigurationDTO {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Default)]
 #[schema(example=json!({
     "CREATE_CHUNK_FEATURE": true,
     "SEARCH_QUERIES": "search queries",
@@ -7406,6 +7406,12 @@ pub enum RAGAnalytics {
         direct: Option<bool>,
         granularity: Option<Granularity>,
     },
+    #[schema(title = "PopularChats")]
+    #[serde(rename = "popular_chats")]
+    PopularChats {
+        filter: Option<TopicAnalyticsFilter>,
+        page: Option<u32>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7587,6 +7593,19 @@ pub enum RAGAnalyticsResponse {
     EventFunnel(EventNameAndCountsResponse),
     #[schema(title = "ChatRevenue")]
     ChatRevenue(ChatRevenueResponse),
+    #[schema(title = "PopularChats")]
+    PopularChats(PopularChatsResponse),
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct PopularChatsResponse {
+    pub chats: Vec<PopularChat>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct PopularChat {
+    pub name: String,
+    pub count: i64,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
