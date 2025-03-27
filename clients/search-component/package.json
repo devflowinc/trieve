@@ -19,7 +19,7 @@
       "import": "./dist/vanilla/index.js"
     }
   },
-  "version": "0.4.47",
+  "version": "0.4.48",
   "license": "MIT",
   "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/search-component",
   "scripts": {
@@ -83,7 +83,7 @@
     "react-scan": "^0.3.2",
     "react-snap-carousel": "^0.5.0",
     "tailwind-merge": "^3.0.2",
-    "trieve-ts-sdk": "^0.0.68"
+    "trieve-ts-sdk": "^0.0.69"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.0.0-rc",
