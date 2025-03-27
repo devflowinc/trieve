@@ -85,13 +85,15 @@ export default function Dashboard() {
       },
       {
         term: "Dataset Limit",
-        description: organization?.plan?.dataset_count?.toLocaleString() || "N/A",
+        description:
+          organization?.plan?.dataset_count?.toLocaleString() || "N/A",
       },
       {
         term: "Message Limit",
-        description: organization?.plan?.message_count.toLocaleString() || "N/A",
-      }
-    )
+        description:
+          organization?.plan?.message_count.toLocaleString() || "N/A",
+      },
+    );
   }
 
   const navigate = useNavigate();

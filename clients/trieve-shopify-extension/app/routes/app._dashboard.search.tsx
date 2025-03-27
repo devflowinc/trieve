@@ -63,10 +63,7 @@ export default function SearchAnalyticsPage() {
               <div className="flex flex-col gap-4">
                 <SearchUserJourneyFunnel filters={filters} />
                 <SearchCTRChart filters={filters} granularity={granularity} />
-                <SearchesPerUser
-                  filters={filters}
-                  granularity={granularity}
-                />{" "}
+                <SearchesPerUser filters={filters} granularity={granularity} />
                 <HeadQueriesTable filters={filters} />
               </div>
             </Grid.Cell>
