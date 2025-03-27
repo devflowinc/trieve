@@ -1,11 +1,8 @@
 import {
   Card,
   Box,
-  DataTable,
-  Pagination,
   Text,
   Tooltip,
-  ColumnContentType,
   IndexTable,
   IndexFilters,
   useSetIndexFiltersMode,
@@ -14,6 +11,9 @@ import {
   IndexFiltersProps,
   Icon,
 } from "@shopify/polaris";
+import {
+  Link
+} from "@remix-run/react";
 import { IndexTableHeading } from "@shopify/polaris/build/ts/src/components/IndexTable";
 import { NonEmptyArray } from "@shopify/polaris/build/ts/src/types";
 import {
@@ -29,8 +29,13 @@ export interface Filter {
   pinned?: boolean;
 }
 
+export interface AdvancedTableCell {
+  content: string;
+  url?: string;
+}
+
 export interface AdvancedTableComponentProps {
-  data: any[][];
+  data: AdvancedTableCell[][];
   page: number;
   setPage: (page: (page: number) => number) => void;
   tabs: string[];
@@ -179,7 +184,13 @@ export const AdvancedTableComponent = ({
                     key={innerIndex}
                     className="max-w-[200px] truncate"
                   >
-                    {cell}
+                    {cell.url ? (
+                      <Link
+                        to={cell.url}
+                      >
+                        {cell.content}
+                      </Link>
+                    ) : cell.content}
                   </IndexTable.Cell>
                 ))}
               </IndexTable.Row>

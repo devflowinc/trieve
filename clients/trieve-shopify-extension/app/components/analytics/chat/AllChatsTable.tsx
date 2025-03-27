@@ -3,7 +3,7 @@ import { useTrieve } from "app/context/trieveContext";
 import { useEffect, useMemo, useState } from "react";
 import { RAGSortBy, SortOrder, TopicAnalyticsFilter, RagTypes } from "trieve-ts-sdk";
 import { formatStringDateRangeToDates, parseCustomDateString, toTitleCase, transformDateParams } from "app/utils/formatting";
-import { AdvancedTableComponent, Filter } from "../AdvancedTableComponent";
+import { AdvancedTableCell, AdvancedTableComponent, Filter } from "../AdvancedTableComponent";
 import { Checkbox, ChoiceList, IndexFiltersProps, RangeSlider } from "@shopify/polaris";
 import { DateRangePicker } from "../DateRangePicker";
 import { ComponentNameSelect } from "../ComponentNameSelect";
@@ -30,7 +30,7 @@ export const AllChatsTable = () => {
 
   const [previousData, setPreviousData] = useState<any[][]>([]);
 
-  const mappedData = useMemo((): any[][] => {
+  const mappedData = useMemo((): AdvancedTableCell[][] => {
     if (isLoading && previousData.length > 0) {
       console.log("returning previous data");
       return previousData;
@@ -40,14 +40,14 @@ export const AllChatsTable = () => {
       return [];
     }
 
-    let newData = data?.topics.map((query) => {
+    let newData: AdvancedTableCell[][] = data?.topics.map((topic) => {
       return [
-        query.name,
-        query.message_count,
-        query.avg_top_score?.toLocaleString('en-US', { maximumFractionDigits: 2 }),
-        query.avg_hallucination_score?.toLocaleString('en-US', { maximumFractionDigits: 2 }),
-        query.avg_query_rating ? query.avg_query_rating.toLocaleString('en-US', { maximumFractionDigits: 2 }) : "N/A",
-        parseCustomDateString(query.created_at).toLocaleString(),
+        { content: topic.name, url: `/app/chatview/${topic.topic_id}` },
+        { content: topic.message_count.toLocaleString() },
+        { content: topic.avg_top_score?.toLocaleString('en-US', { maximumFractionDigits: 2 }) },
+        { content: topic.avg_hallucination_score?.toLocaleString('en-US', { maximumFractionDigits: 2 }) },
+        { content: topic.avg_query_rating ? topic.avg_query_rating.toLocaleString('en-US', { maximumFractionDigits: 2 }) : "N/A" },
+        { content: parseCustomDateString(topic.created_at).toLocaleString() },
       ];
     }) ?? [];
 

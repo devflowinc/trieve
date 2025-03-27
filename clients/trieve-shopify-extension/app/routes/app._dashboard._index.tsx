@@ -4,7 +4,6 @@ import {
   Card,
   Text,
   Badge,
-  Banner,
   Button,
   SkeletonBodyText,
   DescriptionList,
@@ -31,7 +30,7 @@ export const loader = createServerLoader(load);
 export const clientLoader = createClientLoader(load);
 
 export default function Dashboard() {
-  const { dataset, organization, trieve } = useTrieve();
+  const { organization, trieve } = useTrieve();
 
   const {
     data: usage,
@@ -71,24 +70,29 @@ export default function Dashboard() {
     },
   ];
 
-  const planItems = [
+  let planItems = [
     {
       term: "Plan",
       description: planType,
     },
-    {
-      term: "Chunk Limit",
-      description: organization?.plan?.chunk_count?.toLocaleString() || "N/A",
-    },
-    {
-      term: "Dataset Limit",
-      description: organization?.plan?.dataset_count?.toLocaleString() || "N/A",
-    },
-    {
-      term: "Message Limit",
-      description: organization?.plan?.message_count || "N/A",
-    },
   ];
+
+  if (organization?.plan?.type === "flat") {
+    planItems.push(
+      {
+        term: "Chunk Limit",
+        description: organization?.plan?.chunk_count?.toLocaleString() || "N/A",
+      },
+      {
+        term: "Dataset Limit",
+        description: organization?.plan?.dataset_count?.toLocaleString() || "N/A",
+      },
+      {
+        term: "Message Limit",
+        description: organization?.plan?.message_count || "N/A",
+      }
+    )
+  }
 
   const navigate = useNavigate();
 

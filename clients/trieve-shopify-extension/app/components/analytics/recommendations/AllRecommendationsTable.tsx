@@ -41,12 +41,12 @@ export const AllRecommendationsTable = () => {
 
     let newData = data?.queries.map((query) => {
       return [
-        query.positive_tracking_ids,
-        query.negative_tracking_ids,
-        query.top_score,
-        query.created_at,
-        query.results.length,
-        parseCustomDateString(query.created_at).toLocaleString(),
+        { content: query.positive_tracking_ids },
+        { content: query.negative_tracking_ids },
+        { content: query.top_score },
+        { content: query.created_at },
+        { content: query.results.length },
+        { content: parseCustomDateString(query.created_at).toLocaleString() },
       ];
     }) ?? [];
 
