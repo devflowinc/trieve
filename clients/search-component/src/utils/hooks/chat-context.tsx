@@ -18,9 +18,9 @@ const scrollToBottomOfChatModalWrapper = () => {
   }
 };
 
-export type Messages = {
+export type ComponentMessages = {
   queryId: string | null;
-  type: string;
+  type: "user" | "system";
   text: string;
   additional: Chunk[] | null;
 }[];
@@ -33,7 +33,7 @@ const ChatContext = createContext<{
     match_any_tags?: string[],
   ) => Promise<void>;
   isLoading: boolean;
-  messages: Messages;
+  messages: ComponentMessages;
   currentQuestion: string;
   setCurrentQuestion: React.Dispatch<React.SetStateAction<string>>;
   stopGeneratingMessage: () => void;
@@ -69,11 +69,15 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     audioBase64,
     setAudioBase64,
     fingerprint,
+    selectedTags,
+    currentGroup,
+    props,
+    selectedSidebarFilters,
   } = useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
   const called = useRef(false);
-  const [messages, setMessages] = useState<Messages>([]);
+  const [messages, setMessages] = useState<ComponentMessages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatMessageAbortController = useRef<AbortController>(
     new AbortController(),
@@ -115,8 +119,36 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([]);
   };
 
-  const { selectedTags, currentGroup, props, selectedSidebarFilters } =
-    useModalState();
+  useEffect(() => {
+    if (props.previewTopicId) {
+      trieveSDK
+        .getAllMessagesForTopic({ messagesTopicId: props.previewTopicId })
+        .then((messages) => {
+          const componentMessages: ComponentMessages = messages.map(
+            (message) => {
+              if (message.content.includes("||")) {
+                const [additional, text] = message.content.split("||");
+
+                return {
+                  queryId: message.id,
+                  type: message.role == "assistant" ? "system" : "system",
+                  text: text,
+                  additional: JSON.parse(additional),
+                } as ComponentMessages[0];
+              } else {
+                return {
+                  queryId: message.id,
+                  type: message.role,
+                  text: message.content,
+                  additional: null,
+                } as ComponentMessages[0];
+              }
+            },
+          );
+          setMessages(componentMessages.slice(1));
+        });
+    }
+  }, []);
 
   useEffect(() => {
     if (props.groupTrackingId) {

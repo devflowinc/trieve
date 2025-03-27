@@ -13,7 +13,7 @@ export const toBase64 = (file: File) =>
 export const UploadImage = () => {
   const fileInputRef = useRef(null);
   const [file, setFile] = React.useState<File | null>(null);
-  const { trieveSDK, setImageUrl, setUploadingImage, mode, setQuery } =
+  const { props, trieveSDK, setImageUrl, setUploadingImage, mode, setQuery } =
     useModalState();
 
   const handleClick = () => {
@@ -61,6 +61,7 @@ export const UploadImage = () => {
         className={`tv-rounded ${
           mode === "chat" && "tv-right-9 tv-top-[0.825rem] tv-absolute"
         } tv-z-20 tv-dark-text-white tv-text-zinc-700`}
+        disabled={props.previewTopicId != undefined}
       >
         <i className="fa-solid fa-image"> </i>
       </button>

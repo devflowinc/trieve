@@ -621,6 +621,12 @@ body {
         color: var(--tv-zinc-400);
       }
 
+      &:disabled {
+        @apply tv-cursor-not-allowed;
+        color: var(--tv-zinc-500);
+        background-color: var(--tv-zinc-200);
+      }
+
       &.inline-input {
         @apply tv-pl-2;
 

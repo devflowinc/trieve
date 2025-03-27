@@ -177,6 +177,7 @@ export type ModalProps = {
     filter?: ChunkFilter;
   };
   usePortal?: boolean;
+  previewTopicId?: string;
 };
 
 const defaultProps = {
@@ -244,6 +245,7 @@ const defaultProps = {
     } as FilterSidebarProps,
   } as SearchPageProps,
   usePortal: true,
+  previewTopicId: undefined,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{

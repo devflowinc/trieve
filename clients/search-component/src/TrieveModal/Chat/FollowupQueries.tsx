@@ -3,8 +3,10 @@ import { useChatState } from "../../utils/hooks/chat-context";
 import { useFollowupQuestions } from "../../utils/hooks/useFollowupQuestions";
 import { SparklesIcon } from "../icons";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { useModalState } from "../../utils/hooks/modal-context";
 
 export const FollowupQueries = () => {
+  const { props } = useModalState();
   const { isDoneReading, askQuestion } = useChatState();
 
   const { suggestedQuestions, isLoadingSuggestedQueries } =
@@ -12,7 +14,7 @@ export const FollowupQueries = () => {
 
   const [parent] = useAutoAnimate();
 
-  if (!isDoneReading) {
+  if (!isDoneReading || props.previewTopicId) {
     return null;
   }
 

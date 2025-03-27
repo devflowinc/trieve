@@ -418,77 +418,81 @@ export const Message = ({
                   <div className="additional-links">{docsItems}</div>
                 )
               : null}
-            <div className="feedback-wrapper tv-gap-2 w-full tv-flex">
-              <span className="spacer tv-grow"></span>
-              <div className="feedback-icons tv-flex tv-gap-2">
-                {copied ? (
-                  <span>
-                    <i className="fa-regular fa-circle-check"></i>
-                  </span>
-                ) : (
+            {props.previewTopicId == undefined && (
+              <div className="feedback-wrapper tv-gap-2 w-full tv-flex">
+                <span className="spacer tv-grow"></span>
+                <div className="feedback-icons tv-flex tv-gap-2">
+                  {copied ? (
+                    <span>
+                      <i className="fa-regular fa-circle-check"></i>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        void navigator.clipboard
+                          .writeText(message.text)
+                          .then(() => {
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 500);
+                          });
+                      }}
+                    >
+                      <i className="fa-regular fa-copy"></i>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
-                      void navigator.clipboard
-                        .writeText(message.text)
-                        .then(() => {
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 500);
-                        });
+                      rateChatCompletion(true, message.queryId);
+                      setPositive((prev) => {
+                        if (prev === true) return null;
+                        return true;
+                      });
                     }}
                   >
-                    <i className="fa-regular fa-copy"></i>
+                    <div
+                      style={{
+                        display: positive ? "block" : "none",
+                      }}
+                    >
+                      <i className="fa-solid fa-thumbs-up"></i>
+                    </div>
+                    <div
+                      style={{
+                        display: !positive ? "block" : "none",
+                      }}
+                    >
+                      <i className="fa-regular fa-thumbs-up"></i>
+                    </div>
                   </button>
-                )}
-                <button
-                  onClick={() => {
-                    rateChatCompletion(true, message.queryId);
-                    setPositive((prev) => {
-                      if (prev === true) return null;
-                      return true;
-                    });
-                  }}
-                >
-                  <div
-                    style={{
-                      display: positive ? "block" : "none",
+                  <button
+                    onClick={() => {
+                      rateChatCompletion(false, message.queryId);
+                      setPositive((prev) => {
+                        if (prev === false) return null;
+                        return false;
+                      });
                     }}
                   >
-                    <i className="fa-solid fa-thumbs-up"></i>
-                  </div>
-                  <div
-                    style={{
-                      display: !positive ? "block" : "none",
-                    }}
-                  >
-                    <i className="fa-regular fa-thumbs-up"></i>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    rateChatCompletion(false, message.queryId);
-                    setPositive((prev) => {
-                      if (prev === false) return null;
-                      return false;
-                    });
-                  }}
-                >
-                  <div
-                    style={{
-                      display: positive != null && !positive ? "block" : "none",
-                    }}
-                  >
-                    <i className="fa-solid fa-thumbs-down"></i>
-                  </div>
-                  <div
-                    style={{
-                      display: positive == null || positive ? "block" : "none",
-                    }}
-                  >
-                    <i className="fa-regular fa-thumbs-down"></i>
-                  </div>
-                </button>
+                    <div
+                      style={{
+                        display:
+                          positive != null && !positive ? "block" : "none",
+                      }}
+                    >
+                      <i className="fa-solid fa-thumbs-down"></i>
+                    </div>
+                    <div
+                      style={{
+                        display:
+                          positive == null || positive ? "block" : "none",
+                      }}
+                    >
+                      <i className="fa-regular fa-thumbs-down"></i>
+                    </div>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       ) : null}
