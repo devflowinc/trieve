@@ -11,6 +11,7 @@ import { Granularity } from "trieve-ts-sdk";
 export default function ComponentAnalyticsPage() {
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
   const [granularity, setGranularity] = useState<Granularity>("day");
+
   return (
     <>
       <SearchFilterBar
@@ -18,6 +19,15 @@ export default function ComponentAnalyticsPage() {
         setGranularity={setGranularity}
         filters={filters}
         setFilters={setFilters}
+        options={{ hideComponentName: true }}
+      />
+      <TopComponents filters={filters} />
+      <SearchFilterBar
+        granularity={granularity}
+        setGranularity={setGranularity}
+        filters={filters}
+        setFilters={setFilters}
+        options={{ hideDateRange: true }}
       />
       <Grid>
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
@@ -28,7 +38,6 @@ export default function ComponentAnalyticsPage() {
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
           <div className="flex flex-col pb-8 gap-4">
             <TopPages filters={filters} />
-            <TopComponents filters={filters} />
           </div>
         </Grid.Cell>
       </Grid>

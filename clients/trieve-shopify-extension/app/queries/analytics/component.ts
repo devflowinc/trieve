@@ -9,7 +9,6 @@ import {
   TopComponentsResponse,
   ComponentNamesResponse,
   ComponentInteractionTimeResponse,
-  EventNameAndCountsResponse,
 } from "trieve-ts-sdk";
 
 export const totalUniqueUsersQuery = (
@@ -55,11 +54,13 @@ export const topComponentsQuery = (
   filters: ComponentAnalyticsFilter,
   page: number,
 ) => {
+  const filtersNoComponent = { ...filters, component_name: undefined };
+
   return {
-    queryKey: ["topComponents", filters, page],
+    queryKey: ["topComponents", filtersNoComponent, page],
     queryFn: async () => {
       const result = await trieve.getComponentAnalytics({
-        filter: filters,
+        filter: filtersNoComponent,
         type: "top_components",
         page: page,
       });
