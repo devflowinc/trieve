@@ -12,7 +12,7 @@ RUN cargo chef prepare  --recipe-path recipe.json
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
-RUN cargo chef cook --release --recipe-path recipe.json --bin "trieve-server"
+RUN cargo chef cook --release --recipe-path recipe.json --features "hallucination-detection" --bin "trieve-server"
 # Build application
 COPY . .
 RUN cargo build --release --features "runtime-env","hallucination-detection"  --bin "trieve-server"
