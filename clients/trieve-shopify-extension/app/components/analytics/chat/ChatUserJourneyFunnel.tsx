@@ -12,10 +12,10 @@ import { useTrieve } from "app/context/trieveContext";
 import { formatEventName, KnownEventNames } from "app/utils/formatting";
 import { Chart, ChartConfiguration } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ComponentAnalyticsFilter, EventNameAndCounts } from "trieve-ts-sdk";
 import { BasicTableComponent } from "../BasicTableComponent";
-import { chatEvents } from "../EventPathSelector";
+import { chatEvents, EventPathSelector } from "../EventPathSelector";
 import { chatEventFunnelQuery } from "app/queries/analytics/chat";
 
 export const ChatUserJourneyFunnel = ({
@@ -24,19 +24,20 @@ export const ChatUserJourneyFunnel = ({
   filters: ComponentAnalyticsFilter;
 }) => {
   const { trieve } = useTrieve();
-  const events = chatEvents;
+  const [events, setEvents] = useState<KnownEventNames[]>(chatEvents);
 
   const { data, status } = useQuery(chatEventFunnelQuery(trieve, filters));
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
-
   const filteredData = useMemo(() => {
     if (!data) return [];
     const selected = events.map((event) => {
       return (
-        data.event_names.find((e: EventNameAndCounts) => e.event_name === event) || {
+        data.event_names.find(
+          (e: EventNameAndCounts) => e.event_name === event,
+        ) || {
           event_name: event,
           event_count: 0,
         }
@@ -164,9 +165,9 @@ export const ChatUserJourneyFunnel = ({
 
   const tableData = filteredData
     ? filteredData.map((item) => [
-      formatEventName(item.event_name),
-      item.event_count.toString(),
-    ])
+        formatEventName(item.event_name),
+        item.event_count.toString(),
+      ])
     : [];
   const tableHeadings = ["Event Name", "Unique Users"];
   const tableContentTypes: ColumnContentType[] = ["text", "numeric"];
@@ -186,6 +187,7 @@ export const ChatUserJourneyFunnel = ({
           </Tooltip>
         </div>
       </div>
+      <EventPathSelector events={events} mode="chat" setEvents={setEvents} />
       {events.length > 0 ? (
         <>
           <Box paddingBlockStart="800" minHeight="150px">
@@ -203,7 +205,7 @@ export const ChatUserJourneyFunnel = ({
             hidePagination
             data={tableData}
             page={1}
-            setPage={() => { }}
+            setPage={() => {}}
             tableContentTypes={tableContentTypes}
             tableHeadings={tableHeadings}
             hasNext={hasNext}

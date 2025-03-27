@@ -15,7 +15,7 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ComponentAnalyticsFilter, EventNameAndCounts } from "trieve-ts-sdk";
 import { BasicTableComponent } from "../BasicTableComponent";
-import { searchEvents } from "../EventPathSelector";
+import { EventPathSelector, searchEvents } from "../EventPathSelector";
 import { searchEventFunnelQuery } from "app/queries/analytics/search";
 export const SearchUserJourneyFunnel = ({
   filters,
@@ -23,19 +23,20 @@ export const SearchUserJourneyFunnel = ({
   filters: ComponentAnalyticsFilter;
 }) => {
   const { trieve } = useTrieve();
-  const events = searchEvents;
+  const [events, setEvents] = useState<KnownEventNames[]>(searchEvents);
 
   const { data, status } = useQuery(searchEventFunnelQuery(trieve, filters));
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
-
   const filteredData = useMemo(() => {
     if (!data) return [];
     const selected = events.map((event) => {
       return (
-        data.event_names.find((e: EventNameAndCounts) => e.event_name === event) || {
+        data.event_names.find(
+          (e: EventNameAndCounts) => e.event_name === event,
+        ) || {
           event_name: event,
           event_count: 0,
         }
@@ -163,9 +164,9 @@ export const SearchUserJourneyFunnel = ({
 
   const tableData = filteredData
     ? filteredData.map((item) => [
-      formatEventName(item.event_name),
-      item.event_count.toString(),
-    ])
+        formatEventName(item.event_name),
+        item.event_count.toString(),
+      ])
     : [];
   const tableHeadings = ["Event Name", "Unique Users"];
   const tableContentTypes: ColumnContentType[] = ["text", "numeric"];
@@ -185,6 +186,7 @@ export const SearchUserJourneyFunnel = ({
           </Tooltip>
         </div>
       </div>
+      <EventPathSelector events={events} mode="search" setEvents={setEvents} />
       {events.length > 0 ? (
         <>
           <Box paddingBlockStart="800" minHeight="150px">
@@ -202,7 +204,7 @@ export const SearchUserJourneyFunnel = ({
             hidePagination
             data={tableData}
             page={1}
-            setPage={() => { }}
+            setPage={() => {}}
             tableContentTypes={tableContentTypes}
             tableHeadings={tableHeadings}
             hasNext={hasNext}
