@@ -302,6 +302,8 @@ export const formatEventName = (
     return "Open Modal";
   } else if (event === "View") {
     return "View Product";
+  } else if (event === "conversation_started") {
+    return "Start Chat";
   }
 
   return toTitleCase(event);
