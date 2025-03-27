@@ -1,5 +1,5 @@
 const { build } = require("esbuild");
-const path = require('path');
+const path = require("path");
 
 const doBuild = async () => {
   const reactBuild = await build({
@@ -14,8 +14,8 @@ const doBuild = async () => {
     target: ["es2020"],
     external: ["react", "react-dom"],
     define: {
-      __dirname: JSON.stringify(path.resolve())
-    }
+      __dirname: JSON.stringify(path.resolve()),
+    },
   });
 
   const vanillaJsBuild = await build({
@@ -29,8 +29,8 @@ const doBuild = async () => {
     format: "esm",
     target: ["es2020"],
     define: {
-      __dirname: JSON.stringify(path.resolve())
-    }
+      __dirname: JSON.stringify(path.resolve()),
+    },
   });
 };
 

@@ -41,6 +41,9 @@ export default function ECommerce() {
     import.meta.env.VITE_SHOW_RESULT_HIGHLIGHTS == "true";
   const inlineCarousel = import.meta.env.VITE_INLINE_CAROUSEL == "true";
 
+  //VITE_TOPIC_ID
+  const topicId = import.meta.env.VITE_TOPIC_ID;
+
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [component, setComponent] = useState(0);
 
@@ -115,6 +118,7 @@ export default function ECommerce() {
               showFloatingInput={showFloatingInput}
               inline={inline}
               showResultHighlights={showResultHighlights}
+              previewTopicId={topicId}
               recommendOptions={{
                 queriesToTriggerRecommendations: [
                   "What if this is out of stock?",

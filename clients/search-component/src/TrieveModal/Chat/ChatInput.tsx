@@ -88,6 +88,7 @@ export const ChatInput = ({
             value={currentQuestion}
             className={`${props.inline ? "inline-input " : ""}${mode}  tv-rounded-md tv-mb-0`}
             onChange={(e) => setCurrentQuestion(e.target.value)}
+            disabled={props.previewTopicId != undefined}
             placeholder={
               isRecording
                 ? "Recording... Press stop icon to submit"

@@ -5,7 +5,8 @@ import { StopSquareIcon, MicIcon } from "../icons";
 import { motion } from "motion/react";
 
 export const UploadAudio = () => {
-  const { mode, setAudioBase64, isRecording, setIsRecording } = useModalState();
+  const { props, mode, setAudioBase64, isRecording, setIsRecording } =
+    useModalState();
 
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
     null,
@@ -71,7 +72,7 @@ export const UploadAudio = () => {
 
   return (
     <div>
-      <div
+      <button
         className={cn(
           "tv-rounded tv-z-20 tv-cursor-pointer",
           mode === "chat" && "tv-right-[60px] tv-top-[17px] tv-absolute",
@@ -80,6 +81,7 @@ export const UploadAudio = () => {
           e.preventDefault();
           toggleRecording();
         }}
+        disabled={props.previewTopicId != undefined}
       >
         {isRecording ? (
           <motion.div
@@ -105,7 +107,7 @@ export const UploadAudio = () => {
             className="tv-text-zinc-700 tv-dark-text-white"
           />
         )}
-      </div>
+      </button>
     </div>
   );
 };
