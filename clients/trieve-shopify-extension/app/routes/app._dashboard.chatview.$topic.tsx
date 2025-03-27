@@ -1,13 +1,20 @@
 // app/routes/app.chat.$id.tsx
-import { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
-import { useLoaderData } from '@remix-run/react';
-import { BlockStack, Card, InlineGrid, InlineStack, Page, Text } from '@shopify/polaris';
-import { Suspense, useState } from 'react';
-import { TrieveModalSearch } from 'trieve-search-component';
+import { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+import {
+  BlockStack,
+  Card,
+  InlineGrid,
+  InlineStack,
+  Page,
+  Text,
+} from "@shopify/polaris";
+import { Suspense } from "react";
+import { TrieveModalSearch } from "trieve-search-component";
 import "trieve-search-component/styles";
 import { useTrieve } from "app/context/trieveContext";
 import styles from "../styles/chatview-styles.css?url";
-import { sdkFromKey, validateTrieveAuth } from 'app/auth';
+import { sdkFromKey, validateTrieveAuth } from "app/auth";
 
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: styles }];
@@ -17,8 +24,9 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
   const topicId = params.topic;
   const key = await validateTrieveAuth(request);
   const trieve = sdkFromKey(key);
-  let messages = await trieve.getAllMessagesForTopic({ messagesTopicId: topicId! });
-
+  let messages = await trieve.getAllMessagesForTopic({
+    messagesTopicId: topicId!,
+  });
 
   return { topicId, messages };
 }
@@ -29,17 +37,17 @@ export default function ChatRoute() {
 
   return (
     <Page
-      title='Chat Thread'
+      title="Chat Thread"
       backAction={{
-        content: 'All Chats',
-        url: "/app/chats"
+        content: "All Chats",
+        url: "/app/chats",
       }}
     >
       <InlineGrid columns={{ xs: 1, md: "3fr 1fr" }} gap="400">
         <BlockStack align="space-between" gap="300">
           <InlineStack align="space-between" gap="300">
             <Suspense fallback={null}>
-              {typeof window !== "undefined" &&
+              {typeof window !== "undefined" && (
                 <TrieveModalSearch
                   type="ecommerce"
                   defaultSearchMode="chat"
@@ -56,10 +64,10 @@ export default function ChatRoute() {
                   hidePrice={true}
                   hideChunkHtml={true}
                   useGroupSearch={true}
-                />}
+                />
+              )}
             </Suspense>
           </InlineStack>
-
         </BlockStack>
         <BlockStack>
           <Card>
@@ -68,7 +76,13 @@ export default function ChatRoute() {
                 Metadata
               </Text>
               <Text variant="bodyMd" as="h2">
-                Message Length: <Text as="span"> {messages.filter((message) => message.role == "user").length} </Text>
+                Message Length:{" "}
+                <Text as="span">
+                  {" "}
+                  {
+                    messages.filter((message) => message.role == "user").length
+                  }{" "}
+                </Text>
               </Text>
             </BlockStack>
           </Card>
