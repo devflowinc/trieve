@@ -68,7 +68,7 @@ export default function ChatRoute() {
                 Metadata
               </Text>
               <Text variant="bodyMd" as="h2">
-                Message Length: <Text as="span"> {messages.length - 1} </Text>
+                Message Length: <Text as="span"> {messages.filter((message) => message.role == "user").length} </Text>
               </Text>
             </BlockStack>
           </Card>
