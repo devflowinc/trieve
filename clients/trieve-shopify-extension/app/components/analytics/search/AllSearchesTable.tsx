@@ -43,14 +43,14 @@ export const AllSearchesTable = () => {
     let newData = data?.queries.map((query) => {
       const searchMethod = (query.request_params as SearchChunksReqPayload).search_type;
       return [
-        query.query,
-        toTitleCase(query.search_type),
-        toTitleCase(searchMethod),
-        query.top_score,
-        query.latency,
-        query.query_rating ?? "N/A",
-        query.results.length,
-        parseCustomDateString(query.created_at).toLocaleString(),
+        { content: query.query },
+        { content: toTitleCase(query.search_type) },
+        { content: toTitleCase(searchMethod) },
+        { content: query.top_score },
+        { content: query.latency },
+        { content: query.query_rating ?? "N/A" },
+        { content: query.results.length },
+        { content: parseCustomDateString(query.created_at).toLocaleString() },
       ];
     }) ?? [];
 

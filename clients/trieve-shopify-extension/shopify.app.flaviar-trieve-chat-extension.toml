@@ -6,25 +6,42 @@ embedded = true
 name = "flaviar-trieve-chat-extension"
 handle = "flaviar-trieve-chat-extension"
 
-[build]
-include_config_on_deploy = true
-
 [webhooks]
 api_version = "2025-01"
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
 
   [[webhooks.subscriptions]]
   topics = [ "app/scopes_update" ]
   uri = "/webhooks/app/scopes_update"
 
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+  #
+  # [[webhooks.subscriptions]]
+  # topics = [ "products/create" ]
+  # uri = "/webhooks/app/products/create"
+  #
+  # [[webhooks.subscriptions]]
+  # topics = [ "products/update" ]
+  # uri = "/webhooks/app/products/update"
+  #
+  # [[webhooks.subscriptions]]
+  # topics = [ "products/delete" ]
+  # uri = "/webhooks/app/products/delete"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,read_products"
+scopes = "write_products,read_products,read_themes"
 
 [auth]
 redirect_urls = [ "https://flaviar-shopify.trieve.ai/api/auth" ]
 
+[access.admin]
+direct_api_mode = "online"
+embedded_app_direct_api_access = true
+
 [pos]
 embedded = false
+
+[build]
+include_config_on_deploy = true
