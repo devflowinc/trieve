@@ -188,9 +188,11 @@ export const AdvancedTableComponent = ({
                         <Link
                           to={cell.url}
                         >
-                          <InlineStack>
+                          <InlineStack wrap={false}>
                             <ViewIcon width={20} />
-                            {cell.content}
+                            <Text as="span" variant="bodyMd" truncate={true}>
+                              {cell.content}
+                            </Text>
                           </InlineStack>
                         </Link>
                       ) : cell.content}
