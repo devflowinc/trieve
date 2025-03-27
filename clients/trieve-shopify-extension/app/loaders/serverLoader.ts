@@ -1,7 +1,7 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { dehydrate, QueryClient } from "@tanstack/react-query";
 import { sdkFromKey, validateTrieveAuth } from "../auth";
-import { Loader, Result, Success, tryCatch } from "./";
+import { Loader, Result, tryCatch } from "./";
 import { authenticate } from "app/shopify.server";
 
 export const createServerLoader = (loader: Loader) => {
@@ -15,7 +15,7 @@ export const createServerLoader = (loader: Loader) => {
       session.accessToken!,
     );
 
-    await loader({ queryClient, trieve, adminApiFetcher });
+    await loader({ queryClient, trieve, adminApiFetcher, params: args.params });
     return {
       dehydratedState: dehydrate(queryClient),
     };

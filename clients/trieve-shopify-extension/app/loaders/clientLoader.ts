@@ -81,7 +81,7 @@ export const createClientLoader = (loader: Loader) => {
     };
 
     const adminApiFetcher = buildClientAdminApiFetcher();
-    await loader({ queryClient, trieve, adminApiFetcher });
+    await loader({ queryClient, trieve, adminApiFetcher, params: args.params });
     return null;
   };
 };
