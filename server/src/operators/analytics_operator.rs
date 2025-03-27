@@ -2902,7 +2902,7 @@ pub async fn get_search_revenue_query(
 
 pub async fn get_chat_revenue_query(
     dataset_id: uuid::Uuid,
-    filter: Option<RAGAnalyticsFilter>,
+    filter: Option<EventAnalyticsFilter>,
     direct: Option<bool>,
     granularity: Option<Granularity>,
     clickhouse_client: &clickhouse::Client,
@@ -2932,7 +2932,7 @@ pub async fn get_chat_revenue_query(
     }
 
     if let Some(filter) = &filter {
-        query_string = filter.add_to_query(query_string);
+        query_string = filter.add_to_query(query_string).unwrap_or_default();
     }
 
     query_string.push_str(

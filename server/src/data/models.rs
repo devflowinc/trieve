@@ -7402,7 +7402,7 @@ pub enum RAGAnalytics {
     #[schema(title = "ChatRevenue")]
     #[serde(rename = "chat_revenue")]
     ChatRevenue {
-        filter: Option<RAGAnalyticsFilter>,
+        filter: Option<EventAnalyticsFilter>,
         direct: Option<bool>,
         granularity: Option<Granularity>,
     },

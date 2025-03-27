@@ -14817,7 +14817,7 @@
               "filter": {
                 "allOf": [
                   {
-                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                    "$ref": "#/components/schemas/EventAnalyticsFilter"
                   }
                 ],
                 "nullable": true
