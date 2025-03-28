@@ -7935,6 +7935,8 @@ pub struct TopComponentsResponse {
 pub struct TopComponents {
     pub component_name: String,
     pub count: u64,
+    pub cart_count: u64,
+    pub checkout_count: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

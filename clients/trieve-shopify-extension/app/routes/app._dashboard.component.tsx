@@ -1,5 +1,4 @@
 import { Grid } from "@shopify/polaris";
-import { AverageInteractionTime } from "app/components/analytics/component/AverageInteractionTime";
 import { TopComponents } from "app/components/analytics/component/TopComponents";
 import { TopPages } from "app/components/analytics/component/TopPages";
 import { TotalUniqueVisitors } from "app/components/analytics/component/TotalUniqueVisitors";

@@ -3721,6 +3721,8 @@ export type ToolFunctionParameter = {
 export type ToolFunctionParameterType = 'number' | 'boolean';
 
 export type TopComponents = {
+    cart_count: number;
+    checkout_count: number;
     component_name: string;
     count: number;
 };
