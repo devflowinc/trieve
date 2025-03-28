@@ -26,6 +26,7 @@ import {
 } from "app/components/chat/MessageEventTimeline";
 import { EventsForTopicResponse } from "trieve-ts-sdk";
 import { format } from "date-fns";
+import { parseCustomDateString } from "app/utils/formatting";
 
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: styles }];
@@ -59,19 +60,8 @@ export default function ChatRoute() {
         new Date(b.created_at).getUTCSeconds() -
         new Date(a.created_at).getUTCSeconds(),
     );
-    if (sortedMessages.length > 0) {
-      events.push({
-        date: new Date(sortedMessages.at(0)!.created_at),
-        type: "New Chat",
-        additional: format(
-          new Date(sortedMessages.at(0)!.created_at),
-          "h:m aa, LLL d y",
-        ),
-        icon: <PlusIcon width={20} fill="#000" height={20} />,
-      });
-    }
 
-    messages.forEach((message) => {
+    sortedMessages.forEach((message) => {
       if (message.role === "user") {
         events.push({
           date: new Date(message.created_at),
@@ -86,23 +76,35 @@ export default function ChatRoute() {
       if (event.event_name === "View") return;
       if (event.event_name === "Click") {
         events.push({
-          date: new Date(event.created_at),
+          date: new Date(parseCustomDateString(event.updated_at, false)),
           type: "Click on Product",
           icon: <CursorIcon width={20} fill="#000" height={20} />,
         });
       }
       if (event.event_name === "site-add_to_cart") {
         events.push({
-          date: new Date(event.created_at),
+          date: new Date(parseCustomDateString(event.updated_at, false)),
           type: "Add To Cart",
           icon: <CartIcon width={20} fill="#000" height={20} />,
         });
       }
     });
 
-    const result = events.sort(
-      (a, b) => b.date.getUTCSeconds() - a.date.getUTCSeconds(),
-    );
+    const result = events.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    if (sortedMessages.length > 0) {
+      result.unshift({
+        date: new Date(sortedMessages.at(0)!.created_at),
+        type: "New Chat",
+        additional: format(
+          new Date(
+            parseCustomDateString(sortedMessages.at(0)!.created_at, true),
+          ),
+          "h:m aa, LLL d y",
+        ),
+        icon: <PlusIcon width={20} fill="#000" height={20} />,
+      });
+    }
     return result;
   };
 
