@@ -11683,6 +11683,20 @@
           "filter_clicked"
         ]
       },
+      "EventsForTopicResponse": {
+        "type": "object",
+        "required": [
+          "events"
+        ],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventData"
+            }
+          }
+        }
+      },
       "ExtendedOrganizationUsageCount": {
         "type": "object",
         "required": [
@@ -14840,6 +14854,26 @@
           },
           {
             "type": "object",
+            "title": "EventsForTopic",
+            "required": [
+              "topic_id",
+              "type"
+            ],
+            "properties": {
+              "topic_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "events_for_topic"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
             "title": "ChatRevenue",
             "required": [
               "type"
@@ -14984,6 +15018,9 @@
           },
           {
             "$ref": "#/components/schemas/EventNameAndCountsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/EventsForTopicResponse"
           },
           {
             "$ref": "#/components/schemas/ChatRevenueResponse"
