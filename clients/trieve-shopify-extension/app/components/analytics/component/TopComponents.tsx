@@ -21,7 +21,12 @@ export const TopComponents = ({
   }, [page]);
 
   const mappedData = data
-    ? data.top_components.map((query) => [query.component_name, query.count])
+    ? data.top_components.map((query) => [
+        query.component_name,
+        query.cart_count,
+        query.checkout_count,
+        query.count,
+      ])
     : [];
 
   return (
@@ -30,9 +35,14 @@ export const TopComponents = ({
       page={page}
       setPage={setPage}
       label="Top Components by Interactions"
-      tooltipContent="The top components with messages sent, products viewed, and other interactions."
-      tableContentTypes={["text", "numeric"]}
-      tableHeadings={["Component Name", "Interactions"]}
+      tooltipContent="The top components with messages sent, products engaged with, and other interactions."
+      tableContentTypes={["text", "numeric", "numeric", "numeric"]}
+      tableHeadings={[
+        "Component Name",
+        "Add to Carts",
+        "Checkouts",
+        "Interactions",
+      ]}
       hasNext={data?.top_components.length == 10}
     />
   );

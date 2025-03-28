@@ -2087,7 +2087,9 @@ pub async fn get_top_components_query(
     let mut query_string = String::from(
         "SELECT 
             JSONExtractString(metadata, 'component_props', 'componentName') as componentName,
-            count(*) as count
+            count(*) as count,
+            countIf(event_name LIKE '%cart%') as cart_count,
+            countIf(event_name LIKE '%checkout%') as checkout_count
         FROM events
         WHERE dataset_id = ? AND componentName != '' AND event_name NOT LIKE '%_load'",
     );

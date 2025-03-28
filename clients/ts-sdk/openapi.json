@@ -18914,9 +18914,21 @@
         "type": "object",
         "required": [
           "component_name",
-          "count"
+          "count",
+          "cart_count",
+          "checkout_count"
         ],
         "properties": {
+          "cart_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "checkout_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
           "component_name": {
             "type": "string"
           },
