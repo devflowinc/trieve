@@ -1831,9 +1831,11 @@ pub async fn get_topic_queries_query(
             COUNT(rag_queries.id) as message_count,
             AVG(rag_queries.top_score) as top_score,
             AVG(rag_queries.hallucination_score) as hallucination_score,
-            AVG(JSONExtract(query_rating, 'rating', 'Nullable(Float64)')) as query_rating
+            AVG(JSONExtract(query_rating, 'rating', 'Nullable(Float64)')) as query_rating,
+            length(view_events.items) as products_shown
         FROM topics 
         JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
+        JOIN events as view_events ON rag_queries.id = toUUID(view_events.request_id) AND view_events.event_type = 'view'
         ",
     );
 

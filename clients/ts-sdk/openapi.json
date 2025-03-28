@@ -19113,7 +19113,8 @@
           "updated_at",
           "message_count",
           "avg_top_score",
-          "avg_hallucination_score"
+          "avg_hallucination_score",
+          "products_shown"
         ],
         "properties": {
           "avg_hallucination_score": {
@@ -19146,6 +19147,11 @@
           },
           "owner_id": {
             "type": "string"
+          },
+          "products_shown": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           },
           "topic_id": {
             "type": "string",

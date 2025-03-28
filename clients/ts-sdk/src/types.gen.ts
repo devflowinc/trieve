@@ -3775,6 +3775,7 @@ export type TopicAnalyticsSummary = {
     message_count: number;
     name: string;
     owner_id: string;
+    products_shown: number;
     topic_id: string;
     updated_at: string;
 };

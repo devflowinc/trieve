@@ -7705,6 +7705,7 @@ pub struct TopicAnalyticsSummaryClickhouse {
     pub avg_top_score: f64,
     pub avg_hallucination_score: f64,
     pub avg_query_rating: Option<f64>,
+    pub products_shown: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -7719,6 +7720,7 @@ pub struct TopicAnalyticsSummary {
     pub avg_top_score: f64,
     pub avg_hallucination_score: f64,
     pub avg_query_rating: Option<f64>,
+    pub products_shown: u64,
 }
 
 impl From<TopicAnalyticsSummaryClickhouse> for TopicAnalyticsSummary {
@@ -7734,6 +7736,7 @@ impl From<TopicAnalyticsSummaryClickhouse> for TopicAnalyticsSummary {
             avg_top_score: value.avg_top_score,
             avg_hallucination_score: value.avg_hallucination_score,
             avg_query_rating: value.avg_query_rating,
+            products_shown: value.products_shown,
         }
     }
 }
