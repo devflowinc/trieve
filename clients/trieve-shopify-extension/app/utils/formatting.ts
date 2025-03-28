@@ -26,7 +26,7 @@ export const formatDateForApi = (date: Date) => {
     .replace(",", "");
 };
 
-export const parseCustomDateString = (dateString: string) => {
+export const parseCustomDateString = (dateString: string, isUtc = true) => {
   const [datePart, timePart] = dateString.includes(" ")
     ? dateString.split(" ")
     : dateString.split("T");
@@ -42,7 +42,7 @@ export const parseCustomDateString = (dateString: string) => {
   minute = minute.padStart(2, "0");
   wholeSec = wholeSec.padStart(2, "0");
 
-  const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}Z`;
+  const isoString = `${year}-${month}-${day}T${hour}:${minute}:${wholeSec}${isUtc ? "Z" : ""}`;
   return new Date(isoString);
 };
 
