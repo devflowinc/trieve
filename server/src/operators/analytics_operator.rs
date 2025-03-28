@@ -1736,6 +1736,30 @@ pub async fn get_event_by_id_query(
     Ok(clickhouse_query.into())
 }
 
+pub async fn get_events_by_topic_id_query(
+    dataset_id: uuid::Uuid,
+    topic_id: uuid::Uuid,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<Vec<EventData>, ServiceError> {
+    let clickhouse_query = clickhouse_client
+        .query(
+            "SELECT ?fields from events 
+JOIN rag_queries ON rag_queries.id = toUUIDOrNull(events.request_id)
+WHERE rag_queries.dataset_id = ? AND rag_queries.topic_id = ?",
+        )
+        .bind(dataset_id)
+        .bind(topic_id)
+        .fetch_all::<EventDataClickhouse>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
+
+    let events: Vec<EventData> = clickhouse_query.into_iter().map(|q| q.into()).collect_vec();
+    Ok(events)
+}
+
 pub async fn get_all_events_query(
     dataset_id: uuid::Uuid,
     page: Option<u32>,
