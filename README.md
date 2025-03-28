@@ -19,6 +19,9 @@
     <a href="https://smithery.ai/server/trieve-mcp-server">
         <img src="https://smithery.ai/badge/trieve-mcp-server" alt="smithery badge"/>
     </a>
+    <a href="https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522trieve-mcp-server%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522more%2520args...%2522%255D%257D">
+        <img= src="https://img.shields.io/badge/vscode-mcp-install?style=flat&logoColor=%230078d4&label=vscode-mcp&labelColor=%230078d4&link=https%3A%2F%2Finsiders.vscode.dev%2Fredirect%3Furl%3Dvscode%253Amcp%252Finstall%253F%25257B%252522name%252522%25253A%252522trieve-mcp-server%252522%25252C%252522command%252522%25253A%252522npx%252522%25252C%252522args%252522%25253A%25255B%252522more%252520args...%252522%25255D%25257D" alt="vscode mcp install badge"/>
+    </a>
 </p>
 
 <h2 align="center">
