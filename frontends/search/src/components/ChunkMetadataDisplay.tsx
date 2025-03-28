@@ -387,7 +387,7 @@ const ChunkMetadataDisplay = (props: ChunkMetadataDisplayProps) => {
             // eslint-disable-next-line solid/no-innerhtml
             innerHTML={sanitizeHtml(
               props.chunk.chunk_html !== undefined
-                ? props.chunk.chunk_html.replaceAll("\n", "<br>")
+                ? props.chunk.chunk_html.replace(/\n+/, "<br>")
                 : "",
               // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
               sanitzerOptions,
