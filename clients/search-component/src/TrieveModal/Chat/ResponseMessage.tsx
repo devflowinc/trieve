@@ -113,7 +113,7 @@ export const Message = ({
           requestID: message.queryId,
           type: "rag",
           items: ecommerceChunks.map((chunk) => {
-            return chunk.id ?? "";
+            return chunk.tracking_id ?? "";
           }),
           fingerprint,
         });
@@ -147,7 +147,7 @@ export const Message = ({
     .filter(
       (item, index, array) =>
         array.findIndex((arrayItem) => arrayItem.title === item.title) ===
-          index && item.title,
+        index && item.title,
     )
     .map((item, index) => {
       const { title, descriptionHtml } = guessTitleAndDesc(item);
@@ -186,9 +186,9 @@ export const Message = ({
                 __html: props.showResultHighlights
                   ? title
                   : title.replace(
-                      /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                      "",
-                    ),
+                    /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                    "",
+                  ),
               }}
             />
             {!props.hidePrice && (
@@ -288,13 +288,12 @@ export const Message = ({
         return tag.replaceWith(tag.textContent || "");
       });
       const cleanFirstHeading = $firstHeading?.textContent;
-      const title = `${
-        chunk.metadata?.heading ||
+      const title = `${chunk.metadata?.heading ||
         chunk.metadata?.title ||
         chunk.metadata?.page_title ||
         chunk.metadata?.name ||
         cleanFirstHeading
-      }`
+        }`
         .replace("#", "")
         .replace("¶", "");
       return {
@@ -312,9 +311,8 @@ export const Message = ({
     )
     .map((item, index) => (
       <a
-        className={`source-anchor${
-          item.metadata?.yt_preview_src ? " yt-anchor" : ""
-        }`}
+        className={`source-anchor${item.metadata?.yt_preview_src ? " yt-anchor" : ""
+          }`}
         key={index}
         href={item.link as string}
         target="_blank"
@@ -415,8 +413,8 @@ export const Message = ({
           <div>
             {message.additional
               ? props.type !== "ecommerce" && (
-                  <div className="additional-links">{docsItems}</div>
-                )
+                <div className="additional-links">{docsItems}</div>
+              )
               : null}
             {props.previewTopicId == undefined && (
               <div className="feedback-wrapper tv-gap-2 w-full tv-flex">

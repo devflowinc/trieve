@@ -108,20 +108,48 @@ const Modal = () => {
 
             addCarts.forEach((cart) => {
               cart.addEventListener("click", () => {
-                trieveSDK.sendAnalyticsEvent(
-                  {
-                    event_name: `site-add_to_cart`,
-                    event_type: "add_to_cart",
-                    items: [],
-                    user_id: fingerprint,
-                    location: window.location.href,
-                    metadata: {
-                      component_props: props,
-                      elementHtml: cart.outerHTML,
+                (async function () {
+                  const itemIds = Array.from(
+                    cart.outerHTML?.matchAll(/\b\d{14}\b/g) ?? [],
+                  );
+
+                  const items = itemIds
+                    .filter(
+                      (item, index, self) =>
+                        index ===
+                        self.findIndex((t) => t === item),
+                    )
+                    .map((item) => item[0]);
+
+                  const lastMessage = JSON.parse(window.localStorage.getItem("lastMessage") ?? "{}");
+                  let requestId = "00000000-0000-0000-0000-000000000000";
+                  for (const id in lastMessage) {
+                    const storedItems = lastMessage[id];
+                    if (storedItems.some((item: any) => items.includes(item))) {
+                      requestId = id;
+                      break;
+                    }
+                  }
+
+                  await trieveSDK.sendAnalyticsEvent(
+                    {
+                      event_name: `site-add_to_cart`,
+                      event_type: "add_to_cart",
+                      items,
+                      user_id: fingerprint,
+                      location: window.location.href,
+                      metadata: {
+                        component_props: props,
+                        elementHtml: cart.outerHTML,
+                      },
+                      request: {
+                        request_id: requestId,
+                        request_type: "rag",
+                      },
                     },
-                  },
-                  abortController.signal,
-                );
+                    abortController.signal,
+                  );
+                })();
               });
             });
           }
@@ -143,40 +171,56 @@ const Modal = () => {
                 );
 
                 checkout.addEventListener("click", () => {
-                  const itemIds = Array.from(
-                    itemsElem?.outerHTML.matchAll(/\b\d{14}\b/g) ?? [],
-                  );
-                  const prices = Array.from(
-                    itemsElem?.outerHTML.matchAll(/\$\d+(?:\.\d{2})?/g) ?? [],
-                  );
-                  const items = itemIds
-                    .map((itemId, index) => {
-                      return {
-                        tracking_id: itemId[0],
-                        revenue: parseFloat(prices[index][0].replace(/\$/, "")),
-                      };
-                    })
-                    .filter(
-                      (item, index, self) =>
-                        index ===
-                        self.findIndex((t) => t.tracking_id === item.tracking_id),
+                  (async function () {
+                    const itemIds = Array.from(
+                      itemsElem?.outerHTML.matchAll(/\b\d{14}\b/g) ?? [],
                     );
+                    const prices = Array.from(
+                      itemsElem?.outerHTML.matchAll(/\$\d+(?:\.\d{2})?/g) ?? [],
+                    );
+                    const items = itemIds
+                      .map((itemId, index) => {
+                        return {
+                          tracking_id: itemId[0],
+                          revenue: parseFloat(prices[index][0].replace(/\$/, "")),
+                        };
+                      })
+                      .filter(
+                        (item, index, self) =>
+                          index ===
+                          self.findIndex((t) => t.tracking_id === item.tracking_id),
+                      );
 
-                  trieveSDK.sendAnalyticsEvent(
-                    {
-                      event_name: `site-checkout`,
-                      event_type: "purchase",
-                      items,
-                      is_conversion: true,
-                      user_id: fingerprint,
-                      location: window.location.href,
-                      metadata: {
-                        component_props: props,
-                        itemsElem: itemsElem?.outerHTML,
+                    const lastMessage = JSON.parse(window.localStorage.getItem("lastMessage") ?? "{}");
+                    let requestId = "00000000-0000-0000-0000-000000000000";
+                    for (const id in lastMessage) {
+                      const storedItems = lastMessage[id];
+                      if (storedItems.some((item: any) => items.map((i: any) => i.tracking_id).includes(item))) {
+                        requestId = id;
+                        break;
+                      }
+                    }
+
+                    await trieveSDK.sendAnalyticsEvent(
+                      {
+                        event_name: `site-checkout`,
+                        event_type: "purchase",
+                        items,
+                        is_conversion: true,
+                        user_id: fingerprint,
+                        location: window.location.href,
+                        metadata: {
+                          component_props: props,
+                          itemsElem: itemsElem?.outerHTML,
+                        },
+                        request: {
+                          request_id: requestId,
+                          request_type: "rag",
+                        },
                       },
-                    },
-                    abortController.signal,
-                  );
+                      abortController.signal,
+                    );
+                  })();
                 });
 
                 checkout.setAttribute("data-tr-checkout", "true");
