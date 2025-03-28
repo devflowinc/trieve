@@ -437,7 +437,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               tool_function: {
                 name: "get_filters",
                 description:
-                  "Decide on which filters to apply to available catalog being used within the knowledge base to respond. If the question is about a specific product, respond with no filters (all false).",
+                  "Decide on which filters to apply to available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
                 parameters:
                   props.tags?.map((tag) => {
                     return {
