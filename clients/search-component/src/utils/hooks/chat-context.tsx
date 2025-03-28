@@ -44,17 +44,17 @@ const ChatContext = createContext<{
   isDoneReading?: boolean;
   rateChatCompletion: (isPositive: boolean, queryId: string | null) => void;
 }>({
-  askQuestion: async () => {},
+  askQuestion: async () => { },
   currentQuestion: "",
   isLoading: false,
   messages: [],
-  setCurrentQuestion: () => {},
-  cancelGroupChat: () => {},
-  clearConversation: () => {},
-  chatWithGroup: () => {},
-  switchToChatAndAskQuestion: async () => {},
-  stopGeneratingMessage: () => {},
-  rateChatCompletion: () => {},
+  setCurrentQuestion: () => { },
+  cancelGroupChat: () => { },
+  clearConversation: () => { },
+  chatWithGroup: () => { },
+  switchToChatAndAskQuestion: async () => { },
+  stopGeneratingMessage: () => { },
+  rateChatCompletion: () => { },
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
@@ -229,7 +229,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               requestID: queryId,
               type: "rag",
               items: ecommerceChunks.map((chunk) => {
-                return chunk.id ?? "";
+                return chunk.tracking_id ?? "";
               }),
               fingerprint,
             });
@@ -424,13 +424,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               user_message_text:
                 questionProp || currentQuestion
                   ? `Get filters from the following messages: ${messages
-                      .slice(0, -1)
-                      .filter((message) => {
-                        return message.type == "user";
-                      })
-                      .map(
-                        (message) => `\n\n${message.text}`,
-                      )} \n\n ${questionProp || currentQuestion}`
+                    .slice(0, -1)
+                    .filter((message) => {
+                      return message.type == "user";
+                    })
+                    .map(
+                      (message) => `\n\n${message.text}`,
+                    )} \n\n ${questionProp || currentQuestion}`
                   : null,
               image_url: imageUrl ? imageUrl : null,
               audio_input: curAudioBase64 ? curAudioBase64 : null,

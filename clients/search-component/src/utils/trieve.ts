@@ -354,6 +354,9 @@ export const trackViews = async ({
   fingerprint: string;
 }) => {
   if (props.previewTopicId === undefined) {
+    const lastMessage = JSON.parse(window.localStorage.getItem("lastMessage") ?? "{}");
+    lastMessage[requestID] = items;
+    window.localStorage.setItem("lastMessage", JSON.stringify(lastMessage));
     await trieve.sendAnalyticsEvent({
       event_name: "View",
       event_type: "view",
