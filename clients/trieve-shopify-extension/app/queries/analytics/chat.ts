@@ -8,7 +8,6 @@ import {
   MessagesPerUserResponse,
   RAGSortBy,
   SortOrder,
-  RagQueryResponse,
   TopicQueriesResponse,
   ChatAverageRatingResponse,
   ChatConversionRateResponse,

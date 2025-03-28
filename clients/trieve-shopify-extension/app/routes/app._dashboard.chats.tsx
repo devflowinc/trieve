@@ -32,7 +32,6 @@ export default function ChatsPage() {
 
   const mappedData = useMemo((): AdvancedTableCell[][] => {
     if (isLoading && previousData.length > 0) {
-      console.log("returning previous data");
       return previousData;
     }
 
@@ -44,6 +43,7 @@ export default function ChatsPage() {
       return [
         { content: topic.name, url: `/app/chatview/${topic.topic_id}` },
         { content: topic.message_count.toLocaleString() },
+        { content: topic.products_shown?.toLocaleString('en-US', { maximumFractionDigits: 0 }) },
         { content: topic.avg_top_score?.toLocaleString('en-US', { maximumFractionDigits: 2 }) },
         { content: topic.avg_hallucination_score?.toLocaleString('en-US', { maximumFractionDigits: 2 }) },
         { content: topic.avg_query_rating ? topic.avg_query_rating.toLocaleString('en-US', { maximumFractionDigits: 2 }) : "N/A" },
@@ -365,6 +365,7 @@ export default function ChatsPage() {
       tableHeadings={[
         { heading: "Name", tooltip: "The name created by the chatbot to represent the chat session." },
         { heading: "Message Count", tooltip: "The number of messages in the chat session." },
+        { heading: "Number of Products Shown", tooltip: "The number of products displayed in the chat session." },
         { heading: "Avg Top Score", tooltip: "The average top score of the chat session.", sortCol: "top_score" },
         { heading: "Avg Hallucination Score", tooltip: "The average hallucination score of the chat session.", sortCol: "hallucination_score" },
         { heading: "Avg Query Rating", tooltip: "The average query rating of the chat session." },
