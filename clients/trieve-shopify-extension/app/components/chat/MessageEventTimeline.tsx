@@ -4,6 +4,7 @@ import { differenceInSeconds, differenceInMinutes } from "date-fns";
 
 export type SidebarEvent = {
   type: string;
+  additional?: string;
   icon?: ReactNode;
   date: Date;
 };
@@ -35,21 +36,24 @@ export const MessageEventTimeline = ({ events }: MessageEventTimelineProps) => {
               {event.icon}
             </div>
           )}
-          <div>
-            <div className="opacity-80">{event.type}</div>
+          <div className="flex gap-3 items-baseline">
+            <span className="opacity-80 text-nowrap">{event.type}</span>
+            {event.additional ? (
+              <span className="opacity-40 truncate">{event.additional}</span>
+            ) : null}
           </div>
         </div>
         {!isLast && (
           <div className="translate-x-[13px] flex gap-2 items-center">
             <div
               style={{
-                height: timePassedLabel ? "38px" : "11px",
+                height: timePassedLabel ? "48px" : "11px",
               }}
               className="w-[2px]
           bg-purple-200/80"
             ></div>
             {timePassedLabel && (
-              <div className="opacity-70 text-xs pl-2">{timePassedLabel}</div>
+              <div className="opacity-40 text-xs pl-2">{timePassedLabel}</div>
             )}
           </div>
         )}
@@ -59,7 +63,7 @@ export const MessageEventTimeline = ({ events }: MessageEventTimelineProps) => {
 
   return (
     <Box>
-      <Text variant="headingXs" as="p">
+      <Text variant="headingMd" as="p">
         Timeline
       </Text>
       <div className="h-2"></div>

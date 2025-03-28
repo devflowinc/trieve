@@ -1,5 +1,9 @@
-// app/routes/app.chat.$id.tsx
-import { ChatIcon, PlusIcon } from "@shopify/polaris-icons";
+import {
+  CartIcon,
+  ChatIcon,
+  CursorIcon,
+  PlusIcon,
+} from "@shopify/polaris-icons";
 import { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import {
@@ -20,6 +24,8 @@ import {
   MessageEventTimeline,
   SidebarEvent,
 } from "app/components/chat/MessageEventTimeline";
+import { EventsForTopicResponse } from "trieve-ts-sdk";
+import { format } from "date-fns";
 
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: styles }];
@@ -33,20 +39,34 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     messagesTopicId: topicId!,
   });
 
-  return { topicId, messages };
+  let topicEvents = (await trieve.getRagAnalytics({
+    type: "events_for_topic",
+    topic_id: topicId!,
+  })) as EventsForTopicResponse;
+
+  return { topicId, messages, topicEvents: topicEvents.events };
 }
 
 export default function ChatRoute() {
-  const { topicId, messages } = useLoaderData<typeof loader>();
+  const { topicId, messages, topicEvents } = useLoaderData<typeof loader>();
   const { dataset, trieveKey } = useTrieve();
 
   const getEventLog = () => {
     const events: SidebarEvent[] = [];
     // create a "new chat" event
-    if (messages.length > 0) {
+    const sortedMessages = messages.sort(
+      (a, b) =>
+        new Date(b.created_at).getUTCSeconds() -
+        new Date(a.created_at).getUTCSeconds(),
+    );
+    if (sortedMessages.length > 0) {
       events.push({
-        date: new Date(messages.at(0)!.created_at),
+        date: new Date(sortedMessages.at(0)!.created_at),
         type: "New Chat",
+        additional: format(
+          new Date(sortedMessages.at(0)!.created_at),
+          "h:m aa, LLL d y",
+        ),
         icon: <PlusIcon width={20} fill="#000" height={20} />,
       });
     }
@@ -56,12 +76,34 @@ export default function ChatRoute() {
         events.push({
           date: new Date(message.created_at),
           type: "User Message",
+          additional: message.content,
           icon: <ChatIcon width={20} fill="#000" height={20} />,
         });
       }
     });
 
-    return events;
+    topicEvents.forEach((event) => {
+      if (event.event_name === "View") return;
+      if (event.event_name === "Click") {
+        events.push({
+          date: new Date(event.created_at),
+          type: "Click on Product",
+          icon: <CursorIcon width={20} fill="#000" height={20} />,
+        });
+      }
+      if (event.event_name === "site-add_to_cart") {
+        events.push({
+          date: new Date(event.created_at),
+          type: "Add To Cart",
+          icon: <CartIcon width={20} fill="#000" height={20} />,
+        });
+      }
+    });
+
+    const result = events.sort(
+      (a, b) => b.date.getUTCSeconds() - a.date.getUTCSeconds(),
+    );
+    return result;
   };
 
   const events = getEventLog();
