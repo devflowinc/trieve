@@ -20,6 +20,7 @@ import { InferenceFiltersForm } from "./FilterSidebarComponents";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { createPortal } from "react-dom";
 
+
 const SearchPage = () => {
   const { props } = useModalState();
   if (!props.searchPageProps?.display) return null;
@@ -41,6 +42,32 @@ const SearchPage = () => {
     </div>
   );
 };
+
+function findCartChanges(oldCart: any, newCart: any) {
+  if (!oldCart.items) return { added: newCart.items.map((item: any) => item.variant_id), removed: [] };
+  const onlyInLeft = (l: any, r: any) => l.filter((li: any) => !r.some((ri: any) => li.key == ri.key));
+  const result = {
+    added: onlyInLeft(newCart.items, oldCart.items),
+    removed: onlyInLeft(oldCart.items, newCart.items),
+  };
+
+
+  oldCart.items.forEach((oi: any) => {
+    const ni = newCart.items.find((i: any) => i.key == oi.key && i.quantity != oi.quantity);
+    if (!ni) return;
+    const quantity = ni.quantity - oi.quantity;
+    const item = { ...ni };
+    item.quantity = Math.abs(quantity);
+    if (quantity > 0) {
+      result.added.push(item.variant_id);
+    } else {
+      result.removed.push(item);
+    }
+  });
+
+
+  return result;
+}
 
 const Modal = () => {
   useKeyboardNavigation();
@@ -102,57 +129,59 @@ const Modal = () => {
             abortController.signal,
           );
 
-          const addToCart = props.analyticsSelectors?.addToCart;
-          if (addToCart) {
-            const addCarts = document.querySelectorAll(addToCart.querySelector);
-
-            addCarts.forEach((cart) => {
-              cart.addEventListener("click", () => {
+          const cartObserver = new PerformanceObserver((list) => {
+            list.getEntries().forEach((entry) => {
+              const isValidRequestType = ['xmlhttprequest', 'fetch'].includes((entry as any).initiatorType);
+              const isCartChangeRequest = /\/cart\/add\.js/.test(entry.name);
+              if (isValidRequestType && isCartChangeRequest) {
                 (async function () {
-                  const itemIds = Array.from(
-                    cart.outerHTML?.matchAll(/\b\d{14}\b/g) ?? [],
-                  );
+                  const oldCart = JSON.parse(localStorage.getItem('trieve-cart') ?? '{}');
+                  const newCart = await fetch((window as any).Shopify.routes.root + 'cart.js')
+                    .then(response => response.json())
+                    .then(data => {
+                      localStorage.setItem('trieve-cart', JSON.stringify(data));
+                      return data;
+                    });
 
-                  const items = itemIds
-                    .filter(
-                      (item, index, self) =>
-                        index ===
-                        self.findIndex((t) => t === item),
-                    )
-                    .map((item) => item[0]);
+                  const cartChanges = findCartChanges(oldCart, newCart);
 
-                  const lastMessage = JSON.parse(window.localStorage.getItem("lastMessage") ?? "{}");
-                  let requestId = "00000000-0000-0000-0000-000000000000";
-                  for (const id in lastMessage) {
-                    const storedItems = lastMessage[id];
-                    if (storedItems.some((item: any) => items.includes(item))) {
-                      requestId = id;
-                      break;
+                  const items = cartChanges.added.map((item: any) => item.toString());
+                  console.log("cartItems", items);
+
+                  if (items.length > 0) {
+                    const lastMessage = JSON.parse(window.localStorage.getItem("lastMessage") ?? "{}");
+                    let requestId = "00000000-0000-0000-0000-000000000000";
+                    for (const id in lastMessage) {
+                      const storedItems = lastMessage[id];
+                      if (storedItems.some((item: any) => items.includes(item))) {
+                        requestId = id;
+                        break;
+                      }
                     }
-                  }
 
-                  await trieveSDK.sendAnalyticsEvent(
-                    {
-                      event_name: `site-add_to_cart`,
-                      event_type: "add_to_cart",
-                      items,
-                      user_id: fingerprint,
-                      location: window.location.href,
-                      metadata: {
-                        component_props: props,
-                        elementHtml: cart.outerHTML,
+                    await trieveSDK.sendAnalyticsEvent(
+                      {
+                        event_name: `site-add_to_cart`,
+                        event_type: "add_to_cart",
+                        items,
+                        user_id: fingerprint,
+                        location: window.location.href,
+                        metadata: {
+                          component_props: props,
+                        },
+                        request: {
+                          request_id: requestId,
+                          request_type: "rag",
+                        },
                       },
-                      request: {
-                        request_id: requestId,
-                        request_type: "rag",
-                      },
-                    },
-                    abortController.signal,
-                  );
+                      abortController.signal,
+                    );
+                  }
                 })();
-              });
+              }
             });
-          }
+          });
+          cartObserver.observe({ entryTypes: ["resource"] });
 
           const checkoutSelector = props.analyticsSelectors?.checkout;
           if (checkoutSelector) {
@@ -166,30 +195,24 @@ const Modal = () => {
                   return;
                 }
 
-                const itemsElem = document.querySelector(
-                  checkoutSelector.containerSelector,
-                );
-
                 checkout.addEventListener("click", () => {
                   (async function () {
-                    const itemIds = Array.from(
-                      itemsElem?.outerHTML.matchAll(/\b\d{14}\b/g) ?? [],
-                    );
-                    const prices = Array.from(
-                      itemsElem?.outerHTML.matchAll(/\$\d+(?:\.\d{2})?/g) ?? [],
-                    );
-                    const items = itemIds
-                      .map((itemId, index) => {
+                    const checkoutItems = await fetch((window as any).Shopify.routes.root + 'cart.js')
+                      .then(response => response.json())
+                      .then(data => {
+                        return data;
+                      });
+
+
+                    const items = checkoutItems
+                      .items
+                      .map((item: any) => {
+                        const price = item.final_line_price.toString();
                         return {
-                          tracking_id: itemId[0],
-                          revenue: parseFloat(prices[index][0].replace(/\$/, "")),
+                          tracking_id: item.variant_id.toString(),
+                          revenue: parseFloat(price.slice(0, -2) + "." + price.slice(-2)),
                         };
-                      })
-                      .filter(
-                        (item, index, self) =>
-                          index ===
-                          self.findIndex((t) => t.tracking_id === item.tracking_id),
-                      );
+                      });
 
                     const lastMessage = JSON.parse(window.localStorage.getItem("lastMessage") ?? "{}");
                     let requestId = "00000000-0000-0000-0000-000000000000";
@@ -211,7 +234,6 @@ const Modal = () => {
                         location: window.location.href,
                         metadata: {
                           component_props: props,
-                          itemsElem: itemsElem?.outerHTML,
                         },
                         request: {
                           request_id: requestId,
@@ -228,22 +250,6 @@ const Modal = () => {
             };
 
             setCheckoutEventListener();
-
-            if (checkoutSelector.watchSelectorToRefreshListener) {
-              const checkoutElemToObserve = document.querySelector(
-                checkoutSelector.watchSelectorToRefreshListener,
-              );
-              if (checkoutElemToObserve) {
-                const observer = new MutationObserver(() => {
-                  setCheckoutEventListener();
-                });
-                observer.observe(checkoutElemToObserve, {
-                  attributes: true,
-                  childList: true,
-                  subtree: true,
-                });
-              }
-            }
           }
         });
       }
