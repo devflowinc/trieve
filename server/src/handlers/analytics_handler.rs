@@ -3,8 +3,8 @@ use crate::{
     data::models::{
         CTRAnalytics, CTRAnalyticsResponse, CTRType, ClusterAnalytics, ClusterAnalyticsResponse,
         ComponentAnalytics, ComponentAnalyticsResponse, DatasetAndOrgWithSubAndPlan, DateRange,
-        EventDataTypes, EventNameAndCountsResponse, EventTypes, GetEventsRequestBody,
-        OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
+        EventDataTypes, EventNameAndCountsResponse, EventTypes, EventsForTopicResponse,
+        GetEventsRequestBody, OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
         RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
         SearchAnalyticsResponse, TopDatasetsRequestTypes,
     },
@@ -581,6 +581,16 @@ pub async fn get_rag_analytics(
             RAGAnalyticsResponse::EventFunnel(EventNameAndCountsResponse {
                 event_names: event_counts,
             })
+        }
+        RAGAnalytics::EventsForTopic { topic_id } => {
+            let events = get_events_by_topic_id_query(
+                dataset_org_plan_sub.dataset.id,
+                topic_id,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            RAGAnalyticsResponse::EventsForTopic(EventsForTopicResponse { events })
         }
         RAGAnalytics::ChatRevenue {
             filter,

@@ -497,6 +497,7 @@ impl Modify for SecurityAddon {
             data::models::EventNameAndCounts,
             data::models::GetEventCountsRequestBody,
             data::models::EventNameAndCountsResponse,
+            data::models::EventsForTopicResponse,
             data::models::PopularFilters,
             data::models::RecommendationStrategy,
             data::models::ScoreChunk,

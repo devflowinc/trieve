@@ -1,3 +1,4 @@
+import { Params } from "@remix-run/react";
 import { QueryClient } from "@tanstack/react-query";
 import { AppInstallData } from "app/routes/app.setup";
 import { TrieveSDK } from "trieve-ts-sdk";
@@ -6,6 +7,7 @@ interface TrieveServerLoaderCtx {
   queryClient: QueryClient;
   trieve: TrieveSDK;
   adminApiFetcher: AdminApiCaller;
+  params: Params<string>;
 }
 
 export type Success<T> = {

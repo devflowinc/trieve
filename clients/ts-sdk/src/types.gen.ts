@@ -1682,6 +1682,10 @@ export type event_type = 'view';
 
 export type EventTypesFilter = 'add_to_cart' | 'purchase' | 'view' | 'click' | 'filter_clicked';
 
+export type EventsForTopicResponse = {
+    events: Array<EventData>;
+};
+
 export type ExtendedOrganizationUsageCount = {
     bytes_ingested: number;
     chunk_count: number;
@@ -2653,6 +2657,9 @@ export type RAGAnalytics = {
     filter?: ((TopicAnalyticsFilter) | null);
     type: 'event_funnel';
 } | {
+    topic_id: string;
+    type: 'events_for_topic';
+} | {
     direct?: (boolean) | null;
     filter?: ((EventAnalyticsFilter) | null);
     granularity?: ((Granularity) | null);
@@ -2673,7 +2680,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse | EventNameAndCountsResponse | ChatRevenueResponse | PopularChatsResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse | EventNameAndCountsResponse | EventsForTopicResponse | ChatRevenueResponse | PopularChatsResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at';
 

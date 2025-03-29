@@ -7399,6 +7399,8 @@ pub enum RAGAnalytics {
     EventFunnel {
         filter: Option<TopicAnalyticsFilter>,
     },
+    #[schema(title = "EventsForTopic")]
+    EventsForTopic { topic_id: uuid::Uuid },
     #[schema(title = "ChatRevenue")]
     #[serde(rename = "chat_revenue")]
     ChatRevenue {
@@ -7591,6 +7593,8 @@ pub enum RAGAnalyticsResponse {
     ChatConversionRate(ChatConversionRateResponse),
     #[schema(title = "EventFunnel")]
     EventFunnel(EventNameAndCountsResponse),
+    #[schema(title = "EventsForTopic")]
+    EventsForTopic(EventsForTopicResponse),
     #[schema(title = "ChatRevenue")]
     ChatRevenue(ChatRevenueResponse),
     #[schema(title = "PopularChats")]
@@ -7646,6 +7650,11 @@ pub struct ChatMessageCount {
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct EventNameAndCountsResponse {
     pub event_names: Vec<EventNameAndCounts>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct EventsForTopicResponse {
+    pub events: Vec<EventData>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
