@@ -1,9 +1,12 @@
 use std::{collections::HashMap, str::FromStr};
 
 use crate::{
-    data::models::{
-        DateRange, OrganizationUsageCount, Pool, StripeInvoice, StripePlan, StripeSubscription,
-        StripeUsageBasedPlan, StripeUsageBasedSubscription, TrievePlan, TrieveSubscription,
+    data::{
+        models::{
+            DateRange, OrganizationUsageCount, Pool, StripeInvoice, StripePlan, StripeSubscription,
+            StripeUsageBasedPlan, StripeUsageBasedSubscription, TrievePlan, TrieveSubscription,
+        },
+        schema::stripe_usage_based_subscriptions,
     },
     errors::ServiceError,
     get_env,
@@ -476,6 +479,30 @@ pub async fn get_trieve_subscription_by_id_query(
 
     TrieveSubscription::from_flat(stripe_subscription, stripe_usage_based_subscription)
         .ok_or(ServiceError::NotFound("Subscription not found".to_string()))
+}
+
+pub async fn delete_usage_subscription_by_id_query(
+    subscription_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+    diesel::delete(
+        stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
+            .filter(stripe_usage_based_subscriptions::id.eq(subscription_id)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to delete stripe subscription: {}", e);
+        ServiceError::BadRequest("Failed to delete stripe subscription".to_string())
+    })?;
+
+    Ok(())
 }
 
 pub async fn delete_subscription_by_id_query(

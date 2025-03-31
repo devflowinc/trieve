@@ -4128,12 +4128,24 @@ impl TrieveSubscription {
         stripe_subscription: Option<StripeSubscription>,
         stripe_usage_based_subscription: Option<StripeUsageBasedSubscription>,
     ) -> Option<Self> {
-        if let Some(usage_subscription) = stripe_usage_based_subscription {
-            Some(TrieveSubscription::UsageBased(usage_subscription))
-        } else if let Some(subscription) = stripe_subscription {
-            Some(TrieveSubscription::Flat(subscription))
-        } else {
-            None
+        match (stripe_subscription, stripe_usage_based_subscription) {
+            (Some(flat_sub), None) => Some(TrieveSubscription::Flat(flat_sub)),
+            (None, Some(usage_sub)) => Some(TrieveSubscription::UsageBased(usage_sub)),
+            (Some(flat_sub), Some(usage_sub)) => {
+                match (flat_sub.current_period_end, usage_sub.current_period_end) {
+                    (Some(flat_period_end), Some(usage_period_ned)) => {
+                        if flat_period_end > usage_period_ned {
+                            Some(TrieveSubscription::Flat(flat_sub))
+                        } else {
+                            Some(TrieveSubscription::UsageBased(usage_sub))
+                        }
+                    }
+                    (Some(_), None) => Some(TrieveSubscription::UsageBased(usage_sub)),
+                    (None, Some(_)) => Some(TrieveSubscription::Flat(flat_sub)),
+                    (None, None) => None,
+                }
+            }
+            (None, None) => None,
         }
     }
 
@@ -4157,6 +4169,13 @@ impl TrieveSubscription {
             TrieveSubscription::UsageBased(subscription) => {
                 subscription.stripe_subscription_id.clone()
             }
+        }
+    }
+
+    pub fn current_period_end(&self) -> Option<chrono::NaiveDateTime> {
+        match self {
+            TrieveSubscription::Flat(subscription) => subscription.current_period_end,
+            TrieveSubscription::UsageBased(subscription) => subscription.current_period_end,
         }
     }
 }

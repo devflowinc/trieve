@@ -407,19 +407,24 @@ export const PlansTable = (props: PlansTableProps) => {
               <For each={availablePlansWithCurrent()}>
                 {(plan) => {
                   const curPlan = currentPlan();
-                  const isUpgrade = curPlan
-                    ? curPlan.amount < plan.amount
-                    : false;
 
                   const currentPeriodEnd = plan.current_period_end;
                   let actionButton = <ActiveTag text="Current Tier" />;
 
                   if (!plan.current || currentPeriodEnd) {
-                    if ((curPlan?.amount ?? 0) > 0 && !currentPeriodEnd) {
+                    if (!currentPeriodEnd) {
                       const onClickFunc = () => {
                         void updatePlan(plan);
                       };
-                      const buttonText = isUpgrade ? "Upgrade" : "Downgrade";
+
+                      const isUpgrade = curPlan
+                        ? curPlan.amount < plan.amount
+                        : true;
+
+                      const buttonText =
+                        isUpgrade || curPlan?.amount == null
+                          ? "Upgrade"
+                          : "Downgrade";
                       actionButton = (
                         <button
                           onClick={onClickFunc}
