@@ -1331,7 +1331,6 @@ pub async fn search_chunks(
     let search_id = uuid::Uuid::new_v4();
 
     if !dataset_config.DISABLE_ANALYTICS {
-        log::info!("Sending clickhouse event");
         let clickhouse_event = SearchQueryEventClickhouse {
             id: search_id,
             search_type: String::from("search"),
