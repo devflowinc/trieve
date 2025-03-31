@@ -127,12 +127,12 @@ diesel::table! {
         file_name -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        size -> Int8,
         metadata -> Nullable<Jsonb>,
         link -> Nullable<Text>,
         time_stamp -> Nullable<Timestamp>,
         dataset_id -> Uuid,
         tag_set -> Nullable<Array<Nullable<Text>>>,
+        size -> Int8,
     }
 }
 
@@ -198,9 +198,9 @@ diesel::table! {
         org_id -> Uuid,
         dataset_count -> Int4,
         user_count -> Int4,
-        file_storage -> Int8,
         message_count -> Int4,
         chunk_count -> Int4,
+        file_storage -> Int8,
     }
 }
 
@@ -233,7 +233,6 @@ diesel::table! {
         id -> Uuid,
         stripe_id -> Text,
         chunk_count -> Int4,
-        file_storage -> Int8,
         user_count -> Int4,
         dataset_count -> Int4,
         message_count -> Int4,
@@ -242,6 +241,7 @@ diesel::table! {
         updated_at -> Timestamp,
         name -> Text,
         visible -> Bool,
+        file_storage -> Int8,
     }
 }
 
