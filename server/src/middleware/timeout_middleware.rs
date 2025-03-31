@@ -60,8 +60,8 @@ pub async fn timeout_15secs(
             let emails_enabled = std::env::var("ENABLE_408_EMAILS").unwrap_or("false".to_string());
 
             if emails_enabled == "true" {
-                web::block(move || {
-                    send_email(
+                let _ = web::block(move || {
+                    let _ = send_email(
                         email_body,
                         "webmaster@trieve.ai".to_string(),
                         Some(format!(
@@ -69,7 +69,8 @@ pub async fn timeout_15secs(
                             base_server_url, path
                         )),
                     );
-                });
+                })
+                .await;
             }
 
             Err(ServiceError::RequestTimeout(

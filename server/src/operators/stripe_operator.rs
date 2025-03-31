@@ -83,10 +83,7 @@ pub async fn update_static_stripe_meters(
     {
         // Prevent double metering
         let static_events: Vec<(&str, String)> = vec![
-            (
-                "chunk_storage_mb",
-                "None, already sent".to_string(),
-            ),
+            ("chunk_storage_mb", "None, already sent".to_string()),
             ("file_storage_mb", "None, already sent".to_string()),
             ("users", "None, already sent".to_string()),
             ("dataset_count", "None, already sent".to_string()),

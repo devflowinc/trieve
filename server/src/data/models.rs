@@ -3987,6 +3987,7 @@ pub enum TrievePlan {
 }
 
 impl TrievePlan {
+    #[allow(clippy::manual_map)]
     pub fn from_flat(
         stripe_plan: Option<StripePlan>,
         stripe_usage_based_plan: Option<StripeUsageBasedPlan>,
@@ -4064,6 +4065,7 @@ pub enum TrieveSubscription {
 }
 
 impl TrieveSubscription {
+    #[allow(clippy::manual_map)]
     pub fn from_flat(
         stripe_subscription: Option<StripeSubscription>,
         stripe_usage_based_subscription: Option<StripeUsageBasedSubscription>,
