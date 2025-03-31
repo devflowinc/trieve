@@ -189,10 +189,13 @@ pub async fn get_groups_for_dataset_cursor_query(
         .filter(chunk_group_columns::dataset_id.eq(dataset_uuid))
         .filter(chunk_group_columns::id.ge(cursor.unwrap_or(uuid::Uuid::nil())))
         .order_by(chunk_group_columns::id.asc())
-        .limit(10)
+        .limit(11)
         .load::<ChunkGroup>(&mut conn)
         .await
-        .map_err(|_err| ServiceError::BadRequest("Error getting groups for dataset".to_string()))?;
+        .map_err(|err| {
+            log::error!("Error getting groups {:?}", err);
+            ServiceError::BadRequest("Error getting groups for dataset".to_string())
+        })?;
 
     let file_ids = groups_from_files_columns::groups_from_files
         .filter(
@@ -205,9 +208,12 @@ pub async fn get_groups_for_dataset_cursor_query(
         ))
         .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
         .await
-        .map_err(|_err| ServiceError::BadRequest("Error getting file ids".to_string()))?;
+        .map_err(|err| {
+            log::error!("Error getting file ids {:?}", err);
+            ServiceError::BadRequest("Error getting file ids".to_string())
+        })?;
 
-    let group_and_files = groups
+    let group_and_files: Vec<ChunkGroupAndFileId> = groups
         .clone()
         .into_iter()
         .map(|group| {
@@ -231,17 +237,17 @@ pub async fn get_groups_for_dataset_cursor_query(
         })
         .collect();
 
-    let next = groups
-        .iter()
-        .map(|group| group.id)
-        .max()
-        .unwrap_or(uuid::Uuid::nil());
-
-    if next == cursor.unwrap_or(uuid::Uuid::nil()) || groups.len() < 10 {
-        Ok((group_and_files, group_count, None))
+    let next = if groups.len() > 10 {
+        groups.last().map(|group| group.id)
     } else {
-        Ok((group_and_files, group_count, Some(next)))
-    }
+        None
+    };
+
+    Ok((
+        group_and_files.into_iter().take(10).collect(),
+        group_count,
+        next,
+    ))
 }
 
 pub async fn get_groups_for_dataset_page_query(

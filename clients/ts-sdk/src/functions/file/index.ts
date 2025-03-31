@@ -10,8 +10,9 @@ import {
   DeleteFileHandlerData,
   DeleteFileHandlerResponse,
   FileDTO,
-  GetDatasetFilesHandlerData,
+  GetDatasetFilesAndGroupIdsHandlerData,
   GetFileHandlerData,
+  GetFilesCursorHandlerData,
   UploadFileReqPayload,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
@@ -78,7 +79,38 @@ export async function createPresignedUrlForCsvJsonl(
 }
 
 /**
- * Get all files which belong to a given dataset specified by the dataset_id parameter. 10 files are returned per page.
+ * Scroll through the files along with their groups in a dataset. This is useful for paginating through files. The cursor is used to fetch the next page of files. The page size is used to specify how many files to fetch per page. The default page size is 10.
+ * 
+ * Example:
+ * ```js
+  *const data = await trieve.getFilesForDataset({
+    cursor: "a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8",
+  });
+ * ```
+ */
+export async function scrollFiles(
+  /** @hidden */
+  this: TrieveSDK,
+  data: Omit<Omit<GetFilesCursorHandlerData, "datasetId">, "trDataset">,
+  signal?: AbortSignal,
+) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
+  return await this.trieve.fetch(
+    "/api/dataset/scroll_files",
+    "get",
+    {
+      ...data,
+      datasetId: this.datasetId,
+    },
+    signal,
+  );
+}
+
+/**
+ * Get all files and their group ids which belong to a given dataset specified by the dataset_id parameter. 10 files and group ids are returned per page. This route may return the same file multiple times if the file is associated with multiple groups.
  * 
  * Example:
  * ```js
@@ -90,7 +122,10 @@ export async function createPresignedUrlForCsvJsonl(
 export async function getFilesForDataset(
   /** @hidden */
   this: TrieveSDK,
-  data: Omit<Omit<GetDatasetFilesHandlerData, "datasetId">, "trDataset">,
+  data: Omit<
+    Omit<GetDatasetFilesAndGroupIdsHandlerData, "datasetId">,
+    "trDataset"
+  >,
   signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
@@ -109,7 +144,7 @@ export async function getFilesForDataset(
 }
 
 /**
- * Download a file based on its id.
+ * Get a signed s3 url corresponding to the file_id requested such that you can download the file.
  * 
  * Example:
  * ```js

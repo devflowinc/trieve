@@ -3870,9 +3870,9 @@
         "tags": [
           "File"
         ],
-        "summary": "Get Files for Dataset",
-        "description": "Get all files which belong to a given dataset specified by the dataset_id parameter. 10 files are returned per page.",
-        "operationId": "get_dataset_files_handler",
+        "summary": "Get Files and Group IDs for Dataset",
+        "description": "Get all files and their group ids which belong to a given dataset specified by the dataset_id parameter. 10 files and group ids are returned per page. This route may return the same file multiple times if the file is associated with multiple groups.",
+        "operationId": "get_dataset_files_and_group_ids_handler",
         "parameters": [
           {
             "name": "TR-Dataset",
@@ -3908,7 +3908,7 @@
         ],
         "responses": {
           "200": {
-            "description": "JSON body representing the files in the current dataset",
+            "description": "JSON body representing the files and their group ids in the current dataset",
             "content": {
               "application/json": {
                 "schema": {
@@ -3928,6 +3928,7 @@
             }
           }
         },
+        "deprecated": true,
         "security": [
           {
             "ApiKey": [
@@ -4052,7 +4053,7 @@
           {
             "name": "cursor",
             "in": "query",
-            "description": "The cursor offset for .Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`",
+            "description": "The cursor offset for. Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`. Group ids are compared to the cursor using a greater than or equal to.",
             "required": false,
             "schema": {
               "type": "string",
@@ -4276,6 +4277,80 @@
           {
             "ApiKey": [
               "owner"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/dataset/scroll_files": {
+      "get": {
+        "tags": [
+          "File"
+        ],
+        "summary": "Scroll Files with Groups",
+        "description": "Scroll through the files along with their groups in a dataset. This is useful for paginating through files. The cursor is used to fetch the next page of files. The page size is used to specify how many files to fetch per page. The default page size is 10.",
+        "operationId": "get_files_cursor_handler",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "The cursor to fetch files from. If not specified, will fetch from the beginning. File ids are compared to the cursor using a greater than or equal to.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "nullable": true
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "The page size of files you wish to fetch. Defaults to 10.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "nullable": true,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON body representing the files along with their associated groups in the current dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetFilesCursorResponseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting the files in the current datase",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
             ]
           }
         ]
@@ -10626,6 +10701,24 @@
           "updated_at": "2021-01-01 00:00:00.000"
         }
       },
+      "DatasetFilePathParams": {
+        "type": "object",
+        "required": [
+          "dataset_id",
+          "page"
+        ],
+        "properties": {
+          "dataset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "DatasetUsageCount": {
         "type": "object",
         "required": [
@@ -12024,6 +12117,96 @@
           }
         }
       },
+      "FileWithChunkGroups": {
+        "type": "object",
+        "required": [
+          "id",
+          "file_name",
+          "created_at",
+          "updated_at",
+          "size",
+          "dataset_id"
+        ],
+        "properties": {
+          "chunk_groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChunkGroup"
+            },
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "link": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "nullable": true
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tag_set": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "nullable": true
+            },
+            "nullable": true
+          },
+          "time_stamp": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "example": {
+          "chunk_groups": [
+            {
+              "created_at": "2021-01-01 00:00:00.000",
+              "dataset_id": "f83f08ef-c05d-421c-baf1-4f1509ea069b",
+              "description": "",
+              "id": "df1b73ec-1e62-44bc-b07e-b04485217842",
+              "metadata": {},
+              "name": "uploadme.pdf",
+              "tag_set": [],
+              "tracking_id": "file-upload-group",
+              "updated_at": "2021-01-01 00:00:00.000"
+            }
+          ],
+          "created_at": "2021-01-01 00:00:00.000",
+          "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "file_name": "file.txt",
+          "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+          "link": "https://trieve.ai",
+          "metadata": {
+            "key": "value"
+          },
+          "size": 1000,
+          "tag_set": "tag1,tag2",
+          "time_stamp": "2021-01-01 00:00:00.000",
+          "updated_at": "2021-01-01 00:00:00.000"
+        }
+      },
       "FloatRange": {
         "type": "object",
         "properties": {
@@ -12484,6 +12667,45 @@
             "items": {
               "$ref": "#/components/schemas/EventData"
             }
+          }
+        }
+      },
+      "GetFilesCursorReqQuery": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "format": "uuid",
+            "description": "File ids are compared to the cursor using a greater than or equal to. This is used to paginate through files.",
+            "nullable": true
+          },
+          "page_size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The page size of files you wish to fetch. Defaults to 10.",
+            "nullable": true
+          }
+        }
+      },
+      "GetFilesCursorResponseBody": {
+        "type": "object",
+        "title": "GetFilesCursorResponseBody",
+        "required": [
+          "file_with_chunk_groups"
+        ],
+        "properties": {
+          "file_with_chunk_groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileWithChunkGroups"
+            },
+            "description": "This is a paginated list of files and their associated groups. The page size is specified in the request. The cursor is used to fetch the next page of files."
+          },
+          "next_cursor": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Parameter for the next cursor offset. This is used to fetch the next page of files. If there are no more files, this will be None.",
+            "nullable": true
           }
         }
       },

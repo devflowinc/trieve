@@ -4,6 +4,7 @@ import {
   CreatePresignedUrlForCsvJsonResponseBody,
   FileData,
   FileDTO,
+  GetFilesCursorResponseBody,
   UploadFileResponseBody,
 } from "../../types.gen";
 import { EXAMPLE_FILE_ID, TRIEVE } from "../../__tests__/constants";
@@ -12,11 +13,7 @@ import { test } from "../../__tests__/utils";
 
 const file = fs.readFileSync("./src/__tests__/uploadme.pdf");
 
-const fileEncoded = file
-  .toString("base64")
-  .replace(/\+/g, "-") // Convert '+' to '-'
-  .replace(/\//g, "_") // Convert '/' to '_'
-  .replace(/=+$/, ""); // Remove ending '='
+const fileEncoded = file.toString("base64");
 
 describe("File Tests", async () => {
   let trieve: TrieveSDK;
@@ -117,6 +114,11 @@ describe("File Tests", async () => {
       page: 1,
     });
     expectTypeOf(data).toEqualTypeOf<FileData>();
+  });
+
+  test("scrollFiles", async () => {
+    const data = await trieve.scrollFiles({});
+    expectTypeOf(data).toEqualTypeOf<GetFilesCursorResponseBody>();
   });
 
   test("getFile", async () => {
