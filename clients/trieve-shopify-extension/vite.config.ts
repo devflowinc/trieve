@@ -91,6 +91,7 @@ export default defineConfig(({ mode }) => {
         "d3-time-format",
         "internmap",
         "use-debounce",
+        "trieve-search-component"
       ],
     },
   } satisfies UserConfig;

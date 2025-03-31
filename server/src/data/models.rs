@@ -2448,7 +2448,7 @@ pub struct DatasetEventCount {
     "server_configuration": {
         "LLM_BASE_URL": "https://api.openai.com/v1",
         "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
-        "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+        "EMBEDDING_MODEL_NAME": "jina-base-en",
         "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
         "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
         "N_RETRIEVALS_TO_INCLUDE": 8,
@@ -2617,7 +2617,7 @@ pub enum DistanceMetric {
 #[schema(example=json!({
     "LLM_BASE_URL": "https://api.openai.com/v1",
     "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
-    "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+    "EMBEDDING_MODEL_NAME": "jina-base-en",
     "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
     "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
     "N_RETRIEVALS_TO_INCLUDE": 8,
@@ -2697,7 +2697,7 @@ pub struct PublicDatasetOptions {
 #[schema(example=json!({
     "LLM_BASE_URL": "https://api.openai.com/v1",
     "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
-    "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+    "EMBEDDING_MODEL_NAME": "jina-base-en",
     "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
     "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
     "N_RETRIEVALS_TO_INCLUDE": 8,
@@ -2807,8 +2807,8 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             LLM_API_KEY: dto.LLM_API_KEY.unwrap_or("".to_string()),
             RERANKER_API_KEY: dto.RERANKER_API_KEY.unwrap_or("".to_string()),
             RERANKER_MODEL_NAME: dto.RERANKER_MODEL_NAME.unwrap_or("bge-reranker-large".to_string()),
-            EMBEDDING_BASE_URL: dto.EMBEDDING_BASE_URL.unwrap_or("https://api.openai.com/v1".to_string()),
-            EMBEDDING_MODEL_NAME: dto.EMBEDDING_MODEL_NAME.unwrap_or("text-embedding-3-small".to_string()),
+            EMBEDDING_BASE_URL: dto.EMBEDDING_BASE_URL.unwrap_or("https://embedding.trieve.ai".to_string()),
+            EMBEDDING_MODEL_NAME: dto.EMBEDDING_MODEL_NAME.unwrap_or("jina-base-en".to_string()),
             RERANKER_BASE_URL: dto.RERANKER_BASE_URL.unwrap_or("".to_string()),
             MESSAGE_TO_QUERY_PROMPT: dto.MESSAGE_TO_QUERY_PROMPT.unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()),
             RAG_PROMPT: dto.RAG_PROMPT.unwrap_or("Use the following retrieved documents to respond briefly and accurately:".to_string()),
@@ -2905,8 +2905,8 @@ impl Default for DatasetConfiguration {
             LLM_API_KEY: "".to_string(),
             RERANKER_API_KEY: "".to_string(),
             RERANKER_MODEL_NAME: "bge-reranker-large".to_string(),
-            EMBEDDING_BASE_URL: "https://api.openai.com/v1".to_string(),
-            EMBEDDING_MODEL_NAME: "text-embedding-3-small".to_string(),
+            EMBEDDING_BASE_URL: "https://embedding.trieve.ai".to_string(),
+            EMBEDDING_MODEL_NAME: "jina-base-en".to_string(),
             RERANKER_BASE_URL: "".to_string(),
             MESSAGE_TO_QUERY_PROMPT: "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string(),
             RAG_PROMPT: "Use the following retrieved documents to respond briefly and accurately:".to_string(),
@@ -3077,16 +3077,16 @@ impl DatasetConfiguration {
                 }).unwrap_or(DistanceMetric::Cosine),
             EMBEDDING_MODEL_NAME: configuration
                 .get("EMBEDDING_MODEL_NAME")
-                .unwrap_or(&json!("text-embedding-3-small"))
+                .unwrap_or(&json!("jina-base-en"))
                 .as_str()
                 .map(|s| {
                     if s.is_empty() {
-                        "text-embedding-3-small".to_string()
+                        "jina-base-en".to_string()
                     } else {
                         s.to_string()
                     }
                 })
-                .unwrap_or("text-embedding-3-small".to_string()),
+                .unwrap_or("jina-base-en".to_string()),
             RERANKER_BASE_URL: configuration
                 .get("RERANKER_BASE_URL")
                 .unwrap_or(&json!(get_env!("RERANKER_SERVER_ORIGIN", "RERANKER_SERVER_ORIGIN must be set").to_string()))
@@ -3150,16 +3150,16 @@ impl DatasetConfiguration {
                 .unwrap_or(&{
                     let model_name = configuration
                         .get("EMBEDDING_MODEL_NAME")
-                        .unwrap_or(&json!("text-embedding-3-small"))
+                        .unwrap_or(&json!("jina-base-en"))
                         .as_str()
                         .map(|s| {
                             if s.is_empty() {
-                                "text-embedding-3-small".to_string()
+                                "jina-base-en".to_string()
                             } else {
                                 s.to_string()
                             }
                         })
-                        .unwrap_or("text-embedding-3-small".to_string());
+                        .unwrap_or("jina-base-en".to_string());
                     if model_name == "jina-base-en" {
                         json!("Search for")
                     } else {

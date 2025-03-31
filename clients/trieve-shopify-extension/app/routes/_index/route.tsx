@@ -61,11 +61,16 @@ export default function App() {
     fetch(`${envs.TRIEVE_BASE_URL}/api/auth/me`, {
       credentials: "include",
     }).then((response) => {
-      if (response.status === 401) {
+      if (response.status !== 200) {
         window.location.href = `${envs.TRIEVE_BASE_URL}/api/auth?redirect_uri=${window.location}`;
+        return;
       }
       response.json().then((data: User) => {
-        setOrgs(data.orgs);
+        if (data.orgs.length == 1) {
+          generateApiKey(data.orgs[0].id);
+        } else {
+          setOrgs(data.orgs);
+        }
       });
     });
   }, []);
