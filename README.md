@@ -163,6 +163,20 @@ cat .env.chat .env.search .env.server .env.docker-compose > .env
 ./convenience.sh -l
 ```
 
+### Install front-end packages for local dev
+
+```
+cd frontends
+yarn
+```
+`cd ..`
+
+```
+cd clients/ts-sdk
+yarn build
+```
+`cd ../..`
+
 ### Start services for local dev
 
 It is recommend to manage services through [tmuxp, see the guide here](https://gist.github.com/skeptrunedev/101c7a13bb9b9242999830655470efac) or terminal tabs.
@@ -172,14 +186,6 @@ cd frontends
 yarn
 yarn dev
 ```
-close and `cd ..`
-
-```
-cd clients/ts-sdk
-yarn build
-```
-close and `cd ../..`
-
 
 ```
 cd server

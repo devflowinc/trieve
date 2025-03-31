@@ -12,6 +12,9 @@ import {
   createMemo,
   createSignal,
 } from "solid-js";
+
+import { useDatasetServerConfig } from "../hooks/useDatasetServerConfig";
+
 import {
   Menu,
   MenuItem,
@@ -42,7 +45,15 @@ const SearchForm = (props: {
   groupID?: string;
   openRateQueryModal: Setter<boolean>;
 }) => {
+  const datasetConfig = useDatasetServerConfig();
+
+  const isAimonRerankerSelected = () => {
+    const config = datasetConfig();
+    return config?.RERANKER_MODEL_NAME === "aimon-rerank";
+  };
+
   const bm25Active = import.meta.env.VITE_BM25_ACTIVE as unknown as string;
+
   const [tempSearchValues, setTempSearchValues] = createSignal(
     // eslint-disable-next-line solid/reactivity
     props.search.state,
@@ -308,6 +319,9 @@ const SearchForm = (props: {
     }
   });
 
+  // Declared debounce timeout variable for delaying search when AIMon reranker is selected.
+  let debounceTimeout: ReturnType<typeof setTimeout>;
+
   return (
     <>
       <div class="w-full">
@@ -328,8 +342,9 @@ const SearchForm = (props: {
                       true,
                   }}
                   value={props.search.state.query}
+                  // Use debounce logic on onInput when AIMon reranker is selected.
                   onInput={(e) => {
-                    props.search.setSearch("query", e.currentTarget.value);
+                    const value = e.currentTarget.value;
 
                     e.currentTarget.style.height = "auto";
                     e.currentTarget.style.height =
@@ -357,12 +372,25 @@ const SearchForm = (props: {
                     setTimeout(() => {
                       searchTextarea?.focus();
                     }, 500);
+
+                    if (isAimonRerankerSelected()) {
+                      clearTimeout(debounceTimeout);
+                      debounceTimeout = setTimeout(() => {
+                        props.search.setSearch("query", value);
+                        props.search.setSearch("version", (prev) => prev + 1);
+                      }, 1200); // 1.2 second delay
+                    } else {
+                      props.search.setSearch("query", value);
+                      props.search.setSearch("version", (prev) => prev + 1);
+                    }
                   }}
+                  // Clear debounce on keydown so that Enter triggers immediate search.
                   onKeyDown={(e) => {
                     if (
                       ((e.ctrlKey || e.metaKey) && e.key === "Enter") ||
                       (!e.shiftKey && e.key === "Enter")
                     ) {
+                      clearTimeout(debounceTimeout);
                       props.search.setSearch("version", (prev) => prev + 1);
                       e.preventDefault();
                       e.stopPropagation();
