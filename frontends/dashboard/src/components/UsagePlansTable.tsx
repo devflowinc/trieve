@@ -51,6 +51,23 @@ export const UsagePlansTable = (props: PlansTableProps) => {
     });
   });
 
+  const refetchOrgSubPlan = async () => {
+    const selectedOrgId = props.currentOrgSubPlan?.organization.id ?? "";
+
+    const resp = await fetch(`${apiHost}/organization/${selectedOrgId}`, {
+      credentials: "include",
+      headers: {
+        "TR-Organization": selectedOrgId,
+      },
+    });
+
+    if (resp.ok) {
+      const data = (await resp.json()) as OrganizationAndSubAndPlan;
+      setCurrentSubscription(data.subscription ?? null);
+      setCurrentPlan(data.plan ?? null);
+    }
+  };
+
   const updatePlan = async (plan: StripeUsageBasedPlan) => {
     const resp = await fetch(
       `${apiHost}/stripe/subscription_plan/${
@@ -68,6 +85,8 @@ export const UsagePlansTable = (props: PlansTableProps) => {
     if (resp.ok) {
       setCurrentPlan(plan);
     }
+
+    void refetchOrgSubPlan();
   };
 
   return (
@@ -78,8 +97,10 @@ export const UsagePlansTable = (props: PlansTableProps) => {
         let actionButton = <ActiveTag text="Current Tier" />;
 
         if (plan.id !== curPlan?.id || curSub?.current_period_end != null) {
-          if (curPlan?.id !== "00000000-0000-0000-0000-000000000000") {
-            console.log("We have id", plan.id);
+          if (
+            curPlan?.id !== "00000000-0000-0000-0000-000000000000" &&
+            curSub?.current_period_end == null
+          ) {
             actionButton = (
               <button
                 onClick={() => void updatePlan(plan)}
