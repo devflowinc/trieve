@@ -1219,6 +1219,11 @@ export type DatasetDTO = {
     updated_at: string;
 };
 
+export type DatasetFilePathParams = {
+    dataset_id: string;
+    page: number;
+};
+
 export type DatasetUsageCount = {
     chunk_count: number;
     dataset_id: string;
@@ -1763,6 +1768,20 @@ export type FileData = {
     total_pages: number;
 };
 
+export type FileWithChunkGroups = {
+    chunk_groups?: Array<ChunkGroup> | null;
+    created_at: string;
+    dataset_id: string;
+    file_name: string;
+    id: string;
+    link?: (string) | null;
+    metadata?: unknown;
+    size: number;
+    tag_set?: Array<((string) | null)> | null;
+    time_stamp?: (string) | null;
+    updated_at: string;
+};
+
 export type FloatRange = {
     gt?: (number) | null;
     gte?: (number) | null;
@@ -1969,6 +1988,28 @@ export type GetEventsRequestBody = {
  */
 export type GetEventsResponseBody = {
     events: Array<EventData>;
+};
+
+export type GetFilesCursorReqQuery = {
+    /**
+     * File ids are compared to the cursor using a greater than or equal to. This is used to paginate through files.
+     */
+    cursor?: (string) | null;
+    /**
+     * The page size of files you wish to fetch. Defaults to 10.
+     */
+    page_size?: (number) | null;
+};
+
+export type GetFilesCursorResponseBody = {
+    /**
+     * This is a paginated list of files and their associated groups. The page size is specified in the request. The cursor is used to fetch the next page of files.
+     */
+    file_with_chunk_groups: Array<FileWithChunkGroups>;
+    /**
+     * Parameter for the next cursor offset. This is used to fetch the next page of files. If there are no more files, this will be None.
+     */
+    next_cursor?: (string) | null;
 };
 
 export type GetGroupsForChunksReqPayload = {
@@ -5047,7 +5088,7 @@ export type GetEventsData2 = {
 
 export type GetEventsResponse = (EventReturn);
 
-export type GetDatasetFilesHandlerData = {
+export type GetDatasetFilesAndGroupIdsHandlerData = {
     /**
      * The id of the dataset to fetch files for.
      */
@@ -5062,7 +5103,7 @@ export type GetDatasetFilesHandlerData = {
     trDataset: string;
 };
 
-export type GetDatasetFilesHandlerResponse = (FileData);
+export type GetDatasetFilesAndGroupIdsHandlerResponse = (FileData);
 
 export type GetAllTagsData = {
     /**
@@ -5079,7 +5120,7 @@ export type GetAllTagsResponse2 = (GetAllTagsResponse);
 
 export type GetGroupsForDatasetData = {
     /**
-     * The cursor offset for .Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`
+     * The cursor offset for. Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`. Group ids are compared to the cursor using a greater than or equal to.
      */
     cursor?: (string) | null;
     /**
@@ -5140,6 +5181,23 @@ export type CreatePagefindIndexForDatasetData = {
 };
 
 export type CreatePagefindIndexForDatasetResponse = (void);
+
+export type GetFilesCursorHandlerData = {
+    /**
+     * The cursor to fetch files from. If not specified, will fetch from the beginning. File ids are compared to the cursor using a greater than or equal to.
+     */
+    cursor?: (string) | null;
+    /**
+     * The page size of files you wish to fetch. Defaults to 10.
+     */
+    pageSize?: (number) | null;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetFilesCursorHandlerResponse = (GetFilesCursorResponseBody);
 
 export type GetDatasetByTrackingIdData = {
     /**
@@ -6627,10 +6685,10 @@ export type $OpenApiTs = {
     };
     '/api/dataset/files/{dataset_id}/{page}': {
         get: {
-            req: GetDatasetFilesHandlerData;
+            req: GetDatasetFilesAndGroupIdsHandlerData;
             res: {
                 /**
-                 * JSON body representing the files in the current dataset
+                 * JSON body representing the files and their group ids in the current dataset
                  */
                 200: FileData;
                 /**
@@ -6712,6 +6770,21 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to creating the index
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/dataset/scroll_files': {
+        get: {
+            req: GetFilesCursorHandlerData;
+            res: {
+                /**
+                 * JSON body representing the files along with their associated groups in the current dataset
+                 */
+                200: GetFilesCursorResponseBody;
+                /**
+                 * Service error relating to getting the files in the current datase
                  */
                 400: ErrorResponseBody;
             };

@@ -1,20 +1,20 @@
 use super::chunk_operator::{create_chunk_metadata, get_row_count_for_organization_id_query};
-use super::group_operator::{create_group_from_file_query, create_groups_query};
+use super::group_operator::{
+    create_group_from_file_query, create_groups_query, delete_group_by_file_id_query,
+};
 use super::parse_operator::{build_chunking_regex, coarse_doc_chunker};
-use crate::data::models::ChunkGroup;
-use crate::data::models::FileDTO;
-use crate::data::models::{Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration};
+use crate::data::models::{
+    ChunkGroup, Dataset, DatasetAndOrgWithSubAndPlan, DatasetConfiguration, File, FileDTO,
+    FileWithChunkGroups, Pool,
+};
+use crate::errors::ServiceError;
 use crate::get_env;
 use crate::handlers::chunk_handler::ChunkReqPayload;
-use crate::handlers::file_handler::UploadFileReqPayload;
-use crate::operators::group_operator::delete_group_by_file_id_query;
-use crate::{
-    data::models::{File, Pool},
-    errors::ServiceError,
-};
+use crate::handlers::file_handler::{GetFilesCursorResponseBody, UploadFileReqPayload};
 use actix_web::web;
 use broccoli_queue::queue::BroccoliQueue;
 use diesel::dsl::sql;
+use diesel::pg::sql_types;
 use diesel::prelude::*;
 use diesel::sql_types::BigInt;
 use diesel_async::RunQueryDsl;
@@ -490,7 +490,7 @@ pub async fn get_file_query(
     Ok(file_dto)
 }
 
-pub async fn get_dataset_file_query(
+pub async fn get_dataset_files_and_group_ids_query(
     dataset_id: uuid::Uuid,
     page: u64,
     pool: web::Data<Pool>,
@@ -516,11 +516,85 @@ pub async fn get_dataset_file_query(
         ))
         .limit(10)
         .offset(((page - 1) * 10).try_into().unwrap_or(0))
+        .order_by(files_columns::created_at.desc())
         .load(&mut conn)
         .await
-        .map_err(|_| ServiceError::NotFound("No dataset found".to_string()))?;
+        .map_err(|e| {
+            log::error!("Error getting files {:?}", e);
+            ServiceError::BadRequest("Could not get files and group ids".to_string())
+        })?;
 
     Ok(file_metadata)
+}
+
+pub async fn get_files_query(
+    dataset_id: uuid::Uuid,
+    cursor: Option<uuid::Uuid>,
+    page_size: Option<i64>,
+    pool: web::Data<Pool>,
+) -> Result<GetFilesCursorResponseBody, ServiceError> {
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+    use crate::data::schema::files::dsl as files_columns;
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let file_and_groups: Vec<(File, Option<serde_json::Value>)> = files_columns::files
+        .left_join(
+            groups_from_files_columns::groups_from_files
+                .on(groups_from_files_columns::file_id.eq(files_columns::id)),
+        )
+        .left_join(
+            chunk_group_columns::chunk_group
+                .on(chunk_group_columns::id.eq(groups_from_files_columns::group_id)),
+        )
+        .filter(files_columns::dataset_id.eq(dataset_id))
+        .filter(files_columns::id.ge(cursor.unwrap_or(uuid::Uuid::nil())))
+        .select((
+            File::as_select(),
+            sql::<sql_types::Jsonb>("jsonb_agg(chunk_group)").nullable(),
+        ))
+        .group_by(files_columns::id)
+        .limit(page_size.unwrap_or(10) + 1)
+        .order_by(files_columns::id.desc())
+        .load(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Error getting files {:?}", e);
+            ServiceError::BadRequest("Could not get files".to_string())
+        })?;
+
+    let next_cursor = if file_and_groups.len() > page_size.unwrap_or(10) as usize {
+        file_and_groups.last().map(|last_file| last_file.0.id)
+    } else {
+        None
+    };
+
+    let file_with_chunk_groups = file_and_groups
+        .into_iter()
+        .map(|(file, groups)| {
+            FileWithChunkGroups::from_details(
+                file,
+                groups.map(
+                    |groups| match serde_json::from_value::<Vec<ChunkGroup>>(groups) {
+                        Ok(groups) => groups,
+                        Err(e) => {
+                            log::error!("Error parsing groups {:?}", e);
+                            vec![]
+                        }
+                    },
+                ),
+            )
+        })
+        .collect::<Vec<FileWithChunkGroups>>();
+
+    Ok(GetFilesCursorResponseBody {
+        file_with_chunk_groups,
+        next_cursor,
+    })
 }
 
 pub async fn delete_file_query(

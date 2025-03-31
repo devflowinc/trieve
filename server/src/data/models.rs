@@ -2113,6 +2113,64 @@ impl File {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[schema(example = json!({
+    "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+    "file_name": "file.txt",
+    "created_at": "2021-01-01 00:00:00.000",
+    "updated_at": "2021-01-01 00:00:00.000",
+    "size": 1000,
+    "tag_set": "tag1,tag2",
+    "metadata": {"key": "value"},
+    "link": "https://trieve.ai",
+    "time_stamp": "2021-01-01 00:00:00.000",
+    "chunk_groups": [
+        {
+            "id": "df1b73ec-1e62-44bc-b07e-b04485217842", 
+            "name": "uploadme.pdf", 
+            "tag_set": [], 
+            "metadata": {}, 
+            "created_at": "2021-01-01 00:00:00.000", 
+            "updated_at": "2021-01-01 00:00:00.000",
+            "dataset_id": "f83f08ef-c05d-421c-baf1-4f1509ea069b", 
+            "description": "", 
+            "tracking_id": "file-upload-group"
+        }
+    ],
+    "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
+}))]
+pub struct FileWithChunkGroups {
+    pub id: uuid::Uuid,
+    pub file_name: String,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub size: i64,
+    pub metadata: Option<serde_json::Value>,
+    pub link: Option<String>,
+    pub time_stamp: Option<chrono::NaiveDateTime>,
+    pub dataset_id: uuid::Uuid,
+    pub tag_set: Option<Vec<Option<String>>>,
+    pub chunk_groups: Option<Vec<ChunkGroup>>,
+}
+
+impl FileWithChunkGroups {
+    pub fn from_details(file: File, chunk_groups: Option<Vec<ChunkGroup>>) -> Self {
+        FileWithChunkGroups {
+            id: file.id,
+            file_name: file.file_name,
+            created_at: file.created_at,
+            updated_at: file.updated_at,
+            size: file.size,
+            metadata: file.metadata,
+            link: file.link,
+            time_stamp: file.time_stamp,
+            dataset_id: file.dataset_id,
+            tag_set: file.tag_set,
+            chunk_groups,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct FileAndGroupId {
     pub file: File,

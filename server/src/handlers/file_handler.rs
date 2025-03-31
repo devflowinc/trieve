@@ -5,15 +5,15 @@ use super::{
 use crate::{
     data::models::{
         ChunkReqPayloadMappings, CsvJsonlWorkerMessage, DatasetAndOrgWithSubAndPlan,
-        DatasetConfiguration, File, FileAndGroupId, FileWorkerMessage, Pool, RedisPool,
+        DatasetConfiguration, File, FileAndGroupId, FileWithChunkGroups, FileWorkerMessage, Pool,
+        RedisPool,
     },
     errors::ServiceError,
-    middleware::auth_middleware::verify_member,
     operators::{
         crawl_operator::{process_crawl_doc, Document},
         file_operator::{
             create_file_query, delete_file_query, get_aws_bucket, get_csvjsonl_aws_bucket,
-            get_dataset_file_query, get_file_query,
+            get_dataset_files_and_group_ids_query, get_file_query, get_files_query,
         },
         organization_operator::{get_file_size_sum_org, hash_function},
     },
@@ -527,7 +527,7 @@ pub async fn create_presigned_url_for_csv_jsonl(
 }
 
 #[derive(Deserialize, Debug, Serialize, ToSchema)]
-pub struct DatasetFileQuery {
+pub struct DatasetFilePathParams {
     pub dataset_id: uuid::Uuid,
     pub page: u64,
 }
@@ -537,16 +537,16 @@ pub struct FileData {
     pub total_pages: i64,
 }
 
-/// Get Files for Dataset
+/// Get Files and Group IDs for Dataset
 ///
-/// Get all files which belong to a given dataset specified by the dataset_id parameter. 10 files are returned per page.
+/// Get all files and their group ids which belong to a given dataset specified by the dataset_id parameter. 10 files and group ids are returned per page. This route may return the same file multiple times if the file is associated with multiple groups.
 #[utoipa::path(
     get,
     path = "/dataset/files/{dataset_id}/{page}",
     context_path = "/api",
     tag = "File",
     responses(
-        (status = 200, description = "JSON body representing the files in the current dataset", body = FileData),
+        (status = 200, description = "JSON body representing the files and their group ids in the current dataset", body = FileData),
         (status = 400, description = "Service error relating to getting the files in the current datase", body = ErrorResponseBody),
     ),
     params(
@@ -558,11 +558,12 @@ pub struct FileData {
         ("ApiKey" = ["readonly"]),
     )
 )]
-pub async fn get_dataset_files_handler(
-    data: web::Path<DatasetFileQuery>,
+#[deprecated]
+pub async fn get_dataset_files_and_group_ids_handler(
+    data: web::Path<DatasetFilePathParams>,
     pool: web::Data<Pool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    required_user: LoggedUser,
+    _user: LoggedUser,
 ) -> Result<HttpResponse, actix_web::Error> {
     let data = data.into_inner();
     if dataset_org_plan_sub.dataset.id != data.dataset_id {
@@ -571,14 +572,8 @@ pub async fn get_dataset_files_handler(
         )
         .into());
     }
-    if !verify_member(
-        &required_user,
-        &dataset_org_plan_sub.organization.organization.id,
-    ) {
-        return Err(ServiceError::Forbidden.into());
-    }
 
-    let files = get_dataset_file_query(data.dataset_id, data.page, pool).await?;
+    let files = get_dataset_files_and_group_ids_query(data.dataset_id, data.page, pool).await?;
 
     Ok(HttpResponse::Ok().json(FileData {
         file_and_group_ids: files
@@ -594,6 +589,66 @@ pub async fn get_dataset_files_handler(
             .unwrap_or(1),
     }))
 }
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct GetFilesCursorReqQuery {
+    /// File ids are compared to the cursor using a greater than or equal to. This is used to paginate through files.
+    pub cursor: Option<uuid::Uuid>,
+    /// The page size of files you wish to fetch. Defaults to 10.
+    pub page_size: Option<i64>,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[schema(title = "GetFilesCursorResponseBody")]
+pub struct GetFilesCursorResponseBody {
+    /// This is a paginated list of files and their associated groups. The page size is specified in the request. The cursor is used to fetch the next page of files.
+    pub file_with_chunk_groups: Vec<FileWithChunkGroups>,
+    /// Parameter for the next cursor offset. This is used to fetch the next page of files. If there are no more files, this will be None.
+    pub next_cursor: Option<uuid::Uuid>,
+}
+
+/// Scroll Files with Groups
+///
+/// Scroll through the files along with their groups in a dataset. This is useful for paginating through files. The cursor is used to fetch the next page of files. The page size is used to specify how many files to fetch per page. The default page size is 10.
+#[utoipa::path(
+    get,
+    path = "/dataset/scroll_files",
+    context_path = "/api",
+    tag = "File",
+    responses(
+        (status = 200, description = "JSON body representing the files along with their associated groups in the current dataset", body = GetFilesCursorResponseBody),
+        (status = 400, description = "Service error relating to getting the files in the current datase", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("cursor" = Option<uuid::Uuid>, Query, description = "The cursor to fetch files from. If not specified, will fetch from the beginning. File ids are compared to the cursor using a greater than or equal to."),
+        ("page_size" = Option<u64>, Query, description = "The page size of files you wish to fetch. Defaults to 10."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn get_files_cursor_handler(
+    data: web::Query<GetFilesCursorReqQuery>,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: LoggedUser,
+) -> Result<HttpResponse, actix_web::Error> {
+    let data = data.into_inner();
+    let page_size = data.page_size;
+    let cursor = data.cursor;
+
+    let files_cursor_resp_body = get_files_query(
+        dataset_org_plan_sub.dataset.id,
+        cursor,
+        page_size,
+        pool.clone(),
+    )
+    .await?;
+
+    Ok(HttpResponse::Ok().json(files_cursor_resp_body))
+}
+
 /// Delete File
 ///
 /// Delete a file from S3 attached to the server based on its id. This will disassociate chunks from the file, but only delete them all together if you specify delete_chunks to be true. Auth'ed user or api key must have an admin or owner role for the specified dataset's organization.

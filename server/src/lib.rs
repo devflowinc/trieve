@@ -224,7 +224,8 @@ impl Modify for SecurityAddon {
         handlers::group_handler::add_chunk_to_group_by_tracking_id,
         handlers::group_handler::get_chunks_in_group_by_tracking_id,
         handlers::group_handler::search_within_group,
-        handlers::file_handler::get_dataset_files_handler,
+        handlers::file_handler::get_dataset_files_and_group_ids_handler,
+        handlers::file_handler::get_files_cursor_handler,
         handlers::file_handler::upload_file_handler,
         handlers::file_handler::get_file_handler,
         handlers::file_handler::delete_file_handler,
@@ -335,9 +336,6 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::GetAllTagsResponse,
             handlers::dataset_handler::Datasets,
             handlers::dataset_handler::GetPagefindIndexResponse,
-            data::models::UserApiKey,
-            data::models::CrawlStatus,
-            data::models::CrawlType,
             handlers::crawl_handler::GetCrawlRequestsReqPayload,
             handlers::crawl_handler::CreateCrawlReqPayload,
             handlers::crawl_handler::UpdateCrawlReqPayload,
@@ -380,6 +378,9 @@ impl Modify for SecurityAddon {
             handlers::file_handler::UploadHtmlPageReqPayload,
             handlers::file_handler::FileData,
             handlers::file_handler::Pdf2MdOptions,
+            handlers::file_handler::GetFilesCursorResponseBody,
+            handlers::file_handler::DatasetFilePathParams,
+            handlers::file_handler::GetFilesCursorReqQuery,
             handlers::invitation_handler::InvitationData,
             handlers::event_handler::GetEventsData,
             handlers::organization_handler::CreateOrganizationReqPayload,
@@ -428,6 +429,9 @@ impl Modify for SecurityAddon {
             handlers::page_handler::PublicPageTabMessage,
             handlers::page_handler::HeroPattern,
             handlers::etl_handler::CreateSchemaReqPayload,
+            data::models::UserApiKey,
+            data::models::CrawlStatus,
+            data::models::CrawlType,
             data::models::ChunkReqPayloadFields,
             data::models::ChunkReqPayloadMapping,
             data::models::ChunkReqPayloadMappings,
@@ -530,9 +534,10 @@ impl Modify for SecurityAddon {
             data::models::ChunkMetadata,
             data::models::ChatMessageProxy,
             data::models::WorkerEvent,
-            data::models::File,
             data::models::ChunkGroup,
             data::models::ChunkGroupAndFileId,
+            data::models::File,
+            data::models::FileWithChunkGroups,
             data::models::FileAndGroupId,
             data::models::FileDTO,
             data::models::Organization,
@@ -963,6 +968,7 @@ pub fn main() -> std::io::Result<()> {
                                     web::resource("/events")
                                         .route(web::post().to(handlers::event_handler::get_events)),
                                 )
+                                .route("/scroll_files", web::get().to(handlers::file_handler::get_files_cursor_handler))
                                 .service(
                                     web::resource("/{dataset_id}")
                                         .route(web::get().to(handlers::dataset_handler::get_dataset))
@@ -989,7 +995,7 @@ pub fn main() -> std::io::Result<()> {
                                         .route("/", web::get().to( handlers::group_handler::get_groups_for_dataset,))
                                         .route("/{page}", web::get().to( handlers::group_handler::get_groups_for_dataset,))
                                 )
-                                .route("/files/{dataset_id}/{page}", web::get().to(handlers::file_handler::get_dataset_files_handler)),
+                                .route("/files/{dataset_id}/{page}", web::get().to(handlers::file_handler::get_dataset_files_and_group_ids_handler)),
                         )
                         .service(web::scope("/etl")
                             .route("/create_job", web::post().to(handlers::etl_handler::create_etl_job))

@@ -299,6 +299,7 @@ pub struct GroupData {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DatasetGroupCursorQuery {
+    /// Group ids are compared to the cursor using a greater than or equal to. This is used to paginate through files.
     pub cursor: Option<uuid::Uuid>,
     pub use_cursor: Option<bool>,
 }
@@ -326,7 +327,7 @@ pub struct DatasetGroupQuery {
         ("dataset_id" = uuid::Uuid, description = "The id of the dataset to fetch groups for."),
         ("page" = Option<i64>, description = "The page of groups to fetch. Page is 1-indexed. Only used if `use_cursor` = `false`."),
         ("use_cursor" = Option<bool>, Query, description = "Flag to enable `cursor` mode, this runs faster for large scroll operations. Defaults to false"),
-        ("cursor" = Option<uuid::Uuid>, Query, description = "The cursor offset for .Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`")
+        ("cursor" = Option<uuid::Uuid>, Query, description = "The cursor offset for. Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`. Group ids are compared to the cursor using a greater than or equal to.")
     ),
     security(
         ("ApiKey" = ["readonly"]),
@@ -381,7 +382,6 @@ pub struct GetGroupByTrackingIDData {
 /// Get Group by Tracking ID
 ///
 /// Fetch the group with the given tracking id.
-
 #[utoipa::path(
     get,
     path = "/chunk_group/tracking_id/{tracking_id}",
