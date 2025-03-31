@@ -163,6 +163,7 @@ export async function getRecommendedChunks(
     {
       data: props,
       datasetId: this.datasetId,
+      xApiVersion: "V2",
     },
     signal,
   ) as Promise<RecommendChunksResponseBody>;

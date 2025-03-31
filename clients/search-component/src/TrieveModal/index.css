@@ -581,7 +581,7 @@ body {
 
       .suggested-question {
         @apply tv-p-2 tv-text-left tv-rounded-md tv-border tv-transition-all tv-border-solid;
-        border-color: var(--tv-zinc-200) !important;
+        border-color: var(--tv-zinc-200);
         border: 1px solid var(--tv-zinc-200);
 
         &:hover {

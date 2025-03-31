@@ -47,7 +47,7 @@ import { TrieveSDK } from "../../sdk";
 export async function createChunkGroup(
   /** @hidden */
   this: TrieveSDK,
-  data: Omit<CreateChunkGroupReqPayloadEnum, "datasetId">
+  data: Omit<CreateChunkGroupReqPayloadEnum, "datasetId">,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -74,7 +74,7 @@ export async function searchOverGroups(
   this: TrieveSDK,
   data: SearchOverGroupsReqPayload,
   signal?: AbortSignal,
-  parseHeaders?: (headers: Record<string, string>) => void
+  parseHeaders?: (headers: Record<string, string>) => void,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -85,10 +85,11 @@ export async function searchOverGroups(
     "post",
     {
       data,
+      xApiVersion: "V2",
       datasetId: this.datasetId,
     },
     signal,
-    parseHeaders
+    parseHeaders,
   ) as Promise<SearchOverGroupsResponseBody>;
 }
 
@@ -107,7 +108,7 @@ export async function searchInGroup(
   this: TrieveSDK,
   data: SearchWithinGroupReqPayload,
   signal?: AbortSignal,
-  parseHeaders?: (headers: Record<string, string>) => void
+  parseHeaders?: (headers: Record<string, string>) => void,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -119,9 +120,10 @@ export async function searchInGroup(
     {
       data,
       datasetId: this.datasetId,
+      xApiVersion: "V2",
     },
     signal,
-    parseHeaders
+    parseHeaders,
   ) as Promise<SearchWithinGroupResponseBody>;
 }
 
@@ -139,7 +141,7 @@ export async function recommendedGroups(
   /** @hidden */
   this: TrieveSDK,
   data: RecommendGroupsReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -151,8 +153,9 @@ export async function recommendedGroups(
     {
       data,
       datasetId: this.datasetId,
+      xApiVersion: "V2",
     },
-    signal
+    signal,
   ) as Promise<RecommendGroupsResponseBody>;
 }
 
@@ -170,7 +173,7 @@ export async function updateGroup(
   /** @hidden */
   this: TrieveSDK,
   data: UpdateChunkGroupReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -183,7 +186,7 @@ export async function updateGroup(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -201,7 +204,7 @@ export async function addChunkToGroup(
   /** @hidden */
   this: TrieveSDK,
   data: AddChunkToGroupReqPayload & { group_id: string },
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -215,7 +218,7 @@ export async function addChunkToGroup(
       groupId: data.group_id,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -234,7 +237,7 @@ export async function removeChunkFromGroup(
   /** @hidden */
   this: TrieveSDK,
   data: RemoveChunkFromGroupReqPayload & { group_id: string },
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -248,7 +251,7 @@ export async function removeChunkFromGroup(
       groupId: data.group_id,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -266,7 +269,7 @@ export async function getGroupsForChunks(
   /** @hidden */
   this: TrieveSDK,
   data: GetGroupsForChunksReqPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -279,7 +282,7 @@ export async function getGroupsForChunks(
       data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -298,7 +301,7 @@ export async function getChunksGroupByTrackingId(
   /** @hidden */
   this: TrieveSDK,
   data: Omit<GetChunksInGroupByTrackingIdData, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -313,7 +316,7 @@ export async function getChunksGroupByTrackingId(
 
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -331,7 +334,7 @@ export async function getGroupByTrackingId(
   /** @hidden */
   this: TrieveSDK,
   data: Omit<GetGroupByTrackingIdData, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -344,7 +347,7 @@ export async function getGroupByTrackingId(
       ...data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -363,7 +366,7 @@ export async function addChunkToGroupByTrackingId(
   /** @hidden */
   this: TrieveSDK,
   data: AddChunkToGroupReqPayload & { tracking_id: string },
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -377,7 +380,7 @@ export async function addChunkToGroupByTrackingId(
       datasetId: this.datasetId,
       trackingId: data.tracking_id,
     },
-    signal
+    signal,
   );
 }
 
@@ -395,7 +398,7 @@ export async function deleteGroupByTrackingId(
   /** @hidden */
   this: TrieveSDK,
   data: DeleteGroupByTrackingIdData & { tracking_id: string },
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -409,7 +412,7 @@ export async function deleteGroupByTrackingId(
       trackingId: data.tracking_id,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -427,7 +430,7 @@ export async function getGroup(
   /** @hidden */
   this: TrieveSDK,
   data: Omit<GetChunkGroupData, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -440,7 +443,7 @@ export async function getGroup(
       ...data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -458,7 +461,7 @@ export async function deleteGroup(
   /** @hidden */
   this: TrieveSDK,
   data: DeleteChunkGroupData,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -471,7 +474,7 @@ export async function deleteGroup(
       ...data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -490,7 +493,7 @@ export async function getChunksInGroup(
   /** @hidden */
   this: TrieveSDK,
   data: Omit<GetChunksInGroupData, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -503,7 +506,7 @@ export async function getChunksInGroup(
       ...data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
 
@@ -521,7 +524,7 @@ export async function getGroupsForDataset(
   /** @hidden */
   this: TrieveSDK,
   data: Omit<Omit<GetGroupsForDatasetData, "datasetId">, "trDataset">,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
@@ -534,6 +537,6 @@ export async function getGroupsForDataset(
       ...data,
       datasetId: this.datasetId,
     },
-    signal
+    signal,
   );
 }
