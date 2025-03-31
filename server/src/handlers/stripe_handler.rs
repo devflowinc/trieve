@@ -4,6 +4,7 @@ use crate::{
     get_env,
     middleware::auth_middleware::verify_owner,
     operators::{
+        email_operator::send_email,
         organization_operator::{
             get_org_from_id_query, get_org_id_from_subscription_id_query, get_org_usage_by_id_query,
         },
@@ -14,7 +15,8 @@ use crate::{
             create_usage_stripe_subscription_query, delete_subscription_by_id_query,
             get_all_plans_query, get_all_usage_plans_query, get_invoices_for_org_query,
             get_option_subscription_by_organization_id_query,
-            get_option_usage_based_subscription_by_organization_id_query, get_plan_by_id_query,
+            get_option_usage_based_subscription_by_organization_id_query,
+            get_option_usage_based_subscription_by_subscription_id_query, get_plan_by_id_query,
             get_stripe_client, get_trieve_plan_by_id_query, get_trieve_subscription_by_id_query,
             get_usage_based_plan_query, set_stripe_subscription_current_period_end,
             set_subscription_payment_method, update_static_stripe_meters,
@@ -215,7 +217,39 @@ pub async fn webhook(
                 if let EventObject::Invoice(invoice) = event.data.object {
                     let subscription_stripe_id = invoice.subscription.unwrap().id().to_string();
 
-                    update_static_stripe_meters(subscription_stripe_id, pool).await?;
+                    let usage_based_subscription =
+                        get_option_usage_based_subscription_by_subscription_id_query(
+                            subscription_stripe_id.clone(),
+                            pool.clone(),
+                        )
+                        .await?;
+
+                    if let Some(usage_based_subscription) = usage_based_subscription {
+                        let organization = get_org_from_id_query(
+                            usage_based_subscription.organization_id,
+                            pool.clone(),
+                        )
+                        .await?;
+                        let metrics_sent =
+                            update_static_stripe_meters(usage_based_subscription, pool).await?;
+
+                        let subject = format!(
+                            "Send static stripe billing for organization: {}, id: {}",
+                            organization.organization.name, organization.organization.id
+                        );
+
+                        let body = format!(
+                            "{:?}\n\n{:?}",
+                            subject.clone(),
+                            metrics_sent.iter().map(|(k, v)| format!("{}: {}", k, v)).collect::<Vec<String>>().join("\n")
+                        );
+
+                        send_email(
+                            body,
+                            "webmaster@trieve.ai".to_string(),
+                            Some(subject),
+                        )?;
+                    }
                 }
             }
             EventType::CustomerSubscriptionDeleted => {

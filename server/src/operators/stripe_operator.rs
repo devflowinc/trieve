@@ -68,110 +68,110 @@ pub async fn create_usage_stripe_subscription_query(
 }
 
 pub async fn update_static_stripe_meters(
-    stripe_subscription_id: String,
+    usage_based_subscription: StripeUsageBasedSubscription,
     pool: web::Data<Pool>,
-) -> Result<(), ServiceError> {
-    let usage_based_subscription = get_option_usage_based_subscription_by_subscription_id_query(
-        stripe_subscription_id,
-        pool.clone(),
-    )
-    .await?;
+) -> Result<Vec<(&'static str, String)>, ServiceError> {
+    let timestamp_now = chrono::Utc::now();
 
-    if let Some(usage_based_subscription) = usage_based_subscription {
-        let timestamp_now = chrono::Utc::now();
-
-        // Check if within 4 days
-        if usage_based_subscription
-            .last_cycle_timestamp
-            .date()
-            .signed_duration_since(timestamp_now.naive_utc().date())
-            .num_days()
-            > 4
-        {
-            // Prevent double metering
-            return Ok(());
-        }
-
-        let usage =
-            get_org_usage_by_id_query(usage_based_subscription.organization_id, pool.clone())
-                .await?;
-
+    // Check if within 4 days
+    if usage_based_subscription
+        .last_cycle_timestamp
+        .date()
+        .signed_duration_since(timestamp_now.naive_utc().date())
+        .num_days()
+        > 4
+    {
+        // Prevent double metering
         let static_events: Vec<(&str, String)> = vec![
             (
                 "chunk_storage_mb",
-                get_storage_mb_from_chunk_count(usage.chunk_count).to_string(),
+                "None, already sent".to_string(),
             ),
-            ("file_storage_mb", usage.file_storage.to_string()),
-            ("users", usage.user_count.to_string()),
-            ("dataset_count", usage.dataset_count.to_string()),
+            ("file_storage_mb", "None, already sent".to_string()),
+            ("users", "None, already sent".to_string()),
+            ("dataset_count", "None, already sent".to_string()),
         ];
-
-        let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
-        let reqwest_client = reqwest::Client::new();
-
-        let stripe_customer_id = get_stripe_customer_id_from_subscription(
-            usage_based_subscription.stripe_subscription_id.clone(),
-        )
-        .await?;
-
-        for (event_name, event_value) in static_events {
-            let identifier = hash_function(&format!(
-                "{:?}||{:?}||{:?}||{:?}",
-                stripe_customer_id,
-                timestamp_now.to_string(),
-                event_name,
-                usage_based_subscription.organization_id
-            ));
-
-            let response = reqwest_client
-                .post("https://api.stripe.com/v1/billing/meter_events")
-                .basic_auth(stripe_secret, Option::<&str>::None)
-                .form(&[
-                    ("event_name", event_name),
-                    ("timestamp", &timestamp_now.timestamp().to_string()),
-                    ("identifier", &identifier),
-                    ("payload[stripe_customer_id]", &stripe_customer_id),
-                    ("payload[value]", &event_value),
-                ])
-                .send()
-                .await
-                .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
-
-            let stripe_billing_response = response
-                .json::<StripeBillingMetricsResponse>()
-                .await
-                .unwrap();
-
-            if let Some(error) = stripe_billing_response.error {
-                log::error!("Failed to send stripe billing: {}", error.message);
-            }
-        }
-
-        use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
-        let mut conn = pool
-            .get()
-            .await
-            .expect("Failed to get connection from pool");
-
-        diesel::update(
-            stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions.filter(
-                stripe_usage_based_subscriptions_columns::stripe_subscription_id
-                    .eq(usage_based_subscription.stripe_subscription_id),
-            ),
-        )
-        .set(
-            stripe_usage_based_subscriptions_columns::last_cycle_timestamp
-                .eq(timestamp_now.naive_utc()),
-        )
-        .execute(&mut conn)
-        .await
-        .map_err(|e| {
-            log::error!("Failed to update usage based stripe subscription: {}", e);
-            ServiceError::BadRequest("Failed to update usage based stripe subscription".to_string())
-        })?;
+        return Ok(static_events);
     }
 
-    Ok(())
+    let usage =
+        get_org_usage_by_id_query(usage_based_subscription.organization_id, pool.clone()).await?;
+
+    let static_events: Vec<(&str, String)> = vec![
+        (
+            "chunk_storage_mb",
+            get_storage_mb_from_chunk_count(usage.chunk_count).to_string(),
+        ),
+        ("file_storage_mb", usage.file_storage.to_string()),
+        ("users", usage.user_count.to_string()),
+        ("dataset_count", usage.dataset_count.to_string()),
+    ];
+
+    let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
+    let reqwest_client = reqwest::Client::new();
+
+    let stripe_customer_id = get_stripe_customer_id_from_subscription(
+        usage_based_subscription.stripe_subscription_id.clone(),
+    )
+    .await?;
+
+    for (event_name, event_value) in static_events.clone().into_iter() {
+        let identifier = hash_function(&format!(
+            "{:?}||{:?}||{:?}||{:?}",
+            stripe_customer_id,
+            timestamp_now.to_string(),
+            event_name,
+            usage_based_subscription.organization_id
+        ));
+
+        let response = reqwest_client
+            .post("https://api.stripe.com/v1/billing/meter_events")
+            .basic_auth(stripe_secret, Option::<&str>::None)
+            .form(&[
+                ("event_name", event_name),
+                ("timestamp", &timestamp_now.timestamp().to_string()),
+                ("identifier", &identifier),
+                ("payload[stripe_customer_id]", &stripe_customer_id),
+                ("payload[value]", &event_value),
+            ])
+            .send()
+            .await
+            .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+        let stripe_billing_response = response
+            .json::<StripeBillingMetricsResponse>()
+            .await
+            .unwrap();
+
+        if let Some(error) = stripe_billing_response.error {
+            log::error!("Failed to send stripe billing: {}", error.message);
+        }
+    }
+
+    use crate::data::schema::stripe_usage_based_subscriptions::dsl as stripe_usage_based_subscriptions_columns;
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    diesel::update(
+        stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions.filter(
+            stripe_usage_based_subscriptions_columns::stripe_subscription_id
+                .eq(usage_based_subscription.stripe_subscription_id),
+        ),
+    )
+    .set(
+        stripe_usage_based_subscriptions_columns::last_cycle_timestamp
+            .eq(timestamp_now.naive_utc()),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|e| {
+        log::error!("Failed to update usage based stripe subscription: {}", e);
+        ServiceError::BadRequest("Failed to update usage based stripe subscription".to_string())
+    })?;
+
+    Ok(static_events)
 }
 
 pub async fn create_stripe_subscription_query(
