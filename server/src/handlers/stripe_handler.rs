@@ -241,14 +241,14 @@ pub async fn webhook(
                         let body = format!(
                             "{:?}\n\n{:?}",
                             subject.clone(),
-                            metrics_sent.iter().map(|(k, v)| format!("{}: {}", k, v)).collect::<Vec<String>>().join("\n")
+                            metrics_sent
+                                .iter()
+                                .map(|(k, v)| format!("{}: {}", k, v))
+                                .collect::<Vec<String>>()
+                                .join("\n")
                         );
 
-                        send_email(
-                            body,
-                            "webmaster@trieve.ai".to_string(),
-                            Some(subject),
-                        )?;
+                        send_email(body, "webmaster@trieve.ai".to_string(), Some(subject))?;
                     }
                 }
             }
