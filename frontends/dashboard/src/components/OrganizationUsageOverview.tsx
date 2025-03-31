@@ -2,6 +2,7 @@ import { useContext } from "solid-js";
 import { ProgressBar } from "./ProgressBar";
 import {
   formatNumberWithCommas,
+  formatStorageBytes,
   // formatStorageBytes,
   formatStorageMb,
 } from "../utils/formatNumbers";
@@ -143,7 +144,6 @@ export const OrganizationUsageOverview = () => {
             </div>
           </dd>
         </div>
-        {/*
         <div class="px-4 py-5 sm:p-6 md:!border-r">
           <dt class="text-base font-normal">Ingested Tokens</dt>
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
@@ -207,7 +207,7 @@ export const OrganizationUsageOverview = () => {
               </div>
             </div>
           </dd>
-        </div>*/}
+        </div>
       </dl>
     </div>
   );

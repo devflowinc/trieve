@@ -197,12 +197,7 @@ pub async fn create_account(
     let org_plan_sub = get_org_from_id_query(org_id, pool.clone()).await?;
     let user_org_count_pool = pool.clone();
     let user_org_count = get_user_org_count(org_id, user_org_count_pool).await?;
-    if user_org_count
-        >= org_plan_sub
-            .plan
-            .unwrap_or_default()
-            .user_count()
-    {
+    if user_org_count >= org_plan_sub.plan.unwrap_or_default().user_count() {
         return Err(ServiceError::BadRequest(
             "User limit reached for organization, must upgrade plan to add more users".to_string(),
         ));

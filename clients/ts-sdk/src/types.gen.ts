@@ -3649,7 +3649,10 @@ export type StripeSubscription = {
 export type StripeUsageBasedPlan = {
     analytics_events_price_id: string;
     bytes_ingested_price_id: string;
+    chunks_stored_price_id: string;
     created_at: string;
+    datasets_price_id: string;
+    files_storage_price_id: string;
     id: string;
     ingest_tokens_price_id: string;
     message_tokens_price_id: string;
@@ -3657,12 +3660,19 @@ export type StripeUsageBasedPlan = {
     ocr_pages_price_id: string;
     pages_crawls_price_id: string;
     search_tokens_price_id: string;
+    users_price_id: string;
     visible: boolean;
 };
 
 export type StripeUsageBasedSubscription = {
     created_at: string;
+    current_period_end?: (string) | null;
     id: string;
+    last_cycle_chunks_stored_mb: number;
+    last_cycle_dataset_count: number;
+    last_cycle_files_storage_mb: number;
+    last_cycle_timestamp: string;
+    last_cycle_users_count: number;
     last_recorded_meter: string;
     organization_id: string;
     stripe_subscription_id: string;

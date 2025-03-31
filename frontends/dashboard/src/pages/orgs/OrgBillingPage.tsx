@@ -5,7 +5,6 @@ import { PlansTable } from "../../components/PlansTable";
 import { createToast } from "../../components/ShowToasts";
 import { InvoicesTable } from "../../components/InvoicesTable";
 import { OrganizationUsageOverview } from "../../components/OrganizationUsageOverview";
-import { UsagePlansTable } from "../../components/UsagePlansTable";
 
 export const OrgBillingPage = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -50,7 +49,6 @@ export const OrgBillingPage = () => {
     <div class="pb-4">
       <OrganizationUsageOverview />
       <InvoicesTable />
-      <UsagePlansTable currentOrgSubPlan={orgSubPlan()} />
       <PlansTable currentOrgSubPlan={orgSubPlan()} />
     </div>
   );

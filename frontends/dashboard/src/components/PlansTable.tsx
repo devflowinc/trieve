@@ -13,6 +13,8 @@ import {
 } from "../utils/formatters";
 import { AiOutlineWarning } from "solid-icons/ai";
 import { createToast } from "./ShowToasts";
+import { UsagePlansTable } from "./UsagePlansTable";
+import { StripeUsageBasedPlan } from "trieve-ts-sdk";
 
 interface CreateSetupCheckoutSessionResPayload {
   url: string;
@@ -38,6 +40,9 @@ export const PlansTable = (props: PlansTableProps) => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
 
   const [availablePlans, setAvailablePlans] = createSignal<StripePlan[]>([]);
+  const [availableUsagePlans, setAvailableUsagePlans] = createSignal<
+    StripeUsageBasedPlan[]
+  >([]);
   const [currentPlan, setCurrentPlan] = createSignal<StripePlan | null>(null);
   const [currentSubscription, setCurrentSubscription] =
     createSignal<StripeSubscription | null>(null);
@@ -45,6 +50,28 @@ export const PlansTable = (props: PlansTableProps) => {
     null,
   );
   const [canceling, setCanceling] = createSignal(false);
+
+  createEffect(() => {
+    if (!props.currentOrgSubPlan?.organization) {
+      return;
+    }
+    const availablePlansAbortController = new AbortController();
+    void fetch(`${apiHost}/stripe/usage_plans`, {
+      credentials: "include",
+      headers: {
+        "TR-Organization": props.currentOrgSubPlan?.organization.id ?? "",
+      },
+      signal: availablePlansAbortController.signal,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setAvailableUsagePlans(data as StripeUsageBasedPlan[]);
+      });
+
+    onCleanup(() => {
+      availablePlansAbortController.abort();
+    });
+  });
 
   createEffect(() => {
     setCurrentPlan(props.currentOrgSubPlan?.plan ?? null);
@@ -376,6 +403,7 @@ export const PlansTable = (props: PlansTableProps) => {
                   </Switch>
                 </td>
               </tr>
+              <UsagePlansTable currentOrgSubPlan={props.currentOrgSubPlan} />
               <For each={availablePlansWithCurrent()}>
                 {(plan) => {
                   const curPlan = currentPlan();
@@ -454,6 +482,15 @@ export const PlansTable = (props: PlansTableProps) => {
             </tbody>
           </table>
         </div>
+        <Show when={availableUsagePlans().length > 0}>
+          <p class="text-sm">
+            ** For more information about our usage based plans see our pricing
+            page.{" "}
+            <a class="text-magenta" href="https://trieve.ai/betapricing">
+              https://trieve.ai/betapricing
+            </a>
+          </p>
+        </Show>
       </div>
     </div>
   );

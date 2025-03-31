@@ -18792,6 +18792,10 @@
           "analytics_events_price_id",
           "ocr_pages_price_id",
           "pages_crawls_price_id",
+          "datasets_price_id",
+          "users_price_id",
+          "chunks_stored_price_id",
+          "files_storage_price_id",
           "created_at"
         ],
         "properties": {
@@ -18801,9 +18805,18 @@
           "bytes_ingested_price_id": {
             "type": "string"
           },
+          "chunks_stored_price_id": {
+            "type": "string"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "datasets_price_id": {
+            "type": "string"
+          },
+          "files_storage_price_id": {
+            "type": "string"
           },
           "id": {
             "type": "string",
@@ -18827,6 +18840,9 @@
           "search_tokens_price_id": {
             "type": "string"
           },
+          "users_price_id": {
+            "type": "string"
+          },
           "visible": {
             "type": "boolean"
           }
@@ -18847,18 +18863,48 @@
           "id",
           "organization_id",
           "stripe_subscription_id",
-          "last_recorded_meter",
           "usage_based_plan_id",
-          "created_at"
+          "created_at",
+          "last_recorded_meter",
+          "last_cycle_timestamp",
+          "last_cycle_dataset_count",
+          "last_cycle_users_count",
+          "last_cycle_chunks_stored_mb",
+          "last_cycle_files_storage_mb"
         ],
         "properties": {
           "created_at": {
             "type": "string",
             "format": "date-time"
           },
+          "current_period_end": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "last_cycle_chunks_stored_mb": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_cycle_dataset_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_cycle_files_storage_mb": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_cycle_timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_cycle_users_count": {
+            "type": "integer",
+            "format": "int32"
           },
           "last_recorded_meter": {
             "type": "string",
