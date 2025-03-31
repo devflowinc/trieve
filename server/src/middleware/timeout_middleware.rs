@@ -4,6 +4,7 @@ use actix_web::{
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse},
     middleware::Next,
+    web,
 };
 
 pub async fn timeout_15secs(
@@ -53,19 +54,22 @@ pub async fn timeout_15secs(
         Err(_err) => {
             let email_body = format!(
                 "Request timeout: {}\n\n<br/><br/>Method: {}\n<br/><br/>Queries: {}\n<br/><br/>Headers: {:?}",
-                path, method, queries, headers
+                path, method, queries, headers.join("\n")
             );
             log::info!("Request timeout: {}", path);
             let emails_enabled = std::env::var("ENABLE_408_EMAILS").unwrap_or("false".to_string());
+
             if emails_enabled == "true" {
-                let _ = send_email(
-                    email_body,
-                    "webmaster@trieve.ai".to_string(),
-                    Some(format!(
-                        "🤖🤖 {} Request timeout {} 🤖🤖",
-                        base_server_url, path
-                    )),
-                );
+                web::block(move || {
+                    send_email(
+                        email_body,
+                        "webmaster@trieve.ai".to_string(),
+                        Some(format!(
+                            "🤖🤖 {} Request timeout {} 🤖🤖",
+                            base_server_url, path
+                        )),
+                    );
+                });
             }
 
             Err(ServiceError::RequestTimeout(
