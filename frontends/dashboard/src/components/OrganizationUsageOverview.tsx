@@ -3,7 +3,6 @@ import { ProgressBar } from "./ProgressBar";
 import {
   formatNumberWithCommas,
   formatStorageBytes,
-  // formatStorageBytes,
   formatStorageMb,
 } from "../utils/formatNumbers";
 import { UserContext } from "../contexts/UserContext";
@@ -65,7 +64,7 @@ export const OrganizationUsageOverview = () => {
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatStorageMb(usageQuery.data?.file_storage ?? 0)} mb
+                {formatStorageBytes(usageQuery.data?.file_storage ?? 0)} mb
                 <span class="ml-2 text-sm font-medium text-neutral-600">
                   of{" "}
                   {formatStorageMb(
