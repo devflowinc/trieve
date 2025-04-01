@@ -1,5 +1,5 @@
 use crate::{
-    data::models::{Pool, TrievePlan, TrieveSubscription},
+    data::models::{DateRange, OrganizationWithSubAndPlan, Pool, TrievePlan, TrieveSubscription},
     errors::ServiceError,
     get_env,
     middleware::auth_middleware::verify_owner,
@@ -14,7 +14,8 @@ use crate::{
             create_stripe_subscription_query, create_usage_based_stripe_payment_link,
             create_usage_stripe_subscription_query, delete_subscription_by_id_query,
             delete_usage_subscription_by_id_query, get_all_plans_query, get_all_usage_plans_query,
-            get_invoices_for_org_query, get_option_subscription_by_organization_id_query,
+            get_bill_from_range, get_invoices_for_org_query,
+            get_option_subscription_by_organization_id_query,
             get_option_usage_based_subscription_by_organization_id_query,
             get_option_usage_based_subscription_by_subscription_id_query, get_plan_by_id_query,
             get_stripe_client, get_trieve_plan_by_id_query, get_trieve_subscription_by_id_query,
@@ -639,4 +640,50 @@ pub async fn update_payment_method(
     let checkout_link = create_stripe_setup_checkout_session(subscription_id, org_id).await?;
 
     Ok(HttpResponse::Ok().json(CreateSetupCheckoutSessionResPayload { url: checkout_link }))
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct BillingEstimate {
+    pub items: Vec<BillItem>,
+    pub total: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct BillItem {
+    pub name: String,
+    pub amount: f64,
+}
+
+/// Estimate Bill From Range
+///
+/// Return the amount you will be billed from a date range if you were on usage based pricing
+#[utoipa::path(
+    get,
+    path = "/stripe/estimate_bill",
+    context_path = "/api",
+    tag = "Stripe",
+    responses (
+        (status = 200, description ="Billing estimate", body = BillingEstimate ),
+        (status = 400, description = "Service error relating to calculating bill", body = ErrorResponseBody),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn estimate_bill_from_range(
+    _user: OwnerOnly,
+    org_with_plan_and_sub: OrganizationWithSubAndPlan,
+    date_range: web::Json<DateRange>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let billing_estimate = get_bill_from_range(
+        org_with_plan_and_sub.organization.id,
+        date_range.into_inner(),
+        &clickhouse_client,
+        pool,
+    )
+    .await?;
+
+    Ok(HttpResponse::Ok().json(billing_estimate))
 }

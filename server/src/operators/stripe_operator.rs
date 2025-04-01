@@ -1,4 +1,5 @@
-use std::{collections::HashMap, str::FromStr};
+use crate::handlers::stripe_handler::{BillItem, BillingEstimate};
+use std::{cmp::max, collections::HashMap, str::FromStr};
 
 use crate::{
     data::{
@@ -1160,4 +1161,137 @@ pub async fn update_stripe_usage_based_subscription(
     })?;
 
     Ok(())
+}
+
+pub struct BillingPrice {
+    free_tier: i64,
+    past_free_tier_charge: f64,
+    name: String,
+    guage_name: String,
+}
+
+pub async fn get_bill_from_range(
+    organization_id: uuid::Uuid,
+    date_range: DateRange,
+    clickhouse_client: &clickhouse::Client,
+    pool: web::Data<Pool>,
+) -> Result<BillingEstimate, ServiceError> {
+    let usage = get_extended_org_usage_by_id_query(
+        organization_id,
+        Some(date_range),
+        clickhouse_client,
+        pool.clone(),
+        &mut None,
+    )
+    .await?;
+
+    let prices = vec![
+        BillingPrice {
+            free_tier: 3_000_000,
+            past_free_tier_charge: 0.00000002,
+            name: "Search Tokens".to_string(),
+            guage_name: "search_tokens".to_string(),
+        },
+        BillingPrice {
+            free_tier: 263_000,
+            past_free_tier_charge: 0.000003528,
+            name: "Message Tokens".to_string(),
+            guage_name: "message_tokens".to_string(),
+        },
+        BillingPrice {
+            free_tier: 3_000_000,
+            past_free_tier_charge: 0.00000002,
+            name: "Bytes Ingested".to_string(),
+            guage_name: "bytes_ingested".to_string(),
+        },
+        BillingPrice {
+            free_tier: 3_000_000,
+            past_free_tier_charge: 0.00000002,
+            name: "Tokens Ingested".to_string(),
+            guage_name: "tokens_ingested".to_string(),
+        },
+        BillingPrice {
+            free_tier: 10,
+            past_free_tier_charge: 0.00086,
+            name: "Pages Crawled".to_string(),
+            guage_name: "pages_crawled".to_string(),
+        },
+        BillingPrice {
+            free_tier: 100,
+            past_free_tier_charge: 0.0,
+            name: "OCR Pages".to_string(),
+            guage_name: "ocr_pages".to_string(),
+        },
+        BillingPrice {
+            free_tier: 1_000_000,
+            past_free_tier_charge: 0.0001,
+            name: "Analytics Events".to_string(),
+            guage_name: "analytics_events".to_string(),
+        },
+        BillingPrice {
+            free_tier: 10_000,
+            past_free_tier_charge: 0.0113,
+            name: "Chunk Storage (MB)".to_string(),
+            guage_name: "chunk_storage_mb".to_string(),
+        },
+        BillingPrice {
+            free_tier: 10_240,
+            past_free_tier_charge: 0.0000224609375,
+            name: "File Storage (MB)".to_string(),
+            guage_name: "file_storage_mb".to_string(),
+        },
+        BillingPrice {
+            free_tier: 0,
+            past_free_tier_charge: 0.0,
+            name: "Users".to_string(),
+            guage_name: "users".to_string(),
+        },
+        BillingPrice {
+            free_tier: 10,
+            past_free_tier_charge: 0.05,
+            name: "Datasets".to_string(),
+            guage_name: "dataset_count".to_string(),
+        },
+    ];
+
+    let all_events: Vec<(&str, i64)> = vec![
+        (
+            "chunk_storage_mb",
+            get_storage_mb_from_chunk_count(usage.chunk_count),
+        ),
+        ("file_storage_mb", (usage.file_storage * 1024)),
+        ("users", usage.user_count as i64),
+        ("dataset_count", usage.dataset_count as i64),
+        ("search_tokens", usage.search_tokens as i64),
+        ("message_tokens", usage.message_tokens as i64),
+        ("bytes_ingested", usage.bytes_ingested as i64),
+        ("tokens_ingested", usage.tokens_ingested as i64),
+        ("pages_crawled", usage.website_pages_scraped as i64),
+        ("ocr_pages", usage.ocr_pages_ingested as i64),
+        ("analytics_events", usage.events_ingested as i64),
+    ];
+
+    let mut total_cost = 0.0;
+    let mut breakdown = vec![];
+    for (guage, amount) in all_events.iter() {
+        let billing_price = prices
+            .iter()
+            .find(|p| p.guage_name == *guage)
+            .expect("Billing price will exist");
+
+        let cost =
+            max(billing_price.free_tier - amount, 0) as f64 * billing_price.past_free_tier_charge;
+
+        breakdown.push(BillItem {
+            name: billing_price.name.clone(),
+            amount: cost,
+        });
+
+        total_cost += cost;
+    }
+
+    Ok(BillingEstimate {
+        items: breakdown,
+        total: total_cost,
+    })
 }
