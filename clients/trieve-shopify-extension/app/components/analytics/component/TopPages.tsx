@@ -1,4 +1,3 @@
-import { Card, Text, Tooltip } from "@shopify/polaris";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { topPagesQuery } from "app/queries/analytics/component";
