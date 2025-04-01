@@ -2,9 +2,9 @@ import { queryOptions, QueryOptions } from "@tanstack/react-query";
 import { AdminApiCaller, getMetafield } from "app/loaders";
 import { onboardingSteps } from "app/utils/onboarding";
 
-export const themeSettingsQuery = (fetcher: AdminApiCaller) => {
+export const globalComponentInstallQuery = (fetcher: AdminApiCaller) => {
   return {
-    queryKey: ["theme_settings"],
+    queryKey: ["global-component-install"],
     queryFn: async () => {
       const result = await fetcher(
         `#graphql
@@ -35,6 +35,90 @@ query GetStoreThemes {
         throw result.error;
       }
       return result.data;
+    },
+  } satisfies QueryOptions;
+};
+
+export const pdpInstallQuery = (fetcher: AdminApiCaller) => {
+  return {
+    queryKey: ["pdp-install"],
+    queryFn: async () => {
+      const result = await fetcher(
+        `#graphql
+query GetStoreThemes {
+    themes(first: 10) {
+      edges {
+        node {
+          files(filenames: ["templates/product.json"]) { 
+            edges {
+              node {
+                body {
+                  ... on OnlineStoreThemeFileBodyText {
+                    content
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`,
+      );
+
+      if (result.error) {
+        console.error(result.error);
+        throw result.error;
+      }
+      return result.data;
+    },
+  } satisfies QueryOptions;
+};
+
+export const themeListQuery = (fetcher: AdminApiCaller) => {
+  return {
+    queryKey: ["theme_list"],
+    queryFn: async () => {
+      const result = await fetcher(
+        `#graphql
+query GetStoreThemes {
+  themes(first:20){
+    nodes{
+      name
+      prefix
+      id
+      role
+      updatedAt
+    }
+  }
+}
+`,
+      );
+      console.log("THEME LIST", result);
+      if (result.error) {
+        console.error(result.error);
+        throw result.error;
+      }
+      const data = result.data as {
+        themes: {
+          nodes: {
+            name: string;
+            prefix: string;
+            id: string;
+            role: string;
+            updatedAt: string;
+          }[];
+        };
+      };
+      // Hides weird internal shopify app theme
+      return data.themes.nodes
+        .filter((t) => t.role != "DEVELOPMENT")
+        .sort((a, b) => {
+          return (
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          );
+        });
     },
   } satisfies QueryOptions;
 };

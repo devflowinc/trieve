@@ -4,10 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useClientAdminApi } from "app/loaders/clientLoader";
 import { crawlStatusOnboardQuery } from "app/queries/onboarding";
 import { OnboardingBody } from "app/utils/onboarding";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const WelcomeOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
   const adminApi = useClientAdminApi();
+  const [stopFetching, setStopFetching] = useState(false);
 
   const { data } = useQuery({
     ...crawlStatusOnboardQuery(adminApi),
@@ -16,10 +17,12 @@ export const WelcomeOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
       chunkCount: 0,
       done: false,
     },
+    enabled: !stopFetching,
   });
 
   useEffect(() => {
     if (data?.done) {
+      setStopFetching(true);
       if (broadcastCompletion) {
         broadcastCompletion();
       }

@@ -21,7 +21,7 @@ export const Onboarding = () => {
             className="text-[12px] hover:underline opacity-40"
             onClick={onboarding.skipOnboarding}
           >
-            Skip Onboarding
+            Hide Tutorial
           </button>
         </div>
       </div>
@@ -67,16 +67,18 @@ export const Onboarding = () => {
               </button>
               <Collapsible expandOnPrint open={isCurrent} id={step.id}>
                 {
-                  <step.body
-                    goToNextStep={onboarding.goToNextStep}
-                    goToPreviousStep={onboarding.goToPreviousStep}
-                    broadcastCompletion={() => {
-                      onboarding.setStepCompletions((prev) => ({
-                        ...prev,
-                        [step.id]: true,
-                      }));
-                    }}
-                  />
+                  <div className="w-full">
+                    <step.body
+                      goToNextStep={onboarding.goToNextStep}
+                      goToPreviousStep={onboarding.goToPreviousStep}
+                      broadcastCompletion={() => {
+                        onboarding.setStepCompletions((prev) => ({
+                          ...prev,
+                          [step.id]: true,
+                        }));
+                      }}
+                    />
+                  </div>
                 }
               </Collapsible>
             </div>
