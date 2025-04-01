@@ -11,8 +11,14 @@ import {
   BlockStack,
   InlineStack,
   Grid,
+  Layout,
+  Link,
 } from "@shopify/polaris";
-import { RefreshIcon } from "@shopify/polaris-icons";
+import {
+  EnvelopeIcon,
+  QuestionCircleIcon,
+  RefreshIcon,
+} from "@shopify/polaris-icons";
 import { usageQuery } from "app/queries/usage";
 import { useQuery } from "@tanstack/react-query";
 import { Onboarding } from "app/components/onboarding/Onboarding";
@@ -99,62 +105,111 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   return (
-    <BlockStack gap="400">
-      <Onboarding />
-      <Grid>
-        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-          <Card>
-            <BlockStack gap="400">
-              <Box paddingInline="400" paddingBlockStart="400">
-                <InlineStack align="space-between">
-                  <Text variant="headingMd" as="h2">
-                    Dataset Overview
-                  </Text>
-                  <Badge>{planType + " Plan"}</Badge>
-                </InlineStack>
-              </Box>
+    <Layout>
+      <Layout.Section>
+        <BlockStack gap="400">
+          <Onboarding />
+          <Grid>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+              <Card>
+                <BlockStack gap="400">
+                  <Box paddingInline="400" paddingBlockStart="400">
+                    <InlineStack align="space-between">
+                      <Text variant="headingMd" as="h2">
+                        Dataset Overview
+                      </Text>
+                      <Badge>{planType + " Plan"}</Badge>
+                    </InlineStack>
+                  </Box>
 
-              <Box paddingInline="400">
-                <DescriptionList items={statsItems} />
-              </Box>
+                  <Box paddingInline="400">
+                    <DescriptionList items={statsItems} />
+                  </Box>
 
-              <Box paddingInline="400" paddingBlockEnd="400">
-                <InlineStack align="end">
-                  <Button
-                    variant="primary"
-                    onClick={() => {
-                      fetch("/app/setup");
-                    }}
-                  >
-                    Sync Index
-                  </Button>
-                </InlineStack>
-              </Box>
-            </BlockStack>
-          </Card>
-        </Grid.Cell>
+                  <Box paddingInline="400" paddingBlockEnd="400">
+                    <InlineStack align="end">
+                      <Button
+                        variant="primary"
+                        onClick={() => {
+                          fetch("/app/setup");
+                        }}
+                      >
+                        Sync Index
+                      </Button>
+                    </InlineStack>
+                  </Box>
+                </BlockStack>
+              </Card>
+            </Grid.Cell>
 
-        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-          <Card>
-            <BlockStack gap="400">
-              <Box paddingInline="400" paddingBlockStart="400">
-                <InlineStack align="space-between">
-                  <Text variant="headingMd" as="h2">
-                    Plan Details
-                  </Text>
-                  <Button onClick={() => navigate("/app/plans")}>
-                    Upgrade Plan
-                  </Button>
-                </InlineStack>
-              </Box>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+              <Card>
+                <BlockStack gap="400">
+                  <Box paddingInline="400" paddingBlockStart="400">
+                    <InlineStack align="space-between">
+                      <Text variant="headingMd" as="h2">
+                        Plan Details
+                      </Text>
+                      <Button onClick={() => navigate("/app/plans")}>
+                        Upgrade Plan
+                      </Button>
+                    </InlineStack>
+                  </Box>
 
-              <Box paddingInline="400">
-                <DescriptionList items={planItems} />
-              </Box>
-            </BlockStack>
-          </Card>
-        </Grid.Cell>
-      </Grid>
-    </BlockStack>
+                  <Box paddingInline="400">
+                    <DescriptionList items={planItems} />
+                  </Box>
+                </BlockStack>
+              </Card>
+            </Grid.Cell>
+          </Grid>
+        </BlockStack>
+      </Layout.Section>
+      <Layout.Section variant="oneThird">
+        <Card>
+          <BlockStack gap="400">
+            <Text variant="headingLg" as="h1">
+              Get support
+            </Text>
+            <Text variant="bodyLg" as="p">
+              We would love to hear from you about anything at all. Email{" "}
+              <Link url="mailto:humans@trieve.ai" target="_blank">
+                humans@trieve.ai
+              </Link>{" "}
+              to quickly get in touch with a human on our team.
+            </Text>
+            <Text variant="bodyLg" as="p">
+              Or, if you prefer, see the{" "}
+              <Link
+                url="https://docs.trieve.ai/site-search/introduction"
+                target="_blank"
+              >
+                support center
+              </Link>{" "}
+              for answers to common questions, video tutorials, documentation,
+              and more. We would love to hear from you about anything.
+            </Text>
+            <InlineStack align="start" gap="300">
+              <Button
+                icon={QuestionCircleIcon}
+                size="large"
+                url="https://docs.trieve.ai/site-search/introduction"
+                target="_blank"
+              >
+                Support Center
+              </Button>
+              <Button
+                icon={EnvelopeIcon}
+                size="large"
+                url="mailto:humans@trieve.ai"
+                target="_blank"
+              >
+                Email Us
+              </Button>
+            </InlineStack>
+          </BlockStack>
+        </Card>
+      </Layout.Section>
+    </Layout>
   );
 }

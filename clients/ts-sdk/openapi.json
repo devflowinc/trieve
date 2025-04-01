@@ -10326,10 +10326,10 @@
             "BM25_ENABLED": true,
             "BM25_K": 0.75,
             "DISTANCE_METRIC": "cosine",
-            "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
-            "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+            "EMBEDDING_BASE_URL": "https://embedding.trieve.ai",
+            "EMBEDDING_MODEL_NAME": "jina-base-en",
             "EMBEDDING_QUERY_PREFIX": "",
-            "EMBEDDING_SIZE": 1536,
+            "EMBEDDING_SIZE": 768,
             "FREQUENCY_PENALTY": 0.0,
             "FULLTEXT_ENABLED": true,
             "INDEXED_ONLY": false,
@@ -10632,10 +10632,10 @@
           "BM25_ENABLED": true,
           "BM25_K": 0.75,
           "DISTANCE_METRIC": "cosine",
-          "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
-          "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+          "EMBEDDING_BASE_URL": "https://embedding.trieve.ai",
+          "EMBEDDING_MODEL_NAME": "jina-base-en",
           "EMBEDDING_QUERY_PREFIX": "",
-          "EMBEDDING_SIZE": 1536,
+          "EMBEDDING_SIZE": 768,
           "FREQUENCY_PENALTY": 0.0,
           "FULLTEXT_ENABLED": true,
           "INDEXED_ONLY": false,
@@ -11965,8 +11965,8 @@
           "file_name",
           "created_at",
           "updated_at",
-          "size",
-          "dataset_id"
+          "dataset_id",
+          "size"
         ],
         "properties": {
           "created_at": {
@@ -13783,9 +13783,9 @@
           "org_id",
           "dataset_count",
           "user_count",
-          "file_storage",
           "message_count",
-          "chunk_count"
+          "chunk_count",
+          "file_storage"
         ],
         "properties": {
           "chunk_count": {
@@ -18917,7 +18917,6 @@
           "id",
           "stripe_id",
           "chunk_count",
-          "file_storage",
           "user_count",
           "dataset_count",
           "message_count",
@@ -18925,7 +18924,8 @@
           "created_at",
           "updated_at",
           "name",
-          "visible"
+          "visible",
+          "file_storage"
         ],
         "properties": {
           "amount": {
