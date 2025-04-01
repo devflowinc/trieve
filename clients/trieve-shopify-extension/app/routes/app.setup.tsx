@@ -114,7 +114,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       },
     );
   };
-  
+
   const { session, sessionToken } = await authenticate.admin(args.request);
 
   let key = await prisma.apiKey.findFirst({
