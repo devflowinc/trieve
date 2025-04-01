@@ -55,19 +55,40 @@ export const AddComponentOnboarding: OnboardingBody = ({
 
   return (
     <div className="grid w-full py-4 min-h-[180px] place-items-center">
-      <div className="flex flex-col gap-1 items-center">
-        <Text as="h2" variant="headingMd">
-          {complete === true ? "Component Added" : "Add the search component"}
-        </Text>
-        {!complete && getDeeplink() ? (
-          <Button onClick={openDeepLink}>Add to site</Button>
-        ) : (
-          <CheckIcon
-            fill="#2A845A"
-            color="#2A845A"
-            style={{ height: "50px" }}
-          />
-        )}
+      <div className="flex items-center w-full justify-evenly">
+        <div className="flex flex-col gap-1 items-center">
+          <Text as="h2" variant="headingMd">
+            {complete === true
+              ? "Global Component Added"
+              : "Add the global search component"}
+          </Text>
+          {!complete && getDeeplink() ? (
+            <Button onClick={openDeepLink}>Add to site</Button>
+          ) : (
+            <CheckIcon
+              fill="#2A845A"
+              color="#2A845A"
+              style={{ height: "50px" }}
+            />
+          )}
+        </div>
+        <div className="h-24 border-r-neutral-200 border-r"></div>
+        <div className="flex flex-col gap-1 items-center">
+          <Text as="h2" variant="headingMd">
+            {complete === true
+              ? "Component Added"
+              : "Add the product chat component"}
+          </Text>
+          {!complete && getDeeplink() ? (
+            <Button onClick={openDeepLink}>Add to site</Button>
+          ) : (
+            <CheckIcon
+              fill="#2A845A"
+              color="#2A845A"
+              style={{ height: "50px" }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
