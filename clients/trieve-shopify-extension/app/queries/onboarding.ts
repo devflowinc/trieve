@@ -1,4 +1,4 @@
-import { queryOptions, QueryOptions } from "@tanstack/react-query";
+import { QueryOptions } from "@tanstack/react-query";
 import { AdminApiCaller, getMetafield } from "app/loaders";
 import { onboardingSteps } from "app/utils/onboarding";
 
