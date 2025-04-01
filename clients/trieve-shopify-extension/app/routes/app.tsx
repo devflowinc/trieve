@@ -43,9 +43,6 @@ export default function App() {
         <Link to="/app" rel="home">
           Home
         </Link>
-        <Link to="/app/component" rel="component">
-          Component
-        </Link>
         <Link to="/app/chat" rel="chat">
           Chat Overview
         </Link>

@@ -20,7 +20,7 @@ interface SearchFilterBarProps {
 }
 export const SearchFilterBar = (props: SearchFilterBarProps) => {
   return (
-    <div className="flex py-4 justify-between">
+    <div className="flex justify-between">
       {!props.options?.hideDateRange && (
         <Box maxWidth="200">
           <DateRangePicker
