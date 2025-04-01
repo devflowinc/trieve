@@ -2072,12 +2072,12 @@ pub struct File {
     pub file_name: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub size: i64,
     pub metadata: Option<serde_json::Value>,
     pub link: Option<String>,
     pub time_stamp: Option<chrono::NaiveDateTime>,
     pub dataset_id: uuid::Uuid,
     pub tag_set: Option<Vec<Option<String>>>,
-    pub size: i64,
 }
 
 impl File {
@@ -3830,6 +3830,7 @@ pub struct StripePlan {
     pub id: uuid::Uuid,
     pub stripe_id: String,
     pub chunk_count: i32,
+    pub file_storage: i64,
     pub user_count: i32,
     pub dataset_count: i32,
     pub message_count: i32,
@@ -3838,7 +3839,6 @@ pub struct StripePlan {
     pub updated_at: chrono::NaiveDateTime,
     pub name: String,
     pub visible: bool,
-    pub file_storage: i64,
 }
 
 impl StripePlan {
@@ -4289,9 +4289,9 @@ pub struct OrganizationUsageCount {
     pub org_id: uuid::Uuid,
     pub dataset_count: i32,
     pub user_count: i32,
+    pub file_storage: i64,
     pub message_count: i32,
     pub chunk_count: i32,
-    pub file_storage: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, Insertable, Selectable, Clone)]
