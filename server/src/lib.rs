@@ -261,6 +261,7 @@ impl Modify for SecurityAddon {
         handlers::stripe_handler::get_all_usage_plans,
         handlers::stripe_handler::get_all_invoices,
         handlers::stripe_handler::update_payment_method,
+        handlers::stripe_handler::estimate_bill_from_range,
         handlers::analytics_handler::get_cluster_analytics,
         handlers::analytics_handler::get_rag_analytics,
         handlers::analytics_handler::get_search_analytics,
@@ -620,6 +621,8 @@ impl Modify for SecurityAddon {
             data::models::PopularChat,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
+            handlers::stripe_handler::BillingEstimate,
+            handlers::stripe_handler::BillItem,
         )
     ),
     tags(
@@ -1379,6 +1382,10 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/checkout/setup/{organization_id}")
                                         .route(web::post().to(handlers::stripe_handler::update_payment_method)),
+                                )
+                                .service(
+                                    web::resource("/estimate_bill")
+                                        .route(web::post().to(handlers::stripe_handler::estimate_bill_from_range)),
                                 ),
                         )
                         .service(
