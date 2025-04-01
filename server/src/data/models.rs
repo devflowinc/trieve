@@ -2447,12 +2447,12 @@ pub struct DatasetEventCount {
     "tracking_id": "foobar-dataset",
     "server_configuration": {
         "LLM_BASE_URL": "https://api.openai.com/v1",
-        "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_BASE_URL": "https://embedding.trieve.ai",
         "EMBEDDING_MODEL_NAME": "jina-base-en",
         "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
         "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
         "N_RETRIEVALS_TO_INCLUDE": 8,
-        "EMBEDDING_SIZE": 1536,
+        "EMBEDDING_SIZE": 768,
         "DISTANCE_METRIC": "cosine",
         "LLM_DEFAULT_MODEL": "gpt-4o",
         "BM25_ENABLED": true,
@@ -2616,12 +2616,12 @@ pub enum DistanceMetric {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example=json!({
     "LLM_BASE_URL": "https://api.openai.com/v1",
-    "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+    "EMBEDDING_BASE_URL": "https://embedding.trieve.ai",
     "EMBEDDING_MODEL_NAME": "jina-base-en",
     "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
     "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
     "N_RETRIEVALS_TO_INCLUDE": 8,
-    "EMBEDDING_SIZE": 1536,
+    "EMBEDDING_SIZE": 768,
     "DISTANCE_METRIC": "cosine",
     "LLM_DEFAULT_MODEL": "gpt-4o",
     "BM25_ENABLED": true,
@@ -2696,12 +2696,12 @@ pub struct PublicDatasetOptions {
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[schema(example=json!({
     "LLM_BASE_URL": "https://api.openai.com/v1",
-    "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+    "EMBEDDING_BASE_URL": "https://embedding.trieve.ai",
     "EMBEDDING_MODEL_NAME": "jina-base-en",
     "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
     "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
     "N_RETRIEVALS_TO_INCLUDE": 8,
-    "EMBEDDING_SIZE": 1536,
+    "EMBEDDING_SIZE": 768,
     "DISTANCE_METRIC": "cosine",
     "LLM_DEFAULT_MODEL": "gpt-4o",
     "BM25_ENABLED": true,
@@ -2813,7 +2813,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             MESSAGE_TO_QUERY_PROMPT: dto.MESSAGE_TO_QUERY_PROMPT.unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()),
             RAG_PROMPT: dto.RAG_PROMPT.unwrap_or("Use the following retrieved documents to respond briefly and accurately:".to_string()),
             N_RETRIEVALS_TO_INCLUDE: dto.N_RETRIEVALS_TO_INCLUDE.unwrap_or(8),
-            EMBEDDING_SIZE: dto.EMBEDDING_SIZE.unwrap_or(1536),
+            EMBEDDING_SIZE: dto.EMBEDDING_SIZE.unwrap_or(768),
             DISTANCE_METRIC: dto.DISTANCE_METRIC.unwrap_or(DistanceMetric::Cosine),
             LLM_DEFAULT_MODEL: dto.LLM_DEFAULT_MODEL.unwrap_or("gpt-4o".to_string()),
             BM25_ENABLED: dto.BM25_ENABLED.unwrap_or(true),
@@ -2911,7 +2911,7 @@ impl Default for DatasetConfiguration {
             MESSAGE_TO_QUERY_PROMPT: "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string(),
             RAG_PROMPT: "Use the following retrieved documents to respond briefly and accurately:".to_string(),
             N_RETRIEVALS_TO_INCLUDE: 8,
-            EMBEDDING_SIZE: 1536,
+            EMBEDDING_SIZE: 768,
             DISTANCE_METRIC: DistanceMetric::Cosine,
             LLM_DEFAULT_MODEL: "gpt-4o".to_string(),
             BM25_ENABLED: true,
@@ -3048,7 +3048,7 @@ impl DatasetConfiguration {
                 .unwrap_or(5),
             EMBEDDING_SIZE: configuration
                 .get("EMBEDDING_SIZE")
-                .unwrap_or(&json!(1536))
+                .unwrap_or(&json!(768))
                 .as_u64()
                 .map(|u| u as usize)
                 .unwrap_or(1536),
