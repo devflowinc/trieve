@@ -844,6 +844,7 @@ pub async fn stream_response(
             json!({
                 "doc": idx + 1,
                 "text": convert_html_to_text(&(ChunkMetadata::from(score_chunk.chunk.clone()).chunk_html.clone().unwrap_or_default())),
+                "num_value": ChunkMetadata::from(score_chunk.chunk.clone()).num_value.map(|x| x.to_string()).unwrap_or("".to_string()),
                 "link": ChunkMetadata::from(score_chunk.chunk.clone()).link.clone().unwrap_or_default()
             })
             .to_string()
