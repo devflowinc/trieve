@@ -43,7 +43,7 @@ export const onboardingSteps: OnboardingStep[] = [
   {
     // Name in a way that changing the step + adding more will not require id rename
     id: "after-welcome",
-    title: "Add the Trieve Search Component to your site",
+    title: "Add the widgets to your site",
     description: "Second task",
     body: AddComponentOnboarding,
   },
@@ -67,9 +67,7 @@ export const onboardingSteps: OnboardingStep[] = [
 export const useOnboarding = () => {
   const adminApi = useClientAdminApi();
   // suspense but included in trievecontext prefetch list
-  const { data: currentStepId, refetch: refetchCurrentStep } = useSuspenseQuery(
-    lastStepIdQuery(adminApi),
-  );
+  const { data: currentStepId } = useSuspenseQuery(lastStepIdQuery(adminApi));
 
   const [stepCompletions, setStepCompletions] = useState<
     Record<string, boolean>
