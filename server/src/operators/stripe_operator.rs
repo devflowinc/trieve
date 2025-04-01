@@ -1232,7 +1232,7 @@ pub async fn get_bill_from_range(
                 free_tier,
                 past_free_tier_charge: per_unit_price.parse::<f64>().map_err(|_| {
                     ServiceError::BadRequest("Failed to format unit price".to_string())
-                })?,
+                })? / 100.0f64,
                 guage_name: guage.clone(),
             });
         }
