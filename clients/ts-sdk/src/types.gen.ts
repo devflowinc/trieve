@@ -1390,13 +1390,17 @@ export type EventData = {
      */
     dataset_id: string;
     /**
-     * The name of the event, e.g. "Added to Cart", "Purchased", "Viewed Home Page", "Clicked", "Filter Clicked".
+     * The name of the event, e.g. "Added to Cart", "Purchased", "Viewed Home Page", "Clicked", "Filter Clicked", "Followup Query".
      */
     event_name: string;
     /**
-     * The type of event, "add_to_cart", "purchase", "view", "click", "filter_clicked".
+     * The type of event, "add_to_cart", "purchase", "view", "click", "filter_clicked", "followup_query"
      */
     event_type: string;
+    /**
+     * The followup query associated with the event.
+     */
+    followup_query?: (string) | null;
     /**
      * The unique identifier for the event
      */
@@ -1554,6 +1558,29 @@ export type EventTypes = {
      * The name of the event
      */
     event_name: string;
+    event_type: 'followup_query';
+    /**
+     * The followup query
+     */
+    followup_query: string;
+    /**
+     * The location of the event
+     */
+    location?: (string) | null;
+    /**
+     * Any other metadata associated with the event
+     */
+    metadata?: unknown;
+    request?: ((RequestInfo) | null);
+    /**
+     * The user id of the user who made the followup query
+     */
+    user_id?: (string) | null;
+} | {
+    /**
+     * The name of the event
+     */
+    event_name: string;
     event_type: 'filter_clicked';
     /**
      * Whether the event is a conversion event
@@ -1697,7 +1724,7 @@ export type EventTypes = {
 
 export type event_type = 'view';
 
-export type EventTypesFilter = 'add_to_cart' | 'purchase' | 'view' | 'click' | 'filter_clicked';
+export type EventTypesFilter = 'add_to_cart' | 'purchase' | 'view' | 'followup_query' | 'click' | 'filter_clicked';
 
 export type EventsForTopicResponse = {
     events: Array<EventData>;

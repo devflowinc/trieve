@@ -11217,11 +11217,16 @@
           },
           "event_name": {
             "type": "string",
-            "description": "The name of the event, e.g. \"Added to Cart\", \"Purchased\", \"Viewed Home Page\", \"Clicked\", \"Filter Clicked\"."
+            "description": "The name of the event, e.g. \"Added to Cart\", \"Purchased\", \"Viewed Home Page\", \"Clicked\", \"Filter Clicked\", \"Followup Query\"."
           },
           "event_type": {
             "type": "string",
-            "description": "The type of event, \"add_to_cart\", \"purchase\", \"view\", \"click\", \"filter_clicked\"."
+            "description": "The type of event, \"add_to_cart\", \"purchase\", \"view\", \"click\", \"filter_clicked\", \"followup_query\""
+          },
+          "followup_query": {
+            "type": "string",
+            "description": "The followup query associated with the event.",
+            "nullable": true
           },
           "id": {
             "type": "string",
@@ -11584,6 +11589,53 @@
           },
           {
             "type": "object",
+            "title": "FollowupQuery",
+            "required": [
+              "event_name",
+              "followup_query",
+              "event_type"
+            ],
+            "properties": {
+              "event_name": {
+                "type": "string",
+                "description": "The name of the event"
+              },
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "followup_query"
+                ]
+              },
+              "followup_query": {
+                "type": "string",
+                "description": "The followup query"
+              },
+              "location": {
+                "type": "string",
+                "description": "The location of the event",
+                "nullable": true
+              },
+              "metadata": {
+                "description": "Any other metadata associated with the event",
+                "nullable": true
+              },
+              "request": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RequestInfo"
+                  }
+                ],
+                "nullable": true
+              },
+              "user_id": {
+                "type": "string",
+                "description": "The user id of the user who made the followup query",
+                "nullable": true
+              }
+            }
+          },
+          {
+            "type": "object",
             "title": "FilterClicked",
             "required": [
               "event_name",
@@ -11889,6 +11941,7 @@
           "add_to_cart",
           "purchase",
           "view",
+          "followup_query",
           "click",
           "filter_clicked"
         ]

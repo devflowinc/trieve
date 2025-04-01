@@ -6881,9 +6881,9 @@ impl From<TopicQueryClickhouse> for TopicQuery {
 pub struct EventData {
     /// The unique identifier for the event
     pub id: uuid::Uuid,
-    /// The type of event, "add_to_cart", "purchase", "view", "click", "filter_clicked".
+    /// The type of event, "add_to_cart", "purchase", "view", "click", "filter_clicked", "followup_query"
     pub event_type: String,
-    /// The name of the event, e.g. "Added to Cart", "Purchased", "Viewed Home Page", "Clicked", "Filter Clicked".
+    /// The name of the event, e.g. "Added to Cart", "Purchased", "Viewed Home Page", "Clicked", "Filter Clicked", "Followup Query".
     pub event_name: String,
     /// The unique identifier for the request the event is associated with.
     pub request_id: Option<String>,
@@ -6903,6 +6903,8 @@ pub struct EventData {
     pub created_at: String,
     /// The time the event was last updated.
     pub updated_at: String,
+    /// The followup query associated with the event.
+    pub followup_query: Option<String>,
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize, Row, Clone)]
@@ -6938,6 +6940,7 @@ pub struct EventDataClickhouse {
     pub created_at: OffsetDateTime,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub updated_at: OffsetDateTime,
+    pub followup_query: Option<String>, 
 }
 
 pub enum EventDataTypes {
@@ -6974,6 +6977,30 @@ impl EventTypes {
                 user_id: user_id.unwrap_or_default(),
                 is_conversion: is_conversion.unwrap_or(true),
                 dataset_id,
+                followup_query: None,
+                created_at: OffsetDateTime::now_utc(),
+                updated_at: OffsetDateTime::now_utc(),
+            }),
+            EventTypes::FollowupQuery {
+                event_name,
+                request,
+                user_id,
+                metadata,
+                followup_query,
+                location,
+            } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
+                id: uuid::Uuid::new_v4(),
+                event_type: "followup_query".to_string(),
+                event_name,
+                request_id: request.clone().unwrap_or_default().request_id.to_string(),
+                request_type: request.unwrap_or_default().request_type.to_string(),
+                items: vec![],
+                user_id: user_id.unwrap_or_default(),
+                metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
+                is_conversion: false,
+                location: location.unwrap_or_default(),
+                dataset_id,
+                followup_query: Some(followup_query),
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
             }),
@@ -7000,6 +7027,7 @@ impl EventTypes {
                 is_conversion: is_conversion.unwrap_or(true),
                 location: location.unwrap_or_default(),
                 dataset_id,
+                followup_query: None,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
             }),
@@ -7022,6 +7050,7 @@ impl EventTypes {
                 user_id: user_id.unwrap_or_default(),
                 is_conversion: false,
                 dataset_id,
+                followup_query: None,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
             }),
@@ -7053,6 +7082,7 @@ impl EventTypes {
                     is_conversion: is_conversion.unwrap_or(true),
                     location: location.unwrap_or_default(),
                     dataset_id,
+                    followup_query: None,
                     created_at: OffsetDateTime::now_utc(),
                     updated_at: OffsetDateTime::now_utc(),
                 })
@@ -7076,6 +7106,7 @@ impl EventTypes {
                 is_conversion: is_conversion.unwrap_or(true),
                 location: location.unwrap_or_default(),
                 dataset_id,
+                followup_query: None,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
             }),
@@ -7226,6 +7257,7 @@ impl From<EventDataClickhouse> for EventData {
             metadata: serde_json::from_str(&clickhouse_response.metadata).unwrap_or_default(),
             user_id,
             is_conversion: Some(clickhouse_response.is_conversion),
+            followup_query: clickhouse_response.followup_query,
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
             created_at: clickhouse_response.created_at.to_string(),
             updated_at: clickhouse_response.updated_at.to_string(),
@@ -7267,6 +7299,8 @@ pub enum EventTypesFilter {
     Purchase,
     #[display(fmt = "view")]
     View,
+    #[display(fmt = "followup_query")]
+    FollowupQuery,
     #[display(fmt = "click")]
     Click,
     #[display(fmt = "filter_clicked")]
@@ -8491,6 +8525,22 @@ pub enum EventTypes {
         metadata: Option<serde_json::Value>,
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
+        /// The location of the event
+        location: Option<String>,
+    },
+    #[display(fmt = "followup_query")]
+    #[schema(title = "FollowupQuery")]
+    FollowupQuery {
+        /// The name of the event
+        event_name: String,
+        /// The request id of the event to associate it with a request
+        request: Option<RequestInfo>,
+        /// The user id of the user who made the followup query
+        user_id: Option<String>,
+        /// Any other metadata associated with the event
+        metadata: Option<serde_json::Value>,
+        /// The followup query
+        followup_query: String,
         /// The location of the event
         location: Option<String>,
     },
