@@ -114,6 +114,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
       },
     );
   };
+  
   const { session, sessionToken } = await authenticate.admin(args.request);
 
   let key = await prisma.apiKey.findFirst({
@@ -207,6 +208,24 @@ export const loader = async (args: LoaderFunctionArgs) => {
       setAppMetafields(fetcher, key);
     }
   }
+
+  let crawlSettings = await prisma.crawlSettings.findFirst({
+    where: {
+      datasetId: key.currentDatasetId,
+      shop: session.shop,
+    },
+  });
+
+  if (!crawlSettings) {
+    crawlSettings = await prisma.crawlSettings.create({
+      data: {
+        datasetId: key.currentDatasetId,
+        shop: session.shop,
+        crawlSettings: defaultCrawlOptions,
+      },
+    });
+  }
+
   datasetId = shopDataset?.id;
   if (!datasetId) {
     throw new Response("Error choosing default dataset, need to create one", {
@@ -214,7 +233,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
     });
   }
 
-  startCrawl(defaultCrawlOptions, datasetId, session, key, fetcher);
+  startCrawl(crawlSettings.crawlSettings as ExtendedCrawlOptions, datasetId, session, key, fetcher);
 
   trieve.datasetId = datasetId;
 
