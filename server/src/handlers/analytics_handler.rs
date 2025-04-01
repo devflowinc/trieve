@@ -6,7 +6,7 @@ use crate::{
         EventDataTypes, EventNameAndCountsResponse, EventTypes, EventsForTopicResponse,
         GetEventsRequestBody, OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
         RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
-        SearchAnalyticsResponse, TopDatasetsRequestTypes
+        SearchAnalyticsResponse, TopDatasetsRequestTypes,
     },
     errors::ServiceError,
     operators::{

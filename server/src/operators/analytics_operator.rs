@@ -4,8 +4,9 @@ use crate::{
         ChatRevenueResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse,
         ComponentAnalyticsFilter, ComponentInteractionTimeResponse, ComponentNamesResponse,
         DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts,
-        FloatTimePoint, FloatTimePointClickhouse, GetEventsResponseBody, Granularity, HeadQueries,
-        IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularChat,
+        FloatTimePoint, FloatTimePointClickhouse, FollowupQueriesResponse, FollowupQuery,
+        GetEventsResponseBody, Granularity, HeadQueries, IntegerTimePoint,
+        IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularChat,
         PopularChatsResponse, PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter,
         RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
         RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
@@ -23,7 +24,7 @@ use crate::{
         TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages, TopPagesResponse,
         TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse, TopicDetailsResponse,
         TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse,
-        TotalUniqueUsersResponse, FollowupQueriesResponse, FollowupQuery,
+        TotalUniqueUsersResponse,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
@@ -3276,10 +3277,8 @@ pub async fn get_most_popular_chats_query(
             log::error!("Error fetching most popular chats: {:?}", e);
             ServiceError::InternalServerError("Error fetching most popular chats".to_string())
         })?;
-
     Ok(PopularChatsResponse { chats: result })
 }
-
 
 pub async fn get_top_followup_queries_query(
     dataset_id: uuid::Uuid,
@@ -3294,17 +3293,20 @@ pub async fn get_top_followup_queries_query(
         FROM
             events
         WHERE dataset_id = ?
-        AND event_name = 'site-followup_query'"
+        AND event_name = 'site-followup_query'",
     );
 
     if let Some(filter) = &filter {
         query_string = filter.add_to_query(query_string);
     }
 
-    query_string.push_str(format!(
-        "GROUP BY query ORDER BY count DESC LIMIT 10 OFFSET {}",
-        (page.unwrap_or(1) - 1) * 10,
-    ).as_str());
+    query_string.push_str(
+        format!(
+            "GROUP BY query ORDER BY count DESC LIMIT 10 OFFSET {}",
+            (page.unwrap_or(1) - 1) * 10,
+        )
+        .as_str(),
+    );
 
     let result = clickhouse_client
         .query(query_string.as_str())
