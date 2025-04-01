@@ -2657,7 +2657,13 @@ pub async fn search_groups_query(
         filter: data.filters.clone(),
         group_size: None,
     }
-    .into_qdrant_query(parsed_query.clone(), dataset.id, None, config, pool.clone())
+    .into_qdrant_query(
+        parsed_query.clone(),
+        dataset.id,
+        Some(group.id),
+        config,
+        pool.clone(),
+    )
     .await?;
 
     let search_semantic_chunk_query_results = retrieve_qdrant_points_query(
