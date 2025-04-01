@@ -1,5 +1,5 @@
 import { Card, Collapsible, Text } from "@shopify/polaris";
-import { CaretUpIcon } from "@shopify/polaris-icons";
+import { CaretUpIcon, CheckCircleIcon } from "@shopify/polaris-icons";
 import { cn } from "app/utils/cn";
 import { useOnboarding } from "app/utils/onboarding";
 
@@ -14,7 +14,7 @@ export const Onboarding = () => {
     <Card padding={"0"}>
       <div className="flex justify-between p-4">
         <Text variant="headingMd" as="h2">
-          Getting Started
+          Getting Started With Trieve
         </Text>
         <div className="flex gap-4">
           <button
@@ -31,18 +31,30 @@ export const Onboarding = () => {
             return null;
           }
           const isCurrent = onboarding.currentStep.id === step.id;
+          const isCompleted = onboarding.stepCompletions[step.id];
           return (
             <div className="border-t px-2 border-t-neutral-200">
               <button
                 onClick={() => {
                   onboarding.goToStep(step.id);
                 }}
-                className="flex w-full justify-between items-center p-1"
+                className={cn(
+                  "flex w-full justify-between items-center p-1 px-2",
+                  isCurrent && "cursor-default",
+                )}
               >
-                <div
-                  className={cn(isCurrent ? "text-black" : "text-neutral-400")}
-                >
-                  {step.title}
+                <div className="flex gap-2">
+                  <div
+                    className={cn(
+                      "transition-colors duration-100",
+                      isCurrent ? "text-black" : "text-neutral-400",
+                    )}
+                  >
+                    {step.title}
+                  </div>
+                  {isCompleted && (
+                    <CheckCircleIcon height={20} width={20} fill="green" />
+                  )}
                 </div>
                 <div
                   className={cn(
@@ -61,7 +73,7 @@ export const Onboarding = () => {
                     broadcastCompletion={() => {
                       onboarding.setStepCompletions((prev) => ({
                         ...prev,
-                        [onboarding.currentStep.id]: true,
+                        [step.id]: true,
                       }));
                     }}
                   />

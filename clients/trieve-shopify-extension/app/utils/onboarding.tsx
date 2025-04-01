@@ -34,7 +34,7 @@ type OnboardingStep = {
 export const onboardingSteps: OnboardingStep[] = [
   {
     id: "welcome-message",
-    title: "Welcome to Trieve!",
+    title: "Sync products",
     defaultComplete: false,
     description: "Let's get you set up",
     body: WelcomeOnboarding,
@@ -170,6 +170,7 @@ export const useOnboarding = () => {
     skipOnboarding,
     goToPreviousStep,
     setStepCompletions,
+    stepCompletions,
     allSteps: stepsWithInfo,
   };
 };
