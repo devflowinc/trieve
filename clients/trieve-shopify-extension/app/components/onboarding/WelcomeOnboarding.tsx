@@ -27,7 +27,7 @@ export const WelcomeOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
   }, [data]);
 
   return (
-    <div className="grid w-full py-4 min-h-[100px] place-items-center">
+    <div className="grid w-full py-4 min-h-[180px] place-items-center">
       <div className="flex flex-col gap-1 items-center">
         <Text as="h2" variant="headingMd">
           {data?.done === true ? "Products Indexed!" : "Indexing products..."}

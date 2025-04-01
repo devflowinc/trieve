@@ -32,7 +32,7 @@ export const DoChatOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
   };
 
   return (
-    <div className="grid w-full py-2">
+    <div className="grid w-full h-[180px] pb-4 px-4 py-2">
       <div className="flex justify-between items-center gap-1">
         {complete === false && (
           <Text as="p">

@@ -17,12 +17,19 @@ export const Onboarding = () => {
           Getting Started
         </Text>
         <div className="flex gap-4">
-          <button onClick={onboarding.goToPreviousStep}>Prev</button>
-          <button onClick={onboarding.goToNextStep}>Next</button>
+          <button
+            className="text-[12px] hover:underline opacity-40"
+            onClick={onboarding.skipOnboarding}
+          >
+            Skip Onboarding
+          </button>
         </div>
       </div>
       <div>
         {onboarding.allSteps.map((step) => {
+          if (step.hidden) {
+            return null;
+          }
           const isCurrent = onboarding.currentStep.id === step.id;
           return (
             <div className="border-t px-2 border-t-neutral-200">
@@ -39,14 +46,14 @@ export const Onboarding = () => {
                 </div>
                 <div
                   className={cn(
-                    "p-2 fill-black",
+                    "p-2 fill-black transition-transform",
                     isCurrent ? "rotate-180" : "",
                   )}
                 >
                   <CaretUpIcon width={20} height={20} />
                 </div>
               </button>
-              <Collapsible open={isCurrent} id={step.id}>
+              <Collapsible expandOnPrint open={isCurrent} id={step.id}>
                 {
                   <step.body
                     goToNextStep={onboarding.goToNextStep}
