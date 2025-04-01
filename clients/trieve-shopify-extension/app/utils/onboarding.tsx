@@ -12,7 +12,7 @@ import {
   lastStepIdQuery,
   ONBOARD_STEP_META_FIELD,
 } from "app/queries/onboarding";
-import { FC, ReactNode, useCallback, useMemo, useState } from "react";
+import { FC, useCallback, useMemo, useState } from "react";
 
 export type OnboardingBody = FC<{
   goToNextStep?: () => void;
@@ -57,10 +57,9 @@ export const onboardingSteps: OnboardingStep[] = [
   {
     id: "after-chat",
     title: "Finished",
-    body: () => {
-      return <div></div>;
+    body: ({ goToPreviousStep }) => {
+      return <div onClick={goToPreviousStep}>jls</div>;
     },
-    hidden: true,
   },
 ];
 
