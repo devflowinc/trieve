@@ -173,6 +173,7 @@ export const crawlStatusOnboardQuery = (fetcher: AdminApiCaller) => {
         chunkCount: number;
         done: boolean;
       };
+      console.log("Crawl Status", crawlStatus);
       return crawlStatus;
     },
   } satisfies QueryOptions;
