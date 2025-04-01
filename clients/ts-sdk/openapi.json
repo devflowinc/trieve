@@ -11584,48 +11584,6 @@
           },
           {
             "type": "object",
-            "title": "FollowupQuery",
-            "required": [
-              "event_name",
-              "event_type"
-            ],
-            "properties": {
-              "event_name": {
-                "type": "string",
-                "description": "The name of the event"
-              },
-              "event_type": {
-                "type": "string",
-                "enum": [
-                  "followup_query"
-                ]
-              },
-              "location": {
-                "type": "string",
-                "description": "The location of the event",
-                "nullable": true
-              },
-              "metadata": {
-                "description": "Any other metadata associated with the event",
-                "nullable": true
-              },
-              "request": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/RequestInfo"
-                  }
-                ],
-                "nullable": true
-              },
-              "user_id": {
-                "type": "string",
-                "description": "The user id of the user who made the followup query",
-                "nullable": true
-              }
-            }
-          },
-          {
-            "type": "object",
             "title": "FilterClicked",
             "required": [
               "event_name",
@@ -11931,7 +11889,6 @@
           "add_to_cart",
           "purchase",
           "view",
-          "followup_query",
           "click",
           "filter_clicked"
         ]

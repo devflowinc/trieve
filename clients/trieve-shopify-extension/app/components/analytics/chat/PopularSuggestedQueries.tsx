@@ -21,7 +21,7 @@ export const PopularSuggestedQueries = ({
     client.prefetchQuery(
       popularSuggestedQueriesQuery(trieve, filters, page + 1),
     );
-  }, [page]);
+  }, [page, filters]);
 
   const mappedData = data
     ? data.top_queries.map((query: { query: string; count: number }) => [

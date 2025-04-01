@@ -1554,25 +1554,6 @@ export type EventTypes = {
      * The name of the event
      */
     event_name: string;
-    event_type: 'followup_query';
-    /**
-     * The location of the event
-     */
-    location?: (string) | null;
-    /**
-     * Any other metadata associated with the event
-     */
-    metadata?: unknown;
-    request?: ((RequestInfo) | null);
-    /**
-     * The user id of the user who made the followup query
-     */
-    user_id?: (string) | null;
-} | {
-    /**
-     * The name of the event
-     */
-    event_name: string;
     event_type: 'filter_clicked';
     /**
      * Whether the event is a conversion event
@@ -1716,7 +1697,7 @@ export type EventTypes = {
 
 export type event_type = 'view';
 
-export type EventTypesFilter = 'add_to_cart' | 'purchase' | 'view' | 'followup_query' | 'click' | 'filter_clicked';
+export type EventTypesFilter = 'add_to_cart' | 'purchase' | 'view' | 'click' | 'filter_clicked';
 
 export type EventsForTopicResponse = {
     events: Array<EventData>;
