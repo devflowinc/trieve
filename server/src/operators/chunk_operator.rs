@@ -2763,6 +2763,6 @@ pub async fn get_last_processed_from_clickhouse(
 }
 
 pub fn get_storage_mb_from_chunk_count(chunk_count: i32) -> i64 {
-    //       dense        sparse
-    (((1536 * 4) + (256 * 4)) * (chunk_count as i64)) / (1_000_000)
+    // dense        sparse    payload
+    (((1536 * 4) + (256 * 4) + 4096 ) * (chunk_count as i64)) / (1_000_000)
 }
