@@ -6977,27 +6977,6 @@ impl EventTypes {
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
             }),
-            EventTypes::FollowupQuery {
-                event_name,
-                request,
-                user_id,
-                metadata,
-                location,
-            } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
-                id: uuid::Uuid::new_v4(),
-                event_type: "followup_query".to_string(),
-                event_name,
-                request_id: request.clone().unwrap_or_default().request_id.to_string(),
-                request_type: request.unwrap_or_default().request_type.to_string(),
-                items: vec![],
-                user_id: user_id.unwrap_or_default(),
-                metadata: serde_json::to_string(&metadata.unwrap_or_default()).unwrap_or_default(),
-                is_conversion: false,
-                location: location.unwrap_or_default(),
-                dataset_id,
-                created_at: OffsetDateTime::now_utc(),
-                updated_at: OffsetDateTime::now_utc(),
-            }),
             EventTypes::Purchase {
                 event_name,
                 request,
@@ -7288,8 +7267,6 @@ pub enum EventTypesFilter {
     Purchase,
     #[display(fmt = "view")]
     View,
-    #[display(fmt = "followup_query")]
-    FollowupQuery,
     #[display(fmt = "click")]
     Click,
     #[display(fmt = "filter_clicked")]
@@ -8533,20 +8510,6 @@ pub enum EventTypes {
         metadata: Option<serde_json::Value>,
         /// Whether the event is a conversion event
         is_conversion: Option<bool>,
-        /// The location of the event
-        location: Option<String>,
-    },
-    #[display(fmt = "followup_query")]
-    #[schema(title = "FollowupQuery")]
-    FollowupQuery {
-        /// The name of the event
-        event_name: String,
-        /// The request id of the event to associate it with a request
-        request: Option<RequestInfo>,
-        /// The user id of the user who made the followup query
-        user_id: Option<String>,
-        /// Any other metadata associated with the event
-        metadata: Option<serde_json::Value>,
         /// The location of the event
         location: Option<String>,
     },

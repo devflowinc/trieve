@@ -3288,7 +3288,7 @@ pub async fn get_top_followup_queries_query(
 ) -> Result<FollowupQueriesResponse, ServiceError> {
     let mut query_string = String::from(
         "SELECT
-            JSONExtractString(metadata, 'followup_query') as query,
+            DISTINCT JSONExtractString(metadata, 'followup_query') as query,
             COUNT(*) AS count
         FROM
             events

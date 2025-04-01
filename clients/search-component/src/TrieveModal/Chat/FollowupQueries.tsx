@@ -26,7 +26,7 @@ export const FollowupQueries = () => {
 
     await trieveSDK.sendAnalyticsEvent({
       event_name: `site-followup_query`,
-      event_type: "followup_query",
+      event_type: "click",
       user_id: fingerprint,
       location: window.location.href,
       metadata: {
