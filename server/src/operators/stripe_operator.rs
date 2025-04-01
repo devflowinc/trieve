@@ -1264,7 +1264,7 @@ pub async fn get_bill_from_range(
             .expect("Billing price will exist");
 
         let cost =
-            max(billing_price.free_tier - amount, 0) as f64 * billing_price.past_free_tier_charge;
+            max(amount - billing_price.free_tier, 0) as f64 * billing_price.past_free_tier_charge;
 
         breakdown.push(BillItem {
             name: billing_price.guage_name.clone(),
