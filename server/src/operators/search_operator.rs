@@ -2517,6 +2517,8 @@ pub async fn search_hybrid_chunks(
     )
     .await?;
 
+    timer.add("searched within qdrant");
+
     let result_chunks = retrieve_chunks_from_point_ids(
         search_chunk_query_results.clone(),
         Some(timer),
