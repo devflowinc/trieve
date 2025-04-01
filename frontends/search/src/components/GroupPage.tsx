@@ -688,6 +688,12 @@ export const GroupPage = (props: GroupPageProps) => {
           </button>
         </div>
         <Show when={!editing()}>
+          <div class="flex space-x-2">
+            <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+              ID:{" "}
+            </span>
+            <span class="line-clamp-1 break-all">{groupInfo()?.id}</span>
+          </div>
           <Show when={groupInfo()?.name}>
             <div class="flex space-x-2">
               <span class="font-semibold text-neutral-800 dark:text-neutral-200">

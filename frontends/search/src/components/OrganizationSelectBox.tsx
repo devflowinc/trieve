@@ -25,7 +25,7 @@ export const OrganizationSelectBox = () => {
           {({ isOpen, setState }) => (
             <>
               <PopoverButton
-                aria-label="Toggle filters"
+                aria-label="Select Organization"
                 type="button"
                 class="flex items-center space-x-1 pb-1 text-sm"
               >

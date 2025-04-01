@@ -826,7 +826,7 @@ const SearchForm = (props: {
               {({ isOpen, setState }) => (
                 <>
                   <PopoverButton
-                    aria-label="Toggle filters"
+                    aria-label="Toggle search mode"
                     type="button"
                     class="flex items-center space-x-1 pb-1 text-sm"
                   >
@@ -852,10 +852,6 @@ const SearchForm = (props: {
                       <Menu class="ml-1 space-y-1">
                         <For each={searchTypes()}>
                           {(option) => {
-                            if (props.groupID && option.route === "hybrid") {
-                              return <></>;
-                            }
-
                             const onClick = (e: Event) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -911,7 +907,7 @@ const SearchForm = (props: {
               {({ isOpen, setState }) => (
                 <>
                   <PopoverButton
-                    aria-label="Toggle filters"
+                    aria-label="Toggle Sort"
                     type="button"
                     class="flex items-center space-x-1 pb-1 text-sm"
                   >
@@ -986,7 +982,7 @@ const SearchForm = (props: {
               {({ isOpen, setState }) => (
                 <>
                   <PopoverButton
-                    aria-label="Toggle filters"
+                    aria-label="Toggle Rerank by"
                     type="button"
                     class="flex items-center space-x-1 pb-1 text-sm"
                   >

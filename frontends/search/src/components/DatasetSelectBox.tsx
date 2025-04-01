@@ -56,7 +56,7 @@ export const DatasetSelectBox = () => {
         {({ isOpen, setState }) => (
           <>
             <PopoverButton
-              aria-label="Toggle filters"
+              aria-label="Select Dataset"
               type="button"
               class="flex min-w-fit items-center space-x-1 pb-1 text-sm"
             >
