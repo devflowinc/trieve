@@ -1,4 +1,6 @@
-import { Banner, Button, Box, Card, Text } from "@shopify/polaris";
+import { Card, Collapsible, Text } from "@shopify/polaris";
+import { CaretUpIcon } from "@shopify/polaris-icons";
+import { cn } from "app/utils/cn";
 import { useOnboarding } from "app/utils/onboarding";
 
 export const Onboarding = () => {
@@ -9,8 +11,8 @@ export const Onboarding = () => {
   }
 
   return (
-    <Card>
-      <div className="flex justify-between">
+    <Card padding={"0"}>
+      <div className="flex justify-between p-4">
         <Text variant="headingMd" as="h2">
           Getting Started
         </Text>
@@ -21,17 +23,30 @@ export const Onboarding = () => {
       </div>
       <div>
         {onboarding.allSteps.map((step) => {
+          const isCurrent = onboarding.currentStep.id === step.id;
           return (
-            <div className="border-t border-t-neutral-200">
-              <div className="flex p-2">
-                <div>{step.title}</div>
-              </div>
-              <div
-                style={{
-                  height: onboarding.currentStep.id === step.id ? 100 : 0,
+            <div className="border-t px-2 border-t-neutral-200">
+              <button
+                onClick={() => {
+                  onboarding.goToStep(step.id);
                 }}
-                className="transition-all overflow-hidden"
+                className="flex w-full justify-between items-center p-1"
               >
+                <div
+                  className={cn(isCurrent ? "text-black" : "text-neutral-400")}
+                >
+                  {step.title}
+                </div>
+                <div
+                  className={cn(
+                    "p-2 fill-black",
+                    isCurrent ? "rotate-180" : "",
+                  )}
+                >
+                  <CaretUpIcon width={20} height={20} />
+                </div>
+              </button>
+              <Collapsible open={isCurrent} id={step.id}>
                 {
                   <step.body
                     goToNextStep={onboarding.goToNextStep}
@@ -44,7 +59,7 @@ export const Onboarding = () => {
                     }}
                   />
                 }
-              </div>
+              </Collapsible>
             </div>
           );
         })}
