@@ -2,6 +2,8 @@ import { Card, Collapsible, Text } from "@shopify/polaris";
 import { CaretUpIcon, CheckCircleIcon } from "@shopify/polaris-icons";
 import { cn } from "app/utils/cn";
 import { useOnboarding } from "app/utils/onboarding";
+import { is } from "date-fns/locale";
+import { useState } from "react";
 
 export const Onboarding = () => {
   const onboarding = useOnboarding();
@@ -31,17 +33,16 @@ export const Onboarding = () => {
             return null;
           }
           const isCurrent = onboarding.currentStep.id === step.id;
+          const [open, setOpen] = useState(isCurrent);
           const isCompleted = onboarding.stepCompletions[step.id];
           return (
             <div className="border-t px-2 border-t-neutral-200">
               <button
                 onClick={() => {
                   onboarding.goToStep(step.id);
+                  setOpen((prev) => !prev);
                 }}
-                className={cn(
-                  "flex w-full justify-between items-center p-1 px-2",
-                  isCurrent && "cursor-default",
-                )}
+                className="flex w-full justify-between items-center p-1 px-2"
               >
                 <div className="flex gap-2">
                   <div
@@ -59,13 +60,13 @@ export const Onboarding = () => {
                 <div
                   className={cn(
                     "p-2 fill-black transition-transform",
-                    isCurrent ? "rotate-180" : "",
+                    open ? "rotate-180" : "",
                   )}
                 >
                   <CaretUpIcon width={20} height={20} />
                 </div>
               </button>
-              <Collapsible expandOnPrint open={isCurrent} id={step.id}>
+              <Collapsible expandOnPrint open={open} id={step.id}>
                 {
                   <div className="w-full">
                     <step.body
