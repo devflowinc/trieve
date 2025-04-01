@@ -4911,8 +4911,8 @@
         "tags": [
           "File"
         ],
-        "summary": "Get File Signed URL",
-        "description": "Get a signed s3 url corresponding to the file_id requested such that you can download the file.",
+        "summary": "Get File with Signed URL",
+        "description": "Get all of the information for a file along with a signed s3 url corresponding to the file_id requested such that you can download the file.",
         "operationId": "get_file_handler",
         "parameters": [
           {
@@ -4933,6 +4933,18 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "ttl",
+            "in": "query",
+            "description": "The time to live of the signed url in seconds",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true,
+              "minimum": 0
             }
           },
           {
@@ -6392,6 +6404,56 @@
         ]
       }
     },
+    "/api/stripe/estimate_bill": {
+      "get": {
+        "tags": [
+          "Stripe"
+        ],
+        "summary": "Estimate Bill From Range",
+        "description": "Return the amount you will be billed from a date range if you were on usage based pricing",
+        "operationId": "estimate_bill_from_range",
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DateRange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Billing estimate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingEstimate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to calculating bill",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/stripe/invoices/{organization_id}": {
       "get": {
         "tags": [
@@ -7552,6 +7614,41 @@
             }
           ],
           "pos_in_queue": 2
+        }
+      },
+      "BillItem": {
+        "type": "object",
+        "required": [
+          "name",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "BillingEstimate": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillItem"
+            }
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
+          }
         }
       },
       "BulkDeleteChunkPayload": {
@@ -10326,10 +10423,10 @@
             "BM25_ENABLED": true,
             "BM25_K": 0.75,
             "DISTANCE_METRIC": "cosine",
-            "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
-            "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+            "EMBEDDING_BASE_URL": "https://embedding.trieve.ai",
+            "EMBEDDING_MODEL_NAME": "jina-base-en",
             "EMBEDDING_QUERY_PREFIX": "",
-            "EMBEDDING_SIZE": 1536,
+            "EMBEDDING_SIZE": 768,
             "FREQUENCY_PENALTY": 0.0,
             "FULLTEXT_ENABLED": true,
             "INDEXED_ONLY": false,
@@ -10632,10 +10729,10 @@
           "BM25_ENABLED": true,
           "BM25_K": 0.75,
           "DISTANCE_METRIC": "cosine",
-          "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
-          "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+          "EMBEDDING_BASE_URL": "https://embedding.trieve.ai",
+          "EMBEDDING_MODEL_NAME": "jina-base-en",
           "EMBEDDING_QUERY_PREFIX": "",
-          "EMBEDDING_SIZE": 1536,
+          "EMBEDDING_SIZE": 768,
           "FREQUENCY_PENALTY": 0.0,
           "FULLTEXT_ENABLED": true,
           "INDEXED_ONLY": false,
@@ -11965,8 +12062,8 @@
           "file_name",
           "created_at",
           "updated_at",
-          "size",
-          "dataset_id"
+          "dataset_id",
+          "size"
         ],
         "properties": {
           "created_at": {
@@ -18917,7 +19014,6 @@
           "id",
           "stripe_id",
           "chunk_count",
-          "file_storage",
           "user_count",
           "dataset_count",
           "message_count",
@@ -18925,7 +19021,8 @@
           "created_at",
           "updated_at",
           "name",
-          "visible"
+          "visible",
+          "file_storage"
         ],
         "properties": {
           "amount": {
