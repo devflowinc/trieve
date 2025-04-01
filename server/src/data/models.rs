@@ -6903,8 +6903,6 @@ pub struct EventData {
     pub created_at: String,
     /// The time the event was last updated.
     pub updated_at: String,
-    /// The followup query associated with the event.
-    pub followup_query: Option<String>,
 }
 
 #[derive(Debug, ToSchema, Serialize, Deserialize, Row, Clone)]
@@ -6940,7 +6938,6 @@ pub struct EventDataClickhouse {
     pub created_at: OffsetDateTime,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub updated_at: OffsetDateTime,
-    pub followup_query: Option<String>, 
 }
 
 pub enum EventDataTypes {
@@ -6977,7 +6974,6 @@ impl EventTypes {
                 user_id: user_id.unwrap_or_default(),
                 is_conversion: is_conversion.unwrap_or(true),
                 dataset_id,
-                followup_query: None,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
             }),
@@ -6986,7 +6982,6 @@ impl EventTypes {
                 request,
                 user_id,
                 metadata,
-                followup_query,
                 location,
             } => EventDataTypes::EventDataClickhouse(EventDataClickhouse {
                 id: uuid::Uuid::new_v4(),
@@ -7000,7 +6995,6 @@ impl EventTypes {
                 is_conversion: false,
                 location: location.unwrap_or_default(),
                 dataset_id,
-                followup_query: Some(followup_query),
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
             }),
@@ -7027,7 +7021,6 @@ impl EventTypes {
                 is_conversion: is_conversion.unwrap_or(true),
                 location: location.unwrap_or_default(),
                 dataset_id,
-                followup_query: None,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
             }),
@@ -7050,7 +7043,6 @@ impl EventTypes {
                 user_id: user_id.unwrap_or_default(),
                 is_conversion: false,
                 dataset_id,
-                followup_query: None,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
             }),
@@ -7082,7 +7074,6 @@ impl EventTypes {
                     is_conversion: is_conversion.unwrap_or(true),
                     location: location.unwrap_or_default(),
                     dataset_id,
-                    followup_query: None,
                     created_at: OffsetDateTime::now_utc(),
                     updated_at: OffsetDateTime::now_utc(),
                 })
@@ -7106,7 +7097,6 @@ impl EventTypes {
                 is_conversion: is_conversion.unwrap_or(true),
                 location: location.unwrap_or_default(),
                 dataset_id,
-                followup_query: None,
                 created_at: OffsetDateTime::now_utc(),
                 updated_at: OffsetDateTime::now_utc(),
             }),
@@ -7257,7 +7247,6 @@ impl From<EventDataClickhouse> for EventData {
             metadata: serde_json::from_str(&clickhouse_response.metadata).unwrap_or_default(),
             user_id,
             is_conversion: Some(clickhouse_response.is_conversion),
-            followup_query: clickhouse_response.followup_query,
             dataset_id: uuid::Uuid::from_bytes(*clickhouse_response.dataset_id.as_bytes()),
             created_at: clickhouse_response.created_at.to_string(),
             updated_at: clickhouse_response.updated_at.to_string(),
@@ -7693,6 +7682,12 @@ pub enum RAGAnalytics {
     #[schema(title = "RAGQueryRatings")]
     #[serde(rename = "rag_query_ratings")]
     RAGQueryRatings { filter: Option<RAGAnalyticsFilter> },
+    #[schema(title = "FollowupQueries")]
+    #[serde(rename = "followup_queries")]
+    FollowupQueries {
+        filter: Option<RAGAnalyticsFilter>,
+        page: Option<u32>,
+    },
     #[schema(title = "TopicAnalytics")]
     #[serde(rename = "topic_queries")]
     TopicQueries {
@@ -7902,6 +7897,17 @@ pub struct RagQueryRatingsResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct FollowupQueriesResponse {
+    pub top_queries: Vec<FollowupQuery>,
+}
+
+#[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
+pub struct FollowupQuery {
+    pub query: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(untagged)]
 pub enum RAGAnalyticsResponse {
     #[schema(title = "RAGQueries")]
@@ -7914,6 +7920,8 @@ pub enum RAGAnalyticsResponse {
     RAGQueryDetails(Box<RagQueryEvent>),
     #[schema(title = "RAGQueryRatings")]
     RAGQueryRatings(RagQueryRatingsResponse),
+    #[schema(title = "FollowupQueries")]
+    FollowupQueries(FollowupQueriesResponse),
     #[schema(title = "TopicAnalytics")]
     TopicQueries(TopicQueriesResponse),
     #[schema(title = "TopicDetails")]
@@ -8539,8 +8547,6 @@ pub enum EventTypes {
         user_id: Option<String>,
         /// Any other metadata associated with the event
         metadata: Option<serde_json::Value>,
-        /// The followup query
-        followup_query: String,
         /// The location of the event
         location: Option<String>,
     },

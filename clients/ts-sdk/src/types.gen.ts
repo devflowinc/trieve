@@ -1398,10 +1398,6 @@ export type EventData = {
      */
     event_type: string;
     /**
-     * The followup query associated with the event.
-     */
-    followup_query?: (string) | null;
-    /**
      * The unique identifier for the event
      */
     id: string;
@@ -1559,10 +1555,6 @@ export type EventTypes = {
      */
     event_name: string;
     event_type: 'followup_query';
-    /**
-     * The followup query
-     */
-    followup_query: string;
     /**
      * The location of the event
      */
@@ -1831,6 +1823,15 @@ export type FloatRange = {
 export type FloatTimePoint = {
     point: number;
     time_stamp: string;
+};
+
+export type FollowupQueriesResponse = {
+    top_queries: Array<FollowupQuery>;
+};
+
+export type FollowupQuery = {
+    count: number;
+    query: string;
 };
 
 /**
@@ -2704,6 +2705,10 @@ export type RAGAnalytics = {
     filter?: ((RAGAnalyticsFilter) | null);
     type: 'rag_query_ratings';
 } | {
+    filter?: ((RAGAnalyticsFilter) | null);
+    page?: (number) | null;
+    type: 'followup_queries';
+} | {
     filter?: ((TopicAnalyticsFilter) | null);
     has_clicks?: (boolean) | null;
     page?: (number) | null;
@@ -2760,7 +2765,7 @@ export type RAGAnalyticsFilter = {
     rag_type?: ((RagTypes) | null);
 };
 
-export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse | EventNameAndCountsResponse | EventsForTopicResponse | ChatRevenueResponse | PopularChatsResponse;
+export type RAGAnalyticsResponse = RagQueryResponse | RAGUsageResponse | RAGUsageGraphResponse | RagQueryEvent | RagQueryRatingsResponse | FollowupQueriesResponse | TopicQueriesResponse | TopicDetailsResponse | TopicsOverTimeResponse | CTRMetricsOverTimeResponse | MessagesPerUserResponse | ChatAverageRatingResponse | ChatConversionRateResponse | EventNameAndCountsResponse | EventsForTopicResponse | ChatRevenueResponse | PopularChatsResponse;
 
 export type RAGSortBy = 'hallucination_score' | 'top_score' | 'created_at';
 

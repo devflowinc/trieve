@@ -23,7 +23,7 @@ use crate::{
         TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages, TopPagesResponse,
         TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse, TopicDetailsResponse,
         TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse,
-        TotalUniqueUsersResponse,
+        TotalUniqueUsersResponse, FollowupQueriesResponse, FollowupQuery,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
@@ -3278,4 +3278,45 @@ pub async fn get_most_popular_chats_query(
         })?;
 
     Ok(PopularChatsResponse { chats: result })
+}
+
+
+pub async fn get_top_followup_queries_query(
+    dataset_id: uuid::Uuid,
+    page: Option<u32>,
+    filter: Option<RAGAnalyticsFilter>,
+    clickhouse_client: &clickhouse::Client,
+) -> Result<FollowupQueriesResponse, ServiceError> {
+    let mut query_string = String::from(
+        "SELECT
+            JSONExtractString(metadata, 'followup_query') as query,
+            COUNT(*) AS count
+        FROM
+            events
+        WHERE dataset_id = ?
+        AND event_name = 'site-followup_query'"
+    );
+
+    if let Some(filter) = &filter {
+        query_string = filter.add_to_query(query_string);
+    }
+
+    query_string.push_str(format!(
+        "GROUP BY query ORDER BY count DESC LIMIT 10 OFFSET {}",
+        (page.unwrap_or(1) - 1) * 10,
+    ).as_str());
+
+    let result = clickhouse_client
+        .query(query_string.as_str())
+        .bind(dataset_id)
+        .fetch_all::<FollowupQuery>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching top followup queries: {:?}", e);
+            ServiceError::InternalServerError("Error fetching top followup queries".to_string())
+        })?;
+
+    Ok(FollowupQueriesResponse {
+        top_queries: result,
+    })
 }

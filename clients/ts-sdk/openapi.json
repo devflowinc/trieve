@@ -11223,11 +11223,6 @@
             "type": "string",
             "description": "The type of event, \"add_to_cart\", \"purchase\", \"view\", \"click\", \"filter_clicked\", \"followup_query\""
           },
-          "followup_query": {
-            "type": "string",
-            "description": "The followup query associated with the event.",
-            "nullable": true
-          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -11592,7 +11587,6 @@
             "title": "FollowupQuery",
             "required": [
               "event_name",
-              "followup_query",
               "event_type"
             ],
             "properties": {
@@ -11605,10 +11599,6 @@
                 "enum": [
                   "followup_query"
                 ]
-              },
-              "followup_query": {
-                "type": "string",
-                "description": "The followup query"
               },
               "location": {
                 "type": "string",
@@ -12414,6 +12404,36 @@
             "format": "double"
           },
           "time_stamp": {
+            "type": "string"
+          }
+        }
+      },
+      "FollowupQueriesResponse": {
+        "type": "object",
+        "required": [
+          "top_queries"
+        ],
+        "properties": {
+          "top_queries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FollowupQuery"
+            }
+          }
+        }
+      },
+      "FollowupQuery": {
+        "type": "object",
+        "required": [
+          "query",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "query": {
             "type": "string"
           }
         }
@@ -15002,6 +15022,35 @@
           },
           {
             "type": "object",
+            "title": "FollowupQueries",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RAGAnalyticsFilter"
+                  }
+                ],
+                "nullable": true
+              },
+              "page": {
+                "type": "integer",
+                "format": "int32",
+                "nullable": true,
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "followup_queries"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
             "title": "TopicAnalytics",
             "required": [
               "type"
@@ -15386,6 +15435,9 @@
           },
           {
             "$ref": "#/components/schemas/RagQueryRatingsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/FollowupQueriesResponse"
           },
           {
             "$ref": "#/components/schemas/TopicQueriesResponse"

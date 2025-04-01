@@ -15,6 +15,7 @@ import {
   EventNameAndCountsResponse,
   TopicAnalyticsFilter,
   PopularChatsResponse,
+  FollowupQueriesResponse,
 } from "trieve-ts-sdk";
 
 export const topicsUsageQuery = (
@@ -184,6 +185,24 @@ export const popularChatsQuery = (
         page: page,
       });
       return result as PopularChatsResponse;
+    },
+  } satisfies QueryOptions;
+};
+
+export const popularSuggestedQueriesQuery = (
+  trieve: TrieveSDK,
+  filters: RAGAnalyticsFilter,
+  page: number,
+) => {
+  return {
+    queryKey: ["popularSuggestedQueries", filters, page],
+    queryFn: async () => {
+      const result = await trieve.getRagAnalytics({
+        filter: filters,
+        type: "followup_queries",
+        page: page,
+      });
+      return result as FollowupQueriesResponse;
     },
   } satisfies QueryOptions;
 };

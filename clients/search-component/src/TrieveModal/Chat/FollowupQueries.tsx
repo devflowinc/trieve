@@ -27,10 +27,10 @@ export const FollowupQueries = () => {
     await trieveSDK.sendAnalyticsEvent({
       event_name: `site-followup_query`,
       event_type: "followup_query",
-      followup_query: q,
       user_id: fingerprint,
       location: window.location.href,
       metadata: {
+        followup_query: q,
         component_props: props,
       },
       request: {
