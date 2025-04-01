@@ -3955,6 +3955,46 @@ impl StripeUsageBasedPlan {
             self.files_storage_price_id.clone(),
         ]
     }
+
+    pub fn guage_line_item_map(&self) -> HashMap<String, String> {
+        HashMap::from([
+            (
+                "tokens_ingested".to_string(),
+                self.ingest_tokens_price_id.clone(),
+            ),
+            (
+                "bytes_ingested".to_string(),
+                self.bytes_ingested_price_id.clone(),
+            ),
+            (
+                "search_tokens".to_string(),
+                self.search_tokens_price_id.clone(),
+            ),
+            (
+                "message_tokens".to_string(),
+                self.message_tokens_price_id.clone(),
+            ),
+            (
+                "analytics_events".to_string(),
+                self.analytics_events_price_id.clone(),
+            ),
+            ("ocr_pages".to_string(), self.ocr_pages_price_id.clone()),
+            (
+                "pages_crawled".to_string(),
+                self.pages_crawls_price_id.clone(),
+            ),
+            ("dataset_count".to_string(), self.datasets_price_id.clone()),
+            ("users".to_string(), self.users_price_id.clone()),
+            (
+                "chunk_storage_mb".to_string(),
+                self.chunks_stored_price_id.clone(),
+            ),
+            (
+                "file_storage_mb".to_string(),
+                self.files_storage_price_id.clone(),
+            ),
+        ])
+    }
 }
 
 #[derive(

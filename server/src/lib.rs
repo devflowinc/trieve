@@ -1384,7 +1384,7 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::post().to(handlers::stripe_handler::update_payment_method)),
                                 )
                                 .service(
-                                    web::resource("/estimate_bill")
+                                    web::resource("/estimate_bill/{plan_id}")
                                         .route(web::post().to(handlers::stripe_handler::estimate_bill_from_range)),
                                 ),
                         )
