@@ -115,6 +115,13 @@ export const useOnboarding = () => {
     nextStepMutation.mutate({ stepId: nextStepId });
   }, [currentStepId, nextStepMutation]);
 
+  const goToStep = useCallback(
+    (stepId: string) => {
+      nextStepMutation.mutate({ stepId });
+    },
+    [nextStepMutation],
+  );
+
   const goToPreviousStep = useCallback(() => {
     let currentStepIndex = onboardingSteps.findIndex(
       (step) => step.id === currentStepId,
@@ -150,6 +157,7 @@ export const useOnboarding = () => {
     hasNextStep,
     stepIsComplete,
     currentStep,
+    goToStep,
     goToPreviousStep,
     setStepCompletions,
     allSteps: stepsWithInfo,
