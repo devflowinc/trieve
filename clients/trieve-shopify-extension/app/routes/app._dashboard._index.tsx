@@ -15,6 +15,7 @@ import {
   Link,
 } from "@shopify/polaris";
 import {
+  CalendarIcon,
   EnvelopeIcon,
   QuestionCircleIcon,
   RefreshIcon,
@@ -49,12 +50,12 @@ export default function Dashboard() {
 
   const statsItems = [
     {
-      term: "Chunks",
+      term: "Products",
       description: isLoading ? (
         <SkeletonBodyText lines={1} />
       ) : (
         <InlineStack align="space-between">
-          {usage?.chunk_count.toLocaleString()}{" "}
+          {usage?.chunk_count.toLocaleString()}
           <Button
             icon={RefreshIcon}
             onClick={() => {
@@ -65,7 +66,7 @@ export default function Dashboard() {
       ),
     },
     {
-      term: "Last Updated",
+      term: "Last Synced",
       description: isLoading ? (
         <SkeletonBodyText lines={1} />
       ) : dataUpdatedAt ? (
@@ -116,7 +117,7 @@ export default function Dashboard() {
                   <Box paddingInline="400" paddingBlockStart="400">
                     <InlineStack align="space-between">
                       <Text variant="headingMd" as="h2">
-                        Dataset Overview
+                        Usage Overview
                       </Text>
                       <Badge>{planType + " Plan"}</Badge>
                     </InlineStack>
@@ -176,10 +177,14 @@ export default function Dashboard() {
               <Link url="mailto:humans@trieve.ai" target="_blank">
                 humans@trieve.ai
               </Link>{" "}
+              or call{" "}
+              <Link url="tel:+16282224090" target="_blank">
+                628-222-4090
+              </Link>{" "}
               to quickly get in touch with a human on our team.
             </Text>
             <Text variant="bodyLg" as="p">
-              Or, if you prefer, see the{" "}
+              Or visit the{" "}
               <Link
                 url="https://docs.trieve.ai/site-search/introduction"
                 target="_blank"
@@ -187,7 +192,7 @@ export default function Dashboard() {
                 support center
               </Link>{" "}
               for answers to common questions, video tutorials, documentation,
-              and more. We would love to hear from you about anything.
+              and more.
             </Text>
             <InlineStack align="start" gap="300">
               <Button
@@ -205,6 +210,14 @@ export default function Dashboard() {
                 target="_blank"
               >
                 Email Us
+              </Button>
+              <Button
+                icon={CalendarIcon}
+                size="large"
+                url="https://cal.com/team/trieve/chat"
+                target="_blank"
+              >
+                Book a Call
               </Button>
             </InlineStack>
           </BlockStack>
