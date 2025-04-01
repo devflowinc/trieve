@@ -57,8 +57,9 @@ export const onboardingSteps: OnboardingStep[] = [
   {
     id: "after-chat",
     title: "Finished",
+    hidden: true,
     body: ({ goToPreviousStep }) => {
-      return <div onClick={goToPreviousStep}>jls</div>;
+      return <div onClick={goToPreviousStep}>back</div>;
     },
   },
 ];
@@ -152,12 +153,21 @@ export const useOnboarding = () => {
     return getStepIndex(currentStepId) < onboardingSteps.length - 1;
   }, [currentStepId]);
 
+  const skipOnboarding = () => {
+    const hiddenSteps = onboardingSteps.filter((step) => step.hidden);
+    if (hiddenSteps.length === 0) {
+      return;
+    }
+    goToStep(hiddenSteps[0].id);
+  };
+
   return {
     goToNextStep,
     hasNextStep,
     stepIsComplete,
     currentStep,
     goToStep,
+    skipOnboarding,
     goToPreviousStep,
     setStepCompletions,
     allSteps: stepsWithInfo,
