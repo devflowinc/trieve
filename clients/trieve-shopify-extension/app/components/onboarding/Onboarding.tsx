@@ -36,7 +36,7 @@ export const Onboarding = () => {
           const [open, setOpen] = useState(isCurrent);
           const isCompleted = onboarding.stepCompletions[step.id];
           return (
-            <div className="border-t px-2 border-t-neutral-200">
+            <div className="border-t px-2 border-t-neutral-200" key={step.id}>
               <button
                 onClick={() => {
                   onboarding.goToStep(step.id);
