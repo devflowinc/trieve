@@ -211,7 +211,7 @@ pub async fn upload_file_handler(
             })?;
     }
 
-    let file_size_mb = decoded_file_data.len() as i64;
+    let file_size_mb = (decoded_file_data.len() as f64 / 1024.0).ceil() as i64;
 
     create_file_query(
         file_id,

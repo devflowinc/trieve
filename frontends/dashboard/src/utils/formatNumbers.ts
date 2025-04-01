@@ -35,3 +35,18 @@ export const formatStorageMb = (mb: number) => {
     return `${formatNumberWithCommas(tb)} tb`;
   }
 };
+
+export const formatStorageKb = (kb: number) => {
+  if (kb < 1000) {
+    return `${formatNumberWithCommas(kb)} kb`;
+  } else if (kb <= 9000000000) {
+    const mb = kb / 1000000;
+    return `${formatNumberWithCommas(mb)} mb`;
+  } else if (kb <= 9000000000000) {
+    const gb = kb / 1000000000;
+    return `${formatNumberWithCommas(gb)} gb`;
+  } else {
+    const tb = kb / 50000000000;
+    return `${formatNumberWithCommas(tb)} tb`;
+  }
+};

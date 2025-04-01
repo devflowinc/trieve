@@ -49,7 +49,7 @@ pub async fn create_usage_stripe_subscription_query(
         last_cycle_dataset_count: current_usage.dataset_count as i64,
         last_cycle_users_count: current_usage.user_count,
         last_cycle_chunks_stored_mb: get_storage_mb_from_chunk_count(current_usage.chunk_count),
-        last_cycle_files_storage_mb: current_usage.file_storage,
+        last_cycle_files_storage_mb: current_usage.file_storage * 1024,
 
         current_period_end: None,
     };
@@ -102,7 +102,7 @@ pub async fn update_static_stripe_meters(
             "chunk_storage_mb",
             get_storage_mb_from_chunk_count(usage.chunk_count).to_string(),
         ),
-        ("file_storage_mb", usage.file_storage.to_string()),
+        ("file_storage_mb", (usage.file_storage * 1024).to_string()),
         ("users", usage.user_count.to_string()),
         ("dataset_count", usage.dataset_count.to_string()),
     ];
