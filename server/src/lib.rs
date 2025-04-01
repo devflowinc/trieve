@@ -613,6 +613,8 @@ impl Modify for SecurityAddon {
             data::models::ChatAverageRatingResponse,
             data::models::SearchAverageRatingResponse,
             data::models::ChatConversionRateResponse,
+            data::models::FollowupQueriesResponse,
+            data::models::FollowupQuery,
             data::models::ComponentInteractionTimeResponse,
             data::models::SearchRevenueResponse,
             data::models::ChatRevenueResponse,

@@ -6,7 +6,7 @@ use crate::{
         EventDataTypes, EventNameAndCountsResponse, EventTypes, EventsForTopicResponse,
         GetEventsRequestBody, OrganizationWithSubAndPlan, Pool, RAGAnalytics, RAGAnalyticsResponse,
         RecommendationAnalytics, RecommendationAnalyticsResponse, SearchAnalytics,
-        SearchAnalyticsResponse, TopDatasetsRequestTypes,
+        SearchAnalyticsResponse, TopDatasetsRequestTypes
     },
     errors::ServiceError,
     operators::{
@@ -617,6 +617,17 @@ pub async fn get_rag_analytics(
             )
             .await?;
             RAGAnalyticsResponse::PopularChats(most_popular_chats)
+        }
+        RAGAnalytics::FollowupQueries { filter, page } => {
+            let followup_queries = get_top_followup_queries_query(
+                dataset_org_plan_sub.dataset.id,
+                page,
+                filter,
+                clickhouse_client.get_ref(),
+            )
+            .await?;
+
+            RAGAnalyticsResponse::FollowupQueries(followup_queries)
         }
     };
 
