@@ -181,7 +181,6 @@ export const fillDate = <T>({
         const parsedDate = new Date(
           parseCustomDateString(curr[timestampKey] as string),
         );
-        console.log("parsedDate", parsedDate, curr[timestampKey]);
         if (isSameDay(parsedDate, d)) {
           foundDataPoint = {
             time: parsedDate,
