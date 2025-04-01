@@ -427,6 +427,7 @@ pub async fn create_file_chunks(
 
 pub async fn get_file_query(
     file_uuid: uuid::Uuid,
+    ttl: u32,
     dataset_id: uuid::Uuid,
     content_type: Option<String>,
     pool: web::Data<Pool>,
@@ -476,7 +477,7 @@ pub async fn get_file_query(
 
     let bucket = get_aws_bucket()?;
     let s3_url = bucket
-        .presign_get(file.id.to_string(), 6000, Some(custom_queries))
+        .presign_get(file.id.to_string(), ttl, Some(custom_queries))
         .await
         .map_err(|e| {
             log::error!("Could not get presigned url {:?}", e);

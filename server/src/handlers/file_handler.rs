@@ -355,12 +355,15 @@ pub async fn upload_html_page(
 
 #[derive(Debug, Deserialize, Serialize, ToSchema, Default)]
 pub struct FileSignedUrlOptions {
-    content_type: Option<String>,
+    /// The content type of the file
+    pub content_type: Option<String>,
+    /// The time to live of the signed url in seconds. Defaults to 86400 seconds (1 day).
+    pub ttl: Option<u32>,
 }
 
-/// Get File Signed URL
+/// Get File with Signed URL
 ///
-/// Get a signed s3 url corresponding to the file_id requested such that you can download the file.
+/// Get all of the information for a file along with a signed s3 url corresponding to the file_id requested such that you can download the file.
 #[utoipa::path(
     get,
     path = "/file/{file_id}",
@@ -374,6 +377,7 @@ pub struct FileSignedUrlOptions {
     params(
         ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
         ("file_id" = uuid::Uuid, description = "The id of the file to fetch"),
+        ("ttl" = Option<u32>, Query, description = "The time to live of the signed url in seconds"),
         ("content_type" = Option<String>, Query, description = "Optional field to override the presigned url's Content-Type header"),
     ),
     security(
@@ -387,8 +391,11 @@ pub async fn get_file_handler(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     options: web::Query<FileSignedUrlOptions>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let ttl = options.ttl.unwrap_or(86400);
+
     let file = get_file_query(
         file_id.into_inner(),
+        ttl,
         dataset_org_plan_sub.dataset.id,
         options.into_inner().content_type,
         pool,
@@ -697,8 +704,29 @@ pub struct GetImageResponse {
     pub signed_url: String,
 }
 
+/// Get presigned url for file (deprecated)
+///
+/// Returns the presigned url for a file.
+#[utoipa::path(
+    get,
+    path = "/get_signed_url/{file_id}",
+    context_path = "/api",
+    tag = "File",
+    responses(
+        (status = 200, description = "JSON body representing the signed url", body = GetImageResponse),
+        (status = 400, description = "Service error relating to getting the signed url", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("ttl" = u32, Query, description = "The time to live of the signed url in seconds"),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+#[deprecated]
 pub async fn get_signed_url(
-    file_name: web::Path<String>,
+    file_id: web::Path<String>,
     _user: LoggedUser,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
@@ -718,7 +746,7 @@ pub async fn get_signed_url(
     };
 
     let signed_url = bucket
-        .presign_get(format!("{}/{}", s3_path, file_name.into_inner()), 300, None)
+        .presign_get(format!("{}/{}", s3_path, file_id.into_inner()), 86400, None)
         .await
         .map_err(|e| {
             log::error!("Error getting signed url: {}", e);

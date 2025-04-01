@@ -123,6 +123,16 @@ export type BatchQueuedChunkResponse = {
     chunk_metadata: Array<ChunkMetadata>;
 };
 
+export type BillItem = {
+    amount: number;
+    name: string;
+};
+
+export type BillingEstimate = {
+    items: Array<BillItem>;
+    total: number;
+};
+
 export type BulkDeleteChunkPayload = {
     filter: ChunkFilter;
 };
@@ -5325,6 +5335,10 @@ export type GetFileHandlerData = {
      * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
      */
     trDataset: string;
+    /**
+     * The time to live of the signed url in seconds
+     */
+    ttl?: (number) | null;
 };
 
 export type GetFileHandlerResponse = (FileDTO);
@@ -5621,6 +5635,12 @@ export type UpdatePaymentMethodData = {
 };
 
 export type UpdatePaymentMethodResponse = (CreateSetupCheckoutSessionResPayload);
+
+export type EstimateBillFromRangeData = {
+    requestBody: DateRange;
+};
+
+export type EstimateBillFromRangeResponse = (BillingEstimate);
 
 export type GetAllInvoicesData = {
     /**
@@ -7308,6 +7328,21 @@ export type $OpenApiTs = {
                 200: CreateSetupCheckoutSessionResPayload;
                 /**
                  * Service error relating to creating setup checkout session
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/stripe/estimate_bill': {
+        get: {
+            req: EstimateBillFromRangeData;
+            res: {
+                /**
+                 * Billing estimate
+                 */
+                200: BillingEstimate;
+                /**
+                 * Service error relating to calculating bill
                  */
                 400: ErrorResponseBody;
             };
