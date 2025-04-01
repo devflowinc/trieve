@@ -1164,14 +1164,14 @@ pub async fn update_stripe_usage_based_subscription(
 }
 
 pub struct BillingPrice {
-    free_tier: i64,
-    past_free_tier_charge: f64,
-    name: String,
-    guage_name: String,
+    pub free_tier: i64,
+    pub past_free_tier_charge: f64,
+    pub guage_name: String,
 }
 
 pub async fn get_bill_from_range(
     organization_id: uuid::Uuid,
+    usage_plan: StripeUsageBasedPlan,
     date_range: DateRange,
     clickhouse_client: &clickhouse::Client,
     pool: web::Data<Pool>,
@@ -1185,74 +1185,58 @@ pub async fn get_bill_from_range(
     )
     .await?;
 
-    let prices = vec![
-        BillingPrice {
-            free_tier: 3_000_000,
-            past_free_tier_charge: 0.00000002,
-            name: "Search Tokens".to_string(),
-            guage_name: "search_tokens".to_string(),
-        },
-        BillingPrice {
-            free_tier: 263_000,
-            past_free_tier_charge: 0.000003528,
-            name: "Message Tokens".to_string(),
-            guage_name: "message_tokens".to_string(),
-        },
-        BillingPrice {
-            free_tier: 3_000_000,
-            past_free_tier_charge: 0.00000002,
-            name: "Bytes Ingested".to_string(),
-            guage_name: "bytes_ingested".to_string(),
-        },
-        BillingPrice {
-            free_tier: 3_000_000,
-            past_free_tier_charge: 0.00000002,
-            name: "Tokens Ingested".to_string(),
-            guage_name: "tokens_ingested".to_string(),
-        },
-        BillingPrice {
-            free_tier: 10,
-            past_free_tier_charge: 0.00086,
-            name: "Pages Crawled".to_string(),
-            guage_name: "pages_crawled".to_string(),
-        },
-        BillingPrice {
-            free_tier: 100,
-            past_free_tier_charge: 0.0,
-            name: "OCR Pages".to_string(),
-            guage_name: "ocr_pages".to_string(),
-        },
-        BillingPrice {
-            free_tier: 1_000_000,
-            past_free_tier_charge: 0.0001,
-            name: "Analytics Events".to_string(),
-            guage_name: "analytics_events".to_string(),
-        },
-        BillingPrice {
-            free_tier: 10_000,
-            past_free_tier_charge: 0.0113,
-            name: "Chunk Storage (MB)".to_string(),
-            guage_name: "chunk_storage_mb".to_string(),
-        },
-        BillingPrice {
-            free_tier: 10_240,
-            past_free_tier_charge: 0.0000224609375,
-            name: "File Storage (MB)".to_string(),
-            guage_name: "file_storage_mb".to_string(),
-        },
-        BillingPrice {
-            free_tier: 0,
-            past_free_tier_charge: 0.0,
-            name: "Users".to_string(),
-            guage_name: "users".to_string(),
-        },
-        BillingPrice {
-            free_tier: 10,
-            past_free_tier_charge: 0.05,
-            name: "Datasets".to_string(),
-            guage_name: "dataset_count".to_string(),
-        },
-    ];
+    let stripe_secret = get_env!("STRIPE_SECRET", "STRIPE_SECRET must be set");
+
+    let guage_to_price = usage_plan.guage_line_item_map();
+
+    let mut prices = vec![];
+    for (guage, price_id) in guage_to_price.iter() {
+        // Get stripe price
+        let price = reqwest::Client::new()
+            .post(format!("https://api.stripe.com/v1/prices/{}", price_id))
+            .basic_auth(stripe_secret, Option::<&str>::None)
+            .form(&[("expand[]", "tiers")])
+            .send()
+            .await
+            .map_err(|e| ServiceError::BadRequest(format!("Failed to get stripe price: {}", e)))?
+            .json::<stripe::Price>()
+            .await
+            .map_err(|e| {
+                ServiceError::BadRequest(format!("Failed to get stripe price text: {}", e))
+            })?;
+
+        if let Some(tiers) = &price.tiers {
+            let mut iter_tiers = tiers.iter();
+
+            let free_tier = iter_tiers
+                .next()
+                .ok_or(ServiceError::BadRequest(
+                    "Price must have tier [0]".to_string(),
+                ))?
+                .up_to
+                .expect("price must have up to");
+
+            let per_unit_price = iter_tiers.next().ok_or(ServiceError::BadRequest(
+                "Price must have tier [1]".to_string(),
+            ))?;
+            let per_unit_price = per_unit_price
+                .clone()
+                .unit_amount_decimal
+                .ok_or(ServiceError::BadRequest(
+                    "Price must have unit amount".to_string(),
+                ))?
+                .clone();
+
+            // Get Stripe price per unit fee past free tier
+            prices.push(BillingPrice {
+                free_tier,
+                past_free_tier_charge: per_unit_price.parse::<f64>().map_err(|_| {
+                    ServiceError::BadRequest("Failed to format unit price".to_string())
+                })?,
+                guage_name: guage.clone(),
+            });
+        }
+    }
 
     let all_events: Vec<(&str, i64)> = vec![
         (
@@ -1283,7 +1267,7 @@ pub async fn get_bill_from_range(
             max(billing_price.free_tier - amount, 0) as f64 * billing_price.past_free_tier_charge;
 
         breakdown.push(BillItem {
-            name: billing_price.name.clone(),
+            name: billing_price.guage_name.clone(),
             amount: cost,
         });
 

@@ -659,7 +659,7 @@ pub struct BillItem {
 /// Return the amount you will be billed from a date range if you were on usage based pricing
 #[utoipa::path(
     get,
-    path = "/stripe/estimate_bill",
+    path = "/stripe/estimate_bill/{plan_id}",
     context_path = "/api",
     tag = "Stripe",
     responses (
@@ -673,17 +673,28 @@ pub struct BillItem {
 pub async fn estimate_bill_from_range(
     _user: OwnerOnly,
     org_with_plan_and_sub: OrganizationWithSubAndPlan,
+    plan_id: web::Path<uuid::Uuid>,
     date_range: web::Json<DateRange>,
     clickhouse_client: web::Data<clickhouse::Client>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let billing_estimate = get_bill_from_range(
-        org_with_plan_and_sub.organization.id,
-        date_range.into_inner(),
-        &clickhouse_client,
-        pool,
-    )
-    .await?;
+    let usage_plan = get_trieve_plan_by_id_query(plan_id.into_inner(), pool.clone())
+        .await
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
-    Ok(HttpResponse::Ok().json(billing_estimate))
+    match usage_plan {
+        TrievePlan::UsageBased(usage_plan) => {
+            let billing_estimate = get_bill_from_range(
+                org_with_plan_and_sub.organization.id,
+                usage_plan,
+                date_range.into_inner(),
+                &clickhouse_client,
+                pool,
+            )
+            .await?;
+
+            Ok(HttpResponse::Ok().json(billing_estimate))
+        }
+        _ => Err(ServiceError::BadRequest("Plan is not usage based".to_string()).into()),
+    }
 }
