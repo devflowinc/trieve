@@ -427,7 +427,6 @@ export const sendChunks = async (
         ),
       );
 
-    console.log(dataChunks);
 
     for (const batch of chunk_to_size(dataChunks, 120)) {
       const sendPromise = sendChunksToTrieve(batch, key, datasetId ?? "");

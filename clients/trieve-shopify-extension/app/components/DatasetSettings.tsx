@@ -81,6 +81,7 @@ export const DatasetSettings = ({
     shopDataset.server_configuration ?? ({} as DatasetConfig),
   );
 
+
   useEffect(() => {
     // Quickly set the nonnegotiable options for shopify to work
     setUnsavedCrawlOptions({
