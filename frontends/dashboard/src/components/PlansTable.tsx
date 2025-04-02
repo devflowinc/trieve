@@ -412,7 +412,7 @@ export const PlansTable = (props: PlansTableProps) => {
                   let actionButton = <ActiveTag text="Current Tier" />;
 
                   if (!plan.current || currentPeriodEnd) {
-                    if (!currentPeriodEnd) {
+                    if ((curPlan?.amount ?? 0) > 0 && !currentPeriodEnd) {
                       const onClickFunc = () => {
                         void updatePlan(plan);
                       };
