@@ -1,4 +1,4 @@
-import { createEffect, createSignal, useContext } from "solid-js";
+import { createEffect, createMemo, createSignal, useContext } from "solid-js";
 import { ProgressBar } from "./ProgressBar";
 import {
   formatNumberWithCommas,
@@ -27,9 +27,11 @@ export const OrganizationUsageOverview = (
 
   const [startDate, setStartDate] = createSignal(startOfMonth(new Date()));
 
-  const usageQuery = createUsageQuery(userContext, trieve, {
-    startDate: formatDateForApi(startOfMonth(new Date())),
-    endDate: formatDateForApi(addMonths(startOfMonth(new Date()), 1)),
+  const usageQuery = createMemo(() => {
+    return createUsageQuery(userContext, trieve, {
+      startDate: formatDateForApi(startDate()),
+      endDate: formatDateForApi(addMonths(startDate(), 1)),
+    });
   });
 
   const subscriptionQuery = createSubscriptionQuery(userContext, trieve);
@@ -37,8 +39,8 @@ export const OrganizationUsageOverview = (
   createEffect(() => {
     if (props.currentOrgSubPlan?.subscription?.type === "usage_based") {
       setStartDate(
-        startOfMonth(
-          new Date(props.currentOrgSubPlan.subscription.last_cycle_timestamp),
+        new Date(
+          `${props.currentOrgSubPlan.subscription.last_cycle_timestamp}Z`,
         ),
       );
     }
@@ -53,6 +55,13 @@ export const OrganizationUsageOverview = (
             {startDate().toLocaleString("default", {
               month: "long",
               year: "numeric",
+              day: "numeric",
+            })}{" "}
+            -{" "}
+            {addMonths(startDate(), 1).toLocaleString("default", {
+              month: "long",
+              year: "numeric",
+              day: "numeric",
             })}{" "}
             Usage
           </div>
@@ -62,19 +71,21 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery.data?.user_count ?? 0)}
-                {props.currentOrgSubPlan?.subscription?.type !== "usage_based" && (
-                <span class="ml-2 text-sm font-medium text-neutral-600">
-                  of{" "}
-                  {formatNumberWithCommas(
-                    subscriptionQuery.data?.plan?.user_count || 0,
-                  )}
-                </span>)}
+                {formatNumberWithCommas(usageQuery().data?.user_count ?? 0)}
+                {props.currentOrgSubPlan?.subscription?.type !==
+                  "usage_based" && (
+                  <span class="ml-2 text-sm font-medium text-neutral-600">
+                    of{" "}
+                    {formatNumberWithCommas(
+                      subscriptionQuery.data?.plan?.user_count || 0,
+                    )}
+                  </span>
+                )}
               </div>
               <ProgressBar
                 width={"200px"}
                 max={subscriptionQuery.data?.plan?.user_count || 0}
-                progress={usageQuery.data?.user_count || 0}
+                progress={usageQuery().data?.user_count || 0}
               />
             </div>
           </dd>
@@ -84,8 +95,9 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatStorageKb(usageQuery.data?.file_storage ?? 0)}
-                {props.currentOrgSubPlan?.subscription?.type !== "usage_based" && (
+                {formatStorageKb(usageQuery().data?.file_storage ?? 0)}
+                {props.currentOrgSubPlan?.subscription?.type !==
+                  "usage_based" && (
                   <span class="ml-2 text-sm font-medium text-neutral-600">
                     of{" "}
                     {formatStorageKb(
@@ -97,7 +109,7 @@ export const OrganizationUsageOverview = (
               <ProgressBar
                 width={"200px"}
                 max={subscriptionQuery.data?.plan?.file_storage || 0}
-                progress={usageQuery.data?.file_storage || 0}
+                progress={usageQuery().data?.file_storage || 0}
               />
             </div>
           </dd>
@@ -107,8 +119,9 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery.data?.message_count ?? 0)}
-                {props.currentOrgSubPlan?.subscription?.type !== "usage_based" && (
+                {formatNumberWithCommas(usageQuery().data?.message_count ?? 0)}
+                {props.currentOrgSubPlan?.subscription?.type !==
+                  "usage_based" && (
                   <span class="ml-2 text-sm font-medium text-neutral-600">
                     of{" "}
                     {formatNumberWithCommas(
@@ -120,7 +133,7 @@ export const OrganizationUsageOverview = (
               <ProgressBar
                 width={"200px"}
                 max={subscriptionQuery.data?.plan?.message_count || 0}
-                progress={usageQuery.data?.message_count || 0}
+                progress={usageQuery().data?.message_count || 0}
               />
             </div>
           </dd>
@@ -130,8 +143,9 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery.data?.chunk_count ?? 0)}
-                {props.currentOrgSubPlan?.subscription?.type !== "usage_based" && (
+                {formatNumberWithCommas(usageQuery().data?.chunk_count ?? 0)}
+                {props.currentOrgSubPlan?.subscription?.type !==
+                  "usage_based" && (
                   <span class="ml-2 text-sm font-medium text-neutral-600">
                     of{" "}
                     {formatNumberWithCommas(
@@ -143,7 +157,7 @@ export const OrganizationUsageOverview = (
               <ProgressBar
                 width={"200px"}
                 max={subscriptionQuery.data?.plan?.chunk_count || 0}
-                progress={usageQuery.data?.chunk_count || 0}
+                progress={usageQuery().data?.chunk_count || 0}
               />
             </div>
           </dd>
@@ -153,19 +167,21 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery.data?.dataset_count ?? 0)}
-                {props.currentOrgSubPlan?.subscription?.type !== "usage_based" && (
-                <span class="ml-2 text-sm font-medium text-neutral-600">
-                  of{" "}
-                  {formatNumberWithCommas(
-                    subscriptionQuery.data?.plan?.dataset_count ?? 0,
-                  )}
-                </span>)}
+                {formatNumberWithCommas(usageQuery().data?.dataset_count ?? 0)}
+                {props.currentOrgSubPlan?.subscription?.type !==
+                  "usage_based" && (
+                  <span class="ml-2 text-sm font-medium text-neutral-600">
+                    of{" "}
+                    {formatNumberWithCommas(
+                      subscriptionQuery.data?.plan?.dataset_count ?? 0,
+                    )}
+                  </span>
+                )}
               </div>
               <ProgressBar
                 width={"200px"}
                 max={subscriptionQuery.data?.plan?.dataset_count || 0}
-                progress={usageQuery.data?.dataset_count || 0}
+                progress={usageQuery().data?.dataset_count || 0}
               />
             </div>
           </dd>
@@ -175,7 +191,9 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery.data?.tokens_ingested ?? 0)}
+                {formatNumberWithCommas(
+                  usageQuery().data?.tokens_ingested ?? 0,
+                )}
               </div>
             </div>
           </dd>
@@ -185,7 +203,7 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatStorageBytes(usageQuery.data?.bytes_ingested ?? 0)}
+                {formatStorageBytes(usageQuery().data?.bytes_ingested ?? 0)}
               </div>
             </div>
           </dd>
@@ -195,7 +213,7 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery.data?.search_tokens ?? 0)}
+                {formatNumberWithCommas(usageQuery().data?.search_tokens ?? 0)}
               </div>
             </div>
           </dd>
@@ -205,7 +223,7 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery.data?.message_tokens ?? 0)}
+                {formatNumberWithCommas(usageQuery().data?.message_tokens ?? 0)}
               </div>
             </div>
           </dd>
@@ -216,7 +234,7 @@ export const OrganizationUsageOverview = (
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
                 {formatNumberWithCommas(
-                  usageQuery.data?.ocr_pages_ingested ?? 0,
+                  usageQuery().data?.ocr_pages_ingested ?? 0,
                 )}
               </div>
             </div>
@@ -228,7 +246,7 @@ export const OrganizationUsageOverview = (
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
                 {formatNumberWithCommas(
-                  usageQuery.data?.website_pages_scraped ?? 0,
+                  usageQuery().data?.website_pages_scraped ?? 0,
                 )}
               </div>
             </div>

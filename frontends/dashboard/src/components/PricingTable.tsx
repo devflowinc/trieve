@@ -111,7 +111,7 @@ export const PricingTable = (props: PricingTableProps) => {
 
   return (
     <Show when={billingEstimate()}>
-      <div class="overflow-hidden">
+      <div class="overflow-hidden pb-8">
         <h3 class="text-lg font-semibold text-neutral-800">
           Upcoming Bill For{" "}
           {startOfBill().toLocaleString("default", {
