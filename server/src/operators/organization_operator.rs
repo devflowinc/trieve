@@ -647,11 +647,28 @@ pub async fn get_extended_org_usage_by_id_query(
         timer.add("fetched website_pages_scraped");
     }
 
-    let events_ingested = clickhouse_client
+    let rag_events = clickhouse_client
         .query(&format_with_daterange(
             "
-            SELECT SUM(tokens) as event_count
+            SELECT COUNT(*) as event_count
             FROM rag_queries
+            WHERE organization_id = ?
+        "
+            .to_string(),
+            &date_range,
+        ))
+        .bind(organization_id)
+        .fetch_one::<EventsIngestedRow>()
+        .await
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+        })?;
+
+    let search_events = clickhouse_client
+        .query(&format_with_daterange(
+            "
+            SELECT COUNT(*) as event_count
+            FROM search_queries
             WHERE organization_id = ?
         "
             .to_string(),
@@ -681,7 +698,7 @@ pub async fn get_extended_org_usage_by_id_query(
         search_count: search_tokens.search_count,
         ocr_pages_ingested: ocr_pages.page_count,
         website_pages_scraped: website_pages_scraped.pages_scraped,
-        events_ingested: events_ingested.event_count,
+        events_ingested: rag_events.event_count + search_events.event_count,
     })
 }
 
