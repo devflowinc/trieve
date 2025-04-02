@@ -1848,49 +1848,42 @@ pub async fn suggested_new_queries(
             .collect::<Vec<ChunkMetadata>>()
         }
         None => {
-            let random_chunk = get_random_chunk_metadatas_query(dataset_id, 1, pool.clone())
-                .await?
-                .clone()
-                .get(0)
-                .cloned();
-            match random_chunk {
-                Some(chunk) => {
-                    let filter =
-                        assemble_qdrant_filter(filters, None, None, dataset_id, pool.clone())
-                            .await?;
+            let random_offset_id = match payload.filters {
+                Some(_) => Some(uuid::Uuid::nil()),
+                None => get_random_chunk_metadatas_query(dataset_id, 1, pool.clone())
+                    .await?
+                    .clone()
+                    .get(0)
+                    .cloned()
+                    .map(|chunk| chunk.qdrant_point_id),
+            };
+            let filter =
+                assemble_qdrant_filter(filters, None, None, dataset_id, pool.clone()).await?;
 
-                    let (search_results, _) = scroll_dataset_points(
-                        10,
-                        Some(chunk.qdrant_point_id),
-                        None,
-                        dataset_config.clone(),
-                        filter,
-                    )
+            let (search_results, _) =
+                scroll_dataset_points(10, random_offset_id, None, dataset_config.clone(), filter)
                     .await?;
-                    if qdrant_only {
-                        search_results
-                            .iter()
-                            .map(|search_result| {
-                                ChunkMetadata::from(ChunkMetadataTypes::Metadata(
-                                    ChunkMetadataStringTagSet::from(QdrantChunkMetadata::from(
-                                        search_result.clone(),
-                                    )),
-                                ))
-                            })
-                            .collect()
-                    } else {
-                        let qdrant_point_ids: Vec<uuid::Uuid> = search_results
-                            .iter()
-                            .map(|search_result| search_result.point_id)
-                            .collect();
-                        get_chunk_metadatas_from_point_ids(qdrant_point_ids.clone(), pool)
-                            .await?
-                            .into_iter()
-                            .map(ChunkMetadata::from)
-                            .collect()
-                    }
-                }
-                None => vec![],
+            if qdrant_only {
+                search_results
+                    .iter()
+                    .map(|search_result| {
+                        ChunkMetadata::from(ChunkMetadataTypes::Metadata(
+                            ChunkMetadataStringTagSet::from(QdrantChunkMetadata::from(
+                                search_result.clone(),
+                            )),
+                        ))
+                    })
+                    .collect()
+            } else {
+                let qdrant_point_ids: Vec<uuid::Uuid> = search_results
+                    .iter()
+                    .map(|search_result| search_result.point_id)
+                    .collect();
+                get_chunk_metadatas_from_point_ids(qdrant_point_ids.clone(), pool)
+                    .await?
+                    .into_iter()
+                    .map(ChunkMetadata::from)
+                    .collect()
             }
         }
     };

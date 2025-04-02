@@ -11,19 +11,20 @@
 
   const inlineRoot = document.querySelector(".trieve-inline-root");
   const appMetafieldTrieve = {{ app.metafields.trieve | json }};
-
   const blockSettings = {{ block.settings | json }};
-  const productMetafieldTrieve = {{ product.metafields.trieve | json }};
+  const productId = {{ product.id | json }};
+  const productTitle = {{ product.title | json }};
+  const productMetafieldsTrieve = {{ product.metafields.trieve | json }};
   let trievePDPQuestions = null;
-  if (productMetafieldTrieve && Object.keys(productMetafieldTrieve).includes("trievePDPQuestions")) {
-    trievePDPQuestions = productMetafieldTrieve.trievePDPQuestions;
+  if (productMetafieldsTrieve && Object.keys(productMetafieldsTrieve).includes("trievePDPQuestions")) {
+    trievePDPQuestions = productMetafieldsTrieve.trievePDPQuestions;
   }
   let defaultAiQuestions = null;
   if (trievePDPQuestions && trievePDPQuestions.length > 0) {
     defaultAiQuestions = trievePDPQuestions.map((question) => question.text);
   }
 
-  const toBool = (value) => value === 'true';
+  const toBool = (value) => value === 'true' || value === true;
   const getValue = (value, defaultValue) => {
     if (value === null || value === undefined || value === '') {
       return defaultValue;
@@ -32,15 +33,13 @@
   };
 
   if (!appMetafieldTrieve.dataset_id || !appMetafieldTrieve.api_key) {
-    console.error("Trieve: Cannut render inline Triece comopnent due to missing dataset_id or api_key in the app metafields");
+    console.error("Trieve: Cannot render inline Triece comopnent due to missing dataset_id or api_key in the app metafields");
   } else {
-    console.log("Trieve: Found dataset_id and api_key in the app metafields", appMetafieldTrieve.dataset_id, appMetafieldTrieve.api_key, defaultAiQuestions);
-
     renderToDiv(inlineRoot, {
       inline: true,
       apiKey: appMetafieldTrieve.api_key,
       datasetId: appMetafieldTrieve.dataset_id,
-      baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
+      baseUrl: getValue("{{ block.settings.base_url }}", "http://localhost:8090"),
       type: "ecommerce",
       useGroupSearch: true,
       allowSwitchingModes: toBool(getValue("{{ block.settings.allow_switching_modes }}", true)),
@@ -57,12 +56,15 @@
       defaultAiQuestions,
       theme: getValue("{{ block.settings.theme }}", "light"),
       inlineHeader: "{{ block.settings.inline_header }} ",
+      groupTrackingId: productId ? productId.toString() : undefined,
+      cleanGroupName: productTitle ?? undefined,
       onAddToCart: (chunk) => {
         addToCart(parseInt(chunk.tracking_id))
       },
       getCartQuantity: (trackingId) => {
         return checkCartQuantity(parseInt(trackingId));
       },
+      hideOpenButton: true,
     });
   }
 </script>
