@@ -1,5 +1,5 @@
 import { useRouteLoaderData } from "@remix-run/react";
-import { Button, Select, Text } from "@shopify/polaris";
+import { Button, Text } from "@shopify/polaris";
 import { CheckIcon } from "@shopify/polaris-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useClientAdminApi } from "app/loaders/clientLoader";
@@ -12,14 +12,7 @@ import { cn } from "app/utils/cn";
 import { OnboardingBody } from "app/utils/onboarding";
 import { useShopName } from "app/utils/useShopName";
 import { useEffect, useMemo, useState } from "react";
-
-type ThemeChoice = {
-  name: string;
-  prefix: string;
-  id: string;
-  role: string;
-  updatedAt: string;
-};
+import { ThemeSelect, ThemeChoice } from "./ThemeSelect"; // Import the new component
 
 const getShortThemeId = (fullGid: string): string | null => {
   const regex = /gid:\/\/shopify\/OnlineStoreTheme\/(\d+)/;
@@ -137,22 +130,20 @@ export const AddComponentOnboarding: OnboardingBody = ({
 
   const allDone = globalComplete && pdpComplete;
 
+  const handleThemeChange = (theme: ThemeChoice) => {
+    setSelectedTheme(theme);
+  };
+
   return (
     <div className={cn(!allDone && "min-h-[180px]")}>
       {!allDone && (
         <div className="px-5 mb-2 max-w-[300px]">
-          <Select
+          <ThemeSelect
+            themes={themes}
+            selectedTheme={selectedTheme}
+            onChange={handleThemeChange}
             disabled={themes.length < 2}
-            label="Theme"
-            value={selectedTheme?.name}
-            onChange={(e) => {
-              setSelectedTheme(themes.find((t) => t.name === e)!);
-            }}
-            options={themes.map((t) => ({
-              label: t.name,
-              value: t.name,
-            }))}
-          ></Select>
+          />
         </div>
       )}
       <div
