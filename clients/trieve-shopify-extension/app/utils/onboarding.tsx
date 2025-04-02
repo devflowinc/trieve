@@ -89,15 +89,15 @@ export const useOnboarding = () => {
       setMetafield(adminApi, ONBOARD_STEP_META_FIELD, stepId);
     },
     onMutate({ stepId }) {
-      utils.setQueryData(lastStepIdQuery(adminApi)["queryKey"], stepId);
+      utils.setQueryData(
+        lastStepIdQuery(adminApi)["queryKey"],
+        stepId === "null" ? null : stepId,
+      );
     },
   });
 
   const currentStep = useMemo(() => {
-    return (
-      onboardingSteps.find((step) => step.id === currentStepId) ||
-      onboardingSteps[0]
-    );
+    return onboardingSteps.find((step) => step.id === currentStepId) || null;
   }, [currentStepId]);
 
   const goToNextStep = useCallback(() => {
@@ -121,6 +121,10 @@ export const useOnboarding = () => {
     [nextStepMutation],
   );
 
+  const collapseAllSteps = () => {
+    nextStepMutation.mutate({ stepId: "null" });
+  };
+
   const goToPreviousStep = useCallback(() => {
     let currentStepIndex = onboardingSteps.findIndex(
       (step) => step.id === currentStepId,
@@ -132,25 +136,6 @@ export const useOnboarding = () => {
     nextStepMutation.mutate({ stepId: previousStepId });
   }, [currentStepId, nextStepMutation]);
 
-  const getStepIndex = (stepId: string) => {
-    return onboardingSteps.findIndex((step) => step.id === stepId);
-  };
-
-  // give additional info about current, already done
-  const stepsWithInfo = onboardingSteps.map((step) => ({
-    ...step,
-    inProgress: step.id === currentStepId,
-    isCompleted: getStepIndex(currentStepId) > getStepIndex(step.id),
-  }));
-
-  const stepIsComplete = useMemo(() => {
-    return stepCompletions[currentStepId] || false;
-  }, [currentStepId, stepCompletions]);
-
-  const hasNextStep = useMemo(() => {
-    return getStepIndex(currentStepId) < onboardingSteps.length - 1;
-  }, [currentStepId]);
-
   const skipOnboarding = () => {
     const hiddenSteps = onboardingSteps.filter((step) => step.hidden);
     if (hiddenSteps.length === 0) {
@@ -161,14 +146,13 @@ export const useOnboarding = () => {
 
   return {
     goToNextStep,
-    hasNextStep,
-    stepIsComplete,
     currentStep,
     goToStep,
     skipOnboarding,
     goToPreviousStep,
     setStepCompletions,
+    collapseAllSteps,
     stepCompletions,
-    allSteps: stepsWithInfo,
+    allSteps: onboardingSteps,
   };
 };
