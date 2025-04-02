@@ -158,26 +158,30 @@ export const lastStepIdQuery = (fetcher: AdminApiCaller) => {
   };
 };
 
-export const crawlStatusOnboardQuery = (fetcher: AdminApiCaller) => {
+export const shopifyProductCountQuery = (fetcher: AdminApiCaller) => {
   return {
-    queryKey: ["initial_ingest_onboard"],
+    queryKey: ["shopify_product_count"],
     queryFn: async () => {
-      const result = await getMetafield(fetcher, "crawlStatus");
+      const result = await fetcher(
+        `#graphql
+query ProductCount {
+  productsCount{
+    count
+  }
+}
+`,
+      );
       if (result.error) {
         console.error(result.error);
         throw result.error;
       }
-      if (!result.data)
-        return {
-          chunkCount: 0,
-          done: false,
+      const data = result.data as {
+        productsCount: {
+          count: number;
         };
-      const crawlStatus = (await JSON.parse(result.data)) as {
-        chunkCount: number;
-        done: boolean;
       };
-      console.log("Crawl Status", crawlStatus);
-      return crawlStatus;
+      // Hides weird internal shopify app theme
+      return data.productsCount.count;
     },
   } satisfies QueryOptions;
 };
