@@ -9,7 +9,7 @@ export const globalComponentInstallQuery = (fetcher: AdminApiCaller) => {
       const result = await fetcher(
         `#graphql
 query GetStoreThemes {
-    themes(first: 10) {
+    themes(first: 50) {
       edges {
         node {
           files(filenames: ["config/settings_data.json"]) { 
@@ -46,7 +46,7 @@ export const pdpInstallQuery = (fetcher: AdminApiCaller) => {
       const result = await fetcher(
         `#graphql
 query GetStoreThemes {
-    themes(first: 10) {
+    themes(first: 50) {
       edges {
         node {
           files(filenames: ["templates/product.json"]) { 
@@ -83,7 +83,7 @@ export const themeListQuery = (fetcher: AdminApiCaller) => {
       const result = await fetcher(
         `#graphql
 query GetStoreThemes {
-  themes(first:20){
+  themes(first:50){
     nodes{
       name
       prefix
