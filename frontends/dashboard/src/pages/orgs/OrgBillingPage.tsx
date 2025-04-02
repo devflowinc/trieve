@@ -5,6 +5,8 @@ import { PlansTable } from "../../components/PlansTable";
 import { createToast } from "../../components/ShowToasts";
 import { InvoicesTable } from "../../components/InvoicesTable";
 import { OrganizationUsageOverview } from "../../components/OrganizationUsageOverview";
+import { PricingTable } from "../../components/PricingTable";
+import { OrganizationWithSubAndPlan } from "trieve-ts-sdk";
 
 export const OrgBillingPage = () => {
   const apiHost = import.meta.env.VITE_API_HOST as unknown as string;
@@ -47,7 +49,16 @@ export const OrgBillingPage = () => {
 
   return (
     <div class="pb-4">
-      <OrganizationUsageOverview />
+      <OrganizationUsageOverview
+        currentOrgSubPlan={
+          orgSubPlan() as unknown as OrganizationWithSubAndPlan
+        }
+      />
+      <PricingTable
+        currentOrgSubPlan={
+          orgSubPlan() as unknown as OrganizationWithSubAndPlan
+        }
+      />
       <InvoicesTable />
       <PlansTable currentOrgSubPlan={orgSubPlan()} />
     </div>

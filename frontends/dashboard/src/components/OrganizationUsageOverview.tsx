@@ -1,4 +1,4 @@
-import { useContext } from "solid-js";
+import { createEffect, createSignal, useContext } from "solid-js";
 import { ProgressBar } from "./ProgressBar";
 import {
   formatNumberWithCommas,
@@ -13,10 +13,19 @@ import {
 } from "../utils/fetchOrgUsage";
 import { addMonths, startOfMonth } from "date-fns";
 import { formatDateForApi } from "../analytics/utils/formatDate";
+import { OrganizationWithSubAndPlan } from "trieve-ts-sdk";
 
-export const OrganizationUsageOverview = () => {
+export interface OrganizationUsageOverviewProps {
+  currentOrgSubPlan: OrganizationWithSubAndPlan | null;
+}
+
+export const OrganizationUsageOverview = (
+  props: OrganizationUsageOverviewProps,
+) => {
   const userContext = useContext(UserContext);
   const trieve = useTrieve();
+
+  const [startDate, setStartDate] = createSignal(startOfMonth(new Date()));
 
   const usageQuery = createUsageQuery(userContext, trieve, {
     startDate: formatDateForApi(startOfMonth(new Date())),
@@ -25,13 +34,23 @@ export const OrganizationUsageOverview = () => {
 
   const subscriptionQuery = createSubscriptionQuery(userContext, trieve);
 
+  createEffect(() => {
+    if (props.currentOrgSubPlan?.subscription?.type === "usage_based") {
+      setStartDate(
+        startOfMonth(
+          new Date(props.currentOrgSubPlan.subscription.last_cycle_timestamp),
+        ),
+      );
+    }
+  });
+
   return (
     <div class="mb-3 grid grid-cols-1 gap-5 lg:grid-cols-4">
       <dl class="col-span-4 grid grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg border bg-white shadow md:grid-cols-2 md:divide-x md:divide-y-0">
         <div class="col-span-2 px-4 pt-5 text-xl font-bold">
           {/* Display Currennt Billing Month (the current month)*/}
           <div>
-            {new Date().toLocaleString("default", {
+            {startDate().toLocaleString("default", {
               month: "long",
               year: "numeric",
             })}{" "}
@@ -44,12 +63,13 @@ export const OrganizationUsageOverview = () => {
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
                 {formatNumberWithCommas(usageQuery.data?.user_count ?? 0)}
+                {props.currentOrgSubPlan?.subscription?.type !== "usage_based" && (
                 <span class="ml-2 text-sm font-medium text-neutral-600">
                   of{" "}
                   {formatNumberWithCommas(
                     subscriptionQuery.data?.plan?.user_count || 0,
                   )}
-                </span>
+                </span>)}
               </div>
               <ProgressBar
                 width={"200px"}
@@ -65,12 +85,14 @@ export const OrganizationUsageOverview = () => {
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
                 {formatStorageKb(usageQuery.data?.file_storage ?? 0)}
-                <span class="ml-2 text-sm font-medium text-neutral-600">
-                  of{" "}
-                  {formatStorageKb(
-                    subscriptionQuery.data?.plan?.file_storage || 0,
-                  )}{" "}
-                </span>
+                {props.currentOrgSubPlan?.subscription?.type !== "usage_based" && (
+                  <span class="ml-2 text-sm font-medium text-neutral-600">
+                    of{" "}
+                    {formatStorageKb(
+                      subscriptionQuery.data?.plan?.file_storage || 0,
+                    )}{" "}
+                  </span>
+                )}
               </div>
               <ProgressBar
                 width={"200px"}
@@ -86,12 +108,14 @@ export const OrganizationUsageOverview = () => {
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
                 {formatNumberWithCommas(usageQuery.data?.message_count ?? 0)}
-                <span class="ml-2 text-sm font-medium text-neutral-600">
-                  of{" "}
-                  {formatNumberWithCommas(
-                    subscriptionQuery.data?.plan?.message_count ?? 0,
-                  )}
-                </span>
+                {props.currentOrgSubPlan?.subscription?.type !== "usage_based" && (
+                  <span class="ml-2 text-sm font-medium text-neutral-600">
+                    of{" "}
+                    {formatNumberWithCommas(
+                      subscriptionQuery.data?.plan?.message_count ?? 0,
+                    )}
+                  </span>
+                )}
               </div>
               <ProgressBar
                 width={"200px"}
@@ -107,12 +131,14 @@ export const OrganizationUsageOverview = () => {
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
                 {formatNumberWithCommas(usageQuery.data?.chunk_count ?? 0)}
-                <span class="ml-2 text-sm font-medium text-neutral-600">
-                  of{" "}
-                  {formatNumberWithCommas(
-                    subscriptionQuery.data?.plan?.chunk_count ?? 0,
-                  )}
-                </span>
+                {props.currentOrgSubPlan?.subscription?.type !== "usage_based" && (
+                  <span class="ml-2 text-sm font-medium text-neutral-600">
+                    of{" "}
+                    {formatNumberWithCommas(
+                      subscriptionQuery.data?.plan?.chunk_count ?? 0,
+                    )}
+                  </span>
+                )}
               </div>
               <ProgressBar
                 width={"200px"}
@@ -128,12 +154,13 @@ export const OrganizationUsageOverview = () => {
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
                 {formatNumberWithCommas(usageQuery.data?.dataset_count ?? 0)}
+                {props.currentOrgSubPlan?.subscription?.type !== "usage_based" && (
                 <span class="ml-2 text-sm font-medium text-neutral-600">
                   of{" "}
                   {formatNumberWithCommas(
                     subscriptionQuery.data?.plan?.dataset_count ?? 0,
                   )}
-                </span>
+                </span>)}
               </div>
               <ProgressBar
                 width={"200px"}
