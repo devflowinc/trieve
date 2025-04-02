@@ -5637,6 +5637,7 @@ export type UpdatePaymentMethodData = {
 export type UpdatePaymentMethodResponse = (CreateSetupCheckoutSessionResPayload);
 
 export type EstimateBillFromRangeData = {
+    planId: string;
     requestBody: DateRange;
 };
 
@@ -7333,7 +7334,7 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/api/stripe/estimate_bill': {
+    '/api/stripe/estimate_bill/{plan_id}': {
         get: {
             req: EstimateBillFromRangeData;
             res: {

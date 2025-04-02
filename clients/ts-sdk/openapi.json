@@ -6404,7 +6404,7 @@
         ]
       }
     },
-    "/api/stripe/estimate_bill": {
+    "/api/stripe/estimate_bill/{plan_id}": {
       "get": {
         "tags": [
           "Stripe"
@@ -6412,6 +6412,17 @@
         "summary": "Estimate Bill From Range",
         "description": "Return the amount you will be billed from a date range if you were on usage based pricing",
         "operationId": "estimate_bill_from_range",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
           "description": "",
           "content": {
@@ -13880,9 +13891,9 @@
           "org_id",
           "dataset_count",
           "user_count",
+          "file_storage",
           "message_count",
-          "chunk_count",
-          "file_storage"
+          "chunk_count"
         ],
         "properties": {
           "chunk_count": {

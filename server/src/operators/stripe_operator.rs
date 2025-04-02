@@ -623,7 +623,7 @@ pub async fn set_stripe_subscription_current_period_end(
     .await
     .optional()
     .map_err(|e| {
-        log::error!("Failed to update stripe subscription: {}", e);
+        log::error!("Failed to update flat stripe subscription in postgres: {}", e);
         ServiceError::BadRequest("Failed to update stripe subscription".to_string())
     })?;
 
@@ -638,7 +638,7 @@ pub async fn set_stripe_subscription_current_period_end(
     .await
     .optional()
     .map_err(|e| {
-        log::error!("Failed to update stripe subscription: {}", e);
+        log::error!("Failed to update usage stripe subscription period end in postgres: {}", e);
         ServiceError::BadRequest("Failed to update stripe subscription".to_string())
     })?;
 
@@ -686,7 +686,7 @@ pub async fn update_stripe_subscription_plan_query(
     .get_result::<StripeSubscription>(&mut conn)
     .await
     .map_err(|e| {
-        log::error!("Failed to update stripe subscription: {}", e);
+        log::error!("Failed to update stripe subscription in postgres: {}", e);
         ServiceError::BadRequest("Failed to update stripe subscription".to_string())
     })?;
 
@@ -744,7 +744,7 @@ pub async fn update_to_usage_based_stripe_subscription(
     )
     .await
     .map_err(|e| {
-        log::error!("Failed to update stripe subscription: {}", e);
+        log::error!("Failed to update usage stripe subscription: {}", e);
         ServiceError::BadRequest("Failed to update stripe subscription".to_string())
     })?;
 
@@ -798,7 +798,7 @@ pub async fn update_to_flat_stripe_subscription(
     )
     .await
     .map_err(|e| {
-        log::error!("Failed to update stripe subscription: {}", e);
+        log::error!("Failed to update to flat stripe subscription: {}", e);
         ServiceError::BadRequest("Failed to update stripe subscription".to_string())
     })?;
 
@@ -1189,54 +1189,68 @@ pub async fn get_bill_from_range(
 
     let guage_to_price = usage_plan.guage_line_item_map();
 
-    let mut prices = vec![];
-    for (guage, price_id) in guage_to_price.iter() {
-        // Get stripe price
-        let price = reqwest::Client::new()
-            .post(format!("https://api.stripe.com/v1/prices/{}", price_id))
-            .basic_auth(stripe_secret, Option::<&str>::None)
-            .form(&[("expand[]", "tiers")])
-            .send()
-            .await
-            .map_err(|e| ServiceError::BadRequest(format!("Failed to get stripe price: {}", e)))?
-            .json::<stripe::Price>()
-            .await
-            .map_err(|e| {
-                ServiceError::BadRequest(format!("Failed to get stripe price text: {}", e))
-            })?;
+    let futures: Vec<_> = guage_to_price
+        .iter()
+        .map(|(guage, price_id)| {
+            async move {
+                // Get stripe price
+                let price = reqwest::Client::new()
+                    .post(format!("https://api.stripe.com/v1/prices/{}", price_id))
+                    .basic_auth(stripe_secret, Option::<&str>::None)
+                    .form(&[("expand[]", "tiers")])
+                    .send()
+                    .await
+                    .map_err(|e| {
+                        ServiceError::BadRequest(format!("Failed to get stripe price: {}", e))
+                    })?
+                    .json::<stripe::Price>()
+                    .await
+                    .map_err(|e| {
+                        ServiceError::BadRequest(format!("Failed to get stripe price text: {}", e))
+                    })?;
 
-        if let Some(tiers) = &price.tiers {
-            let mut iter_tiers = tiers.iter();
+                if let Some(tiers) = &price.tiers {
+                    let mut iter_tiers = tiers.iter();
 
-            let free_tier = iter_tiers
-                .next()
-                .ok_or(ServiceError::BadRequest(
-                    "Price must have tier [0]".to_string(),
-                ))?
-                .up_to
-                .expect("price must have up to");
+                    let free_tier = iter_tiers
+                        .next()
+                        .ok_or(ServiceError::BadRequest(
+                            "Price must have tier [0]".to_string(),
+                        ))?
+                        .up_to
+                        .expect("price must have up to");
 
-            let per_unit_price = iter_tiers.next().ok_or(ServiceError::BadRequest(
-                "Price must have tier [1]".to_string(),
-            ))?;
-            let per_unit_price = per_unit_price
-                .clone()
-                .unit_amount_decimal
-                .ok_or(ServiceError::BadRequest(
-                    "Price must have unit amount".to_string(),
-                ))?
-                .clone();
+                    let per_unit_price = iter_tiers.next().ok_or(ServiceError::BadRequest(
+                        "Price must have tier [1]".to_string(),
+                    ))?;
+                    let per_unit_price = per_unit_price
+                        .clone()
+                        .unit_amount_decimal
+                        .ok_or(ServiceError::BadRequest(
+                            "Price must have unit amount".to_string(),
+                        ))?
+                        .clone();
 
-            // Get Stripe price per unit fee past free tier
-            prices.push(BillingPrice {
-                free_tier,
-                past_free_tier_charge: per_unit_price.parse::<f64>().map_err(|_| {
-                    ServiceError::BadRequest("Failed to format unit price".to_string())
-                })? / 100.0f64,
-                guage_name: guage.clone(),
-            });
-        }
-    }
+                    Ok(BillingPrice {
+                        free_tier,
+                        past_free_tier_charge: per_unit_price.parse::<f64>().map_err(|_| {
+                            ServiceError::BadRequest("Failed to format unit price".to_string())
+                        })? / 100.0f64,
+                        guage_name: guage.clone(),
+                    })
+                } else {
+                    Err(ServiceError::BadRequest(
+                        "Price must have tiers".to_string(),
+                    ))
+                }
+            }
+        })
+        .collect();
+
+    let prices: Vec<BillingPrice> = futures::future::join_all(futures)
+        .await
+        .into_iter()
+        .collect::<Result<Vec<BillingPrice>, ServiceError>>()?;
 
     let all_events: Vec<(&str, i64)> = vec![
         (

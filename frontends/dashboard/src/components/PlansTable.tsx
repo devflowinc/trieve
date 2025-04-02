@@ -13,7 +13,6 @@ import {
 } from "../utils/formatters";
 import { AiOutlineWarning } from "solid-icons/ai";
 import { createToast } from "./ShowToasts";
-import { UsagePlansTable } from "./UsagePlansTable";
 import { StripeUsageBasedPlan } from "trieve-ts-sdk";
 
 interface CreateSetupCheckoutSessionResPayload {
@@ -110,12 +109,23 @@ export const PlansTable = (props: PlansTableProps) => {
     const availablePlansWithCurrent = availablePlansList.map((plan) => {
       return {
         ...plan,
+        type: "flat",
         current: plan.id === curPlan?.id,
         current_period_end: curSub?.current_period_end,
       };
     });
 
-    return availablePlansWithCurrent;
+    const usagePlansList = availableUsagePlans();
+    const usagePlansWithCurrent = usagePlansList.map((plan) => {
+      return {
+        ...plan,
+        type: "usage_based",
+        current: plan.id === curPlan?.id,
+        current_period_end: curSub?.current_period_end,
+      };
+    });
+
+    return [...availablePlansWithCurrent, ...usagePlansWithCurrent];
   });
 
   const createStripeSetupCheckoutSession = () => {
@@ -164,8 +174,7 @@ export const PlansTable = (props: PlansTableProps) => {
   const cancelPlan = async () => {
     setCanceling(true);
     await fetch(
-      `${apiHost}/stripe/subscription/${
-        props.currentOrgSubPlan?.subscription?.id ?? ""
+      `${apiHost}/stripe/subscription/${props.currentOrgSubPlan?.subscription?.id ?? ""
       }`,
       {
         credentials: "include",
@@ -187,8 +196,7 @@ export const PlansTable = (props: PlansTableProps) => {
     setProcessingPlanId(plan.id);
 
     const resp = await fetch(
-      `${apiHost}/stripe/subscription_plan/${
-        props.currentOrgSubPlan?.subscription?.id ?? ""
+      `${apiHost}/stripe/subscription_plan/${props.currentOrgSubPlan?.subscription?.id ?? ""
       }/${plan.id}`,
       {
         credentials: "include",
@@ -201,6 +209,33 @@ export const PlansTable = (props: PlansTableProps) => {
 
     if (resp.ok) {
       setCurrentPlan(plan);
+      createToast({
+        title: `Subscription changed to ${plan.name}`,
+        type: "success",
+      });
+      setProcessingPlanId(null);
+    }
+
+    void refetchOrgSubPlan();
+  };
+
+  const updateUsagePlan = async (plan: StripeUsageBasedPlan) => {
+    setProcessingPlanId(plan.id);
+
+    const resp = await fetch(
+      `${apiHost}/stripe/subscription_plan/${props.currentOrgSubPlan?.subscription?.id ?? ""
+      }/${plan.id}`,
+      {
+        credentials: "include",
+        method: "PATCH",
+        headers: {
+          "TR-Organization": props.currentOrgSubPlan?.organization.id ?? "",
+        },
+      },
+    );
+
+    if (resp.ok) {
+      setCurrentPlan(plan as unknown as StripePlan);
       createToast({
         title: `Subscription changed to ${plan.name}`,
         type: "success",
@@ -403,7 +438,6 @@ export const PlansTable = (props: PlansTableProps) => {
                   </Switch>
                 </td>
               </tr>
-              <UsagePlansTable currentOrgSubPlan={props.currentOrgSubPlan} />
               <For each={availablePlansWithCurrent()}>
                 {(plan) => {
                   const curPlan = currentPlan();
@@ -412,13 +446,22 @@ export const PlansTable = (props: PlansTableProps) => {
                   let actionButton = <ActiveTag text="Current Tier" />;
 
                   if (!plan.current || currentPeriodEnd) {
-                    if ((curPlan?.amount ?? 0) > 0 && !currentPeriodEnd) {
+                    if (
+                      curPlan?.id !== "00000000-0000-0000-0000-000000000000" &&
+                      !currentPeriodEnd
+                    ) {
                       const onClickFunc = () => {
-                        void updatePlan(plan);
+                        if (plan.type === "flat") {
+                          void updatePlan(plan as StripePlan);
+                        } else {
+                          void updateUsagePlan(plan as StripeUsageBasedPlan);
+                        }
                       };
 
                       const isUpgrade = curPlan
-                        ? curPlan.amount < plan.amount
+                        ? (curPlan.type === "flat" &&
+                          curPlan.amount < plan?.amount) ||
+                        plan.type === "usage_based"
                         : true;
 
                       const buttonText =
@@ -459,27 +502,56 @@ export const PlansTable = (props: PlansTableProps) => {
                       <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-6">
                         {plan.name}
                       </td>
-                      <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                        {usdFormatter.format(plan.amount / 100)}/mo
-                      </td>
-                      <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                        {numberFormatter.format(plan.chunk_count)}
-                      </td>
-                      <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                        {numberFormatter.format(plan.user_count)}
-                      </td>
-                      <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                        {numberFormatter.format(plan.dataset_count)}
-                      </td>
-                      <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                        {formatBytesDecimal(plan.file_storage)}
-                      </td>
-                      <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                        {numberFormatter.format(plan.message_count)}
-                      </td>
-                      <td class="whitespace-nowrap px-3 py-4">
-                        {actionButton}
-                      </td>
+                      <Show when={plan.type === "flat"}>
+                        <>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            {usdFormatter.format(plan.amount / 100)}/mo
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            {numberFormatter.format(plan.chunk_count)}
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            {numberFormatter.format(plan.user_count)}
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            {numberFormatter.format(plan.dataset_count)}
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            {formatBytesDecimal(plan.file_storage)}
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            {numberFormatter.format(plan.message_count)}
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4">
+                            {actionButton}
+                          </td>
+                        </>
+                      </Show>
+                      <Show when={plan.type === "usage_based"}>
+                        <>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            **Usage Based
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            No Limit
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            No Limit
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            No Limit
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            No Limit
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            No Limit
+                          </td>
+                          <td class="whitespace-nowrap px-3 py-4">
+                            {actionButton}
+                          </td>
+                        </>
+                      </Show>
                     </tr>
                   );
                 }}

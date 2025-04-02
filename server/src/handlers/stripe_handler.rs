@@ -17,11 +17,10 @@ use crate::{
             get_bill_from_range, get_invoices_for_org_query,
             get_option_subscription_by_organization_id_query,
             get_option_usage_based_subscription_by_organization_id_query,
-            get_option_usage_based_subscription_by_subscription_id_query, get_plan_by_id_query,
-            get_stripe_client, get_trieve_plan_by_id_query, get_trieve_subscription_by_id_query,
-            get_usage_based_plan_query, set_stripe_subscription_current_period_end,
-            set_subscription_payment_method, update_static_stripe_meters,
-            update_stripe_subscription_plan_query,
+            get_option_usage_based_subscription_by_subscription_id_query, get_stripe_client,
+            get_trieve_plan_by_id_query, get_trieve_subscription_by_id_query,
+            set_stripe_subscription_current_period_end, set_subscription_payment_method,
+            update_static_stripe_meters, update_stripe_subscription_plan_query,
             update_stripe_usage_based_subscription_plan_query, update_to_flat_stripe_subscription,
             update_to_usage_based_stripe_subscription,
         },
@@ -33,6 +32,30 @@ use stripe::{EventObject, EventType, Object, Webhook};
 use utoipa::ToSchema;
 
 use super::auth_handler::OwnerOnly;
+
+pub async fn delete_existing_subscriptions_if_exists(
+    organization_id: uuid::Uuid,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    let optional_existing_flat_subscription =
+        get_option_subscription_by_organization_id_query(organization_id, pool.clone()).await?;
+
+    if let Some(existing_subscription) = optional_existing_flat_subscription {
+        let delete_subscription_pool = pool.clone();
+
+        delete_subscription_by_id_query(existing_subscription.id, delete_subscription_pool).await?;
+    }
+
+    let optional_usage_existing_subscription =
+        get_option_usage_based_subscription_by_organization_id_query(organization_id, pool.clone())
+            .await?;
+
+    if let Some(existing_subscription) = optional_usage_existing_subscription {
+        delete_usage_subscription_by_id_query(existing_subscription.id, pool.clone()).await?;
+    }
+
+    Ok(())
+}
 
 pub async fn webhook(
     req: HttpRequest,
@@ -105,7 +128,6 @@ pub async fn webhook(
                             .await?;
                         }
                         _ => {
-                            let optional_subscription_pool = pool.clone();
                             let subscription_stripe_id = checkout_session
                                 .clone()
                                 .subscription
@@ -153,22 +175,12 @@ pub async fn webhook(
                                 })?;
 
                             if plan_type == "usage-based" {
-                                log::info!("Creating usage based stripe subscription");
-                                let optional_existing_subscription =
-                                    get_option_usage_based_subscription_by_organization_id_query(
-                                        organization_id,
-                                        optional_subscription_pool,
-                                    )
-                                    .await?;
+                                let _ = delete_existing_subscriptions_if_exists(
+                                    organization_id,
+                                    pool.clone(),
+                                )
+                                .await;
 
-                                if let Some(existing_subscription) = optional_existing_subscription
-                                {
-                                    delete_usage_subscription_by_id_query(
-                                        existing_subscription.id,
-                                        pool.clone(),
-                                    )
-                                    .await?;
-                                }
                                 // record current usage
                                 let usage =
                                     get_org_usage_by_id_query(organization_id, pool.clone())
@@ -183,23 +195,11 @@ pub async fn webhook(
                                 )
                                 .await?;
                             } else if plan_type == "flat" {
-                                let optional_existing_subscription =
-                                    get_option_subscription_by_organization_id_query(
-                                        organization_id,
-                                        optional_subscription_pool,
-                                    )
-                                    .await?;
-
-                                if let Some(existing_subscription) = optional_existing_subscription
-                                {
-                                    let delete_subscription_pool = pool.clone();
-
-                                    delete_subscription_by_id_query(
-                                        existing_subscription.id,
-                                        delete_subscription_pool,
-                                    )
-                                    .await?;
-                                }
+                                let _ = delete_existing_subscriptions_if_exists(
+                                    organization_id,
+                                    pool.clone(),
+                                )
+                                .await;
 
                                 create_stripe_subscription_query(
                                     subscription_stripe_id,
@@ -320,11 +320,6 @@ pub struct GetDirectPaymentLinkData {
     pub organization_id: uuid::Uuid,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CreateDirectPaymentLinkQueryParams {
-    pub usage_based: Option<bool>,
-}
-
 /// Checkout
 ///
 /// Get a 303 SeeOther redirect link to the stripe checkout page for the plan and organization
@@ -344,7 +339,6 @@ pub struct CreateDirectPaymentLinkQueryParams {
 )]
 pub async fn direct_to_payment_link(
     path_data: web::Path<GetDirectPaymentLinkData>,
-    query_params: web::Query<CreateDirectPaymentLinkQueryParams>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let subscription_org_id = path_data.organization_id;
@@ -363,14 +357,14 @@ pub async fn direct_to_payment_link(
     let _org_plan_sub = get_org_from_id_query(organization_id_clone, pool.clone()).await?;
     let plan_id = path_data.plan_id;
 
-    let payment_link = match query_params.usage_based {
-        Some(true) => {
-            let usage_based_plan = get_usage_based_plan_query(plan_id, pool).await?;
+    let plan = get_trieve_plan_by_id_query(plan_id, pool.clone()).await?;
+
+    let payment_link = match plan {
+        TrievePlan::UsageBased(usage_based_plan) => {
             create_usage_based_stripe_payment_link(usage_based_plan, organization_id).await?
         }
-        _ => {
-            let plan = get_plan_by_id_query(plan_id, pool).await?;
-            create_stripe_payment_link(plan, organization_id).await?
+        TrievePlan::Flat(flat_plan) => {
+            create_stripe_payment_link(flat_plan, organization_id).await?
         }
     };
 
@@ -452,41 +446,62 @@ pub async fn update_subscription_plan(
     let current_subscription_id = path_data.subscription_id;
     let new_plan_id = path_data.plan_id;
 
-    let trieve_subscription =
+    let current_trieve_subscription =
         get_trieve_subscription_by_id_query(current_subscription_id, pool.clone()).await?;
 
     let new_trieve_plan = get_trieve_plan_by_id_query(new_plan_id, pool.clone()).await?;
 
-    if !verify_owner(&user, &trieve_subscription.organization_id()) {
+    if !verify_owner(&user, &current_trieve_subscription.organization_id()) {
         return Err(ServiceError::Forbidden.into());
     };
 
     match new_trieve_plan {
         TrievePlan::Flat(flat_plan) => {
             update_to_flat_stripe_subscription(
-                trieve_subscription.stripe_subscription_id(),
-                flat_plan.stripe_id,
+                current_trieve_subscription.stripe_subscription_id(),
+                flat_plan.stripe_id.clone(),
             )
             .await?;
 
-            update_stripe_subscription_plan_query(
-                trieve_subscription.id(),
-                flat_plan.id,
-                pool.clone(),
-            )
-            .await?;
+            match current_trieve_subscription {
+                TrieveSubscription::Flat(_) => {
+                    update_stripe_subscription_plan_query(
+                        current_trieve_subscription.id(),
+                        flat_plan.id,
+                        pool.clone(),
+                    )
+                    .await?;
+                }
+                TrieveSubscription::UsageBased(_) => {
+                    // Old was usage based, create a new entry for flat
+                    create_stripe_subscription_query(
+                        current_trieve_subscription.stripe_subscription_id(),
+                        flat_plan.id,
+                        current_trieve_subscription.organization_id(),
+                        pool.clone(),
+                    )
+                    .await?;
+
+                    // delete old subscription
+                    delete_usage_subscription_by_id_query(
+                        current_trieve_subscription.id(),
+                        pool.clone(),
+                    )
+                    .await?;
+                }
+            }
         }
         TrievePlan::UsageBased(stripe_usage_based_plan) => {
             update_to_usage_based_stripe_subscription(
-                trieve_subscription.stripe_subscription_id(),
+                current_trieve_subscription.stripe_subscription_id(),
                 stripe_usage_based_plan.clone(),
             )
             .await?;
 
-            match trieve_subscription {
+            match current_trieve_subscription {
                 TrieveSubscription::UsageBased(_) => {
                     update_stripe_usage_based_subscription_plan_query(
-                        trieve_subscription.id(),
+                        current_trieve_subscription.id(),
                         stripe_usage_based_plan.id,
                         pool.clone(),
                     )
@@ -495,22 +510,23 @@ pub async fn update_subscription_plan(
                 TrieveSubscription::Flat(_) => {
                     // Old was flat, create a new one
                     let current_usage = get_org_usage_by_id_query(
-                        trieve_subscription.organization_id(),
+                        current_trieve_subscription.organization_id(),
                         pool.clone(),
                     )
                     .await?;
 
                     create_usage_stripe_subscription_query(
-                        trieve_subscription.stripe_subscription_id(),
+                        current_trieve_subscription.stripe_subscription_id(),
                         current_usage,
                         stripe_usage_based_plan.id,
-                        trieve_subscription.organization_id(),
+                        current_trieve_subscription.organization_id(),
                         pool.clone(),
                     )
                     .await?;
 
                     // delete old subscription
-                    delete_subscription_by_id_query(trieve_subscription.id(), pool.clone()).await?
+                    delete_subscription_by_id_query(current_trieve_subscription.id(), pool.clone())
+                        .await?
                 }
             }
         }
