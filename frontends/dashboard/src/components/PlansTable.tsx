@@ -116,11 +116,11 @@ export const PlansTable = (props: PlansTableProps) => {
     });
 
     const usagePlansList = availableUsagePlans();
-    const usagePlansWithCurrent = usagePlansList.map((plan) => {
+    const usagePlansWithCurrent = usagePlansList.map((usage_plan) => {
       return {
-        ...plan,
+        ...usage_plan,
         type: "usage_based",
-        current: plan.id === curPlan?.id,
+        current: usage_plan.id === curPlan?.id,
         current_period_end: curSub?.current_period_end,
       };
     });
@@ -174,7 +174,8 @@ export const PlansTable = (props: PlansTableProps) => {
   const cancelPlan = async () => {
     setCanceling(true);
     await fetch(
-      `${apiHost}/stripe/subscription/${props.currentOrgSubPlan?.subscription?.id ?? ""
+      `${apiHost}/stripe/subscription/${
+        props.currentOrgSubPlan?.subscription?.id ?? ""
       }`,
       {
         credentials: "include",
@@ -196,7 +197,8 @@ export const PlansTable = (props: PlansTableProps) => {
     setProcessingPlanId(plan.id);
 
     const resp = await fetch(
-      `${apiHost}/stripe/subscription_plan/${props.currentOrgSubPlan?.subscription?.id ?? ""
+      `${apiHost}/stripe/subscription_plan/${
+        props.currentOrgSubPlan?.subscription?.id ?? ""
       }/${plan.id}`,
       {
         credentials: "include",
@@ -223,7 +225,8 @@ export const PlansTable = (props: PlansTableProps) => {
     setProcessingPlanId(plan.id);
 
     const resp = await fetch(
-      `${apiHost}/stripe/subscription_plan/${props.currentOrgSubPlan?.subscription?.id ?? ""
+      `${apiHost}/stripe/subscription_plan/${
+        props.currentOrgSubPlan?.subscription?.id ?? ""
       }/${plan.id}`,
       {
         credentials: "include",
@@ -459,9 +462,11 @@ export const PlansTable = (props: PlansTableProps) => {
                       };
 
                       const isUpgrade = curPlan
-                        ? (curPlan.type === "flat" &&
-                          curPlan.amount < plan?.amount) ||
-                        plan.type === "usage_based"
+                        ? // @ts-expect-error Typecheck done above
+                          (curPlan.type === "flat" &&
+                            // @ts-expect-error Typecheck done above
+                            curPlan.amount < plan?.amount) ||
+                          plan.type === "usage_based"
                         : true;
 
                       const buttonText =
@@ -505,22 +510,38 @@ export const PlansTable = (props: PlansTableProps) => {
                       <Show when={plan.type === "flat"}>
                         <>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
+                            {/* @ts-expect-error This is fine */}
                             {usdFormatter.format(plan.amount / 100)}/mo
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            {numberFormatter.format(plan.chunk_count)}
+                            {numberFormatter.format(
+                              /// @ts-expect-error Typecheck done above
+                              plan.chunk_count as unknown as number,
+                            )}
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            {numberFormatter.format(plan.user_count)}
+                            {numberFormatter.format(
+                              /// @ts-expect-error Typecheck done above
+                              plan.user_count as unknown as number,
+                            )}
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            {numberFormatter.format(plan.dataset_count)}
+                            {numberFormatter.format(
+                              /// @ts-expect-error Typecheck done above
+                              plan.dataset_count as unknown as number,
+                            )}
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            {formatBytesDecimal(plan.file_storage)}
+                            {formatBytesDecimal(
+                              /// @ts-expect-error Typecheck done above
+                              plan.file_storage as unknown as number,
+                            )}
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            {numberFormatter.format(plan.message_count)}
+                            {numberFormatter.format(
+                              /// @ts-expect-error Typecheck done above
+                              plan.message_count as unknown as number,
+                            )}
                           </td>
                           <td class="whitespace-nowrap px-3 py-4">
                             {actionButton}

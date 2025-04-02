@@ -3,6 +3,10 @@ import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { formatDateForApi } from "../analytics/utils/formatDate";
 import { usdFormatter } from "../utils/formatters";
 import { addMonths } from "date-fns";
+import {
+  formatNumberWithCommas,
+  formatStorageMb,
+} from "../utils/formatNumbers";
 
 export interface PricingTableProps {
   currentOrgSubPlan: OrganizationWithSubAndPlan | null;
@@ -15,53 +19,6 @@ export const PricingTable = (props: PricingTableProps) => {
     createSignal<BillingEstimate | null>(null);
 
   const [startOfBill, setStartOfBill] = createSignal<Date>(new Date());
-
-  const names_to_guages = [
-    {
-      name: "Chunk Storage (mb)",
-      gauge: "chunk_storage_mb",
-    },
-    {
-      name: "File Storage (mb)",
-      gauge: "file_storage_mb",
-    },
-    {
-      name: "Users",
-      gauge: "users",
-    },
-    {
-      name: "Datasets",
-      gauge: "dataset_count",
-    },
-    {
-      name: "Search Tokens",
-      gauge: "search_tokens",
-    },
-    {
-      name: "Message Tokens",
-      gauge: "message_tokens",
-    },
-    {
-      name: "Bytes Ingested",
-      gauge: "bytes_ingested",
-    },
-    {
-      name: "Tokens Ingested",
-      gauge: "tokens_ingested",
-    },
-    {
-      name: "Pages Crawled",
-      gauge: "pages_crawled",
-    },
-    {
-      name: "OCR Pages",
-      gauge: "ocr_pages",
-    },
-    {
-      name: "Analytics Events",
-      gauge: "analytics_events",
-    },
-  ];
 
   createEffect(() => {
     const availablePlansAbortController = new AbortController();
@@ -110,7 +67,7 @@ export const PricingTable = (props: PricingTableProps) => {
   });
 
   return (
-    <Show when={billingEstimate()}>
+    <Show when={billingEstimate() != null}>
       <div class="overflow-hidden pb-8">
         <h3 class="text-lg font-semibold text-neutral-800">
           Upcoming Bill For{" "}
@@ -133,6 +90,9 @@ export const PricingTable = (props: PricingTableProps) => {
                 Item
               </td>
               <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
+                Quantity
+              </td>
+              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
                 Price
               </td>
             </tr>
@@ -143,12 +103,18 @@ export const PricingTable = (props: PricingTableProps) => {
                 return (
                   <tr>
                     <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
-                      {
-                        names_to_guages.find(
-                          (gauge) => gauge.gauge === item.name,
-                        )?.name
-                      }
+                      {item.clean_name}
                     </td>
+                    <Show when={item.clean_name.includes("MB")}>
+                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
+                        {formatStorageMb(item.usage_amount)}
+                      </td>
+                    </Show>
+                    <Show when={!item.clean_name.includes("MB")}>
+                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
+                        {formatNumberWithCommas(item.usage_amount)}
+                      </td>
+                    </Show>
                     <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
                       {usdFormatter.format(item.amount)}
                     </td>
@@ -160,8 +126,9 @@ export const PricingTable = (props: PricingTableProps) => {
               <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
                 Total
               </td>
+              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium" />
               <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium">
-                {usdFormatter.format(billingEstimate()!.total)}
+                {usdFormatter.format(billingEstimate()?.total ?? 0)}
               </td>
             </tr>
           </tbody>

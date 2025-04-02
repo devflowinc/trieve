@@ -125,7 +125,9 @@ export type BatchQueuedChunkResponse = {
 
 export type BillItem = {
     amount: number;
+    clean_name: string;
     name: string;
+    usage_amount: number;
 };
 
 export type BillingEstimate = {

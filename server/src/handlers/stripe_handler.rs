@@ -667,6 +667,8 @@ pub struct BillingEstimate {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct BillItem {
     pub name: String,
+    pub clean_name: String,
+    pub usage_amount: i64,
     pub amount: f64,
 }
 
