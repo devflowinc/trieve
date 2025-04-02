@@ -2,12 +2,11 @@ import { Card, Collapsible, Text } from "@shopify/polaris";
 import { CaretUpIcon, CheckCircleIcon } from "@shopify/polaris-icons";
 import { cn } from "app/utils/cn";
 import { useOnboarding } from "app/utils/onboarding";
-import { useState } from "react";
 
 export const Onboarding = () => {
   const onboarding = useOnboarding();
 
-  if (onboarding.currentStep.hidden) {
+  if (onboarding.currentStep && onboarding.currentStep.hidden) {
     return null;
   }
 
@@ -31,24 +30,26 @@ export const Onboarding = () => {
           if (step.hidden) {
             return null;
           }
-          const isCurrent = onboarding.currentStep.id === step.id;
-          const isCompleted = onboarding.stepCompletions[step.id];
+          const isCurrent = onboarding?.currentStep?.id === step.id;
+          const isCompleted = onboarding?.stepCompletions[step.id];
           return (
             <div className="border-t px-2 border-t-neutral-200" key={step.id}>
               <button
                 onClick={() => {
+                  if (isCurrent) {
+                    return onboarding.collapseAllSteps();
+                  }
                   onboarding.goToStep(step.id);
                 }}
                 className={cn(
                   "flex w-full justify-between items-center p-1 px-2",
-                  isCurrent && "cursor-default",
                 )}
               >
                 <div className="flex gap-2">
                   <div
                     className={cn(
                       "transition-colors duration-100",
-                      isCurrent ? "text-black" : "text-neutral-400",
+                      isCurrent ? "text-black" : "text-neutral-500",
                     )}
                   >
                     {step.title}

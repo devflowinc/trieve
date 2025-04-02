@@ -150,6 +150,9 @@ export const lastStepIdQuery = (fetcher: AdminApiCaller) => {
       if (!onboardingSteps.some((s) => s.id === result.data)) {
         return onboardingSteps[0].id;
       }
+      if (result.data === "null") {
+        return null;
+      }
       return result.data;
     },
   };
