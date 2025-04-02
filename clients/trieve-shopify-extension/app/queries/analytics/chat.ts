@@ -93,7 +93,7 @@ export const allChatsQuery = (
         sort_by,
         sort_order,
       });
-      return result as TopicQueriesResponse;
+      return { topics: [] } as TopicQueriesResponse;
     },
   } satisfies QueryOptions;
 };
