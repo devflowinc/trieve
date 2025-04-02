@@ -353,8 +353,6 @@ export const sendChunks = async (
   let next_page: string | null = null;
   let started = false;
   const chunks: ChunkReqPayload[] = [];
-  // Streamed to onboarding frontend
-  let chunkCount = 0;
   let chunkSendPromises = new Array<Promise<void>>();
 
   while (next_page != null || !started) {
@@ -427,18 +425,15 @@ export const sendChunks = async (
         ),
       );
 
-
     for (const batch of chunk_to_size(dataChunks, 120)) {
       const sendPromise = sendChunksToTrieve(batch, key, datasetId ?? "");
       chunkSendPromises.push(sendPromise);
     }
 
-    chunkCount += dataChunks.length;
     setMetafield(
       adminApiFetcher,
       "crawlStatus",
       JSON.stringify({
-        chunkCount,
         done: false,
       }),
     );
@@ -453,7 +448,6 @@ export const sendChunks = async (
     adminApiFetcher,
     "crawlStatus",
     JSON.stringify({
-      chunkCount,
       done: true,
     }),
   );
