@@ -7631,6 +7631,8 @@
         "type": "object",
         "required": [
           "name",
+          "clean_name",
+          "usage_amount",
           "amount"
         ],
         "properties": {
@@ -7638,8 +7640,15 @@
             "type": "number",
             "format": "double"
           },
+          "clean_name": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
+          },
+          "usage_amount": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

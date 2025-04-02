@@ -623,7 +623,10 @@ pub async fn set_stripe_subscription_current_period_end(
     .await
     .optional()
     .map_err(|e| {
-        log::error!("Failed to update flat stripe subscription in postgres: {}", e);
+        log::error!(
+            "Failed to update flat stripe subscription in postgres: {}",
+            e
+        );
         ServiceError::BadRequest("Failed to update stripe subscription".to_string())
     })?;
 
@@ -638,7 +641,10 @@ pub async fn set_stripe_subscription_current_period_end(
     .await
     .optional()
     .map_err(|e| {
-        log::error!("Failed to update usage stripe subscription period end in postgres: {}", e);
+        log::error!(
+            "Failed to update usage stripe subscription period end in postgres: {}",
+            e
+        );
         ServiceError::BadRequest("Failed to update stripe subscription".to_string())
     })?;
 
@@ -1252,36 +1258,75 @@ pub async fn get_bill_from_range(
         .into_iter()
         .collect::<Result<Vec<BillingPrice>, ServiceError>>()?;
 
-    let all_events: Vec<(&str, i64)> = vec![
+    let all_events: Vec<(&str, String, i64)> = vec![
         (
             "chunk_storage_mb",
+            "Chunk Storage (MB)".to_string(),
             get_storage_mb_from_chunk_count(usage.chunk_count),
         ),
-        ("file_storage_mb", (usage.file_storage * 1024)),
-        ("users", usage.user_count as i64),
-        ("dataset_count", usage.dataset_count as i64),
-        ("search_tokens", usage.search_tokens as i64),
-        ("message_tokens", usage.message_tokens as i64),
-        ("bytes_ingested", usage.bytes_ingested as i64),
-        ("tokens_ingested", usage.tokens_ingested as i64),
-        ("pages_crawled", usage.website_pages_scraped as i64),
-        ("ocr_pages", usage.ocr_pages_ingested as i64),
-        ("analytics_events", usage.events_ingested as i64),
+        (
+            "file_storage_mb",
+            "File Storage (MB)".to_string(),
+            (usage.file_storage * 1024),
+        ),
+        ("users", "Users".to_string(), usage.user_count as i64),
+        (
+            "dataset_count",
+            "Datasets".to_string(),
+            usage.dataset_count as i64,
+        ),
+        (
+            "search_tokens",
+            "Search Tokens".to_string(),
+            usage.search_tokens as i64,
+        ),
+        (
+            "message_tokens",
+            "Message Tokens".to_string(),
+            usage.message_tokens as i64,
+        ),
+        (
+            "bytes_ingested",
+            "Bytes Ingested".to_string(),
+            usage.bytes_ingested as i64,
+        ),
+        (
+            "tokens_ingested",
+            "Tokens Ingested".to_string(),
+            usage.tokens_ingested as i64,
+        ),
+        (
+            "pages_crawled",
+            "Pages Crawled".to_string(),
+            usage.website_pages_scraped as i64,
+        ),
+        (
+            "ocr_pages",
+            "OCR Pages".to_string(),
+            usage.ocr_pages_ingested as i64,
+        ),
+        (
+            "analytics_events",
+            "Analytics Events".to_string(),
+            usage.events_ingested as i64,
+        ),
     ];
 
     let mut total_cost = 0.0;
     let mut breakdown = vec![];
-    for (guage, amount) in all_events.iter() {
+    for (guage, clean_name, usage_amount) in all_events.iter() {
         let billing_price = prices
             .iter()
             .find(|p| p.guage_name == *guage)
             .expect("Billing price will exist");
 
-        let cost =
-            max(amount - billing_price.free_tier, 0) as f64 * billing_price.past_free_tier_charge;
+        let cost = max(usage_amount - billing_price.free_tier, 0) as f64
+            * billing_price.past_free_tier_charge;
 
         breakdown.push(BillItem {
             name: billing_price.guage_name.clone(),
+            usage_amount: *usage_amount,
+            clean_name: clean_name.clone(),
             amount: cost,
         });
 
