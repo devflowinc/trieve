@@ -71,7 +71,11 @@ export const Onboarding = () => {
                 {
                   <div className="w-full">
                     <step.body
-                      goToNextStep={onboarding.goToNextStep}
+                      goToNextStep={() => {
+                        if (step.id === onboarding.currentStep?.id) {
+                          onboarding.goToNextStep();
+                        }
+                      }}
                       goToPreviousStep={onboarding.goToPreviousStep}
                       broadcastCompletion={() => {
                         onboarding.setStepCompletions((prev) => ({
