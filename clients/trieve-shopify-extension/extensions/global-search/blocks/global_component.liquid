@@ -8,9 +8,11 @@
   import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
 
   const root = document.createElement('div');
+  root.id = "trieve-global-root";
+  const appMetafieldTrieve = {{ app.metafields.trieve | json }};
   document.body.appendChild(root);
 
-  const toBool = (value) => value === 'true';
+  const toBool = (value) => value === 'true' || value === true;
   const getValue = (value, defaultValue) => {
     if (value === null || value === undefined || value === '') {
       return defaultValue;
@@ -18,37 +20,43 @@
     return value;
   };
 
-  renderToDiv(root, {
-    // Required values
-    type: "ecommerce",
-    apiKey: getValue("{{ app.metafields.trieve.api_key }}", ""),
-    datasetId: getValue("{{ app.metafields.trieve.dataset_id }}", ""),
-    baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
-    useGroupSearch: true,
-    allowSwitchingModes: toBool(getValue("{{ block.settings.allow_switching_modes }}", true)),
-    zIndex: Number(getValue("{{ block.settings.z_index }}", 21474830000000)),
-    scaleRem: true,
-    defaultSearchMode: getValue("{{ block.settings.default_search_mode }}", "chat"),
-    brandName: getValue("{{ block.settings.brand_name }}", ""),
-    brandColor: getValue("{{ block.settings.brand_color }}", ""),
-    floatingSearchIconPosition: getValue("{{ block.settings.floating_icon_pos }}", "right"),
-    showFloatingSearchIcon: toBool(getValue("{{ block.settings.floating_search_icon }}", false)),
-    showFloatingInput: toBool(getValue("{{ block.settings.floating_search_bar }}", false)),
-    placeholder: getValue("{{ block.settings.placeholder }}", "Search..."),
-    chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask Anything..."),
-    showFloatingButton: toBool(getValue("{{ block.settings.show_floating_button }}", false)),
-    floatingButtonPosition: getValue("{{ block.settings.floating_button_position }}", "bottom-right"),
-    suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
-    followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
-    numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
-    theme: getValue("{{ block.settings.theme }}", "light"),
-    onAddToCart: (chunk) => {
-      addToCart(parseInt(chunk.tracking_id))
-    },
-    getCartQuantity: (trackingId) => {
-      return checkCartQuantity(parseInt(trackingId));
-    },
-  });
+  if (!appMetafieldTrieve.dataset_id || !appMetafieldTrieve.api_key) {
+    console.error("Trieve: Cannot render inline Triece comopnent due to missing dataset_id or api_key in the app metafields");
+  } else {
+    renderToDiv(root, {
+      // Required values
+      type: "ecommerce",
+      apiKey: appMetafieldTrieve.api_key,
+      datasetId: appMetafieldTrieve.dataset_id,
+      baseUrl: getValue("{{ block.settings.base_url }}", "http://localhost:8090"),
+      useGroupSearch: true,
+      allowSwitchingModes: toBool(getValue("{{ block.settings.allow_switching_modes }}", true)),
+      zIndex: Number(getValue("{{ block.settings.z_index }}", 21474830000000)),
+      scaleRem: true,
+      defaultSearchMode: getValue("{{ block.settings.default_search_mode }}", "chat"),
+      brandName: getValue("{{ block.settings.brand_name }}", ""),
+      brandColor: getValue("{{ block.settings.brand_color }}", ""),
+      floatingSearchIconPosition: getValue("{{ block.settings.floating_icon_pos }}", "left"),
+      showFloatingSearchIcon: toBool(getValue("{{ block.settings.show_floating_search_icon }}", true)),
+      showFloatingInput: toBool(getValue("{{ block.settings.show_floating_input }}", false)),
+      placeholder: getValue("{{ block.settings.placeholder }}", "Search..."),
+      chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask Anything..."),
+      showFloatingButton: toBool(getValue("{{ block.settings.show_floating_button }}", false)),
+      floatingButtonPosition: getValue("{{ block.settings.floating_button_position }}", "bottom-right"),
+      suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
+      followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
+      numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
+      openLinksInNewTab: toBool(getValue("{{ block.settings.open_links_new_tab }}", true)),
+      theme: getValue("{{ block.settings.theme }}", "light"),
+      onAddToCart: (chunk) => {
+        addToCart(parseInt(chunk.tracking_id))
+      },
+      getCartQuantity: (trackingId) => {
+        return checkCartQuantity(parseInt(trackingId));
+      },
+      hideOpenButton: true,
+    });
+  }
 </script>
 
 {% comment %}
@@ -72,8 +80,8 @@
       "id": "default_search_mode",
       "label": "Default Search Mode",
       "options": [
-        {"label": "Search", "value": "search"},
-        {"label": "Chat", "value": "chat"}
+        { "label": "Search", "value": "search" },
+        { "label": "Chat", "value": "chat" }
       ],
       "default": "chat"
     },
@@ -94,8 +102,8 @@
       "id": "theme",
       "label": "Theme",
       "options": [
-        {"label": "Light", "value": "light"},
-        {"label": "Dark", "value": "dark"}
+        { "label": "Light", "value": "light" },
+        { "label": "Dark", "value": "dark" }
       ],
       "default": "light"
     },
@@ -146,10 +154,10 @@
       "id": "floating_button_position",
       "label": "Floating Button Position",
       "options": [
-        {"label": "Top Left", "value": "top-left"},
-        {"label": "Top Right", "value": "top-right"},
-        {"label": "Bottom Left", "value": "bottom-left"},
-        {"label": "Bottom Right", "value": "bottom-right"}
+        { "label": "Top Left", "value": "top-left" },
+        { "label": "Top Right", "value": "top-right" },
+        { "label": "Bottom Left", "value": "bottom-left" },
+        { "label": "Bottom Right", "value": "bottom-right" }
       ],
       "default": "bottom-right"
     },
@@ -158,8 +166,8 @@
       "id": "floating_icon_pos",
       "label": "Floating Icon Position",
       "options": [
-        {"label": "Left", "value": "left"},
-        {"label": "Right", "value": "right"}
+        { "label": "Left", "value": "left" },
+        { "label": "Right", "value": "right" }
       ],
       "default": "left"
     },
@@ -178,7 +186,7 @@
     {
       "type": "number",
       "id": "z_index",
-      "label": "Z-Index",
+      "label": "Z-Index"
     }
   ]
 }

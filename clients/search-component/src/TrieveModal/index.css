@@ -1264,13 +1264,13 @@ body {
     }
 
     .floating-search-input {
-      @apply tv-p-2 tv-outline-none tv-text-base tv-w-full tv-text-black tv-bg-transparent tv-text-ellipsis;
+      @apply tv-p-2 tv-outline-none tv-text-base tv-w-full tv-text-black tv-bg-transparent tv-text-ellipsis tv-border-none tv-shadow-none;
 
       font-family: var(--tv-prop-brand-font-family);
     }
 
     button {
-      @apply tv-flex tv-justify-center tv-items-center tv-gap-4 tv-text-sm;
+      @apply tv-flex tv-justify-center tv-items-center tv-gap-4 tv-text-sm tv-bg-none tv-border-none;
     }
   }
 
