@@ -8,7 +8,10 @@ import { usageQuery } from "app/queries/usage";
 import { OnboardingBody } from "app/utils/onboarding";
 import { useEffect, useState } from "react";
 
-export const WelcomeOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
+export const WelcomeOnboarding: OnboardingBody = ({
+  broadcastCompletion,
+  goToNextStep,
+}) => {
   const adminApi = useClientAdminApi();
   const { trieve } = useTrieve();
   const [completed, setCompleted] = useState(false);
@@ -30,6 +33,9 @@ export const WelcomeOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
       setRefetch(false);
       if (broadcastCompletion) {
         broadcastCompletion();
+      }
+      if (goToNextStep) {
+        goToNextStep();
       }
     }
   }, [usage, productCount]);
