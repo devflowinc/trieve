@@ -32,8 +32,8 @@ export const DoChatOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
   };
 
   return (
-    <div className="grid w-full h-[180px] pb-4 px-4 py-2">
-      <div className="flex justify-between items-center gap-1">
+    <div className="grid w-full place-items-center h-[180px] pb-4 px-4 py-2">
+      <div className="flex flex-col gap-2 items-center">
         {complete === false && (
           <Text as="p">
             Chat with your products using the Trieve chat widget.
