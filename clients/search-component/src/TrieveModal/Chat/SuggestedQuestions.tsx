@@ -16,7 +16,7 @@ export const SuggestedQuestions = ({
   const { suggestedQuestions, isLoadingSuggestedQueries, getQuestions } =
     useSuggestedQuestions();
 
-  const { props } = useModalState();
+  const { props, trieveSDK, fingerprint } = useModalState();
   const [parent] = useAutoAnimate({ duration: 100 });
 
   if (messages.length) {
@@ -24,6 +24,25 @@ export const SuggestedQuestions = ({
   }
 
   const handleSuggestedQuestion = async (q: string) => {
+    const requestId = messages[messages.length - 1].queryId;
+
+    if (requestId) {
+      await trieveSDK.sendAnalyticsEvent({
+        event_name: `site-followup_query`,
+        event_type: "click",
+        user_id: fingerprint,
+        location: window.location.href,
+        metadata: {
+          followup_query: q,
+          component_props: props,
+        },
+        request: {
+          request_id: requestId,
+          request_type: "rag",
+        },
+      });
+    };
+
     setCurrentQuestion(q);
     askQuestion(q);
     if (onMessageSend) {
@@ -65,9 +84,8 @@ export const SuggestedQuestions = ({
                 handleSuggestedQuestion(q);
               }}
               key={q}
-              className={`suggested-question tv-flex tv-gap-1 tv-items-center${
-                isLoadingSuggestedQueries ? " loading" : ""
-              }`}
+              className={`suggested-question tv-flex tv-gap-1 tv-items-center${isLoadingSuggestedQueries ? " loading" : ""
+                }`}
             >
               <SparklesIcon width={15} height={15} />
               {q}

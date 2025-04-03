@@ -7,7 +7,7 @@ import { useModalState } from "../../utils/hooks/modal-context";
 
 export const FollowupQueries = () => {
   const { props, trieveSDK, fingerprint } = useModalState();
-  const { isDoneReading, askQuestion } = useChatState();
+  const { isDoneReading, askQuestion, messages } = useChatState();
   const { suggestedQuestions, isLoadingSuggestedQueries } =
     useFollowupQuestions();
   const [parent] = useAutoAnimate();
@@ -17,30 +17,27 @@ export const FollowupQueries = () => {
   }
 
   const handleFollowupQuery = async (q: string) => {
-    const lastMessage = JSON.parse(
-      window.localStorage.getItem("lastMessage") ?? "{}",
-    );
+    const requestId = messages[messages.length - 1].queryId;
 
-    const requestId =
-      Object.keys(lastMessage)[0] || "00000000-0000-0000-0000-000000000000";
-
-    await trieveSDK.sendAnalyticsEvent({
-      event_name: `site-followup_query`,
-      event_type: "click",
-      user_id: fingerprint,
-      location: window.location.href,
-      metadata: {
-        followup_query: q,
-        component_props: props,
-      },
-      request: {
-        request_id: requestId,
-        request_type: "rag",
-      },
-    });
-
+    if (requestId) {
+      await trieveSDK.sendAnalyticsEvent({
+        event_name: `site-followup_query`,
+        event_type: "click",
+        user_id: fingerprint,
+        location: window.location.href,
+        metadata: {
+          followup_query: q,
+          component_props: props,
+        },
+        request: {
+          request_id: requestId,
+          request_type: "rag",
+        },
+      });
+    };
     askQuestion(q);
-  };
+
+  }
 
   return (
     <div ref={parent} className="followup-questions">
@@ -48,9 +45,8 @@ export const FollowupQueries = () => {
         <button
           onClick={() => handleFollowupQuery(q)}
           key={q}
-          className={`followup-question ${
-            isLoadingSuggestedQueries ? "loading" : ""
-          }`}
+          className={`followup-question ${isLoadingSuggestedQueries ? "loading" : ""
+            }`}
         >
           <SparklesIcon className="followup-icon" />
           {q}
