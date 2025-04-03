@@ -1,4 +1,4 @@
-use crate::operators::chunkr::{Status, TaskResponse};
+use crate::operators::chunkr::{CreateForm, Status, TaskResponse};
 use derive_more::derive::Display;
 use s3::creds::time::OffsetDateTime;
 use utoipa::ToSchema;
@@ -111,6 +111,8 @@ pub struct UploadFileReqPayload {
     pub webhook_payload_template: Option<String>,
     /// The API key to use for the Chunkr API.
     pub chunkr_api_key: Option<String>,
+    /// The request payload to use for the Chunkr API create task endpoint.
+    pub chunkr_create_task_req_payload: Option<CreateForm>,
 }
 
 #[derive(Debug)]

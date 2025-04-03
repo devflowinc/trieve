@@ -31,10 +31,7 @@ async fn create_task(
     _api_key: ApiKey,
 ) -> Result<HttpResponse, actix_web::Error> {
     let upload_file_data = req.into_inner();
-    let provider = upload_file_data
-        .provider
-        .clone()
-        .unwrap_or(Provider::LLM);
+    let provider = upload_file_data.provider.clone().unwrap_or(Provider::LLM);
 
     let mut clickhouse_task = models::FileTaskClickhouse {
         id: uuid::Uuid::new_v4().to_string(),
@@ -89,6 +86,7 @@ async fn create_task(
                 &task.file_name,
                 &task.upload_file_data.base64_file,
                 task.upload_file_data.chunkr_api_key.as_deref(),
+                task.upload_file_data.chunkr_create_task_req_payload.clone(),
             )
             .await
             .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
