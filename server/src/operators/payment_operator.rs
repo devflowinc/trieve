@@ -1,4 +1,4 @@
-use crate::handlers::stripe_handler::{BillItem, BillingEstimate};
+use crate::handlers::payment_handler::{BillItem, BillingEstimate};
 use std::{cmp::max, collections::HashMap, str::FromStr};
 
 use crate::{
@@ -262,6 +262,29 @@ pub async fn get_plan_by_id_query(
 
     let stripe_plan: StripePlan = stripe_plans_columns::stripe_plans
         .filter(stripe_plans_columns::id.eq(plan_id))
+        .first(&mut conn)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to get stripe plan: {}", e);
+            ServiceError::BadRequest("Failed to get stripe plan".to_string())
+        })?;
+
+    Ok(stripe_plan)
+}
+
+pub async fn get_plan_by_handle_query(
+    plan_handle: String,
+    pool: web::Data<Pool>,
+) -> Result<StripePlan, ServiceError> {
+    use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .expect("Failed to get connection from pool");
+
+    let stripe_plan: StripePlan = stripe_plans_columns::stripe_plans
+        .filter(stripe_plans_columns::stripe_id.eq(plan_handle))
         .first(&mut conn)
         .await
         .map_err(|e| {
