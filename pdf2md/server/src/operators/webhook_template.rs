@@ -115,6 +115,7 @@ mod tests {
             llm_api_key: None,
             system_prompt: None,
             chunkr_api_key: None,
+            chunkr_create_task_req_payload: None,
         };
 
         let data = WebhookPayloadData {
@@ -159,6 +160,7 @@ mod tests {
             llm_api_key: None,
             system_prompt: None,
             chunkr_api_key: None,
+            chunkr_create_task_req_payload: None,
         };
 
         let data = WebhookPayloadData {
