@@ -1196,12 +1196,16 @@ pub async fn get_bill_from_range(
 
     let guage_to_price = usage_plan.guage_line_item_map();
 
+    let req_client = reqwest::Client::new();
+
     let futures: Vec<_> = guage_to_price
         .iter()
         .map(|(guage, price_id)| {
+            let req_client = req_client.clone();
+
             async move {
                 // Get stripe price
-                let price = reqwest::Client::new()
+                let price = req_client
                     .post(format!("https://api.stripe.com/v1/prices/{}", price_id))
                     .basic_auth(stripe_secret, Option::<&str>::None)
                     .form(&[("expand[]", "tiers")])
