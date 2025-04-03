@@ -2279,7 +2279,7 @@ pub enum EventType {
     FileUploaded {
         file_id: uuid::Uuid,
         file_name: String,
-        pdf2md_options: Option<Pdf2MdOptions>,
+        pdf2md_options: Box<Option<Pdf2MdOptions>>,
         pages: Option<u64>,
     },
     #[display(fmt = "file_upload_failed")]

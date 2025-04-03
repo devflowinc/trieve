@@ -159,7 +159,7 @@ async fn file_worker(
                         models::EventType::FileUploaded {
                             file_id: message.file_id,
                             file_name: message.upload_file_data.file_name.clone(),
-                            pdf2md_options: message.upload_file_data.pdf2md_options,
+                            pdf2md_options: Box::new(message.upload_file_data.pdf2md_options),
                             pages,
                         },
                     )
