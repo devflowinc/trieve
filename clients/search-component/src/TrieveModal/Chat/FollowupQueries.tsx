@@ -17,8 +17,6 @@ export const FollowupQueries = () => {
   }
 
   const handleFollowupQuery = async (q: string) => {
-    askQuestion(q);
-
     const requestId = messages[messages.length - 1]?.queryId ?? "00000000-0000-0000-0000-000000000000";
 
     await trieveSDK.sendAnalyticsEvent({
@@ -35,6 +33,8 @@ export const FollowupQueries = () => {
         request_type: "rag",
       },
     });
+
+    askQuestion(q);
   }
 
   return (
