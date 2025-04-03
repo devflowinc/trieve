@@ -6353,6 +6353,40 @@
         }
       }
     },
+    "/api/shopify/plan_change": {
+      "post": {
+        "tags": [
+          "Shopify"
+        ],
+        "operationId": "handle_shopify_plan_change",
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopifyPlanChangePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Service error relating to Shopify plan change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/shopify/user_event": {
       "post": {
         "tags": [
@@ -19037,6 +19071,45 @@
           },
           "store_name": {
             "type": "string"
+          }
+        }
+      },
+      "ShopifyPlan": {
+        "type": "object",
+        "required": [
+          "name",
+          "handle",
+          "status"
+        ],
+        "properties": {
+          "handle": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ShopifyPlanChangePayload": {
+        "type": "object",
+        "required": [
+          "organization_id",
+          "session_token",
+          "shopify_plan"
+        ],
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "session_token": {
+            "type": "string"
+          },
+          "shopify_plan": {
+            "$ref": "#/components/schemas/ShopifyPlan"
           }
         }
       },

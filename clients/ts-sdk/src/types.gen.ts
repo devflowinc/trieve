@@ -3748,6 +3748,18 @@ export type ShopifyCustomerEvent = {
     store_name: string;
 };
 
+export type ShopifyPlan = {
+    handle: string;
+    name: string;
+    status: string;
+};
+
+export type ShopifyPlanChangePayload = {
+    organization_id: string;
+    session_token: string;
+    shopify_plan: ShopifyPlan;
+};
+
 export type SingleProductOptions = {
     groupTrackingId?: (string) | null;
     productDescriptionHtml?: (string) | null;
@@ -5857,6 +5869,12 @@ export type PublicPageData = {
 
 export type PublicPageResponse = (unknown);
 
+export type HandleShopifyPlanChangeData = {
+    requestBody: ShopifyPlanChangePayload;
+};
+
+export type HandleShopifyPlanChangeResponse = (void);
+
 export type SendShopifyUserEventData = {
     /**
      * The shopify customer data to add to this user
@@ -7555,6 +7573,21 @@ export type $OpenApiTs = {
                  * Dataset not found
                  */
                 404: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/shopify/plan_change': {
+        post: {
+            req: HandleShopifyPlanChangeData;
+            res: {
+                /**
+                 * No content
+                 */
+                204: void;
+                /**
+                 * Service error relating to Shopify plan change
+                 */
+                400: ErrorResponseBody;
             };
         };
     };
