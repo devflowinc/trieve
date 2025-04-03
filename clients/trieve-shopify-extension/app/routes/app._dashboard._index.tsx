@@ -1,5 +1,5 @@
 import { useTrieve } from "app/context/trieveContext";
-import { useNavigate } from "@remix-run/react";
+import { useNavigate, useSubmit } from "@remix-run/react";
 import {
   Card,
   Text,
@@ -33,6 +33,8 @@ import { TopPages } from "app/components/analytics/component/TopPages";
 import { useState } from "react";
 import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
 import { Granularity } from "trieve-ts-sdk";
+import { ActionFunctionArgs } from "@remix-run/node";
+import { authenticate } from "app/shopify.server";
 
 const load: Loader = async ({ adminApiFetcher, queryClient }) => {
   await queryClient.ensureQueryData(lastStepIdQuery(adminApiFetcher));
@@ -42,10 +44,21 @@ const load: Loader = async ({ adminApiFetcher, queryClient }) => {
 export const loader = createServerLoader(load);
 export const clientLoader = createClientLoader(load);
 
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { redirect } = await authenticate.admin(request);
+  return redirect(
+    `shopify://admin/charges/densumes-trieve-extension/pricing_plans?test=true`,
+    {
+      target: "_top",
+    },
+  );
+};
+
 export default function Dashboard() {
   const { organization, trieve } = useTrieve();
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
   const [granularity, setGranularity] = useState<Granularity>("day");
+  const submit = useSubmit();
 
   const {
     data: usage,
@@ -239,7 +252,13 @@ export default function Dashboard() {
                   <Text variant="headingMd" as="h2">
                     Plan Details
                   </Text>
-                  <Button onClick={() => navigate("/app/plans")}>
+                  <Button
+                    onClick={() => {
+                      submit(null, {
+                        method: "post",
+                      });
+                    }}
+                  >
                     Upgrade Plan
                   </Button>
                 </InlineStack>
