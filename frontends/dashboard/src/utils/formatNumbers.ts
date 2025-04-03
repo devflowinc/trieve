@@ -25,7 +25,7 @@ export const formatStorageBytes = (bytes: number) => {
 };
 
 export const formatStorageMb = (mb: number) => {
-  if (mb < 1000) {
+  if (mb < 10000) {
     return `${formatNumberWithCommas(mb)} mb`;
   } else if (mb < 1000000) {
     const gb = mb / 1000;
