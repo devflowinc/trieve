@@ -24,27 +24,27 @@ export const SuggestedQuestions = ({
   }
 
   const handleSuggestedQuestion = async (q: string) => {
-    const requestId = messages[messages.length - 1].queryId;
 
-    if (requestId) {
-      await trieveSDK.sendAnalyticsEvent({
-        event_name: `site-followup_query`,
-        event_type: "click",
-        user_id: fingerprint,
-        location: window.location.href,
-        metadata: {
-          followup_query: q,
-          component_props: props,
-        },
-        request: {
-          request_id: requestId,
-          request_type: "rag",
-        },
-      });
-    };
 
     setCurrentQuestion(q);
     askQuestion(q);
+    
+    const requestId = messages[messages.length - 1]?.queryId ?? "00000000-0000-0000-0000-000000000000";
+
+    await trieveSDK.sendAnalyticsEvent({
+      event_name: `site-followup_query`,
+      event_type: "click",
+      user_id: fingerprint,
+      location: window.location.href,
+      metadata: {
+        followup_query: q,
+        component_props: props,
+      },
+      request: {
+        request_id: requestId,
+        request_type: "rag",
+      },
+    });
     if (onMessageSend) {
       onMessageSend();
     }
