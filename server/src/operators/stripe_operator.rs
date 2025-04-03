@@ -422,6 +422,7 @@ pub async fn create_usage_based_stripe_payment_link(
                     })
                     .collect(),
             ),
+            allow_promotion_codes: Some(true),
             metadata: Some(HashMap::from([
                 ("organization_id".to_string(), organization_id.to_string()),
                 ("plan_type".to_string(), "usage-based".to_string()),
