@@ -2,7 +2,7 @@ use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfi
 use signal_hook::consts::SIGTERM;
 use std::sync::{atomic::AtomicBool, Arc};
 use trieve_server::errors::ServiceError;
-use trieve_server::operators::{organization_operator, stripe_operator};
+use trieve_server::operators::{organization_operator, payment_operator};
 use trieve_server::{establish_connection, get_env};
 
 #[tokio::main]
@@ -45,14 +45,14 @@ async fn main() -> Result<(), ServiceError> {
 
     for organization_id in organization_ids {
         let usage_based_subscription =
-            stripe_operator::get_option_usage_based_subscription_by_organization_id_query(
+            payment_operator::get_option_usage_based_subscription_by_organization_id_query(
                 organization_id,
                 pool.clone(),
             )
             .await?;
 
         if let Some(usage_based_subscription) = usage_based_subscription {
-            let result = stripe_operator::send_stripe_billing(
+            let result = payment_operator::send_stripe_billing(
                 usage_based_subscription,
                 &clickhouse_client,
                 pool.clone(),

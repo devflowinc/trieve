@@ -8,7 +8,7 @@ use crate::{
         organization_operator::{
             get_org_from_id_query, get_org_id_from_subscription_id_query, get_org_usage_by_id_query,
         },
-        stripe_operator::{
+        payment_operator::{
             cancel_stripe_subscription, create_invoice_query, create_stripe_payment_link,
             create_stripe_plan_query, create_stripe_setup_checkout_session,
             create_stripe_subscription_query, create_usage_based_stripe_payment_link,
@@ -17,8 +17,8 @@ use crate::{
             get_bill_from_range, get_invoices_for_org_query,
             get_option_subscription_by_organization_id_query,
             get_option_usage_based_subscription_by_organization_id_query,
-            get_option_usage_based_subscription_by_subscription_id_query, get_stripe_client,
-            get_trieve_plan_by_id_query, get_trieve_subscription_by_id_query,
+            get_option_usage_based_subscription_by_subscription_id_query, get_plan_by_handle_query,
+            get_stripe_client, get_trieve_plan_by_id_query, get_trieve_subscription_by_id_query,
             set_stripe_subscription_current_period_end, set_subscription_payment_method,
             update_static_stripe_meters, update_stripe_subscription_plan_query,
             update_stripe_usage_based_subscription_plan_query, update_to_flat_stripe_subscription,
@@ -717,4 +717,92 @@ pub async fn estimate_bill_from_range(
         }
         _ => Err(ServiceError::BadRequest("Plan is not usage based".to_string()).into()),
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ShopifyPlanChangePayload {
+    pub organization_id: uuid::Uuid,
+    pub session_token: String,
+    pub shopify_plan: ShopifyPlan,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ShopifyPlan {
+    pub name: String,
+    pub handle: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ShopifyClaims {
+    pub dest: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/shopify/plan_change",
+    context_path = "/api",
+    tag = "Shopify",
+    responses (
+        (status = 204, description = "No content"),
+        (status = 400, description = "Service error relating to Shopify plan change", body = ErrorResponseBody),
+    ),
+)]
+pub async fn handle_shopify_plan_change(
+    payload: web::Json<ShopifyPlanChangePayload>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, actix_web::Error> {
+    if payload.session_token != get_env!("SHOPIFY_SECRET_KEY", "SHOPIFY_SECRET_KEY must be set") {
+        return Err(ServiceError::BadRequest("Invalid session token".to_string()).into());
+    }
+
+    let organization_plan =
+        get_option_subscription_by_organization_id_query(payload.organization_id, pool.clone())
+            .await
+            .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+    let plan = get_plan_by_handle_query(payload.shopify_plan.handle.clone(), pool.clone())
+        .await
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+    if let Some(organization_plan) = organization_plan {
+        if organization_plan.plan_id == plan.id
+            && payload.shopify_plan.status.to_lowercase() == "active"
+        {
+            // No changes
+            return Ok(HttpResponse::NoContent().finish());
+        } else if organization_plan.plan_id == plan.id
+            && payload.shopify_plan.status.to_lowercase() != "active"
+        {
+            // Cancel the old plan
+            set_stripe_subscription_current_period_end(
+                organization_plan.stripe_id,
+                chrono::Utc::now().naive_utc(),
+                pool,
+            )
+            .await?;
+        } else if organization_plan.plan_id != plan.id
+            && payload.shopify_plan.status.to_lowercase() == "active"
+        {
+            // Create a new plan
+            create_stripe_subscription_query(
+                plan.stripe_id,
+                plan.id,
+                payload.organization_id,
+                pool.clone(),
+            )
+            .await?;
+        }
+    } else if payload.shopify_plan.status.to_lowercase() == "active" {
+        // Create a new plan
+        create_stripe_subscription_query(
+            plan.stripe_id,
+            plan.id,
+            payload.organization_id,
+            pool.clone(),
+        )
+        .await?;
+    }
+
+    Ok(HttpResponse::NoContent().finish())
 }

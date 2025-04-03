@@ -254,14 +254,14 @@ impl Modify for SecurityAddon {
         handlers::dataset_handler::create_pagefind_index_for_dataset,
         handlers::dataset_handler::get_pagefind_index_for_dataset,
         handlers::dataset_handler::clear_dataset,
-        handlers::stripe_handler::direct_to_payment_link,
-        handlers::stripe_handler::cancel_subscription,
-        handlers::stripe_handler::update_subscription_plan,
-        handlers::stripe_handler::get_all_plans,
-        handlers::stripe_handler::get_all_usage_plans,
-        handlers::stripe_handler::get_all_invoices,
-        handlers::stripe_handler::update_payment_method,
-        handlers::stripe_handler::estimate_bill_from_range,
+        handlers::payment_handler::direct_to_payment_link,
+        handlers::payment_handler::cancel_subscription,
+        handlers::payment_handler::update_subscription_plan,
+        handlers::payment_handler::get_all_plans,
+        handlers::payment_handler::get_all_usage_plans,
+        handlers::payment_handler::get_all_invoices,
+        handlers::payment_handler::update_payment_method,
+        handlers::payment_handler::estimate_bill_from_range,
         handlers::analytics_handler::get_cluster_analytics,
         handlers::analytics_handler::get_rag_analytics,
         handlers::analytics_handler::get_search_analytics,
@@ -278,7 +278,8 @@ impl Modify for SecurityAddon {
         handlers::shopify_handler::send_shopify_user_event,
         handlers::metrics_handler::get_metrics,
         handlers::page_handler::public_page,
-        handlers::etl_handler::create_etl_job
+        handlers::etl_handler::create_etl_job,
+        handlers::payment_handler::handle_shopify_plan_change,
     ),
     components(
         schemas(
@@ -435,7 +436,7 @@ impl Modify for SecurityAddon {
             operators::crawl_operator::Document,
             operators::crawl_operator::Metadata,
             operators::crawl_operator::Sitemap,
-            handlers::stripe_handler::CreateSetupCheckoutSessionResPayload,
+            handlers::payment_handler::CreateSetupCheckoutSessionResPayload,
             handlers::page_handler::ButtonTrigger,
             handlers::page_handler::PublicPageSearchOptions,
             handlers::page_handler::OpenGraphMetadata,
@@ -447,6 +448,8 @@ impl Modify for SecurityAddon {
             handlers::page_handler::HeroPattern,
             handlers::etl_handler::CreateSchemaReqPayload,
             handlers::shopify_handler::ShopifyCustomerEvent,
+            handlers::payment_handler::ShopifyPlanChangePayload,
+            handlers::payment_handler::ShopifyPlan,
             data::models::UserApiKey,
             data::models::CrawlStatus,
             data::models::CrawlType,
@@ -643,8 +646,8 @@ impl Modify for SecurityAddon {
             data::models::PopularChat,
             errors::ErrorResponseBody,
             middleware::api_version::APIVersion,
-            handlers::stripe_handler::BillingEstimate,
-            handlers::stripe_handler::BillItem,
+            handlers::payment_handler::BillingEstimate,
+            handlers::payment_handler::BillItem,
         )
     ),
     tags(
@@ -1376,45 +1379,52 @@ pub fn main() -> std::io::Result<()> {
                                 ),
                             )
                         .service(
+                            web::scope("/shopify")
+                                .service(
+                                    web::resource("/plan_change")
+                                        .route(web::post().to(handlers::payment_handler::handle_shopify_plan_change)),
+                                ),
+                        )
+                        .service(
                             web::scope("/stripe")
                                 .service(
                                     web::resource("/webhook")
-                                        .route(web::post().to(handlers::stripe_handler::webhook)),
+                                        .route(web::post().to(handlers::payment_handler::webhook)),
                                 )
                                 .service(web::resource("/subscription/{subscription_id}").route(
-                                    web::delete().to(handlers::stripe_handler::cancel_subscription),
+                                    web::delete().to(handlers::payment_handler::cancel_subscription),
                                 ))
                                 .service(
                                     web::resource("/subscription_plan/{subscription_id}/{plan_id}")
                                         .route(
                                             web::patch()
-                                                .to(handlers::stripe_handler::update_subscription_plan),
+                                                .to(handlers::payment_handler::update_subscription_plan),
                                         ),
                                 )
                                 .service(
                                     web::resource("/payment_link/{plan_id}/{organization_id}").route(
-                                        web::get().to(handlers::stripe_handler::direct_to_payment_link),
+                                        web::get().to(handlers::payment_handler::direct_to_payment_link),
                                     ),
                                 )
                                 .service(
                                     web::resource("/plans")
-                                        .route(web::get().to(handlers::stripe_handler::get_all_plans)),
+                                        .route(web::get().to(handlers::payment_handler::get_all_plans)),
                                 )
                                 .service(
                                     web::resource("/usage_plans")
-                                        .route(web::get().to(handlers::stripe_handler::get_all_usage_plans)),
+                                        .route(web::get().to(handlers::payment_handler::get_all_usage_plans)),
                                 )
                                 .service(
                                     web::resource("/invoices/{organization_id}")
-                                        .route(web::get().to(handlers::stripe_handler::get_all_invoices)),
+                                        .route(web::get().to(handlers::payment_handler::get_all_invoices)),
                                 )
                                 .service(
                                     web::resource("/checkout/setup/{organization_id}")
-                                        .route(web::post().to(handlers::stripe_handler::update_payment_method)),
+                                        .route(web::post().to(handlers::payment_handler::update_payment_method)),
                                 )
                                 .service(
                                     web::resource("/estimate_bill/{plan_id}")
-                                        .route(web::post().to(handlers::stripe_handler::estimate_bill_from_range)),
+                                        .route(web::post().to(handlers::payment_handler::estimate_bill_from_range)),
                                 ),
                         )
                         .service(
