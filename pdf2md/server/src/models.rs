@@ -1,4 +1,4 @@
-use crate::operators::chunkr::{CreateForm, Status, TaskResponse};
+use crate::operators::chunkr::{CreateFormWithoutFile, Segment, Status, TaskResponse};
 use derive_more::derive::Display;
 use s3::creds::time::OffsetDateTime;
 use utoipa::ToSchema;
@@ -112,7 +112,7 @@ pub struct UploadFileReqPayload {
     /// The API key to use for the Chunkr API.
     pub chunkr_api_key: Option<String>,
     /// The request payload to use for the Chunkr API create task endpoint.
-    pub chunkr_create_task_req_payload: Option<CreateForm>,
+    pub chunkr_create_task_req_payload: Option<CreateFormWithoutFile>,
 }
 
 #[derive(Debug)]
@@ -191,21 +191,23 @@ pub struct ChunkClickhouse {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, ToSchema)]
-pub struct Chunk {
+pub struct PdfToMdPage {
     pub id: String,
     pub task_id: String,
     pub content: String,
+    pub segments: Option<Vec<Segment>>,
     pub page_num: u32,
     pub usage: serde_json::Value,
     pub created_at: String,
 }
 
-impl From<ChunkClickhouse> for Chunk {
+impl From<ChunkClickhouse> for PdfToMdPage {
     fn from(c: ChunkClickhouse) -> Self {
         Self {
             id: c.id,
             task_id: c.task_id,
             content: c.content,
+            segments: None,
             page_num: c.page,
             usage: serde_json::from_str(&c.usage).unwrap(),
             created_at: c.created_at.to_string(),
@@ -213,31 +215,53 @@ impl From<ChunkClickhouse> for Chunk {
     }
 }
 
-impl From<TaskResponse> for Vec<Chunk> {
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, ToSchema)]
+pub struct ChunkrPageContentVals {
+    pub content: String,
+    pub segments: Vec<Segment>,
+}
+
+impl From<TaskResponse> for Vec<PdfToMdPage> {
     fn from(response: TaskResponse) -> Self {
         if let Some(output) = response.output {
-            let mut page_contents: std::collections::HashMap<u32, String> =
+            let mut page_contents: std::collections::HashMap<u32, ChunkrPageContentVals> =
                 std::collections::HashMap::new();
-
             for chunk in output.chunks {
                 for segment in chunk.segments {
                     let page_num = segment.page_number;
                     page_contents
                         .entry(page_num)
-                        .and_modify(|content| {
-                            content.push_str("\n\n");
-                            content.push_str(&segment.markdown);
+                        .and_modify(|chunkr_page_content_val| {
+                            chunkr_page_content_val.content.push_str("\n\n");
+                            chunkr_page_content_val.content.push_str(&segment.markdown);
+                            let mut clean_segment = segment.clone();
+                            clean_segment.content = String::new();
+                            clean_segment.markdown = String::new();
+                            clean_segment.html = String::new();
+                            clean_segment.image = None;
+                            chunkr_page_content_val.segments.push(clean_segment);
                         })
-                        .or_insert(segment.markdown);
+                        .or_insert({
+                            let mut clean_segment = segment.clone();
+                            clean_segment.content = String::new();
+                            clean_segment.markdown = String::new();
+                            clean_segment.html = String::new();
+                            clean_segment.image = None;
+                            ChunkrPageContentVals {
+                                content: segment.clone().markdown,
+                                segments: vec![clean_segment],
+                            }
+                        });
                 }
             }
 
             page_contents
                 .into_iter()
-                .map(|(page_num, content)| Chunk {
+                .map(|(page_num, chunkr_page_content_val)| PdfToMdPage {
                     id: uuid::Uuid::new_v4().to_string(),
                     task_id: response.task_id.clone(),
-                    content,
+                    content: chunkr_page_content_val.content,
+                    segments: Some(chunkr_page_content_val.segments),
                     page_num,
                     usage: serde_json::json!({}),
                     created_at: response.created_at.to_string(),
@@ -264,7 +288,7 @@ pub struct GetTaskResponse {
     pub pages_processed: u32,
     pub status: String,
     pub created_at: String,
-    pub pages: Option<Vec<Chunk>>,
+    pub pages: Option<Vec<PdfToMdPage>>,
     pub pagination_token: Option<u32>,
 }
 
@@ -297,7 +321,7 @@ impl GetTaskResponse {
             status: task.status,
             created_at: task.created_at.to_string(),
             pagination_token: pages.last().map(|c| c.page),
-            pages: Some(pages.into_iter().map(Chunk::from).collect()),
+            pages: Some(pages.into_iter().map(PdfToMdPage::from).collect()),
         }
     }
 

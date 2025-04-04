@@ -73,6 +73,29 @@ export type AuthQuery = {
     redirect_uri?: (string) | null;
 };
 
+/**
+ * Controls the processing and generation for the segment.
+ * - `crop_image` controls whether to crop the file's images to the segment's bounding box.
+ * The cropped image will be stored in the segment's `image` field. Use `All` to always crop,
+ * or `Auto` to only crop when needed for post-processing.
+ * - `html` is the HTML output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)
+ * - `llm` is the LLM-generated output for the segment, this uses off-the-shelf models to generate a custom output for the segment
+ * - `markdown` is the Markdown output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)
+ * - `embed_sources` defines which content sources will be included in the chunk's embed field and counted towards the chunk length.
+ * The array's order determines the sequence in which content appears in the embed field (e.g., [Markdown, LLM] means Markdown content
+ * is followed by LLM content). This directly affects what content is available for embedding and retrieval.
+ */
+export type AutoGenerationConfig = {
+    crop_image?: (CroppingStrategy);
+    embed_sources?: Array<EmbedSource>;
+    html?: (GenerationStrategy);
+    /**
+     * Prompt for the LLM mode
+     */
+    llm?: (string) | null;
+    markdown?: (GenerationStrategy);
+};
+
 export type AutocompleteReqPayload = {
     /**
      * Set content_only to true to only returning the chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
@@ -393,6 +416,22 @@ export type ChunkMetadataWithScore = {
     tracking_id?: (string) | null;
     updated_at: string;
     weight: number;
+};
+
+/**
+ * Controls the setting for the chunking and post-processing of each chunk.
+ */
+export type ChunkProcessing = {
+    /**
+     * Whether to ignore headers and footers in the chunking process.
+     * This is recommended as headers and footers break reading order across pages.
+     */
+    ignore_headers_and_footers?: boolean;
+    /**
+     * The target number of words in each chunk. If 0, each chunk will contain a single segment.
+     */
+    target_length?: number;
+    tokenizer?: (TokenizerType);
 };
 
 /**
@@ -834,6 +873,26 @@ export type CreateDatasetReqPayload = {
     tracking_id?: (string) | null;
 };
 
+/**
+ * Will use [chunkr.ai](https://chunkr.ai) to process the file when this object is defined. See [docs.chunkr.ai/api-references/task/create-task](https://docs.chunkr.ai/api-references/task/create-task) for detailed information about what each field on this request payload does.
+ */
+export type CreateFormWithoutFile = {
+    chunk_processing?: ((ChunkProcessing) | null);
+    /**
+     * The number of seconds until task is deleted.
+     * Expried tasks can **not** be updated, polled or accessed via web interface.
+     */
+    expires_in?: (number) | null;
+    /**
+     * Whether to use high-resolution images for cropping and post-processing. (Latency penalty: ~7 seconds per page)
+     */
+    high_resolution?: (boolean) | null;
+    ocr_strategy?: ((OcrStrategy) | null);
+    pipeline?: ((PipelineType) | null);
+    segment_processing?: ((SegmentProcessing) | null);
+    segmentation_strategy?: ((SegmentationStrategy) | null);
+};
+
 export type CreateMessageReqPayload = {
     /**
      * The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.
@@ -1021,6 +1080,13 @@ export type CreateTopicReqPayload = {
      */
     owner_id: string;
 };
+
+/**
+ * Controls the cropping strategy for an item (e.g. segment, chunk, etc.)
+ * - `All` crops all images in the item
+ * - `Auto` crops images only if required for post-processing
+ */
+export type CroppingStrategy = 'All' | 'Auto';
 
 export type Dataset = {
     /**
@@ -1352,6 +1418,8 @@ export type EditMessageReqPayload = {
      */
     user_id?: (string) | null;
 };
+
+export type EmbedSource = 'HTML' | 'Markdown' | 'LLM' | 'Content';
 
 export type ErrorResponseBody = {
     message: string;
@@ -1881,6 +1949,8 @@ export type GenerateOffChunksReqPayload = {
     user_id?: (string) | null;
 };
 
+export type GenerationStrategy = 'LLM' | 'Auto';
+
 /**
  * Location that you want to use as the center of the search.
  */
@@ -2285,6 +2355,29 @@ export type LatencyGraphResponse = {
     points: Array<FloatTimePoint>;
 };
 
+/**
+ * Controls the processing and generation for the segment.
+ * - `crop_image` controls whether to crop the file's images to the segment's bounding box.
+ * The cropped image will be stored in the segment's `image` field. Use `All` to always crop,
+ * or `Auto` to only crop when needed for post-processing.
+ * - `html` is the HTML output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)
+ * - `llm` is the LLM-generated output for the segment, this uses off-the-shelf models to generate a custom output for the segment
+ * - `markdown` is the Markdown output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)
+ * - `embed_sources` defines which content sources will be included in the chunk's embed field and counted towards the chunk length.
+ * The array's order determines the sequence in which content appears in the embed field (e.g., [Markdown, LLM] means Markdown content
+ * is followed by LLM content). This directly affects what content is available for embedding and retrieval.
+ */
+export type LlmGenerationConfig = {
+    crop_image?: (CroppingStrategy);
+    embed_sources?: Array<EmbedSource>;
+    html?: (GenerationStrategy);
+    /**
+     * Prompt for the LLM model
+     */
+    llm?: (string) | null;
+    markdown?: (GenerationStrategy);
+};
+
 export type LocationBoundingBox = {
     bottom_right: GeoInfo;
     top_left: GeoInfo;
@@ -2384,6 +2477,13 @@ export type MultiQuery = {
 
 export type NewChunkMetadataTypes = SlimChunkMetadataWithArrayTagSet | ChunkMetadata | ContentChunkMetadata;
 
+/**
+ * Controls the Optical Character Recognition (OCR) strategy.
+ * - `All`: Processes all pages with OCR. (Latency penalty: ~0.5 seconds per page)
+ * - `Auto`: Selectively applies OCR only to pages with missing or low-quality text. When text layer is present the bounding boxes from the text layer are used.
+ */
+export type OcrStrategy = 'All' | 'Auto';
+
 export type OpenGraphMetadata = {
     description?: (string) | null;
     image?: (string) | null;
@@ -2449,6 +2549,9 @@ export type PartnerConfiguration = {
     SLACK_LINK: string;
 };
 
+/**
+ * We plan to deprecate pdf2md in favor of chunkr.ai. This is a legacy option for using a vision LLM to convert a given file into markdown and then ingest it.
+ */
 export type Pdf2MdOptions = {
     /**
      * Split headings is an optional field which allows you to specify whether or not to split headings into separate chunks. Default is false.
@@ -2463,6 +2566,38 @@ export type Pdf2MdOptions = {
      */
     use_pdf2md_ocr: boolean;
 };
+
+/**
+ * Controls the cropping strategy for an item (e.g. segment, chunk, etc.)
+ * - `All` crops all images in the item
+ * - `Auto` crops images only if required for post-processing
+ */
+export type PictureCroppingStrategy = 'All' | 'Auto';
+
+/**
+ * Controls the processing and generation for the segment.
+ * - `crop_image` controls whether to crop the file's images to the segment's bounding box.
+ * The cropped image will be stored in the segment's `image` field. Use `All` to always crop,
+ * or `Auto` to only crop when needed for post-processing.
+ * - `html` is the HTML output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)
+ * - `llm` is the LLM-generated output for the segment, this uses off-the-shelf models to generate a custom output for the segment
+ * - `markdown` is the Markdown output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)
+ * - `embed_sources` defines which content sources will be included in the chunk's embed field and counted towards the chunk length.
+ * The array's order determines the sequence in which content appears in the embed field (e.g., [Markdown, LLM] means Markdown content
+ * is followed by LLM content). This directly affects what content is available for embedding and retrieval.
+ */
+export type PictureGenerationConfig = {
+    crop_image?: (PictureCroppingStrategy);
+    embed_sources?: Array<EmbedSource>;
+    html?: (GenerationStrategy);
+    /**
+     * Prompt for the LLM model
+     */
+    llm?: (string) | null;
+    markdown?: (GenerationStrategy);
+};
+
+export type PipelineType = 'Azure' | 'Chunkr';
 
 export type PopularChat = {
     count: number;
@@ -3533,6 +3668,38 @@ export type SearchesPerUserResponse = {
 };
 
 /**
+ * Controls the post-processing of each segment type.
+ *
+ * Allows you to generate HTML and Markdown from chunkr models for each segment type.
+ * By default, the HTML and Markdown are generated manually using the segmentation information except for `Table`, `Formula` and `Picture`.
+ * You can optionally configure custom LLM prompts and models to generate an additional `llm` field with LLM-processed content for each segment type.
+ *
+ * The configuration of which content sources (HTML, Markdown, LLM, Content) of the segment
+ * should be included in the chunk's `embed` field and counted towards the chunk length can be configured through the `embed_sources` setting.
+ */
+export type SegmentProcessing = {
+    Caption?: ((AutoGenerationConfig) | null);
+    Footnote?: ((AutoGenerationConfig) | null);
+    Formula?: ((LlmGenerationConfig) | null);
+    ListItem?: ((AutoGenerationConfig) | null);
+    Page?: ((LlmGenerationConfig) | null);
+    PageFooter?: ((AutoGenerationConfig) | null);
+    PageHeader?: ((AutoGenerationConfig) | null);
+    Picture?: ((PictureGenerationConfig) | null);
+    SectionHeader?: ((AutoGenerationConfig) | null);
+    Table?: ((LlmGenerationConfig) | null);
+    Text?: ((AutoGenerationConfig) | null);
+    Title?: ((AutoGenerationConfig) | null);
+};
+
+/**
+ * Controls the segmentation strategy:
+ * - `LayoutAnalysis`: Analyzes pages for layout elements (e.g., `Table`, `Picture`, `Formula`, etc.) using bounding boxes. Provides fine-grained segmentation and better chunking. (Latency penalty: ~TBD seconds per page).
+ * - `Page`: Treats each page as a single segment. Faster processing, but without layout element detection and only simple chunking.
+ */
+export type SegmentationStrategy = 'LayoutAnalysis' | 'Page';
+
+/**
  * Semantic boosting moves the dense vector of the chunk in the direction of the distance phrase for semantic search. I.e. you can force a cluster by moving every chunk for a PDF closer to its title or push a chunk with a chunk_html of "iphone" 25% closer to the term "flagship" by using the distance phrase "flagship" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.
  */
 export type SemanticBoost = {
@@ -3773,6 +3940,35 @@ export type TagsWithCount = {
      * Content of the tag
      */
     tag: string;
+};
+
+/**
+ * Common tokenizers used for text processing.
+ *
+ * These values represent standard tokenization approaches and popular pre-trained
+ * tokenizers from the Hugging Face ecosystem.
+ */
+export type Tokenizer = 'Word' | 'Cl100kBase' | 'XlmRobertaBase' | 'BertBaseUncased';
+
+/**
+ * Specifies which tokenizer to use for the chunking process.
+ *
+ * This type supports two ways of specifying a tokenizer:
+ * 1. Using a predefined tokenizer from the `Tokenizer` enum
+ * 2. Using any Hugging Face tokenizer by providing its model ID as a string
+ * (e.g. "facebook/bart-large", "Qwen/Qwen-tokenizer", etc.)
+ *
+ * When using a string, any valid Hugging Face tokenizer ID can be specified,
+ * which will be loaded using the Hugging Face tokenizers library.
+ */
+export type TokenizerType = {
+    Enum: Tokenizer;
+} | {
+    /**
+     * Use any Hugging Face tokenizer by specifying its model ID
+     * Examples: "Qwen/Qwen-tokenizer", "facebook/bart-large"
+     */
+    String: string;
 };
 
 /**
@@ -4178,6 +4374,7 @@ export type UploadFileReqPayload = {
      * Base64 encoded file.
      */
     base64_file: string;
+    chunkr_create_task_req_payload?: ((CreateFormWithoutFile) | null);
     /**
      * Create chunks is a boolean which determines whether or not to create chunks from the file. If false, you can manually chunk the file and send the chunks to the create_chunk endpoint with the file_id to associate chunks with the file. Meant mostly for advanced users.
      */

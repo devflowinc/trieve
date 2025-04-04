@@ -542,6 +542,7 @@ async fn process_csv_jsonl_file(
             pdf2md_options: None,
             split_avg: None,
             base64_file: "".to_string(),
+            chunkr_create_task_req_payload: None,
         },
         csv_jsonl_worker_message.dataset_id,
         web_pool.clone(),

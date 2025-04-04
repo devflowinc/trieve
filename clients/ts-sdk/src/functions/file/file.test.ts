@@ -11,9 +11,14 @@ import { EXAMPLE_FILE_ID, TRIEVE } from "../../__tests__/constants";
 import fs from "fs";
 import { test } from "../../__tests__/utils";
 
-const file = fs.readFileSync("./src/__tests__/uploadme.pdf");
+const uploadMeFile = fs.readFileSync("./src/__tests__/uploadme.pdf");
+const uploadMeFileEncoded = uploadMeFile.toString("base64");
 
-const fileEncoded = file.toString("base64");
+const villageOfCatskillZoningRegulationsFile = fs.readFileSync(
+  "./src/__tests__/Village_of_Catskill_Zoning_Regulations.pdf",
+);
+const villageOfCatskillZoningRegulationsFileEncoded =
+  villageOfCatskillZoningRegulationsFile.toString("base64");
 
 describe("File Tests", async () => {
   let trieve: TrieveSDK;
@@ -22,9 +27,21 @@ describe("File Tests", async () => {
   });
   test("uploadFile", async () => {
     const data = await trieve.uploadFile({
-      base64_file: fileEncoded,
+      base64_file: uploadMeFileEncoded,
       file_name: "uploadme.pdf",
       group_tracking_id: "file-upload-group",
+    });
+    expectTypeOf(data).toEqualTypeOf<UploadFileResponseBody>();
+  });
+
+  test("uploadFileWithChunkr", async () => {
+    const data = await trieve.uploadFile({
+      base64_file: villageOfCatskillZoningRegulationsFileEncoded,
+      file_name: "Village_of_Catskill_Zoning_Regulations.pdf",
+      group_tracking_id: "village-of-catskill-file-upload-group",
+      chunkr_create_task_req_payload: {
+        pipeline: "Chunkr",
+      },
     });
     expectTypeOf(data).toEqualTypeOf<UploadFileResponseBody>();
   });
