@@ -3937,22 +3937,24 @@ pub struct StripeUsageBasedPlan {
     pub chunks_stored_price_id: String,
     pub files_storage_price_id: String,
     pub created_at: chrono::NaiveDateTime,
+    pub platform_price_id: Option<String>,
+    pub platform_price_amount: Option<i32>,
 }
 
 impl StripeUsageBasedPlan {
     pub fn line_item_ids(&self) -> Vec<String> {
         vec![
-            self.ingest_tokens_price_id.clone(),
+            self.chunks_stored_price_id.clone(),
+            self.files_storage_price_id.clone(),
+            self.datasets_price_id.clone(),
             self.bytes_ingested_price_id.clone(),
             self.search_tokens_price_id.clone(),
             self.message_tokens_price_id.clone(),
             self.analytics_events_price_id.clone(),
             self.ocr_pages_price_id.clone(),
             self.pages_crawls_price_id.clone(),
-            self.datasets_price_id.clone(),
             self.users_price_id.clone(),
-            self.chunks_stored_price_id.clone(),
-            self.files_storage_price_id.clone(),
+            self.ingest_tokens_price_id.clone(),
         ]
     }
 
@@ -4079,6 +4081,7 @@ pub struct OrganizationWithSubAndPlan {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
+#[allow(clippy::large_enum_variant)]
 pub enum TrievePlan {
     Flat(StripePlan),
     UsageBased(StripeUsageBasedPlan),

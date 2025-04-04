@@ -3732,6 +3732,8 @@ export type StripeUsageBasedPlan = {
     name: string;
     ocr_pages_price_id: string;
     pages_crawls_price_id: string;
+    platform_price_amount?: (number) | null;
+    platform_price_id?: (string) | null;
     search_tokens_price_id: string;
     users_price_id: string;
     visible: boolean;

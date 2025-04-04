@@ -345,7 +345,7 @@ export const PlansTable = (props: PlansTableProps) => {
                   scope="col"
                   class="px-3 py-3.5 text-left text-sm font-semibold"
                 >
-                  Price
+                  Base Price
                 </th>
                 <th
                   scope="col"
@@ -510,7 +510,7 @@ export const PlansTable = (props: PlansTableProps) => {
                       <Show when={plan.type === "flat"}>
                         <>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            {/* @ts-expect-error This is fine */}
+                            {/* @ts-expect-error Typecheck done above */}
                             {usdFormatter.format(plan.amount / 100)}/mo
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
@@ -533,13 +533,13 @@ export const PlansTable = (props: PlansTableProps) => {
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
                             {formatBytesDecimal(
-                              /// @ts-expect-error Typecheck done above
+                              // @ts-expect-error Typecheck done above
                               plan.file_storage as unknown as number,
                             )}
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
                             {numberFormatter.format(
-                              /// @ts-expect-error Typecheck done above
+                              // @ts-expect-error Typecheck done above
                               plan.message_count as unknown as number,
                             )}
                           </td>
@@ -551,22 +551,31 @@ export const PlansTable = (props: PlansTableProps) => {
                       <Show when={plan.type === "usage_based"}>
                         <>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            **Usage Based
+                            **
+                            {
+                              // @ts-expect-error Typecheck done above
+                              plan.platform_price_amount != null
+                                ? usdFormatter.format(
+                                    // @ts-expect-error Typecheck done above
+                                    plan.platform_price_amount as unknown as number,
+                                  )
+                                : "Usage Based"
+                            }
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            No Limit
+                            Charged on usage
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            No Limit
+                            Charged on usage
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            No Limit
+                            Charged on usage
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            No Limit
+                            Charged on usage
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
-                            No Limit
+                            Charged on usage
                           </td>
                           <td class="whitespace-nowrap px-3 py-4">
                             {actionButton}

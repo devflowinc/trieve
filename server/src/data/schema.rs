@@ -274,6 +274,8 @@ diesel::table! {
         chunks_stored_price_id -> Text,
         files_storage_price_id -> Text,
         created_at -> Timestamp,
+        platform_price_id -> Nullable<Text>,
+        platform_price_amount -> Nullable<Int4>,
     }
 }
 

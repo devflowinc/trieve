@@ -393,6 +393,25 @@ pub async fn create_usage_based_stripe_payment_link(
 
     let line_item_ids = usage_based_plan.line_item_ids();
 
+    let mut checkout_line_items: Vec<stripe::CreateCheckoutSessionLineItems> = line_item_ids
+        .iter()
+        .map(|id| stripe::CreateCheckoutSessionLineItems {
+            price: Some(id.to_string()),
+            ..Default::default()
+        })
+        .collect();
+
+    if let Some(platform_price_id) = usage_based_plan.platform_price_id {
+        checkout_line_items.insert(
+            0,
+            stripe::CreateCheckoutSessionLineItems {
+                price: Some(platform_price_id.to_string()),
+                quantity: Some(1),
+                ..Default::default()
+            },
+        );
+    }
+
     let session = stripe::CheckoutSession::create(
         &stripe_client,
         stripe::CreateCheckoutSession {
@@ -413,15 +432,7 @@ pub async fn create_usage_based_stripe_payment_link(
                 )
                 .as_str(),
             ),
-            line_items: Some(
-                line_item_ids
-                    .iter()
-                    .map(|id| stripe::CreateCheckoutSessionLineItems {
-                        price: Some(id.to_string()),
-                        ..Default::default()
-                    })
-                    .collect(),
-            ),
+            line_items: Some(checkout_line_items),
             allow_promotion_codes: Some(true),
             metadata: Some(HashMap::from([
                 ("organization_id".to_string(), organization_id.to_string()),
@@ -726,6 +737,14 @@ pub async fn update_to_usage_based_stripe_subscription(
         deleted_item.id = Some(stripe_item.id.to_string());
         deleted_item.deleted = Some(true);
         update_subscription_items.push(deleted_item.clone());
+    }
+
+    if let Some(ref platform_price_id) = usage_plan.platform_price_id {
+        update_subscription_items.push(stripe::UpdateSubscriptionItems {
+            price: Some(platform_price_id.to_string()),
+            quantity: Some(1),
+            ..Default::default()
+        })
     }
 
     let mut new_items = usage_plan
@@ -1336,6 +1355,16 @@ pub async fn get_bill_from_range(
         });
 
         total_cost += cost;
+    }
+
+    if let Some(platform_price_amount) = usage_plan.platform_price_amount {
+        total_cost += platform_price_amount as f64;
+        breakdown.push(BillItem {
+            name: "Platform".to_string(),
+            usage_amount: 0,
+            clean_name: "Platform".to_string(),
+            amount: platform_price_amount as f64,
+        });
     }
 
     Ok(BillingEstimate {
