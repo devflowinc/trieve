@@ -41,7 +41,11 @@ api_version = "2025-04"
 scopes = "write_products,read_products,read_themes"
 
 [auth]
-redirect_urls = [ "https://mac-case-shopify.trieve.ai/api/auth" ]
+redirect_urls = [
+  "https://mac-case-shopify.trieve.ai/api/auth",
+  "https://mac-case-shopify.trieve.ai/api/shopify/callback",
+  "https://mac-case-shopify.trieve.ai/auth/callback"
+]
 
 [pos]
 embedded = false
