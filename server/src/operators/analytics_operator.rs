@@ -1,30 +1,6 @@
 use crate::{
     data::models::{
-        CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ChatConversionRateResponse,
-        ChatRevenueResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse,
-        ComponentAnalyticsFilter, ComponentInteractionTimeResponse, ComponentNamesResponse,
-        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts,
-        FloatTimePoint, FloatTimePointClickhouse, FollowupQueriesResponse, FollowupQuery,
-        GetEventsResponseBody, Granularity, HeadQueries, IntegerTimePoint,
-        IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularChat,
-        PopularChatsResponse, PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter,
-        RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
-        RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
-        RecommendationEvent, RecommendationEventClickhouse, RecommendationSortBy,
-        RecommendationUsageGraphResponse, RecommendationsCTRRateResponse,
-        RecommendationsConversionRateResponse, RecommendationsPerUserResponse,
-        RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
-        RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
-        SearchAnalyticsFilter, SearchAverageRatingResponse, SearchCTRMetrics,
-        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchConversionRateResponse,
-        SearchQueriesWithClicksCTRResponse, SearchQueriesWithClicksCTRResponseClickhouse,
-        SearchQueriesWithoutClicksCTRResponse, SearchQueriesWithoutClicksCTRResponseClickhouse,
-        SearchQueryEvent, SearchQueryEventClickhouse, SearchRevenueResponse, SearchSortBy,
-        SearchTypeCount, SearchesPerUserResponse, SortOrder, TopComponents, TopComponentsResponse,
-        TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages, TopPagesResponse,
-        TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse, TopicDetailsResponse,
-        TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse,
-        TotalUniqueUsersResponse,
+        CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ChatConversionRateResponse, ChatRevenueResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse, ComponentAnalyticsFilter, ComponentInteractionTimeResponse, ComponentNamesResponse, DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts, FloatTimePoint, FloatTimePointClickhouse, FollowupQueriesResponse, FollowupQuery, GetEventsResponseBody, Granularity, HeadQueries, IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularChat, PopularChatsResponse, PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse, RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse, RecommendationSortBy, RecommendationUsageGraphResponse, RecommendationsCTRRateResponse, RecommendationsConversionRateResponse, RecommendationsPerUserResponse, RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchAverageRatingResponse, SearchCTRMetrics, SearchCTRMetricsClickhouse, SearchClusterTopics, SearchConversionRateResponse, SearchQueriesWithClicksCTRResponse, SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse, SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent, SearchQueryEventClickhouse, SearchRevenueResponse, SearchSortBy, SearchTypeCount, SearchesPerUserResponse, SortOrder, TopComponents, TopComponentsResponse, TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages, TopPagesResponse, TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse, TopicDetailsResponse, TopicEventFilter, TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse, TotalUniqueUsersResponse
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
@@ -1737,19 +1713,19 @@ pub async fn get_event_by_id_query(
     Ok(clickhouse_query.into())
 }
 
-pub async fn get_events_by_topic_id_query(
+pub async fn get_events_by_topic_ids_query(
     dataset_id: uuid::Uuid,
-    topic_id: uuid::Uuid,
+    topic_ids: Vec<uuid::Uuid>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<Vec<EventData>, ServiceError> {
     let clickhouse_query = clickhouse_client
         .query(
             "SELECT ?fields from events 
 JOIN rag_queries ON rag_queries.id = toUUIDOrNull(events.request_id)
-WHERE rag_queries.dataset_id = ? AND rag_queries.topic_id = ?",
+WHERE rag_queries.dataset_id = ? AND rag_queries.topic_id in ?",
         )
         .bind(dataset_id)
-        .bind(topic_id)
+        .bind(topic_ids)
         .fetch_all::<EventDataClickhouse>()
         .await
         .map_err(|e| {
@@ -1841,7 +1817,7 @@ pub async fn get_topic_queries_query(
     filter: Option<TopicAnalyticsFilter>,
     sort_by: Option<RAGSortBy>,
     sort_order: Option<SortOrder>,
-    has_clicks: Option<bool>,
+    topic_events_filter: Option<TopicEventFilter>,
     page: Option<u32>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<TopicQueriesResponse, ServiceError> {
@@ -1864,13 +1840,29 @@ pub async fn get_topic_queries_query(
         ",
     );
 
-    if let Some(has_clicks) = has_clicks {
-        if has_clicks {
+    if let Some(topic_events_filter) = topic_events_filter {
+        let event_match_string = topic_events_filter
+            .event_types
+            .iter()
+            .map(|event_type| format!("event_type = '{}'", event_type))
+            .join(" OR ");
+
+        if topic_events_filter.inverted {
             query_string.push_str(
-                "JOIN events ON rag_queries.id = toUUID(events.request_id) AND events.event_type = 'click'",
+                format!(
+                    "JOIN events ON rag_queries.id = toUUID(events.request_id) AND ({})",
+                    event_match_string
+                )
+                .as_str(),
             );
         } else {
-            query_string.push_str("LEFT ANTI JOIN events ON rag_queries.id = toUUID(events.request_id) AND events.event_type = 'click'");
+            query_string.push_str(
+                format!(
+                    "LEFT ANTI JOIN events ON rag_queries.id = toUUID(events.request_id) AND ({})",
+                    event_match_string
+                )
+                .as_str(),
+            );
         }
     }
 
@@ -1918,8 +1910,13 @@ pub async fn get_topic_queries_query(
             ServiceError::InternalServerError("Error fetching topics".to_string())
         })?;
 
+    let topic_ids = topics.iter().map(|topic| topic.topic_id).collect();
+
+    let events = get_events_by_topic_ids_query(dataset_id, topic_ids, clickhouse_client).await?;
+
     Ok(TopicQueriesResponse {
         topics: topics.into_iter().map(|t| t.into()).collect(),
+        events,
     })
 }
 

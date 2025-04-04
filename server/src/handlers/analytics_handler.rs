@@ -484,7 +484,7 @@ pub async fn get_rag_analytics(
         RAGAnalytics::TopicQueries {
             filter,
             page,
-            has_clicks,
+            topic_events_filter,
             sort_by,
             sort_order,
         } => {
@@ -493,7 +493,7 @@ pub async fn get_rag_analytics(
                 filter,
                 sort_by,
                 sort_order,
-                has_clicks,
+                topic_events_filter,
                 page,
                 clickhouse_client.get_ref(),
             )
@@ -583,9 +583,9 @@ pub async fn get_rag_analytics(
             })
         }
         RAGAnalytics::EventsForTopic { topic_id } => {
-            let events = get_events_by_topic_id_query(
+            let events = get_events_by_topic_ids_query(
                 dataset_org_plan_sub.dataset.id,
-                topic_id,
+                vec![topic_id],
                 clickhouse_client.get_ref(),
             )
             .await?;

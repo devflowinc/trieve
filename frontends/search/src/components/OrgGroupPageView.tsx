@@ -55,7 +55,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
   );
   const [prevGroupOffsets, setPrevGroupOffsets] = createSignal<string[]>([]);
   const [nextGroupOffset, setNextGroupOffset] = createSignal<string | null>(
-    null
+    null,
   );
 
   const [groupPageCount, setGroupPageCount] = createSignal(1);
@@ -175,7 +175,8 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     setLoading(true);
 
     void fetch(
-      `${apiHost}/dataset/groups/${currentDataset.dataset.id
+      `${apiHost}/dataset/groups/${
+        currentDataset.dataset.id
       }/?use_cursor=true&cursor=${groupOffset()}`,
       {
         method: "GET",
@@ -231,7 +232,8 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
       return (delete_chunks: boolean) => {
         setDeleting(true);
         void fetch(
-          `${apiHost}/chunk_group/${group.id
+          `${apiHost}/chunk_group/${
+            group.id
           }?delete_chunks=${delete_chunks.toString()}`,
           {
             method: "DELETE",
@@ -366,9 +368,9 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                   each={
                     searchQuery()
                       ? searchResults().slice(
-                        (groupPage() - 1) * 10,
-                        groupPage() * 10,
-                      )
+                          (groupPage() - 1) * 10,
+                          groupPage() * 10,
+                        )
                       : groups()
                   }
                 >
@@ -410,7 +412,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                           <Show
                             when={
                               serverConfig()?.["DOCUMENT_DOWNLOAD_FEATURE"] !=
-                              false && group.file_id
+                                false && group.file_id
                             }
                           >
                             <button
@@ -470,13 +472,18 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
               </button>
               <button
                 class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
-                disabled={groupPage() == groupPageCount() && nextGroupOffset() == null}
+                disabled={
+                  groupPage() == groupPageCount() && nextGroupOffset() == null
+                }
                 onClick={() => {
                   setGroupPage((prev) => prev + 1);
                   const currentGroupOffset = groupOffset();
                   setGroupOffset(nextGroupOffset());
                   if (currentGroupOffset != null) {
-                    setPrevGroupOffsets((prevGroups) => [...prevGroups, currentGroupOffset]);
+                    setPrevGroupOffsets((prevGroups) => [
+                      ...prevGroups,
+                      currentGroupOffset,
+                    ]);
                   }
                 }}
               >
@@ -484,8 +491,8 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
               </button>
             </div>
           </div>
-        </Show >
-      </div >
+        </Show>
+      </div>
     </>
   );
 };
