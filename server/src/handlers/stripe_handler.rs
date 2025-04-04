@@ -247,7 +247,8 @@ pub async fn webhook(
                         )
                         .await?;
                         let metrics_sent =
-                            update_static_stripe_meters(usage_based_subscription, pool).await?;
+                            update_static_stripe_meters(usage_based_subscription.clone(), pool)
+                                .await?;
 
                         let subject = format!(
                             "Send static stripe billing for organization: '{}', id: {}",
