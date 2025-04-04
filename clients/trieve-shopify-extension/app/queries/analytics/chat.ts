@@ -16,6 +16,7 @@ import {
   TopicAnalyticsFilter,
   PopularChatsResponse,
   FollowupQueriesResponse,
+  TopicEventFilter,
 } from "trieve-ts-sdk";
 
 export const topicsUsageQuery = (
@@ -79,22 +80,35 @@ export const allChatsQuery = (
   trieve: TrieveSDK,
   filters: RAGAnalyticsFilter,
   page: number,
-  has_clicks?: boolean,
+  topic_event_filter: TopicEventFilter,
   sort_by?: RAGSortBy,
   sort_order?: SortOrder,
 ) => {
   return {
-    queryKey: ["all_chats", filters, page, has_clicks, sort_by, sort_order],
+    queryKey: [
+      "all_chats",
+      filters,
+      page,
+      topic_event_filter,
+      sort_by,
+      sort_order,
+    ],
     queryFn: async () => {
-      const result = await trieve.getRagAnalytics({
+      const result = (await trieve.getRagAnalytics({
         filter: filters,
         type: "topic_queries",
         page: page,
-        has_clicks,
+        topic_events_filter:
+          topic_event_filter.event_types.length > 0
+            ? topic_event_filter
+            : undefined,
         sort_by,
         sort_order,
-      });
-      return { topics: [] } as TopicQueriesResponse;
+      })) as TopicQueriesResponse;
+      return {
+        topics: result.topics,
+        events: result.events,
+      } satisfies TopicQueriesResponse;
     },
   } satisfies QueryOptions;
 };
