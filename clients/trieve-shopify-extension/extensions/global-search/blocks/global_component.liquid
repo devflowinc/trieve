@@ -1,7 +1,7 @@
 <link
   rel="stylesheet"
   href="https://cdn.trieve.ai/beta/search-component/index.css"
-/>
+>
 
 <script type="module">
   import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
@@ -9,8 +9,15 @@
 
   const root = document.createElement('div');
   root.id = "trieve-global-root";
-  const appMetafieldTrieve = {{ app.metafields.trieve | json }};
   document.body.appendChild(root);
+
+  const appMetafieldTrieve = {{ app.metafields.trieve | json }};
+  let defaultAiQuestions = {{ block.settings.default_ai_questions | json }};
+  if (defaultAiQuestions && typeof defaultAiQuestions === "string") {
+    defaultAiQuestions = defaultAiQuestions.split(",").map((question) => question.trim());
+  } else {
+    defaultAiQuestions = null;
+  }
 
   const toBool = (value) => value === 'true' || value === true;
   const getValue = (value, defaultValue) => {
@@ -21,28 +28,20 @@
   };
 
   if (!appMetafieldTrieve.dataset_id || !appMetafieldTrieve.api_key) {
-    console.error("Trieve: Cannot render inline Triece comopnent due to missing dataset_id or api_key in the app metafields");
+    console.error("Trieve: Cannot render inline Trieve comopnent due to missing dataset_id or api_key in the app metafields");
   } else {
     renderToDiv(root, {
-      // Required values
       type: "ecommerce",
+      baseUrl: "https://api.trieve.ai",
+      useGroupSearch: true,
+      scaleRem: true,
+      hideOpenButton: true,
       apiKey: appMetafieldTrieve.api_key,
       datasetId: appMetafieldTrieve.dataset_id,
-      baseUrl: getValue("{{ block.settings.base_url }}", "http://localhost:8090"),
-      useGroupSearch: true,
-      allowSwitchingModes: toBool(getValue("{{ block.settings.allow_switching_modes }}", true)),
-      zIndex: Number(getValue("{{ block.settings.z_index }}", 21474830000000)),
-      scaleRem: true,
-      defaultSearchMode: getValue("{{ block.settings.default_search_mode }}", "chat"),
-      brandName: getValue("{{ block.settings.brand_name }}", ""),
+      zIndex: Number(getValue(appMetafieldTrieve.z_index, 2147483645)),
+      defaultAiQuestions,
       brandColor: getValue("{{ block.settings.brand_color }}", ""),
-      floatingSearchIconPosition: getValue("{{ block.settings.floating_icon_pos }}", "left"),
-      showFloatingSearchIcon: toBool(getValue("{{ block.settings.show_floating_search_icon }}", true)),
-      showFloatingInput: toBool(getValue("{{ block.settings.show_floating_input }}", false)),
-      placeholder: getValue("{{ block.settings.placeholder }}", "Search..."),
-      chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask Anything..."),
-      showFloatingButton: toBool(getValue("{{ block.settings.show_floating_button }}", false)),
-      floatingButtonPosition: getValue("{{ block.settings.floating_button_position }}", "bottom-right"),
+      chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask anything..."),
       suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
       followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
       numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
@@ -54,7 +53,11 @@
       getCartQuantity: (trackingId) => {
         return checkCartQuantity(parseInt(trackingId));
       },
-      hideOpenButton: true,
+      {% comment %} not on inline {% endcomment %}
+      showFloatingSearchIcon: toBool(getValue("{{ block.settings.show_floating_search_icon }}", true)),
+      floatingSearchIconPosition: getValue("{{ block.settings.floating_icon_pos }}", "left"),
+      allowSwitchingModes: false,
+      defaultSearchMode: "chat",
     });
   }
 </script>
@@ -69,34 +72,6 @@
   "name": "Trieve Global component",
   "target": "body",
   "settings": [
-    {
-      "type": "text",
-      "id": "base_url",
-      "label": "Base URL",
-      "default": "https://api.trieve.ai"
-    },
-    {
-      "type": "select",
-      "id": "default_search_mode",
-      "label": "Default Search Mode",
-      "options": [
-        { "label": "Search", "value": "search" },
-        { "label": "Chat", "value": "chat" }
-      ],
-      "default": "chat"
-    },
-    {
-      "type": "text",
-      "id": "placeholder",
-      "label": "Search Placeholder Text",
-      "default": "Search..."
-    },
-    {
-      "type": "text",
-      "id": "chat_placeholder",
-      "label": "Chat Placeholder Text",
-      "default": "Ask Anything..."
-    },
     {
       "type": "select",
       "id": "theme",
@@ -115,51 +90,27 @@
     },
     {
       "type": "text",
-      "id": "brand_name",
-      "label": "Brand Name",
-      "default": "TrieveAi"
-    },
-    {
-      "type": "checkbox",
-      "id": "suggested_queries",
-      "label": "Show Suggested Queries",
-      "default": true
-    },
-    {
-      "type": "number",
-      "id": "number_of_suggestions",
-      "label": "Number of Suggestions",
-      "default": 3
-    },
-    {
-      "type": "checkbox",
-      "id": "allow_switching_modes",
-      "label": "Allow Switching Modes",
-      "default": true
+      "id": "chat_placeholder",
+      "label": "Input Placeholder Text",
+      "default": "Ask anything..."
     },
     {
       "type": "checkbox",
       "id": "open_links_new_tab",
       "label": "Open Links in New Tab",
-      "default": false
+      "default": true
+    },
+    {
+      "id": "default_ai_questions",
+      "type": "textarea",
+      "label": "Initial Questions (Separated by commas)",
+      "placeholder": "What is your flagship product?, Surprise me!, Best items for gifts?"
     },
     {
       "type": "checkbox",
-      "id": "show_floating_button",
-      "label": "Show Floating Button",
-      "default": false
-    },
-    {
-      "type": "select",
-      "id": "floating_button_position",
-      "label": "Floating Button Position",
-      "options": [
-        { "label": "Top Left", "value": "top-left" },
-        { "label": "Top Right", "value": "top-right" },
-        { "label": "Bottom Left", "value": "bottom-left" },
-        { "label": "Bottom Right", "value": "bottom-right" }
-      ],
-      "default": "bottom-right"
+      "id": "show_floating_search_icon",
+      "label": "Show Floating Search Icon",
+      "default": true
     },
     {
       "type": "select",
@@ -170,23 +121,6 @@
         { "label": "Right", "value": "right" }
       ],
       "default": "left"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_floating_search_icon",
-      "label": "Show Floating Search Icon",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_floating_input",
-      "label": "Show Floating Input",
-      "default": false
-    },
-    {
-      "type": "number",
-      "id": "z_index",
-      "label": "Z-Index"
     }
   ]
 }
