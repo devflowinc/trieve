@@ -13,17 +13,16 @@ import {
   Page,
   InlineStack,
 } from "@shopify/polaris";
-import {
-  Link
-} from "@remix-run/react";
+import { Link } from "@remix-run/react";
 import { IndexTableHeading } from "@shopify/polaris/build/ts/src/components/IndexTable";
 import { NonEmptyArray } from "@shopify/polaris/build/ts/src/types";
 import {
   ChevronUpIcon,
   ChevronDownIcon,
   ViewIcon,
-} from '@shopify/polaris-icons';
-
+} from "@shopify/polaris-icons";
+import { ReactNode } from "react";
+import { add } from "date-fns";
 
 export interface Filter {
   key: string;
@@ -43,14 +42,14 @@ export interface AdvancedTableComponentProps {
   setPage: (page: (page: number) => number) => void;
   tabs: string[];
   label: string;
-  tableHeadings: { heading: string, tooltip: string, sortCol?: string }[];
-  sortOptions: IndexFiltersProps['sortOptions'];
+  tableHeadings: { heading: string; tooltip: string; sortCol?: string }[];
+  sortOptions: IndexFiltersProps["sortOptions"];
   sortSelected: string[];
   setSortSelected: (sortSelected: string[]) => void;
   tooltipContent: string;
   hasNext: boolean;
   loading: boolean;
-  appliedFilters: IndexFiltersProps['appliedFilters'];
+  appliedFilters: IndexFiltersProps["appliedFilters"];
   filters: Filter[];
   query: string;
   setQuery: (query: string) => void;
@@ -60,6 +59,7 @@ export interface AdvancedTableComponentProps {
   sortableColumns?: boolean[];
   onSort?: (index: number, direction: "ascending" | "descending") => void;
   disableSearch?: boolean;
+  additionalControls?: ReactNode;
 }
 
 export const AdvancedTableComponent = ({
@@ -85,6 +85,7 @@ export const AdvancedTableComponent = ({
   sortSelected,
   setSortSelected,
   disableSearch,
+  additionalControls,
 }: AdvancedTableComponentProps) => {
   const { mode, setMode } = useSetIndexFiltersMode();
 
@@ -96,37 +97,44 @@ export const AdvancedTableComponent = ({
   }));
 
   return (
-    <Page
-      title={label}
-      fullWidth={true}
-    >
+    <Page title={label} fullWidth={true}>
       <Card>
         <Box minHeight="14px">
-          <IndexFilters
-            sortOptions={sortOptions}
-            sortSelected={sortSelected}
-            onSort={setSortSelected}
-            mode={mode}
-            setMode={setMode}
-            tabs={indexTabs}
-            filters={filters.map((filter) => ({ ...filter, shortcut: true }))}
-            queryValue={query}
-            cancelAction={{
-              onAction: () => { },
-              disabled: false,
-              loading: false,
-            }}
-            borderlessQueryField={false}
-            appliedFilters={appliedFilters}
-            onQueryChange={setQuery}
-            onQueryClear={() => setQuery('')}
-            onClearAll={handleClearAll}
-            selected={selected}
-            onSelect={setSelected}
-            loading={loading}
-            canCreateNewView={false}
-            hideQueryField={disableSearch}
-          />
+          <div className="flex justify-end">
+            <div className="grow border-b border-b-neutral-200 flex items-end pb-1">
+              {additionalControls}
+            </div>
+            <div className="shrink-0">
+              <IndexFilters
+                sortOptions={sortOptions}
+                sortSelected={sortSelected}
+                onSort={setSortSelected}
+                mode={mode}
+                setMode={setMode}
+                tabs={[]}
+                filters={filters.map((filter) => ({
+                  ...filter,
+                  shortcut: true,
+                }))}
+                queryValue={query}
+                cancelAction={{
+                  onAction: () => {},
+                  disabled: false,
+                  loading: false,
+                }}
+                borderlessQueryField={false}
+                appliedFilters={appliedFilters}
+                onQueryChange={setQuery}
+                onQueryClear={() => setQuery("")}
+                onClearAll={handleClearAll}
+                selected={selected}
+                onSelect={setSelected}
+                loading={loading}
+                canCreateNewView={false}
+                hideQueryField={disableSearch}
+              />
+            </div>
+          </div>
           <IndexTable
             hasZebraStriping
             condensed={useBreakpoints().smDown}
@@ -138,11 +146,16 @@ export const AdvancedTableComponent = ({
               tableHeadings.map((heading, index) => {
                 return {
                   title: (
-                    <div onClick={() => {
-                      if (heading.sortCol) {
-                        setSortSelected([`${heading.sortCol} ${sortSelected[0].split(" ")[0] === heading.sortCol ? (sortSelected[0].split(" ")[1] === "asc" ? "desc" : "asc") : "asc"}`]);
-                      }
-                    }} className={`${heading.sortCol ? "cursor-pointer" : ""}`}>
+                    <div
+                      onClick={() => {
+                        if (heading.sortCol) {
+                          setSortSelected([
+                            `${heading.sortCol} ${sortSelected[0].split(" ")[0] === heading.sortCol ? (sortSelected[0].split(" ")[1] === "asc" ? "desc" : "asc") : "asc"}`,
+                          ]);
+                        }
+                      }}
+                      className={`${heading.sortCol ? "cursor-pointer" : ""}`}
+                    >
                       <div className="flex flex-row items-center">
                         <Tooltip content={heading.tooltip} hasUnderline>
                           <Text as="span" variant="bodyMd" fontWeight="bold">
@@ -150,13 +163,17 @@ export const AdvancedTableComponent = ({
                           </Text>
                         </Tooltip>
                         {heading.sortCol && (
-                          <span className="ml-1">{sortSelected[0].split(" ")[0] === heading.sortCol ? (sortSelected[0].split(" ")[1] === "asc" ? <Icon
-                            source={ChevronUpIcon}
-                            tone="base"
-                          /> : <Icon
-                            source={ChevronDownIcon}
-                            tone="base"
-                          />) : ""}
+                          <span className="ml-1">
+                            {sortSelected[0].split(" ")[0] ===
+                            heading.sortCol ? (
+                              sortSelected[0].split(" ")[1] === "asc" ? (
+                                <Icon source={ChevronUpIcon} tone="base" />
+                              ) : (
+                                <Icon source={ChevronDownIcon} tone="base" />
+                              )
+                            ) : (
+                              ""
+                            )}
                           </span>
                         )}
                       </div>
@@ -166,28 +183,31 @@ export const AdvancedTableComponent = ({
                 };
               }) as NonEmptyArray<IndexTableHeading>
             }
-            pagination={
-              {
-                hasNext, hasPrevious: page > 1, onNext: () => {
-                  setPage((prevPage) => prevPage + 1);
-                }, onPrevious: () => {
-                  setPage((prevPage) => prevPage - 1);
-                }
-              }
-            }
+            pagination={{
+              hasNext,
+              hasPrevious: page > 1,
+              onNext: () => {
+                setPage((prevPage) => prevPage + 1);
+              },
+              onPrevious: () => {
+                setPage((prevPage) => prevPage - 1);
+              },
+            }}
           >
             {data.map((row, index) => {
               return (
-                <IndexTable.Row key={index} id={index.toString()} position={index}>
+                <IndexTable.Row
+                  key={index}
+                  id={index.toString()}
+                  position={index}
+                >
                   {row.map((cell, innerIndex) => (
                     <IndexTable.Cell
                       key={innerIndex}
                       className="max-w-[200px] truncate"
                     >
                       {cell.url ? (
-                        <Link
-                          to={cell.url}
-                        >
+                        <Link to={cell.url}>
                           <InlineStack wrap={false}>
                             <ViewIcon width={20} />
                             <Text as="span" variant="bodyMd" truncate={true}>
@@ -195,7 +215,9 @@ export const AdvancedTableComponent = ({
                             </Text>
                           </InlineStack>
                         </Link>
-                      ) : cell.content}
+                      ) : (
+                        cell.content
+                      )}
                     </IndexTable.Cell>
                   ))}
                 </IndexTable.Row>
