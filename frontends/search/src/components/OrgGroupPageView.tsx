@@ -50,6 +50,14 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     GetChunkGroupCountResponse[]
   >([]);
   const [groupPage, setGroupPage] = createSignal(1);
+  const [groupOffset, setGroupOffset] = createSignal<string | null>(
+    "00000000-0000-0000-0000-000000000000",
+  );
+  const [prevGroupOffsets, setPrevGroupOffsets] = createSignal<string[]>([]);
+  const [nextGroupOffset, setNextGroupOffset] = createSignal<string | null>(
+    null
+  );
+
   const [groupPageCount, setGroupPageCount] = createSignal(1);
   const [deleting, setDeleting] = createSignal(false);
   const [loading, setLoading] = createSignal(true);
@@ -108,12 +116,12 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     if (!currentDataset) return;
 
     const fetchAllGroups = async () => {
-      let currentPage = 1;
-      let hasMore = true;
-
-      while (hasMore) {
+      const currentDataset = $dataset?.();
+      if (!currentDataset) return;
+      let cursor = "00000000-0000-0000-0000-000000000000";
+      while (cursor != null) {
         const response = await fetch(
-          `${apiHost}/dataset/groups/${currentDataset.dataset.id}/${currentPage}`,
+          `${apiHost}/dataset/groups/${currentDataset.dataset.id}?cursor=${cursor}&use_curosr=true`,
           {
             method: "GET",
             credentials: "include",
@@ -125,24 +133,29 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
           },
         );
 
-        if (response.ok) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const data = await response.json();
-          if (isChunkGroupPageDTO(data)) {
-            setAllGroups((prevGroups) => {
-              return [...prevGroups, ...data.groups];
-            });
-            hasMore = currentPage < data.total_pages && currentPage < 100;
-            currentPage++;
-          } else {
-            hasMore = false;
-          }
-        } else {
-          hasMore = false;
+        if (!response.ok) {
+          break;
         }
 
-        if (hasMore) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const data = await response.json();
+        if (!isChunkGroupPageDTO(data)) {
+          break;
+        }
+
+        setAllGroups((prevGroups) => {
+          return [...prevGroups, ...data.groups];
+        });
+
+        if (!data.next_cursor) {
+          break;
+        }
+
+        if (data.next_cursor) {
+          cursor = data.next_cursor;
           await new Promise((resolve) => setTimeout(resolve, 750));
+        } else {
+          break;
         }
       }
     };
@@ -162,7 +175,8 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     setLoading(true);
 
     void fetch(
-      `${apiHost}/dataset/groups/${currentDataset.dataset.id}/${groupPage()}`,
+      `${apiHost}/dataset/groups/${currentDataset.dataset.id
+      }/?use_cursor=true&cursor=${groupOffset()}`,
       {
         method: "GET",
         credentials: "include",
@@ -177,6 +191,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
           setLoading(false);
           if (isChunkGroupPageDTO(data)) {
             setGroups(data.groups);
+            setNextGroupOffset(data.next_cursor);
             setGroupPageCount(data.total_pages == 0 ? 1 : data.total_pages);
           } else {
             console.error("Invalid response", data);
@@ -203,6 +218,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
       );
       setSearchResults(results);
       setGroupPage(1);
+      setGroupOffset("00000000-0000-0000-0000-000000000000");
       setGroupPageCount(Math.ceil(results.length / 10));
     }
   });
@@ -215,8 +231,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
       return (delete_chunks: boolean) => {
         setDeleting(true);
         void fetch(
-          `${apiHost}/chunk_group/${
-            group.id
+          `${apiHost}/chunk_group/${group.id
           }?delete_chunks=${delete_chunks.toString()}`,
           {
             method: "DELETE",
@@ -351,9 +366,9 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                   each={
                     searchQuery()
                       ? searchResults().slice(
-                          (groupPage() - 1) * 10,
-                          groupPage() * 10,
-                        )
+                        (groupPage() - 1) * 10,
+                        groupPage() * 10,
+                      )
                       : groups()
                   }
                 >
@@ -395,7 +410,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                           <Show
                             when={
                               serverConfig()?.["DOCUMENT_DOWNLOAD_FEATURE"] !=
-                                false && group.file_id
+                              false && group.file_id
                             }
                           >
                             <button
@@ -442,23 +457,35 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                 disabled={groupPage() == 1}
                 onClick={() => {
                   setGroupPage((prev) => prev - 1);
+                  const currentGroupOffset = groupOffset();
+                  // pop from prevGroup <Offset>
+                  const prevGroupOffset = prevGroupOffsets().pop();
+                  if (prevGroupOffset != null) {
+                    setGroupOffset(prevGroupOffset);
+                    setNextGroupOffset(currentGroupOffset);
+                  }
                 }}
               >
                 <BiRegularChevronLeft class="h-6 w-6 fill-current" />
               </button>
               <button
                 class="disabled:text-neutral-400 dark:disabled:text-neutral-500"
-                disabled={groupPage() == groupPageCount()}
+                disabled={groupPage() == groupPageCount() && nextGroupOffset() == null}
                 onClick={() => {
                   setGroupPage((prev) => prev + 1);
+                  const currentGroupOffset = groupOffset();
+                  setGroupOffset(nextGroupOffset());
+                  if (currentGroupOffset != null) {
+                    setPrevGroupOffsets((prevGroups) => [...prevGroups, currentGroupOffset]);
+                  }
                 }}
               >
                 <BiRegularChevronRight class="h-6 w-6 fill-current" />
               </button>
             </div>
           </div>
-        </Show>
-      </div>
+        </Show >
+      </div >
     </>
   );
 };

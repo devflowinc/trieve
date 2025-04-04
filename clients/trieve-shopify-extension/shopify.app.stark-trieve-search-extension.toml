@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "39654580026bc6aa0906bea48fd3f77d"
-application_url = "https://shopify.trieve.ai"
+application_url = "https://inn-ever-tn-vendor.trycloudflare.com"
 embedded = true
 name = "stark-trieve-search-extension"
 handle = "stark-trieve-search-extension"
@@ -22,15 +22,27 @@ api_version = "2025-01"
   topics = [ "app/uninstalled" ]
   uri = "/webhooks/app/uninstalled"
 
+  [[webhooks.subscriptions]]
+  topics = [ "products/create" ]
+  uri = "/webhooks/app/products/create"
+
+  [[webhooks.subscriptions]]
+  topics = [ "products/update" ]
+  uri = "/webhooks/app/products/update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "products/delete" ]
+  uri = "/webhooks/app/products/delete"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,read_products"
+scopes = "write_products,read_products,read_themes"
 
 [auth]
 redirect_urls = [
-  "https://shopify.trieve.ai/auth/callback",
-  "https://shopify.trieve.ai/auth/shopify/callback",
-  "https://shopify.trieve.ai/api/auth/callback"
+  "https://inn-ever-tn-vendor.trycloudflare.com/auth/callback",
+  "https://inn-ever-tn-vendor.trycloudflare.com/auth/shopify/callback",
+  "https://inn-ever-tn-vendor.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
