@@ -19,7 +19,12 @@
   if (productMetafieldsTrieve && Object.keys(productMetafieldsTrieve).includes("trievePDPQuestions")) {
     trievePDPQuestions = productMetafieldsTrieve.trievePDPQuestions;
   }
-  let defaultAiQuestions = null;
+  let defaultAiQuestions = {{ block.settings.default_ai_questions | json }};
+  if (defaultAiQuestions && typeof defaultAiQuestions === "string") {
+    defaultAiQuestions = defaultAiQuestions.split(",").map((question) => question.trim());
+  } else {
+    defaultAiQuestions = null;
+  }
   if (trievePDPQuestions && trievePDPQuestions.length > 0) {
     defaultAiQuestions = trievePDPQuestions.map((question) => question.text);
   }
@@ -33,38 +38,36 @@
   };
 
   if (!appMetafieldTrieve.dataset_id || !appMetafieldTrieve.api_key) {
-    console.error("Trieve: Cannot render inline Triece comopnent due to missing dataset_id or api_key in the app metafields");
+    console.error("Trieve: Cannot render inline Trieve comopnent due to missing dataset_id or api_key in the app metafields");
   } else {
     renderToDiv(inlineRoot, {
-      inline: true,
+      type: "ecommerce",
+      baseUrl: "https://api.trieve.ai",
+      useGroupSearch: true,
+      scaleRem: true,
+      hideOpenButton: true,
       apiKey: appMetafieldTrieve.api_key,
       datasetId: appMetafieldTrieve.dataset_id,
-      baseUrl: getValue("{{ block.settings.base_url }}", "http://localhost:8090"),
-      type: "ecommerce",
-      useGroupSearch: true,
-      allowSwitchingModes: toBool(getValue("{{ block.settings.allow_switching_modes }}", true)),
-      zIndex: Number(getValue("{{ block.settings.z_index }}", 2147483645)),
-      scaleRem: true,
-      defaultSearchMode: getValue("{{ block.settings.default_search_mode }}", "chat"),
-      brandName: getValue("{{ block.settings.brand_name }}", ""),
+      zIndex: Number(getValue(appMetafieldTrieve.z_index, 2147483645)),
+      defaultAiQuestions,
       brandColor: getValue("{{ block.settings.brand_color }}", ""),
-      placeholder: getValue("{{ block.settings.placeholder }}", "Search..."),
-      chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask Anything..."),
+      chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask anything..."),
       suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
       followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
       numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
-      defaultAiQuestions,
+      openLinksInNewTab: toBool(getValue("{{ block.settings.open_links_new_tab }}", true)),
       theme: getValue("{{ block.settings.theme }}", "light"),
-      inlineHeader: "{{ block.settings.inline_header }} ",
-      groupTrackingId: productId ? productId.toString() : undefined,
-      cleanGroupName: productTitle ?? undefined,
       onAddToCart: (chunk) => {
         addToCart(parseInt(chunk.tracking_id))
       },
       getCartQuantity: (trackingId) => {
         return checkCartQuantity(parseInt(trackingId));
       },
-      hideOpenButton: true,
+      {% comment %} not on global {% endcomment %}
+      inlineHeader: "",
+      inline: true,
+      groupTrackingId: productId ? productId.toString() : undefined,
+      cleanGroupName: productTitle ?? undefined,
     });
   }
 </script>
@@ -77,6 +80,42 @@
 {% schema %}
 {
   "name": "Trieve Product Chat",
-  "target": "section"
+  "target": "section",
+  "settings": [
+    {
+      "type": "select",
+      "id": "theme",
+      "label": "Theme",
+      "options": [
+        { "label": "Light", "value": "light" },
+        { "label": "Dark", "value": "dark" }
+      ],
+      "default": "light"
+    },
+    {
+      "type": "color",
+      "id": "brand_color",
+      "label": "Brand Color",
+      "default": "#ff0000"
+    },
+    {
+      "type": "text",
+      "id": "chat_placeholder",
+      "label": "Input Placeholder Text",
+      "default": "Ask anything..."
+    },
+    {
+      "type": "checkbox",
+      "id": "open_links_new_tab",
+      "label": "Open Links in New Tab",
+      "default": true
+    },
+    {
+      "id": "default_ai_questions",
+      "type": "textarea",
+      "label": "Initial Questions (Separated by commas)",
+      "placeholder": "What is this made of?"
+    }
+  ]
 }
 {% endschema %}
