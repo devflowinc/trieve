@@ -28,10 +28,8 @@ export const PricingTable = (props: PricingTableProps) => {
       props.currentOrgSubPlan?.subscription?.type === "usage_based" &&
       props.currentOrgSubPlan?.plan?.id
     ) {
-      const startOfBill = formatDateForApi(
-        new Date(
-          `${props.currentOrgSubPlan?.subscription.last_cycle_timestamp}Z`,
-        ),
+      const startOfBill = new Date(
+        `${props.currentOrgSubPlan?.subscription.last_cycle_timestamp}Z`,
       );
       setStartOfBill(new Date(startOfBill));
       void fetch(
@@ -46,9 +44,10 @@ export const PricingTable = (props: PricingTableProps) => {
           body: JSON.stringify({
             date_range: {
               gte: formatDateForApi(
-                new Date(
-                  props.currentOrgSubPlan?.subscription.last_cycle_timestamp,
-                ),
+                startOfBill,
+              ),
+              lte: formatDateForApi(
+                addMonths(startOfBill, 1),
               ),
             },
           }),

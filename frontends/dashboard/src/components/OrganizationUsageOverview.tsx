@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, useContext } from "solid-js";
+import { createEffect, createSignal, useContext } from "solid-js";
 import { ProgressBar } from "./ProgressBar";
 import {
   formatNumberWithCommas,
@@ -7,13 +7,13 @@ import {
 } from "../utils/formatNumbers";
 import { UserContext } from "../contexts/UserContext";
 import { useTrieve } from "../hooks/useTrieve";
-import {
-  createUsageQuery,
-  createSubscriptionQuery,
-} from "../utils/fetchOrgUsage";
+import { createSubscriptionQuery } from "../utils/fetchOrgUsage";
 import { addMonths, startOfMonth } from "date-fns";
 import { formatDateForApi } from "../analytics/utils/formatDate";
-import { OrganizationWithSubAndPlan } from "trieve-ts-sdk";
+import {
+  ExtendedOrganizationUsageCount,
+  OrganizationWithSubAndPlan,
+} from "trieve-ts-sdk";
 
 export interface OrganizationUsageOverviewProps {
   currentOrgSubPlan: OrganizationWithSubAndPlan | null;
@@ -26,12 +26,24 @@ export const OrganizationUsageOverview = (
   const trieve = useTrieve();
 
   const [startDate, setStartDate] = createSignal(startOfMonth(new Date()));
+  const [organizationUsage, setOrganizationUsage] =
+    createSignal<ExtendedOrganizationUsageCount | null>(null);
 
-  const usageQuery = createMemo(() => {
-    return createUsageQuery(userContext, trieve, {
-      startDate: formatDateForApi(startDate()),
-      endDate: formatDateForApi(addMonths(startDate(), 1)),
-    });
+  createEffect(() => {
+    void trieve
+      .fetch("/api/organization/usage/{organization_id}", "post", {
+        organizationId: userContext.selectedOrg().id,
+        data: {
+          date_range: {
+            gte: formatDateForApi(startDate()),
+            lte: formatDateForApi(addMonths(startDate(), 1)),
+          },
+          v1_usage: false,
+        },
+      })
+      .then((organization_usage) => {
+        setOrganizationUsage(organization_usage);
+      });
   });
 
   const subscriptionQuery = createSubscriptionQuery(userContext, trieve);
@@ -71,7 +83,7 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery().data?.user_count ?? 0)}
+                {formatNumberWithCommas(organizationUsage()?.user_count ?? 0)}
                 {props.currentOrgSubPlan?.subscription?.type !==
                   "usage_based" && (
                   <span class="ml-2 text-sm font-medium text-neutral-600">
@@ -85,7 +97,7 @@ export const OrganizationUsageOverview = (
               <ProgressBar
                 width={"200px"}
                 max={subscriptionQuery.data?.plan?.user_count || 0}
-                progress={usageQuery().data?.user_count || 0}
+                progress={organizationUsage()?.user_count || 0}
               />
             </div>
           </dd>
@@ -95,7 +107,7 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatStorageKb(usageQuery().data?.file_storage ?? 0)}
+                {formatStorageKb(organizationUsage()?.file_storage ?? 0)}
                 {props.currentOrgSubPlan?.subscription?.type !==
                   "usage_based" && (
                   <span class="ml-2 text-sm font-medium text-neutral-600">
@@ -109,7 +121,7 @@ export const OrganizationUsageOverview = (
               <ProgressBar
                 width={"200px"}
                 max={subscriptionQuery.data?.plan?.file_storage || 0}
-                progress={usageQuery().data?.file_storage || 0}
+                progress={organizationUsage()?.file_storage || 0}
               />
             </div>
           </dd>
@@ -119,7 +131,9 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery().data?.message_count ?? 0)}
+                {formatNumberWithCommas(
+                  organizationUsage()?.message_count ?? 0,
+                )}
                 {props.currentOrgSubPlan?.subscription?.type !==
                   "usage_based" && (
                   <span class="ml-2 text-sm font-medium text-neutral-600">
@@ -133,7 +147,7 @@ export const OrganizationUsageOverview = (
               <ProgressBar
                 width={"200px"}
                 max={subscriptionQuery.data?.plan?.message_count || 0}
-                progress={usageQuery().data?.message_count || 0}
+                progress={organizationUsage()?.message_count || 0}
               />
             </div>
           </dd>
@@ -143,7 +157,7 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery().data?.chunk_count ?? 0)}
+                {formatNumberWithCommas(organizationUsage()?.chunk_count ?? 0)}
                 {props.currentOrgSubPlan?.subscription?.type !==
                   "usage_based" && (
                   <span class="ml-2 text-sm font-medium text-neutral-600">
@@ -157,7 +171,7 @@ export const OrganizationUsageOverview = (
               <ProgressBar
                 width={"200px"}
                 max={subscriptionQuery.data?.plan?.chunk_count || 0}
-                progress={usageQuery().data?.chunk_count || 0}
+                progress={organizationUsage()?.chunk_count || 0}
               />
             </div>
           </dd>
@@ -167,7 +181,9 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery().data?.dataset_count ?? 0)}
+                {formatNumberWithCommas(
+                  organizationUsage()?.dataset_count ?? 0,
+                )}
                 {props.currentOrgSubPlan?.subscription?.type !==
                   "usage_based" && (
                   <span class="ml-2 text-sm font-medium text-neutral-600">
@@ -181,7 +197,7 @@ export const OrganizationUsageOverview = (
               <ProgressBar
                 width={"200px"}
                 max={subscriptionQuery.data?.plan?.dataset_count || 0}
-                progress={usageQuery().data?.dataset_count || 0}
+                progress={organizationUsage()?.dataset_count || 0}
               />
             </div>
           </dd>
@@ -192,7 +208,7 @@ export const OrganizationUsageOverview = (
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
                 {formatNumberWithCommas(
-                  usageQuery().data?.tokens_ingested ?? 0,
+                  organizationUsage()?.tokens_ingested ?? 0,
                 )}
               </div>
             </div>
@@ -203,7 +219,7 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatStorageBytes(usageQuery().data?.bytes_ingested ?? 0)}
+                {formatStorageBytes(organizationUsage()?.bytes_ingested ?? 0)}
               </div>
             </div>
           </dd>
@@ -213,7 +229,9 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery().data?.search_tokens ?? 0)}
+                {formatNumberWithCommas(
+                  organizationUsage()?.search_tokens ?? 0,
+                )}
               </div>
             </div>
           </dd>
@@ -223,7 +241,9 @@ export const OrganizationUsageOverview = (
           <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
-                {formatNumberWithCommas(usageQuery().data?.message_tokens ?? 0)}
+                {formatNumberWithCommas(
+                  organizationUsage()?.message_tokens ?? 0,
+                )}
               </div>
             </div>
           </dd>
@@ -234,7 +254,7 @@ export const OrganizationUsageOverview = (
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
                 {formatNumberWithCommas(
-                  usageQuery().data?.ocr_pages_ingested ?? 0,
+                  organizationUsage()?.ocr_pages_ingested ?? 0,
                 )}
               </div>
             </div>
@@ -246,7 +266,7 @@ export const OrganizationUsageOverview = (
             <div class="flex flex-col items-baseline gap-3 text-2xl font-semibold text-magenta">
               <div>
                 {formatNumberWithCommas(
-                  usageQuery().data?.website_pages_scraped ?? 0,
+                  organizationUsage()?.website_pages_scraped ?? 0,
                 )}
               </div>
             </div>
