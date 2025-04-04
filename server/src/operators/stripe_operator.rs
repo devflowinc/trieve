@@ -1190,7 +1190,7 @@ pub async fn update_stripe_usage_based_subscription(
 }
 
 pub struct BillingPrice {
-    pub free_tier: i64,
+    pub free_tier: u64,
     pub past_free_tier_charge: f64,
     pub guage_name: String,
 }
@@ -1262,7 +1262,7 @@ pub async fn get_bill_from_range(
                         .clone();
 
                     Ok(BillingPrice {
-                        free_tier,
+                        free_tier: free_tier as u64,
                         past_free_tier_charge: per_unit_price.parse::<f64>().map_err(|_| {
                             ServiceError::BadRequest("Failed to format unit price".to_string())
                         })? / 100.0f64,
@@ -1282,57 +1282,57 @@ pub async fn get_bill_from_range(
         .into_iter()
         .collect::<Result<Vec<BillingPrice>, ServiceError>>()?;
 
-    let all_events: Vec<(&str, String, i64)> = vec![
+    let all_events: Vec<(&str, String, u64)> = vec![
         (
             "chunk_storage_mb",
             "Chunk Storage (MB)".to_string(),
-            get_storage_mb_from_chunk_count(usage.chunk_count),
+            get_storage_mb_from_chunk_count(usage.chunk_count) as u64,
         ),
         (
             "file_storage_mb",
             "File Storage (MB)".to_string(),
-            (usage.file_storage * 1024),
+            (usage.file_storage * 1024) as u64,
         ),
-        ("users", "Users".to_string(), usage.user_count as i64),
+        ("users", "Users".to_string(), usage.user_count as u64),
         (
             "dataset_count",
             "Datasets".to_string(),
-            usage.dataset_count as i64,
+            usage.dataset_count as u64,
         ),
         (
             "search_tokens",
             "Search Tokens".to_string(),
-            usage.search_tokens as i64,
+            usage.search_tokens as u64,
         ),
         (
             "message_tokens",
             "Message Tokens".to_string(),
-            usage.message_tokens as i64,
+            usage.message_tokens as u64,
         ),
         (
             "bytes_ingested",
             "Bytes Ingested".to_string(),
-            usage.bytes_ingested as i64,
+            usage.bytes_ingested as u64,
         ),
         (
             "tokens_ingested",
             "Tokens Ingested".to_string(),
-            usage.tokens_ingested as i64,
+            usage.tokens_ingested as u64,
         ),
         (
             "pages_crawled",
             "Pages Crawled".to_string(),
-            usage.website_pages_scraped as i64,
+            usage.website_pages_scraped as u64,
         ),
         (
             "ocr_pages",
             "OCR Pages".to_string(),
-            usage.ocr_pages_ingested as i64,
+            usage.ocr_pages_ingested as u64,
         ),
         (
             "analytics_events",
             "Analytics Events".to_string(),
-            usage.events_ingested as i64,
+            usage.events_ingested as u64,
         ),
     ];
 

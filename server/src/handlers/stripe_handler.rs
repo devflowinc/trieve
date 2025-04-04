@@ -668,7 +668,7 @@ pub struct BillingEstimate {
 pub struct BillItem {
     pub name: String,
     pub clean_name: String,
-    pub usage_amount: i64,
+    pub usage_amount: u64,
     pub amount: f64,
 }
 
