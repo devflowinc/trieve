@@ -19275,6 +19275,15 @@
           "pages_crawls_price_id": {
             "type": "string"
           },
+          "platform_price_amount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "platform_price_id": {
+            "type": "string",
+            "nullable": true
+          },
           "search_tokens_price_id": {
             "type": "string"
           },
