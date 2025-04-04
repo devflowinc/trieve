@@ -4,6 +4,7 @@ use broccoli_queue::{
     queue::{BroccoliQueue, ConsumeOptions},
 };
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
+use serde::{Deserialize, Serialize};
 use signal_hook::consts::SIGTERM;
 use std::{
     error::Error,
@@ -20,6 +21,7 @@ use trieve_server::{
         group_operator::{create_group_from_file_query, create_groups_query},
     },
 };
+use utoipa::ToSchema;
 
 const HEADING_CHUNKING_SYSTEM_PROMPT: &str = "
 Analyze this PDF page and restructure it into clear markdown sections based on the content topics. For each distinct topic or theme discussed:
@@ -172,14 +174,16 @@ async fn file_worker(
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+#[derive(serde::Deserialize, Serialize, Clone, Debug)]
 pub struct CreateFileTaskResponse {
     pub id: uuid::Uuid,
+    pub file_name: String,
     pub status: FileTaskStatus,
-    pub pos_in_queue: String,
+    /// Only returned if the provider is LLM.
+    pub pos_in_queue: Option<String>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub enum FileTaskStatus {
     Created,
     ProcessingFile(u32),
@@ -188,7 +192,7 @@ pub enum FileTaskStatus {
     Failed,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PollTaskResponse {
     pub id: String,
     pub file_name: String,
@@ -201,11 +205,60 @@ pub struct PollTaskResponse {
     pub pagination_token: Option<u32>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct BoundingBox {
+    pub height: f32,
+    pub left: f32,
+    pub top: f32,
+    pub width: f32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct OCRResult {
+    pub bbox: BoundingBox,
+    pub confidence: Option<f32>,
+    pub text: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ToSchema)]
+pub enum SegmentType {
+    Caption,
+    Footnote,
+    Formula,
+    ListItem,
+    Page,
+    PageFooter,
+    PageHeader,
+    Picture,
+    SectionHeader,
+    Table,
+    Text,
+    Title,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct Segment {
+    pub bbox: BoundingBox,
+    pub confidence: Option<f32>,
+    pub content: String,
+    pub html: String,
+    pub image: Option<String>,
+    pub llm: Option<String>,
+    pub markdown: String,
+    pub ocr: Option<Vec<OCRResult>>,
+    pub page_height: f32,
+    pub page_number: u32,
+    pub page_width: f32,
+    pub segment_id: String,
+    pub segment_type: SegmentType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PdfToMdPage {
     pub id: String,
     pub task_id: String,
     pub content: String,
+    pub segments: Option<Vec<Segment>>,
     pub page_num: u32,
     pub usage: serde_json::Value,
     pub created_at: String,
@@ -311,6 +364,10 @@ async fn upload_file(
             .pdf2md_options
             .as_ref()
             .is_some_and(|options| options.use_pdf2md_ocr)
+        || file_worker_message
+            .upload_file_data
+            .chunkr_create_task_req_payload
+            .is_some()
     {
         log::info!("Using pdf2md for OCR for file");
         let pdf2md_url = std::env::var("PDF2MD_URL")
@@ -326,6 +383,16 @@ async fn upload_file(
             "file_name": file_name,
             "base64_file": encoded_file.clone()
         });
+
+        if let Some(chunkr_create_task_req_payload) = file_worker_message
+            .upload_file_data
+            .chunkr_create_task_req_payload
+            .clone()
+        {
+            json_value["chunkr_create_task_req_payload"] =
+                serde_json::json!(chunkr_create_task_req_payload);
+            json_value["provider"] = serde_json::json!("Chunkr");
+        }
 
         if let Some(system_prompt) = &file_worker_message
             .upload_file_data
@@ -362,18 +429,31 @@ async fn upload_file(
                 BroccoliError::Job("Could not send file to pdf2md".to_string())
             })?;
 
-        let response = pdf2md_response.json::<CreateFileTaskResponse>().await;
+        let is_success = pdf2md_response.status().is_success();
 
-        let task_id = match response {
-            Ok(response) => response.id,
-            Err(err) => {
-                log::error!("Could not parse id from pdf2md {:?}", err);
-                return Err(BroccoliError::Job(format!(
-                    "Could not parse id from pdf2md {:?}",
-                    err
-                )));
-            }
-        };
+        let response_body: serde_json::Value = pdf2md_response.json().await.map_err(|err| {
+            log::error!("Could not get pdf2md response body {:?}", err);
+            BroccoliError::Job("Could not get pdf2md response body".to_string())
+        })?;
+
+        if !is_success {
+            log::error!("pdf2md response body: {:?}", response_body.clone());
+            return Err(BroccoliError::Job(
+                "Could not send file to pdf2md".to_string(),
+            ));
+        }
+
+        let response = serde_json::from_value::<CreateFileTaskResponse>(response_body.clone())
+            .map_err(|err| {
+                log::error!(
+                    "Could not parse pdf2md response {:?}, {:?}",
+                    err,
+                    response_body
+                );
+                BroccoliError::Job("Could not parse pdf2md response".to_string())
+            })?;
+
+        let task_id = response.id;
 
         log::info!("Waiting on Task {}", task_id);
         let mut processed_pages = std::collections::HashSet::new();
@@ -446,12 +526,18 @@ async fn upload_file(
                                 metadata["page_num"] = serde_json::json!(page.page_num);
                                 metadata["file_name"] = serde_json::json!(task_response.file_name);
                                 metadata["file_id"] = serde_json::json!(file_id);
+                                metadata["file_url"] =
+                                    serde_json::json!(task_response.file_url.clone());
+                                metadata["segments"] =
+                                    serde_json::json!(page.segments.clone().unwrap_or_default());
                                 metadata
                             })
                             .or(Some(serde_json::json!({
                                 "page_num": page.page_num,
                                 "file_name": task_response.file_name,
-                                "file_id": file_id
+                                "file_id": file_id,
+                                "file_url": task_response.file_url.clone(),
+                                "segments": page.segments.clone().unwrap_or_default(),
                             })));
 
                         let create_chunk_data = ChunkReqPayload {

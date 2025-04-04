@@ -7410,6 +7410,48 @@
           "redirect_uri": "https://api.trieve.ai"
         }
       },
+      "AutoGenerationConfig": {
+        "type": "object",
+        "description": "Controls the processing and generation for the segment.\n- `crop_image` controls whether to crop the file's images to the segment's bounding box.\nThe cropped image will be stored in the segment's `image` field. Use `All` to always crop,\nor `Auto` to only crop when needed for post-processing.\n- `html` is the HTML output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)\n- `llm` is the LLM-generated output for the segment, this uses off-the-shelf models to generate a custom output for the segment\n- `markdown` is the Markdown output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)\n- `embed_sources` defines which content sources will be included in the chunk's embed field and counted towards the chunk length.\nThe array's order determines the sequence in which content appears in the embed field (e.g., [Markdown, LLM] means Markdown content\nis followed by LLM content). This directly affects what content is available for embedding and retrieval.",
+        "properties": {
+          "crop_image": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CroppingStrategy"
+              }
+            ],
+            "default": "Auto"
+          },
+          "embed_sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmbedSource"
+            },
+            "default": "[Markdown]"
+          },
+          "html": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GenerationStrategy"
+              }
+            ],
+            "default": "Auto"
+          },
+          "llm": {
+            "type": "string",
+            "description": "Prompt for the LLM mode",
+            "nullable": true
+          },
+          "markdown": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GenerationStrategy"
+              }
+            ],
+            "default": "Auto"
+          }
+        }
+      },
       "AutocompleteReqPayload": {
         "type": "object",
         "required": [
@@ -8660,6 +8702,32 @@
           "tracking_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "updated_at": "2021-01-01 00:00:00.000",
           "weight": 0.5
+        }
+      },
+      "ChunkProcessing": {
+        "type": "object",
+        "description": "Controls the setting for the chunking and post-processing of each chunk.",
+        "properties": {
+          "ignore_headers_and_footers": {
+            "type": "boolean",
+            "description": "Whether to ignore headers and footers in the chunking process.\nThis is recommended as headers and footers break reading order across pages.",
+            "default": true
+          },
+          "target_length": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The target number of words in each chunk. If 0, each chunk will contain a single segment.",
+            "default": 512,
+            "minimum": 0
+          },
+          "tokenizer": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TokenizerType"
+              }
+            ],
+            "default": "Word"
+          }
         }
       },
       "ChunkReqPayload": {
@@ -10007,6 +10075,67 @@
           }
         }
       },
+      "CreateFormWithoutFile": {
+        "type": "object",
+        "description": "Will use [chunkr.ai](https://chunkr.ai) to process the file when this object is defined. See [docs.chunkr.ai/api-references/task/create-task](https://docs.chunkr.ai/api-references/task/create-task) for detailed information about what each field on this request payload does.",
+        "properties": {
+          "chunk_processing": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChunkProcessing"
+              }
+            ],
+            "nullable": true
+          },
+          "expires_in": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The number of seconds until task is deleted.\nExpried tasks can **not** be updated, polled or accessed via web interface.",
+            "nullable": true
+          },
+          "high_resolution": {
+            "type": "boolean",
+            "description": "Whether to use high-resolution images for cropping and post-processing. (Latency penalty: ~7 seconds per page)",
+            "default": false,
+            "nullable": true
+          },
+          "ocr_strategy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OcrStrategy"
+              }
+            ],
+            "default": "All",
+            "nullable": true
+          },
+          "pipeline": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PipelineType"
+              }
+            ],
+            "default": "Azure",
+            "nullable": true
+          },
+          "segment_processing": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SegmentProcessing"
+              }
+            ],
+            "nullable": true
+          },
+          "segmentation_strategy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SegmentationStrategy"
+              }
+            ],
+            "default": "LayoutAnalysis",
+            "nullable": true
+          }
+        }
+      },
       "CreateMessageReqPayload": {
         "type": "object",
         "required": [
@@ -10380,6 +10509,14 @@
             "description": "The owner_id of the topic. This is typically a browser fingerprint or your user's id. It is used to group topics together for a user."
           }
         }
+      },
+      "CroppingStrategy": {
+        "type": "string",
+        "description": "Controls the cropping strategy for an item (e.g. segment, chunk, etc.)\n- `All` crops all images in the item\n- `Auto` crops images only if required for post-processing",
+        "enum": [
+          "All",
+          "Auto"
+        ]
       },
       "Dataset": {
         "type": "object",
@@ -11130,6 +11267,15 @@
             "nullable": true
           }
         }
+      },
+      "EmbedSource": {
+        "type": "string",
+        "enum": [
+          "HTML",
+          "Markdown",
+          "LLM",
+          "Content"
+        ]
       },
       "ErrorResponseBody": {
         "type": "object",
@@ -12537,6 +12683,13 @@
           "stream_response": true
         }
       },
+      "GenerationStrategy": {
+        "type": "string",
+        "enum": [
+          "LLM",
+          "Auto"
+        ]
+      },
       "GeoInfo": {
         "type": "object",
         "description": "Location that you want to use as the center of the search.",
@@ -13492,6 +13645,48 @@
           }
         }
       },
+      "LlmGenerationConfig": {
+        "type": "object",
+        "description": "Controls the processing and generation for the segment.\n- `crop_image` controls whether to crop the file's images to the segment's bounding box.\nThe cropped image will be stored in the segment's `image` field. Use `All` to always crop,\nor `Auto` to only crop when needed for post-processing.\n- `html` is the HTML output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)\n- `llm` is the LLM-generated output for the segment, this uses off-the-shelf models to generate a custom output for the segment\n- `markdown` is the Markdown output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)\n- `embed_sources` defines which content sources will be included in the chunk's embed field and counted towards the chunk length.\nThe array's order determines the sequence in which content appears in the embed field (e.g., [Markdown, LLM] means Markdown content\nis followed by LLM content). This directly affects what content is available for embedding and retrieval.",
+        "properties": {
+          "crop_image": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CroppingStrategy"
+              }
+            ],
+            "default": "Auto"
+          },
+          "embed_sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmbedSource"
+            },
+            "default": "[Markdown]"
+          },
+          "html": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GenerationStrategy"
+              }
+            ],
+            "default": "LLM"
+          },
+          "llm": {
+            "type": "string",
+            "description": "Prompt for the LLM model",
+            "nullable": true
+          },
+          "markdown": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GenerationStrategy"
+              }
+            ],
+            "default": "LLM"
+          }
+        }
+      },
       "LocationBoundingBox": {
         "type": "object",
         "required": [
@@ -13849,6 +14044,14 @@
           }
         ]
       },
+      "OcrStrategy": {
+        "type": "string",
+        "description": "Controls the Optical Character Recognition (OCR) strategy.\n- `All`: Processes all pages with OCR. (Latency penalty: ~0.5 seconds per page)\n- `Auto`: Selectively applies OCR only to pages with missing or low-quality text. When text layer is present the bounding boxes from the text layer are used.",
+        "enum": [
+          "All",
+          "Auto"
+        ]
+      },
       "OpenGraphMetadata": {
         "type": "object",
         "properties": {
@@ -14082,6 +14285,7 @@
       },
       "Pdf2MdOptions": {
         "type": "object",
+        "description": "We plan to deprecate pdf2md in favor of chunkr.ai. This is a legacy option for using a vision LLM to convert a given file into markdown and then ingest it.",
         "required": [
           "use_pdf2md_ocr"
         ],
@@ -14101,6 +14305,63 @@
             "description": "Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o. Default is false."
           }
         }
+      },
+      "PictureCroppingStrategy": {
+        "type": "string",
+        "description": "Controls the cropping strategy for an item (e.g. segment, chunk, etc.)\n- `All` crops all images in the item\n- `Auto` crops images only if required for post-processing",
+        "enum": [
+          "All",
+          "Auto"
+        ]
+      },
+      "PictureGenerationConfig": {
+        "type": "object",
+        "description": "Controls the processing and generation for the segment.\n- `crop_image` controls whether to crop the file's images to the segment's bounding box.\nThe cropped image will be stored in the segment's `image` field. Use `All` to always crop,\nor `Auto` to only crop when needed for post-processing.\n- `html` is the HTML output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)\n- `llm` is the LLM-generated output for the segment, this uses off-the-shelf models to generate a custom output for the segment\n- `markdown` is the Markdown output for the segment, generated either through huerstics (`Auto`) or using Chunkr fine-tuned models (`LLM`)\n- `embed_sources` defines which content sources will be included in the chunk's embed field and counted towards the chunk length.\nThe array's order determines the sequence in which content appears in the embed field (e.g., [Markdown, LLM] means Markdown content\nis followed by LLM content). This directly affects what content is available for embedding and retrieval.",
+        "properties": {
+          "crop_image": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PictureCroppingStrategy"
+              }
+            ],
+            "default": "All"
+          },
+          "embed_sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmbedSource"
+            },
+            "default": "[Markdown]"
+          },
+          "html": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GenerationStrategy"
+              }
+            ],
+            "default": "LLM"
+          },
+          "llm": {
+            "type": "string",
+            "description": "Prompt for the LLM model",
+            "nullable": true
+          },
+          "markdown": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GenerationStrategy"
+              }
+            ],
+            "default": "LLM"
+          }
+        }
+      },
+      "PipelineType": {
+        "type": "string",
+        "enum": [
+          "Azure",
+          "Chunkr"
+        ]
       },
       "PopularChat": {
         "type": "object",
@@ -18519,6 +18780,116 @@
           }
         }
       },
+      "SegmentProcessing": {
+        "type": "object",
+        "description": "Controls the post-processing of each segment type.\n\nAllows you to generate HTML and Markdown from chunkr models for each segment type.\nBy default, the HTML and Markdown are generated manually using the segmentation information except for `Table`, `Formula` and `Picture`.\nYou can optionally configure custom LLM prompts and models to generate an additional `llm` field with LLM-processed content for each segment type.\n\nThe configuration of which content sources (HTML, Markdown, LLM, Content) of the segment\nshould be included in the chunk's `embed` field and counted towards the chunk length can be configured through the `embed_sources` setting.",
+        "properties": {
+          "Caption": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AutoGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "Footnote": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AutoGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "Formula": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LlmGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "ListItem": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AutoGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "Page": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LlmGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "PageFooter": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AutoGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "PageHeader": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AutoGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "Picture": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PictureGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "SectionHeader": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AutoGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "Table": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LlmGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "Text": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AutoGenerationConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "Title": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AutoGenerationConfig"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "SegmentationStrategy": {
+        "type": "string",
+        "description": "Controls the segmentation strategy:\n- `LayoutAnalysis`: Analyzes pages for layout elements (e.g., `Table`, `Picture`, `Formula`, etc.) using bounding boxes. Provides fine-grained segmentation and better chunking. (Latency penalty: ~TBD seconds per page).\n- `Page`: Treats each page as a single segment. Faster processing, but without layout element detection and only simple chunking.",
+        "enum": [
+          "LayoutAnalysis",
+          "Page"
+        ]
+      },
       "SemanticBoost": {
         "type": "object",
         "description": "Semantic boosting moves the dense vector of the chunk in the direction of the distance phrase for semantic search. I.e. you can force a cluster by moving every chunk for a PDF closer to its title or push a chunk with a chunk_html of \"iphone\" 25% closer to the term \"flagship\" by using the distance phrase \"flagship\" and a distance factor of 0.25. Conceptually it's drawing a line (euclidean/L2 distance) between the vector for the innerText of the chunk_html and distance_phrase then moving the vector of the chunk_html distance_factor*L2Distance closer to or away from the distance_phrase point along the line between the two points.",
@@ -19458,6 +19829,44 @@
             "description": "Content of the tag"
           }
         }
+      },
+      "Tokenizer": {
+        "type": "string",
+        "description": "Common tokenizers used for text processing.\n\nThese values represent standard tokenization approaches and popular pre-trained\ntokenizers from the Hugging Face ecosystem.",
+        "enum": [
+          "Word",
+          "Cl100kBase",
+          "XlmRobertaBase",
+          "BertBaseUncased"
+        ]
+      },
+      "TokenizerType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Enum"
+            ],
+            "properties": {
+              "Enum": {
+                "$ref": "#/components/schemas/Tokenizer"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "String"
+            ],
+            "properties": {
+              "String": {
+                "type": "string",
+                "description": "Use any Hugging Face tokenizer by specifying its model ID\nExamples: \"Qwen/Qwen-tokenizer\", \"facebook/bart-large\""
+              }
+            }
+          }
+        ],
+        "description": "Specifies which tokenizer to use for the chunking process.\n\nThis type supports two ways of specifying a tokenizer:\n1. Using a predefined tokenizer from the `Tokenizer` enum\n2. Using any Hugging Face tokenizer by providing its model ID as a string\n(e.g. \"facebook/bart-large\", \"Qwen/Qwen-tokenizer\", etc.)\n\nWhen using a string, any valid Hugging Face tokenizer ID can be specified,\nwhich will be loaded using the Hugging Face tokenizers library."
       },
       "ToolFunction": {
         "type": "object",
@@ -20523,6 +20932,14 @@
           "base64_file": {
             "type": "string",
             "description": "Base64 encoded file."
+          },
+          "chunkr_create_task_req_payload": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CreateFormWithoutFile"
+              }
+            ],
+            "nullable": true
           },
           "create_chunks": {
             "type": "boolean",

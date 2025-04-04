@@ -357,6 +357,27 @@ fn default_job_interval() -> u64 {
 fn default_task_timeout() -> u32 {
     1800
 }
+
+#[derive(Debug, Serialize, Clone, Deserialize, ToSchema, IntoParams)]
+pub struct CreateFormWithoutFile {
+    pub chunk_processing: Option<ChunkProcessing>,
+    /// The number of seconds until task is deleted.
+    /// Expried tasks can **not** be updated, polled or accessed via web interface.
+    pub expires_in: Option<i32>,
+    /// Whether to use high-resolution images for cropping and post-processing. (Latency penalty: ~7 seconds per page)
+    #[schema(default = false)]
+    pub high_resolution: Option<bool>,
+    #[schema(default = "All")]
+    pub ocr_strategy: Option<OcrStrategy>,
+    #[schema(default = "Azure")]
+    /// Choose the provider whose models will be used for segmentation and OCR.
+    /// The output will be unified to the Chunkr `output` format.
+    pub pipeline: Option<PipelineType>,
+    pub segment_processing: Option<SegmentProcessing>,
+    #[schema(default = "LayoutAnalysis")]
+    pub segmentation_strategy: Option<SegmentationStrategy>,
+}
+
 #[derive(Debug, Serialize, Clone, Deserialize, ToSchema, IntoParams)]
 pub struct CreateForm {
     pub chunk_processing: Option<ChunkProcessing>,
@@ -381,83 +402,6 @@ pub struct CreateForm {
     pub segmentation_strategy: Option<SegmentationStrategy>,
 }
 
-impl CreateForm {
-    fn get_chunk_processing(&self) -> ChunkProcessing {
-        self.chunk_processing.clone().unwrap_or_default()
-    }
-
-    fn get_high_resolution(&self) -> bool {
-        self.high_resolution.unwrap_or(false)
-    }
-
-    fn get_ocr_strategy(&self) -> OcrStrategy {
-        self.ocr_strategy.clone().unwrap_or_default()
-    }
-
-    fn get_segment_processing(&self) -> SegmentProcessing {
-        let user_config = self.segment_processing.clone().unwrap_or_default();
-        SegmentProcessing {
-            title: user_config
-                .title
-                .or_else(|| SegmentProcessing::default().title),
-            section_header: user_config
-                .section_header
-                .or_else(|| SegmentProcessing::default().section_header),
-            text: user_config
-                .text
-                .or_else(|| SegmentProcessing::default().text),
-            list_item: user_config
-                .list_item
-                .or_else(|| SegmentProcessing::default().list_item),
-            table: user_config
-                .table
-                .or_else(|| SegmentProcessing::default().table),
-            picture: user_config
-                .picture
-                .or_else(|| SegmentProcessing::default().picture),
-            caption: user_config
-                .caption
-                .or_else(|| SegmentProcessing::default().caption),
-            formula: user_config
-                .formula
-                .or_else(|| SegmentProcessing::default().formula),
-            footnote: user_config
-                .footnote
-                .or_else(|| SegmentProcessing::default().footnote),
-            page_header: user_config
-                .page_header
-                .or_else(|| SegmentProcessing::default().page_header),
-            page_footer: user_config
-                .page_footer
-                .or_else(|| SegmentProcessing::default().page_footer),
-            page: user_config
-                .page
-                .or_else(|| SegmentProcessing::default().page),
-        }
-    }
-
-    fn get_segmentation_strategy(&self) -> SegmentationStrategy {
-        self.segmentation_strategy.clone().unwrap_or_default()
-    }
-
-    fn get_pipeline(&self) -> Option<PipelineType> {
-        Some(self.pipeline.clone().unwrap_or_default())
-    }
-
-    pub fn to_configuration(&self) -> Configuration {
-        Configuration {
-            chunk_processing: self.get_chunk_processing(),
-            expires_in: None,
-            high_resolution: self.get_high_resolution(),
-            input_file_url: None,
-            ocr_strategy: self.get_ocr_strategy(),
-            pipeline: self.get_pipeline(),
-            segment_processing: self.get_segment_processing(),
-            segmentation_strategy: self.get_segmentation_strategy(),
-        }
-    }
-}
-
 fn get_chunkr_credentials(api_key: Option<&str>) -> Result<(String, String), ServiceError> {
     let api_url = std::env::var("CHUNKR_API_URL").unwrap_or("https://api.chunkr.ai".to_string());
     let api_key = match api_key {
@@ -473,26 +417,35 @@ pub async fn create_chunkr_task(
     file_name: &str,
     file_base64: &str,
     api_key: Option<&str>,
-    chunkr_create_task_req_payload: Option<CreateForm>,
+    chunkr_create_task_req_payload: Option<CreateFormWithoutFile>,
 ) -> Result<TaskResponse, ServiceError> {
     let client = reqwest::Client::new();
     let (api_url, api_key) = get_chunkr_credentials(api_key)?;
 
-    let req_payload = chunkr_create_task_req_payload.unwrap_or_else(|| CreateForm {
-        file_name: Some(file_name.to_string()),
-        file: file_base64.to_string(),
-        pipeline: Some(PipelineType::Azure),
-        high_resolution: Some(true),
-        chunk_processing: Some(ChunkProcessing {
-            ignore_headers_and_footers: default_ignore_headers_and_footers(),
-            target_length: default_target_length(),
-            tokenizer: TokenizerType::Enum(Tokenizer::default()),
-        }),
-        expires_in: None,
-        ocr_strategy: None,
-        segment_processing: None,
-        segmentation_strategy: None,
-    });
+    let req_payload = chunkr_create_task_req_payload.map_or_else(
+        || CreateForm {
+            file: file_base64.to_string(),
+            file_name: Some(file_name.to_string()),
+            chunk_processing: None,
+            expires_in: None,
+            high_resolution: Some(false),
+            ocr_strategy: Some(OcrStrategy::All),
+            pipeline: Some(PipelineType::Chunkr),
+            segment_processing: None,
+            segmentation_strategy: Some(SegmentationStrategy::LayoutAnalysis),
+        },
+        |payload| CreateForm {
+            file: file_base64.to_string(),
+            file_name: Some(file_name.to_string()),
+            chunk_processing: payload.chunk_processing,
+            expires_in: payload.expires_in,
+            high_resolution: payload.high_resolution,
+            ocr_strategy: payload.ocr_strategy,
+            pipeline: payload.pipeline,
+            segment_processing: payload.segment_processing,
+            segmentation_strategy: payload.segmentation_strategy,
+        },
+    );
 
     let response = client
         .post(format!("{}/parse", api_url))
@@ -551,7 +504,7 @@ pub async fn get_chunkr_task(
     Ok(response)
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct BoundingBox {
     pub height: f32,
     pub left: f32,
@@ -674,7 +627,7 @@ pub struct JsonSchema {
     pub properties: Vec<Property>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct OCRResult {
     pub bbox: BoundingBox,
     pub confidence: Option<f32>,
@@ -700,7 +653,7 @@ pub struct Property {
     pub default: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub struct Segment {
     pub bbox: BoundingBox,
     pub confidence: Option<f32>,
@@ -717,7 +670,7 @@ pub struct Segment {
     pub segment_type: SegmentType,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ToSchema)]
 pub enum SegmentType {
     Caption,
     Footnote,

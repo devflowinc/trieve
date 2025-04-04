@@ -396,16 +396,14 @@ fn default_job_interval() -> u64 {
 fn default_task_timeout() -> u32 {
     1800
 }
+
+/// Will use [chunkr.ai](https://chunkr.ai) to process the file when this object is defined. See [docs.chunkr.ai/api-references/task/create-task](https://docs.chunkr.ai/api-references/task/create-task) for detailed information about what each field on this request payload does.
 #[derive(Debug, Serialize, Clone, Deserialize, ToSchema, IntoParams)]
-pub struct CreateForm {
+pub struct CreateFormWithoutFile {
     pub chunk_processing: Option<ChunkProcessing>,
     /// The number of seconds until task is deleted.
     /// Expried tasks can **not** be updated, polled or accessed via web interface.
     pub expires_in: Option<i32>,
-    /// The file to be uploaded. Can be a URL or a base64 encoded file.
-    pub file: String,
-    /// The name of the file to be uploaded. If not set a name will be generated.
-    pub file_name: Option<String>,
     /// Whether to use high-resolution images for cropping and post-processing. (Latency penalty: ~7 seconds per page)
     #[schema(default = false)]
     pub high_resolution: Option<bool>,
@@ -462,12 +460,15 @@ pub struct UploadFileReqPayload {
     pub target_splits_per_chunk: Option<usize>,
     /// Group tracking id is an optional field which allows you to specify the tracking id of the group that is created from the file. Chunks created will be created with the tracking id of `group_tracking_id|<index of chunk>`
     pub group_tracking_id: Option<String>,
+    /// The request payload to use for the Chunkr API create task endpoint.
+    pub chunkr_create_task_req_payload: Option<CreateFormWithoutFile>,
     /// Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o. Default is false.
     pub pdf2md_options: Option<Pdf2MdOptions>,
     /// Split average will automatically split your file into multiple chunks and average all of the resulting vectors into a single output chunk. Default is false. Explicitly enabling this will cause each file to only produce a single chunk.
     pub split_avg: Option<bool>,
 }
 
+/// We plan to deprecate pdf2md in favor of chunkr.ai. This is a legacy option for using a vision LLM to convert a given file into markdown and then ingest it.
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct Pdf2MdOptions {
     /// Parameter to use pdf2md_ocr. If true, the file will be converted to markdown using gpt-4o. Default is false.
@@ -476,10 +477,6 @@ pub struct Pdf2MdOptions {
     pub system_prompt: Option<String>,
     /// Split headings is an optional field which allows you to specify whether or not to split headings into separate chunks. Default is false.
     pub split_headings: Option<bool>,
-    /// The name of the llm model to use for the task. If not provided, the default model will be used. We support all models from (OpenRouter)[https://openrouter.ai/models]
-    pub llm_model: Option<String>,
-    /// The request payload to use for the Chunkr API create task endpoint.
-    pub chunkr_create_task_req_payload: Option<CreateForm>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
