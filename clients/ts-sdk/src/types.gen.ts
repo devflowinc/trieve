@@ -552,6 +552,20 @@ export type ClickhouseRecommendationTypes = 'Chunk' | 'Group';
 
 export type ClickhouseSearchTypes = 'search' | 'search_over_groups' | 'autocomplete' | 'rag';
 
+export type ClickhouseTopicAnalyticsSummary = {
+    avg_hallucination_score: number;
+    avg_query_rating?: (number) | null;
+    avg_top_score: number;
+    created_at: string;
+    id: string;
+    message_count: number;
+    name: string;
+    owner_id: string;
+    products_shown: number;
+    topic_id: string;
+    updated_at: string;
+};
+
 export type CloneTopicReqPayload = {
     /**
      * The name of the topic. If this is not provided, the topic name is the same as the previous topic
@@ -2826,10 +2840,10 @@ export type RAGAnalytics = {
     type: 'followup_queries';
 } | {
     filter?: ((TopicAnalyticsFilter) | null);
-    has_clicks?: (boolean) | null;
     page?: (number) | null;
     sort_by?: ((RAGSortBy) | null);
     sort_order?: ((SortOrder) | null);
+    topic_events_filter?: ((TopicEventFilter) | null);
     type: 'topic_queries';
 } | {
     topic_id: string;
@@ -4078,27 +4092,22 @@ export type TopicAnalyticsFilter = {
     top_score?: ((FloatRange) | null);
 };
 
-export type TopicAnalyticsSummary = {
-    avg_hallucination_score: number;
-    avg_query_rating?: (number) | null;
-    avg_top_score: number;
-    created_at: string;
-    id: string;
-    message_count: number;
-    name: string;
-    owner_id: string;
-    products_shown: number;
-    topic_id: string;
-    updated_at: string;
-};
-
 export type TopicDetailsResponse = {
     messages: Array<RagQueryEvent>;
     topic: TopicQuery;
 };
 
+export type TopicEventFilter = {
+    /**
+     * Filter by event type
+     */
+    event_types: Array<EventTypesFilter>;
+    inverted: boolean;
+};
+
 export type TopicQueriesResponse = {
-    topics: Array<TopicAnalyticsSummary>;
+    events: Array<EventData>;
+    topics: Array<ClickhouseTopicAnalyticsSummary>;
 };
 
 export type TopicQuery = {
