@@ -9047,6 +9047,66 @@
           "rag"
         ]
       },
+      "ClickhouseTopicAnalyticsSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "topic_id",
+          "owner_id",
+          "created_at",
+          "updated_at",
+          "message_count",
+          "avg_top_score",
+          "avg_hallucination_score",
+          "products_shown"
+        ],
+        "properties": {
+          "avg_hallucination_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "avg_query_rating": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "avg_top_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "message_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string"
+          },
+          "products_shown": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "topic_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
       "CloneTopicReqPayload": {
         "type": "object",
         "required": [
@@ -15319,10 +15379,6 @@
                 ],
                 "nullable": true
               },
-              "has_clicks": {
-                "type": "boolean",
-                "nullable": true
-              },
               "page": {
                 "type": "integer",
                 "format": "int32",
@@ -15341,6 +15397,14 @@
                 "allOf": [
                   {
                     "$ref": "#/components/schemas/SortOrder"
+                  }
+                ],
+                "nullable": true
+              },
+              "topic_events_filter": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/TopicEventFilter"
                   }
                 ],
                 "nullable": true
@@ -20206,66 +20270,6 @@
           }
         }
       },
-      "TopicAnalyticsSummary": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "topic_id",
-          "owner_id",
-          "created_at",
-          "updated_at",
-          "message_count",
-          "avg_top_score",
-          "avg_hallucination_score",
-          "products_shown"
-        ],
-        "properties": {
-          "avg_hallucination_score": {
-            "type": "number",
-            "format": "double"
-          },
-          "avg_query_rating": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "avg_top_score": {
-            "type": "number",
-            "format": "double"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "message_count": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "name": {
-            "type": "string"
-          },
-          "owner_id": {
-            "type": "string"
-          },
-          "products_shown": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "topic_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "updated_at": {
-            "type": "string"
-          }
-        }
-      },
       "TopicDetailsResponse": {
         "type": "object",
         "required": [
@@ -20284,16 +20288,42 @@
           }
         }
       },
+      "TopicEventFilter": {
+        "type": "object",
+        "required": [
+          "event_types",
+          "inverted"
+        ],
+        "properties": {
+          "event_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTypesFilter"
+            },
+            "description": "Filter by event type"
+          },
+          "inverted": {
+            "type": "boolean"
+          }
+        }
+      },
       "TopicQueriesResponse": {
         "type": "object",
         "required": [
-          "topics"
+          "topics",
+          "events"
         ],
         "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventData"
+            }
+          },
           "topics": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TopicAnalyticsSummary"
+              "$ref": "#/components/schemas/ClickhouseTopicAnalyticsSummary"
             }
           }
         }

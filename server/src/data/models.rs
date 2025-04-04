@@ -6436,6 +6436,13 @@ pub struct FloatRange {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct TopicEventFilter {
+    /// Filter by event type
+    pub event_types: Vec<EventTypesFilter>,
+    pub inverted: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct TopicAnalyticsFilter {
     pub date_range: Option<DateRange>,
     pub rag_type: Option<RagTypes>,
@@ -7685,7 +7692,7 @@ pub enum RAGAnalytics {
     TopicQueries {
         filter: Option<TopicAnalyticsFilter>,
         page: Option<u32>,
-        has_clicks: Option<bool>,
+        topic_events_filter: Option<TopicEventFilter>,
         sort_by: Option<RAGSortBy>,
         sort_order: Option<SortOrder>,
     },
@@ -8032,7 +8039,8 @@ pub struct SearchAverageRatingResponse {
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct TopicQueriesResponse {
-    pub topics: Vec<TopicAnalyticsSummary>,
+    pub topics: Vec<ClickhouseTopicAnalyticsSummary>,
+    pub events: Vec<EventData>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -8055,7 +8063,7 @@ pub struct TopicAnalyticsSummaryClickhouse {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct TopicAnalyticsSummary {
+pub struct ClickhouseTopicAnalyticsSummary {
     pub id: uuid::Uuid,
     pub name: String,
     pub topic_id: uuid::Uuid,
@@ -8069,9 +8077,9 @@ pub struct TopicAnalyticsSummary {
     pub products_shown: u64,
 }
 
-impl From<TopicAnalyticsSummaryClickhouse> for TopicAnalyticsSummary {
+impl From<TopicAnalyticsSummaryClickhouse> for ClickhouseTopicAnalyticsSummary {
     fn from(value: TopicAnalyticsSummaryClickhouse) -> Self {
-        TopicAnalyticsSummary {
+        ClickhouseTopicAnalyticsSummary {
             id: uuid::Uuid::from_bytes(value.id.into_bytes()),
             name: value.name,
             topic_id: uuid::Uuid::from_bytes(value.topic_id.into_bytes()),
