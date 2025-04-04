@@ -92,14 +92,17 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
 
-    void fetch(`${apiHost}/dataset/groups/${currentDataset.dataset.id}/1`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "X-API-version": "2.0",
-        "TR-Dataset": currentDataset.dataset.id,
+    void fetch(
+      `${apiHost}/dataset/groups/${currentDataset.dataset.id}/?use_curosr=true`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "X-API-version": "2.0",
+          "TR-Dataset": currentDataset.dataset.id,
+        },
       },
-    }).then((response) => {
+    ).then((response) => {
       if (response.ok) {
         void response.json().then((data) => {
           if (isChunkGroupPageDTO(data)) {
@@ -112,14 +115,12 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
   };
 
   const fetchAllGroups = async () => {
-    let currentPage = 1;
-    let hasMore = true;
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
-
-    while (hasMore) {
+    let cursor = "00000000-0000-0000-0000-000000000000";
+    while (cursor != null) {
       const response = await fetch(
-        `${apiHost}/dataset/groups/${currentDataset.dataset.id}/${currentPage}`,
+        `${apiHost}/dataset/groups/${currentDataset.dataset.id}?cursor=${cursor}&use_curosr=true`,
         {
           method: "GET",
           credentials: "include",
@@ -131,24 +132,29 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
         },
       );
 
-      if (response.ok) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const data = await response.json();
-        if (isChunkGroupPageDTO(data)) {
-          setAllGroupsList((prevGroups) => {
-            return [...prevGroups, ...data.groups];
-          });
-          hasMore = currentPage < data.total_pages && currentPage < 100;
-          currentPage++;
-        } else {
-          hasMore = false;
-        }
-      } else {
-        hasMore = false;
+      if (!response.ok) {
+        break;
       }
 
-      if (hasMore) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const data = await response.json();
+      if (!isChunkGroupPageDTO(data)) {
+        break;
+      }
+
+      setAllGroupsList((prevGroups) => {
+        return [...prevGroups, ...data.groups];
+      });
+
+      if (!data.next_cursor) {
+        break;
+      }
+
+      if (data.next_cursor) {
+        cursor = data.next_cursor;
         await new Promise((resolve) => setTimeout(resolve, 750));
+      } else {
+        break;
       }
     }
   };

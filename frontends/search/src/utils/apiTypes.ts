@@ -282,6 +282,7 @@ export interface ChunkGroupDTO {
 export interface ChunkGroupPageDTO {
   groups: ChunkGroupDTO[];
   total_pages: number;
+  next_cursor: string | null;
 }
 
 export const isChunkGroupPageDTO = (
