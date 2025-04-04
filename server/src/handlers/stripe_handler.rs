@@ -250,18 +250,19 @@ pub async fn webhook(
                             update_static_stripe_meters(usage_based_subscription, pool).await?;
 
                         let subject = format!(
-                            "Send static stripe billing for organization: {}, id: {}",
+                            "Send static stripe billing for organization: '{}', id: {}",
                             organization.organization.name, organization.organization.id
                         );
 
                         let body = format!(
-                            "{:?}\n\n{:?}",
+                            "{:?}<br/>{:?}<br/>{:?}",
                             subject.clone(),
                             metrics_sent
                                 .iter()
                                 .map(|(k, v)| format!("{}: {}", k, v))
                                 .collect::<Vec<String>>()
-                                .join("\n")
+                                .join("<br/>"),
+                            format!("View their bill here: https://dashboard.stripe.com/subcriptions/{}", usage_based_subscription.stripe_subscription_id)
                         );
 
                         send_email(body, "webmaster@trieve.ai".to_string(), Some(subject))?;
