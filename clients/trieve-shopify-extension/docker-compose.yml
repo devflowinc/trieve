@@ -23,7 +23,7 @@ services:
     ports:
       - "3080:3000"
     environment:
-      - TRIEVE_AUTH_URL=${TRIEVE_AUTH_URL}
+      - REMIX_SERVER_URL=${REMIX_SERVER_URL}
       - DATABASE_URL=${DATABASE_URL}
 
 volumes:

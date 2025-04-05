@@ -1,6 +1,5 @@
 # Environment Configuration
 .env
-.env.*
 
 # Dependency directory
 node_modules/*
@@ -32,5 +31,6 @@ extensions/*/dist
 shopify.app.densumes-trieve-extension.toml
 shopify.app.cdxker-search-extension.toml
 shopify.app.vidyoot-testing.toml
-
+shopify.app.trieve-search-extension.toml
+shopify.app.toml
 build/

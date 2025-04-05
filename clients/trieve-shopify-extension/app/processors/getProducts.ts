@@ -411,9 +411,7 @@ export const sendChunks = async (
     if (response.error) {
       throw response.error;
     }
-
     const dataChunks: ChunkReqPayload[] = response.data.products.nodes
-      .filter((node) => node.status == "ACTIVE")
       .flatMap((product) =>
         product.variants.nodes.map((variant) =>
           createChunkFromProduct(

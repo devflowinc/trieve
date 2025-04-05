@@ -158,30 +158,30 @@ export const lastStepIdQuery = (fetcher: AdminApiCaller) => {
   };
 };
 
-export const shopifyProductCountQuery = (fetcher: AdminApiCaller) => {
+export const shopifyVariantsCountQuery = (fetcher: AdminApiCaller) => {
   return {
     queryKey: ["shopify_product_count"],
     queryFn: async () => {
       const result = await fetcher(
         `#graphql
-query ProductCount {
-  productsCount{
-    count
-  }
-}
-`,
+        query ProductCount {
+          productVariantsCount{
+            count
+          }
+        }
+      `,
       );
       if (result.error) {
-        console.error(result.error);
+        console.error("Error fetching product count:", result.error);
         throw result.error;
       }
       const data = result.data as {
-        productsCount: {
+        productVariantsCount: {
           count: number;
         };
       };
       // Hides weird internal shopify app theme
-      return data.productsCount.count;
+      return data.productVariantsCount.count;
     },
   } satisfies QueryOptions;
 };

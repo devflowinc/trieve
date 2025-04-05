@@ -48,8 +48,8 @@ export default defineConfig(({ mode }) => {
         // See https://vitejs.dev/config/server-options.html#server-fs-allow for more information
         allow: ["app", "node_modules"],
       },
-      allowedHosts: (process.env.TRIEVE_AUTH_URL || env.TRIEVE_AUTH_URL)
-        ? [(process.env.TRIEVE_AUTH_URL || env.TRIEVE_AUTH_URL).replace("https://", "")]
+      allowedHosts: (process.env.REMIX_SERVER_URL || env.REMIX_SERVER_URL)
+        ? [(process.env.REMIX_SERVER_URL || env.REMIX_SERVER_URL).replace("https://", "")]
         : true,
     },
     plugins: [

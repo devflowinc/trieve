@@ -3,7 +3,7 @@ import { CheckIcon } from "@shopify/polaris-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { useClientAdminApi } from "app/loaders/clientLoader";
-import { shopifyProductCountQuery } from "app/queries/onboarding";
+import { shopifyVariantsCountQuery } from "app/queries/onboarding";
 import { usageQuery } from "app/queries/usage";
 import { OnboardingBody } from "app/utils/onboarding";
 import { useEffect, useState } from "react";
@@ -22,13 +22,15 @@ export const WelcomeOnboarding: OnboardingBody = ({
     refetchInterval: 1000,
     enabled: refetch,
   });
-  const { data: productCount } = useQuery(shopifyProductCountQuery(adminApi));
+  const { data: productVariantsCount } = useQuery(
+    shopifyVariantsCountQuery(adminApi),
+  );
 
   useEffect(() => {
-    if (!productCount || !usage?.chunk_count) {
+    if (!productVariantsCount || !usage?.chunk_count) {
       return;
     }
-    if (usage?.chunk_count >= productCount) {
+    if (usage?.chunk_count >= productVariantsCount) {
       setCompleted(true);
       setRefetch(false);
       if (broadcastCompletion) {
@@ -38,7 +40,7 @@ export const WelcomeOnboarding: OnboardingBody = ({
         goToNextStep();
       }
     }
-  }, [usage, productCount]);
+  }, [usage, productVariantsCount]);
 
   return (
     <div className="grid w-full py-4 min-h-[180px] place-items-center">
@@ -46,7 +48,9 @@ export const WelcomeOnboarding: OnboardingBody = ({
         <Text as="h2" variant="headingMd">
           {completed === true ? "Products Indexed!" : "Indexing products..."}
         </Text>
-        <div className="opacity-30">{usage?.chunk_count} Products</div>
+        <div className="opacity-30">
+          Ingested {usage?.chunk_count} out of {productVariantsCount} products
+        </div>
         {!completed ? (
           <Spinner />
         ) : (
