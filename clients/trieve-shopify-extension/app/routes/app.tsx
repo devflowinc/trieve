@@ -22,7 +22,7 @@ export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 export const loader = async () => {
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
-    trieveAuthUrl: process.env.TRIEVE_AUTH_URL!,
+    trieveAuthUrl: process.env.REMIX_SERVER_URL!,
     shopifyThemeAppExtensionUuid: process.env.SHOPIFY_THEME_APP_EXTENSION_UUID,
   };
 };

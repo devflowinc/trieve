@@ -27,6 +27,17 @@ export const action = async ({ request }: LoaderFunctionArgs) => {
   const decoded = jwt.decode(idToken.toString()) as JwtPayload;
 
   if (type === "insert") {
+    const existingKey = await prisma.apiKey.findFirst({
+      where: {
+        userId: decoded.sub ?? "",
+        organizationId: orgId.toString(),
+        shop: decoded.dest ?? "",
+      },
+    });
+    if (existingKey) {
+      return existingKey;
+    }
+
     const key = await prisma.apiKey.create({
       data: {
         userId: decoded.sub ?? "",
@@ -55,6 +66,7 @@ type Orgs = {
 export default function App() {
   const fetcher = useFetcher<typeof action>();
   const [orgs, setOrgs] = useState<Orgs[]>([]);
+  const [successfulLogin, setSuccessfulLogin] = useState(false);
   const envs = useEnvs();
 
   useEffect(() => {
@@ -77,7 +89,7 @@ export default function App() {
 
   useEffect(() => {
     if (fetcher.data?.key) {
-      window.close();
+      setSuccessfulLogin(true);
     }
   }, [fetcher.data?.key]);
 
@@ -93,21 +105,26 @@ export default function App() {
         "TR-Organization": selectedOrg.toString(),
       },
       body: JSON.stringify({ name: "Shopify-Access", role: 2 }),
-    }).then((response) => {
-      response.json().then((data) => {
-        let params = new URLSearchParams(window.location.search);
+    })
+      .then((response) => {
+        response.json().then((data) => {
+          let params = new URLSearchParams(window.location.search);
 
-        fetcher.submit(
-          {
-            apiKey: data.api_key,
-            orgId: selectedOrg,
-            idToken: params.get("token"),
-            type: "insert",
-          },
-          { method: "POST" },
-        );
+          fetcher.submit(
+            {
+              apiKey: data.api_key,
+              orgId: selectedOrg,
+              idToken: params.get("token"),
+              type: "insert",
+            },
+            { method: "POST" },
+          );
+        });
+      })
+      .catch((error) => {
+        console.error("Error generating API key:", error);
+        setSuccessfulLogin(true);
       });
-    });
   };
 
   return (
@@ -120,28 +137,53 @@ export default function App() {
         />
         <span className="text-2xl font-semibold">Trieve</span>
       </div>
-      {orgs.length > 0 && (
-        <div className="rounded-md border border-neutral-300 bg-white p-4 md:min-w-[500px]">
-          <div className="flex justify-between">
-            <div className="text-lg font-medium">Select An Organization</div>
-          </div>
-          <div className="flex flex-col py-2">
-            {orgs?.map((org) => (
-              <button
-                onClick={() => {
-                  generateApiKey(org.id);
-                }}
-                className="flex cursor-pointer items-center justify-between rounded-md border-b border-b-neutral-200 p-2 last:border-b-transparent hover:bg-neutral-100"
-              >
-                <div className="flex w-full items-center justify-between">
-                  <div className="text-sm font-medium">{org.name}</div>
-                  <div className="text-xs text-neutral-500">{org.id}</div>
+      <div className="rounded-md border border-neutral-300 bg-white p-4 md:min-w-[500px]">
+        {successfulLogin && (
+          <>
+            <div className="flex justify-between">
+              <div className="text-lg font-medium">Login Successful 🎉</div>
+            </div>
+            <div className="py-2 text-sm text-neutral-700">
+              You can now close this window and return to your Shopify store.
+            </div>
+            <div className="py-2 text-sm text-neutral-700">
+              If you don't see the app, please refresh the page.
+            </div>
+          </>
+        )}
+        {!successfulLogin &&
+          (orgs.length > 0 ? (
+            <>
+              <div className="flex justify-between">
+                <div className="text-lg font-medium">
+                  Select An Organization
                 </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+              </div>
+              <div className="flex flex-col py-2">
+                {orgs?.map((org) => (
+                  <button
+                    key={org.id}
+                    onClick={() => {
+                      generateApiKey(org.id);
+                    }}
+                    className="flex cursor-pointer items-center justify-between rounded-md border-b border-b-neutral-200 p-2 last:border-b-transparent hover:bg-neutral-100"
+                  >
+                    <div className="flex w-full items-center justify-between">
+                      <div className="text-sm font-medium">{org.name}</div>
+                      <div className="text-xs text-neutral-500">{org.id}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-center items-center w-full">
+              <div className="flex h-10 w-10 animate-spin items-center justify-center rounded-full border-4 border-neutral-300 border-t-transparent">
+                <div className="h-6 w-6 animate-spin rounded-full border-4 border-neutral-300 border-t-transparent" />
+              </div>
+            </div>
+          ))}
+      </div>
     </div>
   );
 }
