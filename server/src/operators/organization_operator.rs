@@ -356,11 +356,23 @@ pub async fn get_org_from_id_query(
             ServiceError::NotFound("Organization not found".to_string())
         })?;
 
-    let org_with_plan_sub: OrganizationWithSubAndPlan = OrganizationWithSubAndPlan::from_components(
-        organization,
-        TrievePlan::from_flat(stripe_plan, usage_plan),
-        TrieveSubscription::from_flat(stripe_subscription, usage_subscription),
-    );
+    let mut subscription = TrieveSubscription::from_flat(stripe_subscription, usage_subscription);
+    let mut plan = TrievePlan::from_flat(stripe_plan, usage_plan);
+
+    if let Some(sub) = &subscription {
+        let end_date = sub.current_period_end();
+        log::info!("Subscription end date: {}", end_date.unwrap_or_default());
+        if end_date.is_some()
+            && chrono::Utc::now().naive_utc() > end_date.expect("End date should be set")
+        {
+            log::info!("Gotcha!");
+            subscription = None;
+            plan = None;
+        }
+    }
+
+    let org_with_plan_sub: OrganizationWithSubAndPlan =
+        OrganizationWithSubAndPlan::from_components(organization, plan, subscription);
 
     Ok(org_with_plan_sub)
 }
