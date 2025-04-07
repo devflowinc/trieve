@@ -252,9 +252,9 @@ export default function ECommerce() {
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
               <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path>
               <rect x="2" y="6" width="14" height="12" rx="2"></rect>
@@ -310,6 +310,9 @@ export default function ECommerce() {
                       "Write a single short sentence (maximum 10 words) describing in high detail the way you see the space in the image in terms of color, luminance, and style. Make a specific callout to something unique so a reader knows you actually saw the image. \n\n",
                     inferenceInputLabel:
                       "How the AI understands your image (editable)",
+                    inputLabel: "Describe the goal of the change",
+                    placeholder:
+                      "I want to make the space more modern and bright.",
                   },
                   {
                     title: "Filter Selection",
@@ -317,9 +320,6 @@ export default function ECommerce() {
                       "Select the material(s) you want to change and are interested in getting recommendations for.",
                     type: "tags",
                     filterSidebarSectionKey: "categories",
-                    inputLabel: "Describe the goal of the change",
-                    placeholder:
-                      "I want to make the space more modern and bright.",
                   },
                   {
                     title: "View Recommended Materials",

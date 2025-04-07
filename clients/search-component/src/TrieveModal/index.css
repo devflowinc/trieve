@@ -1560,7 +1560,7 @@ body {
   }
 
   .trieve-inference-filters-form {
-    @apply tv-flex tv-flex-col tv-gap-2 tv-p-2 tv-mt-2 tv-w-full;
+    @apply tv-flex tv-flex-col tv-gap-6 tv-p-2 tv-mt-2 tv-w-full;
 
     .trieve-inference-filters-step-container {
       @apply tv-flex tv-flex-col tv-p-2;
@@ -1702,7 +1702,7 @@ body {
               @apply tv-flex tv-items-center tv-justify-center tv-px-3 tv-py-1.5 tv-rounded-md tv-gap-x-1;
 
               background-color: var(--tv-prop-brand-color);
-              color: var(--tv-zinc-50);
+              color: white;
 
               &:hover {
                 @apply tv-outline tv-outline-2 tv-outline-offset-2;
@@ -1758,7 +1758,7 @@ body {
 
               &[data-active="true"] {
                 background-color: var(--tv-prop-brand-color);
-                color: var(--tv-zinc-50);
+                color: white;
 
                 .trieve-checkbox-icon {
                   display: block;

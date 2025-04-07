@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo } from "react";
 import { useState } from "react";
 import {
@@ -303,8 +304,6 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
   );
 
   useEffect(() => {
-    const toolCallAbortController = new AbortController();
-
     for (let i = 1; i < steps.length; i++) {
       if (completedSteps[steps[i].title]) {
         continue;
@@ -323,31 +322,25 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
         continue;
       }
 
-      (async () => {
-        const match_all_tags: string[] = [];
-        if (match_all_tags.length === 0) {
-          match_all_tags.push(...correspondingFilter.options.map((t) => t.tag));
-        }
+      const match_all_tags: string[] = [];
+      if (match_all_tags.length === 0) {
+        match_all_tags.push(...correspondingFilter.options.map((t) => t.tag));
+      }
 
-        setFilterOptions((prev) => {
-          const newFilterOptions = {
-            ...prev,
-            [steps[i].filterSidebarSectionKey ?? ""]: match_all_tags,
-          };
-
-          return newFilterOptions;
-        });
-
-        setLoadingStates((prev) => ({
+      setFilterOptions((prev) => {
+        const newFilterOptions = {
           ...prev,
-          [steps[i].title]: "idle",
-        }));
-      })();
-    }
+          [steps[i].filterSidebarSectionKey ?? ""]: match_all_tags,
+        };
 
-    return () => {
-      toolCallAbortController.abort();
-    };
+        return newFilterOptions;
+      });
+
+      setLoadingStates((prev) => ({
+        ...prev,
+        [steps[i].title]: "idle",
+      }));
+    }
   }, [completedSteps]);
 
   useEffect(() => {
@@ -372,7 +365,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
           stopGeneratingMessage();
           clearConversation();
 
-          const prevStep = i > 0 ? steps[i - 1] : null;
+          const prevStep = i > 1 ? steps[i - 2] : null;
           const prevInferenceText = prevStep
             ? (textFields[prevStep.title]?.inferenceValue ?? "")
             : "";
@@ -809,9 +802,15 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                     name="ai-understanding-input"
                     rows={4}
                     className="trieve-text-input-textarea"
-                    disabled={completedSteps[step.title]}
                     value={textFields[step.title]?.inferenceValue}
                     onChange={(e) => {
+                      setCompletedSteps((prev) => {
+                        const newCompletedSteps = { ...prev };
+                        for (let j = index; j < steps.length; j++) {
+                          newCompletedSteps[steps[j].title] = false;
+                        }
+                        return newCompletedSteps;
+                      });
                       setTextFields((prev) => ({
                         ...prev,
                         [step.title]: {
@@ -837,10 +836,16 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                       name="text-input"
                       rows={4}
                       className="trieve-text-input-textarea"
-                      disabled={completedSteps[step.title]}
                       placeholder={step.placeholder}
                       value={textFields[step.title]?.inputValue}
                       onChange={(e) => {
+                        setCompletedSteps((prev) => {
+                          const newCompletedSteps = { ...prev };
+                          for (let j = index; j < steps.length; j++) {
+                            newCompletedSteps[steps[j].title] = false;
+                          }
+                          return newCompletedSteps;
+                        });
                         setTextFields((prev) => ({
                           ...prev,
                           [step.title]: {
@@ -854,23 +859,71 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 </div>
               )}
 
-              <div className="trieve-text-button-container">
-                <button
-                  type="button"
-                  className="trieve-text-input-button"
-                  onClick={() => {
-                    setCompletedSteps((prev) => ({
-                      ...prev,
-                      [step.title]: true,
-                    }));
-                  }}
-                >
-                  Next
-                  <div>
-                    <i className="fa-solid fa-arrow-right"></i>
-                  </div>
-                </button>
-              </div>
+              {(loadingStates[steps[index + 1]?.title] ?? "idle") == "idle" && (
+                <div className="trieve-text-button-container">
+                  <button
+                    type="button"
+                    className="trieve-text-input-button"
+                    disabled={!textFields[step.title]?.inputValue}
+                    onClick={() => {
+                      setLoadingStates((prev) => ({
+                        ...prev,
+                        [steps[index + 1]?.title]:
+                          "Predicting your material categories",
+                      }));
+                      const topLevelFilters =
+                        props.searchPageProps?.filterSidebarProps?.sections.find(
+                          (section) =>
+                            section.key ===
+                            steps[index + 1].filterSidebarSectionKey,
+                        )?.options;
+                      trieveSDK
+                        .getToolCallFunctionParams({
+                          user_message_text:
+                            textFields[step.title]?.inputValue ?? "",
+                          tool_function: {
+                            description:
+                              "Call this tool no matter what. Predict the best category for the provided input",
+                            name: "predict_best_category",
+                            parameters:
+                              topLevelFilters?.map((filterOption) => {
+                                return {
+                                  name: filterOption.tag,
+                                  description: filterOption.description ?? "",
+                                  parameter_type: "boolean",
+                                };
+                              }) ?? [],
+                          },
+                        })
+                        .then((res) => {
+                          const parameters: any = res.parameters ?? {};
+                          for (const key of Object.keys(parameters)) {
+                            if (parameters[key] === true) {
+                              setSelectedSidebarFilters((prev) => ({
+                                ...prev,
+                                [steps[index + 1].filterSidebarSectionKey ??
+                                ""]: [key],
+                              }));
+                            }
+                          }
+                          setLoadingStates((prev) => ({
+                            ...prev,
+                            [steps[index + 1]?.title]: "idle",
+                          }));
+                          setCompletedSteps((prev) => ({
+                            ...prev,
+                            [step.title]: true,
+                          }));
+                        });
+                    }}
+                  >
+                    Next
+                    <div>
+                      <i className="fa-solid fa-arrow-right"></i>
+                    </div>
+                  </button>
+                </div>
+              )}
             </div>
 
             <div
@@ -898,7 +951,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 </p>
                 <div className="trieve-inference-filters-step-row">
                   {filterOptions[step.filterSidebarSectionKey ?? ""]?.map(
-                    (tag) => {
+                    (tag, i) => {
                       const currentFilterOption =
                         props.searchPageProps?.filterSidebarProps?.sections
                           .find(
@@ -909,6 +962,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
 
                       return (
                         <FilterButton
+                          key={`${i}-${tag}`}
                           sectionKey={step.filterSidebarSectionKey ?? ""}
                           filterKey={tag}
                           label={currentFilterOption?.label ?? tag}
@@ -929,9 +983,10 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                     },
                   )}
                 </div>
+
                 <div className="trieve-inference-filters-step-row">
                   {filterOptions[step.filterSidebarSectionKey ?? ""]?.map(
-                    (tag) => {
+                    (tag, i) => {
                       const active =
                         selectedSidebarFilters[
                           step.filterSidebarSectionKey ?? ""
@@ -947,6 +1002,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
 
                       return (
                         <div
+                          key={`${i}-${tag}-child`}
                           data-active={active ? "true" : "false"}
                           className="trieve-inference-filters-step-tags-children"
                         >
@@ -957,6 +1013,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                             {currentFilterOption?.child?.options?.map(
                               (childTagProp) => (
                                 <FilterButton
+                                  key={`${i}-${childTagProp.tag}`}
                                   sectionKey={
                                     step.filterSidebarSectionKey ?? ""
                                   }
@@ -994,41 +1051,10 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 </div>
               </div>
 
-              {step.inputLabel && (
-                <div className="trieve-text-input-container">
-                  <label
-                    htmlFor="text-input"
-                    className="trieve-text-input-label"
-                  >
-                    {step.inputLabel}
-                  </label>
-                  <div className="trieve-text-input-textarea-container">
-                    <textarea
-                      name="text-input"
-                      rows={4}
-                      className="trieve-text-input-textarea"
-                      disabled={completedSteps[step.title]}
-                      placeholder={step.placeholder}
-                      value={textFields[step.title]?.inputValue}
-                      onChange={(e) => {
-                        setTextFields((prev) => ({
-                          ...prev,
-                          [step.title]: {
-                            ...prev[step.title],
-                            inputValue: e.target.value,
-                          },
-                        }));
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
               <div className="trieve-text-button-container">
                 <button
                   type="button"
                   className="trieve-text-input-button"
-                  disabled={!textFields[step.title]?.inputValue}
                   onClick={() => {
                     setCompletedSteps((prev) => ({
                       ...prev,
