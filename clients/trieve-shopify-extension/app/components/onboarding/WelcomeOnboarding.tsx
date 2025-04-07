@@ -3,6 +3,7 @@ import { CheckIcon } from "@shopify/polaris-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { useClientAdminApi } from "app/loaders/clientLoader";
+import { trackCustomerEvent } from "app/processors/shopifyTrackers";
 import { shopifyVariantsCountQuery } from "app/queries/onboarding";
 import { usageQuery } from "app/queries/usage";
 import { OnboardingBody } from "app/utils/onboarding";
@@ -34,6 +35,18 @@ export const WelcomeOnboarding: OnboardingBody = ({
       setCompleted(true);
       setRefetch(false);
       if (broadcastCompletion) {
+        if (trieve.organizationId && trieve.trieve.apiKey != null) {
+          trackCustomerEvent(
+            trieve.trieve.baseUrl,
+            {
+              organization_id: trieve.organizationId,
+              store_name: "",
+              event_type: "catalogue_indexed",
+            },
+            trieve.organizationId,
+            trieve.trieve.apiKey,
+          );
+        }
         broadcastCompletion();
       }
       if (goToNextStep) {

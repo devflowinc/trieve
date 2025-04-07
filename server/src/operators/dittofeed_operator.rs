@@ -8,7 +8,7 @@ use crate::{
     errors::ServiceError,
     handlers::{
         analytics_handler::GetTopDatasetsRequestBody, dataset_handler::GetDatasetsPagination,
-        shopify_handler::ShopifyCustomer,
+        shopify_handler::ShopifyCustomerEvent,
     },
 };
 
@@ -67,7 +67,7 @@ pub enum DittoTrackProperties {
     DittoDatasetUsage(DittoDatasetUsage),
     DittoOrgUsage(DittoOrgUsage),
     DittoDatasetCreated(DittoDatasetCreated),
-    DittoShopifyLink(ShopifyCustomer),
+    DittoShopifyEvent(ShopifyCustomerEvent),
 }
 
 #[derive(Debug, Serialize, Deserialize)]

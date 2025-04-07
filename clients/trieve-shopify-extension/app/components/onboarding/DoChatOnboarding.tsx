@@ -5,6 +5,7 @@ import { useTrieve } from "app/context/trieveContext";
 import { allChatsQuery } from "app/queries/analytics/chat";
 import { OnboardingBody } from "app/utils/onboarding";
 import { useShopName } from "app/utils/useShopName";
+import { trackCustomerEvent } from "app/processors/shopifyTrackers";
 import { useEffect } from "react";
 
 export const DoChatOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
@@ -17,6 +18,18 @@ export const DoChatOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
   useEffect(() => {
     if (chats && chats.topics.length > 0) {
       if (broadcastCompletion) {
+        if (trieve.organizationId && trieve.trieve.apiKey != null) {
+          trackCustomerEvent(
+            trieve.trieve.baseUrl
+            , {
+              organization_id: trieve.organizationId,
+              store_name: "",
+              event_type: "fist_chat_completed",
+            },
+            trieve.organizationId,
+            trieve.trieve.apiKey,
+          );
+        }
         broadcastCompletion();
       }
     }

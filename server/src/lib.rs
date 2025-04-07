@@ -275,7 +275,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_all_events,
         handlers::analytics_handler::get_event_by_id,
         handlers::analytics_handler::get_component_analytics,
-        handlers::shopify_handler::link_to_shopify,
+        handlers::shopify_handler::send_shopify_user_event,
         handlers::metrics_handler::get_metrics,
         handlers::page_handler::public_page,
         handlers::etl_handler::create_etl_job
@@ -446,7 +446,7 @@ impl Modify for SecurityAddon {
             handlers::page_handler::PublicPageTabMessage,
             handlers::page_handler::HeroPattern,
             handlers::etl_handler::CreateSchemaReqPayload,
-            handlers::shopify_handler::ShopifyCustomer,
+            handlers::shopify_handler::ShopifyCustomerEvent,
             data::models::UserApiKey,
             data::models::CrawlStatus,
             data::models::CrawlType,
@@ -955,8 +955,8 @@ pub fn main() -> std::io::Result<()> {
                         .service(
                             web::scope("/shopify")
                                 .service(
-                                    web::resource("/link")
-                                    .route(web::post().to(handlers::shopify_handler::link_to_shopify))
+                                    web::resource("user_event")
+                                    .route(web::post().to(handlers::shopify_handler::send_shopify_user_event))
                                 )
                         )
                         .service(

@@ -17,30 +17,31 @@ use crate::{
 use super::auth_handler::AdminOnly;
 
 #[derive(ToSchema, Clone, Debug, Serialize, Deserialize)]
-pub struct ShopifyCustomer {
+pub struct ShopifyCustomerEvent {
     pub organization_id: uuid::Uuid,
     pub store_name: String,
+    pub event_type: String,
 }
 
-/// Link Trieve Account to Shopify
+/// Send a Shopify user event
 ///
-/// Links your organization_id to a Shopify store
+/// This endpoint is used to send a Shopify user event to all users in the organization.
 #[utoipa::path(
     post,
-    path = "/shopify/link",
+    path = "/shopify/user_event",
     context_path = "/api",
     tag = "Public",
-    request_body(content = ShopifyCustomer, description = "The shopify customer data to add to this user", content_type = "application/json"),
+    request_body(content = ShopifyCustomerEvent, description = "The shopify customer data to add to this user", content_type = "application/json"),
     responses(
         (status = 200, description = "Public Page associated to the dataset"),
         (status = 400, description = "Service error relating to linking your organization to the Shopify store", body = ErrorResponseBody),
     ),
 )]
-pub async fn link_to_shopify(
+pub async fn send_shopify_user_event(
     _user: AdminOnly,
     pool: web::Data<Pool>,
     org_plan_sub: OrganizationWithSubAndPlan,
-    shopify_customer: web::Json<ShopifyCustomer>,
+    customer_event: web::Json<ShopifyCustomerEvent>,
 ) -> Result<HttpResponse, ServiceError> {
     let users = get_org_users_by_id_query(org_plan_sub.organization.id, pool).await?;
 
@@ -50,20 +51,21 @@ pub async fn link_to_shopify(
             .map(|user| {
                 DittoBatchRequestTypes::Track(DittoTrackRequest {
                     r#type: Some("track".to_string()),
-                    message_id: shopify_customer.store_name.clone(),
-                    event: "shopify_linked".to_string(),
-                    properties: DittoTrackProperties::DittoShopifyLink(shopify_customer.clone()),
+                    message_id: format!(
+                        "{}-{}-{}",
+                        customer_event.store_name.clone(),
+                        user.id,
+                        customer_event.event_type.clone()
+                    ),
+                    event: customer_event.event_type.clone(),
+                    properties: DittoTrackProperties::DittoShopifyEvent(customer_event.clone()),
                     user_id: user.id,
                 })
             })
             .collect(),
     };
 
-    log::info!("Shopify Linked Request: {:#?}", dittofeed_batch_request);
-
-    let response = send_user_ditto_identity(dittofeed_batch_request).await;
-
-    log::info!("Shopify Linked Response: {:#?}", response);
+    send_user_ditto_identity(dittofeed_batch_request).await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
