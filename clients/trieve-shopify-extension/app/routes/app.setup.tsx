@@ -230,6 +230,5 @@ export const loader = async (args: LoaderFunctionArgs) => {
   ).catch(console.error);
 
   trieve.datasetId = datasetId;
-  console.log("redirecting to app!");
   return redirect("/app");
 };
