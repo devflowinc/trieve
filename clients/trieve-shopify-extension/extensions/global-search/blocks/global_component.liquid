@@ -36,6 +36,7 @@
       useGroupSearch: true,
       scaleRem: true,
       hideOpenButton: true,
+      defaultSearchMode: "chat",
       apiKey: appMetafieldTrieve.api_key,
       datasetId: appMetafieldTrieve.dataset_id,
       zIndex: Number(getValue(appMetafieldTrieve.z_index, 2147483645)),
@@ -53,11 +54,49 @@
       getCartQuantity: (trackingId) => {
         return checkCartQuantity(parseInt(trackingId));
       },
+      searchOptions: {
+        use_autocomplete: true,
+        search_type: "fulltext",
+        typo_options: {
+          correct_typos: true,
+        },
+        filters: {
+          must: [
+            {
+              field: "metadata.variant_inventory",
+              range: {
+                gt: 0
+              }
+            },
+            {
+              field: "metadata.status",
+              match_all: [
+                "ACTIVE"
+              ]
+            }
+          ]
+        }
+      },
+      chatFilters: {
+        must: [
+          {
+            field: "metadata.variant_inventory",
+            range: {
+              gt: 0
+            }
+          },
+          {
+            field: "metadata.status",
+            match_all: [
+              "ACTIVE"
+            ]
+          }
+        ]
+      },
       {% comment %} not on inline {% endcomment %}
       showFloatingSearchIcon: toBool(getValue("{{ block.settings.show_floating_search_icon }}", true)),
       floatingSearchIconPosition: getValue("{{ block.settings.floating_icon_pos }}", "left"),
       allowSwitchingModes: false,
-      defaultSearchMode: "chat",
     });
   }
 </script>
