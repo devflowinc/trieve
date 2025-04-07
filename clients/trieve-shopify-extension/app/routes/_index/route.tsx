@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import "./tailwind.css";
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { useFetcher } from "@remix-run/react";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 import { useEffect, useState } from "react";

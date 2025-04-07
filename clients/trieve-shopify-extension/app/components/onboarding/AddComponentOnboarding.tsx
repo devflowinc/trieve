@@ -175,21 +175,42 @@ export const AddComponentOnboarding: OnboardingBody = ({
   };
 
   useEffect(() => {
-    if (globalComplete && pdpComplete) {
-      if (broadcastCompletion) {
+
+  })
+
+  useEffect(() => {
+    if (globalComplete) {
         if (trieve.organizationId && trieve.trieve.apiKey != null) {
           trackCustomerEvent(
             trieve.trieve.baseUrl
             , {
               organization_id: trieve.organizationId,
               store_name: "",
-              event_type: "onboarding_component_completed",
+              event_type: "global_component_added",
             },
             trieve.organizationId,
             trieve.trieve.apiKey,
           );
         }
+    }
 
+    if (pdpComplete) {
+        if (trieve.organizationId && trieve.trieve.apiKey != null) {
+          trackCustomerEvent(
+            trieve.trieve.baseUrl
+            , {
+              organization_id: trieve.organizationId,
+              store_name: "",
+              event_type: "pdp_component_added",
+            },
+            trieve.organizationId,
+            trieve.trieve.apiKey,
+          );
+        }
+    }
+
+    if (globalComplete && pdpComplete) {
+      if (broadcastCompletion) {
         broadcastCompletion();
       }
     }
