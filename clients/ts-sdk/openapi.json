@@ -6353,20 +6353,20 @@
         }
       }
     },
-    "/api/shopify/link": {
+    "/api/shopify/user_event": {
       "post": {
         "tags": [
           "Public"
         ],
-        "summary": "Link Trieve Account to Shopify",
-        "description": "Links your organization_id to a Shopify store",
-        "operationId": "link_to_shopify",
+        "summary": "Send a Shopify user event",
+        "description": "This endpoint is used to send a Shopify user event to all users in the organization.",
+        "operationId": "send_shopify_user_event",
         "requestBody": {
           "description": "The shopify customer data to add to this user",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ShopifyCustomer"
+                "$ref": "#/components/schemas/ShopifyCustomerEvent"
               }
             }
           },
@@ -18946,15 +18946,20 @@
           }
         }
       },
-      "ShopifyCustomer": {
+      "ShopifyCustomerEvent": {
         "type": "object",
         "required": [
           "organization_id",
-          "store_name"
+          "store_name",
+          "event_type"
         ],
         "properties": {
-          "organization_id": {
+          "event_type": {
             "type": "string"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid"
           },
           "store_name": {
             "type": "string"

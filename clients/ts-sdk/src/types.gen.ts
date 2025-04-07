@@ -3726,7 +3726,8 @@ export type SemanticBoost = {
     phrase: string;
 };
 
-export type ShopifyCustomer = {
+export type ShopifyCustomerEvent = {
+    event_type: string;
     organization_id: string;
     store_name: string;
 };
@@ -5846,14 +5847,14 @@ export type PublicPageData = {
 
 export type PublicPageResponse = (unknown);
 
-export type LinkToShopifyData = {
+export type SendShopifyUserEventData = {
     /**
      * The shopify customer data to add to this user
      */
-    requestBody: ShopifyCustomer;
+    requestBody: ShopifyCustomerEvent;
 };
 
-export type LinkToShopifyResponse = (unknown);
+export type SendShopifyUserEventResponse = (unknown);
 
 export type UpdatePaymentMethodData = {
     /**
@@ -7547,9 +7548,9 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/api/shopify/link': {
+    '/api/shopify/user_event': {
         post: {
-            req: LinkToShopifyData;
+            req: SendShopifyUserEventData;
             res: {
                 /**
                  * Public Page associated to the dataset

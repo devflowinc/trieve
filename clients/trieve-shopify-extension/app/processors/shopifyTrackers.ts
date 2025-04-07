@@ -1,17 +1,14 @@
-import { TrieveKey } from "app/types";
-import { getTrieveBaseUrlEnv } from "app/env.server";
-import { ShopifyCustomer } from "trieve-ts-sdk";
+import { ShopifyCustomerEvent } from "trieve-ts-sdk";
 
-export async function trackUserLinked(shopifyCustomer: ShopifyCustomer, key: TrieveKey) {
-  console.log("linked to user");
-  await fetch(`${getTrieveBaseUrlEnv()}/api/shopify/link`, {
+export async function trackCustomerEvent(trieveUrl: string, shopifyCustomerEvent: ShopifyCustomerEvent, organizationId: string, apiKey: string) {
+  await fetch(`${trieveUrl}/api/shopify/user_event`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${key.key}`,
+      "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "TR-Organization": key.organizationId,
+      "TR-Organization": organizationId,
     },
-    body: JSON.stringify(shopifyCustomer),
+    body: JSON.stringify(shopifyCustomerEvent),
   }).catch((e) => {
     console.error(`Error sending account link to Trieve: ${e}`);
   });

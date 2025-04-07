@@ -1,4 +1,4 @@
-import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
+import { LoaderFunctionArgs, redirect } from "@remix-run/node";
 import {
   defaultCrawlOptions,
   ExtendedCrawlOptions,
@@ -7,7 +7,7 @@ import { getTrieveBaseUrlEnv } from "app/env.server";
 import { AdminApiCaller } from "app/loaders";
 import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 import { sendChunks } from "app/processors/getProducts";
-import { trackUserLinked } from "app/processors/shopifyTrackers";
+import { trackCustomerEvent } from "app/processors/shopifyTrackers";
 import { authenticate } from "app/shopify.server";
 import { TrieveKey } from "app/types";
 import { TrieveSDK } from "trieve-ts-sdk";
@@ -212,10 +212,15 @@ export const loader = async (args: LoaderFunctionArgs) => {
     },
   });
 
-  trackUserLinked({
-    organization_id: key.organizationId,
-    store_name: session.shop,
-  }, key).catch(console.error);
+  trackCustomerEvent(
+    getTrieveBaseUrlEnv()
+    , {
+      organization_id: key.organizationId,
+      store_name: session.shop,
+      event_name: "shopify_linked",
+    }, key.organizationId,
+    key.key
+  ).catch(console.error);
 
   sendChunks(
     datasetId ?? "",

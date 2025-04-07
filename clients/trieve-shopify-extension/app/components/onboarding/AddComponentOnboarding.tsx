@@ -14,6 +14,8 @@ import { OnboardingBody } from "app/utils/onboarding";
 import { useShopName } from "app/utils/useShopName";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { ThemeSelect, ThemeChoice } from "./ThemeSelect"; // Import the new component
+import { trackCustomerEvent } from "app/processors/shopifyTrackers";
+import { useTrieve } from "app/context/trieveContext";
 
 const getShortThemeId = (fullGid: string): string | null => {
   const regex = /gid:\/\/shopify\/OnlineStoreTheme\/(\d+)/;
@@ -80,6 +82,7 @@ export const AddComponentOnboarding: OnboardingBody = ({
   broadcastCompletion,
 }) => {
   const adminApi = useClientAdminApi();
+  const { trieve } = useTrieve();
 
   const [keepFetchingGlobal, setKeepFetchingGlobal] = useState(true);
 
@@ -174,6 +177,19 @@ export const AddComponentOnboarding: OnboardingBody = ({
   useEffect(() => {
     if (globalComplete && pdpComplete) {
       if (broadcastCompletion) {
+        if (trieve.organizationId && trieve.trieve.apiKey != null) {
+          trackCustomerEvent(
+            trieve.trieve.baseUrl
+            , {
+              organization_id: trieve.organizationId,
+              store_name: "",
+              event_type: "onboarding_component_completed",
+            },
+            trieve.organizationId,
+            trieve.trieve.apiKey,
+          );
+        }
+
         broadcastCompletion();
       }
     }
