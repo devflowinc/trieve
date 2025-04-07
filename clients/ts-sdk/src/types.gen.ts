@@ -3726,6 +3726,11 @@ export type SemanticBoost = {
     phrase: string;
 };
 
+export type ShopifyCustomer = {
+    organization_id: string;
+    store_name: string;
+};
+
 export type SingleProductOptions = {
     groupTrackingId?: (string) | null;
     productDescriptionHtml?: (string) | null;
@@ -5841,6 +5846,15 @@ export type PublicPageData = {
 
 export type PublicPageResponse = (unknown);
 
+export type LinkToShopifyData = {
+    /**
+     * The shopify customer data to add to this user
+     */
+    requestBody: ShopifyCustomer;
+};
+
+export type LinkToShopifyResponse = (unknown);
+
 export type UpdatePaymentMethodData = {
     /**
      * The id of the organization to create setup checkout session for.
@@ -7530,6 +7544,21 @@ export type $OpenApiTs = {
                  * Dataset not found
                  */
                 404: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/shopify/link': {
+        post: {
+            req: LinkToShopifyData;
+            res: {
+                /**
+                 * Public Page associated to the dataset
+                 */
+                200: unknown;
+                /**
+                 * Service error relating to linking your organization to the Shopify store
+                 */
+                400: ErrorResponseBody;
             };
         };
     };

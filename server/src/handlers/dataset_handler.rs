@@ -167,7 +167,7 @@ pub async fn create_dataset(
     let dataset_created_event = DittoTrackRequest {
         event: "DATASET_CREATED".to_string(),
         user_id: user.0.id,
-        message_id: uuid::Uuid::new_v4(),
+        message_id: uuid::Uuid::new_v4().to_string(),
         properties: DittoTrackProperties::DittoDatasetCreated(DittoDatasetCreated {
             dataset: DatasetDTO::from(dataset),
         }),
