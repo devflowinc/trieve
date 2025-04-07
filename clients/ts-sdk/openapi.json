@@ -6353,6 +6353,42 @@
         }
       }
     },
+    "/api/shopify/link": {
+      "post": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Link Trieve Account to Shopify",
+        "description": "Links your organization_id to a Shopify store",
+        "operationId": "link_to_shopify",
+        "requestBody": {
+          "description": "The shopify customer data to add to this user",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopifyCustomer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Public Page associated to the dataset"
+          },
+          "400": {
+            "description": "Service error relating to linking your organization to the Shopify store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/stripe/checkout/setup/{organization_id}": {
       "post": {
         "tags": [
@@ -7690,7 +7726,8 @@
           },
           "usage_amount": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -18906,6 +18943,21 @@
           "phrase": {
             "type": "string",
             "description": "Terms to embed in order to create the vector which is weighted summed with the chunk_html embedding vector"
+          }
+        }
+      },
+      "ShopifyCustomer": {
+        "type": "object",
+        "required": [
+          "organization_id",
+          "store_name"
+        ],
+        "properties": {
+          "organization_id": {
+            "type": "string"
+          },
+          "store_name": {
+            "type": "string"
           }
         }
       },

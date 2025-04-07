@@ -8,6 +8,7 @@ use crate::{
     errors::ServiceError,
     handlers::{
         analytics_handler::GetTopDatasetsRequestBody, dataset_handler::GetDatasetsPagination,
+        shopify_handler::ShopifyCustomer,
     },
 };
 
@@ -66,6 +67,7 @@ pub enum DittoTrackProperties {
     DittoDatasetUsage(DittoDatasetUsage),
     DittoOrgUsage(DittoOrgUsage),
     DittoDatasetCreated(DittoDatasetCreated),
+    DittoShopifyLink(ShopifyCustomer),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -77,7 +79,7 @@ pub struct DittoDatasetCreated {
 #[serde(rename_all = "camelCase")]
 pub struct DittoTrackRequest {
     pub r#type: Option<String>,
-    pub message_id: uuid::Uuid,
+    pub message_id: String,
     pub event: String,
     pub properties: DittoTrackProperties,
     pub user_id: uuid::Uuid,
@@ -207,6 +209,7 @@ pub async fn get_user_ditto_identity(
                 clickhouse_client,
             )
             .await?;
+
             let usage = DittoDatasetUsage {
                 dataset: dataset.dataset,
                 top_search_queries: top_search_queries.queries,
@@ -233,7 +236,7 @@ pub async fn get_user_ditto_identity(
         .into_iter()
         .map(|usage| DittoTrackRequest {
             r#type: Some("track".to_string()),
-            message_id: usage.organization.id,
+            message_id: usage.organization.id.to_string(),
             event: "ORGANIZATION_USAGE".to_string(),
             properties: DittoTrackProperties::DittoOrgUsage(usage),
             user_id: user.id,
@@ -244,7 +247,7 @@ pub async fn get_user_ditto_identity(
         .into_iter()
         .map(|usage| DittoTrackRequest {
             r#type: Some("track".to_string()),
-            message_id: usage.dataset.id,
+            message_id: usage.dataset.id.to_string(),
             event: "DATASET_USAGE".to_string(),
             properties: DittoTrackProperties::DittoDatasetUsage(usage),
             user_id: user.id,

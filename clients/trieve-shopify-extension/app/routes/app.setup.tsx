@@ -7,6 +7,7 @@ import { getTrieveBaseUrlEnv } from "app/env.server";
 import { AdminApiCaller } from "app/loaders";
 import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 import { sendChunks } from "app/processors/getProducts";
+import { trackUserLinked } from "app/processors/shopifyTrackers";
 import { authenticate } from "app/shopify.server";
 import { TrieveKey } from "app/types";
 import { TrieveSDK } from "trieve-ts-sdk";
@@ -16,39 +17,6 @@ export type AppInstallData = {
 };
 
 export const loader = async (args: LoaderFunctionArgs) => {
-  const startCrawl = async (
-    crawlOptions: ExtendedCrawlOptions,
-    datasetId: string,
-    session: { shop: string },
-    trieveKey: TrieveKey,
-    adminApi: AdminApiCaller,
-  ) => {
-    await prisma.crawlSettings.upsert({
-      create: {
-        datasetId: datasetId,
-        shop: session.shop,
-        crawlSettings: crawlOptions,
-      },
-      update: {
-        crawlSettings: crawlOptions,
-      },
-      where: {
-        datasetId_shop: {
-          datasetId: datasetId,
-          shop: session.shop,
-        },
-      },
-    });
-
-    sendChunks(
-      datasetId ?? "",
-      trieveKey,
-      adminApi,
-      session,
-      crawlOptions,
-    ).catch(console.error);
-  };
-
   const setAppMetafields = async (
     adminApi: AdminApiCaller,
     trieveKey: TrieveKey,
@@ -225,15 +193,39 @@ export const loader = async (args: LoaderFunctionArgs) => {
     });
   }
 
-  startCrawl(
-    crawlSettings.crawlSettings as ExtendedCrawlOptions,
-    datasetId,
-    session,
+  const crawlOptions = crawlSettings.crawlSettings as ExtendedCrawlOptions;
+
+  await prisma.crawlSettings.upsert({
+    create: {
+      datasetId: datasetId,
+      shop: session.shop,
+      crawlSettings: crawlOptions,
+    },
+    update: {
+      crawlSettings: crawlOptions,
+    },
+    where: {
+      datasetId_shop: {
+        datasetId: datasetId,
+        shop: session.shop,
+      },
+    },
+  });
+
+  trackUserLinked({
+    organization_id: key.organizationId,
+    store_name: session.shop,
+  }, key).catch(console.error);
+
+  sendChunks(
+    datasetId ?? "",
     key,
     fetcher,
-  );
+    session,
+    crawlOptions,
+  ).catch(console.error);
 
   trieve.datasetId = datasetId;
-
+  console.log("redirecting to app!");
   return redirect("/app");
 };

@@ -22,7 +22,7 @@ export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 export const loader = async () => {
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
-    trieveAuthUrl: process.env.REMIX_SERVER_URL!,
+    remixServerUrl: process.env.REMIX_SERVER_URL!,
     shopifyThemeAppExtensionUuid: process.env.SHOPIFY_THEME_APP_EXTENSION_UUID,
   };
 };
@@ -60,16 +60,16 @@ export default function App() {
 
 // Shopify needs Remix to catch some thrown responses, so that their headers are included in the response.
 export function ErrorBoundary() {
-  const { apiKey, trieveAuthUrl } = useRouteLoaderData("routes/app") as {
+  const { apiKey, remixServerUrl } = useRouteLoaderData("routes/app") as {
     apiKey: string;
-    trieveAuthUrl: string;
+    remixServerUrl: string;
   };
   const error = useRouteError();
   if (isRouteErrorResponse(error) && error.status === 401 && apiKey) {
     return (
       // MustLoginPage needs access to use `useAppBridge`
       <AppProvider isEmbeddedApp apiKey={apiKey}>
-        <MustLoginPage authUrl={trieveAuthUrl} />
+        <MustLoginPage authUrl={remixServerUrl} />
       </AppProvider>
     );
   }

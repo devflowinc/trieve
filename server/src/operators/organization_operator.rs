@@ -838,7 +838,7 @@ pub async fn get_arbitrary_org_owner_from_dataset_id(
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
-    let user_orgs_orgs: (User, UserOrganization, Organization) = users_columns::users
+    let (user, user_organization, organization): (User, UserOrganization, Organization) = users_columns::users
         .inner_join(user_organizations_columns::user_organizations)
         .inner_join(
             organization_columns::organizations
@@ -870,9 +870,9 @@ pub async fn get_arbitrary_org_owner_from_dataset_id(
     )?;
 
     Ok(SlimUser::from_details(
-        user_orgs_orgs.0,
-        vec![user_orgs_orgs.1],
-        vec![user_orgs_orgs.2.with_complete_partner_config()],
+        user,
+        vec![user_organization],
+        vec![organization.with_complete_partner_config()],
     ))
 }
 
