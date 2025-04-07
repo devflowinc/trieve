@@ -488,6 +488,7 @@ pub async fn clear_dataset_query(
 
     let chunk_groups = chunk_group::chunk_group
         .filter(chunk_group::dataset_id.eq(id))
+        .filter(chunk_group::created_at.le(deleted_at))
         .select(chunk_group::id)
         .load::<uuid::Uuid>(&mut conn)
         .await
@@ -585,6 +586,10 @@ pub async fn clear_dataset_query(
         delete_points_from_qdrant(qdrant_point_ids, qdrant_collection.clone())
             .await
             .map_err(|err| {
+                log::error!(
+                    "Could not delete points in current batch from qdrant: {}",
+                    err
+                );
                 ServiceError::BadRequest(format!(
                     "Could not delete points in current batch from qdrant: {}",
                     err

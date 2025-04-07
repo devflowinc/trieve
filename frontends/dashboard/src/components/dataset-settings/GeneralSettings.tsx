@@ -14,8 +14,6 @@ export const GeneralServerSettings = (props: {
 }) => {
   return (
     <form class="flex flex-col gap-3">
-      {/* General LLM Settings */}
-
       {/* Embedding Settings */}
       <div
         class="rounded-md border shadow sm:overflow-hidden"
@@ -35,7 +33,7 @@ export const GeneralServerSettings = (props: {
             <div class="col-span-4 space-y-1 sm:col-span-2">
               <div class="flex items-center">
                 <label
-                  for="embeddingSize"
+                  for="embeddingModel"
                   class="mr-2 block text-sm font-medium leading-6"
                 >
                   Embedding Model
@@ -46,11 +44,11 @@ export const GeneralServerSettings = (props: {
                 />
               </div>
               <select
-                id="embeddingSize"
+                id="embeddingModel"
                 aria-readonly
                 title="Embedding Model is only editable on creation"
                 disabled
-                name="embeddingSize"
+                name="embeddingModel"
                 class="col-span-2 block w-full cursor-not-allowed rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={
                   availableEmbeddingModels.find(
@@ -68,7 +66,7 @@ export const GeneralServerSettings = (props: {
             <div class="col-span-4 space-y-1 sm:col-span-2">
               <div class="flex items-center">
                 <label
-                  for="embeddingSize"
+                  for="embeddingQueryPrefix"
                   class="mr-2 block text-sm font-medium leading-6"
                 >
                   Embedding Query Prefix
@@ -98,7 +96,7 @@ export const GeneralServerSettings = (props: {
             <div class="col-span-4 space-y-1 sm:col-span-2">
               <div class="flex items-center">
                 <label
-                  for="embeddingSize"
+                  for="rerankerModel"
                   class="mr-2 block text-sm font-medium leading-6"
                 >
                   Reranker Model
@@ -176,7 +174,7 @@ export const GeneralServerSettings = (props: {
             <div class="col-span-4 space-y-1 sm:col-span-2">
               <div class="flex items-center">
                 <label
-                  for="embeddingSize"
+                  for="distanceMetric"
                   class="mr-2 block text-sm font-medium leading-6"
                 >
                   Distance Metric
@@ -187,11 +185,11 @@ export const GeneralServerSettings = (props: {
                 />
               </div>
               <select
-                id="embeddingSize"
+                id="distanceMetric"
                 aria-readonly
                 title="Embedding Model is only editable on creation"
                 disabled
-                name="embeddingSize"
+                name="distanceMetric"
                 class="col-span-2 block w-full cursor-not-allowed rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 value={
                   availableDistanceMetrics.find(
@@ -398,7 +396,7 @@ export const GeneralServerSettings = (props: {
               />
               <div class="flex items-center">
                 <label
-                  for="embeddingSize"
+                  for="indexedOnly"
                   class="mr-2 block text-sm font-medium leading-6"
                 >
                   Indexed Only
@@ -427,7 +425,7 @@ export const GeneralServerSettings = (props: {
               />
               <div class="flex items-center">
                 <label
-                  for="embeddingSize"
+                  for="qdrantOnly"
                   class="mr-2 block text-sm font-medium leading-6"
                 >
                   Qdrant Only
