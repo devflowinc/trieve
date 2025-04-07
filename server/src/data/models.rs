@@ -3910,7 +3910,7 @@ impl Default for StripePlan {
             chunk_count: 1000,
             file_storage: 1024 * 1024,
             user_count: 5,
-            dataset_count: 300,
+            dataset_count: 2,
             message_count: 1000,
             amount: 0,
             created_at: chrono::Utc::now().naive_local(),
