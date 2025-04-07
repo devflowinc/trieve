@@ -1,15 +1,12 @@
-import { ActionFunctionArgs, json, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useRouteLoaderData } from "@remix-run/react";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
 import { Box } from "@shopify/polaris";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
 import { DatasetSettings as DatasetSettings } from "app/components/DatasetSettings";
 import { useTrieve } from "app/context/trieveContext";
-import { Loader } from "app/loaders";
-import { createClientLoader } from "app/loaders/clientLoader";
-import { buildAdminApiFetcherForServer, createServerLoader } from "app/loaders/serverLoader";
+import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 import { sendChunks } from "app/processors/getProducts";
-import { scrapeOptionsQuery } from "app/queries/scrapeOptions";
 import { shopDatasetQuery } from "app/queries/shopDataset";
 import { authenticate } from "app/shopify.server";
 import { type Dataset } from "trieve-ts-sdk";
@@ -29,7 +26,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return Response.json({ crawlSettings: crawlSettings?.crawlSettings });
 };
 
-
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
@@ -45,7 +41,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         datasetId_shop: {
           datasetId: datasetId as string,
           shop: session.shop,
-        }
+        },
       },
       update: {
         crawlSettings,
@@ -58,13 +54,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       session.accessToken!,
     );
 
-    sendChunks(
-      datasetId as string,
-      key,
-      fetcher,
-      session,
-      crawlSettings,
-    ).catch(console.error);
+    sendChunks(datasetId as string, key, fetcher, session, crawlSettings).catch(
+      console.error,
+    );
     return Response.json({ success: true });
   } else if (type === "dataset") {
     const datasetSettingsString = formData.get("dataset_settings");
