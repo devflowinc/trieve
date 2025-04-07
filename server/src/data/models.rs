@@ -2808,12 +2808,25 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             RERANKER_API_KEY: dto.RERANKER_API_KEY.unwrap_or("".to_string()),
             RERANKER_MODEL_NAME: dto.RERANKER_MODEL_NAME.unwrap_or("bge-reranker-large".to_string()),
             EMBEDDING_BASE_URL: dto.EMBEDDING_BASE_URL.unwrap_or("https://embedding.trieve.ai".to_string()),
-            EMBEDDING_MODEL_NAME: dto.EMBEDDING_MODEL_NAME.unwrap_or("jina-base-en".to_string()),
+            EMBEDDING_MODEL_NAME: dto.EMBEDDING_MODEL_NAME.clone().unwrap_or("jina-base-en".to_string()),
             RERANKER_BASE_URL: dto.RERANKER_BASE_URL.unwrap_or("".to_string()),
             MESSAGE_TO_QUERY_PROMPT: dto.MESSAGE_TO_QUERY_PROMPT.unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()),
             RAG_PROMPT: dto.RAG_PROMPT.unwrap_or("Use the following retrieved documents to respond briefly and accurately:".to_string()),
             N_RETRIEVALS_TO_INCLUDE: dto.N_RETRIEVALS_TO_INCLUDE.unwrap_or(8),
-            EMBEDDING_SIZE: dto.EMBEDDING_SIZE.unwrap_or(768),
+            EMBEDDING_SIZE: if let Some(embedding_size) = dto.EMBEDDING_SIZE {
+                embedding_size
+            } else if let Some(embedding_model_name) = dto.EMBEDDING_MODEL_NAME {
+                match embedding_model_name.as_str() {
+                    "text-embedding-3-small" => 1536,
+                    "text-embedding-3-large" => 3072,
+                    "bge-m3" => 1024,
+                    "jina-embeddings-v2-base-code" => 768,
+                    "jina-base-en" => 768,
+                    _ => 768,
+                }
+            } else {
+                768
+            },
             DISTANCE_METRIC: dto.DISTANCE_METRIC.unwrap_or(DistanceMetric::Cosine),
             LLM_DEFAULT_MODEL: dto.LLM_DEFAULT_MODEL.unwrap_or("gpt-4o".to_string()),
             BM25_ENABLED: dto.BM25_ENABLED.unwrap_or(true),
