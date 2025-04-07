@@ -213,12 +213,11 @@ export const loader = async (args: LoaderFunctionArgs) => {
   });
 
   trackCustomerEvent(
-    getTrieveBaseUrlEnv()
-    , {
-      organization_id: key.organizationId,
-      store_name: session.shop,
-      event_name: "shopify_linked",
-    }, key.organizationId,
+    getTrieveBaseUrlEnv(), {
+    organization_id: key.organizationId,
+    store_name: session.shop,
+    event_type: "shopify_linked",
+  }, key.organizationId,
     key.key
   ).catch(console.error);
 
