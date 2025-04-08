@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { AddComponentOnboarding } from "app/components/onboarding/AddComponentOnboarding";
 import { DoChatOnboarding } from "app/components/onboarding/DoChatOnboarding";
+import { SetPromptsOnboarding } from "app/components/onboarding/SetPromptsOnboarding";
 import { WelcomeOnboarding } from "app/components/onboarding/WelcomeOnboarding";
 import { setMetafield } from "app/loaders";
 import { useClientAdminApi } from "app/loaders/clientLoader";
@@ -23,7 +24,6 @@ export type OnboardingBody = FC<{
 type OnboardingStep = {
   id: string;
   title: string;
-  description?: string;
   defaultComplete?: boolean;
   body: OnboardingBody;
   nextButtonText?: string;
@@ -33,10 +33,16 @@ type OnboardingStep = {
 
 export const onboardingSteps: OnboardingStep[] = [
   {
+    id: "set-chat-messages",
+    title: "Set AI Prompts",
+    defaultComplete: false,
+    body: SetPromptsOnboarding,
+    nextButtonText: "Setup Component",
+  },
+  {
     id: "welcome-message",
     title: "Sync products",
     defaultComplete: false,
-    description: "Let's get you set up",
     body: WelcomeOnboarding,
     nextButtonText: "Setup Component",
   },
@@ -44,13 +50,11 @@ export const onboardingSteps: OnboardingStep[] = [
     // Name in a way that changing the step + adding more will not require id rename
     id: "after-welcome",
     title: "Add the widgets to your site",
-    description: "Second task",
     body: AddComponentOnboarding,
   },
   {
     id: "after-add-component",
     title: "Chat with your products",
-    description: "Complete a chat conversation using a widget",
     body: DoChatOnboarding,
     nextButtonText: "Finish",
   },
