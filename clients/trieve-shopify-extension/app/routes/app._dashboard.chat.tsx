@@ -47,7 +47,7 @@ export default function ChatAnalyticsPage() {
               granularity={granularity}
               direct={false}
             />
-            <ChatUserJourneyFunnel filters={filters} />
+            {/* <ChatUserJourneyFunnel filters={filters} /> */}
             <TopicCTRRate filters={filters} granularity={granularity} />
             <ChatAverageRating filters={filters} granularity={granularity} />
           </div>

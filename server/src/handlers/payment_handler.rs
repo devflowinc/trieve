@@ -27,6 +27,7 @@ use crate::{
     },
 };
 use actix_web::{web, HttpRequest, HttpResponse};
+use dateparser::DateTimeUtc;
 use serde::{Deserialize, Serialize};
 use stripe::{EventObject, EventType, Object, Webhook};
 use utoipa::ToSchema;
@@ -205,6 +206,7 @@ pub async fn webhook(
                                     subscription_stripe_id,
                                     plan_id,
                                     organization_id,
+                                    None,
                                     pool.clone(),
                                 )
                                 .await?;
@@ -480,6 +482,7 @@ pub async fn update_subscription_plan(
                         current_trieve_subscription.stripe_subscription_id(),
                         flat_plan.id,
                         current_trieve_subscription.organization_id(),
+                        current_trieve_subscription.current_period_end(),
                         pool.clone(),
                     )
                     .await?;
@@ -722,20 +725,15 @@ pub async fn estimate_bill_from_range(
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ShopifyPlanChangePayload {
     pub organization_id: uuid::Uuid,
-    pub session_token: String,
+    pub idempotency_key: String,
     pub shopify_plan: ShopifyPlan,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ShopifyPlan {
-    pub name: String,
     pub handle: String,
     pub status: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct ShopifyClaims {
-    pub dest: String,
+    pub current_period_end: Option<String>,
 }
 
 #[utoipa::path(
@@ -749,10 +747,22 @@ pub struct ShopifyClaims {
     ),
 )]
 pub async fn handle_shopify_plan_change(
+    req: HttpRequest,
     payload: web::Json<ShopifyPlanChangePayload>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if payload.session_token != get_env!("SHOPIFY_SECRET_KEY", "SHOPIFY_SECRET_KEY must be set") {
+    let access_key = req
+        .headers()
+        .get("X-Shopify-Authorization")
+        .ok_or(ServiceError::BadRequest(
+            "X-Shopify-Authorization header is required".to_string(),
+        ))?
+        .to_str()
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to parse X-Shopify-Authorization header".to_string())
+        })?;
+
+    if access_key != get_env!("SHOPIFY_SECRET_KEY", "SHOPIFY_SECRET_KEY must be set") {
         return Err(ServiceError::BadRequest("Invalid session token".to_string()).into());
     }
 
@@ -766,6 +776,11 @@ pub async fn handle_shopify_plan_change(
         .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
     if let Some(organization_plan) = organization_plan {
+        if organization_plan.stripe_id == payload.idempotency_key {
+            // No changes
+            return Ok(HttpResponse::NoContent().finish());
+        }
+
         if organization_plan.plan_id == plan.id
             && payload.shopify_plan.status.to_lowercase() == "active"
         {
@@ -786,9 +801,16 @@ pub async fn handle_shopify_plan_change(
         {
             // Create a new plan
             create_stripe_subscription_query(
-                plan.stripe_id,
+                payload.idempotency_key.clone(),
                 plan.id,
                 payload.organization_id,
+                payload.shopify_plan.current_period_end.clone().map(|s| {
+                    s.parse::<DateTimeUtc>()
+                        .unwrap()
+                        .0
+                        .with_timezone(&chrono::Utc)
+                        .naive_utc()
+                }),
                 pool.clone(),
             )
             .await?;
@@ -796,9 +818,16 @@ pub async fn handle_shopify_plan_change(
     } else if payload.shopify_plan.status.to_lowercase() == "active" {
         // Create a new plan
         create_stripe_subscription_query(
-            plan.stripe_id,
+            payload.idempotency_key.clone(),
             plan.id,
             payload.organization_id,
+            payload.shopify_plan.current_period_end.clone().map(|s| {
+                s.parse::<DateTimeUtc>()
+                    .unwrap()
+                    .0
+                    .with_timezone(&chrono::Utc)
+                    .naive_utc()
+            }),
             pool.clone(),
         )
         .await?;

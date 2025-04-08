@@ -142,6 +142,8 @@ export class TrieveFetchClient {
           headers["TR-Organization"] = value;
         } else if (key === "xApiVersion" && typeof value === "string") {
           headers["X-API-VERSION"] = value;
+        } else if (key === "xShopifyAuthorization" && typeof value === "string") {
+          headers["X-Shopify-Authorization"] = value;
         }
         // Check if the key is in the path as path params
         const snakedKey = camelcaseToSnakeCase(key);

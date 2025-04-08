@@ -3749,14 +3749,14 @@ export type ShopifyCustomerEvent = {
 };
 
 export type ShopifyPlan = {
+    current_period_end?: (string) | null;
     handle: string;
-    name: string;
     status: string;
 };
 
 export type ShopifyPlanChangePayload = {
+    idempotency_key: string;
     organization_id: string;
-    session_token: string;
     shopify_plan: ShopifyPlan;
 };
 

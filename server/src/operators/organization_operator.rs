@@ -306,7 +306,16 @@ pub async fn get_org_from_id_query(
         .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
 
     let query = organizations_columns::organizations
-        .left_outer_join(stripe_subscriptions_columns::stripe_subscriptions)
+        .left_outer_join(stripe_subscriptions_columns::stripe_subscriptions.on(
+            stripe_subscriptions_columns::organization_id
+                .eq(organizations_columns::id)
+                .and(
+                    stripe_subscriptions_columns::current_period_end
+                        .is_null()
+                        .or(stripe_subscriptions_columns::current_period_end
+                            .gt(chrono::Utc::now().naive_utc())),
+                ),
+        ))
         .left_outer_join(
             stripe_plans_columns::stripe_plans
                 .on(stripe_plans_columns::id.eq(stripe_subscriptions_columns::plan_id)),
@@ -314,7 +323,14 @@ pub async fn get_org_from_id_query(
         .left_outer_join(
             stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
                 .on(stripe_usage_based_subscriptions_columns::organization_id
-                    .eq(organizations_columns::id)),
+                    .eq(organizations_columns::id)
+                    .and(
+                        stripe_usage_based_subscriptions_columns::current_period_end
+                            .is_null()
+                            .or(stripe_usage_based_subscriptions_columns::current_period_end
+                                .gt(chrono::Utc::now().naive_utc())),
+                    ),
+                )
         )
         .left_outer_join(
             stripe_usage_based_plans_columns::stripe_usage_based_plans

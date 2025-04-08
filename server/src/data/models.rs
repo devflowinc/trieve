@@ -4013,7 +4013,16 @@ impl StripeUsageBasedPlan {
 }
 
 #[derive(
-    Debug, Serialize, Deserialize, Selectable, Clone, Queryable, Insertable, ValidGrouping, ToSchema,
+    Debug,
+    Serialize,
+    Deserialize,
+    Selectable,
+    Clone,
+    Queryable,
+    Insertable,
+    ValidGrouping,
+    ToSchema,
+    AsChangeset,
 )]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",

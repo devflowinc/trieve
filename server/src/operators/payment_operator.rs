@@ -179,12 +179,13 @@ pub async fn create_stripe_subscription_query(
     stripe_id: String,
     plan_id: uuid::Uuid,
     organization_id: uuid::Uuid,
+    current_period_end: Option<chrono::NaiveDateTime>,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     use crate::data::schema::stripe_subscriptions::dsl as stripe_subscriptions_columns;
 
     let stripe_subscription =
-        StripeSubscription::from_details(stripe_id, plan_id, organization_id, None);
+        StripeSubscription::from_details(stripe_id, plan_id, organization_id, current_period_end);
 
     let mut conn = pool
         .get()
@@ -192,6 +193,9 @@ pub async fn create_stripe_subscription_query(
         .expect("Failed to get connection from pool");
     diesel::insert_into(stripe_subscriptions_columns::stripe_subscriptions)
         .values(&stripe_subscription)
+        .on_conflict(stripe_subscriptions_columns::stripe_id)
+        .do_update()
+        .set(&stripe_subscription)
         .execute(&mut conn)
         .await
         .map_err(|e| {
@@ -492,6 +496,12 @@ pub async fn get_trieve_subscription_by_id_query(
     let stripe_subscription: Option<StripeSubscription> =
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::id.eq(subscription_id))
+            .filter(
+                stripe_subscriptions_columns::current_period_end
+                    .is_null()
+                    .or(stripe_subscriptions_columns::current_period_end
+                        .gt(chrono::Utc::now().naive_utc())),
+            )
             .first(&mut conn)
             .await
             .optional()
@@ -503,6 +513,12 @@ pub async fn get_trieve_subscription_by_id_query(
     let stripe_usage_based_subscription: Option<StripeUsageBasedSubscription> =
         stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
             .filter(stripe_usage_based_subscriptions_columns::id.eq(subscription_id))
+            .filter(
+                stripe_usage_based_subscriptions_columns::current_period_end
+                    .is_null()
+                    .or(stripe_usage_based_subscriptions_columns::current_period_end
+                        .gt(chrono::Utc::now().naive_utc())),
+            )
             .first(&mut conn)
             .await
             .optional()
@@ -580,6 +596,12 @@ pub async fn get_option_usage_based_subscription_by_organization_id_query(
         stripe_usage_based_subscriptions_columns::stripe_usage_based_subscriptions
             .select(StripeUsageBasedSubscription::as_select())
             .filter(stripe_usage_based_subscriptions_columns::organization_id.eq(organization_id))
+            .filter(
+                stripe_usage_based_subscriptions_columns::current_period_end
+                    .is_null()
+                    .or(stripe_usage_based_subscriptions_columns::current_period_end
+                        .gt(chrono::Utc::now().naive_utc())),
+            )
             .first::<StripeUsageBasedSubscription>(&mut conn)
             .await
             .optional()?;
@@ -605,6 +627,12 @@ pub async fn get_option_usage_based_subscription_by_subscription_id_query(
                 stripe_usage_based_subscriptions_columns::stripe_subscription_id
                     .eq(stripe_subscription_id),
             )
+            .filter(
+                stripe_usage_based_subscriptions_columns::current_period_end
+                    .is_null()
+                    .or(stripe_usage_based_subscriptions_columns::current_period_end
+                        .gt(chrono::Utc::now().naive_utc())),
+            )
             .first::<StripeUsageBasedSubscription>(&mut conn)
             .await
             .optional()?;
@@ -625,6 +653,12 @@ pub async fn get_option_subscription_by_organization_id_query(
     let stripe_subscriptions: Vec<StripeSubscription> =
         stripe_subscriptions_columns::stripe_subscriptions
             .filter(stripe_subscriptions_columns::organization_id.eq(organization_id))
+            .filter(
+                stripe_subscriptions_columns::current_period_end
+                    .is_null()
+                    .or(stripe_subscriptions_columns::current_period_end
+                        .gt(chrono::Utc::now().naive_utc())),
+            )
             .load(&mut conn)
             .await
             .map_err(|e| {
