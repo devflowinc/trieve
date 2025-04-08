@@ -19077,15 +19077,15 @@
       "ShopifyPlan": {
         "type": "object",
         "required": [
-          "name",
           "handle",
           "status"
         ],
         "properties": {
-          "handle": {
-            "type": "string"
+          "current_period_end": {
+            "type": "string",
+            "nullable": true
           },
-          "name": {
+          "handle": {
             "type": "string"
           },
           "status": {
@@ -19097,16 +19097,16 @@
         "type": "object",
         "required": [
           "organization_id",
-          "session_token",
+          "idempotency_key",
           "shopify_plan"
         ],
         "properties": {
+          "idempotency_key": {
+            "type": "string"
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid"
-          },
-          "session_token": {
-            "type": "string"
           },
           "shopify_plan": {
             "$ref": "#/components/schemas/ShopifyPlan"

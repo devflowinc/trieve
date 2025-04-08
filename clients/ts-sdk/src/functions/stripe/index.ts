@@ -6,7 +6,7 @@
  */
 
 import { TrieveSDK } from "../../sdk";
-import { StripePlan } from "../../types.gen";
+import { ShopifyPlanChangePayload, StripePlan } from "../../types.gen";
 
 export async function getStripePlans(
   /** @hidden */
@@ -34,4 +34,17 @@ export async function startStripeCheckout(
       organizationId: this.organizationId,
     }
   );
+}
+
+
+export async function handleShopifyPlanChange(
+  /** @hidden */
+  this: TrieveSDK,
+  payload: ShopifyPlanChangePayload,
+  shopifySecretKey: string
+) {
+  return this.trieve.fetch<"eject">("/api/shopify/plan_change", "post", {
+    data: payload,
+    xShopifyAuthorization: shopifySecretKey,
+  });
 }

@@ -142,8 +142,6 @@ export default function Dashboard() {
     );
   }
 
-  const navigate = useNavigate();
-
   return (
     <>
       <Modal open={showCancelModal} onClose={() => { setShowCancelModal(false) }} title="Cancel Subscription">
