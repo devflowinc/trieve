@@ -20,7 +20,6 @@ import { InferenceFiltersForm } from "./FilterSidebarComponents";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { createPortal } from "react-dom";
 
-
 const SearchPage = () => {
   const { props } = useModalState();
   if (!props.searchPageProps?.display) return null;
@@ -44,16 +43,22 @@ const SearchPage = () => {
 };
 
 function findCartChanges(oldCart: any, newCart: any) {
-  if (!oldCart.items) return { added: newCart.items.map((item: any) => item.variant_id), removed: [] };
-  const onlyInLeft = (l: any, r: any) => l.filter((li: any) => !r.some((ri: any) => li.key == ri.key));
+  if (!oldCart.items)
+    return {
+      added: newCart.items.map((item: any) => item.variant_id),
+      removed: [],
+    };
+  const onlyInLeft = (l: any, r: any) =>
+    l.filter((li: any) => !r.some((ri: any) => li.key == ri.key));
   const result = {
     added: onlyInLeft(newCart.items, oldCart.items),
     removed: onlyInLeft(oldCart.items, newCart.items),
   };
 
-
   oldCart.items.forEach((oi: any) => {
-    const ni = newCart.items.find((i: any) => i.key == oi.key && i.quantity != oi.quantity);
+    const ni = newCart.items.find(
+      (i: any) => i.key == oi.key && i.quantity != oi.quantity,
+    );
     if (!ni) return;
     const quantity = ni.quantity - oi.quantity;
     const item = { ...ni };
@@ -64,7 +69,6 @@ function findCartChanges(oldCart: any, newCart: any) {
       result.removed.push(item);
     }
   });
-
 
   return result;
 }
@@ -131,29 +135,41 @@ const Modal = () => {
 
           const cartObserver = new PerformanceObserver((list) => {
             list.getEntries().forEach((entry) => {
-              const isValidRequestType = ['xmlhttprequest', 'fetch'].includes((entry as any).initiatorType);
+              const isValidRequestType = ["xmlhttprequest", "fetch"].includes(
+                (entry as any).initiatorType,
+              );
               const isCartChangeRequest = /\/cart\/add\.js/.test(entry.name);
               if (isValidRequestType && isCartChangeRequest) {
                 (async function () {
-                  const oldCart = JSON.parse(localStorage.getItem('trieve-cart') ?? '{}');
-                  const newCart = await fetch((window as any).Shopify.routes.root + 'cart.js')
-                    .then(response => response.json())
-                    .then(data => {
-                      localStorage.setItem('trieve-cart', JSON.stringify(data));
+                  const oldCart = JSON.parse(
+                    localStorage.getItem("trieve-cart") ?? "{}",
+                  );
+                  const newCart = await fetch(
+                    (window as any).Shopify.routes.root + "cart.js",
+                  )
+                    .then((response) => response.json())
+                    .then((data) => {
+                      localStorage.setItem("trieve-cart", JSON.stringify(data));
                       return data;
                     });
 
                   const cartChanges = findCartChanges(oldCart, newCart);
 
-                  const items = cartChanges.added.map((item: any) => item.toString());
+                  const items = cartChanges.added.map((item: any) =>
+                    item.toString(),
+                  );
                   console.log("cartItems", items);
 
                   if (items.length > 0) {
-                    const lastMessage = JSON.parse(window.localStorage.getItem("lastMessage") ?? "{}");
+                    const lastMessage = JSON.parse(
+                      window.localStorage.getItem("lastMessage") ?? "{}",
+                    );
                     let requestId = "00000000-0000-0000-0000-000000000000";
                     for (const id in lastMessage) {
                       const storedItems = lastMessage[id];
-                      if (storedItems.some((item: any) => items.includes(item))) {
+                      if (
+                        storedItems.some((item: any) => items.includes(item))
+                      ) {
                         requestId = id;
                         break;
                       }
@@ -197,28 +213,35 @@ const Modal = () => {
 
                 checkout.addEventListener("click", () => {
                   (async function () {
-                    const checkoutItems = await fetch((window as any).Shopify.routes.root + 'cart.js')
-                      .then(response => response.json())
-                      .then(data => {
+                    const checkoutItems = await fetch(
+                      (window as any).Shopify.routes.root + "cart.js",
+                    )
+                      .then((response) => response.json())
+                      .then((data) => {
                         return data;
                       });
 
+                    const items = checkoutItems.items.map((item: any) => {
+                      const price = item.final_line_price.toString();
+                      return {
+                        tracking_id: item.variant_id.toString(),
+                        revenue: parseFloat(
+                          price.slice(0, -2) + "." + price.slice(-2),
+                        ),
+                      };
+                    });
 
-                    const items = checkoutItems
-                      .items
-                      .map((item: any) => {
-                        const price = item.final_line_price.toString();
-                        return {
-                          tracking_id: item.variant_id.toString(),
-                          revenue: parseFloat(price.slice(0, -2) + "." + price.slice(-2)),
-                        };
-                      });
-
-                    const lastMessage = JSON.parse(window.localStorage.getItem("lastMessage") ?? "{}");
+                    const lastMessage = JSON.parse(
+                      window.localStorage.getItem("lastMessage") ?? "{}",
+                    );
                     let requestId = "00000000-0000-0000-0000-000000000000";
                     for (const id in lastMessage) {
                       const storedItems = lastMessage[id];
-                      if (storedItems.some((item: any) => items.map((i: any) => i.tracking_id).includes(item))) {
+                      if (
+                        storedItems.some((item: any) =>
+                          items.map((i: any) => i.tracking_id).includes(item),
+                        )
+                      ) {
                         requestId = id;
                         break;
                       }
@@ -482,7 +505,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);

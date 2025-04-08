@@ -5,8 +5,19 @@ import { Chunk } from "../types";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
 import { trackViews } from "../trieve";
-import { ChunkFilter, ChunkGroup, ToolFunctionParameter } from "trieve-ts-sdk";
+import {
+  ChunkFilter,
+  ChunkGroup,
+  EventsForTopicResponse,
+  RAGAnalyticsResponse,
+  ToolFunctionParameter,
+} from "trieve-ts-sdk";
 import { defaultHighlightOptions } from "../highlight";
+
+export type ChunkIdWithIndex = {
+  chunk_id: string;
+  index: number;
+};
 
 const scrollToBottomOfChatModalWrapper = () => {
   const chatModal = document.querySelector(".chat-modal-wrapper");
@@ -43,18 +54,20 @@ const ChatContext = createContext<{
   chatWithGroup: (group: ChunkGroup, betterGroupName?: string) => void;
   isDoneReading?: boolean;
   rateChatCompletion: (isPositive: boolean, queryId: string | null) => void;
+  productsWithClicks: ChunkIdWithIndex[];
 }>({
-  askQuestion: async () => { },
+  askQuestion: async () => {},
   currentQuestion: "",
   isLoading: false,
   messages: [],
-  setCurrentQuestion: () => { },
-  cancelGroupChat: () => { },
-  clearConversation: () => { },
-  chatWithGroup: () => { },
-  switchToChatAndAskQuestion: async () => { },
-  stopGeneratingMessage: () => { },
-  rateChatCompletion: () => { },
+  setCurrentQuestion: () => {},
+  cancelGroupChat: () => {},
+  clearConversation: () => {},
+  chatWithGroup: () => {},
+  switchToChatAndAskQuestion: async () => {},
+  stopGeneratingMessage: () => {},
+  rateChatCompletion: () => {},
+  productsWithClicks: [],
 });
 
 function ChatProvider({ children }: { children: React.ReactNode }) {
@@ -83,6 +96,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     new AbortController(),
   );
   const [isDoneReading, setIsDoneReading] = useState(true);
+  const [productsWithClicks, setProductsWithClicks] = useState<
+    ChunkIdWithIndex[]
+  >([]);
 
   const createTopic = async ({
     question,
@@ -146,6 +162,26 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             },
           );
           setMessages(componentMessages.slice(1));
+        });
+
+      trieveSDK
+        .getRagAnalytics({
+          type: "events_for_topic",
+          topic_id: props.previewTopicId,
+        })
+        .then((topicEvents: RAGAnalyticsResponse) => {
+          const topicEventsResponse = topicEvents as EventsForTopicResponse;
+
+          const allProductsWithClicks = topicEventsResponse.events
+            .filter((event) => event.event_type === "click")
+            .flatMap((event) => {
+              const productsWithClicks = event.items.map((jsonItem) => {
+                const serializedItem = JSON.parse(jsonItem) as ChunkIdWithIndex;
+                return serializedItem;
+              });
+              return productsWithClicks;
+            });
+          setProductsWithClicks(allProductsWithClicks);
         });
     }
   }, []);
@@ -424,13 +460,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               user_message_text:
                 questionProp || currentQuestion
                   ? `Get filters from the following messages: ${messages
-                    .slice(0, -1)
-                    .filter((message) => {
-                      return message.type == "user";
-                    })
-                    .map(
-                      (message) => `\n\n${message.text}`,
-                    )} \n\n ${questionProp || currentQuestion}`
+                      .slice(0, -1)
+                      .filter((message) => {
+                        return message.type == "user";
+                      })
+                      .map(
+                        (message) => `\n\n${message.text}`,
+                      )} \n\n ${questionProp || currentQuestion}`
                   : null,
               image_url: imageUrl ? imageUrl : null,
               audio_input: curAudioBase64 ? curAudioBase64 : null,
@@ -804,6 +840,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         stopGeneratingMessage,
         isDoneReading,
         rateChatCompletion,
+        productsWithClicks,
       }}
     >
       {children}
