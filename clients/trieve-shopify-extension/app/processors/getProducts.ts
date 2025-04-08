@@ -15,8 +15,14 @@ function createChunkFromProduct(
   baseUrl: string,
   crawlOptions: ExtendedCrawlOptions,
 ): ChunkReqPayload {
-  // Extract image URLs
-  const imageUrls = product.media.nodes.map((media) => media.preview.image.url);
+  const imageUrls: string[] = [
+    ...(product?.media?.nodes
+      ?.map((media) => media?.preview?.image?.url)
+      .filter((url): url is string => !!url) ?? []),
+    ...(product?.images
+      ?.map((image) => image?.src)
+      .filter((url): url is string => !!url) ?? []),
+  ];
 
   // Handle text cleaning
   let productTitle = product.title || "";
@@ -73,6 +79,7 @@ function createChunkFromProduct(
   const semanticBoostPhrase = groupVariants ? variantTitle : productTitle;
   const fulltextBoostPhrase = groupVariants ? variantTitle : productTitle;
   const tags = product.tags;
+  tags.push(...variantTitle.split(" / "));
 
   if (crawlOptions.include_metafields) {
     product.variants.nodes.forEach((v) => {
@@ -84,15 +91,12 @@ function createChunkFromProduct(
       tags.push(...values);
     });
   }
-  tags.push(...variantTitle.split(" / "));
   const metadata = {
     body_html: product.bodyHtml,
     variantName: variantTitle,
     handle: product.handle,
     id: parseInt(product.id.split("/").pop() || "0"),
-    images: product.media.nodes.map((media) => ({
-      src: media.preview.image.url,
-    })),
+    images: imageUrls,
     tags: product.tags,
     status: product.status,
     title: product.title,
@@ -147,8 +151,14 @@ export function createChunkFromProductWebhook(
   baseUrl: string,
   crawlOptions: ExtendedCrawlOptions,
 ): ChunkReqPayload {
-  // Extract image URLs
-  const imageUrls = product.media.map((media) => media.preview.image.url);
+  const imageUrls: string[] = [
+    ...(product?.media
+      ?.map((media) => media?.preview?.image?.url)
+      .filter((url): url is string => !!url) ?? []),
+    ...(product?.images
+      ?.map((image) => image?.src)
+      .filter((url): url is string => !!url) ?? []),
+  ];
 
   // Handle text cleaning
   let productTitle = product.title || "";
@@ -176,6 +186,11 @@ export function createChunkFromProductWebhook(
     variant.title === "Default Title"
       ? `<h1>${productTitle}</h1>${productBodyHtml}`
       : `<h1>${productTitle} - ${variantTitle}</h1>${productBodyHtml}`;
+  let tags = product.tags;
+  if (typeof tags === "string") {
+    tags = tags.split(",").map((tag) => tag.trim());
+  }
+  tags.push(...variantTitle.split(" / "));
 
   if (crawlOptions.scrape_options?.tag_regexes) {
     const tagMatches = new Set<string>();
@@ -183,7 +198,7 @@ export function createChunkFromProductWebhook(
     crawlOptions.scrape_options.tag_regexes.forEach((pattern) => {
       try {
         const regex = new RegExp(pattern);
-        product.tags.forEach((tag) => {
+        tags.forEach((tag) => {
           if (regex.test(tag)) {
             tagMatches.add(`<span>${pattern}</span>`);
           }
@@ -204,7 +219,6 @@ export function createChunkFromProductWebhook(
   const semanticBoostPhrase = groupVariants ? variantTitle : productTitle;
   const fulltextBoostPhrase = groupVariants ? variantTitle : productTitle;
 
-  const tags = product.tags;
   if (crawlOptions.include_metafields) {
     product.variants.forEach((v) => {
       let values: string[] = JSON.parse(
@@ -242,9 +256,9 @@ export function createChunkFromProductWebhook(
     tag_set: tags,
     num_value: parseFloat(variant.price),
     metadata,
-    tracking_id: groupVariants ? variant.id : product.id,
-    group_tracking_ids: groupVariants ? [product.id] : undefined,
-    image_urls: imageUrls,
+    tracking_id: groupVariants ? variant.id.toString() : product.id.toString(),
+    group_tracking_ids: groupVariants ? [product.id.toString()] : undefined,
+    image_urls: imageUrls ?? [],
     fulltext_boost: {
       phrase: fulltextBoostPhrase,
       boost_factor: 1.3,
@@ -284,15 +298,17 @@ export async function sendChunksFromWebhook(
     if (response.error) {
       throw response.error;
     }
-    let data = response.data as {
-      data: {
-        productVariant?: {
-          metafields: { nodes: { key: string; value: string }[] };
+    let data = (
+      response as {
+        data: {
+          productVariant?: {
+            metafields: { nodes: { key: string; value: string }[] };
+          };
         };
-      };
-    };
+      }
+    ).data;
 
-    variant.metafields = data?.data.productVariant?.metafields.nodes ?? [];
+    variant.metafields = data?.productVariant?.metafields?.nodes ?? [];
     return createChunkFromProductWebhook(
       product,
       variant,
@@ -411,8 +427,8 @@ export const sendChunks = async (
     if (response.error) {
       throw response.error;
     }
-    const dataChunks: ChunkReqPayload[] = response.data.products.nodes
-      .flatMap((product) =>
+    const dataChunks: ChunkReqPayload[] = response.data.products.nodes.flatMap(
+      (product) =>
         product.variants.nodes.map((variant) =>
           createChunkFromProduct(
             product,
@@ -421,7 +437,7 @@ export const sendChunks = async (
             crawlOptions,
           ),
         ),
-      );
+    );
 
     for (const batch of chunk_to_size(dataChunks, 120)) {
       const sendPromise = sendChunksToTrieve(batch, key, datasetId ?? "");

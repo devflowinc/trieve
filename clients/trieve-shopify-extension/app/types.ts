@@ -41,11 +41,14 @@ export type Product = {
       };
     }[];
   };
-  media: {
-    nodes: {
-      preview: {
-        image: {
-          url: string;
+  images?: {
+    src?: string;
+  }[];
+  media?: {
+    nodes?: {
+      preview?: {
+        image?: {
+          url?: string;
         };
       };
     }[];
@@ -58,7 +61,7 @@ export type ProductWebhook = {
   product_type: string;
   body_html: string;
   handle: string;
-  tags: string[];
+  tags: string[] | string;
   category: {
     name: string;
   };
@@ -75,10 +78,13 @@ export type ProductWebhook = {
       value: string;
     }[];
   }[];
-  media: {
-    preview: {
-      image: {
-        url: string;
+  images?: {
+    src?: string;
+  }[];
+  media?: {
+    preview?: {
+      image?: {
+        url?: string;
       };
     };
   }[];

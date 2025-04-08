@@ -50,7 +50,7 @@ export const useRecommendations = (config: RecommendationsConfig) => {
             {
               method: "POST",
               body: JSON.stringify({
-                positive_group_tracking_ids: [config.productId],
+                positive_group_tracking_ids: [config.productId.toString()],
                 limit: config.maxResults,
                 filters: config.filter,
               } satisfies GetRecommendedGroupsData["requestBody"]),
