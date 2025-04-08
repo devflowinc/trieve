@@ -20,8 +20,8 @@ export const DoChatOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
       if (broadcastCompletion) {
         if (trieve.organizationId && trieve.trieve.apiKey != null) {
           trackCustomerEvent(
-            trieve.trieve.baseUrl
-            , {
+            trieve.trieve.baseUrl,
+            {
               organization_id: trieve.organizationId,
               store_name: "",
               event_type: "fist_chat_completed",
