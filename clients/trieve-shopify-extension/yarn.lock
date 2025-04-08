@@ -9316,10 +9316,10 @@ tr46@~0.0.3:
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
 
-trieve-search-component@0.4.50:
-  version "0.4.50"
-  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.4.50.tgz#65fbdf04e66fd568d0e7c0a8a7e520c81d8ac7cc"
-  integrity sha512-6i0pEniz6h6wjix3LPF93OhMR1zREDwHZg525TKDMzB9KI5xrlMNADoaFYnQ6bEjeiuhk7fVkDL9+ESEXrufJg==
+trieve-search-component@0.4.54:
+  version "0.4.54"
+  resolved "https://registry.yarnpkg.com/trieve-search-component/-/trieve-search-component-0.4.54.tgz#eadc7f8f1097a08760b128fd67ffefa9c730e0df"
+  integrity sha512-KB56sPi0O4NSYAl3/HncZi59SelwcYqGEebo3UqLhbYDTWxo1zNI3mllCj/eC/ZA8V835UzFTDTAHMPer4YDvw==
   dependencies:
     "@formkit/auto-animate" "^0.8.2"
     "@r2wc/react-to-web-component" "^2.0.3"
@@ -9335,17 +9335,17 @@ trieve-search-component@0.4.50:
     react-scan "^0.3.2"
     react-snap-carousel "^0.5.0"
     tailwind-merge "^3.0.2"
-    trieve-ts-sdk "^0.0.69"
+    trieve-ts-sdk "0.0.73"
+
+trieve-ts-sdk@0.0.73:
+  version "0.0.73"
+  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.73.tgz#9de17428ddb4b1f6d68709695f371d185c4bda79"
+  integrity sha512-68iG/OlmKSGmnmI/J33S6VKleEAfq4txzARhvKv1g+CYSaG7HOH76n0cFDMtUUEEKn1PD4nV82uh5ZFtfIxD0A==
 
 trieve-ts-sdk@0.0.78:
   version "0.0.78"
   resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.78.tgz#624ee877b829a84ffce633423876bb1d4ab49455"
   integrity sha512-tYvJgZJzjTu4sXpdzf+BdcDtjKUxPlX6R0Paw7db0tO8SmE73BYmPoIm1zkMDCye76wyZuIdG/0rIMpR/TKfXA==
-
-trieve-ts-sdk@^0.0.69:
-  version "0.0.69"
-  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.69.tgz#837f21890faf7658157a65fdf9069246ee59d81a"
-  integrity sha512-I1QOndfsCBcNwPEi7gtO8SNHdt8LZvEAWPNmY38HhEE1Dnxx5lmMmVfjqGogirVaOdS0ZS4JxZ1vlfIjAPgGZg==
 
 trim-lines@^3.0.0:
   version "3.0.1"
