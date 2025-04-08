@@ -74,7 +74,7 @@ export const UploadAudio = () => {
     <div>
       <button
         className={cn(
-          "tv-rounded tv-z-20 tv-cursor-pointer",
+          "tv-rounded tv-z-20 tv-cursor-pointer tv-bg-transparent mic-button-container",
           mode === "chat" && "tv-right-[60px] tv-top-[17px] tv-absolute",
         )}
         onClick={(e) => {

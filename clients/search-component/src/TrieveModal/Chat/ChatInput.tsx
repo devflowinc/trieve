@@ -86,7 +86,7 @@ export const ChatInput = ({
           <input
             ref={chatInput}
             value={currentQuestion}
-            className={`${props.inline ? "inline-input " : ""}${mode}  tv-rounded-md tv-mb-0`}
+            className={`${props.inline ? "inline-input " : ""}${mode} tv-rounded-md tv-mb-0 tv-max-w-full`}
             onChange={(e) => setCurrentQuestion(e.target.value)}
             disabled={props.previewTopicId != undefined}
             placeholder={
@@ -107,7 +107,7 @@ export const ChatInput = ({
               askQuestion(currentQuestion);
             }
           }}
-          className="tv-top-[0.825rem] tv-right-3 tv-absolute tv-z-20"
+          className="tv-top-[0.825rem] tv-right-3 tv-absolute tv-z-20 tv-bg-transparent tv-text-zinc-700 tv-block tv-dark-text-white paper-plane-button-container"
         >
           <i className="fa-solid fa-paper-plane"></i>
         </button>

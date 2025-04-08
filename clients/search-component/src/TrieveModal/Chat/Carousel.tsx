@@ -80,10 +80,8 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="carousel-root tv-relative tv-w-full tv-max-w-full tv-overflow-hidden">
       <div
-        className="tv-absolute tv-left-0 tv-top-0 tv-bottom-0 tv-w-12 tv-pointer-events-none tv-z-10"
+        className="tv-absolute tv-left-0 tv-top-0 tv-bottom-0 tv-w-12 tv-pointer-events-none tv-z-10 tv-carousel-gradient"
         style={{
-          background:
-            "linear-gradient(to right, rgb(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 100%)",
           opacity: showLeftArrow ? 0.4 : 0,
           transition: "opacity 0.2s ease",
         }}
@@ -131,10 +129,8 @@ export const Carousel = ({ children }: { children: React.ReactNode }) => {
         ))}
       </ul>
       <div
-        className="tv-absolute tv-right-0 tv-top-0 tv-bottom-0 tv-w-12 tv-pointer-events-none tv-z-10"
+        className="tv-absolute tv-right-0 tv-top-0 tv-bottom-0 tv-w-12 tv-pointer-events-none tv-z-10 tv-carousel-gradient"
         style={{
-          background:
-            "linear-gradient(to left, rgb(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 100%)",
           opacity: showRightArrow ? 0.4 : 0,
           transition: "opacity 0.2s ease",
         }}

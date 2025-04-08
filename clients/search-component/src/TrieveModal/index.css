@@ -29,6 +29,46 @@ body {
   #trieve-search-modal {
     font-family: var(--tv-prop-brand-font-family);
 
+    button {
+      min-width: auto;
+      background-color: transparent;
+      color: inherit;
+      line-height: inherit;
+      padding: 0;
+      font-size: inherit;
+      display: inherit;
+
+      &.mic-button-container,
+      &.image-button-container,
+      &.paper-plane-button-container {
+        height: 16px;
+        width: 16px;
+        fill: var(--tv-zinc-700);
+        color: var(--tv-zinc-700);
+        display: block;
+      }
+
+      &:focus {
+        outline: none;
+        box-shadow: none;
+      }
+    }
+
+    svg {
+      height: 16px;
+      width: 16px;
+      fill: currentColor;
+      margin: 0;
+      vertical-align: middle;
+    }
+
+    ol,
+    ul,
+    strong {
+      font-size: inherit;
+      color: inherit;
+    }
+
     .tv-guarantee-block {
       display: block;
     }
@@ -241,6 +281,14 @@ body {
       display: none;
     }
 
+    .tv-carousel-gradient {
+      background: linear-gradient(
+        to left,
+        rgb(255, 255, 255, 0.8) 0%,
+        rgba(255, 255, 255, 0) 100%
+      );
+    }
+
     .tv-carousel-item {
       flex: 0 0 auto;
       padding: 0 0.15rem;
@@ -379,7 +427,7 @@ body {
       }
 
       ul:not(.carousel-scroll) {
-        @apply tv-list-disc tv-pl-4 tv-my-4 tv-overflow-hidden;
+        @apply tv-list-disc tv-pl-5 tv-my-4 tv-overflow-hidden;
       }
 
       ol {
@@ -387,7 +435,9 @@ body {
       }
 
       li:not(.tv-carousel-item) {
-        @apply tv-my-2;
+        @apply tv-my-3;
+
+        list-style: unset;
       }
 
       li.tv-carousel-item {
@@ -482,6 +532,10 @@ body {
 
       &.assistant {
         @apply tv-my-3;
+
+        svg {
+          fill: none;
+        }
       }
 
       img {
@@ -573,6 +627,10 @@ body {
         &.empty-state-loading {
           @apply tv-animate-pulse;
         }
+
+        svg {
+          fill: none;
+        }
       }
     }
 
@@ -583,6 +641,17 @@ body {
         @apply tv-p-2 tv-text-left tv-rounded-md tv-border tv-transition-all tv-border-solid;
         border-color: var(--tv-zinc-200);
         border: 1px solid var(--tv-zinc-200);
+        background-color: transparent;
+
+        .refresh-suggestions-icon {
+          fill: currentcolor;
+          height: 15px;
+          width: 15px;
+        }
+
+        svg {
+          fill: none;
+        }
 
         &:hover {
           background-color: var(--tv-zinc-200);
@@ -921,14 +990,23 @@ body {
         }
       }
 
-      .carousel-item {
+      .tv-carousel-gradient {
+        background: linear-gradient(
+          to right,
+          rgba(120, 120, 120, 0) 0%,
+          rgba(120, 120, 120, 0.5) 100%
+        );
+      }
+
+      .tv-carousel-item {
         color: var(--tv-zinc-100);
         background-color: var(--tv-zinc-800);
-        border-color: var(--tv-zinc-800);
+        border: 1px solid var(--tv-zinc-800);
 
         &:hover {
           color: var(--tv-zinc-50);
-          background-color: var(--tv-zinc-900);
+          border-color: var(--tv-zinc-600);
+          background-color: var(--tv-zinc-800);
         }
 
         a {
@@ -937,10 +1015,11 @@ body {
 
           &:hover {
             color: var(--tv-zinc-50);
-            background-color: var(--tv-zinc-900);
+            background-color: var(--tv-zinc-800);
           }
         }
       }
+
       .kbd-wrapper {
         kbd {
           color: var(--tv-zinc-400);
@@ -1227,6 +1306,12 @@ body {
     @apply tv-rounded-full tv-p-[0.35rem] tv-ml-0.5 tv-flex tv-justify-center tv-items-center;
 
     background-color: var(--tv-prop-brand-color);
+
+    svg {
+      width: 26px;
+      height: 26px;
+      fill: white;
+    }
   }
 
   .floating-search-btn-container {

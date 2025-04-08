@@ -24,12 +24,12 @@ export const SuggestedQuestions = ({
   }
 
   const handleSuggestedQuestion = async (q: string) => {
-
-
     setCurrentQuestion(q);
     askQuestion(q);
-    
-    const requestId = messages[messages.length - 1]?.queryId ?? "00000000-0000-0000-0000-000000000000";
+
+    const requestId =
+      messages[messages.length - 1]?.queryId ??
+      "00000000-0000-0000-0000-000000000000";
 
     await trieveSDK.sendAnalyticsEvent({
       event_name: `site-followup_query`,
@@ -71,7 +71,11 @@ export const SuggestedQuestions = ({
             className="suggested-question tv-cursor-pointer tv-border tv-rounded-md tv-p-1 tv-text-xs disabled:tv-cursor-not-allowed tv-text-center"
             title="Refresh suggested questions"
           >
-            <ArrowRotateRightIcon height={15} width={15} />
+            <ArrowRotateRightIcon
+              height={15}
+              width={15}
+              className="refresh-suggestions-icon"
+            />
           </button>{" "}
           {!suggestedQuestions.length && (
             <span className="suggested-question tv-text-nowrap empty-state-loading">
@@ -84,10 +88,11 @@ export const SuggestedQuestions = ({
                 handleSuggestedQuestion(q);
               }}
               key={q}
-              className={`suggested-question tv-flex tv-gap-1 tv-items-center${isLoadingSuggestedQueries ? " loading" : ""
-                }`}
+              className={`suggested-question tv-flex tv-gap-1 tv-items-center${
+                isLoadingSuggestedQueries ? " loading" : ""
+              }`}
             >
-              <SparklesIcon width={15} height={15} />
+              <SparklesIcon fill="none" width={15} height={15} />
               {q}
             </button>
           ))}
