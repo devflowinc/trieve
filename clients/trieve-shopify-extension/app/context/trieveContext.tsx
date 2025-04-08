@@ -67,9 +67,19 @@ export const TrieveProvider = ({
     queryClient.prefetchQuery(lastStepIdQuery(adminApi));
   }, []);
 
+  if (!trieve) {
+    return null;
+  }
+
   return (
     <TrieveContext.Provider
-      value={{ trieve, dataset, trieveKey, organization, refetch: queryClient.refetchQueries }}
+      value={{
+        trieve,
+        dataset,
+        trieveKey,
+        organization,
+        refetch: queryClient.refetchQueries,
+      }}
     >
       {children}
     </TrieveContext.Provider>

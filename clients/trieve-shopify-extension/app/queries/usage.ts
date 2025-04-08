@@ -15,7 +15,9 @@ export const organizationUsageQuery = (trieve: TrieveSDK) => {
   return {
     queryKey: ["organization-usage", trieve.organizationId],
     queryFn: async () => {
-      const usage = await trieve.getOrganizationUsage(trieve.organizationId || "");
+      const usage = await trieve.getOrganizationUsage(
+        trieve.organizationId || "",
+      );
       return usage;
     },
   } satisfies QueryOptions;

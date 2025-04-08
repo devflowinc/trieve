@@ -7,6 +7,7 @@ import {
   QueryClient,
   QueryClientProvider,
   HydrationBoundary,
+  dehydrate,
 } from "@tanstack/react-query";
 import { TrieveProvider } from "app/context/trieveContext";
 import { authenticate } from "app/shopify.server";
@@ -15,6 +16,7 @@ import { StrongTrieveKey } from "app/types";
 import { Dataset, OrganizationWithSubAndPlan } from "trieve-ts-sdk";
 import { useState, Suspense } from "react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { shopDatasetQuery } from "app/queries/shopDataset";
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(args.request);
@@ -31,11 +33,16 @@ export const loader = async (args: LoaderFunctionArgs) => {
     dataset.organization_id,
   );
 
+  // Fill in dataset info
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(shopDatasetQuery(trieve).queryKey, dataset);
+
   return {
     key: key as StrongTrieveKey,
     dataset,
     organization,
     shopDomain: session.shop,
+    dehydratedState: dehydrate(queryClient),
   };
 };
 

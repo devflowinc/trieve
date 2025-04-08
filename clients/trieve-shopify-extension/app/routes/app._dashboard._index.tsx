@@ -13,9 +13,6 @@ import {
   Layout,
   Link,
   Modal,
-  ActionList,
-  Popover,
-  AppProvider,
 } from "@shopify/polaris";
 import {
   CalendarIcon,
