@@ -355,7 +355,6 @@ export const AllSearchesTable = () => {
       page={page}
       setPage={setPage}
       label="Searches"
-      tooltipContent="View and filter all your users' searches."
       tableHeadings={[
         { heading: "Query", tooltip: "The search query" },
         { heading: "Search Type", tooltip: "Represents the type of search. Can be Search, Autocomplete, Search Over Groups, or Search Within Groups" },
@@ -367,7 +366,6 @@ export const AllSearchesTable = () => {
         { heading: "Created At", tooltip: "The date and time the search was made" },
       ]}
       hasNext={data?.queries.length == 10}
-      tabs={tabs}
       filters={shopifyFilters}
       query={query}
       setQuery={setQuery}

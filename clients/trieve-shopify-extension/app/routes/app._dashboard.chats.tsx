@@ -76,8 +76,13 @@ export default function ChatsPage() {
     // TODO: Create badge with "highest ranking event"
     let newData: AdvancedTableCell[][] =
       data?.topics.map((topic) => {
+        const topic_events = data?.events?.filter(
+          (event) => event.event_type === topic.topic_id
+        );
+
         return [
           { content: topic.name, url: `/app/chatview/${topic.topic_id}` },
+          { content: topic.status },
           { content: topic.message_count.toLocaleString() },
           {
             content: topic.products_shown?.toLocaleString("en-US", {
@@ -97,8 +102,8 @@ export default function ChatsPage() {
           {
             content: topic.avg_query_rating
               ? topic.avg_query_rating.toLocaleString("en-US", {
-                  maximumFractionDigits: 2,
-                })
+                maximumFractionDigits: 2,
+              })
               : "N/A",
           },
           { content: parseCustomDateString(topic.created_at).toLocaleString() },
@@ -452,7 +457,6 @@ export default function ChatsPage() {
       page={page}
       setPage={setPage}
       label="Chat Sessions"
-      tooltipContent="View and filter all your users' chat sessions."
       tableHeadings={[
         {
           heading: "Name",
@@ -460,25 +464,29 @@ export default function ChatsPage() {
             "The name created by the chatbot to represent the chat session.",
         },
         {
+          heading: "Status",
+          tooltip: "The last recorded event of the chat session.",
+        },
+        {
           heading: "Message Count",
           tooltip: "The number of messages in the chat session.",
         },
         {
-          heading: "Number of Products Shown",
+          heading: "Products Shown",
           tooltip: "The number of products displayed in the chat session.",
         },
         {
-          heading: "Avg Top Score",
+          heading: "Average Score",
           tooltip: "The average top score of the chat session.",
           sortCol: "top_score",
         },
         {
-          heading: "Avg Hallucination Score",
+          heading: "Hallucination Score",
           tooltip: "The average hallucination score of the chat session.",
           sortCol: "hallucination_score",
         },
         {
-          heading: "Avg Query Rating",
+          heading: "Query Rating",
           tooltip: "The average query rating of the chat session.",
         },
         {
@@ -488,7 +496,6 @@ export default function ChatsPage() {
         },
       ]}
       hasNext={data?.topics.length == 10}
-      tabs={[]}
       filters={shopifyFilters}
       query={query}
       setQuery={setQuery}

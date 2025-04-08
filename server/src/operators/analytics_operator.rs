@@ -1,11 +1,36 @@
 use crate::{
     data::models::{
-        CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ChatConversionRateResponse, ChatRevenueResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse, ComponentAnalyticsFilter, ComponentInteractionTimeResponse, ComponentNamesResponse, DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts, FloatTimePoint, FloatTimePointClickhouse, FollowupQueriesResponse, FollowupQuery, GetEventsResponseBody, Granularity, HeadQueries, IntegerTimePoint, IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularChat, PopularChatsResponse, PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter, RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse, RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics, RecommendationEvent, RecommendationEventClickhouse, RecommendationSortBy, RecommendationUsageGraphResponse, RecommendationsCTRRateResponse, RecommendationsConversionRateResponse, RecommendationsPerUserResponse, RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse, RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse, SearchAnalyticsFilter, SearchAverageRatingResponse, SearchCTRMetrics, SearchCTRMetricsClickhouse, SearchClusterTopics, SearchConversionRateResponse, SearchQueriesWithClicksCTRResponse, SearchQueriesWithClicksCTRResponseClickhouse, SearchQueriesWithoutClicksCTRResponse, SearchQueriesWithoutClicksCTRResponseClickhouse, SearchQueryEvent, SearchQueryEventClickhouse, SearchRevenueResponse, SearchSortBy, SearchTypeCount, SearchesPerUserResponse, SortOrder, TopComponents, TopComponentsResponse, TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages, TopPagesResponse, TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse, TopicDetailsResponse, TopicEventFilter, TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse, TotalUniqueUsersResponse
+        CTRMetricsOverTimeResponse, ChatAverageRatingResponse, ChatConversionRateResponse,
+        ChatRevenueResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse,
+        ComponentAnalyticsFilter, ComponentInteractionTimeResponse, ComponentNamesResponse,
+        DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts,
+        EventTypesFilter, FloatTimePoint, FloatTimePointClickhouse, FollowupQueriesResponse,
+        FollowupQuery, GetEventsResponseBody, Granularity, HeadQueries, IntegerTimePoint,
+        IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularChat,
+        PopularChatsResponse, PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter,
+        RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
+        RagQueryRatingsResponse, RecommendationAnalyticsFilter, RecommendationCTRMetrics,
+        RecommendationEvent, RecommendationEventClickhouse, RecommendationSortBy,
+        RecommendationUsageGraphResponse, RecommendationsCTRRateResponse,
+        RecommendationsConversionRateResponse, RecommendationsPerUserResponse,
+        RecommendationsWithClicksCTRResponse, RecommendationsWithClicksCTRResponseClickhouse,
+        RecommendationsWithoutClicksCTRResponse, RecommendationsWithoutClicksCTRResponseClickhouse,
+        SearchAnalyticsFilter, SearchAverageRatingResponse, SearchCTRMetrics,
+        SearchCTRMetricsClickhouse, SearchClusterTopics, SearchConversionRateResponse,
+        SearchQueriesWithClicksCTRResponse, SearchQueriesWithClicksCTRResponseClickhouse,
+        SearchQueriesWithoutClicksCTRResponse, SearchQueriesWithoutClicksCTRResponseClickhouse,
+        SearchQueryEvent, SearchQueryEventClickhouse, SearchRevenueResponse, SearchSortBy,
+        SearchTypeCount, SearchesPerUserResponse, SortOrder, TopComponents, TopComponentsResponse,
+        TopDatasetsResponse, TopDatasetsResponseClickhouse, TopPages, TopPagesResponse,
+        TopicAnalyticsFilter, TopicAnalyticsSummaryClickhouse, TopicDetailsResponse,
+        TopicEventFilter, TopicQueriesResponse, TopicQueryClickhouse, TopicsOverTimeResponse,
+        TotalUniqueUsersResponse,
     },
     errors::ServiceError,
     handlers::analytics_handler::GetTopDatasetsRequestBody,
 };
 use actix_web::web;
+use clickhouse::Row;
 use diesel::{ExpressionMethods, QueryDsl};
 use diesel_async::RunQueryDsl;
 use futures::future::join_all;
@@ -1833,7 +1858,8 @@ pub async fn get_topic_queries_query(
             AVG(rag_queries.top_score) as top_score,
             AVG(rag_queries.hallucination_score) as hallucination_score,
             AVG(JSONExtract(query_rating, 'rating', 'Nullable(Float64)')) as query_rating,
-            length(view_events.items) as products_shown
+            length(view_events.items) as products_shown,
+            'view' as status
         FROM topics 
         JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
         JOIN events as view_events ON rag_queries.id = toUUID(view_events.request_id) AND view_events.event_type = 'view'
@@ -1850,7 +1876,7 @@ pub async fn get_topic_queries_query(
         if topic_events_filter.inverted {
             query_string.push_str(
                 format!(
-                    "JOIN events ON rag_queries.id = toUUID(events.request_id) AND ({})",
+                    "LEFT ANTI JOIN events ON rag_queries.id = toUUID(events.request_id) AND ({})",
                     event_match_string
                 )
                 .as_str(),
@@ -1858,7 +1884,7 @@ pub async fn get_topic_queries_query(
         } else {
             query_string.push_str(
                 format!(
-                    "LEFT ANTI JOIN events ON rag_queries.id = toUUID(events.request_id) AND ({})",
+                    "JOIN events ON rag_queries.id = toUUID(events.request_id) AND ({})",
                     event_match_string
                 )
                 .as_str(),
@@ -1900,7 +1926,7 @@ pub async fn get_topic_queries_query(
         (page.unwrap_or(1) - 1) * 10
     ));
 
-    let topics = clickhouse_client
+    let mut topics = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
         .fetch_all::<TopicAnalyticsSummaryClickhouse>()
@@ -1910,14 +1936,47 @@ pub async fn get_topic_queries_query(
             ServiceError::InternalServerError("Error fetching topics".to_string())
         })?;
 
-    let topic_ids = topics.iter().map(|topic| topic.topic_id).collect();
+    let topic_ids: Vec<uuid::Uuid> = topics.iter().map(|topic| topic.topic_id).collect();
 
-    let events = get_events_by_topic_ids_query(dataset_id, topic_ids, clickhouse_client).await?;
+    let topic_events: Vec<TopicIdEventTypePair> = clickhouse_client
+        .query(
+            "SELECT rag_queries.topic_id as topic_id, events.event_type as event_type
+            FROM events 
+            JOIN rag_queries ON rag_queries.id = toUUIDOrNull(events.request_id)
+            WHERE rag_queries.dataset_id = ? AND rag_queries.topic_id in ?",
+        )
+        .bind(dataset_id)
+        .bind(topic_ids)
+        .fetch_all::<TopicIdEventTypePair>()
+        .await
+        .map_err(|e| {
+            log::error!("Error fetching query: {:?}", e);
+            ServiceError::InternalServerError("Error fetching query".to_string())
+        })?;
 
+    for topic_pair in topic_events {
+        if let Some(topic) = topics
+            .iter_mut()
+            .find(|t| t.topic_id == topic_pair.topic_id)
+        {
+            let current_status = EventTypesFilter::from_string(&topic.status);
+            let topic_status = EventTypesFilter::from_string(&topic_pair.event_type);
+
+            if topic_status > current_status {
+                topic.status = topic_pair.event_type.clone();
+            }
+        }
+    }
     Ok(TopicQueriesResponse {
         topics: topics.into_iter().map(|t| t.into()).collect(),
-        events,
     })
+}
+
+#[derive(Debug, Row, Serialize, Deserialize)]
+pub struct TopicIdEventTypePair {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub topic_id: uuid::Uuid,
+    pub event_type: String,
 }
 
 pub async fn get_topic_details_query(

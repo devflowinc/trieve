@@ -562,6 +562,7 @@ export type ClickhouseTopicAnalyticsSummary = {
     name: string;
     owner_id: string;
     products_shown: number;
+    status: string;
     topic_id: string;
     updated_at: string;
 };
@@ -1779,7 +1780,7 @@ export type EventTypes = {
 
 export type event_type = 'view';
 
-export type EventTypesFilter = 'add_to_cart' | 'purchase' | 'view' | 'click' | 'filter_clicked';
+export type EventTypesFilter = 'view' | 'filter_clicked' | 'click' | 'add_to_cart' | 'purchase';
 
 export type EventsForTopicResponse = {
     events: Array<EventData>;
@@ -4106,7 +4107,6 @@ export type TopicEventFilter = {
 };
 
 export type TopicQueriesResponse = {
-    events: Array<EventData>;
     topics: Array<ClickhouseTopicAnalyticsSummary>;
 };
 

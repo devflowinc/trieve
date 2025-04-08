@@ -7281,19 +7281,32 @@ pub struct EventAnalyticsFilter {
     pub metadata_filter: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Display)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Display, PartialEq, PartialOrd)]
 #[serde(rename_all = "snake_case")]
 pub enum EventTypesFilter {
+    #[display(fmt = "view")]
+    View,
+    #[display(fmt = "filter_clicked")]
+    FilterClicked,
+    #[display(fmt = "click")]
+    Click,
     #[display(fmt = "add_to_cart")]
     AddToCart,
     #[display(fmt = "purchase")]
     Purchase,
-    #[display(fmt = "view")]
-    View,
-    #[display(fmt = "click")]
-    Click,
-    #[display(fmt = "filter_clicked")]
-    FilterClicked,
+}
+
+impl EventTypesFilter {
+    pub fn from_string(value: &str) -> EventTypesFilter {
+        match value {
+            "view" => EventTypesFilter::View,
+            "filter_clicked" => EventTypesFilter::FilterClicked,
+            "click" => EventTypesFilter::Click,
+            "add_to_cart" => EventTypesFilter::AddToCart,
+            "purchase" => EventTypesFilter::Purchase,
+            _ => EventTypesFilter::View,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
@@ -8040,7 +8053,6 @@ pub struct SearchAverageRatingResponse {
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
 pub struct TopicQueriesResponse {
     pub topics: Vec<ClickhouseTopicAnalyticsSummary>,
-    pub events: Vec<EventData>,
 }
 
 #[derive(Debug, Row, Serialize, Deserialize, ToSchema)]
@@ -8060,6 +8072,7 @@ pub struct TopicAnalyticsSummaryClickhouse {
     pub avg_hallucination_score: f64,
     pub avg_query_rating: Option<f64>,
     pub products_shown: u64,
+    pub status: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -8075,6 +8088,7 @@ pub struct ClickhouseTopicAnalyticsSummary {
     pub avg_hallucination_score: f64,
     pub avg_query_rating: Option<f64>,
     pub products_shown: u64,
+    pub status: String,
 }
 
 impl From<TopicAnalyticsSummaryClickhouse> for ClickhouseTopicAnalyticsSummary {
@@ -8091,6 +8105,7 @@ impl From<TopicAnalyticsSummaryClickhouse> for ClickhouseTopicAnalyticsSummary {
             avg_hallucination_score: value.avg_hallucination_score,
             avg_query_rating: value.avg_query_rating,
             products_shown: value.products_shown,
+            status: value.status,
         }
     }
 }

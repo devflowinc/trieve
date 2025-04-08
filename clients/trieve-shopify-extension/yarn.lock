@@ -9337,10 +9337,10 @@ trieve-search-component@0.4.50:
     tailwind-merge "^3.0.2"
     trieve-ts-sdk "^0.0.69"
 
-trieve-ts-sdk@0.0.76:
-  version "0.0.76"
-  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.76.tgz#7d896d90acbdbc29679fc1ee46031a09794166e2"
-  integrity sha512-A92FP8S/1X0Ox4LFij8FfGqVibidFxRN+SUooCFIyq/O+Mxr9HVAeXtIBBGzEGpwy7gpOaRMgS/dW+6q4Pt3MQ==
+trieve-ts-sdk@0.0.78:
+  version "0.0.78"
+  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.78.tgz#624ee877b829a84ffce633423876bb1d4ab49455"
+  integrity sha512-tYvJgZJzjTu4sXpdzf+BdcDtjKUxPlX6R0Paw7db0tO8SmE73BYmPoIm1zkMDCye76wyZuIdG/0rIMpR/TKfXA==
 
 trieve-ts-sdk@^0.0.69:
   version "0.0.69"

@@ -1,16 +1,16 @@
 import { Select } from "@shopify/polaris";
-import { TopicEventFilter } from "trieve-ts-sdk";
+import { TopicEventFilter, EventTypesFilter } from "trieve-ts-sdk";
 import { Dispatch, SetStateAction } from "react";
-import { KnownEventNames } from "app/utils/formatting";
 
 interface EventFiltersProps {
   eventsFilters: TopicEventFilter;
   setEventsFilter: Dispatch<SetStateAction<TopicEventFilter>>;
 }
 
-const AVAILABLE_EVENT_TYPES: { label: string; value: KnownEventNames }[] = [
-  { label: "Checkout", value: "site-checkout" },
-  { label: "Add to Cart", value: "site-add_to_cart" },
+const AVAILABLE_EVENT_TYPES: { label: string; value: EventTypesFilter }[] = [
+  { label: "Checkout", value: "purchase" },
+  { label: "Add to Cart", value: "add_to_cart" },
+  { label: "Click", value: "click" },
 ];
 
 const eventTypeSelectOptions = [
@@ -29,14 +29,14 @@ export function EventFilters({
 }: EventFiltersProps) {
   const handleInvertedChange = (selectedValue: string) => {
     const isInverted = selectedValue === "excludes";
-    setEventsFilter((prev) => ({
+    setEventsFilter((prev: TopicEventFilter) => ({
       ...prev,
       inverted: isInverted,
     }));
   };
 
   const handleEventTypeChange = (selectedValue: string) => {
-    setEventsFilter((prev) => ({
+    setEventsFilter((prev: TopicEventFilter) => ({
       ...prev,
       event_types: selectedValue ? [selectedValue as any] : [],
     }));

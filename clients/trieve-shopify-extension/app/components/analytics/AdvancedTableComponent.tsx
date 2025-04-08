@@ -6,7 +6,6 @@ import {
   IndexTable,
   IndexFilters,
   useSetIndexFiltersMode,
-  TabProps,
   useBreakpoints,
   IndexFiltersProps,
   Icon,
@@ -22,7 +21,6 @@ import {
   ViewIcon,
 } from "@shopify/polaris-icons";
 import { ReactNode } from "react";
-import { add } from "date-fns";
 
 export interface Filter {
   key: string;
@@ -40,13 +38,11 @@ export interface AdvancedTableComponentProps {
   data: AdvancedTableCell[][];
   page: number;
   setPage: (page: (page: number) => number) => void;
-  tabs: string[];
   label: string;
   tableHeadings: { heading: string; tooltip: string; sortCol?: string }[];
   sortOptions: IndexFiltersProps["sortOptions"];
   sortSelected: string[];
   setSortSelected: (sortSelected: string[]) => void;
-  tooltipContent: string;
   hasNext: boolean;
   loading: boolean;
   appliedFilters: IndexFiltersProps["appliedFilters"];
@@ -67,8 +63,6 @@ export const AdvancedTableComponent = ({
   page,
   setPage,
   label,
-  tooltipContent,
-  tabs,
   tableHeadings,
   hasNext,
   loading,
@@ -88,13 +82,6 @@ export const AdvancedTableComponent = ({
   additionalControls,
 }: AdvancedTableComponentProps) => {
   const { mode, setMode } = useSetIndexFiltersMode();
-
-  const indexTabs: TabProps[] = tabs.map((tab, index) => ({
-    content: tab,
-    index,
-    id: `${tab}-${index}`,
-    isLocked: index === 0,
-  }));
 
   return (
     <Page title={label} fullWidth={true}>
