@@ -38,7 +38,6 @@ import { useState } from "react";
 import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
 import { Granularity } from "trieve-ts-sdk";
 import { ActionFunctionArgs } from "@remix-run/node";
-import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "app/shopify.server";
 
 const load: Loader = async ({ adminApiFetcher, queryClient }) => {
