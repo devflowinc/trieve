@@ -48,9 +48,7 @@ export default defineConfig(({ mode }) => {
         // See https://vitejs.dev/config/server-options.html#server-fs-allow for more information
         allow: ["app", "node_modules"],
       },
-      allowedHosts: (process.env.REMIX_SERVER_URL || env.REMIX_SERVER_URL)
-        ? [(process.env.REMIX_SERVER_URL || env.REMIX_SERVER_URL).replace("https://", "")]
-        : true,
+      allowedHosts: true,
     },
     plugins: [
       remix({
@@ -91,7 +89,7 @@ export default defineConfig(({ mode }) => {
         "d3-time-format",
         "internmap",
         "use-debounce",
-        "trieve-search-component"
+        "trieve-search-component",
       ],
     },
   } satisfies UserConfig;

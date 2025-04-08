@@ -421,7 +421,7 @@ export const Message = ({
             {props.previewTopicId == undefined && (
               <div className="feedback-wrapper tv-gap-2 w-full tv-flex">
                 <span className="spacer tv-grow"></span>
-                <div className="feedback-icons tv-flex tv-gap-2">
+                <div className="feedback-icons tv-flex tv-items-center tv-gap-2">
                   {copied ? (
                     <span>
                       <i className="fa-regular fa-circle-check"></i>
