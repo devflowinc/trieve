@@ -97,3 +97,4 @@ pdf2md/ch_migrations/chm.toml
 clients/trieve-shopify-extension/shopify.app.skept-trieve-extension-test.toml
 clients/trieve-shopify-extension/shopify.app.skept-laptop-trieve-extension.toml
 charts/charts/**/*.tgz
+clients/trieve-shopify-extension/.env.skept-trieve-extension-test

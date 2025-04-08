@@ -7,8 +7,7 @@ import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
 import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin, payload, session, topic, shop } =
-    await authenticate.webhook(request);
+  const { payload, session, topic, shop } = await authenticate.webhook(request);
   console.log(`Received ${topic} webhook for ${shop}`);
 
   const current = payload as ProductWebhook;
