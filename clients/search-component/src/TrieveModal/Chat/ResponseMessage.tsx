@@ -90,7 +90,7 @@ export const Message = ({
   idx: number;
   message: Message;
 }) => {
-  const { rateChatCompletion, messages } = useChatState();
+  const { rateChatCompletion, messages, productsWithClicks } = useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
   const { props, trieveSDK, fingerprint } = useModalState();
@@ -152,9 +152,13 @@ export const Message = ({
     .map((item, index) => {
       const { title, descriptionHtml } = guessTitleAndDesc(item);
 
+      const clicked =
+        productsWithClicks?.find(
+          (product) => product.chunk_id === item.chunk.id,
+        ) != undefined;
       return (
         <a
-          className="tv-flex tv-flex-col"
+          className={`tv-flex tv-flex-col ${clicked ? "tv-highlighted-item" : ""}`}
           key={index}
           href={item.link ?? ""}
           target="_blank"

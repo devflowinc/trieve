@@ -11,7 +11,8 @@ import { InlineChatHeader } from "./InlineChatHeader";
 import { ChatInput } from "./ChatInput";
 
 export const ChatMode = () => {
-  const { props, modalRef, minHeight, resetHeight, addHeight } = useModalState();
+  const { props, modalRef, minHeight, resetHeight, addHeight } =
+    useModalState();
   const { messages } = useChatState();
 
   const actualChatRef = useRef<HTMLDivElement>(null);
@@ -101,8 +102,9 @@ export const ChatMode = () => {
 
   return (
     <Suspense>
-      {props.previewTopicId == undefined && 
-      <InlineChatHeader resetHeight={resetHeight} />}
+      {props.previewTopicId == undefined && (
+        <InlineChatHeader resetHeight={resetHeight} />
+      )}
       <div
         ref={modalRef}
         className="chat-modal-wrapper tv-justify-items-stretch tv-flex-grow tv-pt-3 tv-pb-2 tv-px-2 tv-relative tv-overflow-y-auto tv-flex tv-overflow-x-hidden"

@@ -304,6 +304,10 @@ body {
           flex: 0 0 100% 100%;
         }
 
+        &.tv-highlighted-item {
+          background-color: yellow;
+        }
+
         &.yt-anchor {
           @apply tv-text-center;
         }

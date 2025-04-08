@@ -19,7 +19,9 @@ export const FollowupQueries = () => {
   const handleFollowupQuery = async (q: string) => {
     askQuestion(q);
 
-    const requestId = messages[messages.length - 1]?.queryId ?? "00000000-0000-0000-0000-000000000000";
+    const requestId =
+      messages[messages.length - 1]?.queryId ??
+      "00000000-0000-0000-0000-000000000000";
 
     await trieveSDK.sendAnalyticsEvent({
       event_name: `site-followup_query`,
@@ -35,7 +37,7 @@ export const FollowupQueries = () => {
         request_type: "rag",
       },
     });
-  }
+  };
 
   return (
     <div ref={parent} className="followup-questions">
@@ -43,8 +45,9 @@ export const FollowupQueries = () => {
         <button
           onClick={() => handleFollowupQuery(q)}
           key={q}
-          className={`followup-question ${isLoadingSuggestedQueries ? "loading" : ""
-            }`}
+          className={`followup-question ${
+            isLoadingSuggestedQueries ? "loading" : ""
+          }`}
         >
           <SparklesIcon className="followup-icon" />
           {q}
