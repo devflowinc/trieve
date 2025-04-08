@@ -3,27 +3,102 @@ import { useLoaderData } from "@remix-run/react";
 import { Box } from "@shopify/polaris";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
-import { DatasetSettings as DatasetSettings } from "app/components/DatasetSettings";
+import {
+  DatasetSettings as DatasetSettings,
+  ExtendedCrawlOptions,
+} from "app/components/DatasetSettings";
 import { useTrieve } from "app/context/trieveContext";
+import { AdminApiCaller } from "app/loaders";
 import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 import { sendChunks } from "app/processors/getProducts";
 import { shopDatasetQuery } from "app/queries/shopDataset";
 import { authenticate } from "app/shopify.server";
+import { TrieveKey } from "app/types";
 import { type Dataset } from "trieve-ts-sdk";
+import { AppInstallData } from "./app.setup";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+const setAppMetafields = async (
+  adminApi: AdminApiCaller,
+  trieveKey: TrieveKey,
+) => {
+  const response = await adminApi<AppInstallData>(`
+      #graphql
+      query {
+        currentAppInstallation {
+          id
+        }
+      }
+      `);
+
+  if (response.error) {
+    throw response.error;
+  }
+
+  const appId = response.data;
+
+  await adminApi(
+    `#graphql
+    mutation CreateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafieldsSetInput) {
+          metafields {
+            id
+            namespace
+            key
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `,
+    {
+      variables: {
+        metafieldsSetInput: [
+          {
+            namespace: "trieve",
+            key: "dataset_id",
+            value: trieveKey.currentDatasetId,
+            type: "single_line_text_field",
+            ownerId: appId.currentAppInstallation.id,
+          },
+          {
+            namespace: "trieve",
+            key: "api_key",
+            value: trieveKey.key,
+            type: "single_line_text_field",
+            ownerId: appId.currentAppInstallation.id,
+          },
+        ],
+      },
+    },
+  );
+};
+
+export const loader = async ({
+  request,
+}: LoaderFunctionArgs): Promise<{
+  crawlSettings: ExtendedCrawlOptions | undefined;
+}> => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
   const trieve = sdkFromKey(key);
+  const fetcher = buildAdminApiFetcherForServer(
+    session.shop,
+    session.accessToken!,
+  );
+  setAppMetafields(fetcher, key).catch(console.error);
 
-  const crawlSettings = await prisma.crawlSettings.findFirst({
+  const crawlSettings: {
+    crawlSettings: ExtendedCrawlOptions | undefined;
+  } = (await prisma.crawlSettings.findFirst({
     where: {
       datasetId: trieve.datasetId,
       shop: session.shop,
     },
-  });
+  })) as any;
 
-  return Response.json({ crawlSettings: crawlSettings?.crawlSettings });
+  return { crawlSettings: crawlSettings?.crawlSettings };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -57,7 +132,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     sendChunks(datasetId as string, key, fetcher, session, crawlSettings).catch(
       console.error,
     );
-    return Response.json({ success: true });
+    setAppMetafields(fetcher, key).catch(console.error);
+
+    return { success: true };
   } else if (type === "dataset") {
     const datasetSettingsString = formData.get("dataset_settings");
     const datasetId = formData.get("dataset_id");
@@ -67,10 +144,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       server_configuration: datasetSettings,
     });
 
-    return Response.json({ success: true });
+    return { success: true };
   }
 
-  return Response.json({ success: false });
+  return { success: false };
 };
 
 export default function Dataset() {
@@ -81,7 +158,7 @@ export default function Dataset() {
   return (
     <Box paddingBlockStart="400">
       <DatasetSettings
-        initalCrawlOptions={crawlSettings}
+        initalCrawlOptions={crawlSettings as ExtendedCrawlOptions}
         shopDataset={shopDataset as Dataset}
       />
     </Box>
