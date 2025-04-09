@@ -21,33 +21,28 @@ provider "google" {
 }
 
 provider "google-beta" {
-  region = var.region
-  zone   = var.zone
+  region  = var.region
+  zone    = var.zone
   project = var.project
 }
 
-# Get the default network as a data source
-data "google_compute_network" "default" {
-  name = "default"
-}
-
 resource "google_compute_network" "vpc_network" {
-  name                    = "gke-vpc-network-${var.cluster_name}"
+  name                    = "trieve-vpc-network-${var.cluster_name}"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "vpc_subnet" {
-  name          = "k8s-network-${var.cluster_name}"
+  name          = "trieve-network-${var.cluster_name}"
   ip_cidr_range = "10.3.0.0/16"
   region        = var.region
   network       = google_compute_network.vpc_network.id
 
   log_config {
-      aggregation_interval = "INTERVAL_5_SEC"
-      flow_sampling        = 1
-      metadata             = "INCLUDE_ALL_METADATA"
-      filter_expr          = true
-      metadata_fields      = [] 
+    aggregation_interval = "INTERVAL_5_SEC"
+    flow_sampling        = 1
+    metadata             = "INCLUDE_ALL_METADATA"
+    filter_expr          = true
+    metadata_fields      = []
   }
 }
 
@@ -55,10 +50,10 @@ resource "google_compute_subnetwork" "vpc_subnet" {
 # K8s configuration
 ###############################################################
 resource "google_container_cluster" "cluster" {
-  name             = var.cluster_name
-  location         = var.zone
-  network           = google_compute_network.vpc_network.name
-  subnetwork        = google_compute_subnetwork.vpc_subnet.name
+  name       = var.cluster_name
+  location   = var.zone
+  network    = google_compute_network.vpc_network.name
+  subnetwork = google_compute_subnetwork.vpc_subnet.name
 
   # We can't create a cluster with no node pool defined, but we want to only use
   # separately managed node pools. So we create the smallest possible default
@@ -77,34 +72,10 @@ resource "google_container_cluster" "cluster" {
   }
 }
 
-resource "google_container_node_pool" "larger_nodes" {
-  name       = "larger-compute-${var.cluster_name}"
-  location   = var.zone
-  cluster    = google_container_cluster.cluster.name
-
-  node_count = 3
-
-  autoscaling {
-    min_node_count = 0
-    max_node_count = 3
-  }
-
-  node_config {
-    preemptible  = false
-    machine_type = var.qdrant-machine-type
-
-    taint {
-        effect = "NO_SCHEDULE"
-        key    = "qdrant-node"
-        value  = "present"
-    }
-  }
-}
-
 resource "google_container_node_pool" "standard_nodes" {
-  name       = "standard-compute-${var.cluster_name}"
-  location   = var.zone
-  cluster    = google_container_cluster.cluster.name
+  name     = "standard-compute-${var.cluster_name}"
+  location = var.zone
+  cluster  = google_container_cluster.cluster.name
 
   node_count = 1
 
@@ -116,6 +87,16 @@ resource "google_container_node_pool" "standard_nodes" {
   node_config {
     preemptible  = false
     machine_type = var.standard-machine-type
+
+    resource_labels = {
+      goog-gke-node-pool-provisioning-model = "on-demand"
+    }
+
+    kubelet_config {
+      cpu_cfs_quota      = false
+      pod_pids_limit     = 0
+      cpu_manager_policy = ""
+    }
   }
 }
 
@@ -134,8 +115,20 @@ resource "google_container_node_pool" "gpu_nodes" {
     preemptible  = false
     machine_type = var.gpu-machine-type
 
+    resource_labels = {
+      goog-gke-accelerator-type             = "nvidia-tesla-t4"
+      goog-gke-node-pool-provisioning-model = "on-demand"
+    }
+
+
+    kubelet_config {
+      cpu_cfs_quota      = false
+      pod_pids_limit     = 0
+      cpu_manager_policy = ""
+    }
+
     gcfs_config {
-      enabled = true   
+      enabled = true
     }
 
     gvnic {
@@ -143,7 +136,7 @@ resource "google_container_node_pool" "gpu_nodes" {
     }
 
     guest_accelerator {
-      type  = "nvidia-l4"
+      type  = var.gpu-accelerator-type
       count = 1
       gpu_driver_installation_config {
         gpu_driver_version = "LATEST"
@@ -155,9 +148,9 @@ resource "google_container_node_pool" "gpu_nodes" {
     }
 
     taint {
-        effect = "NO_SCHEDULE"
-        key    = "nvidia.com/gpu"
-        value  = "present"
+      effect = "NO_SCHEDULE"
+      key    = "nvidia.com/gpu"
+      value  = "present"
     }
 
     tags = ["gke-my-project-id-region", "gke-my-project-id-region-gpu-time-sharing"]
