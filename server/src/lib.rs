@@ -964,6 +964,10 @@ pub fn main() -> std::io::Result<()> {
                                     web::resource("user_event")
                                     .route(web::post().to(handlers::shopify_handler::send_shopify_user_event))
                                 )
+                                .service(
+                                    web::resource("plan_change")
+                                    .route(web::post().to(handlers::payment_handler::handle_shopify_plan_change))
+                                )
                         )
                         .service(
                             web::scope("/dataset")
@@ -1378,13 +1382,6 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::get().to(handlers::invitation_handler::get_invitations)),
                                 ),
                             )
-                        .service(
-                            web::scope("/shopify")
-                                .service(
-                                    web::resource("/plan_change")
-                                        .route(web::post().to(handlers::payment_handler::handle_shopify_plan_change)),
-                                ),
-                        )
                         .service(
                             web::scope("/stripe")
                                 .service(

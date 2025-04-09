@@ -377,7 +377,6 @@ pub async fn get_org_from_id_query(
 
     if let Some(sub) = &subscription {
         let end_date = sub.current_period_end();
-        log::info!("Subscription end date: {}", end_date.unwrap_or_default());
         if end_date.is_some()
             && chrono::Utc::now().naive_utc() > end_date.expect("End date should be set")
         {

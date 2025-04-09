@@ -17,11 +17,13 @@ export const TrieveContext = createContext<{
   dataset: Dataset;
   trieveKey: StrongTrieveKey;
   organization: OrganizationWithSubAndPlan;
+  refetch: () => void;
 }>({
   trieve: null as any,
   dataset: null as any,
   trieveKey: null as any,
   organization: null as any,
+  refetch: null as any,
 });
 
 export const TrieveProvider = ({
@@ -67,7 +69,7 @@ export const TrieveProvider = ({
 
   return (
     <TrieveContext.Provider
-      value={{ trieve, dataset, trieveKey, organization }}
+      value={{ trieve, dataset, trieveKey, organization, refetch: queryClient.refetchQueries }}
     >
       {children}
     </TrieveContext.Provider>
