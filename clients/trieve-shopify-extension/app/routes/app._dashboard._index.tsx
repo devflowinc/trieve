@@ -54,7 +54,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const action = formData.get("action");
   if (action === "modify") {
     return redirect(
-      `shopify://admin/charges/densumes-trieve-extension/pricing_plans?test=true`,
+      process.env.SHOPIFY_PRICING_URL || "",
       {
         target: "_top",
       },
@@ -72,7 +72,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Dashboard() {
-  const { organization, trieve } = useTrieve();
+  const { organization, trieve, refetch: refetchTrieve } = useTrieve();
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
   const [granularity, setGranularity] = useState<Granularity>("day");
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -157,6 +157,9 @@ export default function Dashboard() {
               method: "post",
             });
             setShowCancelModal(false);
+            setTimeout(() => {
+              refetchTrieve();
+            }, 5000);
           }}>Cancel Subscription</Button>
         </div>
       </Modal>
