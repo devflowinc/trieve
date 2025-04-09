@@ -6438,7 +6438,7 @@ pub struct FloatRange {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct TopicEventFilter {
     /// Filter by event type
-    pub event_types: Vec<EventTypesFilter>,
+    pub event_names: Vec<EventNamesFilter>,
     pub inverted: bool,
 }
 
@@ -7296,15 +7296,42 @@ pub enum EventTypesFilter {
     Purchase,
 }
 
-impl EventTypesFilter {
-    pub fn from_string(value: &str) -> EventTypesFilter {
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Display, PartialEq, PartialOrd)]
+pub enum EventNamesFilter {
+    #[display(rename = "component_close", fmt = "component_close")]
+    #[serde(rename = "component_close")]
+    ComponentClose,
+    #[display(rename = "component_open", fmt = "component_open")]
+    #[serde(rename = "component_open")]
+    ComponentOpen,
+    #[display(rename = "View", fmt = "View")]
+    #[serde(rename = "View")]
+    View,
+    #[display(rename = "site-followup_query", fmt = "site-followup_query")]
+    #[serde(rename = "site-followup_query")]
+    FollowupQuery,
+    #[display(rename = "Click", fmt = "Click")]
+    #[serde(rename = "Click")]
+    Click,
+    #[display(rename = "site-add_to_cart", fmt = "site-add_to_cart")]
+    #[serde(rename = "site-add_to_cart")]
+    AddToCart,
+    #[display(rename = "site-checkout", fmt = "site-checkout")]
+    #[serde(rename = "site-checkout")]
+    Checkout,
+}
+
+impl EventNamesFilter {
+    pub fn from_string(value: &str) -> EventNamesFilter {
         match value {
-            "view" => EventTypesFilter::View,
-            "filter_clicked" => EventTypesFilter::FilterClicked,
-            "click" => EventTypesFilter::Click,
-            "add_to_cart" => EventTypesFilter::AddToCart,
-            "purchase" => EventTypesFilter::Purchase,
-            _ => EventTypesFilter::View,
+            "component_close" => EventNamesFilter::ComponentClose,
+            "component_open" => EventNamesFilter::ComponentOpen,
+            "View" => EventNamesFilter::View,
+            "site-followup_query" => EventNamesFilter::FollowupQuery,
+            "Click" => EventNamesFilter::Click,
+            "site-add_to_cart" => EventNamesFilter::AddToCart,
+            "site-checkout" => EventNamesFilter::Checkout,
+            _ => EventNamesFilter::View,
         }
     }
 }
@@ -8071,7 +8098,6 @@ pub struct TopicAnalyticsSummaryClickhouse {
     pub avg_top_score: f64,
     pub avg_hallucination_score: f64,
     pub avg_query_rating: Option<f64>,
-    pub products_shown: u64,
     pub status: String,
 }
 
@@ -8087,7 +8113,6 @@ pub struct ClickhouseTopicAnalyticsSummary {
     pub avg_top_score: f64,
     pub avg_hallucination_score: f64,
     pub avg_query_rating: Option<f64>,
-    pub products_shown: u64,
     pub status: String,
 }
 
@@ -8104,7 +8129,6 @@ impl From<TopicAnalyticsSummaryClickhouse> for ClickhouseTopicAnalyticsSummary {
             avg_top_score: value.avg_top_score,
             avg_hallucination_score: value.avg_hallucination_score,
             avg_query_rating: value.avg_query_rating,
-            products_shown: value.products_shown,
             status: value.status,
         }
     }

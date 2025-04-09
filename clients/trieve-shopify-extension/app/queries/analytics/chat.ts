@@ -99,7 +99,7 @@ export const allChatsQuery = (
         type: "topic_queries",
         page: page,
         topic_events_filter:
-          topic_event_filter.event_types.length > 0
+          topic_event_filter.event_names.length > 0
             ? topic_event_filter
             : undefined,
         sort_by,
@@ -107,7 +107,6 @@ export const allChatsQuery = (
       })) as TopicQueriesResponse;
       return {
         topics: result.topics,
-        events: result.events,
       } satisfies TopicQueriesResponse;
     },
   } satisfies QueryOptions;

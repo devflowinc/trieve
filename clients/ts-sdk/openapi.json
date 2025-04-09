@@ -9059,7 +9059,6 @@
           "message_count",
           "avg_top_score",
           "avg_hallucination_score",
-          "products_shown",
           "status"
         ],
         "properties": {
@@ -9093,11 +9092,6 @@
           },
           "owner_id": {
             "type": "string"
-          },
-          "products_shown": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
           },
           "status": {
             "type": "string"
@@ -11556,6 +11550,18 @@
             }
           }
         }
+      },
+      "EventNamesFilter": {
+        "type": "string",
+        "enum": [
+          "component_close",
+          "component_open",
+          "View",
+          "site-followup_query",
+          "Click",
+          "site-add_to_cart",
+          "site-checkout"
+        ]
       },
       "EventReturn": {
         "type": "object",
@@ -20295,14 +20301,14 @@
       "TopicEventFilter": {
         "type": "object",
         "required": [
-          "event_types",
+          "event_names",
           "inverted"
         ],
         "properties": {
-          "event_types": {
+          "event_names": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/EventTypesFilter"
+              "$ref": "#/components/schemas/EventNamesFilter"
             },
             "description": "Filter by event type"
           },

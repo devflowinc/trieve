@@ -1,5 +1,5 @@
 import { Select } from "@shopify/polaris";
-import { TopicEventFilter, EventTypesFilter } from "trieve-ts-sdk";
+import { TopicEventFilter, EventNamesFilter } from "trieve-ts-sdk";
 import { Dispatch, SetStateAction } from "react";
 
 interface EventFiltersProps {
@@ -7,10 +7,11 @@ interface EventFiltersProps {
   setEventsFilter: Dispatch<SetStateAction<TopicEventFilter>>;
 }
 
-const AVAILABLE_EVENT_TYPES: { label: string; value: EventTypesFilter }[] = [
-  { label: "Checkout", value: "purchase" },
-  { label: "Add to Cart", value: "add_to_cart" },
-  { label: "Click", value: "click" },
+const AVAILABLE_EVENT_TYPES: { label: string; value: EventNamesFilter }[] = [
+  { label: "Followup Clicked", value: "site-followup_query" },
+  { label: "Click", value: "Click" },
+  { label: "Add to Cart", value: "site-add_to_cart" },
+  { label: "Checkout", value: "site-checkout" },
 ];
 
 const eventTypeSelectOptions = [
@@ -38,7 +39,7 @@ export function EventFilters({
   const handleEventTypeChange = (selectedValue: string) => {
     setEventsFilter((prev: TopicEventFilter) => ({
       ...prev,
-      event_types: selectedValue ? [selectedValue as any] : [],
+      event_names: selectedValue ? [selectedValue as any] : [],
     }));
   };
 
@@ -46,7 +47,7 @@ export function EventFilters({
     ? "excludes"
     : "includes";
 
-  const selectedEventTypeValue = eventsFilters.event_types?.[0] || "";
+  const selectedEventTypeValue = eventsFilters.event_names?.[0] || "";
 
   return (
     <div className="flex items-center gap-2">

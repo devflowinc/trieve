@@ -472,6 +472,7 @@ impl Modify for SecurityAddon {
             data::models::GetEventsRequestBody,
             data::models::GetEventsResponseBody,
             data::models::EventData,
+            data::models::EventNamesFilter,
             data::models::EventTypesFilter,
             data::models::RagTypes,
             data::models::RagQueryEvent,

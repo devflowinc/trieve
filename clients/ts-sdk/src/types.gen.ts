@@ -561,7 +561,6 @@ export type ClickhouseTopicAnalyticsSummary = {
     message_count: number;
     name: string;
     owner_id: string;
-    products_shown: number;
     status: string;
     topic_id: string;
     updated_at: string;
@@ -1522,6 +1521,8 @@ export type EventNameAndCounts = {
 export type EventNameAndCountsResponse = {
     event_names: Array<EventNameAndCounts>;
 };
+
+export type EventNamesFilter = 'component_close' | 'component_open' | 'View' | 'site-followup_query' | 'Click' | 'site-add_to_cart' | 'site-checkout';
 
 export type EventReturn = {
     event_types: Array<(string)>;
@@ -4102,7 +4103,7 @@ export type TopicEventFilter = {
     /**
      * Filter by event type
      */
-    event_types: Array<EventTypesFilter>;
+    event_names: Array<EventNamesFilter>;
     inverted: boolean;
 };
 
