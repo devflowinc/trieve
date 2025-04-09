@@ -1868,7 +1868,7 @@ pub async fn get_topic_queries_query(
         let event_match_string = topic_events_filter
             .event_names
             .iter()
-            .map(|event_name| format!("event_name = '{}'", event_name))
+            .map(|event_name| format!("event_name = '{}'", event_name.to_query_string()))
             .join(" OR ");
 
         if topic_events_filter.inverted {

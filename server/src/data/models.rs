@@ -7349,6 +7349,18 @@ impl EventNamesFilter {
             _ => EventNamesFilter::View,
         }
     }
+
+    pub fn to_query_string(&self) -> String {
+        match self {
+            EventNamesFilter::ComponentClose => String::from("component_close"),
+            EventNamesFilter::ComponentOpen => String::from("component_open"),
+            EventNamesFilter::View => String::from("View"),
+            EventNamesFilter::FollowupQuery => String::from("site-followup_query"),
+            EventNamesFilter::Click => String::from("Click"),
+            EventNamesFilter::AddToCart => String::from("site-add_to_cart"),
+            EventNamesFilter::Checkout => String::from("site-checkout"),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
