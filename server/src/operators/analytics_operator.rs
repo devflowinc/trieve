@@ -4,7 +4,7 @@ use crate::{
         ChatRevenueResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse,
         ComponentAnalyticsFilter, ComponentInteractionTimeResponse, ComponentNamesResponse,
         DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts,
-        EventTypesFilter, FloatTimePoint, FloatTimePointClickhouse, FollowupQueriesResponse,
+        EventNamesFilter, FloatTimePoint, FloatTimePointClickhouse, FollowupQueriesResponse,
         FollowupQuery, GetEventsResponseBody, Granularity, HeadQueries, IntegerTimePoint,
         IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularChat,
         PopularChatsResponse, PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter,
@@ -1858,19 +1858,17 @@ pub async fn get_topic_queries_query(
             AVG(rag_queries.top_score) as top_score,
             AVG(rag_queries.hallucination_score) as hallucination_score,
             AVG(JSONExtract(query_rating, 'rating', 'Nullable(Float64)')) as query_rating,
-            length(view_events.items) as products_shown,
-            'view' as status
+            'View' as status
         FROM topics 
         JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
-        JOIN events as view_events ON rag_queries.id = toUUID(view_events.request_id) AND view_events.event_type = 'view'
         ",
     );
 
     if let Some(topic_events_filter) = topic_events_filter {
         let event_match_string = topic_events_filter
-            .event_types
+            .event_names
             .iter()
-            .map(|event_type| format!("event_type = '{}'", event_type))
+            .map(|event_name| format!("event_name = '{}'", event_name))
             .join(" OR ");
 
         if topic_events_filter.inverted {
@@ -1940,7 +1938,7 @@ pub async fn get_topic_queries_query(
 
     let topic_events: Vec<TopicIdEventTypePair> = clickhouse_client
         .query(
-            "SELECT rag_queries.topic_id as topic_id, events.event_type as event_type
+            "SELECT rag_queries.topic_id as topic_id, events.event_name as event_name
             FROM events 
             JOIN rag_queries ON rag_queries.id = toUUIDOrNull(events.request_id)
             WHERE rag_queries.dataset_id = ? AND rag_queries.topic_id in ?",
@@ -1959,11 +1957,11 @@ pub async fn get_topic_queries_query(
             .iter_mut()
             .find(|t| t.topic_id == topic_pair.topic_id)
         {
-            let current_status = EventTypesFilter::from_string(&topic.status);
-            let topic_status = EventTypesFilter::from_string(&topic_pair.event_type);
+            let current_status = EventNamesFilter::from_string(&topic.status);
+            let topic_status = EventNamesFilter::from_string(&topic_pair.event_name);
 
             if topic_status > current_status {
-                topic.status = topic_pair.event_type.clone();
+                topic.status = topic_pair.event_name.clone();
             }
         }
     }
@@ -1976,7 +1974,7 @@ pub async fn get_topic_queries_query(
 pub struct TopicIdEventTypePair {
     #[serde(with = "clickhouse::serde::uuid")]
     pub topic_id: uuid::Uuid,
-    pub event_type: String,
+    pub event_name: String,
 }
 
 pub async fn get_topic_details_query(

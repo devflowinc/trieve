@@ -32,7 +32,7 @@ export default function ChatsPage() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<TopicAnalyticsFilter>({});
   const [eventsFilters, setEventsFilter] = useState<TopicEventFilter>({
-    event_types: [], // if empty, whole filter undefined on crash
+    event_names: [], // if empty, whole filter undefined on crash
     inverted: false,
   });
   const [appliedFilters, setAppliedFilters] = useState<
@@ -69,6 +69,7 @@ export default function ChatsPage() {
       return previousData;
     }
 
+    console.log("getting data", data)
     if (!data?.topics) {
       return [];
     }
@@ -76,19 +77,10 @@ export default function ChatsPage() {
     // TODO: Create badge with "highest ranking event"
     let newData: AdvancedTableCell[][] =
       data?.topics.map((topic) => {
-        const topic_events = data?.events?.filter(
-          (event) => event.event_type === topic.topic_id
-        );
-
         return [
           { content: topic.name, url: `/app/chatview/${topic.topic_id}` },
           { content: topic.status },
           { content: topic.message_count.toLocaleString() },
-          {
-            content: topic.products_shown?.toLocaleString("en-US", {
-              maximumFractionDigits: 0,
-            }),
-          },
           {
             content: topic.avg_top_score?.toLocaleString("en-US", {
               maximumFractionDigits: 2,
@@ -444,6 +436,8 @@ export default function ChatsPage() {
     }
   }, [query]);
 
+  console.log("I am here data", mappedData);
+
   return (
     <AdvancedTableComponent
       additionalControls={
@@ -470,10 +464,6 @@ export default function ChatsPage() {
         {
           heading: "Message Count",
           tooltip: "The number of messages in the chat session.",
-        },
-        {
-          heading: "Products Shown",
-          tooltip: "The number of products displayed in the chat session.",
         },
         {
           heading: "Average Score",
