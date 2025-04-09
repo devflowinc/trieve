@@ -154,7 +154,8 @@ export const Message = ({
 
       const clicked =
         productsWithClicks?.find(
-          (product) => product.chunk_id === item.chunk.id,
+          (product) =>
+            product.chunk_id === item.chunk.id && product.position == index - 1,
         ) != undefined;
       return (
         <a

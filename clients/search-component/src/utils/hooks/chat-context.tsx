@@ -16,7 +16,7 @@ import { defaultHighlightOptions } from "../highlight";
 
 export type ChunkIdWithIndex = {
   chunk_id: string;
-  index: number;
+  position: number;
 };
 
 const scrollToBottomOfChatModalWrapper = () => {
