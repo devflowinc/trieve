@@ -50,7 +50,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
 export default function ChatRoute() {
   const { topicId, messages, topicEvents } = useLoaderData<typeof loader>();
-  const { dataset, trieveKey } = useTrieve();
+  const { trieve, dataset, trieveKey } = useTrieve();
 
   const getEventLog = () => {
     const events: SidebarEvent[] = [];
@@ -125,6 +125,7 @@ export default function ChatRoute() {
             <Suspense fallback={null}>
               {typeof window !== "undefined" && (
                 <TrieveModalSearch
+                  baseUrl={trieve.trieve.baseUrl}
                   type="ecommerce"
                   defaultSearchMode="chat"
                   allowSwitchingModes={false}
