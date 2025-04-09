@@ -84,7 +84,7 @@ function createChunkFromProduct(
   if (crawlOptions.include_metafields) {
     product.variants.nodes.forEach((v) => {
       let values: string[] = JSON.parse(
-        v.metafields.nodes.find((m) =>
+        v.metafields?.nodes?.find((m) =>
           crawlOptions.include_metafields?.includes(m.key),
         )?.value ?? "[]",
       );
@@ -222,7 +222,7 @@ export function createChunkFromProductWebhook(
   if (crawlOptions.include_metafields) {
     product.variants.forEach((v) => {
       let values: string[] = JSON.parse(
-        v.metafields.find((m) =>
+        v?.metafields?.find((m) =>
           crawlOptions.include_metafields?.includes(m.key),
         )?.value ?? "[]",
       );
