@@ -17,7 +17,7 @@
   "files": [
     "dist"
   ],
-  "version": "0.0.83",
+  "version": "0.0.84",
   "license": "MIT",
   "scripts": {
     "lint": "eslint 'src/**/*.ts'",
