@@ -312,9 +312,15 @@ pub async fn send_user_ditto_identity(
         .json(&batch_request)
         .send()
         .await
-        .map_err(|e| ServiceError::BadRequest(e.to_string()))?
+        .map_err(|e| {
+            log::error!("Error sending request to Dittofeed for /apps/batch: {}", e);
+            ServiceError::BadRequest(e.to_string())
+        })?
         .error_for_status()
-        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+        .map_err(|e| {
+            log::error!("Error sending request to Dittofeed /apps/batch: {}", e);
+            ServiceError::BadRequest(e.to_string())
+        })?;
 
     Ok(())
 }
@@ -339,9 +345,15 @@ pub async fn send_ditto_event(event: DittoTrackRequest) -> Result<(), ServiceErr
         .json(&event)
         .send()
         .await
-        .map_err(|e| ServiceError::BadRequest(e.to_string()))?
+        .map_err(|e| {
+            log::error!("Error sending request to Dittofeed for /apps/track: {}", e);
+            ServiceError::BadRequest(e.to_string())
+        })?
         .error_for_status()
-        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+        .map_err(|e| {
+            log::error!("Error sending request to Dittofeed for /apps/track: {}", e);
+            ServiceError::BadRequest(e.to_string())
+        })?;
 
     Ok(())
 }

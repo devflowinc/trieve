@@ -95,7 +95,6 @@ query GetStoreThemes {
 }
 `,
       );
-      console.log("THEME LIST", result);
       if (result.error) {
         console.error(result.error);
         throw result.error;
