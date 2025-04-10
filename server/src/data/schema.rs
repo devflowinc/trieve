@@ -242,6 +242,7 @@ diesel::table! {
         name -> Text,
         visible -> Bool,
         file_storage -> Int8,
+        component_loads -> Nullable<Int4>,
     }
 }
 
