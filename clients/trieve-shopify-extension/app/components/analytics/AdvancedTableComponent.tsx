@@ -29,8 +29,10 @@ export interface Filter {
   pinned?: boolean;
 }
 
+// Either component or content is required
 export interface AdvancedTableCell {
-  content: string;
+  component?: React.ReactNode;
+  content?: string;
   url?: string;
 }
 
@@ -105,7 +107,7 @@ export const AdvancedTableComponent = ({
                 }))}
                 queryValue={query}
                 cancelAction={{
-                  onAction: () => {},
+                  onAction: () => { },
                   disabled: false,
                   loading: false,
                 }}
@@ -152,7 +154,7 @@ export const AdvancedTableComponent = ({
                         {heading.sortCol && (
                           <span className="ml-1">
                             {sortSelected[0].split(" ")[0] ===
-                            heading.sortCol ? (
+                              heading.sortCol ? (
                               sortSelected[0].split(" ")[1] === "asc" ? (
                                 <Icon source={ChevronUpIcon} tone="base" />
                               ) : (
@@ -188,25 +190,26 @@ export const AdvancedTableComponent = ({
                   id={index.toString()}
                   position={index}
                 >
-                  {row.map((cell, innerIndex) => (
-                    <IndexTable.Cell
-                      key={innerIndex}
-                      className="max-w-[200px] truncate"
-                    >
-                      {cell.url ? (
-                        <Link to={cell.url}>
-                          <InlineStack wrap={false}>
-                            <ViewIcon width={20} />
-                            <Text as="span" variant="bodyMd" truncate={true}>
-                              {cell.content}
-                            </Text>
-                          </InlineStack>
-                        </Link>
-                      ) : (
-                        cell.content
-                      )}
-                    </IndexTable.Cell>
-                  ))}
+                  {row.map((cell, innerIndex) => {
+                    const innerCell = cell.component ? cell.component : <Text as="span" variant="bodyMd" truncate={true}>{cell.content}</Text>;
+                    return (
+                      <IndexTable.Cell
+                        key={innerIndex}
+                        className="max-w-[250px] truncate"
+                      >
+                        {cell.url ? (
+                          <Link to={cell.url}>
+                            <InlineStack wrap={false}>
+                              <ViewIcon width={20} />
+                              {innerCell}
+                            </InlineStack>
+                          </Link>
+                        ) : (
+                          innerCell
+                        )}
+                      </IndexTable.Cell>
+                    );
+                  })}
                 </IndexTable.Row>
               );
             })}

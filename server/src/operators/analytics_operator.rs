@@ -4,8 +4,8 @@ use crate::{
         ChatRevenueResponse, ClusterAnalyticsFilter, ClusterTopicsClickhouse,
         ComponentAnalyticsFilter, ComponentInteractionTimeResponse, ComponentNamesResponse,
         DatasetAnalytics, EventAnalyticsFilter, EventData, EventDataClickhouse, EventNameAndCounts,
-        EventNamesFilter, FloatTimePoint, FloatTimePointClickhouse, FollowupQueriesResponse,
-        FollowupQuery, GetEventsResponseBody, Granularity, HeadQueries, IntegerTimePoint,
+        FloatTimePoint, FloatTimePointClickhouse, FollowupQueriesResponse, FollowupQuery,
+        GetEventsResponseBody, Granularity, HeadQueries, IntegerTimePoint,
         IntegerTimePointClickhouse, MessagesPerUserResponse, Pool, PopularChat,
         PopularChatsResponse, PopularFilters, PopularFiltersClickhouse, RAGAnalyticsFilter,
         RAGSortBy, RAGUsageGraphResponse, RAGUsageResponse, RagQueryEvent, RagQueryEventClickhouse,
@@ -1858,9 +1858,10 @@ pub async fn get_topic_queries_query(
             AVG(rag_queries.top_score) as top_score,
             AVG(rag_queries.hallucination_score) as hallucination_score,
             AVG(JSONExtract(query_rating, 'rating', 'Nullable(Float64)')) as query_rating,
-            'View' as status
+            groupArray(topic_events.event_name) as event_names
         FROM topics 
         JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
+        JOIN events as topic_events ON rag_queries.id = toUUID(topic_events.request_id)
         ",
     );
 
@@ -1924,7 +1925,7 @@ pub async fn get_topic_queries_query(
         (page.unwrap_or(1) - 1) * 10
     ));
 
-    let mut topics = clickhouse_client
+    let topics = clickhouse_client
         .query(query_string.as_str())
         .bind(dataset_id)
         .fetch_all::<TopicAnalyticsSummaryClickhouse>()
@@ -1934,37 +1935,6 @@ pub async fn get_topic_queries_query(
             ServiceError::InternalServerError("Error fetching topics".to_string())
         })?;
 
-    let topic_ids: Vec<uuid::Uuid> = topics.iter().map(|topic| topic.topic_id).collect();
-
-    let topic_events: Vec<TopicIdEventTypePair> = clickhouse_client
-        .query(
-            "SELECT rag_queries.topic_id as topic_id, events.event_name as event_name
-            FROM events 
-            JOIN rag_queries ON rag_queries.id = toUUIDOrNull(events.request_id)
-            WHERE rag_queries.dataset_id = ? AND rag_queries.topic_id in ?",
-        )
-        .bind(dataset_id)
-        .bind(topic_ids)
-        .fetch_all::<TopicIdEventTypePair>()
-        .await
-        .map_err(|e| {
-            log::error!("Error fetching query: {:?}", e);
-            ServiceError::InternalServerError("Error fetching query".to_string())
-        })?;
-
-    for topic_pair in topic_events {
-        if let Some(topic) = topics
-            .iter_mut()
-            .find(|t| t.topic_id == topic_pair.topic_id)
-        {
-            let current_status = EventNamesFilter::from_string(&topic.status);
-            let topic_status = EventNamesFilter::from_string(&topic_pair.event_name);
-
-            if topic_status > current_status {
-                topic.status = topic_pair.event_name.clone();
-            }
-        }
-    }
     Ok(TopicQueriesResponse {
         topics: topics.into_iter().map(|t| t.into()).collect(),
     })

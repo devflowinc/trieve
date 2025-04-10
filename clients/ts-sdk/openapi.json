@@ -9093,7 +9093,7 @@
           "message_count",
           "avg_top_score",
           "avg_hallucination_score",
-          "status"
+          "event_names"
         ],
         "properties": {
           "avg_hallucination_score": {
@@ -9112,6 +9112,13 @@
           "created_at": {
             "type": "string"
           },
+          "event_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "All event_names that are  associated with the topic, may contain duplicate names"
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -9125,9 +9132,6 @@
             "type": "string"
           },
           "owner_id": {
-            "type": "string"
-          },
-          "status": {
             "type": "string"
           },
           "topic_id": {

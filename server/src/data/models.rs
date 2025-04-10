@@ -8125,7 +8125,8 @@ pub struct TopicAnalyticsSummaryClickhouse {
     pub avg_top_score: f64,
     pub avg_hallucination_score: f64,
     pub avg_query_rating: Option<f64>,
-    pub status: String,
+    /// All event_names that are  associated with the topic, may contain duplicate names
+    pub event_names: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -8140,7 +8141,8 @@ pub struct ClickhouseTopicAnalyticsSummary {
     pub avg_top_score: f64,
     pub avg_hallucination_score: f64,
     pub avg_query_rating: Option<f64>,
-    pub status: String,
+    /// All event_names that are  associated with the topic, may contain duplicate names
+    pub event_names: Vec<String>,
 }
 
 impl From<TopicAnalyticsSummaryClickhouse> for ClickhouseTopicAnalyticsSummary {
@@ -8156,7 +8158,7 @@ impl From<TopicAnalyticsSummaryClickhouse> for ClickhouseTopicAnalyticsSummary {
             avg_top_score: value.avg_top_score,
             avg_hallucination_score: value.avg_hallucination_score,
             avg_query_rating: value.avg_query_rating,
-            status: value.status,
+            event_names: value.event_names,
         }
     }
 }
