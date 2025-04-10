@@ -3902,12 +3902,12 @@ export type StripeInvoice = {
 export type StripePlan = {
     amount: number;
     chunk_count: number;
-    component_loads?: (number) | null;
     created_at: string;
     dataset_count: number;
     file_storage: number;
     id: string;
     message_count: number;
+    messages_per_month?: (number) | null;
     name: string;
     stripe_id: string;
     updated_at: string;
