@@ -26,9 +26,6 @@ export const SetPromptsOnboarding: OnboardingBody = withSuspense(
     );
 
     useEffect(() => {
-      if (!broadcastCompletion) {
-        return;
-      }
       if (
         (shopDataset.server_configuration as DatasetConfig).SYSTEM_PROMPT !=
         "You are a helpful assistant"
@@ -51,7 +48,7 @@ export const SetPromptsOnboarding: OnboardingBody = withSuspense(
         });
       },
       onSettled: () => {
-        if (broadcastCompletion) broadcastCompletion();
+        broadcastCompletion();
         refetch();
       },
 
