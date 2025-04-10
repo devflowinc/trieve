@@ -43,6 +43,7 @@ async fn main() -> Result<(), ServiceError> {
                 collection.clone(),
                 Some(cur_offset.to_string()),
                 Some(1000),
+                None,
             )
             .await?;
 

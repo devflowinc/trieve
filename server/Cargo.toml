@@ -58,8 +58,8 @@ name = "sync-qdrant"
 path = "src/bin/sync-qdrant.rs"
 
 [[bin]]
-name = "queue-bm25"
-path = "src/bin/queue-bm25-migration.rs"
+name = "queue-migration"
+path = "src/bin/queue-migration.rs"
 
 [[bin]]
 name = "reindex-worker"

@@ -398,8 +398,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  queue_bm25:
-    name: Push Queue BM25 Script
+  queue_migration:
+    name: Push Queue Migration Script
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     strategy:
@@ -431,7 +431,7 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            trieve/queue-bm25-migration
+            trieve/queue-migration
           tags: |
             type=raw,${{matrix.tag}}
             type=sha,suffix=${{matrix.suffix}}
@@ -441,7 +441,7 @@ jobs:
         with:
           platforms: ${{ matrix.platform }}
           context: server/
-          file: ./server/Dockerfile.queue-bm25
+          file: ./server/Dockerfile.queue-migration
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
