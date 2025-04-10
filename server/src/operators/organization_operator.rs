@@ -542,6 +542,11 @@ pub struct EventsIngestedRow {
     event_count: u64,
 }
 
+#[derive(Row, Deserialize)]
+pub struct CurrentMonthMessageCountRow {
+    query_count: u64,
+}
+
 pub fn format_with_daterange(query_string: String, date_range: &Option<DateRange>) -> String {
     let mut query_string = query_string;
     if let Some(date_range) = date_range {
@@ -571,7 +576,7 @@ pub async fn get_extended_org_usage_by_id_query(
 ) -> Result<ExtendedOrganizationUsageCount, ServiceError> {
     let usage = get_org_usage_by_id_query(organization_id, pool).await?;
 
-    let search_tokens = clickhouse_client
+    let search_tokens_fut = clickhouse_client
         .query(&format_with_daterange(
             "
         SELECT SUM(tokens) as search_tokens, COUNT(*) as search_count
@@ -582,17 +587,9 @@ pub async fn get_extended_org_usage_by_id_query(
             &date_range,
         ))
         .bind(organization_id)
-        .fetch_one::<SearchTokensRow>()
-        .await
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!("Error fetching search queries {:?}", e))
-        })?;
+        .fetch_one::<SearchTokensRow>();
 
-    if let Some(timer) = timer {
-        timer.add("fetched search_count");
-    }
-
-    let message_tokens = clickhouse_client
+    let message_tokens_fut = clickhouse_client
         .query(&format_with_daterange(
             "
         SELECT SUM(tokens) as message_tokens, COUNT(*) as message_count
@@ -603,17 +600,9 @@ pub async fn get_extended_org_usage_by_id_query(
             &date_range,
         ))
         .bind(organization_id)
-        .fetch_one::<MessageTokensRow>()
-        .await
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!("Error fetching message queries {:?}", e))
-        })?;
+        .fetch_one::<MessageTokensRow>();
 
-    if let Some(timer) = timer {
-        timer.add("fetched message_count");
-    }
-
-    let bytes_and_tokens_ingested = clickhouse_client
+    let bytes_and_tokens_ingested_fut = clickhouse_client
         .query(&format_with_daterange(
             "
         SELECT SUM(JSONExtractUInt(event_data, 'bytes_ingested')) as bytes_ingested,
@@ -624,17 +613,9 @@ pub async fn get_extended_org_usage_by_id_query(
             &date_range,
         ))
         .bind(organization_id)
-        .fetch_one::<IngestedTokensRow>()
-        .await
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
-        })?;
+        .fetch_one::<IngestedTokensRow>();
 
-    if let Some(timer) = timer {
-        timer.add("fetched bytes_ingested and tokens_ingested");
-    }
-
-    let ocr_pages = clickhouse_client
+    let ocr_pages_fut = clickhouse_client
         .query(&format_with_daterange(
             "
         SELECT SUM(JSONExtractUInt(event_data, 'pages')) as page_count
@@ -644,17 +625,9 @@ pub async fn get_extended_org_usage_by_id_query(
             &date_range,
         ))
         .bind(organization_id)
-        .fetch_one::<OCRPageCountRow>()
-        .await
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
-        })?;
+        .fetch_one::<OCRPageCountRow>();
 
-    if let Some(timer) = timer {
-        timer.add("fetched ocr_pages");
-    }
-
-    let website_pages_scraped = clickhouse_client
+    let website_pages_scraped_fut = clickhouse_client
         .query(&format_with_daterange(
             "
         SELECT SUM(JSONExtractUInt(event_data, 'pages_crawled')) as pages_scraped
@@ -664,17 +637,9 @@ pub async fn get_extended_org_usage_by_id_query(
             &date_range,
         ))
         .bind(organization_id)
-        .fetch_one::<WebpagesScrapedRow>()
-        .await
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
-        })?;
+        .fetch_one::<WebpagesScrapedRow>();
 
-    if let Some(timer) = timer {
-        timer.add("fetched website_pages_scraped");
-    }
-
-    let rag_events = clickhouse_client
+    let rag_events_fut = clickhouse_client
         .query(&format_with_daterange(
             "
             SELECT COUNT(*) as event_count
@@ -685,13 +650,9 @@ pub async fn get_extended_org_usage_by_id_query(
             &date_range,
         ))
         .bind(organization_id)
-        .fetch_one::<EventsIngestedRow>()
-        .await
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
-        })?;
+        .fetch_one::<EventsIngestedRow>();
 
-    let search_events = clickhouse_client
+    let search_events_fut = clickhouse_client
         .query(&format_with_daterange(
             "
             SELECT COUNT(*) as event_count
@@ -702,14 +663,78 @@ pub async fn get_extended_org_usage_by_id_query(
             &date_range,
         ))
         .bind(organization_id)
-        .fetch_one::<EventsIngestedRow>()
-        .await
-        .map_err(|e| {
-            ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
-        })?;
+        .fetch_one::<EventsIngestedRow>();
+
+    let current_months_message_count_fut = clickhouse_client
+        .query(&format_with_daterange(
+            "
+            SELECT query_count
+            FROM mv_rag_queries_monthly_counts
+            WHERE organization_id = ?
+            AND month_year = formatDateTime(now(), '%Y-%m')
+        "
+            .to_string(),
+            &None,
+        ))
+        .bind(organization_id)
+        .fetch_one::<CurrentMonthMessageCountRow>();
+
+    // Execute all queries in parallel
+    let (
+        search_tokens_result,
+        message_tokens_result,
+        bytes_and_tokens_ingested_result,
+        ocr_pages_result,
+        website_pages_scraped_result,
+        rag_events_result,
+        search_events_result,
+        current_months_message_count_result,
+    ) = futures::join!(
+        search_tokens_fut,
+        message_tokens_fut,
+        bytes_and_tokens_ingested_fut,
+        ocr_pages_fut,
+        website_pages_scraped_fut,
+        rag_events_fut,
+        search_events_fut,
+        current_months_message_count_fut
+    );
+
+    // Handle the results
+    let search_tokens = search_tokens_result.map_err(|e| {
+        ServiceError::InternalServerError(format!("Error fetching search queries {:?}", e))
+    })?;
+
+    let message_tokens = message_tokens_result.map_err(|e| {
+        ServiceError::InternalServerError(format!("Error fetching message queries {:?}", e))
+    })?;
+
+    let bytes_and_tokens_ingested = bytes_and_tokens_ingested_result.map_err(|e| {
+        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+    })?;
+
+    let ocr_pages = ocr_pages_result.map_err(|e| {
+        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+    })?;
+
+    let website_pages_scraped = website_pages_scraped_result.map_err(|e| {
+        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+    })?;
+
+    let rag_events = rag_events_result.map_err(|e| {
+        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+    })?;
+
+    let search_events = search_events_result.map_err(|e| {
+        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+    })?;
+
+    let current_months_message_count = current_months_message_count_result.map_err(|e| {
+        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+    })?;
 
     if let Some(timer) = timer {
-        timer.add("fetched events_ingested");
+        timer.add("fetched all clickhouse data in parallel");
     }
 
     Ok(ExtendedOrganizationUsageCount {
@@ -726,6 +751,7 @@ pub async fn get_extended_org_usage_by_id_query(
         ocr_pages_ingested: ocr_pages.page_count,
         website_pages_scraped: website_pages_scraped.pages_scraped,
         events_ingested: rag_events.event_count + search_events.event_count,
+        current_months_message_count: current_months_message_count.query_count,
     })
 }
 

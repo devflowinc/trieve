@@ -213,7 +213,6 @@ pub async fn create_stripe_plan_query(
 ) -> Result<StripePlan, ServiceError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
-    // TODO: Make this configurable
     let stripe_plan = StripePlan::from_details(
         stripe_id,
         10000,
@@ -224,6 +223,7 @@ pub async fn create_stripe_plan_query(
         amount,
         "Project".to_string(),
         false,
+        Some(1000),
     );
 
     let mut conn = pool
