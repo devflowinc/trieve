@@ -23,7 +23,7 @@ import {
   QuestionCircleIcon,
   RefreshIcon,
 } from "@shopify/polaris-icons";
-import { usageQuery } from "app/queries/usage";
+import { organizationUsageQuery, usageQuery } from "app/queries/usage";
 import { useQuery } from "@tanstack/react-query";
 import { Onboarding } from "app/components/onboarding/Onboarding";
 import { Loader } from "app/loaders";
@@ -36,9 +36,10 @@ import { TotalUniqueVisitors } from "app/components/analytics/component/TotalUni
 import { TopPages } from "app/components/analytics/component/TopPages";
 import { useState } from "react";
 import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
-import { Granularity } from "trieve-ts-sdk";
+import { Granularity, StripePlan } from "trieve-ts-sdk";
 import { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
+import { PlanView } from "app/components/PlanView";
 
 const load: Loader = async ({ adminApiFetcher, queryClient }) => {
   await queryClient.ensureQueryData(lastStepIdQuery(adminApiFetcher));
@@ -85,6 +86,11 @@ export default function Dashboard() {
     refetch,
   } = useQuery(usageQuery(trieve));
 
+  const {
+    data: organizationUsage,
+    isLoading: organizationUsageLoading,
+  } = useQuery(organizationUsageQuery(trieve));
+
   const planType = organization?.plan?.name || "Free";
 
   const statsItems = [
@@ -126,18 +132,8 @@ export default function Dashboard() {
   if ((organization?.plan as any)?.type === "flat") {
     planItems.push(
       {
-        term: "Chunk Limit",
-        description: organization?.plan?.chunk_count?.toLocaleString() || "N/A",
-      },
-      {
-        term: "Dataset Limit",
-        description:
-          organization?.plan?.dataset_count?.toLocaleString() || "N/A",
-      },
-      {
-        term: "Message Limit",
-        description:
-          organization?.plan?.message_count.toLocaleString() || "N/A",
+        term: "Messages Sent",
+        description: organizationUsage?.current_months_message_count?.toLocaleString() || "N/A",
       },
     );
   }
@@ -257,7 +253,7 @@ export default function Dashboard() {
                 <Box paddingInline="400" paddingBlockStart="400">
                   <InlineStack align="space-between">
                     <Text variant="headingMd" as="h2">
-                      Usage Overview
+                      Sync Status
                     </Text>
                     <Badge>{planType + " Plan"}</Badge>
                   </InlineStack>
@@ -281,41 +277,11 @@ export default function Dashboard() {
                 </Box>
               </BlockStack>
             </Card>
-            <Card>
-              <BlockStack gap="400">
-                <Box paddingInline="400" paddingBlockStart="400">
-                  <InlineStack align="space-between">
-                    <Text variant="headingMd" as="h2">
-                      Plan Details
-                    </Text>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          submit({
-                            action: "modify",
-                          }, {
-                            method: "post",
-                          });
-                        }}
-                      >
-                        Modify
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setShowCancelModal(true);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </InlineStack>
-                </Box>
-
-                <Box paddingInline="400">
-                  <DescriptionList items={planItems} />
-                </Box>
-              </BlockStack>
-            </Card>
+            <PlanView
+              planItems={planItems}
+              setShowCancelModal={setShowCancelModal}
+              usagePercentage={((organizationUsage?.current_months_message_count ?? 0) / (organization?.plan as StripePlan)?.message_count) * 100}
+            />
           </BlockStack>
         </Layout.Section>
       </Layout>
