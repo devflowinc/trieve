@@ -23,7 +23,7 @@ import {
   QuestionCircleIcon,
   RefreshIcon,
 } from "@shopify/polaris-icons";
-import { usageQuery } from "app/queries/usage";
+import { organizationUsageQuery, datasetUsageQuery } from "app/queries/usage";
 import { useQuery } from "@tanstack/react-query";
 import { Onboarding } from "app/components/onboarding/Onboarding";
 import { Loader } from "app/loaders";
@@ -39,7 +39,7 @@ import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
 import { Granularity } from "trieve-ts-sdk";
 import { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
-
+import { PlanView } from "app/components/PlanView";
 const load: Loader = async ({ adminApiFetcher, queryClient }) => {
   await queryClient.ensureQueryData(lastStepIdQuery(adminApiFetcher));
   return;
@@ -79,11 +79,16 @@ export default function Dashboard() {
   const submit = useSubmit();
 
   const {
-    data: usage,
+    data: datasetUsage,
     isLoading,
     dataUpdatedAt,
     refetch,
-  } = useQuery(usageQuery(trieve));
+  } = useQuery(datasetUsageQuery(trieve));
+
+  const {
+    data: organizationUsage,
+    isLoading: organizationUsageLoading,
+  } = useQuery(organizationUsageQuery(trieve));
 
   const planType = organization?.plan?.name || "Free";
 
@@ -94,7 +99,7 @@ export default function Dashboard() {
         <SkeletonBodyText lines={1} />
       ) : (
         <InlineStack align="space-between">
-          {usage?.chunk_count.toLocaleString()}
+          {datasetUsage?.chunk_count.toLocaleString()}
           <Button
             icon={RefreshIcon}
             onClick={() => {
@@ -123,24 +128,15 @@ export default function Dashboard() {
     },
   ];
 
-  if ((organization?.plan as any)?.type === "flat") {
+  if (organization?.plan?.type === "flat") {
     planItems.push(
       {
-        term: "Chunk Limit",
-        description: organization?.plan?.chunk_count?.toLocaleString() || "N/A",
-      },
-      {
-        term: "Dataset Limit",
-        description:
-          organization?.plan?.dataset_count?.toLocaleString() || "N/A",
-      },
-      {
-        term: "Message Limit",
-        description:
-          organization?.plan?.message_count.toLocaleString() || "N/A",
+        term: "Messages Sent",
+        description: organizationUsage?.current_months_message_count?.toLocaleString() || "N/A",
       },
     );
   }
+
 
   return (
     <>
@@ -281,41 +277,11 @@ export default function Dashboard() {
                 </Box>
               </BlockStack>
             </Card>
-            <Card>
-              <BlockStack gap="400">
-                <Box paddingInline="400" paddingBlockStart="400">
-                  <InlineStack align="space-between">
-                    <Text variant="headingMd" as="h2">
-                      Plan Details
-                    </Text>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          submit({
-                            action: "modify",
-                          }, {
-                            method: "post",
-                          });
-                        }}
-                      >
-                        Modify
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setShowCancelModal(true);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </InlineStack>
-                </Box>
-
-                <Box paddingInline="400">
-                  <DescriptionList items={planItems} />
-                </Box>
-              </BlockStack>
-            </Card>
+            <PlanView
+              planItems={planItems}
+              setShowCancelModal={setShowCancelModal}
+              usagePercentage={(organizationUsage?.current_months_message_count ?? 0) / organization?.plan?.component_loads}
+            />
           </BlockStack>
         </Layout.Section>
       </Layout>

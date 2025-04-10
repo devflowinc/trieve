@@ -12209,7 +12209,8 @@
           "tokens_ingested",
           "ocr_pages_ingested",
           "website_pages_scraped",
-          "events_ingested"
+          "events_ingested",
+          "current_months_message_count"
         ],
         "properties": {
           "bytes_ingested": {
@@ -12220,6 +12221,11 @@
           "chunk_count": {
             "type": "integer",
             "format": "int32"
+          },
+          "current_months_message_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           },
           "dataset_count": {
             "type": "integer",
@@ -19690,6 +19696,11 @@
             "type": "integer",
             "format": "int32"
           },
+          "component_loads": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -19731,6 +19742,7 @@
         "example": {
           "amount": 1000,
           "chunk_count": 1000,
+          "component_loads": 1000,
           "created_at": "2021-01-01 00:00:00.000",
           "dataset_count": 1,
           "file_storage": 512,

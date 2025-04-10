@@ -5,7 +5,7 @@ import { useTrieve } from "app/context/trieveContext";
 import { useClientAdminApi } from "app/loaders/clientLoader";
 import { trackCustomerEvent } from "app/processors/shopifyTrackers";
 import { shopifyVariantsCountQuery } from "app/queries/onboarding";
-import { usageQuery } from "app/queries/usage";
+import { datasetUsageQuery } from "app/queries/usage";
 import { OnboardingBody } from "app/utils/onboarding";
 import { useEffect, useState } from "react";
 
@@ -19,7 +19,7 @@ export const WelcomeOnboarding: OnboardingBody = ({
   const [refetch, setRefetch] = useState(true);
 
   const { data: usage } = useQuery({
-    ...usageQuery(trieve),
+    ...datasetUsageQuery(trieve),
     refetchInterval: 1000,
     enabled: refetch,
   });
