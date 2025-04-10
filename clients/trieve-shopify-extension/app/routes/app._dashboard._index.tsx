@@ -53,12 +53,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const action = formData.get("action");
   if (action === "modify") {
-    return redirect(
-      process.env.SHOPIFY_PRICING_URL || "",
-      {
-        target: "_top",
-      },
-    );
+    return redirect(process.env.SHOPIFY_PRICING_URL || "", {
+      target: "_top",
+    });
   } else if (action === "cancel") {
     const subscription = await billing.check();
     if (subscription.hasActivePayment) {
@@ -85,10 +82,7 @@ export default function Dashboard() {
     refetch,
   } = useQuery(datasetUsageQuery(trieve));
 
-  const {
-    data: organizationUsage,
-    isLoading: organizationUsageLoading,
-  } = useQuery(organizationUsageQuery(trieve));
+  const { data: organizationUsage } = useQuery(organizationUsageQuery(trieve));
 
   const planType = organization?.plan?.name || "Free";
 
@@ -129,34 +123,41 @@ export default function Dashboard() {
   ];
 
   if (organization?.plan?.type === "flat") {
-    planItems.push(
-      {
-        term: "Message Usage",
-        description: `${organizationUsage?.current_months_message_count?.toLocaleString() ?? 0} / ${(organization?.plan as StripePlan)?.message_count.toLocaleString()}`,
-      },
-    );
+    planItems.push({
+      term: "Message Usage",
+      description: `${organizationUsage?.current_months_message_count?.toLocaleString() ?? 0} / ${((organization?.plan as StripePlan)?.messages_per_month ?? 1000).toLocaleString()}`,
+    });
   }
-
 
   return (
     <>
-      <Modal open={showCancelModal} onClose={() => { setShowCancelModal(false) }} title="Cancel Subscription">
-
+      <Modal
+        open={showCancelModal}
+        onClose={() => {
+          setShowCancelModal(false);
+        }}
+        title="Cancel Subscription"
+      >
         <div className="flex flex-col gap-4 p-4">
-          <Text as="p">
-            Do you want to cancel your subscription?
-          </Text>
-          <Button onClick={() => {
-            submit({
-              action: "cancel",
-            }, {
-              method: "post",
-            });
-            setShowCancelModal(false);
-            setTimeout(() => {
-              refetchTrieve();
-            }, 5000);
-          }}>Cancel Subscription</Button>
+          <Text as="p">Do you want to cancel your subscription?</Text>
+          <Button
+            onClick={() => {
+              submit(
+                {
+                  action: "cancel",
+                },
+                {
+                  method: "post",
+                },
+              );
+              setShowCancelModal(false);
+              setTimeout(() => {
+                refetchTrieve();
+              }, 5000);
+            }}
+          >
+            Cancel Subscription
+          </Button>
         </div>
       </Modal>
       <Layout>
@@ -217,8 +218,8 @@ export default function Dashboard() {
                   >
                     support center
                   </Link>{" "}
-                  for answers to common questions, video tutorials, documentation,
-                  and more.
+                  for answers to common questions, video tutorials,
+                  documentation, and more.
                 </Text>
                 <InlineStack align="start" gap="300">
                   <Button
@@ -280,7 +281,12 @@ export default function Dashboard() {
             <PlanView
               planItems={planItems}
               setShowCancelModal={setShowCancelModal}
-              usagePercentage={((organizationUsage?.current_months_message_count ?? 0) / (organization?.plan as StripePlan)?.message_count) * 100}
+              usagePercentage={
+                ((organizationUsage?.current_months_message_count ?? 0) /
+                  ((organization?.plan as StripePlan)?.messages_per_month ??
+                    1000)) *
+                100
+              }
             />
           </BlockStack>
         </Layout.Section>

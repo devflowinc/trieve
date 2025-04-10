@@ -3837,7 +3837,7 @@ impl Invitation {
     "created_at": "2021-01-01 00:00:00.000",
     "updated_at": "2021-01-01 00:00:00.000",
     "name": "Free",
-    "component_loads": 1000,
+    "messages_per_month": 1000,
 }))]
 #[diesel(table_name = stripe_plans)]
 pub struct StripePlan {
@@ -3853,7 +3853,7 @@ pub struct StripePlan {
     pub name: String,
     pub visible: bool,
     pub file_storage: i64,
-    pub component_loads: Option<i32>,
+    pub messages_per_month: Option<i32>,
 }
 
 impl StripePlan {
@@ -3868,7 +3868,7 @@ impl StripePlan {
         amount: i64,
         name: String,
         visible: bool,
-        component_loads: Option<i32>,
+        messages_per_month: Option<i32>,
     ) -> Self {
         StripePlan {
             id: uuid::Uuid::new_v4(),
@@ -3883,7 +3883,7 @@ impl StripePlan {
             updated_at: chrono::Utc::now().naive_local(),
             name,
             visible,
-            component_loads,
+            messages_per_month,
         }
     }
 }
@@ -3905,7 +3905,7 @@ impl Default for StripePlan {
                 updated_at: chrono::Utc::now().naive_local(),
                 name: "Unlimited".to_string(),
                 visible: true,
-                component_loads: Some(i32::MAX),
+                messages_per_month: Some(i32::MAX),
             };
         }
 
@@ -3922,7 +3922,7 @@ impl Default for StripePlan {
             updated_at: chrono::Utc::now().naive_local(),
             name: "Free".to_string(),
             visible: true,
-            component_loads: Some(1000),
+            messages_per_month: Some(1000),
         }
     }
 }

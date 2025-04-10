@@ -19700,11 +19700,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "component_loads": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -19724,6 +19719,11 @@
           "message_count": {
             "type": "integer",
             "format": "int32"
+          },
+          "messages_per_month": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           },
           "name": {
             "type": "string"
@@ -19746,12 +19746,12 @@
         "example": {
           "amount": 1000,
           "chunk_count": 1000,
-          "component_loads": 1000,
           "created_at": "2021-01-01 00:00:00.000",
           "dataset_count": 1,
           "file_storage": 512,
           "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
           "message_count": 1000,
+          "messages_per_month": 1000,
           "name": "Free",
           "stripe_id": "plan_123",
           "updated_at": "2021-01-01 00:00:00.000",
