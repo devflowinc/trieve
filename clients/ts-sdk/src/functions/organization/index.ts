@@ -8,6 +8,7 @@ import { TrieveSDK } from "../../sdk";
 import {
   CreateApiKeyReqPayload,
   CreateApiKeyResponse,
+  ExtendedOrganizationUsageCount,
   OrganizationWithSubAndPlan,
 } from "../../types.gen";
 
@@ -67,6 +68,44 @@ export async function getOrganizationById(
     "get",
     {
       organizationId,
+    },
+    signal
+  );
+}
+
+export const formatDateForApi = (date: Date) => {
+  return date
+    .toLocaleString("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: "UTC",
+    })
+    .replace(",", "");
+};
+
+export async function getOrganizationUsage(
+  /** @hidden */
+  this: TrieveSDK,
+  organizationId: string,
+  signal?: AbortSignal
+): Promise<ExtendedOrganizationUsageCount> {
+  return this.trieve.fetch(
+    "/api/organization/usage/{organization_id}",
+    "post",
+    {
+      organizationId,
+      data: {
+        v1_usage: false,
+        date_range: {
+          gte: formatDateForApi(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+          lte: formatDateForApi(new Date()),
+        },
+      },
     },
     signal
   );

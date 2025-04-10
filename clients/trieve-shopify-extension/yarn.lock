@@ -9352,15 +9352,15 @@ trieve-search-component@0.4.55:
     tailwind-merge "^3.0.2"
     trieve-ts-sdk "0.0.73"
 
+trieve-ts-sdk@*:
+  version "0.0.82"
+  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.82.tgz#32dcd5cfe37706bd4cff952f415f2d3b15e1f198"
+  integrity sha512-d3qvhYd+KjsImB313xt8rbbJ0ZaaIMKmxhzZaFeXy6uPRvjWPUWKIDYKG4E/a0wvsEkW++zfmP+UlYBB2W+e6w==
+
 trieve-ts-sdk@0.0.73:
   version "0.0.73"
   resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.73.tgz#9de17428ddb4b1f6d68709695f371d185c4bda79"
   integrity sha512-68iG/OlmKSGmnmI/J33S6VKleEAfq4txzARhvKv1g+CYSaG7HOH76n0cFDMtUUEEKn1PD4nV82uh5ZFtfIxD0A==
-
-trieve-ts-sdk@0.0.81:
-  version "0.0.81"
-  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.81.tgz#85313acd01aff48798d5a37e0ba8a5d0bf6592e3"
-  integrity sha512-HLUH6xCeH3OTPGRN5cMnhV6NPAI46y/eJ386sIkq9HuuSQA2HwQi2NpA3Bp6wabo4QdlxwzVzzJLawec8aUwXQ==
 
 trim-lines@^3.0.0:
   version "3.0.1"

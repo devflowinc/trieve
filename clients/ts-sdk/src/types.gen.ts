@@ -1790,6 +1790,7 @@ export type EventsForTopicResponse = {
 export type ExtendedOrganizationUsageCount = {
     bytes_ingested: number;
     chunk_count: number;
+    current_months_message_count: number;
     dataset_count: number;
     events_ingested: number;
     file_storage: number;
@@ -3898,6 +3899,7 @@ export type StripeInvoice = {
 export type StripePlan = {
     amount: number;
     chunk_count: number;
+    component_loads?: (number) | null;
     created_at: string;
     dataset_count: number;
     file_storage: number;
