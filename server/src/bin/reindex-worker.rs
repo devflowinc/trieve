@@ -48,9 +48,10 @@ async fn main() -> Result<(), ServiceError> {
 
     log::info!("Starting reindex worker");
     loop {
-        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpop")
+        let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpoplpush")
             .arg("collection_migration")
-            .arg(1)
+            .arg("collection_migration_started")
+            .arg(1.0)
             .query_async(&mut *redis_connection)
             .await;
 
@@ -63,8 +64,8 @@ async fn main() -> Result<(), ServiceError> {
                 }
 
                 payload
-                    .get(1)
-                    .expect("Payload must have a first element")
+                    .first()
+                    .expect("Payload must have an element")
                     .clone()
             }
             Err(err) => {
