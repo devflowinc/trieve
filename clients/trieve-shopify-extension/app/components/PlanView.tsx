@@ -1,5 +1,5 @@
 import { useSubmit } from "@remix-run/react";
-import { BlockStack, Box, Button, Card, DescriptionList, DescriptionListProps, InlineStack, Text } from "@shopify/polaris";
+import { BlockStack, Box, Button, Card, DescriptionList, DescriptionListProps, InlineStack, Text, Banner } from "@shopify/polaris";
 import { ProgressBar } from "./ProgressBar";
 
 export const PlanView = ({
@@ -45,7 +45,32 @@ export const PlanView = ({
                 </Box>
 
                 <Box paddingInline="400" paddingBlockEnd="400">
-                    <ProgressBar progress={usagePercentage} />
+                    {usagePercentage >= 80 && usagePercentage < 90 && (
+                        <Box paddingBlockEnd="400">
+                            <Banner
+                                title={`You are at ${usagePercentage}% of your usage limit.`}
+                                tone="warning"
+                            >
+                                <p>Consider upgrading your plan to avoid potential disruptions.</p>
+                            </Banner>
+                        </Box>
+                    )}
+                    {usagePercentage >= 90 && (
+                        <Box paddingBlockEnd="400">
+                            <Banner
+                                title={`You have reached ${usagePercentage}% of your usage limit.`}
+                                tone="critical"
+                            >
+                                <p>Upgrade your plan immediately to avoid service disruption.</p>
+                            </Banner>
+                        </Box>
+                    )}
+                    <div className="w-full">
+                        <span className="text-sm font-bold pb-1">
+                            Usage
+                        </span>
+                        <ProgressBar progress={usagePercentage} />
+                    </div>
                     <DescriptionList items={planItems} />
                 </Box>
             </BlockStack>
