@@ -16,9 +16,9 @@ import {
 import { FC, useCallback, useMemo, useState } from "react";
 
 export type OnboardingBody = FC<{
-  goToNextStep?: () => void;
-  goToPreviousStep?: () => void;
-  broadcastCompletion?: () => void;
+  goToNextStep: () => void;
+  goToPreviousStep: () => void;
+  broadcastCompletion: () => void;
 }>;
 
 type OnboardingStep = {

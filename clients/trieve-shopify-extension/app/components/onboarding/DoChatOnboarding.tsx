@@ -17,21 +17,19 @@ export const DoChatOnboarding: OnboardingBody = ({ broadcastCompletion }) => {
 
   useEffect(() => {
     if (chats && chats.topics.length > 0) {
-      if (broadcastCompletion) {
-        if (trieve.organizationId && trieve.trieve.apiKey != null) {
-          trackCustomerEvent(
-            trieve.trieve.baseUrl,
-            {
-              organization_id: trieve.organizationId,
-              store_name: "",
-              event_type: "fist_chat_completed",
-            },
-            trieve.organizationId,
-            trieve.trieve.apiKey,
-          );
-        }
-        broadcastCompletion();
+      if (trieve.organizationId && trieve.trieve.apiKey != null) {
+        trackCustomerEvent(
+          trieve.trieve.baseUrl,
+          {
+            organization_id: trieve.organizationId,
+            store_name: "",
+            event_type: "fist_chat_completed",
+          },
+          trieve.organizationId,
+          trieve.trieve.apiKey,
+        );
       }
+      broadcastCompletion();
     }
   }, [chats]);
 
