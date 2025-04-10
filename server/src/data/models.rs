@@ -8443,7 +8443,16 @@ pub enum EventTypeRequest {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum MigrationMode {
-    BM25 { average_len: f32, k: f32, b: f32 },
+    BM25 {
+        average_len: f32,
+        k: f32,
+        b: f32,
+    },
+    Reembed {
+        embedding_model_name: String,
+        embedding_base_url: String,
+        embedding_size: usize,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

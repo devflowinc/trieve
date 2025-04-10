@@ -1,14 +1,20 @@
-use itertools::Itertools;
+use std::collections::HashMap;
+
+use itertools::{izip, Itertools};
+use qdrant_client::qdrant::{PointStruct, Vector};
 #[allow(deprecated)]
 use qdrant_client::{
     qdrant::{self, GetPointsBuilder, PointId, RetrievedPoint, UpsertPointsBuilder},
     Qdrant,
 };
 use trieve_server::{
-    data::models::{MigratePointMessage, MigrationMode},
+    data::models::{DatasetConfiguration, MigratePointMessage, MigrationMode},
     errors::ServiceError,
     get_env,
-    operators::{model_operator::get_bm25_embeddings, qdrant_operator::get_qdrant_connection},
+    operators::{
+        model_operator::{get_bm25_embeddings, get_dense_vectors, get_sparse_vectors},
+        qdrant_operator::{bulk_upsert_qdrant_points_query, get_qdrant_connection},
+    },
 };
 
 #[allow(clippy::print_stdout)]
@@ -40,6 +46,7 @@ async fn main() -> Result<(), ServiceError> {
 
     let mut broken_pipe_sleep = std::time::Duration::from_secs(10);
 
+    log::info!("Starting reindex worker");
     loop {
         let payload_result: Result<Vec<String>, redis::RedisError> = redis::cmd("brpop")
             .arg("collection_migration")
@@ -52,7 +59,6 @@ async fn main() -> Result<(), ServiceError> {
                 broken_pipe_sleep = std::time::Duration::from_secs(10);
 
                 if payload.is_empty() {
-                    log::info!("wait");
                     continue;
                 }
 
@@ -113,28 +119,28 @@ async fn main() -> Result<(), ServiceError> {
 
         // Get all points in message including Payload & Friends
 
-        let points = qdrant_client
-            .get_points(
-                GetPointsBuilder::new(
-                    migration_message.from_collection.clone(),
-                    migration_message
-                        .qdrant_point_ids
-                        .iter()
-                        .map(|uuid| PointId::from(uuid.to_string()))
-                        .collect_vec(),
-                )
-                .with_payload(true)
-                .with_vectors(true)
-                .build(),
-            )
-            .await
-            .map_err(|_err| {
-                ServiceError::BadRequest("Failed to search_points from qdrant".to_string())
-            })?
-            .result;
-
         let result = match migration_message.mode {
             MigrationMode::BM25 { average_len, k, b } => {
+                let points = qdrant_client
+                    .get_points(
+                        GetPointsBuilder::new(
+                            migration_message.from_collection.clone(),
+                            migration_message
+                                .qdrant_point_ids
+                                .iter()
+                                .map(|uuid| PointId::from(uuid.to_string()))
+                                .collect_vec(),
+                        )
+                        .with_payload(true)
+                        .with_vectors(true)
+                        .build(),
+                    )
+                    .await
+                    .map_err(|_err| {
+                        ServiceError::BadRequest("Failed to search_points from qdrant".to_string())
+                    })?
+                    .result;
+
                 migrate_bm25(
                     qdrant_client,
                     points,
@@ -142,6 +148,38 @@ async fn main() -> Result<(), ServiceError> {
                     average_len,
                     b,
                     k,
+                )
+                .await
+            }
+            MigrationMode::Reembed {
+                embedding_model_name,
+                embedding_base_url,
+                embedding_size,
+            } => {
+                let points = qdrant_client
+                    .get_points(
+                        GetPointsBuilder::new(
+                            migration_message.from_collection.clone(),
+                            migration_message
+                                .qdrant_point_ids
+                                .iter()
+                                .map(|uuid| PointId::from(uuid.to_string()))
+                                .collect_vec(),
+                        )
+                        .with_payload(true)
+                        .with_vectors(false)
+                        .build(),
+                    )
+                    .await
+                    .map_err(|_err| {
+                        ServiceError::BadRequest("Failed to search_points from qdrant".to_string())
+                    })?
+                    .result;
+                reembed_points(
+                    points,
+                    embedding_model_name,
+                    embedding_base_url,
+                    embedding_size,
                 )
                 .await
             }
@@ -161,7 +199,7 @@ async fn main() -> Result<(), ServiceError> {
                     serialized_message.clone()
                 );
                 redis::cmd("lpush")
-                    .arg("dead_letters")
+                    .arg("collection_migration_error")
                     .arg(serialized_message);
             }
         }
@@ -227,6 +265,118 @@ pub async fn migrate_bm25(
         .upsert_points(UpsertPointsBuilder::new(to_collection, new_points))
         .await
         .map_err(|e| ServiceError::BadRequest(format!("Failed to upsert points {:?}", e)))?;
+
+    Ok(())
+}
+
+#[allow(clippy::field_reassign_with_default)]
+pub async fn reembed_points(
+    points: Vec<RetrievedPoint>,
+    embedding_model_name: String,
+    embedding_base_url: String,
+    embedding_size: usize,
+) -> Result<(), ServiceError> {
+    let mut mock_dataset_config = DatasetConfiguration::default();
+
+    mock_dataset_config.EMBEDDING_MODEL_NAME = embedding_model_name;
+    mock_dataset_config.EMBEDDING_BASE_URL = embedding_base_url;
+    mock_dataset_config.EMBEDDING_SIZE = embedding_size;
+
+    // Get all qdrant Ids and content
+    let point_and_content = points
+        .iter()
+        .map(|point| {
+            let content = match point.payload.get("content") {
+                Some(qdrant::Value {
+                    kind: Some(qdrant::value::Kind::StringValue(content)),
+                }) => content.clone(),
+                _ => {
+                    unreachable!()
+                }
+            };
+
+            (point, content)
+        })
+        .collect_vec();
+
+    let reqwest_client = reqwest::Client::new();
+
+    let splade_vectors = get_sparse_vectors(
+        point_and_content
+            .iter()
+            .map(|(_, content)| (content.clone(), None))
+            .collect(),
+        "doc",
+        reqwest_client.clone(),
+    )
+    .await?;
+
+    // Embed content
+    let embedding_vectors = get_dense_vectors(
+        point_and_content
+            .iter()
+            .map(|(_, content)| (content.clone(), None))
+            .collect(),
+        "doc",
+        mock_dataset_config.clone(),
+        reqwest_client.clone(),
+    )
+    .await?;
+
+    let bm25_vectors = get_bm25_embeddings(
+        point_and_content
+            .iter()
+            .map(|(_, content)| (content.clone(), None))
+            .collect(),
+        0.0,
+        0.0,
+        0.0,
+    );
+
+    let new_points = izip!(
+        points.clone().iter(),
+        embedding_vectors.iter(),
+        splade_vectors.iter(),
+        bm25_vectors.iter()
+    )
+    .map(|(point, embedding_vector, splade_vector, bm25_vector)| {
+        let vector_name = match embedding_vector.len() {
+            384 => "384_vectors",
+            512 => "512_vectors",
+            768 => "768_vectors",
+            1024 => "1024_vectors",
+            3072 => "3072_vectors",
+            1536 => "1536_vectors",
+            _ => "768_vectors",
+        };
+
+        let vector_payload = HashMap::from([
+            (
+                "sparse_vectors".to_string(),
+                Vector::from(splade_vector.clone()),
+            ),
+            (
+                vector_name.to_string(),
+                Vector::from(embedding_vector.clone()),
+            ),
+            (
+                "bm25_vectors".to_string(),
+                Vector::from(bm25_vector.clone()),
+            ),
+        ]);
+
+        PointStruct::new(
+            point
+                .id
+                .clone()
+                .unwrap_or(PointId::from(uuid::Uuid::new_v4().to_string())),
+            vector_payload,
+            point.payload.clone(),
+        )
+    })
+    .collect::<Vec<PointStruct>>();
+
+    bulk_upsert_qdrant_points_query(new_points, mock_dataset_config).await?;
 
     Ok(())
 }

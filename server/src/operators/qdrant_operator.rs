@@ -1473,10 +1473,6 @@ pub async fn point_ids_exists_in_qdrant(
     Ok(data.result.len() == point_ids.len())
 }
 
-pub fn get_collection_name_from_config(config: &DatasetConfiguration) -> String {
-    format!("{}_vectors", config.EMBEDDING_SIZE)
-}
-
 pub async fn delete_points_from_qdrant(
     point_ids: Vec<uuid::Uuid>,
     qdrant_collection: String,
@@ -1581,6 +1577,7 @@ pub async fn scroll_qdrant_collection_ids(
     collection_name: String,
     offset_id: Option<String>,
     limit: Option<u32>,
+    filter: Option<Filter>,
 ) -> Result<(Vec<uuid::Uuid>, Option<String>), ServiceError> {
     let qdrant_client = get_qdrant_connection(
         Some(get_env!("QDRANT_URL", "QDRANT_URL should be set")),
@@ -1592,6 +1589,10 @@ pub async fn scroll_qdrant_collection_ids(
 
     if let Some(offset_id) = offset_id {
         scroll_points_params = scroll_points_params.offset(offset_id);
+    };
+
+    if let Some(filter) = filter {
+        scroll_points_params = scroll_points_params.filter(filter);
     };
 
     if let Some(limit) = limit {
