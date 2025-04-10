@@ -108,7 +108,7 @@ resource "google_container_node_pool" "gpu_nodes" {
 
   autoscaling {
     min_node_count = 0
-    max_node_count = 4
+    max_node_count = 5
   }
 
   node_config {
@@ -140,6 +140,11 @@ resource "google_container_node_pool" "gpu_nodes" {
       count = 1
       gpu_driver_installation_config {
         gpu_driver_version = "LATEST"
+      }
+
+      gpu_sharing_config {
+        gpu_sharing_strategy       = "TIME_SHARING"
+        max_shared_clients_per_gpu = 10
       }
     }
 
