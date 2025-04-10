@@ -49,15 +49,19 @@ export const BasicTableComponent = ({
         )}
       </div>
       <Box minHeight="14px">
-        <DataTable
-          truncate
-          hasZebraStripingOnData
-          sortable={sortableColumns}
-          onSort={onSort}
-          rows={data}
-          columnContentTypes={tableContentTypes}
-          headings={tableHeadings}
-        />
+        {data.length <= 0 ? (
+          <div className="w-full text-center pt-6 pb-4 opacity-70">No Data</div>
+        ) : (
+          <DataTable
+            truncate
+            hasZebraStripingOnData
+            sortable={sortableColumns}
+            onSort={onSort}
+            rows={data}
+            columnContentTypes={tableContentTypes}
+            headings={tableHeadings}
+          />
+        )}
         {!hidePagination && (
           <div className="flex justify-end mt-2">
             <Pagination
