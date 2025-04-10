@@ -174,8 +174,6 @@ export const AddComponentOnboarding: OnboardingBody = ({
     window.open(link, "_blank");
   };
 
-  useEffect(() => {});
-
   useEffect(() => {
     if (globalComplete) {
       if (trieve.organizationId && trieve.trieve.apiKey != null) {
@@ -208,7 +206,7 @@ export const AddComponentOnboarding: OnboardingBody = ({
     }
 
     if (globalComplete && pdpComplete) {
-      broadcastCompletion();
+      broadcastCompletion?.();
     }
   }, [globalComplete, pdpComplete]);
 
