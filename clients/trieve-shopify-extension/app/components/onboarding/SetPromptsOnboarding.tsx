@@ -10,16 +10,31 @@ import { OnboardingBody } from "app/utils/onboarding";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { DatasetConfig } from "../DatasetSettings";
 import { withSuspense } from "app/utils/suspense";
+import { trackCustomerEvent } from "app/processors/shopifyTrackers";
 
 export const SetPromptsOnboarding: OnboardingBody = withSuspense(
   ({ broadcastCompletion }) => {
-    const { trieve } = useTrieve();
+    const { trieve, organization, trieveKey } = useTrieve();
     // this info is already preloaded in root loader
     const { data: shopDataset, refetch } = useSuspenseQuery(
       shopDatasetQuery(trieve),
     );
 
     const queryClient = useQueryClient();
+
+    const markComplete = () => {
+      broadcastCompletion();
+      trackCustomerEvent(
+        trieve.trieve.baseUrl,
+        {
+          organization_id: organization.organization.id,
+          store_name: "",
+          event_type: "dataset_prompts_set",
+        },
+        organization.organization.id,
+        trieveKey.key,
+      );
+    };
 
     const [datasetSettings, setDatasetSettings] = useState<DatasetConfig>(
       shopDataset.server_configuration ?? ({} as DatasetConfig),
@@ -30,13 +45,13 @@ export const SetPromptsOnboarding: OnboardingBody = withSuspense(
         (shopDataset.server_configuration as DatasetConfig).SYSTEM_PROMPT !=
         "You are a helpful assistant"
       ) {
-        broadcastCompletion();
+        markComplete();
       }
       if (
         (shopDataset.server_configuration as DatasetConfig).RAG_PROMPT !=
         "Use the following retrieved documents to respond briefly and accurately:"
       ) {
-        broadcastCompletion();
+        markComplete();
       }
     }, [shopDataset]);
 
@@ -48,7 +63,7 @@ export const SetPromptsOnboarding: OnboardingBody = withSuspense(
         });
       },
       onSettled: () => {
-        broadcastCompletion();
+        markComplete();
         refetch();
       },
 
