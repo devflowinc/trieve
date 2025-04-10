@@ -57,7 +57,7 @@ async fn main() -> Result<(), ServiceError> {
         let (qdrant_point_ids, new_offset) = scroll_qdrant_collection_ids(
             from_collection.to_string(),
             Some(cur_offset.to_string()),
-            Some(120),
+            Some(1000),
             Some(Filter::any(dataset_ids.iter().map(|dataset_id| {
                 Condition::matches("dataset_id", dataset_id.to_string())
             }))),
@@ -68,22 +68,26 @@ async fn main() -> Result<(), ServiceError> {
             .get()
             .await
             .expect("Failed to connect to redis");
-
-        let message = serde_json::to_string(&MigratePointMessage {
-            qdrant_point_ids: qdrant_point_ids.clone(),
-            from_collection: from_collection.to_string(),
-            to_collection: to_collection.to_string(),
-            mode: MigrationMode::Reembed {
-                embedding_model_name: new_embedding_model_name.to_string(),
-                embedding_base_url: new_embedding_base_url.to_string(),
-                embedding_size: new_embedding_size,
-            },
-        })
-        .expect("Failed to serialze MigratePoint message");
+        let messages: Vec<String> = qdrant_point_ids
+            .chunks(120)
+            .map(|qdrant_point_ids| {
+                serde_json::to_string(&MigratePointMessage {
+                    qdrant_point_ids: qdrant_point_ids.to_vec().clone(),
+                    from_collection: from_collection.to_string(),
+                    to_collection: to_collection.to_string(),
+                    mode: MigrationMode::Reembed {
+                        embedding_model_name: new_embedding_model_name.to_string(),
+                        embedding_base_url: new_embedding_base_url.to_string(),
+                        embedding_size: new_embedding_size,
+                    },
+                })
+                .expect("Failed to serialze MigratePoint message")
+            })
+            .collect();
 
         redis::cmd("lpush")
             .arg("collection_migration")
-            .arg(&message)
+            .arg(&messages)
             .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *conn)
             .await
             .map_err(|_| ServiceError::BadRequest("Failed to send message to redis".to_string()))?;
