@@ -7,7 +7,7 @@ interface EventFiltersProps {
   setEventsFilter: Dispatch<SetStateAction<TopicEventFilter>>;
 }
 
-const AVAILABLE_EVENT_TYPES: { label: string; value: EventNamesFilter }[] = [
+export const AVAILABLE_EVENT_TYPES: { label: string; value: EventNamesFilter }[] = [
   { label: "Followup Clicked", value: "site-followup_query" },
   { label: "Click", value: "Click" },
   { label: "Add to Cart", value: "site-add_to_cart" },

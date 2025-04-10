@@ -557,11 +557,14 @@ export type ClickhouseTopicAnalyticsSummary = {
     avg_query_rating?: (number) | null;
     avg_top_score: number;
     created_at: string;
+    /**
+     * All event_names that are  associated with the topic, may contain duplicate names
+     */
+    event_names: Array<(string)>;
     id: string;
     message_count: number;
     name: string;
     owner_id: string;
-    status: string;
     topic_id: string;
     updated_at: string;
 };

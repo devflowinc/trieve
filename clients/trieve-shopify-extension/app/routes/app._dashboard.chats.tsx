@@ -19,11 +19,11 @@ import {
   AdvancedTableComponent,
   Filter,
 } from "../components/analytics/AdvancedTableComponent";
-import { ChoiceList, IndexFiltersProps, RangeSlider } from "@shopify/polaris";
+import { Text, Badge, ChoiceList, IndexFiltersProps, RangeSlider } from "@shopify/polaris";
 import { DateRangePicker } from "../components/analytics/DateRangePicker";
 import { ComponentNameSelect } from "../components/analytics/ComponentNameSelect";
 import { allChatsQuery } from "app/queries/analytics/chat";
-import { EventFilters } from "app/components/analytics/chat/ChatEventsFilter";
+import { AVAILABLE_EVENT_TYPES, EventFilters } from "app/components/analytics/chat/ChatEventsFilter";
 
 export default function ChatsPage() {
   const { trieve } = useTrieve();
@@ -69,7 +69,6 @@ export default function ChatsPage() {
       return previousData;
     }
 
-    console.log("getting data", data)
     if (!data?.topics) {
       return [];
     }
@@ -77,9 +76,37 @@ export default function ChatsPage() {
     // TODO: Create badge with "highest ranking event"
     let newData: AdvancedTableCell[][] =
       data?.topics.map((topic) => {
+        let event_names_counts: Record<string, number> = {
+          "site-add_to_cart": 0,
+          "site-checkout": 0,
+          "Click": 0,
+        };
+        for (const event of topic.event_names) {
+          if (event == "View") continue;
+
+          event_names_counts[event] =
+            (event_names_counts[event] ?? 0) + 1;
+        }
         return [
           { content: topic.name, url: `/app/chatview/${topic.topic_id}` },
-          { content: topic.status },
+          // Make a badge with count and name
+          {
+            component: (
+              <div className="flex gap-2">
+                {Object.entries(event_names_counts).map(([event_name, count]) => {
+                  const eventLabel = AVAILABLE_EVENT_TYPES.find((e) => e.value === event_name)?.label ?? event_name
+
+                  if (count == 0) return null
+
+                  return (
+                    <div className="flex items-center gap-1">
+                      <Badge>{`${count.toLocaleString()} ${eventLabel}(s)`}</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          },
           { content: topic.message_count.toLocaleString() },
           {
             content: topic.avg_top_score?.toLocaleString("en-US", {
@@ -435,8 +462,6 @@ export default function ChatsPage() {
       });
     }
   }, [query]);
-
-  console.log("I am here data", mappedData);
 
   return (
     <AdvancedTableComponent
