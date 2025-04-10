@@ -273,6 +273,7 @@ pub async fn get_organization_usage(
                 ocr_pages_ingested: 0,
                 website_pages_scraped: 0,
                 events_ingested: 0,
+                current_months_message_count: 0,
             }
         }))
     } else {
@@ -312,6 +313,7 @@ pub struct ExtendedOrganizationUsageCount {
     // website pages scraped
     pub website_pages_scraped: u64,
     pub events_ingested: u64,
+    pub current_months_message_count: u64,
 }
 
 /// Get Organization Users
