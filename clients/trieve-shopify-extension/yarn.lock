@@ -9353,9 +9353,9 @@ trieve-search-component@0.4.55:
     trieve-ts-sdk "0.0.73"
 
 trieve-ts-sdk@*:
-  version "0.0.82"
-  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.82.tgz#32dcd5cfe37706bd4cff952f415f2d3b15e1f198"
-  integrity sha512-d3qvhYd+KjsImB313xt8rbbJ0ZaaIMKmxhzZaFeXy6uPRvjWPUWKIDYKG4E/a0wvsEkW++zfmP+UlYBB2W+e6w==
+  version "0.0.83"
+  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.83.tgz#a9bd0bbd71e09f3f9017844d91894fde95c5edb9"
+  integrity sha512-EPDy342dDTNVmzzALMtk9JExCn5yt1oyp9moiS4VLyN52hFaKY4MxoSsEp9/Bp7PRNXS2Z8u1H+PTn+joovhbw==
 
 trieve-ts-sdk@0.0.73:
   version "0.0.73"

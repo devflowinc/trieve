@@ -36,7 +36,7 @@ import { TotalUniqueVisitors } from "app/components/analytics/component/TotalUni
 import { TopPages } from "app/components/analytics/component/TopPages";
 import { useState } from "react";
 import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
-import { Granularity } from "trieve-ts-sdk";
+import { Granularity, StripePlan } from "trieve-ts-sdk";
 import { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
 import { PlanView } from "app/components/PlanView";
@@ -131,8 +131,8 @@ export default function Dashboard() {
   if (organization?.plan?.type === "flat") {
     planItems.push(
       {
-        term: "Messages Sent",
-        description: organizationUsage?.current_months_message_count?.toLocaleString() || "N/A",
+        term: "Message Usage",
+        description: `${organizationUsage?.current_months_message_count?.toLocaleString() ?? 0} / ${(organization?.plan as StripePlan)?.message_count.toLocaleString()}`,
       },
     );
   }
@@ -253,7 +253,7 @@ export default function Dashboard() {
                 <Box paddingInline="400" paddingBlockStart="400">
                   <InlineStack align="space-between">
                     <Text variant="headingMd" as="h2">
-                      Usage Overview
+                      Sync Status
                     </Text>
                     <Badge>{planType + " Plan"}</Badge>
                   </InlineStack>
@@ -280,7 +280,7 @@ export default function Dashboard() {
             <PlanView
               planItems={planItems}
               setShowCancelModal={setShowCancelModal}
-              usagePercentage={(organizationUsage?.current_months_message_count ?? 0) / organization?.plan?.component_loads}
+              usagePercentage={((organizationUsage?.current_months_message_count ?? 0) / (organization?.plan as StripePlan)?.message_count) * 100}
             />
           </BlockStack>
         </Layout.Section>

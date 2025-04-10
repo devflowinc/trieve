@@ -10,7 +10,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ progress }) => {
 
     return (
         <Box paddingBlockEnd="200">
-            <div className="w-full bg-gray-200 rounded overflow-hidden h-2 mb-1">
+            <div className="w-full bg-gray-200 rounded overflow-hidden h-2 mb-1 mt-1">
                 <div
                     className="bg-[#800080e6] h-full transition-width duration-300 ease-in-out"
                     style={{ width: `${progressPercentage}%` }}
