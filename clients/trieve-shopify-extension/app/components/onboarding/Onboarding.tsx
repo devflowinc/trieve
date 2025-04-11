@@ -45,10 +45,10 @@ export const Onboarding = () => {
                   "flex w-full justify-between items-center p-1 px-2",
                 )}
               >
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <div
                     className={cn(
-                      "transition-colors duration-100",
+                      "transition-colors duration-100 text-base",
                       isCurrent ? "text-black" : "text-neutral-500",
                     )}
                   >
