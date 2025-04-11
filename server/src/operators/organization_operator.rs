@@ -714,24 +714,29 @@ pub async fn get_extended_org_usage_by_id_query(
     })?;
 
     let ocr_pages = ocr_pages_result.map_err(|e| {
-        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+        ServiceError::InternalServerError(format!("Error fetching ocr pages {:?}", e))
     })?;
 
     let website_pages_scraped = website_pages_scraped_result.map_err(|e| {
-        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+        ServiceError::InternalServerError(format!("Error fetching pages scraped {:?}", e))
     })?;
 
     let rag_events = rag_events_result.map_err(|e| {
-        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+        ServiceError::InternalServerError(format!("Error fetching rag_events {:?}", e))
     })?;
 
     let search_events = search_events_result.map_err(|e| {
-        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
+        ServiceError::InternalServerError(format!("Error fetching search events {:?}", e))
     })?;
 
-    let current_months_message_count = current_months_message_count_result.map_err(|e| {
-        ServiceError::InternalServerError(format!("Error fetching ingestion data {:?}", e))
-    })?;
+    let current_months_message_count = current_months_message_count_result
+        .map_err(|e| {
+            ServiceError::InternalServerError(format!(
+                "Error fetching months message count {:?}",
+                e
+            ))
+        })
+        .unwrap_or(CurrentMonthMessageCountRow { query_count: 0 });
 
     if let Some(timer) = timer {
         timer.add("fetched all clickhouse data in parallel");
