@@ -37,6 +37,12 @@ import { Granularity, StripePlan } from "trieve-ts-sdk";
 import { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
 import { PlanView } from "app/components/PlanView";
+
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
 const load: Loader = async ({ adminApiFetcher, queryClient }) => {
   await queryClient.ensureQueryData(lastStepIdQuery(adminApiFetcher));
   return;
@@ -81,8 +87,6 @@ export default function Dashboard() {
 
   const { data: organizationUsage } = useQuery(organizationUsageQuery(trieve));
 
-  const planType = organization?.plan?.name || "Free";
-
   const statsItems = [
     {
       term: "Products",
@@ -112,12 +116,7 @@ export default function Dashboard() {
     },
   ];
 
-  let planItems = [
-    {
-      term: "Plan",
-      description: planType,
-    },
-  ];
+  let planItems = [];
 
   if (organization?.plan?.type === "flat") {
     planItems.push({
@@ -253,12 +252,11 @@ export default function Dashboard() {
                     <Text variant="headingMd" as="h2">
                       Sync Status
                     </Text>
-                    <Badge>{planType + " Plan"}</Badge>
                   </InlineStack>
                 </Box>
 
                 <Box paddingInline="400">
-                  <DescriptionList items={statsItems} />
+                  <DescriptionList gap="tight" items={statsItems} />
                 </Box>
 
                 <Box paddingInline="400" paddingBlockEnd="400">
@@ -276,6 +274,7 @@ export default function Dashboard() {
               </BlockStack>
             </Card>
             <PlanView
+              plan={organization?.plan}
               planItems={planItems}
               setShowCancelModal={setShowCancelModal}
               usagePercentage={
