@@ -383,7 +383,7 @@ export const sendChunks = async (
             id
             title
             productType
-            bodyHtml
+            descriptionHtml
             handle
             tags
             status
@@ -391,7 +391,7 @@ export const sendChunks = async (
               name
             }
             totalInventory
-            variants(first: 20) {
+            variants(first: 120) {
               nodes {
                 id
                 displayName
@@ -425,6 +425,7 @@ export const sendChunks = async (
     );
 
     if (response.error) {
+      console.error(`Error fetching products from Shopify: ${response.error}`);
       throw response.error;
     }
     const dataChunks: ChunkReqPayload[] = response.data.products.nodes.flatMap(
