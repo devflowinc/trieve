@@ -9,14 +9,18 @@ import {
   InlineStack,
   Text,
   Banner,
+  Badge,
 } from "@shopify/polaris";
 import { ProgressBar } from "./ProgressBar";
+import { TrievePlan } from "trieve-ts-sdk";
 
 export const PlanView = ({
+  plan,
   planItems,
   setShowCancelModal,
   usagePercentage,
 }: {
+  plan: TrievePlan | null | undefined;
   planItems: DescriptionListProps["items"];
   setShowCancelModal: (show: boolean) => void;
   usagePercentage: number;
@@ -28,10 +32,13 @@ export const PlanView = ({
       <BlockStack gap="400">
         <Box paddingInline="400" paddingBlockStart="400">
           <InlineStack align="space-between">
-            <Text variant="headingMd" as="h2">
-              Plan Details
-            </Text>
-            <div className="flex gap-2">
+            <InlineStack gap="400" align="center" blockAlign="center">
+              <Text variant="headingMd" as="h2">
+                Plan Details
+              </Text>
+              <Badge>{plan?.name}</Badge>
+            </InlineStack>
+            <InlineStack gap="200" align="center" blockAlign="center">
               <Button
                 onClick={() => {
                   submit(
@@ -53,7 +60,7 @@ export const PlanView = ({
               >
                 Cancel
               </Button>
-            </div>
+            </InlineStack>
           </InlineStack>
         </Box>
 
@@ -82,10 +89,10 @@ export const PlanView = ({
               </Banner>
             </Box>
           )}
-          <div className="w-full">
+          <BlockStack>
             <span className="text-sm font-bold pb-1">Usage</span>
             <ProgressBar progress={usagePercentage} />
-          </div>
+          </BlockStack>
           <DescriptionList items={planItems} />
         </Box>
       </BlockStack>

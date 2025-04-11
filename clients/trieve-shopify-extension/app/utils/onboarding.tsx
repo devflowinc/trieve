@@ -13,7 +13,7 @@ import {
   lastStepIdQuery,
   ONBOARD_STEP_META_FIELD,
 } from "app/queries/onboarding";
-import { FC, useCallback, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 
 export type OnboardingBody = FC<{
   goToNextStep: () => void;
@@ -29,6 +29,7 @@ type OnboardingStep = {
   nextButtonText?: string;
   hideNextButton?: boolean;
   hidden?: boolean;
+  openAction?: () => void;
 };
 
 export const onboardingSteps: OnboardingStep[] = [
@@ -45,6 +46,9 @@ export const onboardingSteps: OnboardingStep[] = [
     defaultComplete: false,
     body: WelcomeOnboarding,
     nextButtonText: "Setup Component",
+    openAction: () => {
+      fetch("/app/setup");
+    },
   },
   {
     // Name in a way that changing the step + adding more will not require id rename
@@ -103,6 +107,12 @@ export const useOnboarding = () => {
   const currentStep = useMemo(() => {
     return onboardingSteps.find((step) => step.id === currentStepId) || null;
   }, [currentStepId]);
+
+  useEffect(() => {
+    if (currentStep?.openAction) {
+      currentStep.openAction();
+    }
+  }, [currentStep]);
 
   const goToNextStep = useCallback(() => {
     let currentStepIndex = onboardingSteps.findIndex(
