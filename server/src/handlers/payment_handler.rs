@@ -27,7 +27,6 @@ use crate::{
     },
 };
 use actix_web::{web, HttpRequest, HttpResponse};
-use dateparser::DateTimeUtc;
 use serde::{Deserialize, Serialize};
 use stripe::{EventObject, EventType, Object, Webhook};
 use utoipa::ToSchema;
@@ -777,19 +776,16 @@ pub async fn handle_shopify_plan_change(
 
     if let Some(organization_plan) = organization_plan {
         if organization_plan.stripe_id == payload.idempotency_key {
-            // No changes
             return Ok(HttpResponse::NoContent().finish());
         }
 
         if organization_plan.plan_id == plan.id
             && payload.shopify_plan.status.to_lowercase() == "active"
         {
-            // No changes
             return Ok(HttpResponse::NoContent().finish());
         } else if organization_plan.plan_id == plan.id
             && payload.shopify_plan.status.to_lowercase() != "active"
         {
-            // Cancel the old plan
             set_stripe_subscription_current_period_end(
                 organization_plan.stripe_id,
                 chrono::Utc::now().naive_utc(),
@@ -799,35 +795,21 @@ pub async fn handle_shopify_plan_change(
         } else if organization_plan.plan_id != plan.id
             && payload.shopify_plan.status.to_lowercase() == "active"
         {
-            // Create a new plan
             create_stripe_subscription_query(
                 payload.idempotency_key.clone(),
                 plan.id,
                 payload.organization_id,
-                payload.shopify_plan.current_period_end.clone().map(|s| {
-                    s.parse::<DateTimeUtc>()
-                        .unwrap()
-                        .0
-                        .with_timezone(&chrono::Utc)
-                        .naive_utc()
-                }),
+                None,
                 pool.clone(),
             )
             .await?;
         }
     } else if payload.shopify_plan.status.to_lowercase() == "active" {
-        // Create a new plan
         create_stripe_subscription_query(
             payload.idempotency_key.clone(),
             plan.id,
             payload.organization_id,
-            payload.shopify_plan.current_period_end.clone().map(|s| {
-                s.parse::<DateTimeUtc>()
-                    .unwrap()
-                    .0
-                    .with_timezone(&chrono::Utc)
-                    .naive_utc()
-            }),
+            None,
             pool.clone(),
         )
         .await?;
