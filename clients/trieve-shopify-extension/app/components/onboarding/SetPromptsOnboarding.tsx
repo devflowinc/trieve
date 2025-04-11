@@ -13,7 +13,7 @@ import { withSuspense } from "app/utils/suspense";
 import { trackCustomerEvent } from "app/processors/shopifyTrackers";
 
 export const SetPromptsOnboarding: OnboardingBody = withSuspense(
-  ({ broadcastCompletion }) => {
+  ({ broadcastCompletion, goToNextStep }) => {
     const { trieve, organization, trieveKey } = useTrieve();
     // this info is already preloaded in root loader
     const { data: shopDataset, refetch } = useSuspenseQuery(
@@ -34,6 +34,10 @@ export const SetPromptsOnboarding: OnboardingBody = withSuspense(
         organization.organization.id,
         trieveKey.key,
       );
+
+      if (goToNextStep) {
+        goToNextStep();
+      }
     };
 
     const [datasetSettings, setDatasetSettings] = useState<DatasetConfig>(
@@ -127,13 +131,8 @@ export const SetPromptsOnboarding: OnboardingBody = withSuspense(
             autoComplete="off"
           />
           <div className="flex w-full pt-3 justify-end">
-            <Button
-              submit
-              disabled={
-                !hasChangedFromPageLoad || saveSettingsMutation.isPending
-              }
-            >
-              Save
+            <Button submit disabled={saveSettingsMutation.isPending}>
+              {hasChangedFromPageLoad ? "Save" : "Next"}
             </Button>
           </div>
         </form>
