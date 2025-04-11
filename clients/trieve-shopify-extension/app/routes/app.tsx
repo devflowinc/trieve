@@ -43,11 +43,11 @@ export default function App() {
         <Link to="/app" rel="home">
           Home
         </Link>
-        <Link to="/app/chat" rel="chat">
-          Chat Overview
-        </Link>
         <Link to="/app/chats" rel="chat">
           Chat Sessions
+        </Link>
+        <Link to="/app/chat" rel="chat">
+          Analytics
         </Link>
         <Link to="/app/settings" rel="settings">
           Settings
