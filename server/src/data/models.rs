@@ -3922,7 +3922,7 @@ impl Default for StripePlan {
             updated_at: chrono::Utc::now().naive_local(),
             name: "Free".to_string(),
             visible: true,
-            messages_per_month: Some(1000),
+            messages_per_month: Some(50),
         }
     }
 }
