@@ -37,6 +37,10 @@ export type DatasetConfig = Exclude<
   LLM_API_KEY?: string | null;
 };
 
+export type RevenueTrackingOptions = {
+  checkout_selector: string;
+};
+
 export const defaultServerEnvsConfiguration: DatasetConfig = {
   LLM_BASE_URL: "",
   LLM_DEFAULT_MODEL: "",
@@ -66,21 +70,28 @@ export const defaultServerEnvsConfiguration: DatasetConfig = {
   BM25_AVG_LEN: 256,
 };
 
+export const defaultRevenueTrackingOptions: RevenueTrackingOptions = {
+  checkout_selector: "",
+};
+
 export const DatasetSettings = ({
   initalCrawlOptions,
+  initalRevenueTrackingOptions,
   shopDataset,
 }: {
   initalCrawlOptions: ExtendedCrawlOptions;
+  initalRevenueTrackingOptions: RevenueTrackingOptions;
   shopDataset: Dataset;
 }) => {
   const [unsavedCrawlOptions, setUnsavedCrawlOptions] =
     useState(initalCrawlOptions);
+  const [unsavedRevenueTrackingOptions, setUnsavedRevenueTrackingOptions] =
+    useState(initalRevenueTrackingOptions);
   const shopify = useAppBridge();
   const submit = useSubmit();
   const [datasetSettings, setDatasetSettings] = useState<DatasetConfig>(
     shopDataset.server_configuration ?? ({} as DatasetConfig),
   );
-
 
   useEffect(() => {
     // Quickly set the nonnegotiable options for shopify to work
@@ -133,6 +144,21 @@ export const DatasetSettings = ({
     shopify.toast.show("Saved LLM settings!");
   };
 
+  const onRevenueTrackingSettingsSave = async () => {
+    submit(
+      {
+        revenue_tracking_options: JSON.stringify(unsavedRevenueTrackingOptions),
+        dataset_id: shopDataset.id,
+        type: "revenue_tracking",
+      },
+      {
+        method: "POST",
+      },
+    );
+
+    shopify.toast.show("Saved revenue tracking settings!");
+  };
+
   return (
     <BlockStack gap="200">
       <Card>
@@ -177,6 +203,34 @@ export const DatasetSettings = ({
 
           <InlineStack align="end">
             <Button onClick={onCrawlSettingsSave}>Save</Button>
+          </InlineStack>
+        </BlockStack>
+      </Card>
+      <Card>
+        <BlockStack gap="200">
+          <Text variant="headingLg" as="h1">
+            Revenue Tracking Settings
+          </Text>
+
+          <FormLayout>
+            <TextField
+              autoComplete="off"
+              label="Checkout Selector"
+              helpText="The HTML selector of the checkout button on your shopify store. This is used to track revenue when a user clicks the checkout button."
+              value={
+                unsavedRevenueTrackingOptions?.checkout_selector || ""
+              }
+              onChange={(e) => {
+                setUnsavedRevenueTrackingOptions({
+                  ...unsavedRevenueTrackingOptions,
+                  checkout_selector: e,
+                });
+              }}
+            />
+          </FormLayout>
+
+          <InlineStack align="end">
+            <Button onClick={onRevenueTrackingSettingsSave}>Save</Button>
           </InlineStack>
         </BlockStack>
       </Card>

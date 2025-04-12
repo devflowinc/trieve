@@ -108,6 +108,11 @@
       inline: true,
       groupTrackingId: productId ? productId.toString() : undefined,
       cleanGroupName: productTitle ?? undefined,
+      analyticsSelectors: {
+        checkout: {
+          querySelector: appMetafieldTrieve.checkout_selector,
+        },
+      },
     });
   }
 </script>

@@ -6,6 +6,7 @@ import { sdkFromKey, validateTrieveAuth } from "app/auth";
 import {
   DatasetSettings as DatasetSettings,
   ExtendedCrawlOptions,
+  RevenueTrackingOptions,
 } from "app/components/DatasetSettings";
 import { useTrieve } from "app/context/trieveContext";
 import { AdminApiCaller } from "app/loaders";
@@ -19,7 +20,10 @@ import { AppInstallData } from "./app.setup";
 
 const setAppMetafields = async (
   adminApi: AdminApiCaller,
-  trieveKey: TrieveKey,
+  valuesToSet: {
+    key: string;
+    value: string;
+  }[],
 ) => {
   const response = await adminApi<AppInstallData>(`
       #graphql
@@ -54,31 +58,60 @@ const setAppMetafields = async (
     `,
     {
       variables: {
-        metafieldsSetInput: [
-          {
-            namespace: "trieve",
-            key: "dataset_id",
-            value: trieveKey.currentDatasetId,
-            type: "single_line_text_field",
-            ownerId: appId.currentAppInstallation.id,
-          },
-          {
-            namespace: "trieve",
-            key: "api_key",
-            value: trieveKey.key,
-            type: "single_line_text_field",
-            ownerId: appId.currentAppInstallation.id,
-          },
-        ],
+        metafieldsSetInput: valuesToSet.map((value) => ({
+          namespace: "trieve",
+          key: value.key,
+          value: value.value,
+          type: "single_line_text_field",
+          ownerId: appId.currentAppInstallation.id,
+        })),
       },
     },
   );
+};
+
+type Metafields = {
+  currentAppInstallation: {
+    metafields: {
+      nodes: {
+        id: string;
+        namespace: string;
+        key: string;
+        value: string;
+      }[];
+    };
+  };
+};
+
+const getAppMetafields = async (adminApi: AdminApiCaller) => {
+  const response = await adminApi<Metafields>(`
+    #graphql
+    query {
+      currentAppInstallation {
+        metafields(first: 10) {
+          nodes {
+            id
+            namespace
+            key
+            value
+          }
+        }
+      }
+    }
+    `);
+
+  if (response.error) {
+    throw response.error;
+  }
+
+  return response.data.currentAppInstallation.metafields.nodes;
 };
 
 export const loader = async ({
   request,
 }: LoaderFunctionArgs): Promise<{
   crawlSettings: ExtendedCrawlOptions | undefined;
+  revenueTrackingSettings: RevenueTrackingOptions | undefined;
 }> => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
@@ -87,7 +120,13 @@ export const loader = async ({
     session.shop,
     session.accessToken!,
   );
-  setAppMetafields(fetcher, key).catch(console.error);
+  setAppMetafields(fetcher, [{
+    key: "dataset_id",
+    value: key.currentDatasetId || "",
+  }, {
+    key: "api_key",
+    value: key.key,
+  }]).catch(console.error);
 
   const crawlSettings: {
     crawlSettings: ExtendedCrawlOptions | undefined;
@@ -98,13 +137,21 @@ export const loader = async ({
     },
   })) as any;
 
-  return { crawlSettings: crawlSettings?.crawlSettings };
+  const revenueTrackingSettings: RevenueTrackingOptions = {
+    checkout_selector: (await getAppMetafields(fetcher)).find((metafield) => metafield.key === "checkout_selector")?.value ?? "",
+  };
+
+  return { crawlSettings: crawlSettings?.crawlSettings, revenueTrackingSettings };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
   const trieve = sdkFromKey(key);
+  const fetcher = buildAdminApiFetcherForServer(
+    session.shop,
+    session.accessToken!,
+  );
   const formData = await request.formData();
   const type = formData.get("type");
   if (type === "crawl") {
@@ -132,7 +179,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     sendChunks(datasetId as string, key, fetcher, session, crawlSettings).catch(
       console.error,
     );
-    setAppMetafields(fetcher, key).catch(console.error);
+    setAppMetafields(fetcher, [{
+      key: "dataset_id",
+      value: key.currentDatasetId || "",
+    }, {
+      key: "api_key",
+      value: key.key,
+    }]).catch(console.error);
 
     return { success: true };
   } else if (type === "dataset") {
@@ -145,20 +198,31 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     return { success: true };
-  }
+  } else if (type === "revenue_tracking") {
+    const revenueTrackingSettingsString = formData.get("revenue_tracking_options");
+    const revenueTrackingSettings = JSON.parse(revenueTrackingSettingsString as string);
+    await setAppMetafields(fetcher, [
+      {
+        key: "checkout_selector",
+        value: revenueTrackingSettings.checkout_selector,
+      },
+    ]).catch(console.error);
 
+    return { success: true };
+  }
   return { success: false };
 };
 
 export default function Dataset() {
   const { trieve } = useTrieve();
   const { data: shopDataset } = useSuspenseQuery(shopDatasetQuery(trieve));
-  const { crawlSettings } = useLoaderData<typeof loader>();
+  const { crawlSettings, revenueTrackingSettings } = useLoaderData<typeof loader>();
 
   return (
     <Box paddingBlockStart="400">
       <DatasetSettings
         initalCrawlOptions={crawlSettings as ExtendedCrawlOptions}
+        initalRevenueTrackingOptions={revenueTrackingSettings as RevenueTrackingOptions}
         shopDataset={shopDataset as Dataset}
       />
     </Box>
