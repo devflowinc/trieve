@@ -346,7 +346,7 @@ diesel::table! {
         updated_at -> Timestamp,
         name -> Nullable<Text>,
         #[max_length = 255]
-        oidc_subject -> Varchar,
+        oidc_subject -> Nullable<Varchar>,
     }
 }
 

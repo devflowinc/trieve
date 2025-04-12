@@ -476,7 +476,7 @@ pub async fn update_all_org_dataset_configs(
     Ok(HttpResponse::NoContent().finish())
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Default)]
 pub struct CreateApiKeyReqPayload {
     /// The name which will be assigned to the new api key.
     pub name: String,

@@ -118,6 +118,22 @@ pub async fn get_user_by_oidc_subject_query(
     Ok((user, user_orgs, orgs))
 }
 
+pub async fn get_option_user_by_email_query(
+    email: &str,
+    pool: web::Data<Pool>,
+) -> Result<Option<User>, ServiceError> {
+    use crate::data::schema::users::dsl as users_columns;
+    let mut conn = pool.get().await.unwrap();
+
+    users_columns::users
+        .filter(users_columns::email.eq(email.to_lowercase()))
+        .select(User::as_select())
+        .first::<User>(&mut conn)
+        .await
+        .optional()
+        .map_err(|_| ServiceError::BadRequest("Error checking user by id".to_string()))
+}
+
 pub async fn add_existing_user_to_org(
     email: String,
     organization_id: uuid::Uuid,
@@ -192,8 +208,28 @@ pub async fn update_user_org_role_query(
     Ok(())
 }
 
+pub async fn associate_user_to_oidc_subject_query(
+    user_id: uuid::Uuid,
+    oidc_subject: String,
+    pool: web::Data<Pool>,
+) -> Result<(), ServiceError> {
+    use crate::data::schema::users::dsl as users_columns;
+
+    let mut conn = pool.get().await.map_err(|_e| {
+        ServiceError::InternalServerError("Failed to get postgres connection".to_string())
+    })?;
+
+    diesel::update(users_columns::users.filter(users_columns::id.eq(user_id)))
+        .set(users_columns::oidc_subject.eq(oidc_subject))
+        .execute(&mut conn)
+        .await
+        .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
+
+    Ok(())
+}
+
 pub async fn create_user_query(
-    user_oidc_subject: String,
+    user_oidc_subject: Option<String>,
     email: String,
     name: Option<String>,
     role: UserRole,
@@ -207,7 +243,7 @@ pub async fn create_user_query(
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
-    let user = User::from_details_with_id(user_oidc_subject, email, name);
+    let user = User::from_details_with_oidc_subject(user_oidc_subject, email, name);
     let user_org = UserOrganization::from_details(user.id, org_id, role);
 
     let user_org = conn
@@ -360,8 +396,8 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
 
     let mut conn = pool.get_ref().get().await.unwrap();
 
-    let user = User::from_details_with_id(
-        uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
+    let user = User::from_details_with_oidc_subject(
+        uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").ok(),
         "default".to_string(),
         None,
     );
