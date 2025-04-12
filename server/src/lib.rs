@@ -167,7 +167,8 @@ impl Modify for SecurityAddon {
         handlers::auth_handler::login,
         handlers::auth_handler::logout,
         handlers::auth_handler::get_me,
-        handlers::auth_handler::callback,
+        handlers::auth_handler::oidc_callback,
+        handlers::auth_handler::create_api_only_user,
         handlers::auth_handler::health_check,
         handlers::topic_handler::create_topic,
         handlers::topic_handler::delete_topic,
@@ -1053,8 +1054,13 @@ pub fn main() -> std::io::Result<()> {
                                 )
                                 .service(
                                     web::resource("/callback")
-                                        .route(web::get().to(handlers::auth_handler::callback)),
-                                ),
+                                        .route(web::get().to(handlers::auth_handler::oidc_callback)),
+                                )
+                                .service(
+                                    web::resource("/create_api_only_user")
+                                        .route(web::post().to(handlers::auth_handler::create_api_only_user)),
+                                )
+                            ,
                         )
                         .service(
                             web::resource("/topic")

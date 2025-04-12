@@ -1,10 +1,13 @@
-use crate::data::models::{Organization, RedisPool, UserRole};
+use crate::data::models::{ApiKeyRole, Organization, RedisPool, UserRole};
 use crate::get_env;
 use crate::operators::dittofeed_operator::{get_user_ditto_identity, send_user_ditto_identity};
 use crate::operators::invitation_operator::check_inv_valid;
-use crate::operators::organization_operator::{get_org_from_id_query, get_user_org_count};
+use crate::operators::organization_operator::{
+    create_organization_api_key_query, get_org_from_id_query, get_user_org_count,
+};
 use crate::operators::user_operator::{
-    add_user_to_organization, create_user_query, get_user_by_oidc_subject_query,
+    add_user_to_organization, associate_user_to_oidc_subject_query, create_user_query,
+    get_option_user_by_email_query, get_user_by_oidc_subject_query,
 };
 use crate::{
     data::models::{Pool, SlimUser, User, UserOrganization},
@@ -31,6 +34,8 @@ use serde_json::json;
 use std::fs::read_to_string;
 use std::future::{ready, Ready};
 use utoipa::{IntoParams, ToSchema};
+
+use super::organization_handler::CreateApiKeyReqPayload;
 
 #[derive(Deserialize, Debug)]
 pub struct OpCallback {
@@ -163,10 +168,17 @@ pub async fn build_oidc_client() -> CoreClient {
     )
 }
 
+/// Create an account for a user given an email and name
+///
+/// If an organization ID is provided, the user will be added to that organization,
+/// otherwise a new organization will be created with the user as the owner based on their name.
+///
+/// if user_oidc_subject is the subject is not provided, this user will be api only (not able to
+/// access the dashboard)
 pub async fn create_account(
     email: String,
     name: String,
-    user_oidc_subject: String,
+    user_oidc_subject: Option<String>,
     organization_id: Option<uuid::Uuid>,
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -383,7 +395,7 @@ pub async fn login(
         (status = 400, description = "Email or password empty or incorrect", body = ErrorResponseBody),
     )
 )]
-pub async fn callback(
+pub async fn oidc_callback(
     req: HttpRequest,
     session: Session,
     oidc_client: web::Data<CoreClient>,
@@ -469,47 +481,76 @@ pub async fn callback(
 
     let mut user_is_new = false;
 
-    let (user, user_orgs, orgs) =
-        match get_user_by_oidc_subject_query(&user_oidc_subject, pool.clone()).await {
-            Ok(user) => user,
-            Err(_) => {
-                user_is_new = true;
-                let (user, user_orgs, orgs) = create_account(
-                    email.to_string(),
-                    name.iter().next().unwrap().1.to_string(),
-                    user_oidc_subject,
-                    login_state.organization_id,
-                    login_state.inv_code,
-                    pool.clone(),
-                )
+    // Check if a user with this email exists
+    let optional_user_from_email = get_option_user_by_email_query(email, pool.clone()).await?;
+
+    let user_from_oidc_subject =
+        get_user_by_oidc_subject_query(&user_oidc_subject, pool.clone()).await;
+
+    let (user, user_orgs, orgs) = match (user_from_oidc_subject, &optional_user_from_email) {
+        (Ok(user), _) => user,
+        (
+            Err(_),
+            Some(User {
+                oidc_subject: None, ..
+            }),
+        ) => {
+            // User exists, but has no current oidc subject in postgres need to associate them
+            let user_id = optional_user_from_email.expect("user exists from above").id;
+            associate_user_to_oidc_subject_query(user_id, user_oidc_subject.clone(), pool.clone())
                 .await?;
 
-                let slim_user =
-                    SlimUser::from_details(user.clone(), user_orgs.clone(), orgs.clone());
+            get_user_by_id_query(&user_id, pool.clone()).await?
+        }
+        (Err(_), None) => {
+            // User does not exist from oidc_subject or have a matching email
+            user_is_new = true;
+            let (user, user_orgs, orgs) = create_account(
+                email.to_string(),
+                name.iter().next().unwrap().1.to_string(),
+                Some(user_oidc_subject),
+                login_state.organization_id,
+                login_state.inv_code,
+                pool.clone(),
+            )
+            .await?;
 
-                match get_user_ditto_identity(slim_user, pool.clone(), &clickhouse_client).await {
-                    Ok(identify_request) => {
-                        match send_user_ditto_identity(identify_request).await {
-                            Ok(_) => {
-                                log::info!("Sent ditto identity for user {}", user.email);
-                            }
-                            Err(e) => {
-                                log::info!(
-                                    "Failed to send ditto identity for user {}. Error: {}",
-                                    user.email,
-                                    e
-                                );
-                            }
-                        };
-                    }
-                    Err(e) => {
-                        log::info!("No ditto identity for user {}. Error: {}", user.email, e);
-                    }
+            let slim_user = SlimUser::from_details(user.clone(), user_orgs.clone(), orgs.clone());
+
+            match get_user_ditto_identity(slim_user, pool.clone(), &clickhouse_client).await {
+                Ok(identify_request) => {
+                    match send_user_ditto_identity(identify_request).await {
+                        Ok(_) => {
+                            log::info!("Sent ditto identity for user {}", user.email);
+                        }
+                        Err(e) => {
+                            log::info!(
+                                "Failed to send ditto identity for user {}. Error: {}",
+                                user.email,
+                                e
+                            );
+                        }
+                    };
                 }
-
-                (user, user_orgs, orgs)
+                Err(e) => {
+                    log::info!("No ditto identity for user {}. Error: {}", user.email, e);
+                }
             }
-        };
+
+            (user, user_orgs, orgs)
+        }
+        (
+            Err(_),
+            Some(User {
+                oidc_subject: Some(_),
+                ..
+            }),
+        ) => {
+            // This should not be reachable, we should error out.
+            // Something fishy is going on with our auth provider.
+            unreachable!();
+        }
+    };
 
     if login_state.organization_id.is_some()
         && !user_orgs.iter().any(|org| {
@@ -630,4 +671,86 @@ pub async fn login_cli() -> Result<HttpResponse, ServiceError> {
         ServiceError::InternalServerError(format!("Could not read login page {}", e))
     })?;
     Ok(HttpResponse::Ok().content_type("text/html").body(html_page))
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CreateApiUserBody {
+    pub user_email: String,
+    pub user_name: String,
+}
+
+#[derive(Serialize, Debug)]
+pub struct CreateApiUserResponse {
+    pub user: User,
+    pub organization_id: uuid::Uuid,
+    pub api_key: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/create_api_only_user",
+    context_path = "/api",
+    tag = "Auth",
+    responses(
+        (status = 200, description = "The user id", body = SlimUser),
+        (status = 400, description = "Error message indicitating you are not currently signed in", body = ErrorResponseBody),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn create_api_only_user(
+    req: HttpRequest,
+    body: web::Json<CreateApiUserBody>,
+    pool: web::Data<Pool>,
+) -> Result<HttpResponse, ServiceError> {
+    let access_key = req
+        .headers()
+        .get("X-Shopify-Authorization")
+        .ok_or(ServiceError::BadRequest(
+            "X-Shopify-Authorization header is required".to_string(),
+        ))?
+        .to_str()
+        .map_err(|_| {
+            ServiceError::BadRequest("Failed to parse X-Shopify-Authorization header".to_string())
+        })?;
+
+    if access_key != get_env!("SHOPIFY_SECRET_KEY", "SHOPIFY_SECRET_KEY must be set") {
+        return Err(ServiceError::BadRequest(
+            "Invalid session token".to_string(),
+        ));
+    }
+
+    let user_email = body.user_email.clone();
+    let user_name = body.user_name.clone();
+
+    let (user, _, orgs) =
+        create_account(user_email, user_name, None, None, None, pool.clone()).await?;
+
+    let organization = orgs.first().ok_or(ServiceError::BadRequest(
+        "Failed to create organization for api only user; please try again".to_string(),
+    ))?;
+
+    let api_key = create_organization_api_key_query(
+        organization.id,
+        CreateApiKeyReqPayload {
+            name: "User API Key".to_string(),
+            role: ApiKeyRole::Owner.into(),
+            ..Default::default()
+        },
+        pool.clone(),
+    )
+    .await
+    .map_err(|err| {
+        ServiceError::BadRequest(format!(
+            "Failed to set new API key for organization {}",
+            err
+        ))
+    })?;
+
+    Ok(HttpResponse::Ok().json(CreateApiUserResponse {
+        user,
+        organization_id: organization.id,
+        api_key,
+    }))
 }
