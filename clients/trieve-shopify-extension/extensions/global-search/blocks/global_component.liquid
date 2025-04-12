@@ -97,6 +97,11 @@
       showFloatingSearchIcon: toBool(getValue("{{ block.settings.show_floating_search_icon }}", true)),
       floatingSearchIconPosition: getValue("{{ block.settings.floating_icon_pos }}", "left"),
       allowSwitchingModes: false,
+      analyticsSelectors: {
+        checkout: {
+          querySelector: appMetafieldTrieve.checkout_selector,
+        },
+      },
     });
   }
 </script>
