@@ -673,15 +673,15 @@ pub async fn login_cli() -> Result<HttpResponse, ServiceError> {
     Ok(HttpResponse::Ok().content_type("text/html").body(html_page))
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, ToSchema)]
 pub struct CreateApiUserBody {
     pub user_email: String,
     pub user_name: String,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, ToSchema)]
 pub struct CreateApiUserResponse {
-    pub user: User,
+    pub user: SlimUser,
     pub organization_id: uuid::Uuid,
     pub api_key: String,
 }
@@ -692,7 +692,7 @@ pub struct CreateApiUserResponse {
     context_path = "/api",
     tag = "Auth",
     responses(
-        (status = 200, description = "The user id", body = SlimUser),
+        (status = 200, description = "The user id", body = CreateApiUserResponse),
         (status = 400, description = "Error message indicitating you are not currently signed in", body = ErrorResponseBody),
     ),
     security(
@@ -723,13 +723,20 @@ pub async fn create_api_only_user(
 
     let user_email = body.user_email.clone();
     let user_name = body.user_name.clone();
+    // See if user already exists
+    let option_user = get_option_user_by_email_query(&user_email, pool.clone()).await?;
 
-    let (user, _, orgs) =
-        create_account(user_email, user_name, None, None, None, pool.clone()).await?;
+    let (user, user_orgs, orgs) = match option_user {
+        Some(user) => get_user_by_id_query(&user.id, pool.clone()).await?,
+        None => create_account(user_email, user_name, None, None, None, pool.clone()).await?,
+    };
 
-    let organization = orgs.first().ok_or(ServiceError::BadRequest(
-        "Failed to create organization for api only user; please try again".to_string(),
-    ))?;
+    let organization = orgs
+        .first()
+        .ok_or(ServiceError::BadRequest(
+            "Failed to create organization for api only user; please try again".to_string(),
+        ))?
+        .clone();
 
     let api_key = create_organization_api_key_query(
         organization.id,
@@ -749,7 +756,7 @@ pub async fn create_api_only_user(
     })?;
 
     Ok(HttpResponse::Ok().json(CreateApiUserResponse {
-        user,
+        user: SlimUser::from_details(user, user_orgs, orgs),
         organization_id: organization.id,
         api_key,
     }))

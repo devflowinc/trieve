@@ -285,6 +285,8 @@ impl Modify for SecurityAddon {
     components(
         schemas(
             handlers::auth_handler::AuthQuery,
+            handlers::auth_handler::CreateApiUserResponse,
+            handlers::auth_handler::CreateApiUserBody,
             handlers::topic_handler::CreateTopicReqPayload,
             handlers::topic_handler::CloneTopicReqPayload,
             handlers::topic_handler::DeleteTopicData,

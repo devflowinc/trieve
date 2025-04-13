@@ -350,10 +350,6 @@ This template uses [Remix](https://remix.run). The following Shopify tools are a
 
 ![photo-guide](https://cdn.trieve.ai/github/shopify-app-extension-uuid-guide.png)
 
-## Things to know about `REMIX_SERVER_URL`
-
-If you want to use `https://api.trieve.ai` as your `TRIEVE_BASE_URL` instead of `http://localhost:8090` then you must have a URL which reverse proxies to your local remix server at `http:<your-ip>:49345`. The recommended way to do this is using a bastion node VPS setup where both the VPS and your machine are on the same VPN or something like a tailscale network.
-
 ## Include all of the special sauce into the default toml that the `yarn dev` command sets up thru the `shopify` CLI tool
 
 Look at the `shopify.app.toml.dist` file and copy whatever is in there that is not inside of the `.toml` shopify config the CLI created for you.

@@ -1,6 +1,5 @@
 export type TrieveKey = {
   id?: string;
-  userId?: string;
   organizationId?: string;
   currentDatasetId: string | null;
   key: string;
@@ -8,7 +7,6 @@ export type TrieveKey = {
 
 export type StrongTrieveKey = {
   id: string;
-  userId: string;
   organizationId: string;
   currentDatasetId: string;
   key: string;
