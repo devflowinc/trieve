@@ -25,7 +25,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     key: apiKey.key,
     organizationId: apiKey.organizationId,
     currentDatasetId: apiKey.currentDatasetId,
-    userId: apiKey.userId,
   };
 
   let crawlSettings = await db.crawlSettings.findFirst({

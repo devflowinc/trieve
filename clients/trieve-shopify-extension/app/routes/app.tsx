@@ -13,7 +13,6 @@ import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import "../routes/_index/tailwind.css";
-import { MustLoginPage } from "app/components/MustLoginPage";
 import { LinearScale, CategoryScale } from "chart.js";
 import { FunnelController, TrapezoidElement } from "chartjs-chart-funnel";
 
@@ -22,7 +21,6 @@ export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 export const loader = async () => {
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
-    remixServerUrl: process.env.REMIX_SERVER_URL!,
     shopifyThemeAppExtensionUuid: process.env.SHOPIFY_THEME_APP_EXTENSION_UUID,
   };
 };
@@ -60,16 +58,17 @@ export default function App() {
 
 // Shopify needs Remix to catch some thrown responses, so that their headers are included in the response.
 export function ErrorBoundary() {
-  const { apiKey, remixServerUrl } = useRouteLoaderData("routes/app") as {
+  const { apiKey } = useRouteLoaderData("routes/app") as {
     apiKey: string;
     remixServerUrl: string;
   };
   const error = useRouteError();
-  if (isRouteErrorResponse(error) && error.status === 401 && apiKey) {
+  if (isRouteErrorResponse(error)) {
     return (
-      // MustLoginPage needs access to use `useAppBridge`
       <AppProvider isEmbeddedApp apiKey={apiKey}>
-        <MustLoginPage authUrl={remixServerUrl} />
+        <div>
+          Something bad happened
+        </div>
       </AppProvider>
     );
   }

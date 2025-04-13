@@ -869,7 +869,7 @@
         ],
         "summary": "OpenID Connect callback",
         "description": "This is the callback route for the OAuth provider, it should not be called directly. Redirects to browser with set-cookie header.",
-        "operationId": "callback",
+        "operationId": "oidc_callback",
         "responses": {
           "200": {
             "description": "Response that returns with set-cookie header",
@@ -892,6 +892,54 @@
             }
           }
         }
+      }
+    },
+    "/api/auth/create_api_only_user": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "create_api_only_user",
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiUserBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The user id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateApiUserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error message indicitating you are not currently signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
       }
     },
     "/api/auth/me": {
@@ -9958,6 +10006,41 @@
           "api_key": {
             "type": "string",
             "description": "The api key which was created. This is the value which should be used in the Authorization header."
+          }
+        }
+      },
+      "CreateApiUserBody": {
+        "type": "object",
+        "required": [
+          "user_email",
+          "user_name"
+        ],
+        "properties": {
+          "user_email": {
+            "type": "string"
+          },
+          "user_name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateApiUserResponse": {
+        "type": "object",
+        "required": [
+          "user",
+          "organization_id",
+          "api_key"
+        ],
+        "properties": {
+          "api_key": {
+            "type": "string"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user": {
+            "$ref": "#/components/schemas/SlimUser"
           }
         }
       },

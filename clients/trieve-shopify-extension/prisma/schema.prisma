@@ -33,14 +33,11 @@ model Session {
 
 model ApiKey {
   id        String   @id @default(uuid())
-  userId    String
   organizationId String @default("")
   currentDatasetId String? @db.Uuid
-  shop      String @default("")
+  shop      String @default("") @unique
   key       String
   createdAt DateTime @default(now())
-
-  @@unique([userId, shop], name: "userId_shop")
 }
 
 model CrawlSettings {

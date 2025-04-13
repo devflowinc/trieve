@@ -1,4 +1,5 @@
 import { LoaderFunctionArgs, redirect } from "@remix-run/node";
+import { sdkFromKey, validateTrieveAuth } from "app/auth";
 import {
   defaultCrawlOptions,
   ExtendedCrawlOptions,
@@ -75,49 +76,11 @@ export const loader = async (args: LoaderFunctionArgs) => {
     );
   };
 
-  const { session, sessionToken } = await authenticate.admin(args.request);
 
-  let key = await prisma.apiKey.findFirst({
-    where: {
-      userId: (sessionToken.sub as string) ?? "",
-    },
-  });
-  if (!key) {
-    throw new Response(
-      JSON.stringify({
-        message: "No key matching the current user (sessionToken.sub)",
-      }),
-      {
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-        },
-        status: 401,
-      },
-    );
-  }
+  const { session } = await authenticate.admin(args.request);
 
-  if (!key.organizationId) {
-    throw new Response(
-      JSON.stringify({
-        message:
-          "No organization matching the current key (key.organizationId)",
-      }),
-      {
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-        },
-        status: 401,
-      },
-    );
-  }
-
-  const trieve = new TrieveSDK({
-    baseUrl: getTrieveBaseUrlEnv(),
-    apiKey: key.key,
-    datasetId: key.currentDatasetId ? key.currentDatasetId : undefined,
-    organizationId: key.organizationId,
-    omitCredentials: true,
-  });
+  let key = await validateTrieveAuth(args.request, false);
+  const trieve = sdkFromKey(key);
 
   let datasetId = trieve.datasetId;
 
@@ -150,10 +113,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
           currentDatasetId: shopDataset.id,
         },
         where: {
-          userId_shop: {
-            userId: sessionToken.sub as string,
-            shop: `https://${session.shop}`,
-          },
+          shop: `${session.shop}`,
         },
       });
     } else {
@@ -162,10 +122,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
           currentDatasetId: shopDataset.id,
         },
         where: {
-          userId_shop: {
-            userId: sessionToken.sub as string,
-            shop: `https://${session.shop}`,
-          },
+          shop: `${session.shop}`,
         },
       });
     }
@@ -217,17 +174,6 @@ export const loader = async (args: LoaderFunctionArgs) => {
       },
     },
   });
-
-  trackCustomerEvent(
-    getTrieveBaseUrlEnv(),
-    {
-      organization_id: key.organizationId,
-      store_name: session.shop,
-      event_type: "shopify_linked",
-    },
-    key.organizationId,
-    key.key,
-  ).catch(console.error);
 
   sendChunks(datasetId ?? "", key, fetcher, session, crawlOptions).catch(
     console.error,

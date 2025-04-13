@@ -841,6 +841,17 @@ export type CreateApiKeyResponse = {
     api_key: string;
 };
 
+export type CreateApiUserBody = {
+    user_email: string;
+    user_name: string;
+};
+
+export type CreateApiUserResponse = {
+    api_key: string;
+    organization_id: string;
+    user: SlimUser;
+};
+
 export type CreateBatchChunkGroupReqPayload = Array<CreateSingleChunkGroupReqPayload>;
 
 export type CreateBatchChunkReqPayload = Array<ChunkReqPayload>;
@@ -4702,7 +4713,13 @@ export type LoginData = {
 
 export type LogoutResponse = (void);
 
-export type CallbackResponse = (SlimUser);
+export type OidcCallbackResponse = (SlimUser);
+
+export type CreateApiOnlyUserData = {
+    requestBody: CreateApiUserBody;
+};
+
+export type CreateApiOnlyUserResponse = (CreateApiUserResponse);
 
 export type GetMeResponse = (SlimUser);
 
@@ -6274,6 +6291,21 @@ export type $OpenApiTs = {
                 200: SlimUser;
                 /**
                  * Email or password empty or incorrect
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/auth/create_api_only_user': {
+        post: {
+            req: CreateApiOnlyUserData;
+            res: {
+                /**
+                 * The user id
+                 */
+                200: CreateApiUserResponse;
+                /**
+                 * Error message indicitating you are not currently signed in
                  */
                 400: ErrorResponseBody;
             };

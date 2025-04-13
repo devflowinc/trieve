@@ -264,9 +264,9 @@ pub async fn create_user_query(
             .scope_boxed()
         })
         .await
-        .map_err(|_| {
+        .map_err(|err| {
             ServiceError::InternalServerError(
-                "Failed to create user, likely that organization_id is invalid".to_string(),
+                format!("Failed to create user {:?}", err),
             )
         })?;
 

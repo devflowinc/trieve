@@ -32,7 +32,6 @@ export const AllSearchesTable = () => {
 
   const mappedData = useMemo((): any[][] => {
     if (isLoading && previousData.length > 0) {
-      console.log("returning previous data");
       return previousData;
     }
 

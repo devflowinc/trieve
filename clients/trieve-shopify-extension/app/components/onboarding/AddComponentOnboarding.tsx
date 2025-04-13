@@ -1,5 +1,5 @@
 import { useRouteLoaderData } from "@remix-run/react";
-import { Button, Text, Modal } from "@shopify/polaris";
+import { Button, Text } from "@shopify/polaris";
 import { createPortal } from "react-dom";
 import { CheckIcon, ExternalIcon, XIcon } from "@shopify/polaris-icons";
 import { useQuery } from "@tanstack/react-query";

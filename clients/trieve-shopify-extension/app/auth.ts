@@ -1,43 +1,66 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
 import { StrongTrieveKey, TrieveKey } from "./types";
-import { TrieveSDK } from "trieve-ts-sdk";
+import { TrieveSDK, CreateApiUserResponse } from "trieve-ts-sdk";
 import { getTrieveBaseUrlEnv } from "./env.server";
-import { JwtPayload } from "jsonwebtoken";
+
 export const validateTrieveAuth = async <S extends boolean = true>(
   request: LoaderFunctionArgs["request"],
   strict: S = true as S,
 ): Promise<S extends true ? StrongTrieveKey : TrieveKey> => {
-  let { sessionToken } = await authenticate.admin(request);
+  let { admin, session } = await authenticate.admin(request);
 
-  const key = await prisma.apiKey.findFirst({
+  let key = await prisma.apiKey.findFirst({
     where: {
-      userId: (sessionToken.sub as string) ?? "",
+      shop: (session.shop as string) ?? "",
     },
   });
 
   if (!key) {
-    throw new Response(
-      JSON.stringify({ message: "No key matching the current user" }),
-      {
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-        },
-        status: 401,
-      },
-    );
-  }
+    const query = await admin.graphql(
+      `
+      query {
+        shop {
+          name
+          email
+        }
+      }
+    `);
 
-  if (strict && !key.currentDatasetId) {
-    throw new Response(
-      JSON.stringify({ message: "No dataset selected" }),
-      {
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-        },
-        status: 401,
+    const queryResponse = await query?.json();
+
+    const shop_name = queryResponse?.data?.shop?.name ?? "";
+    const shop_email = queryResponse?.data?.shop?.email ?? "";
+
+    const userCredentialsResponse = await fetch(`${getTrieveBaseUrlEnv()}/api/auth/create_api_only_user`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Authorization": `${process.env.SHOPIFY_SECRET_KEY}`,
       },
-    );
+      body: JSON.stringify({
+        user_name: shop_name,
+        user_email: shop_email,
+      }),
+    });
+
+    const userCredentials = await userCredentialsResponse.json() as CreateApiUserResponse;
+
+    key = await prisma.apiKey.upsert({
+      where: {
+        shop: session.shop as string,
+      },
+      update: {
+        key: userCredentials.api_key,
+      },
+      create: {
+        organizationId: userCredentials.organization_id,
+        shop: session.shop as string,
+        key: userCredentials.api_key,
+        createdAt: new Date(),
+      }
+    });
   }
 
   return {
@@ -45,7 +68,6 @@ export const validateTrieveAuth = async <S extends boolean = true>(
     key: key.key,
     organizationId: key.organizationId,
     currentDatasetId: key.currentDatasetId,
-    userId: key.userId,
   } as S extends true ? StrongTrieveKey : TrieveKey;
 };
 
@@ -55,13 +77,13 @@ export const validateTrieveAuthWehbook = async <S extends boolean = true>(
 ): Promise<S extends true ? StrongTrieveKey : TrieveKey> => {
   const key = await prisma.apiKey.findFirst({
     where: {
-      shop: `https://${shop}`,
+      shop: `${shop}`,
     },
   });
 
   if (!key) {
     throw new Response(
-      JSON.stringify({ message: "No key matching the current user" }),
+      JSON.stringify({ message: "No key matching the current shop" }),
       {
         headers: {
           "Content-Type": "application/json; charset=utf-8",
@@ -88,7 +110,6 @@ export const validateTrieveAuthWehbook = async <S extends boolean = true>(
     key: key.key,
     organizationId: key.organizationId,
     currentDatasetId: key.currentDatasetId,
-    userId: key.userId,
   } as S extends true ? StrongTrieveKey : TrieveKey;
 };
 
