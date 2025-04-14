@@ -753,7 +753,7 @@ pub async fn create_api_only_user(
                 .clone();
 
             create_flat_subscription_query(
-                "shopify_free_plan".to_string(),
+                uuid::Uuid::new_v4().to_string(),
                 uuid::Uuid::parse_str("dead0000-f0ee-4000-a000-000000000000")
                     .expect("hardcoded should be valid uuid"),
                 organization.id,
