@@ -23,7 +23,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const current = payload as ProductWebhook;
   const apiKey = await db.apiKey.findFirst({
-    where: { shop: `https://${shop}` },
+    where: { shop: `${shop}` },
   });
 
   if (!apiKey) {

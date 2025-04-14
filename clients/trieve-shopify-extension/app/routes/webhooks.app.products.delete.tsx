@@ -11,7 +11,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const current = payload as { id: string };
   const apiKey = await db.apiKey.findFirst({
-    where: { shop: `https://${shop}` },
+    where: { shop: `${shop}` },
   });
 
   if (!apiKey) {
