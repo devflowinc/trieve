@@ -62,7 +62,7 @@ export const ChatInput = ({
       )}
 
       <div
-        className={`input-wrapper tv-relative tv-top-0 tv-z-10 tv-flex tv-flex-col tv-rounded-lg chat${
+        className={`input-wrapper tv-relative tv-top-0 tv-z-10 tv-flex tv-flex-col tv-rounded-lg trieve-mode-chat${
           props.type == "ecommerce" ? "" : " " + props.type
         }`}
         style={{

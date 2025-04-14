@@ -55,6 +55,12 @@ body {
       }
     }
 
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border: none;
+    }
+
     svg {
       height: 16px;
       width: 16px;
