@@ -1,4 +1,4 @@
-use crate::operators::chunk_operator::get_random_chunk_metadatas_query;
+use crate::operators::chunk_operator::get_random_chunk_qdrant_point_id_query;
 use crate::operators::message_operator::models::DatasetAndOrgWithSubAndPlan;
 use itertools::Itertools;
 use simple_server_timing_header::Timer;
@@ -1849,20 +1849,24 @@ pub async fn suggested_new_queries(
         }
         None => {
             let random_offset_id = match payload.filters {
-                Some(_) => Some(uuid::Uuid::nil()),
-                None => get_random_chunk_metadatas_query(dataset_id, 1, pool.clone())
-                    .await?
-                    .clone()
-                    .get(0)
-                    .cloned()
-                    .map(|chunk| chunk.qdrant_point_id),
+                Some(_) => uuid::Uuid::nil(),
+                None => get_random_chunk_qdrant_point_id_query(dataset_id, pool.clone()).await?,
             };
             let filter =
                 assemble_qdrant_filter(filters, None, None, dataset_id, pool.clone()).await?;
 
-            let (search_results, _) =
-                scroll_dataset_points(10, random_offset_id, None, dataset_config.clone(), filter)
-                    .await?;
+            let (search_results, _) = scroll_dataset_points(
+                payload
+                    .suggestions_to_create
+                    .unwrap_or(5)
+                    .try_into()
+                    .unwrap(),
+                Some(random_offset_id),
+                None,
+                dataset_config.clone(),
+                filter,
+            )
+            .await?;
             if qdrant_only {
                 search_results
                     .iter()
@@ -1890,11 +1894,9 @@ pub async fn suggested_new_queries(
 
     let rag_content = chunk_metadatas
         .iter()
-        .enumerate()
-        .map(|(idx, chunk)| {
+        .map(|chunk| {
             format!(
-                "Doc {}: {}",
-                idx + 1,
+                "- {}",
                 convert_html_to_text(&(chunk.chunk_html.clone().unwrap_or_default()))
             )
         })
@@ -1920,7 +1922,7 @@ pub async fn suggested_new_queries(
         None => "".to_string(),
     };
 
-    let number_of_suggestions_to_create = payload.suggestions_to_create.unwrap_or(10);
+    let number_of_suggestions_to_create = payload.suggestions_to_create.unwrap_or(5);
 
     let content = ChatMessageContent::Text(format!(
         "Here is some content which the user might be looking for: {rag_content}{context_sentence}. Generate {number_of_suggestions_to_create} varied followup {query_style} style queries based off the domain of this dataset. Your only response should be the {number_of_suggestions_to_create} followup {query_style} style queries which are separated by new lines and are just text and you do not add any other context or information about the followup {query_style} style queries. This should not be a list, so do not number each {query_style} style queries.",

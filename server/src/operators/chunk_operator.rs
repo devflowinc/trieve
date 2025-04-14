@@ -286,11 +286,10 @@ pub async fn get_content_chunk_from_point_ids_query(
     Ok(content_chunks)
 }
 
-pub async fn get_random_chunk_metadatas_query(
+pub async fn get_random_chunk_qdrant_point_id_query(
     dataset_id: uuid::Uuid,
-    limit: u64,
     pool: web::Data<Pool>,
-) -> Result<Vec<ChunkMetadata>, ServiceError> {
+) -> Result<uuid::Uuid, ServiceError> {
     use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
 
     let mut conn = pool
@@ -303,53 +302,39 @@ pub async fn get_random_chunk_metadatas_query(
         .select(chunk_metadata_columns::id)
         .order_by(chunk_metadata_columns::id.asc())
         .first::<uuid::Uuid>(&mut conn);
-    let get_highest_ids_future = chunk_metadata_columns::chunk_metadata
+    let get_highest_id_future = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .select(chunk_metadata_columns::id)
         .order_by(chunk_metadata_columns::id.desc())
-        .limit(limit.try_into().unwrap_or(10))
-        .load::<uuid::Uuid>(&mut conn);
-    let (lowest_id, highest_ids) = futures::join!(get_lowest_id_future, get_highest_ids_future);
+        .first::<uuid::Uuid>(&mut conn);
+    let (lowest_id, highest_id) = futures::join!(get_lowest_id_future, get_highest_id_future);
     let lowest_id: uuid::Uuid = lowest_id.map_err(|err| {
         ServiceError::BadRequest(format!(
             "Failed to load chunk with the lowest id in the dataset for random range: {:?}",
             err
         ))
     })?;
-    let highest_ids: Vec<uuid::Uuid> = highest_ids.map_err(|err| {
+    let highest_id: uuid::Uuid = highest_id.map_err(|err| {
         ServiceError::BadRequest(format!(
-            "Failed to load chunks with the highest id in the dataset for random range: {:?}",
+            "Failed to load chunk with the lowest id in the dataset for random range: {:?}",
             err
         ))
     })?;
-    let highest_id = match highest_ids.get(0) {
-        Some(id) => *id,
-        None => {
-            return Err(ServiceError::NotFound(
-                "Chunk with the highest id in the dataset not found for random range".to_string(),
-            ))
-        }
-    };
     let random_uuid = uuid_between(lowest_id, highest_id);
 
-    let chunk_metadatas: Vec<ChunkMetadataTable> = chunk_metadata_columns::chunk_metadata
+    let qdrant_point_id: uuid::Uuid = chunk_metadata_columns::chunk_metadata
         .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
         .filter(chunk_metadata_columns::id.gt(random_uuid))
         .order_by(chunk_metadata_columns::id.asc())
-        .limit(limit.try_into().unwrap_or(10))
-        .select(ChunkMetadataTable::as_select())
-        .load::<ChunkMetadataTable>(&mut conn)
+        .select(chunk_metadata_columns::qdrant_point_id)
+        .first::<uuid::Uuid>(&mut conn)
         .await
-        .map_err(|_| ServiceError::BadRequest("Failed to load metadata".to_string()))?;
+        .map_err(|e| {
+            log::error!("Failed to load random qdrant_point_ids: {:?}", e);
+            ServiceError::BadRequest("Failed to load random qdrant_point_ids".to_string())
+        })?;
 
-    let chunk_metadatas = chunk_metadatas
-        .into_iter()
-        .map(|chunk_metadata_table| {
-            ChunkMetadata::from_table_and_tag_set(chunk_metadata_table, vec![])
-        })
-        .collect();
-
-    Ok(chunk_metadatas)
+    Ok(qdrant_point_id)
 }
 
 pub async fn get_metadata_from_id_query(
