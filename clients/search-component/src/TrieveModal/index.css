@@ -37,6 +37,7 @@ body {
       padding: 0;
       font-size: inherit;
       display: inherit;
+      border: none;
 
       &.mic-button-container,
       &.image-button-container,
@@ -128,8 +129,8 @@ body {
         @apply tv-top-2.5 tv-z-30;
       }
 
-      &.docs.chat,
-      &.pdf.chat {
+      &.docs.trieve-mode-chat,
+      &.pdf.trieve-mode-chat {
         @apply tv-top-0;
       }
 
@@ -677,14 +678,14 @@ body {
         color: var(--tv-zinc-400);
       }
 
-      &.chat {
+      &.trieve-mode-chat {
         .back-icon {
           @apply tv-top-[0.825rem] tv-left-5 tv-absolute tv-z-20;
         }
       }
     }
 
-    input.chat {
+    input.trieve-mode-chat {
       @apply tv-block tv-w-full tv-rounded-lg tv-border-[1px] tv-py-1.5 tv-shadow-sm tv-ring-0 tv-outline-none sm:tv-text-sm sm:tv-leading-6 tv-pl-3 tv-pr-[5rem] tv-h-12 tv-z-10 tv-relative;
       color: var(--tv-zinc-900);
       background-color: var(--tv-zinc-50);
@@ -1090,9 +1091,9 @@ body {
           }
         }
 
-        &.docs.search,
-        &.pdf.search,
-        &.ecommerce.search {
+        &.docs.trieve-mode-search,
+        &.pdf.trieve-mode-search,
+        &.ecommerce.trieve-mode-search {
           background-color: var(--tv-zinc-900);
           color: var(--tv-zinc-50);
           outline: none;

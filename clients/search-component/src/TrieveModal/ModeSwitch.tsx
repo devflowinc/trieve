@@ -10,7 +10,7 @@ export const ChatModeSwitch = () => {
   return (
     <div
       className={cn(
-        `mode-switch-wrapper tv-flex tv-items-center tv-px-2 tv-gap-2 tv-justify-end tv-mt-2 tv-font-medium ${mode}${
+        `mode-switch-wrapper tv-flex tv-items-center tv-px-2 tv-gap-2 tv-justify-end tv-mt-2 tv-font-medium trieve-mode-${mode}${
           query ? " has-query" : ""
         }${props.inline ? "" : " mode-switch-popup"}${" " + props.type}`.trim(),
       )}

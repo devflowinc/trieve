@@ -86,7 +86,7 @@ export const ChatInput = ({
           <input
             ref={chatInput}
             value={currentQuestion}
-            className={`${props.inline ? "inline-input " : ""}${mode} tv-rounded-md tv-mb-0 tv-max-w-full`}
+            className={`${props.inline ? "inline-input " : ""}trieve-mode-${mode} tv-rounded-md tv-mb-0 tv-max-w-full`}
             onChange={(e) => setCurrentQuestion(e.target.value)}
             disabled={props.previewTopicId != undefined}
             placeholder={
