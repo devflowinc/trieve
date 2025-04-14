@@ -45,8 +45,9 @@ export const FollowupQueries = () => {
         <button
           onClick={() => handleFollowupQuery(q)}
           key={q}
-          className={`followup-question ${isLoadingSuggestedQueries ? "loading" : ""
-            }`}
+          className={`followup-question ${
+            isLoadingSuggestedQueries ? "loading" : ""
+          }`}
         >
           <SparklesIcon className="followup-icon" />
           {q}

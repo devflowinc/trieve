@@ -271,7 +271,7 @@ export default function ECommerce() {
             inline={true}
             defaultSearchMode="chat"
             allowSwitchingModes={false}
-            brandColor="#a33eb5"
+            brandColor="#000"
             type="ecommerce"
             searchOptions={{
               search_type: "hybrid",

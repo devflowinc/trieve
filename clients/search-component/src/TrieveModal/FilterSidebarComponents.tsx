@@ -565,7 +565,7 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                 e.preventDefault();
                 e.stopPropagation();
               }}
-              onDrop={(e) => {
+              onDrop={async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 stopGeneratingMessage();
@@ -577,7 +577,12 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                   }
                   return newCompletedSteps;
                 });
-                setSelectedSidebarFilters({});
+                setSelectedSidebarFilters((prev) => {
+                  for (let j = index; j < steps.length; j++) {
+                    prev[steps[j].filterSidebarSectionKey ?? ""] = [];
+                  }
+                  return prev;
+                });
                 setTextFields((prev) => {
                   const newTextFields = { ...prev };
                   for (let j = index; j < steps.length; j++) {
@@ -589,15 +594,72 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                   }
                   return newTextFields;
                 });
-                setImageUrls((prev) => ({
-                  ...prev,
-                  [step.title]: "",
-                }));
                 const files = e.dataTransfer.files;
+                let processedFile =
+                  (files?.length ?? 1) > 0 ? files?.[0] : null;
+                if (!processedFile) {
+                  return;
+                }
+
+                if (
+                  processedFile.type === "image/heic" ||
+                  processedFile.name.toLowerCase().endsWith(".heic")
+                ) {
+                  try {
+                    const buffer = await processedFile.arrayBuffer();
+                    const convertedFile = await convert({
+                      buffer: new Uint8Array(buffer) as unknown as ArrayBuffer,
+                      format: "PNG",
+                    });
+                    processedFile = new File(
+                      [convertedFile],
+                      processedFile.name.replace(/\.heic$/i, ".png"),
+                      {
+                        type: "image/png",
+                        lastModified: Date.now(),
+                      },
+                    );
+                  } catch (err) {
+                    console.error("HEIC conversion failed:", err);
+                    return;
+                  }
+                }
+
                 setImages((prev) => ({
                   ...prev,
-                  [step.title]: files[0],
+                  [step.title]: processedFile,
                 }));
+                setLoadingStates((prev) => ({
+                  ...prev,
+                  [step.title]: "Uploading image...",
+                }));
+                toBase64(processedFile).then((data) => {
+                  const base64File = data
+                    .split(",")[1]
+                    .replace(/\+/g, "-")
+                    .replace(/\//g, "_")
+                    .replace(/=+$/, "");
+                  uploadFile(trieveSDK, processedFile.name, base64File).then(
+                    (fileId) => {
+                      getPresignedUrl(trieveSDK, fileId).then((imageUrl) => {
+                        setImageUrls((prev) => ({
+                          ...prev,
+                          [step.title]: imageUrl,
+                        }));
+
+                        setLoadingStates((prev) => ({
+                          ...prev,
+                          [step.title]: "idle",
+                        }));
+
+                        setCompletedSteps((prev) => ({
+                          ...prev,
+                          [step.title]: true,
+                        }));
+                      });
+                    },
+                  );
+                });
               }}
               onClick={() => {
                 const input = document.createElement("input");
