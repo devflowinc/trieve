@@ -9,9 +9,9 @@ use crate::{
             get_org_from_id_query, get_org_id_from_subscription_id_query, get_org_usage_by_id_query,
         },
         payment_operator::{
-            cancel_stripe_subscription, create_invoice_query, create_stripe_payment_link,
-            create_stripe_plan_query, create_stripe_setup_checkout_session,
-            create_stripe_subscription_query, create_usage_based_stripe_payment_link,
+            cancel_stripe_subscription, create_flat_subscription_query, create_invoice_query,
+            create_stripe_payment_link, create_stripe_plan_query,
+            create_stripe_setup_checkout_session, create_usage_based_stripe_payment_link,
             create_usage_stripe_subscription_query, delete_subscription_by_id_query,
             delete_usage_subscription_by_id_query, get_all_plans_query, get_all_usage_plans_query,
             get_bill_from_range, get_invoices_for_org_query,
@@ -201,7 +201,7 @@ pub async fn webhook(
                                 )
                                 .await;
 
-                                create_stripe_subscription_query(
+                                create_flat_subscription_query(
                                     subscription_stripe_id,
                                     plan_id,
                                     organization_id,
@@ -477,7 +477,7 @@ pub async fn update_subscription_plan(
                 }
                 TrieveSubscription::UsageBased(_) => {
                     // Old was usage based, create a new entry for flat
-                    create_stripe_subscription_query(
+                    create_flat_subscription_query(
                         current_trieve_subscription.stripe_subscription_id(),
                         flat_plan.id,
                         current_trieve_subscription.organization_id(),
@@ -765,7 +765,7 @@ pub async fn handle_shopify_plan_change(
         return Err(ServiceError::BadRequest("Invalid session token".to_string()).into());
     }
 
-    let organization_plan =
+    let organization_sub =
         get_option_subscription_by_organization_id_query(payload.organization_id, pool.clone())
             .await
             .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
@@ -774,28 +774,28 @@ pub async fn handle_shopify_plan_change(
         .await
         .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
-    if let Some(organization_plan) = organization_plan {
-        if organization_plan.stripe_id == payload.idempotency_key {
+    if let Some(organization_sub) = organization_sub {
+        if organization_sub.stripe_id == payload.idempotency_key {
             return Ok(HttpResponse::NoContent().finish());
         }
 
-        if organization_plan.plan_id == plan.id
+        if organization_sub.plan_id == plan.id
             && payload.shopify_plan.status.to_lowercase() == "active"
         {
             return Ok(HttpResponse::NoContent().finish());
-        } else if organization_plan.plan_id == plan.id
+        } else if organization_sub.plan_id == plan.id
             && payload.shopify_plan.status.to_lowercase() != "active"
         {
             set_stripe_subscription_current_period_end(
-                organization_plan.stripe_id,
+                organization_sub.stripe_id,
                 chrono::Utc::now().naive_utc(),
                 pool,
             )
             .await?;
-        } else if organization_plan.plan_id != plan.id
+        } else if organization_sub.plan_id != plan.id
             && payload.shopify_plan.status.to_lowercase() == "active"
         {
-            create_stripe_subscription_query(
+            create_flat_subscription_query(
                 payload.idempotency_key.clone(),
                 plan.id,
                 payload.organization_id,
@@ -805,7 +805,7 @@ pub async fn handle_shopify_plan_change(
             .await?;
         }
     } else if payload.shopify_plan.status.to_lowercase() == "active" {
-        create_stripe_subscription_query(
+        create_flat_subscription_query(
             payload.idempotency_key.clone(),
             plan.id,
             payload.organization_id,
