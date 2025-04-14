@@ -175,7 +175,7 @@ pub async fn update_static_stripe_meters(
     Ok(static_events)
 }
 
-pub async fn create_stripe_subscription_query(
+pub async fn create_flat_subscription_query(
     stripe_id: String,
     plan_id: uuid::Uuid,
     organization_id: uuid::Uuid,

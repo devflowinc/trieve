@@ -1,10 +1,15 @@
 use crate::data::models::{ApiKeyRole, Organization, RedisPool, UserRole};
 use crate::get_env;
-use crate::operators::dittofeed_operator::{get_user_ditto_identity, send_user_ditto_identity};
+use crate::handlers::shopify_handler::ShopifyCustomerEvent;
+use crate::operators::dittofeed_operator::{
+    get_user_ditto_identity, send_user_ditto_identity, DittoBatchRequest, DittoBatchRequestTypes,
+    DittoTrackProperties, DittoTrackRequest, DittofeedIdentifyUser, DittofeedUserTraits,
+};
 use crate::operators::invitation_operator::check_inv_valid;
 use crate::operators::organization_operator::{
     create_organization_api_key_query, get_org_from_id_query, get_user_org_count,
 };
+use crate::operators::payment_operator::create_flat_subscription_query;
 use crate::operators::user_operator::{
     add_user_to_organization, associate_user_to_oidc_subject_query, create_user_query,
     get_option_user_by_email_query, get_user_by_oidc_subject_query,
@@ -728,7 +733,74 @@ pub async fn create_api_only_user(
 
     let (user, user_orgs, orgs) = match option_user {
         Some(user) => get_user_by_id_query(&user.id, pool.clone()).await?,
-        None => create_account(user_email, user_name, None, None, None, pool.clone()).await?,
+        None => {
+            let (user, user_orgs, orgs) = create_account(
+                user_email.clone(),
+                user_name.clone(),
+                None,
+                None,
+                None,
+                pool.clone(),
+            )
+            .await?;
+
+            // Associate orgs.0 with api_only_price
+            let organization = orgs
+                .first()
+                .ok_or(ServiceError::BadRequest(
+                    "Failed to create organization for api only user; please try again".to_string(),
+                ))?
+                .clone();
+
+            create_flat_subscription_query(
+                "shopify_free_plan".to_string(),
+                uuid::Uuid::parse_str("dead0000-f0ee-4000-a000-000000000000")
+                    .expect("hardcoded should be valid uuid"),
+                organization.id,
+                None,
+                pool.clone(),
+            )
+            .await?;
+
+            // Send user ditto identity with shopify tag
+            let ditto_batch_request = vec![
+                DittoBatchRequestTypes::Identify(DittofeedIdentifyUser {
+                    r#type: Some("identify".to_string()),
+                    message_id: uuid::Uuid::new_v4(),
+                    user_id: user.id,
+                    traits: DittofeedUserTraits {
+                        email: user.email.clone(),
+                        name: user.name.clone(),
+                        created_at: user.created_at,
+                        organization_count: 1,
+                        dataset_count: 1,
+                    },
+                }),
+                DittoBatchRequestTypes::Track(DittoTrackRequest {
+                    r#type: Some("track".to_string()),
+                    message_id: format!(
+                        "{}-{}-{}",
+                        user_email.clone(),
+                        user.id,
+                        "shopify_installed"
+                    ),
+                    event: "shopify_installed".to_string(),
+                    properties: DittoTrackProperties::DittoShopifyEvent(ShopifyCustomerEvent {
+                        organization_id: organization.id,
+                        store_name: user_name.clone(),
+                        event_type: "shopify_installed".to_string(),
+                    }),
+                    user_id: user.id,
+                }),
+            ];
+
+            let _ = send_user_ditto_identity(DittoBatchRequest {
+                batch: ditto_batch_request,
+            })
+            .await;
+
+            (user, user_orgs, orgs)
+        }
     };
 
     let organization = orgs
