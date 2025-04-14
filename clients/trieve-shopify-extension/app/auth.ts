@@ -25,6 +25,7 @@ export const validateTrieveAuth = async <S extends boolean = true>(
       `);
 
     if (response.error) {
+      console.error(response.error);
       throw response.error;
     }
 
@@ -78,6 +79,7 @@ export const validateTrieveAuth = async <S extends boolean = true>(
   });
 
   if (!key) {
+    console.log("No key found for current shop, creating one");
     const query = await admin.graphql(
       `
       query {
@@ -86,12 +88,20 @@ export const validateTrieveAuth = async <S extends boolean = true>(
           email
         }
       }
-    `);
+    `).catch((e) => {
+        console.error(e);
+        throw e;
+      });
 
-    const queryResponse = await query?.json();
+    const queryResponse = await query?.json().catch((e) => {
+      console.error(e);
+      throw e;
+    });
 
     const shop_name = queryResponse?.data?.shop?.name ?? "";
     const shop_email = queryResponse?.data?.shop?.email ?? "";
+
+    console.log("New User, creating credentials", { shop_name, shop_email });
 
     const userCredentialsResponse = await fetch(`${getTrieveBaseUrlEnv()}/api/auth/create_api_only_user`, {
       method: "POST",
@@ -104,6 +114,9 @@ export const validateTrieveAuth = async <S extends boolean = true>(
         user_name: shop_name,
         user_email: shop_email,
       }),
+    }).catch((e) => {
+      console.error(e);
+      throw e;
     });
 
     const userCredentials = await userCredentialsResponse.json() as CreateApiUserResponse;
@@ -121,6 +134,9 @@ export const validateTrieveAuth = async <S extends boolean = true>(
         key: userCredentials.api_key,
         createdAt: new Date(),
       }
+    }).catch((e) => {
+      console.error(e);
+      throw e;
     });
 
     const trieve = new TrieveSDK({
@@ -135,6 +151,7 @@ export const validateTrieveAuth = async <S extends boolean = true>(
     let shopDataset = await trieve
       .getDatasetByTrackingId(session.shop)
       .catch(() => {
+        console.error("Could not get dataset by tracking id");
         return null;
       });
 
