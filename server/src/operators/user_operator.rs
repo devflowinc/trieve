@@ -265,9 +265,7 @@ pub async fn create_user_query(
         })
         .await
         .map_err(|err| {
-            ServiceError::InternalServerError(
-                format!("Failed to create user {:?}", err),
-            )
+            ServiceError::InternalServerError(format!("Failed to create user {:?}", err))
         })?;
 
     let user_org = get_user_by_id_query(&user_org.0.id, pool).await?;

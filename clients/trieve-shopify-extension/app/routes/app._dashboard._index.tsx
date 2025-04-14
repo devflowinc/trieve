@@ -1,9 +1,8 @@
 import { useTrieve } from "app/context/trieveContext";
-import { useNavigate, useSubmit } from "@remix-run/react";
+import { useSubmit } from "@remix-run/react";
 import {
   Card,
   Text,
-  Badge,
   Button,
   SkeletonBodyText,
   DescriptionList,
@@ -37,11 +36,6 @@ import { Granularity, StripePlan } from "trieve-ts-sdk";
 import { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
 import { PlanView } from "app/components/PlanView";
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
 
 const load: Loader = async ({ adminApiFetcher, queryClient }) => {
   await queryClient.ensureQueryData(lastStepIdQuery(adminApiFetcher));

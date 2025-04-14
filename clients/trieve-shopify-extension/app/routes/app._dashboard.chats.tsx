@@ -19,7 +19,7 @@ import {
   AdvancedTableComponent,
   Filter,
 } from "../components/analytics/AdvancedTableComponent";
-import { Text, Badge, ChoiceList, IndexFiltersProps, RangeSlider } from "@shopify/polaris";
+import { Badge, ChoiceList, IndexFiltersProps, RangeSlider } from "@shopify/polaris";
 import { DateRangePicker } from "../components/analytics/DateRangePicker";
 import { ComponentNameSelect } from "../components/analytics/ComponentNameSelect";
 import { allChatsQuery } from "app/queries/analytics/chat";

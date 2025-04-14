@@ -1,8 +1,7 @@
-import { Grid, Page, Tabs } from "@shopify/polaris";
+import { Grid, Page } from "@shopify/polaris";
 import { ChatAverageRating } from "app/components/analytics/chat/ChatAverageRating";
 import { ChatConversionRate } from "app/components/analytics/chat/ChatConversionRate";
 import { ChatRevenue } from "app/components/analytics/chat/ChatRevenue";
-import { ChatUserJourneyFunnel } from "app/components/analytics/chat/ChatUserJourneyFunnel";
 import { MessagesPerUser } from "app/components/analytics/chat/MessagesPerUser";
 import { PopularChatsTable } from "app/components/analytics/chat/PopularChatsTable";
 import { PopularSuggestedQueries } from "app/components/analytics/chat/PopularSuggestedQueries";
