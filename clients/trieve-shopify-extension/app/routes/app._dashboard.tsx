@@ -19,7 +19,6 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { shopDatasetQuery } from "app/queries/shopDataset";
 
 export const loader = async (args: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(args.request);
   const key = await validateTrieveAuth(args.request, false);
   if (!key.currentDatasetId) {
     console.log("No dataset selected, redirecting to /app/setup");
@@ -28,6 +27,7 @@ export const loader = async (args: LoaderFunctionArgs) => {
 
   const trieve = sdkFromKey(key);
 
+  const { session } = await authenticate.admin(args.request);
   const dataset = await trieve.getDatasetByTrackingId(session.shop);
   const organization = await trieve.getOrganizationById(
     dataset.organization_id,
