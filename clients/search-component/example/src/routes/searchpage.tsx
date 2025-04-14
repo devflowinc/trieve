@@ -237,13 +237,13 @@ export default function ECommerce() {
     <>
       <div className="min-w-screen max-w-[96rem] mx-auto min-h-screen relative p-2">
         <div className="w-full flex justify-between my-2 py-4 px-2 border-b">
-          <p className="text-3xl font-semibold">Design Muse</p>
+          <p className="text-3xl font-bold">Design Muse</p>
           <a
             href={tutorialUrl}
             target="_blank"
             rel="noopener noreferrer"
             data-slot="button"
-            className="cursor-pointer justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg:not([class*='size-'])]:size-4 shrink-0 [&amp;_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 rounded-md px-3 has-[>svg]:px-2.5 flex items-center gap-1 hover:bg-neutral-100"
+            className="cursor-pointer justify-center whitespace-nowrap text-sm transition-all disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg:not([class*='size-'])]:size-4 shrink-0 [&amp;_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 rounded-xl px-3 has-[>svg]:px-2.5 flex items-center gap-1 hover:bg-neutral-100 font-semibold"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -271,6 +271,7 @@ export default function ECommerce() {
             inline={true}
             defaultSearchMode="chat"
             allowSwitchingModes={false}
+            brandFontFamily="Karla"
             brandColor="#000"
             type="ecommerce"
             searchOptions={{

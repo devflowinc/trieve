@@ -1551,7 +1551,7 @@ body {
     }
 
     label {
-      @apply tv-cursor-pointer tv-text-sm;
+      @apply tv-cursor-pointer;
     }
   }
 
@@ -1568,15 +1568,15 @@ body {
       &[data-prev-complete="false"] {
         .trieve-inference-filters-step-header {
           .trieve-inference-filters-step-number {
-            background-color: var(--tv-zinc-400);
+            background-color: #86868b;
           }
 
           .trieve-inference-filters-step-title {
-            color: var(--tv-zinc-400);
+            color: #86868b;
           }
 
           .trieve-inference-filters-step-description {
-            color: var(--tv-zinc-400);
+            color: #86868b;
           }
         }
       }
@@ -1590,12 +1590,12 @@ body {
         }
 
         .trieve-inference-filters-step-title {
-          @apply tv-text-lg tv-font-medium;
+          @apply tv-text-xl tv-font-bold;
         }
       }
 
       .trieve-inference-filters-step-description {
-        @apply tv-mt-0.5 tv-text-gray-500;
+        @apply tv-mt-0.5 tv-text-[#86868b] tv-font-bold;
       }
 
       .trieve-inference-filters-step-input-container {
@@ -1606,7 +1606,7 @@ body {
         }
 
         .trieve-image-input-container {
-          @apply tv-border-dashed tv-border-2 tv-rounded-lg tv-px-2 tv-py-4 tv-mt-4 tv-flex-col tv-items-center tv-justify-center tv-cursor-pointer;
+          @apply tv-border-dashed tv-border-2 tv-rounded-xl tv-px-2 tv-py-4 tv-mt-4 tv-flex-col tv-items-center tv-justify-center tv-cursor-pointer;
 
           display: none;
 
@@ -1646,7 +1646,7 @@ body {
           }
 
           .trieve-image-input-placeholder {
-            @apply tv-text-sm tv-mt-6 tv-max-w-[75%] tv-text-center;
+            @apply tv-mt-6 tv-max-w-[75%] tv-text-center;
           }
         }
 
@@ -1685,7 +1685,7 @@ body {
 
             .trieve-text-input-textarea-container {
               .trieve-text-input-textarea {
-                @apply tv-block tv-w-full tv-rounded-md tv-bg-white tv-px-3 tv-py-1.5 tv-outline tv-outline-1 tv--outline-offset-1 tv-outline-gray-300 placeholder:tv-text-gray-400 focus:tv-outline focus:tv-outline-2 focus:tv--outline-offset-2 sm:tv-text-sm/6;
+                @apply tv-block tv-w-full tv-rounded-xl tv-bg-white tv-px-3 tv-py-1.5 tv-outline tv-outline-1 tv--outline-offset-1 tv-outline-gray-300 placeholder:tv-text-gray-400 focus:tv-outline focus:tv-outline-2 focus:tv--outline-offset-2 tv-text-black;
 
                 &:focus,
                 &:hover {
@@ -1699,7 +1699,7 @@ body {
             @apply tv-flex tv-w-full tv-mt-4;
 
             .trieve-text-input-button {
-              @apply tv-flex tv-items-center tv-justify-center tv-px-3 tv-py-1.5 tv-rounded-md tv-gap-x-1;
+              @apply tv-flex tv-items-center tv-justify-center tv-px-3 tv-py-1.5 tv-rounded-xl tv-gap-x-1;
 
               background-color: var(--tv-prop-brand-color);
               color: white;
@@ -1754,7 +1754,7 @@ body {
             }
 
             button.trieve-inference-filters-step-tag {
-              @apply tv-flex tv-items-center tv-gap-x-1 tv-py-1 tv-px-2 tv-rounded-lg tv-cursor-pointer tv-bg-zinc-100;
+              @apply tv-flex tv-items-center tv-gap-x-1 tv-py-1 tv-px-2 tv-rounded-xl tv-cursor-pointer tv-bg-zinc-100;
 
               &[data-active="true"] {
                 background-color: var(--tv-prop-brand-color);
