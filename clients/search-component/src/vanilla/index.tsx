@@ -58,7 +58,7 @@ export function renderRecommendationsToDiv(
       case "beta": {
         const link = document.createElement("link");
         link.rel = "stylesheet";
-    link.href = "https://cdn.trieve.ai/beta/search-component/index.css";
+        link.href = "https://cdn.trieve.ai/beta/search-component/index.css";
         document.head.appendChild(link);
         break;
       }
