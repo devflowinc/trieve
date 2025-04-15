@@ -60,12 +60,14 @@ export const ResetSettings = () => {
           Reset
         </Button>
         {resetMetafieldsMutation.error && (
-          <div className="text-red-500">
+          <div className="text-red-500 opacity-100 start-hidden delay-75 duration-75 transition-opacity">
             {resetMetafieldsMutation.error.message}
           </div>
         )}
         {resetMetafieldsMutation.isSuccess && (
-          <div className="opacity-80">Successfully reset app!</div>
+          <div className="opacity-80 start-hidden delay-75 duration-75 transition-opacity">
+            Successfully reset app!
+          </div>
         )}
       </div>
     </Card>
