@@ -19,12 +19,7 @@
   if (productMetafieldsTrieve && Object.keys(productMetafieldsTrieve).includes("trievePDPQuestions")) {
     trievePDPQuestions = productMetafieldsTrieve.trievePDPQuestions;
   }
-  let defaultAiQuestions = {{ block.settings.default_ai_questions | json }};
-  if (defaultAiQuestions && typeof defaultAiQuestions === "string") {
-    defaultAiQuestions = defaultAiQuestions.split(",").map((question) => question.trim());
-  } else {
-    defaultAiQuestions = null;
-  }
+  let defaultAiQuestions = undefined;
   if (trievePDPQuestions && trievePDPQuestions.length > 0) {
     defaultAiQuestions = trievePDPQuestions.map((question) => question.text);
   }
@@ -154,12 +149,6 @@
       "id": "open_links_new_tab",
       "label": "Open Links in New Tab",
       "default": true
-    },
-    {
-      "id": "default_ai_questions",
-      "type": "textarea",
-      "label": "Initial Questions (Separated by commas)",
-      "placeholder": "What is this made of?"
     }
   ]
 }
