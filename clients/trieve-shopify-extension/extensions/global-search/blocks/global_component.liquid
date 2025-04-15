@@ -42,6 +42,7 @@
       zIndex: Number(getValue(appMetafieldTrieve.z_index, 2147483645)),
       defaultAiQuestions,
       brandColor: getValue("{{ block.settings.brand_color }}", ""),
+      brandLogoImgSrcUrl: getValue("{{ block.settings.brand_logo_img_src_url }}", undefined),
       chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask anything..."),
       suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
       followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
@@ -128,6 +129,12 @@
       "id": "brand_color",
       "label": "Brand Color",
       "default": "#ff0000"
+    },
+    {
+      "type": "text",
+      "id": "brand_logo_img_src_url",
+      "label": "Brand Logo Image URL",
+      "placeholder": "https://cdn.trieve.ai/trieve-logo.png"
     },
     {
       "type": "text",
