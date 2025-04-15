@@ -1,8 +1,3 @@
-<link
-  rel="stylesheet"
-  href="https://cdn.trieve.ai/beta/search-component/index.css"
->
-
 <script type="module">
   import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
   import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
@@ -33,6 +28,7 @@
     renderToDiv(root, {
       type: "ecommerce",
       baseUrl: "https://api.trieve.ai",
+      cssRelease: "beta",
       useGroupSearch: true,
       scaleRem: true,
       hideOpenButton: true,
