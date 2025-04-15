@@ -206,7 +206,6 @@ export const validateTrieveAuth = async <S extends boolean = true>(
         });
       }
 
-      console.log("updating dataset id for shop", key);
       if (key.currentDatasetId && key.key && session) {
         setAppMetafields(fetcher, {
           id: key.id,
