@@ -10,6 +10,7 @@ import {
   DEFAULT_RAG_PROMPT,
   DEFAULT_SYSTEM_PROMPT,
 } from "./components/onboarding/SetPromptsOnboarding";
+import { k } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
 
 export const validateTrieveAuth = async <S extends boolean = true>(
   request: LoaderFunctionArgs["request"],
@@ -205,6 +206,7 @@ export const validateTrieveAuth = async <S extends boolean = true>(
         });
       }
 
+      console.log("updating dataset id for shop", key);
       if (key.currentDatasetId && key.key && session) {
         setAppMetafields(fetcher, {
           id: key.id,
