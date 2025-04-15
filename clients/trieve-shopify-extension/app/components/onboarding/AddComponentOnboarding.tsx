@@ -119,7 +119,7 @@ export const AddComponentOnboarding: OnboardingBody = ({
 
   const globalComplete = useMemo(() => {
     const stringified = JSON.stringify(globalThemeData);
-    if (stringified?.includes("trieve.ai")) return true;
+    if (stringified?.includes("global_component")) return true;
     return false;
   }, [globalThemeData]);
 
