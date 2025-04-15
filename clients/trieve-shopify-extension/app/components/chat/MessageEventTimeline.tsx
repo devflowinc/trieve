@@ -7,6 +7,7 @@ export type SidebarEvent = {
   additional?: string;
   icon?: ReactNode;
   date: Date;
+  highlight?: boolean;
 };
 
 interface MessageEventTimelineProps {
@@ -37,7 +38,11 @@ export const MessageEventTimeline = ({ events }: MessageEventTimelineProps) => {
             </div>
           )}
           <div className="flex gap-3 items-baseline">
-            <span className="opacity-80 text-nowrap">{event.type}</span>
+            <span
+              style={{
+                color: event.highlight ? "#eb4034" : undefined,
+              }}
+              className="opacity-80 text-nowrap">{event.type}</span>
             {event.additional ? (
               <span className="opacity-40 truncate">{event.additional}</span>
             ) : null}

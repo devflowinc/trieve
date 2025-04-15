@@ -85,6 +85,7 @@ export default function ChatRoute() {
         events.push({
           date: new Date(parseCustomDateString(event.updated_at, false)),
           type: "Add To Cart",
+          highlight: true,
           icon: <CartIcon width={20} fill="#000" height={20} />,
         });
       }
