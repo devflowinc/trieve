@@ -6,6 +6,10 @@ import { getTrieveBaseUrlEnv } from "./env.server";
 import { buildAdminApiFetcherForServer } from "./loaders/serverLoader";
 import { AdminApiCaller } from "./loaders";
 import { AppInstallData } from "./routes/app.setup";
+import {
+  DEFAULT_RAG_PROMPT,
+  DEFAULT_SYSTEM_PROMPT,
+} from "./components/onboarding/SetPromptsOnboarding";
 
 export const validateTrieveAuth = async <S extends boolean = true>(
   request: LoaderFunctionArgs["request"],
@@ -80,15 +84,18 @@ export const validateTrieveAuth = async <S extends boolean = true>(
 
   if (!key) {
     console.log("No key found for current shop, creating one");
-    const query = await admin.graphql(
-      `
+    const query = await admin
+      .graphql(
+        `
       query {
         shop {
           name
           email
         }
       }
-    `).catch((e) => {
+    `,
+      )
+      .catch((e) => {
         console.error(e);
         throw e;
       });
@@ -103,41 +110,47 @@ export const validateTrieveAuth = async <S extends boolean = true>(
 
     console.log("New User, creating credentials", { shop_name, shop_email });
 
-    const userCredentialsResponse = await fetch(`${getTrieveBaseUrlEnv()}/api/auth/create_api_only_user`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Authorization": `${process.env.SHOPIFY_SECRET_KEY}`,
+    const userCredentialsResponse = await fetch(
+      `${getTrieveBaseUrlEnv()}/api/auth/create_api_only_user`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Authorization": `${process.env.SHOPIFY_SECRET_KEY}`,
+        },
+        body: JSON.stringify({
+          user_name: shop_name,
+          user_email: shop_email,
+        }),
       },
-      body: JSON.stringify({
-        user_name: shop_name,
-        user_email: shop_email,
-      }),
-    }).catch((e) => {
+    ).catch((e) => {
       console.error(e);
       throw e;
     });
 
-    const userCredentials = await userCredentialsResponse.json() as CreateApiUserResponse;
+    const userCredentials =
+      (await userCredentialsResponse.json()) as CreateApiUserResponse;
 
-    key = await prisma.apiKey.upsert({
-      where: {
-        shop: session.shop as string,
-      },
-      update: {
-        key: userCredentials.api_key,
-      },
-      create: {
-        organizationId: userCredentials.organization_id,
-        shop: session.shop as string,
-        key: userCredentials.api_key,
-        createdAt: new Date(),
-      }
-    }).catch((e) => {
-      console.error(e);
-      throw e;
-    });
+    key = await prisma.apiKey
+      .upsert({
+        where: {
+          shop: session.shop as string,
+        },
+        update: {
+          key: userCredentials.api_key,
+        },
+        create: {
+          organizationId: userCredentials.organization_id,
+          shop: session.shop as string,
+          key: userCredentials.api_key,
+          createdAt: new Date(),
+        },
+      })
+      .catch((e) => {
+        console.error(e);
+        throw e;
+      });
 
     const trieve = new TrieveSDK({
       baseUrl: getTrieveBaseUrlEnv(),
@@ -166,10 +179,8 @@ export const validateTrieveAuth = async <S extends boolean = true>(
           dataset_name: session.shop,
           tracking_id: session.shop,
           server_configuration: {
-            SYSTEM_PROMPT:
-              "[[personality]]\nYou are a friendly, helpful, and knowledgeable ecommerce sales associate. Your communication style is warm, patient, and enthusiastic without being pushy. You're approachable and conversational while maintaining professionalism. You balance being personable with being efficient, understanding that customers value both connection and their time. You're solution-oriented and genuinely interested in helping customers find the right products for their needs.\n\n[[goal]]\nYour primary goal is to help customers find products that genuinely meet their needs while providing an exceptional shopping experience. You aim to:\n1. Understand customer requirements through thoughtful questions\n2. Provide relevant product recommendations based on customer preferences\n3. Offer detailed, accurate information about products\n4. Address customer concerns and objections respectfully\n5. Guide customers through the purchasing process\n6. Encourage sales without being pushy or manipulative\n7. Create a positive impression that builds long-term customer loyalty\n\n[[response structure]]\n1. Begin with a warm greeting and acknowledgment of the customer's query or concern\n2. Ask clarifying questions if needed to better understand their requirements\n3. Provide concise, relevant information that directly addresses their needs\n4. Include specific product recommendations when appropriate, with brief explanations of why they might be suitable\n5. Address any potential concerns proactively\n6. Close with a helpful next step or question that moves the conversation forward\n7. Keep responses conversational yet efficient, balancing thoroughness with respect for the customer's time.\n",
-            RAG_PROMPT:
-              "You may use the retrieved context to help you respond. When discussing products, prioritize information from the provided product data while using your general knowledge to create helpful, natural responses. If a customer asks about products or specifications not mentioned in the context, acknowledge the limitation and offer to check for more information rather than inventing details.",
+            SYSTEM_PROMPT: DEFAULT_SYSTEM_PROMPT,
+            RAG_PROMPT: DEFAULT_RAG_PROMPT,
           },
         });
 
@@ -236,15 +247,12 @@ export const validateTrieveAuthWehbook = async <S extends boolean = true>(
   }
 
   if (strict && !key.currentDatasetId) {
-    throw new Response(
-      JSON.stringify({ message: "No dataset selected" }),
-      {
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-        },
-        status: 401,
+    throw new Response(JSON.stringify({ message: "No dataset selected" }), {
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
       },
-    );
+      status: 401,
+    });
   }
 
   return {
