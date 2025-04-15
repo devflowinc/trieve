@@ -48,9 +48,6 @@
       numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
       openLinksInNewTab: toBool(getValue("{{ block.settings.open_links_new_tab }}", true)),
       theme: getValue("{{ block.settings.theme }}", "light"),
-      onAddToCart: (chunk) => {
-        addToCart(parseInt(chunk.tracking_id))
-      },
       getCartQuantity: (trackingId) => {
         return checkCartQuantity(parseInt(trackingId));
       },
