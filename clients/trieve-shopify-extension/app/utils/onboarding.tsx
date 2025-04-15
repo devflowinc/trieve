@@ -35,10 +35,9 @@ type OnboardingStep = {
 export const onboardingSteps: OnboardingStep[] = [
   {
     id: "set-chat-messages",
-    title: "Set AI Prompts",
+    title: "Customize AI Prompts",
     defaultComplete: false,
     body: SetPromptsOnboarding,
-    nextButtonText: "Setup Component",
   },
   {
     id: "welcome-message",

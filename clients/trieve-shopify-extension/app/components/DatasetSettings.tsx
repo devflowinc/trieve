@@ -217,9 +217,7 @@ export const DatasetSettings = ({
               autoComplete="off"
               label="Checkout Selector"
               helpText="The HTML selector of the checkout button on your shopify store. This is used to track revenue when a user clicks the checkout button."
-              value={
-                unsavedRevenueTrackingOptions?.checkout_selector || ""
-              }
+              value={unsavedRevenueTrackingOptions?.checkout_selector || ""}
               onChange={(e) => {
                 setUnsavedRevenueTrackingOptions({
                   ...unsavedRevenueTrackingOptions,
@@ -275,7 +273,7 @@ export const DatasetSettings = ({
             />
             <TextField
               label="LLM Default Model"
-              helpText="The default model to use for the LLM. See https://openrouter.ai/models for all available LLMs you can use."
+              helpText="Use this prompt to set the personality, tone, and goals of the model."
               value={datasetSettings.LLM_DEFAULT_MODEL ?? ""}
               onChange={(e) =>
                 setDatasetSettings({
@@ -299,8 +297,8 @@ export const DatasetSettings = ({
               autoComplete="off"
             />
             <TextField
-              label="RAG Prompt"
-              helpText="The prompt to guide the RAG model in handling retrieved context with the user query"
+              label="Context Prompt"
+              helpText="Use this prompt to tell the model how strictly it needs to follow or how it should generally handle the context (your product descriptions, metadata, photos, etc.)."
               value={datasetSettings.RAG_PROMPT ?? ""}
               multiline={5}
               onChange={(e) =>
