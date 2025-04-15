@@ -353,3 +353,18 @@ This template uses [Remix](https://remix.run). The following Shopify tools are a
 ## Include all of the special sauce into the default toml that the `yarn dev` command sets up thru the `shopify` CLI tool
 
 Look at the `shopify.app.toml.dist` file and copy whatever is in there that is not inside of the `.toml` shopify config the CLI created for you.
+
+## Note about search component css
+
+The search component uses the shopify CDN for faster performance and to achieve the build with shopify icon.
+For this reason the css file must be copied to the `extensions/global-search/assets` folder. 
+
+To copy over the css run
+
+```
+cd clients/search-component
+yarn build
+cd ../trieve-shopify-extension/
+yarn copy-to-cdn
+yarn shopify app deploy # To deploy the extension using the new css
+```

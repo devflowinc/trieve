@@ -16,7 +16,8 @@
     "shopify": "shopify",
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
-    "vite": "vite"
+    "vite": "vite",
+    "copy-to-cdn": "cp ../search-component/dist/index.css ./extensions/global-search/assets/search_component_index.css"
   },
   "type": "module",
   "engines": {
