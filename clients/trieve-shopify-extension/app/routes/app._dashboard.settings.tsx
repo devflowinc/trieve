@@ -14,7 +14,6 @@ import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 import { sendChunks } from "app/processors/getProducts";
 import { shopDatasetQuery } from "app/queries/shopDataset";
 import { authenticate } from "app/shopify.server";
-import { TrieveKey } from "app/types";
 import { type Dataset } from "trieve-ts-sdk";
 import { AppInstallData } from "./app.setup";
 
@@ -120,13 +119,16 @@ export const loader = async ({
     session.shop,
     session.accessToken!,
   );
-  setAppMetafields(fetcher, [{
-    key: "dataset_id",
-    value: key.currentDatasetId || "",
-  }, {
-    key: "api_key",
-    value: key.key,
-  }]).catch(console.error);
+  setAppMetafields(fetcher, [
+    {
+      key: "dataset_id",
+      value: key.currentDatasetId || "",
+    },
+    {
+      key: "api_key",
+      value: key.key,
+    },
+  ]).catch(console.error);
 
   const crawlSettings: {
     crawlSettings: ExtendedCrawlOptions | undefined;
@@ -138,10 +140,16 @@ export const loader = async ({
   })) as any;
 
   const revenueTrackingSettings: RevenueTrackingOptions = {
-    checkout_selector: (await getAppMetafields(fetcher)).find((metafield) => metafield.key === "checkout_selector")?.value ?? "",
+    checkout_selector:
+      (await getAppMetafields(fetcher)).find(
+        (metafield) => metafield.key === "checkout_selector",
+      )?.value ?? "",
   };
 
-  return { crawlSettings: crawlSettings?.crawlSettings, revenueTrackingSettings };
+  return {
+    crawlSettings: crawlSettings?.crawlSettings,
+    revenueTrackingSettings,
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -179,13 +187,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     sendChunks(datasetId as string, key, fetcher, session, crawlSettings).catch(
       console.error,
     );
-    setAppMetafields(fetcher, [{
-      key: "dataset_id",
-      value: key.currentDatasetId || "",
-    }, {
-      key: "api_key",
-      value: key.key,
-    }]).catch(console.error);
+    setAppMetafields(fetcher, [
+      {
+        key: "dataset_id",
+        value: key.currentDatasetId || "",
+      },
+      {
+        key: "api_key",
+        value: key.key,
+      },
+    ]).catch(console.error);
 
     return { success: true };
   } else if (type === "dataset") {
@@ -199,8 +210,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return { success: true };
   } else if (type === "revenue_tracking") {
-    const revenueTrackingSettingsString = formData.get("revenue_tracking_options");
-    const revenueTrackingSettings = JSON.parse(revenueTrackingSettingsString as string);
+    const revenueTrackingSettingsString = formData.get(
+      "revenue_tracking_options",
+    );
+    const revenueTrackingSettings = JSON.parse(
+      revenueTrackingSettingsString as string,
+    );
     await setAppMetafields(fetcher, [
       {
         key: "checkout_selector",
@@ -216,13 +231,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Dataset() {
   const { trieve } = useTrieve();
   const { data: shopDataset } = useSuspenseQuery(shopDatasetQuery(trieve));
-  const { crawlSettings, revenueTrackingSettings } = useLoaderData<typeof loader>();
+  const { crawlSettings, revenueTrackingSettings } =
+    useLoaderData<typeof loader>();
 
   return (
     <Box paddingBlockStart="400">
       <DatasetSettings
         initalCrawlOptions={crawlSettings as ExtendedCrawlOptions}
-        initalRevenueTrackingOptions={revenueTrackingSettings as RevenueTrackingOptions}
+        initalRevenueTrackingOptions={
+          revenueTrackingSettings as RevenueTrackingOptions
+        }
         shopDataset={shopDataset as Dataset}
       />
     </Box>
