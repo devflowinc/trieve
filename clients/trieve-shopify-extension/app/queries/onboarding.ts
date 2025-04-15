@@ -143,14 +143,13 @@ export const lastStepIdQuery = (fetcher: AdminApiCaller) => {
     queryKey: ["last_step_id"],
     queryFn: async () => {
       const result = await getMetafield(fetcher, ONBOARD_STEP_META_FIELD);
-      if (!result || result.error || !result.data) {
+      if (
+        !result ||
+        result.error ||
+        !result.data ||
+        !onboardingSteps.some((s) => s.id === result.data)
+      ) {
         return onboardingSteps[0].id;
-      }
-      if (!onboardingSteps.some((s) => s.id === result.data)) {
-        return onboardingSteps[0].id;
-      }
-      if (result.data === "null") {
-        return null;
       }
       return result.data;
     },

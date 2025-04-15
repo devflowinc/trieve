@@ -6,11 +6,7 @@ import { getTrieveBaseUrlEnv } from "./env.server";
 import { buildAdminApiFetcherForServer } from "./loaders/serverLoader";
 import { AdminApiCaller } from "./loaders";
 import { AppInstallData } from "./routes/app.setup";
-import {
-  DEFAULT_RAG_PROMPT,
-  DEFAULT_SYSTEM_PROMPT,
-} from "./components/onboarding/SetPromptsOnboarding";
-import { k } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
+import { DEFAULT_RAG_PROMPT, DEFAULT_SYSTEM_PROMPT } from "./utils/onboarding";
 
 export const validateTrieveAuth = async <S extends boolean = true>(
   request: LoaderFunctionArgs["request"],
