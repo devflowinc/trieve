@@ -16,6 +16,7 @@ import { shopDatasetQuery } from "app/queries/shopDataset";
 import { authenticate } from "app/shopify.server";
 import { type Dataset } from "trieve-ts-sdk";
 import { AppInstallData } from "./app.setup";
+import { ResetSettings } from "app/components/ResetSettings";
 
 const setAppMetafields = async (
   adminApi: AdminApiCaller,
@@ -243,6 +244,8 @@ export default function Dataset() {
         }
         shopDataset={shopDataset as Dataset}
       />
+      <div className="h-4"></div>
+      <ResetSettings />
     </Box>
   );
 }
