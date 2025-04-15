@@ -1,8 +1,3 @@
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/trieve-search-component@0.4.24/dist/index.css"
-/>
-
 <div class="trieve-recommendations">
 </div>
 
@@ -52,6 +47,7 @@
   if (shouldShow) {
     renderRecommendationsToDiv(inlineRoot, {
       apiKey: getValue("{{ app.metafields.trieve.api_key }}", ""),
+      cssRelease: "beta",
       datasetId: getValue("{{ app.metafields.trieve.dataset_id }}", ""),
       baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
       productId: getValue("{{ product.id }}", ""),
