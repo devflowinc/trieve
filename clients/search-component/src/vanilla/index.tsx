@@ -23,16 +23,15 @@ export function renderToDiv(element: HTMLElement, props: ModalProps) {
       case "beta": {
         const link = document.createElement("link");
         link.rel = "stylesheet";
-        link.href = "https://test-search-component.trieve.ai/dist/index.css";
+        link.href = "https://cdn.trieve.ai/beta/search-component/index.css";
         document.head.appendChild(link);
         break;
       }
     }
   } else {
-    // load stable default
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "https://search-component.trieve.ai/dist/index.css";
+    link.href = "https://cdn.trieve.ai/beta/search-component/index.css";
     document.head.appendChild(link);
   }
 
@@ -59,8 +58,7 @@ export function renderRecommendationsToDiv(
       case "beta": {
         const link = document.createElement("link");
         link.rel = "stylesheet";
-        link.href =
-          "https://test-search-component.trieve.ai/dist/recommendations.css";
+    link.href = "https://cdn.trieve.ai/beta/search-component/index.css";
         document.head.appendChild(link);
         break;
       }
@@ -69,7 +67,7 @@ export function renderRecommendationsToDiv(
     // load stable default
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "https://search-component.trieve.ai/dist/recommendations.css";
+    link.href = "https://cdn.trieve.ai/beta/search-component/index.css";
     document.head.appendChild(link);
   }
 
