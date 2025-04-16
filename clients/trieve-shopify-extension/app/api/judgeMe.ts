@@ -68,4 +68,39 @@ export const judgeMe = new Hono()
     return c.json({
       judgeMeKey,
     });
+  })
+  .post("/sync", async (c) => {
+    const trieve = await validateTrieveAuth(c.req.raw);
+    const judgeMeKey = await tryCatch(
+      prisma.judgeMeKeys.findFirst({
+        where: {
+          trieveApiKeyId: trieve.id,
+        },
+      }),
+    );
+    if (judgeMeKey.error || !judgeMeKey.data) {
+      throw new Error("Failed to find judge.me key", {
+        cause: judgeMeKey.error,
+      });
+    }
+
+    // Get judgeme reviews
+    const page = 1;
+    const perPage = 100;
+
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+      api_token: judgeMeKey.data.authKey,
+    });
+    const reviews = await fetch(
+      "https://api.judge.me/api/v1/reviews?" + params.toString(),
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    console.log(reviews);
   });
