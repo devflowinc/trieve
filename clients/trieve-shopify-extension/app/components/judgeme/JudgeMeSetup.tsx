@@ -2,6 +2,7 @@ import { Button, Card, SkeletonBodyText, Text } from "@shopify/polaris";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { type ApiType } from "app/api/root";
 import { hc } from "hono/client";
+import { JudgeMeSync } from "./JudgeMeSync";
 
 export const JudgeMeSetup = () => {
   const client = hc<ApiType>("/");
@@ -54,9 +55,7 @@ export const JudgeMeSetup = () => {
       </Button>
     );
   } else if (status === "success" && judgeMeInfo) {
-    inner = (
-      <div className="text-green-800">Successfully connected to Judge.me</div>
-    );
+    inner = <JudgeMeSync />;
   }
 
   return (
