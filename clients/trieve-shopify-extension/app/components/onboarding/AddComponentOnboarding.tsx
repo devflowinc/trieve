@@ -16,6 +16,37 @@ import { ReactNode, useEffect, useMemo, useState } from "react";
 import { ThemeSelect, ThemeChoice } from "./ThemeSelect"; // Import the new component
 import { trackCustomerEvent } from "app/processors/shopifyTrackers";
 import { useTrieve } from "app/context/trieveContext";
+import { TrieveKey } from "app/types";
+import { AdminApiCaller } from "app/loaders";
+
+const createWebPixel = async (adminApi: AdminApiCaller, trieveKey: TrieveKey) => {
+  const response = await adminApi(
+    `
+      #graphql
+      mutation webPixelCreate($webPixel: WebPixelInput!) {
+        webPixelCreate(webPixel: $webPixel) {
+          userErrors {
+            code
+            field
+            message
+          }
+          webPixel {
+            settings
+            id
+          }
+        }
+      }
+      `,
+    {
+      variables: {
+        webPixel: {
+          settings: `{"apiKey":"${trieveKey.key}", "datasetId": "${trieveKey.currentDatasetId}"}`,
+        },
+      },
+    },
+  );
+  console.log("Web pixel created", response);
+};
 
 const getShortThemeId = (fullGid: string): string | null => {
   const regex = /gid:\/\/shopify\/OnlineStoreTheme\/(\d+)/;
@@ -82,7 +113,7 @@ export const AddComponentOnboarding: OnboardingBody = ({
   broadcastCompletion,
 }) => {
   const adminApi = useClientAdminApi();
-  const { trieve } = useTrieve();
+  const { trieve, trieveKey } = useTrieve();
 
   const [keepFetchingGlobal, setKeepFetchingGlobal] = useState(true);
 
@@ -177,6 +208,7 @@ export const AddComponentOnboarding: OnboardingBody = ({
   useEffect(() => {
     if (globalComplete) {
       if (trieve.organizationId && trieve.trieve.apiKey != null) {
+        createWebPixel(adminApi, trieveKey);
         trackCustomerEvent(
           trieve.trieve.baseUrl,
           {

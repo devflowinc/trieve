@@ -42,37 +42,6 @@ const SearchPage = () => {
   );
 };
 
-function findCartChanges(oldCart: any, newCart: any) {
-  if (!oldCart.items)
-    return {
-      added: newCart.items.map((item: any) => item.variant_id),
-      removed: [],
-    };
-  const onlyInLeft = (l: any, r: any) =>
-    l.filter((li: any) => !r.some((ri: any) => li.key == ri.key));
-  const result = {
-    added: onlyInLeft(newCart.items, oldCart.items),
-    removed: onlyInLeft(oldCart.items, newCart.items),
-  };
-
-  oldCart.items.forEach((oi: any) => {
-    const ni = newCart.items.find(
-      (i: any) => i.key == oi.key && i.quantity != oi.quantity,
-    );
-    if (!ni) return;
-    const quantity = ni.quantity - oi.quantity;
-    const item = { ...ni };
-    item.quantity = Math.abs(quantity);
-    if (quantity > 0) {
-      result.added.push(item.variant_id);
-    } else {
-      result.removed.push(item);
-    }
-  });
-
-  return result;
-}
-
 const Modal = () => {
   useKeyboardNavigation();
   const { open, setOpen, setMode, setQuery, props } = useModalState();
@@ -118,7 +87,25 @@ const Modal = () => {
 
     try {
       if (props.previewTopicId == undefined) {
-        getFingerprint().then((fingerprint) => {
+        const fingerprint = window.localStorage.getItem("trieve-fingerprint");
+        if (!fingerprint) {
+          getFingerprint().then((fingerprint) => {
+            window.localStorage.setItem("trieve-fingerprint", fingerprint);
+            trieveSDK.sendAnalyticsEvent(
+              {
+                event_name: `component_load`,
+                event_type: "view",
+                items: [],
+                user_id: fingerprint,
+                location: window.location.href,
+                metadata: {
+                  component_props: props,
+                },
+              },
+              abortController.signal,
+            );
+          });
+        } else {
           trieveSDK.sendAnalyticsEvent(
             {
               event_name: `component_load`,
@@ -126,155 +113,9 @@ const Modal = () => {
               items: [],
               user_id: fingerprint,
               location: window.location.href,
-              metadata: {
-                component_props: props,
-              },
             },
-            abortController.signal,
           );
-
-          const cartObserver = new PerformanceObserver((list) => {
-            list.getEntries().forEach((entry) => {
-              const isValidRequestType = ["xmlhttprequest", "fetch"].includes(
-                (entry as any).initiatorType,
-              );
-              const isCartChangeRequest = /\/cart\/add\.js/.test(entry.name);
-              if (isValidRequestType && isCartChangeRequest) {
-                (async function () {
-                  const oldCart = JSON.parse(
-                    localStorage.getItem("trieve-cart") ?? "{}",
-                  );
-                  const newCart = await fetch(
-                    (window as any).Shopify.routes.root + "cart.js",
-                  )
-                    .then((response) => response.json())
-                    .then((data) => {
-                      localStorage.setItem("trieve-cart", JSON.stringify(data));
-                      return data;
-                    });
-
-                  const cartChanges = findCartChanges(oldCart, newCart);
-
-                  const items = cartChanges.added.map((item: any) =>
-                    item.toString(),
-                  );
-                  console.log("cartItems", items);
-
-                  if (items.length > 0) {
-                    const lastMessage = JSON.parse(
-                      window.localStorage.getItem("lastMessage") ?? "{}",
-                    );
-                    let requestId = "00000000-0000-0000-0000-000000000000";
-                    for (const id in lastMessage) {
-                      const storedItems = lastMessage[id];
-                      if (
-                        storedItems.some((item: any) => items.includes(item))
-                      ) {
-                        requestId = id;
-                        break;
-                      }
-                    }
-
-                    await trieveSDK.sendAnalyticsEvent(
-                      {
-                        event_name: `site-add_to_cart`,
-                        event_type: "add_to_cart",
-                        items,
-                        user_id: fingerprint,
-                        location: window.location.href,
-                        metadata: {
-                          component_props: props,
-                        },
-                        request: {
-                          request_id: requestId,
-                          request_type: "rag",
-                        },
-                      },
-                      abortController.signal,
-                    );
-                  }
-                })();
-              }
-            });
-          });
-          cartObserver.observe({ entryTypes: ["resource"] });
-
-          const checkoutSelector = props.analyticsSelectors?.checkout;
-          if (checkoutSelector) {
-            const setCheckoutEventListener = () => {
-              const checkouts = document.querySelectorAll(
-                checkoutSelector.querySelector,
-              );
-
-              checkouts.forEach((checkout) => {
-                if (checkout.getAttribute("data-tr-checkout") === "true") {
-                  return;
-                }
-
-                checkout.addEventListener("click", () => {
-                  (async function () {
-                    const checkoutItems = await fetch(
-                      (window as any).Shopify.routes.root + "cart.js",
-                    )
-                      .then((response) => response.json())
-                      .then((data) => {
-                        return data;
-                      });
-
-                    const items = checkoutItems.items.map((item: any) => {
-                      const price = item.final_line_price.toString();
-                      return {
-                        tracking_id: item.variant_id.toString(),
-                        revenue: parseFloat(
-                          price.slice(0, -2) + "." + price.slice(-2),
-                        ),
-                      };
-                    });
-
-                    const lastMessage = JSON.parse(
-                      window.localStorage.getItem("lastMessage") ?? "{}",
-                    );
-                    let requestId = "00000000-0000-0000-0000-000000000000";
-                    for (const id in lastMessage) {
-                      const storedItems = lastMessage[id];
-                      if (
-                        storedItems.some((item: any) =>
-                          items.map((i: any) => i.tracking_id).includes(item),
-                        )
-                      ) {
-                        requestId = id;
-                        break;
-                      }
-                    }
-
-                    await trieveSDK.sendAnalyticsEvent(
-                      {
-                        event_name: `site-checkout`,
-                        event_type: "purchase",
-                        items,
-                        is_conversion: true,
-                        user_id: fingerprint,
-                        location: window.location.href,
-                        metadata: {
-                          component_props: props,
-                        },
-                        request: {
-                          request_id: requestId,
-                          request_type: "rag",
-                        },
-                      },
-                      abortController.signal,
-                    );
-                  })();
-                });
-
-                checkout.setAttribute("data-tr-checkout", "true");
-              });
-            };
-
-            setCheckoutEventListener();
-          }
-        });
+        }
       }
     } catch (e) {
       console.log("error on load event", e);
@@ -505,7 +346,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);
