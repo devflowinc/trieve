@@ -32,21 +32,38 @@ model Session {
 }
 
 model ApiKey {
-  id        String   @id @default(uuid())
-  organizationId String @default("")
-  currentDatasetId String? @db.Uuid
-  shop      String @default("") @unique
-  key       String
-  createdAt DateTime @default(now())
+  id               String            @id @default(uuid())
+  organizationId   String            @default("")
+  currentDatasetId String?           @db.Uuid
+  shop             String            @unique @default("")
+  key              String
+  createdAt        DateTime          @default(now())
+  JudgeOAuthState  JudgeOAuthState[]
+  JudgeMeKeys      JudgeMeKeys[]
 }
 
 model CrawlSettings {
-  id        String   @id @default(uuid())
-  datasetId String? @db.Uuid
-  shop      String @default("")
+  id            String   @id @default(uuid())
+  datasetId     String?  @db.Uuid
+  shop          String   @default("")
   crawlSettings Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([datasetId, shop], name: "datasetId_shop")
+}
+
+model JudgeOAuthState {
+  id       String @id @default(uuid())
+  apiKey   ApiKey @relation(fields: [apiKeyId], references: [id])
+  apiKeyId String
+  code     String @unique
+}
+
+model JudgeMeKeys {
+  id             String   @id @default(uuid())
+  apiKey         ApiKey   @relation(fields: [trieveApiKeyId], references: [id])
+  trieveApiKeyId String
+  authKey        String
+  createdAt      DateTime @default(now())
 }

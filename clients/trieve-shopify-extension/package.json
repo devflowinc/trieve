@@ -47,14 +47,15 @@
     "deepmerge": "4.3.1",
     "isbot": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "nanoid": "^5.1.5",
     "prisma": "^5.11.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwind-merge": "^3.1.0",
     "tailwindcss": "^3.4.17",
+    "trieve-search-component": "0.4.55",
     "trieve-ts-sdk": "0.0.86",
-    "vite-tsconfig-paths": "^5.0.1",
-    "trieve-search-component": "0.4.55"
+    "vite-tsconfig-paths": "^5.0.1"
   },
   "devDependencies": {
     "@remix-run/eslint-config": "^2.7.1",

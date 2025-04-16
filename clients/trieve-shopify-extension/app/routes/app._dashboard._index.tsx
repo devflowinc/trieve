@@ -20,7 +20,7 @@ import {
   RefreshIcon,
 } from "@shopify/polaris-icons";
 import { organizationUsageQuery, datasetUsageQuery } from "app/queries/usage";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Onboarding } from "app/components/onboarding/Onboarding";
 import { Loader } from "app/loaders";
 import { lastStepIdQuery } from "app/queries/onboarding";

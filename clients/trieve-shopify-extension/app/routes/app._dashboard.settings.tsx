@@ -17,6 +17,7 @@ import { type Dataset } from "trieve-ts-sdk";
 import { AppInstallData } from "./app.setup";
 import { ResetSettings } from "app/components/ResetSettings";
 import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
+import { JudgeMeSetup } from "app/components/JudgeMeSetup";
 
 const setAppMetafields = async (
   adminApi: AdminApiCaller,
@@ -215,8 +216,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Dataset() {
   const { trieve } = useTrieve();
   const { data: shopDataset } = useSuspenseQuery(shopDatasetQuery(trieve));
-  const { crawlSettings, webPixelInstalled } =
-    useLoaderData<typeof loader>();
+  const { crawlSettings, webPixelInstalled } = useLoaderData<typeof loader>();
 
   return (
     <Box paddingBlockStart="400">
@@ -225,6 +225,8 @@ export default function Dataset() {
         webPixelInstalled={webPixelInstalled}
         shopDataset={shopDataset as Dataset}
       />
+      <div className="h-4"></div>
+      <JudgeMeSetup />
       <div className="h-4"></div>
       <ResetSettings />
     </Box>
