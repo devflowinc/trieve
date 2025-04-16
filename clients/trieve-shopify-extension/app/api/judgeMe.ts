@@ -1,7 +1,32 @@
-import { validateTrieveAuth } from "app/auth";
+import { sdkFromKey, validateTrieveAuth } from "app/auth";
+import { getTrieveBaseUrlEnv } from "app/env.server";
 import { tryCatch } from "app/loaders";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
+import { ChunkReqPayload } from "trieve-ts-sdk";
+
+type Review = {
+  id: number;
+  title: string;
+  body: string;
+  rating: number;
+  product_external_id: number;
+  // reviewer: [Object];
+  source: string;
+  curated: string;
+  published: boolean;
+  hidden: boolean;
+  verified: string;
+  featured: boolean;
+  created_at: string;
+  updated_at: string;
+  has_published_pictures: boolean;
+  has_published_videos: boolean;
+  // pictures: [];
+  // ip_address: null;
+  product_title: string;
+  product_handle: string;
+};
 
 export const judgeMe = new Hono()
   .get("/login", async (c) => {
@@ -72,7 +97,6 @@ export const judgeMe = new Hono()
 
   .get("/reviewCount", async (c) => {
     const trieve = await validateTrieveAuth(c.req.raw);
-    console.log(trieve);
     const judgeMeKey = await tryCatch(
       prisma.judgeMeKeys.findFirst({
         where: {
@@ -109,11 +133,11 @@ export const judgeMe = new Hono()
   })
 
   .post("/sync", async (c) => {
-    const trieve = await validateTrieveAuth(c.req.raw);
+    const trieveKey = await validateTrieveAuth(c.req.raw);
     const judgeMeKey = await tryCatch(
       prisma.judgeMeKeys.findFirst({
         where: {
-          trieveApiKeyId: trieve.id,
+          trieveApiKeyId: trieveKey.id,
         },
       }),
     );
@@ -124,23 +148,125 @@ export const judgeMe = new Hono()
     }
 
     // Get judgeme reviews
-    const page = 1;
+    let page = 1;
     const perPage = 100;
+    let isDone = false;
 
-    const params = new URLSearchParams({
-      page: page.toString(),
-      per_page: perPage.toString(),
-      api_token: judgeMeKey.data.authKey,
-    });
+    while (!isDone) {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        per_page: perPage.toString(),
+        api_token: judgeMeKey.data.authKey,
+      });
 
-    const reviews = await fetch(
-      "https://api.judge.me/api/v1/reviews?" + params.toString(),
-      {
+      const response = await fetch(
+        "https://api.judge.me/api/v1/reviews?" + params.toString(),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to get judge.me reviews", {
+          cause: await response.text(),
+        });
+      }
+
+      const reviews = (await response.json()) as {
+        current_page: number;
+        per_page: number;
+        reviews: Review[];
+      };
+
+      if (reviews.reviews.length === 0) {
+        isDone = true;
+        break;
+      }
+
+      const chunks = reviews.reviews.map(transformReviewToChunk);
+
+      fetch(`${getTrieveBaseUrlEnv()}/api/chunk`, {
+        method: "POST",
         headers: {
+          Authorization: `Bearer ${trieveKey.key}`,
+          "TR-Dataset": trieveKey.currentDatasetId,
           "Content-Type": "application/json",
         },
-      },
-    );
+        body: JSON.stringify(chunks),
+      }).catch((e) => {
+        console.error(`Error sending chunks to Trieve: ${e}`);
+      });
 
-    console.log(reviews);
+      page += 1;
+    }
+
+    return c.json({ success: true });
+  })
+  .get("/syncedReviewCount", async (c) => {
+    const trieveKey = await validateTrieveAuth(c.req.raw);
+    let tagsScanned = 0;
+    let tagAmmount = 999999999999999;
+    let page = 1;
+    let page_size = 200;
+    let done = false;
+
+    while (!done || tagsScanned < tagAmmount) {
+      const response = await fetch(
+        `${getTrieveBaseUrlEnv()}/api/dataset/get_all_tags`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${trieveKey.key}`,
+            "TR-Dataset": trieveKey.currentDatasetId,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            page,
+            page_size,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to get synced review tag", {
+          cause: await response.text(),
+        });
+      }
+
+      const data = (await response.json()) as {
+        tags: { count: number; tag: string }[];
+        total: number;
+      };
+
+      if (data.tags.length === 0) {
+        done = true;
+        break;
+      }
+
+      const judgeTag = data.tags.find((t) => t.tag === "judge-me-review");
+      if (judgeTag) {
+        return c.json({ reviewCount: judgeTag?.count });
+      }
+
+      tagAmmount = data.total;
+      tagsScanned += data.total;
+
+      page += 1;
+    }
+
+    return c.json({ reviewCount: 0 });
   });
+
+const transformReviewToChunk = (review: Review): ChunkReqPayload => {
+  return {
+    chunk_html: review.title + "\n\n" + review.body,
+    group_tracking_ids: [review.product_external_id.toString()],
+    metadata: {
+      rating: review.rating,
+    },
+    tag_set: ["judge-me-review"],
+    tracking_id: review.id.toString(),
+  };
+};
