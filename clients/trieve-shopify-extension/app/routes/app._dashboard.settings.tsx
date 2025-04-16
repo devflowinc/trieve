@@ -17,7 +17,7 @@ import { type Dataset } from "trieve-ts-sdk";
 import { AppInstallData } from "./app.setup";
 import { ResetSettings } from "app/components/ResetSettings";
 import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
-import { JudgeMeSetup } from "app/components/JudgeMeSetup";
+import { JudgeMeSetup } from "app/components/judgeme/JudgeMeSetup";
 
 const setAppMetafields = async (
   adminApi: AdminApiCaller,
