@@ -353,3 +353,17 @@ This template uses [Remix](https://remix.run). The following Shopify tools are a
 ## Include all of the special sauce into the default toml that the `yarn dev` command sets up thru the `shopify` CLI tool
 
 Look at the `shopify.app.toml.dist` file and copy whatever is in there that is not inside of the `.toml` shopify config the CLI created for you.
+
+
+
+# Judge.me setup
+1. Create a new judge.me account at judge.me/login
+2. [Create a Judge.me developer app](https://judge.me/reviews/profile/apps/new)
+3. Set the redirect uri to https://my-remix-server-url.com/auth/judgeme/callback
+4. After creating the app you will likely have to hunt around the judge.me website to find it. 
+    Look for the "My Apps" button on https://judge.me/reviews/profile
+5. Set the `JUDGE_ME_CLIENT_ID` `JUDGE_ME_SECRET` and `JUDGE_ME_REDIRECT_URI` environment variables in remix. 
+
+Note: it is quite difficult (maybe impossible) to set the redirect uri environment variable to the cloudflare tunnel when it resets the url every time you change the environment variable. You can run for local development and use tailscale + caddy as the tunnel so the redirect uri doesn't need to be changed every time. 
+ex: `yarn dev --tunnel-url https://drew-shopify2.trieve.ai:49345`
+

@@ -129,6 +129,17 @@ export const validateTrieveAuth = async <S extends boolean = true>(
     const userCredentials =
       (await userCredentialsResponse.json()) as CreateApiUserResponse;
 
+    if (!userCredentials.api_key) {
+      console.error(
+        "SHopify secret key is not set",
+        process.env.SHOPIFY_SECRET_KEY,
+      );
+      throw new Error(
+        "No API key returned from create_api_only_user: " +
+          JSON.stringify(userCredentials),
+      );
+    }
+
     key = await prisma.apiKey
       .upsert({
         where: {
