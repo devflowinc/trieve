@@ -66,6 +66,18 @@ export type MetafieldIdentifierInput = {
   readonly namespace: string;
 };
 
+export type AppMetafieldsQuery = {
+  appInstallation: {
+    id: string;
+    metafields: {
+      nodes: {
+        key: string;
+        value: string;
+      }[];
+    };
+  };
+};
+
 export const deleteMetafields = async (
   adminApi: AdminApiCaller,
   metafieldsToDelete: MetafieldIdentifierInput[],
@@ -88,7 +100,7 @@ mutation metafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
   );
 
   if (result.error) {
-    throw new Error("Failed to delete product metafields", {
+    throw new Error("Failed to delete metafields", {
       cause: result.error,
     });
   }
