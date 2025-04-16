@@ -84,6 +84,7 @@ export const EditChunkPageForm = (props: SingleChunkPageProps) => {
   createEffect(() => {
     const currentDatasetId = $dataset?.()?.dataset.id;
     if (!currentDatasetId) return;
+    if (!props.chunkId) return;
 
     void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",

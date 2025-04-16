@@ -215,6 +215,7 @@ const BookmarkPopover = (props: BookmarkPopoverProps) => {
   const refetchBookmarks = (curPage: number) => {
     const currentDataset = $dataset?.();
     if (!currentDataset) return;
+    if (!props.chunkMetadata.id) return;
 
     void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",
