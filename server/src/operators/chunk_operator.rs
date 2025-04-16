@@ -758,6 +758,7 @@ pub async fn bulk_insert_chunk_metadata_query(
                 chunk_metadata,
                 content: chunk_data.content,
                 embedding_content: chunk_data.embedding_content,
+                fulltext_content: chunk_data.fulltext_content,
                 group_ids: chunk_data.group_ids,
                 upsert_by_tracking_id: chunk_data.upsert_by_tracking_id,
                 fulltext_boost: chunk_data.fulltext_boost,

@@ -248,6 +248,7 @@ async fn main() -> Result<(), ServiceError> {
                                 let upload_message = ChunkReqPayload {
                                     chunk_html: chunk.chunk_html.clone(),
                                     semantic_content: None,
+                                    fulltext_content: None,
                                     link: chunk.link.clone(),
                                     tag_set: chunk.tag_set.clone().map(|tag_set| {
                                         tag_set.split(',').map(|tag| tag.to_string()).collect()

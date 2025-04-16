@@ -625,6 +625,7 @@ fn convert_value_to_chunkreqpayload(
     let mut chunk_req_payload = ChunkReqPayload {
         chunk_html,
         semantic_content: None,
+        fulltext_content: None,
         link: None,
         tag_set: None,
         num_value: None,
