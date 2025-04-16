@@ -1,12 +1,9 @@
 import { Button, Card, Text } from "@shopify/polaris";
 import { useMutation } from "@tanstack/react-query";
+import { setMetafield } from "app/loaders";
 import { useClientAdminApi } from "app/loaders/clientLoader";
-import {
-  AppMetafieldsQuery,
-  deleteMetafields,
-  getPdpMetafields,
-  MetafieldIdentifierInput,
-} from "app/utils/productMetafields";
+import { ONBOARD_STEP_META_FIELD } from "app/queries/onboarding";
+import { onboardingSteps } from "app/utils/onboarding";
 
 export const ResetSettings = () => {
   const adminApi = useClientAdminApi();
@@ -16,69 +13,17 @@ export const ResetSettings = () => {
       console.error("Error clearing app metafields", e);
     },
     mutationFn: async () => {
-      const products = await getPdpMetafields(adminApi);
-      const productsWithTrieveMetafields = products.filter(
-        (p) => p.metafields.nodes.length > 0,
-      );
-      const metafieldsToDelete = productsWithTrieveMetafields.reduce(
-        (acc, p) => {
-          const productId = p.id;
-          return acc.concat(
-            p.metafields.nodes.map((m) => ({
-              key: m.key,
-              ownerId: productId,
-              namespace: m.namespace,
-            })),
-          );
-        },
-        [] as MetafieldIdentifierInput[],
-      );
-      if (metafieldsToDelete.length !== 0) {
-        await deleteMetafields(adminApi, metafieldsToDelete);
-      } else {
-        console.log("No metafields to delete");
-      }
-
-      const appInstallMetafields = await adminApi<AppMetafieldsQuery>(
-        `#graphql
-{
-  appInstallation{
-    id
-    metafields (first: 250, namespace: "trieve"){
-      nodes {
-        key
-        value
-      }
-    }
-  }
-}
-`,
-      );
-
-      if (appInstallMetafields.error) {
-        throw new Error("Failed to get app metafields", {
-          cause: appInstallMetafields.error,
-        });
-      }
-
-      const appMetafieldsToDelete =
-        appInstallMetafields.data.appInstallation.metafields.nodes.map((m) => ({
-          key: m.key,
-          ownerId: appInstallMetafields.data.appInstallation.id,
-          namespace: "trieve",
-        })) as MetafieldIdentifierInput[];
-
-      await deleteMetafields(adminApi, appMetafieldsToDelete);
+      setMetafield(adminApi, ONBOARD_STEP_META_FIELD, onboardingSteps[0].id);
     },
   });
 
   return (
     <Card>
       <Text variant="headingLg" as="h1">
-        Reset Widgets and Onboarding
+        Reset Onboarding
       </Text>
       <Text variant="bodyMd" as="p">
-        Clears all app metafields, onboarding data, and widget configuration.
+        This will reset your onboarding progress so you can view the steps again.
       </Text>
       <div className="h-3"></div>
       <div className="flex items-center gap-4">

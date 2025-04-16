@@ -209,32 +209,6 @@ export const DatasetSettings = ({
       <Card>
         <BlockStack gap="200">
           <Text variant="headingLg" as="h1">
-            Revenue Tracking Settings
-          </Text>
-
-          <FormLayout>
-            <TextField
-              autoComplete="off"
-              label="Checkout Selector"
-              helpText="The HTML selector of the checkout button on your shopify store. This is used to track revenue when a user clicks the checkout button."
-              value={unsavedRevenueTrackingOptions?.checkout_selector || ""}
-              onChange={(e) => {
-                setUnsavedRevenueTrackingOptions({
-                  ...unsavedRevenueTrackingOptions,
-                  checkout_selector: e,
-                });
-              }}
-            />
-          </FormLayout>
-
-          <InlineStack align="end">
-            <Button onClick={onRevenueTrackingSettingsSave}>Save</Button>
-          </InlineStack>
-        </BlockStack>
-      </Card>
-      <Card>
-        <BlockStack gap="200">
-          <Text variant="headingLg" as="h1">
             LLM Settings
           </Text>
           <FormLayout>
