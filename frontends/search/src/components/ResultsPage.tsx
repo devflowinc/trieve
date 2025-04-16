@@ -183,6 +183,7 @@ const ResultsPage = (props: ResultsPageProps) => {
   const fetchBookmarks = () => {
     const dataset = $dataset?.();
     if (!dataset) return;
+    if (resultChunks().length === 0) return;
 
     void fetch(`${apiHost}/chunk_group/chunks`, {
       method: "POST",
