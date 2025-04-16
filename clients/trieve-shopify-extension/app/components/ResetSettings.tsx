@@ -2,6 +2,7 @@ import { Button, Card, Text } from "@shopify/polaris";
 import { useMutation } from "@tanstack/react-query";
 import { useClientAdminApi } from "app/loaders/clientLoader";
 import {
+  AppMetafieldsQuery,
   deleteMetafields,
   getPdpMetafields,
   MetafieldIdentifierInput,
@@ -37,6 +38,37 @@ export const ResetSettings = () => {
       } else {
         console.log("No metafields to delete");
       }
+
+      const appInstallMetafields = await adminApi<AppMetafieldsQuery>(
+        `#graphql
+{
+  appInstallation{
+    id
+    metafields (first: 250, namespace: "trieve"){
+      nodes {
+        key
+        value
+      }
+    }
+  }
+}
+`,
+      );
+
+      if (appInstallMetafields.error) {
+        throw new Error("Failed to get app metafields", {
+          cause: appInstallMetafields.error,
+        });
+      }
+
+      const appMetafieldsToDelete =
+        appInstallMetafields.data.appInstallation.metafields.nodes.map((m) => ({
+          key: m.key,
+          ownerId: appInstallMetafields.data.appInstallation.id,
+          namespace: "trieve",
+        })) as MetafieldIdentifierInput[];
+
+      await deleteMetafields(adminApi, appMetafieldsToDelete);
     },
   });
 
@@ -59,16 +91,18 @@ export const ResetSettings = () => {
         >
           Reset
         </Button>
-        {resetMetafieldsMutation.error && (
-          <div className="text-red-500 opacity-100 start-hidden delay-75 duration-75 transition-opacity">
-            {resetMetafieldsMutation.error.message}
-          </div>
-        )}
-        {resetMetafieldsMutation.isSuccess && (
-          <div className="opacity-80 start-hidden delay-75 duration-75 transition-opacity">
-            Successfully reset app!
-          </div>
-        )}
+        <div>
+          {resetMetafieldsMutation.error && (
+            <div className="text-red-500 opacity-100 start-hidden delay-75 duration-75 transition-opacity">
+              {resetMetafieldsMutation.error.message}
+            </div>
+          )}
+          {resetMetafieldsMutation.isSuccess && (
+            <div className="opacity-80 start-hidden delay-75 duration-75 transition-opacity">
+              Successfully reset app!
+            </div>
+          )}
+        </div>
       </div>
     </Card>
   );
