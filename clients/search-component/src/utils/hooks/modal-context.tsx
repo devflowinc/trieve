@@ -100,11 +100,6 @@ export type ModalProps = {
   chatPlaceholder?: string;
   chat?: boolean;
   analytics?: boolean;
-  analyticsSelectors?: {
-    checkout: {
-      querySelector: string;
-    };
-  };
   ButtonEl?: JSX.ElementType;
   suggestedQueries?: boolean;
   followupQuestions?: boolean;
@@ -140,10 +135,10 @@ export type ModalProps = {
   zIndex?: number;
   showFloatingButton?: boolean;
   floatingButtonPosition?:
-    | "top-left"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-right";
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
   floatingButtonVersion?: "brand-logo" | "brand-color";
   floatingSearchIconPosition?: "left" | "right";
   showFloatingSearchIcon?: boolean;
@@ -288,7 +283,7 @@ const ModalContext = createContext<{
   addHeight: (height: number) => void;
 }>({
   props: defaultProps,
-  trieveSDK: (() => {}) as unknown as TrieveSDK,
+  trieveSDK: (() => { }) as unknown as TrieveSDK,
   query: "",
   imageUrl: "",
   audioBase64: "",
@@ -300,32 +295,32 @@ const ModalContext = createContext<{
   modalRef: { current: null },
   mode: "search",
   fingerprint: "",
-  setFingerprint: () => {},
-  setMode: () => {},
-  setOpen: () => {},
-  setQuery: () => {},
-  setImageUrl: () => {},
-  setAudioBase64: () => {},
-  setUploadingImage: () => {},
-  setResults: () => {},
+  setFingerprint: () => { },
+  setMode: () => { },
+  setOpen: () => { },
+  setQuery: () => { },
+  setImageUrl: () => { },
+  setAudioBase64: () => { },
+  setUploadingImage: () => { },
+  setResults: () => { },
   requestID: "",
-  setRequestID: () => {},
-  setLoadingResults: () => {},
+  setRequestID: () => { },
+  setLoadingResults: () => { },
   selectedTags: [],
-  setSelectedTags: () => {},
+  setSelectedTags: () => { },
   currentGroup: null,
-  setCurrentGroup: () => {},
-  setContextProps: () => {},
+  setCurrentGroup: () => { },
+  setContextProps: () => { },
   pagefind: null,
   isRecording: false,
-  setIsRecording: () => {},
+  setIsRecording: () => { },
   // sidebar filter specific state
   selectedSidebarFilters: {},
-  setSelectedSidebarFilters: () => {},
+  setSelectedSidebarFilters: () => { },
   minHeight: 0,
-  resetHeight: () => {},
+  resetHeight: () => { },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  addHeight: (height: number) => {},
+  addHeight: (height: number) => { },
 });
 
 const ModalProvider = ({
@@ -475,7 +470,7 @@ const ModalProvider = ({
         import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
           // @vite-ignore
           setPagefind(pagefind);
-          pagefind.filters().then(() => {});
+          pagefind.filters().then(() => { });
         });
       });
     }

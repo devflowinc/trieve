@@ -1,0 +1,28 @@
+type = "web_pixel_extension"
+name = "trieve-checkout-web-pixel"
+runtime_context = "strict"
+
+[customer_privacy]
+analytics = true
+marketing = false
+preferences = false
+sale_of_data = "disabled"
+
+[settings]
+type = "object"
+
+[settings.fields.apiKey]
+name = "Trieve API Key"
+description = "Trieve API Key"
+type = "single_line_text_field"
+validations =  [
+  { name = "min", value = "1" }
+]
+
+[settings.fields.datasetId]
+name = "Trieve Dataset ID"
+description = "Trieve Dataset ID"
+type = "single_line_text_field"
+validations =  [
+  { name = "min", value = "1" }
+]

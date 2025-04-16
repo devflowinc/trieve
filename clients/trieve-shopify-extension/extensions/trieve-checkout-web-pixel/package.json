@@ -1,0 +1,9 @@
+{
+  "name": "trieve-checkout-web-pixel",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@shopify/web-pixels-extension": "^2.10.0"
+  }
+}
