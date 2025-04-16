@@ -6,7 +6,6 @@ import { sdkFromKey, validateTrieveAuth } from "app/auth";
 import {
   DatasetSettings as DatasetSettings,
   ExtendedCrawlOptions,
-  RevenueTrackingOptions,
 } from "app/components/DatasetSettings";
 import { useTrieve } from "app/context/trieveContext";
 import { AdminApiCaller } from "app/loaders";
@@ -17,6 +16,7 @@ import { authenticate } from "app/shopify.server";
 import { type Dataset } from "trieve-ts-sdk";
 import { AppInstallData } from "./app.setup";
 import { ResetSettings } from "app/components/ResetSettings";
+import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
 
 const setAppMetafields = async (
   adminApi: AdminApiCaller,
@@ -111,7 +111,7 @@ export const loader = async ({
   request,
 }: LoaderFunctionArgs): Promise<{
   crawlSettings: ExtendedCrawlOptions | undefined;
-  revenueTrackingSettings: RevenueTrackingOptions | undefined;
+  webPixelInstalled: boolean;
 }> => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
@@ -140,16 +140,11 @@ export const loader = async ({
     },
   })) as any;
 
-  const revenueTrackingSettings: RevenueTrackingOptions = {
-    checkout_selector:
-      (await getAppMetafields(fetcher)).find(
-        (metafield) => metafield.key === "checkout_selector",
-      )?.value ?? "",
-  };
+  const webPixelInstalled = await isWebPixelInstalled(fetcher, key);
 
   return {
     crawlSettings: crawlSettings?.crawlSettings,
-    revenueTrackingSettings,
+    webPixelInstalled,
   };
 };
 
@@ -211,19 +206,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return { success: true };
   } else if (type === "revenue_tracking") {
-    const revenueTrackingSettingsString = formData.get(
-      "revenue_tracking_options",
-    );
-    const revenueTrackingSettings = JSON.parse(
-      revenueTrackingSettingsString as string,
-    );
-    await setAppMetafields(fetcher, [
-      {
-        key: "checkout_selector",
-        value: revenueTrackingSettings.checkout_selector,
-      },
-    ]).catch(console.error);
-
+    await createWebPixel(fetcher, key);
     return { success: true };
   }
   return { success: false };
@@ -232,16 +215,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Dataset() {
   const { trieve } = useTrieve();
   const { data: shopDataset } = useSuspenseQuery(shopDatasetQuery(trieve));
-  const { crawlSettings, revenueTrackingSettings } =
+  const { crawlSettings, webPixelInstalled } =
     useLoaderData<typeof loader>();
 
   return (
     <Box paddingBlockStart="400">
       <DatasetSettings
         initalCrawlOptions={crawlSettings as ExtendedCrawlOptions}
-        initalRevenueTrackingOptions={
-          revenueTrackingSettings as RevenueTrackingOptions
-        }
+        webPixelInstalled={webPixelInstalled}
         shopDataset={shopDataset as Dataset}
       />
       <div className="h-4"></div>
