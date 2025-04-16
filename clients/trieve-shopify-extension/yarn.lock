@@ -5459,6 +5459,11 @@ heic-decode@^2.0.0:
   dependencies:
     libheif-js "^1.17.1"
 
+hono@^4.7.7:
+  version "4.7.7"
+  resolved "https://registry.yarnpkg.com/hono/-/hono-4.7.7.tgz#ad01a92a2a1b03c608ef42153c85c99c05c03bfe"
+  integrity sha512-2PCpQRbN87Crty8/L/7akZN3UyZIAopSoRxCwRbJgUuV1+MHNFHzYFxZTg4v/03cXUm+jce/qa2VSBZpKBm3Qw==
+
 hosted-git-info@^6.0.0, hosted-git-info@^6.1.1:
   version "6.1.3"
   resolved "https://registry.yarnpkg.com/hosted-git-info/-/hosted-git-info-6.1.3.tgz#2ee1a14a097a1236bddf8672c35b613c46c55946"

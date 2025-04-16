@@ -19,7 +19,7 @@ export const JudgeMeSetup = () => {
           cause: await repsonse.text(),
         });
       }
-      const data = (await repsonse.json()) as JudgeMeKeyInfo;
+      const data = await repsonse.json();
       return data.judgeMeKey;
     },
   });
