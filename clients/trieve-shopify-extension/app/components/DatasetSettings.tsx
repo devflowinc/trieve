@@ -5,11 +5,13 @@ import {
   Button,
   Card,
   FormLayout,
+  Icon,
   InlineStack,
   Select,
   Text,
   TextField,
 } from "@shopify/polaris";
+import { CheckCircleIcon } from "@shopify/polaris-icons";
 import { useEffect, useState } from "react";
 import { CrawlOptions, Dataset, DatasetConfigurationDTO } from "trieve-ts-sdk";
 
@@ -35,10 +37,6 @@ export type DatasetConfig = Exclude<
   "PUBLIC_DATASET"
 > & {
   LLM_API_KEY?: string | null;
-};
-
-export type RevenueTrackingOptions = {
-  checkout_selector: string;
 };
 
 export const defaultServerEnvsConfiguration: DatasetConfig = {
@@ -70,23 +68,17 @@ export const defaultServerEnvsConfiguration: DatasetConfig = {
   BM25_AVG_LEN: 256,
 };
 
-export const defaultRevenueTrackingOptions: RevenueTrackingOptions = {
-  checkout_selector: "",
-};
-
 export const DatasetSettings = ({
   initalCrawlOptions,
-  initalRevenueTrackingOptions,
+  webPixelInstalled,
   shopDataset,
 }: {
   initalCrawlOptions: ExtendedCrawlOptions;
-  initalRevenueTrackingOptions: RevenueTrackingOptions;
+  webPixelInstalled: boolean;
   shopDataset: Dataset;
 }) => {
   const [unsavedCrawlOptions, setUnsavedCrawlOptions] =
     useState(initalCrawlOptions);
-  const [unsavedRevenueTrackingOptions, setUnsavedRevenueTrackingOptions] =
-    useState(initalRevenueTrackingOptions);
   const shopify = useAppBridge();
   const submit = useSubmit();
   const [datasetSettings, setDatasetSettings] = useState<DatasetConfig>(
@@ -147,7 +139,6 @@ export const DatasetSettings = ({
   const onRevenueTrackingSettingsSave = async () => {
     submit(
       {
-        revenue_tracking_options: JSON.stringify(unsavedRevenueTrackingOptions),
         dataset_id: shopDataset.id,
         type: "revenue_tracking",
       },
@@ -204,6 +195,30 @@ export const DatasetSettings = ({
           <InlineStack align="end">
             <Button onClick={onCrawlSettingsSave}>Save</Button>
           </InlineStack>
+        </BlockStack>
+      </Card>
+      <Card>
+        <BlockStack gap="200">
+          <Text variant="headingLg" as="h1">
+            Revenue Tracking Settings
+          </Text>
+
+          <FormLayout>
+            <BlockStack gap="200">
+              <div className="max-w-fit">
+                {webPixelInstalled ? (
+                  <Button disabled fullWidth={false} icon={CheckCircleIcon} size="slim">
+                    Revenue Tracker Installed
+                  </Button>
+                ) : (
+                  <Button onClick={onRevenueTrackingSettingsSave}>Install Revenue Tracker</Button>
+                )}
+              </div>
+              <Text as="p" tone="subdued" variant="bodySm">
+                Install the revenue tracker to start tracking revenue.
+              </Text>
+            </BlockStack>
+          </FormLayout>
         </BlockStack>
       </Card>
       <Card>

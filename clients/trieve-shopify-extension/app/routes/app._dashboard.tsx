@@ -12,11 +12,13 @@ import {
 import { TrieveProvider } from "app/context/trieveContext";
 import { authenticate } from "app/shopify.server";
 import { useDehydratedState } from "app/dehydrate";
-import { StrongTrieveKey } from "app/types";
+import { StrongTrieveKey, TrieveKey } from "app/types";
 import { Dataset, OrganizationWithSubAndPlan } from "trieve-ts-sdk";
 import { useState, Suspense } from "react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { shopDatasetQuery } from "app/queries/shopDataset";
+import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
+import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
 
 export const loader = async (args: LoaderFunctionArgs) => {
   const key = await validateTrieveAuth(args.request, false);
@@ -36,6 +38,14 @@ export const loader = async (args: LoaderFunctionArgs) => {
   // Fill in dataset info
   const queryClient = new QueryClient();
   queryClient.setQueryData(shopDatasetQuery(trieve).queryKey, dataset);
+  const fetcher = buildAdminApiFetcherForServer(
+    session.shop,
+    session.accessToken!,
+  );
+
+  if (!(await isWebPixelInstalled(fetcher, key))) {
+    await createWebPixel(fetcher, key);
+  }
 
   return {
     key: key as StrongTrieveKey,
