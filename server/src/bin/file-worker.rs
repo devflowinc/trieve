@@ -543,6 +543,7 @@ async fn upload_file(
                         let create_chunk_data = ChunkReqPayload {
                             chunk_html: Some(page.content.clone()),
                             semantic_content: None,
+                            fulltext_content: None,
                             link: file_worker_message.upload_file_data.link.clone(),
                             tag_set: file_worker_message.upload_file_data.tag_set.clone(),
                             metadata,
@@ -658,6 +659,7 @@ async fn upload_file(
         let chunk = ChunkReqPayload {
             chunk_html: Some(html_content.clone()),
             semantic_content: None,
+            fulltext_content: None,
             link: file_worker_message.upload_file_data.link.clone(),
             tag_set: file_worker_message.upload_file_data.tag_set.clone(),
             metadata: file_worker_message.upload_file_data.metadata.clone(),
@@ -706,6 +708,7 @@ async fn upload_file(
         .map(|(i, chunk_html)| ChunkReqPayload {
             chunk_html: Some(chunk_html),
             semantic_content: None,
+            fulltext_content: None,
             link: file_worker_message.upload_file_data.link.clone(),
             tag_set: file_worker_message.upload_file_data.tag_set.clone(),
             metadata: file_worker_message.upload_file_data.metadata.clone(),

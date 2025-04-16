@@ -809,6 +809,7 @@ async fn parse_youtube_chunks(
                     let create_chunk_data = ChunkReqPayload {
                         chunk_html: Some(transcript.text),
                         semantic_content: None,
+                        fulltext_content: None,
                         link: Some(format!(
                             "https://www.youtube.com/watch?v={}&t={}",
                             video.id.video_id,
