@@ -453,7 +453,12 @@ pub async fn bulk_upload_chunks(
             ChunkData {
                 chunk_metadata,
                 content: content.clone(),
-                embedding_content: message.chunk.semantic_content.clone().unwrap_or(content),
+                embedding_content: message
+                    .chunk
+                    .semantic_content
+                    .clone()
+                    .unwrap_or(content.clone()),
+                fulltext_content: message.chunk.fulltext_content.clone().unwrap_or(content),
                 group_ids: Some(deduped_group_ids),
                 upsert_by_tracking_id: message.upsert_by_tracking_id,
                 fulltext_boost: message
@@ -573,12 +578,12 @@ pub async fn bulk_upload_chunks(
         false => vec![None; embedding_content_and_boosts.len()],
     };
 
-    let content_and_boosts: Vec<(String, Option<FullTextBoost>, Option<SemanticBoost>)> =
+    let fulltext_content_and_boosts: Vec<(String, Option<FullTextBoost>, Option<SemanticBoost>)> =
         ingestion_data
             .iter()
             .map(|data| {
                 (
-                    data.content.clone(),
+                    data.fulltext_content.clone(),
                     data.fulltext_boost.clone(),
                     data.semantic_boost.clone(),
                 )
@@ -588,10 +593,10 @@ pub async fn bulk_upload_chunks(
     let splade_vectors = if dataset_config.FULLTEXT_ENABLED {
         log::info!(
             "Creating sparse vectors for {} chunks",
-            content_and_boosts.len()
+            fulltext_content_and_boosts.len()
         );
         match get_sparse_vectors(
-            content_and_boosts
+            fulltext_content_and_boosts
                 .iter()
                 .map(|(content, boost, _)| (content.clone(), boost.clone()))
                 .collect(),
@@ -614,7 +619,7 @@ pub async fn bulk_upload_chunks(
             }
         }
     } else {
-        let content_size = content_and_boosts.len();
+        let content_size = fulltext_content_and_boosts.len();
 
         Ok(std::iter::repeat(vec![(0, 0.0)])
             .take(content_size)
@@ -625,7 +630,7 @@ pub async fn bulk_upload_chunks(
         && std::env::var("BM25_ACTIVE").unwrap_or("false".to_string()) == "true"
     {
         get_bm25_embeddings(
-            content_and_boosts
+            fulltext_content_and_boosts
                 .iter()
                 .map(|(content, boost, _)| (content.clone(), boost.clone()))
                 .collect(),
@@ -637,7 +642,7 @@ pub async fn bulk_upload_chunks(
         .map(Some)
         .collect()
     } else {
-        vec![None; content_and_boosts.len()]
+        vec![None; fulltext_content_and_boosts.len()]
     };
 
     let qdrant_points = tokio_stream::iter(izip!(
