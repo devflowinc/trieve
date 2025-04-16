@@ -55,9 +55,13 @@ export const loader = async (args: LoaderFunctionArgs) => {
     session.shop,
     session.accessToken!,
   );
-  sendChunks(key.currentDatasetId ?? "", key, fetcher, session, crawlOptions).catch(
-    console.error,
-  );
+  sendChunks(
+    key.currentDatasetId ?? "",
+    key,
+    fetcher,
+    session,
+    crawlOptions,
+  ).catch(console.error);
 
   return redirect("/app");
 };
