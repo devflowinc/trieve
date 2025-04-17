@@ -33,6 +33,18 @@ api_version = "2025-01"
   topics = [ "app_subscriptions/update" ]
   uri = "/webhooks/app/app_subscriptions/update"
 
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "shop/redact" ]
+  uri = "/webhooks/app/redact-shop"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/data_request" ]
+  uri = "/webhooks/app/customer-data"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/redact" ]
+  uri = "/webhooks/app/redact-customer"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "write_products,read_products,read_themes,write_pixels,read_customer_events"
