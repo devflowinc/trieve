@@ -21,6 +21,7 @@ use diesel_async::RunQueryDsl;
 use regex::Regex;
 use s3::{creds::Credentials, Bucket, Region};
 use std::collections::HashMap;
+use url::form_urlencoded;
 
 pub fn get_aws_bucket() -> Result<Bucket, ServiceError> {
     let aws_region_name = std::env::var("AWS_REGION").unwrap_or("".to_string());
@@ -450,29 +451,17 @@ pub async fn get_file_query(
             ServiceError::NotFound("File with specified id not found".to_string())
         })?;
 
-    let mut custom_queries = HashMap::new();
+    let url_encoded_file_name: String =
+        form_urlencoded::byte_serialize(file.file_name.as_bytes()).collect();
 
-    match content_type {
-        Some(content_type) => {
-            if content_type == "application/pdf" {
-                custom_queries.insert(
-                    "response-content-disposition".into(),
-                    format!("attachment; filename*=utf-8''{}", file.file_name),
-                );
-            } else {
-                custom_queries.insert(
-                    "response-content-disposition".into(),
-                    format!("attachment; filename=\"{}\"", file.file_name),
-                );
-            }
-            custom_queries.insert("response-content-type".into(), content_type.to_string());
-        }
-        None => {
-            custom_queries.insert(
-                "response-content-disposition".into(),
-                format!("attachment; filename=\"{}\"", file.file_name),
-            );
-        }
+    let mut custom_queries = HashMap::new();
+    custom_queries.insert(
+        "response-content-disposition".into(),
+        format!("attachment; filename=\"{}\"", url_encoded_file_name),
+    );
+
+    if let Some(content_type) = content_type {
+        custom_queries.insert("response-content-type".into(), content_type.to_string());
     }
 
     let bucket = get_aws_bucket()?;
