@@ -16,7 +16,7 @@ export type Product = {
   id: string;
   title: string;
   productType: string;
-  bodyHtml: string;
+  descriptionHtml: string;
   handle: string;
   tags: string[];
   status: "ACTIVE" | "ARCHIVED" | "DRAFT";

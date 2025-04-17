@@ -27,7 +27,7 @@ function createChunkFromProduct(
   // Handle text cleaning
   let productTitle = product.title || "";
   let variantTitle = variant.title || "";
-  let productBodyHtml = product.bodyHtml || "";
+  let productBodyHtml = product.descriptionHtml || "";
 
   if (crawlOptions.heading_remove_strings) {
     crawlOptions.heading_remove_strings.forEach((removeString) => {
@@ -92,7 +92,7 @@ function createChunkFromProduct(
     });
   }
   const metadata = {
-    body_html: product.bodyHtml,
+    body_html: product.descriptionHtml,
     variantName: variantTitle,
     handle: product.handle,
     id: parseInt(product.id.split("/").pop() || "0"),
