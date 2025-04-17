@@ -354,11 +354,20 @@ export const trackViews = async ({
   fingerprint: string;
 }) => {
   if (props.previewTopicId === undefined) {
-    const lastMessage = JSON.parse(
-      window.localStorage.getItem("lastMessage") ?? "{}",
-    );
+    let lastMessageString = "{}";
+    try {
+      lastMessageString = window.localStorage.getItem("lastMessage") ?? "{}";
+    } catch (e) {
+      console.error("failed to get localstorage lastMessage item", e);
+    }
+
+    const lastMessage = JSON.parse(lastMessageString);
     lastMessage[requestID] = items;
-    window.localStorage.setItem("lastMessage", JSON.stringify(lastMessage));
+    try {
+      window.localStorage.setItem("lastMessage", JSON.stringify(lastMessage));
+    } catch (e) {
+      console.error("failed to set localstorage lastMessage item", e);
+    }
     await trieve.sendAnalyticsEvent({
       event_name: "View",
       event_type: "view",

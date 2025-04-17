@@ -5,7 +5,10 @@ register(async ({ analytics, browser, init, settings }) => {
   // Bootstrap and insert pixel script tag here
   const apiKey = settings.apiKey;
   const datasetId = settings.datasetId;
-  const fingerprint = await browser.localStorage.getItem("trieve-fingerprint");
+
+  let fingerprint = await browser.localStorage.getItem("trieve-fingerprint").catch((_) => {
+    return null
+  });
   const trieveSDK = new TrieveSDK({
     apiKey,
     datasetId,
@@ -23,7 +26,7 @@ register(async ({ analytics, browser, init, settings }) => {
     });
 
     const lastMessage = JSON.parse(
-      await browser.localStorage.getItem("lastMessage") ?? "{}",
+      await browser.localStorage.getItem("lastMessage").catch((_) => { return null; }) ?? "{}",
     );
     let requestId = "00000000-0000-0000-0000-000000000000";
     for (const id in lastMessage) {
@@ -74,7 +77,7 @@ register(async ({ analytics, browser, init, settings }) => {
     });
 
     const lastMessage: { [key: string]: string[] } = JSON.parse(
-      await browser.localStorage.getItem("lastMessage") ?? "{}",
+      await browser.localStorage.getItem("lastMessage").catch((_) => { return null; }) ?? "{}",
     );
     let requestId = "00000000-0000-0000-0000-000000000000";
     for (const id in lastMessage) {
@@ -117,7 +120,7 @@ register(async ({ analytics, browser, init, settings }) => {
     const cart_item = event.data.cartLine?.merchandise?.id?.toString() ?? "";
 
     const lastMessage: { [key: string]: string[] } = JSON.parse(
-      await browser.localStorage.getItem("lastMessage") ?? "{}",
+      await browser.localStorage.getItem("lastMessage").catch((_) => { return null; }) ?? "{}",
     );
     let requestId = "00000000-0000-0000-0000-000000000000";
     for (const id in lastMessage) {
