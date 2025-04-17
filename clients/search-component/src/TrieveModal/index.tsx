@@ -87,10 +87,20 @@ const Modal = () => {
 
     try {
       if (props.previewTopicId == undefined) {
-        const fingerprint = window.localStorage.getItem("trieve-fingerprint");
+        let fingerprint = null;
+        try {
+          fingerprint = window.localStorage.getItem("trieve-fingerprint");
+        } catch (e) {
+          console.error("failed to get localstorage fingerprint", e);
+        }
+
         if (!fingerprint) {
           getFingerprint().then((fingerprint) => {
-            window.localStorage.setItem("trieve-fingerprint", fingerprint);
+            try {
+              window.localStorage.setItem("trieve-fingerprint", fingerprint);
+            } catch (e) {
+              console.error("failed to set localstorage fingerprint", e);
+            }
             trieveSDK.sendAnalyticsEvent(
               {
                 event_name: `component_load`,
@@ -106,15 +116,13 @@ const Modal = () => {
             );
           });
         } else {
-          trieveSDK.sendAnalyticsEvent(
-            {
-              event_name: `component_load`,
-              event_type: "view",
-              items: [],
-              user_id: fingerprint,
-              location: window.location.href,
-            },
-          );
+          trieveSDK.sendAnalyticsEvent({
+            event_name: `component_load`,
+            event_type: "view",
+            items: [],
+            user_id: fingerprint,
+            location: window.location.href,
+          });
         }
       }
     } catch (e) {
@@ -346,7 +354,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
     document.documentElement.style.setProperty(
       "--tv-prop-brand-font-family",
       props.brandFontFamily ??
-      `Maven Pro, ui-sans-serif, system-ui, sans-serif,
+        `Maven Pro, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`,
     );
   }, [props.brandColor, props.brandFontFamily]);
