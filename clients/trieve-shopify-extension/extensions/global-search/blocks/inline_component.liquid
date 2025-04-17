@@ -14,7 +14,13 @@
   if (productMetafieldsTrieve && Object.keys(productMetafieldsTrieve).includes("trievePDPQuestions")) {
     trievePDPQuestions = productMetafieldsTrieve.trievePDPQuestions;
   }
-  let defaultAiQuestions = undefined;
+
+  let defaultAiQuestions = {{ block.settings.default_ai_questions | json }};
+  if (defaultAiQuestions && typeof defaultAiQuestions === "string") {
+    defaultAiQuestions = defaultAiQuestions.split(",").map((question) => question.trim());
+  } else {
+    defaultAiQuestions = null;
+  }
   if (trievePDPQuestions && trievePDPQuestions.length > 0) {
     defaultAiQuestions = trievePDPQuestions.map((question) => question.text);
   }
@@ -33,7 +39,7 @@
     renderToDiv(inlineRoot, {
       type: "ecommerce",
       baseUrl: "https://api.trieve.ai",
-      cssRelease: "beta,
+      cssRelease: "beta",
       useGroupSearch: false,
       scaleRem: true,
       hideOpenButton: true,
@@ -143,6 +149,12 @@
       "id": "open_links_new_tab",
       "label": "Open Links in New Tab",
       "default": true
+    },
+    {
+      "id": "default_ai_questions",
+      "type": "textarea",
+      "label": "Initial Questions (Separated by commas)",
+      "placeholder": "What is this made of?"
     }
   ]
 }
