@@ -66,37 +66,9 @@
           correct_typos: true,
         },
         filters: {
-          must: [
-            {
-              field: "metadata.variant_inventory",
-              range: {
-                gt: 0
-              }
-            },
-            {
-              field: "metadata.status",
-              match_all: [
-                "ACTIVE"
-              ]
-            }
-          ]
         }
       },
       chatFilters: {
-        must: [
-          {
-            field: "metadata.variant_inventory",
-            range: {
-              gt: 0
-            }
-          },
-          {
-            field: "metadata.status",
-            match_all: [
-              "ACTIVE"
-            ]
-          }
-        ]
       },
       {% comment %} not on global {% endcomment %}
       inlineHeader: "",
