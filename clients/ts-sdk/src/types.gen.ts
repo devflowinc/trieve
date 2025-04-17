@@ -448,6 +448,10 @@ export type ChunkReqPayload = {
     convert_html_to_text?: (boolean) | null;
     fulltext_boost?: ((FullTextBoost) | null);
     /**
+     * If fulltext_content is present, it will be used for creating the fulltext and bm25 sparse vectors instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and used for semantic functionality unless the corresponding `semantic_content` field is defined. `chunk_html` must still be present for the chunk to be created properly.
+     */
+    fulltext_content?: (string) | null;
+    /**
      * Group ids are the Trieve generated ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these Trieve generated ids must be created first, it cannot be arbitrarily created through this route.
      */
     group_ids?: Array<(string)> | null;
@@ -478,7 +482,7 @@ export type ChunkReqPayload = {
     num_value?: (number) | null;
     semantic_boost?: ((SemanticBoost) | null);
     /**
-     * If semantic_content is present, it will be used for creating semantic embeddings instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and always used for fulltext functionality. `chunk_html` must still be present for the chunk to be created properly.
+     * If semantic_content is present, it will be used for creating semantic embeddings instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and used for fulltext functionality unless the corresponding `fulltext_content` field is defined. `chunk_html` must still be present for the chunk to be created properly.
      */
     semantic_content?: (string) | null;
     /**
