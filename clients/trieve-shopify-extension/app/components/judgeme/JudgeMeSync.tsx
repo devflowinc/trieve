@@ -29,12 +29,7 @@ export const JudgeMeSync = () => {
       const data = await response.json();
       return data.reviewCount;
     },
-    refetchInterval() {
-      if (reviewCount?.count === syncedCount) {
-        return false;
-      }
-      return 1000 * 5;
-    },
+    refetchInterval: 1000 * 5,
   });
 
   const runSyncMutation = useMutation({
