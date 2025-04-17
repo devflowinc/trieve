@@ -17,7 +17,7 @@ export const isWebPixelInstalled = async (adminApi: AdminApiCaller, trieveKey: T
 
     if (response.error) {
         console.error(response.error);
-        throw response.error;
+        return false;
     }
     return response.data.webPixel.id !== null;
 };
