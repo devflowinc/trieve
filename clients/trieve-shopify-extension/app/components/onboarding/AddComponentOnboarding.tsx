@@ -4,20 +4,13 @@ import { createPortal } from "react-dom";
 import { CheckIcon, ExternalIcon, XIcon } from "@shopify/polaris-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useClientAdminApi } from "app/loaders/clientLoader";
-import {
-  themeListQuery,
-  globalComponentInstallQuery,
-  pdpInstallQuery,
-} from "app/queries/onboarding";
+import { themeListQuery } from "app/queries/onboarding";
 import { cn } from "app/utils/cn";
 import { OnboardingBody } from "app/utils/onboarding";
 import { useShopName } from "app/utils/useShopName";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { ThemeSelect, ThemeChoice } from "./ThemeSelect"; // Import the new component
-import { trackCustomerEvent } from "app/processors/shopifyTrackers";
-import { useTrieve } from "app/context/trieveContext";
-import { TrieveKey } from "app/types";
-import { AdminApiCaller } from "app/loaders";
+import { useAddComponentOnboarding } from "app/hooks/add-component-onboard";
 
 const getShortThemeId = (fullGid: string): string | null => {
   const regex = /gid:\/\/shopify\/OnlineStoreTheme\/(\d+)/;
@@ -84,25 +77,9 @@ export const AddComponentOnboarding: OnboardingBody = ({
   broadcastCompletion,
 }) => {
   const adminApi = useClientAdminApi();
-  const { trieve, trieveKey } = useTrieve();
 
-  const [keepFetchingGlobal, setKeepFetchingGlobal] = useState(true);
-
-  const { data: globalThemeData } = useQuery({
-    ...globalComponentInstallQuery(adminApi),
-    refetchInterval: 2000,
-    placeholderData: {},
-    enabled: keepFetchingGlobal,
-  });
-
-  const [keepFetchingPdp, setKeepFetchingPdp] = useState(true);
-
-  const { data: pdpThemeData } = useQuery({
-    ...pdpInstallQuery(adminApi),
-    refetchInterval: 2000,
-    placeholderData: {},
-    enabled: keepFetchingPdp,
-  });
+  const { allDoneGlobally, globalComplete, pdpComplete } =
+    useAddComponentOnboarding(broadcastCompletion);
 
   const { data: themes } = useQuery({
     ...themeListQuery(adminApi),
@@ -118,27 +95,6 @@ export const AddComponentOnboarding: OnboardingBody = ({
       setSelectedTheme(themes[0]);
     }
   }, [themes, selectedTheme]);
-
-  const globalComplete = useMemo(() => {
-    const stringified = JSON.stringify(globalThemeData);
-    if (stringified?.includes("global_component")) return true;
-    return false;
-  }, [globalThemeData]);
-
-  const pdpComplete = useMemo(() => {
-    const stringified = JSON.stringify(pdpThemeData);
-    if (stringified?.includes("inline_component")) return true;
-    return false;
-  }, [pdpThemeData]);
-
-  useEffect(() => {
-    if (globalComplete) {
-      setKeepFetchingGlobal(false);
-    }
-    if (pdpComplete) {
-      setKeepFetchingPdp(false);
-    }
-  }, [globalComplete, pdpComplete]);
 
   const shopname = useShopName();
 
@@ -176,68 +132,23 @@ export const AddComponentOnboarding: OnboardingBody = ({
     window.open(link, "_blank");
   };
 
-  useEffect(() => {
-    if (globalComplete) {
-      if (trieve.organizationId && trieve.trieve.apiKey != null) {
-        trackCustomerEvent(
-          trieve.trieve.baseUrl,
-          {
-            organization_id: trieve.organizationId,
-            store_name: "",
-            event_type: "global_component_added",
-          },
-          trieve.organizationId,
-          trieve.trieve.apiKey,
-        );
-      }
-    }
-
-    if (pdpComplete) {
-      if (trieve.organizationId && trieve.trieve.apiKey != null) {
-        trackCustomerEvent(
-          trieve.trieve.baseUrl,
-          {
-            organization_id: trieve.organizationId,
-            store_name: "",
-            event_type: "pdp_component_added",
-          },
-          trieve.organizationId,
-          trieve.trieve.apiKey,
-        );
-      }
-    }
-
-    if (globalComplete && pdpComplete) {
-      broadcastCompletion?.();
-    }
-  }, [globalComplete, pdpComplete]);
-
   const themeName = selectedTheme?.name ? `"${selectedTheme?.name}"` : "...";
-
-  const allDone = globalComplete && pdpComplete;
 
   const handleThemeChange = (theme: ThemeChoice) => {
     setSelectedTheme(theme);
   };
 
   return (
-    <div className={cn(!allDone && "min-h-[180px]")}>
-      {!allDone && (
-        <div className="px-5 mb-2 max-w-[300px]">
-          <ThemeSelect
-            themes={themes}
-            selectedTheme={selectedTheme}
-            onChange={handleThemeChange}
-            disabled={themes.length < 2}
-          />
-        </div>
-      )}
-      <div
-        className={cn(
-          "grid w-full pb-1 place-items-center",
-          allDone && "min-h-[180px]",
-        )}
-      >
+    <div className={cn(!allDoneGlobally && "min-h-[180px]")}>
+      <div className="px-5 mb-2 max-w-[300px]">
+        <ThemeSelect
+          themes={themes}
+          selectedTheme={selectedTheme}
+          onChange={handleThemeChange}
+          disabled={themes.length < 2}
+        />
+      </div>
+      <div className={cn("grid w-full pb-1 place-items-center")}>
         <div className="grid grid-cols-2 pt-4 px-8 w-full">
           <div className="flex flex-col gap-1 border-r border-r-neutral-200 items-center">
             <Text as="h2" variant="headingMd">
