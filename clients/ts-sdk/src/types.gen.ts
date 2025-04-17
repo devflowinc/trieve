@@ -1540,7 +1540,7 @@ export type EventNameAndCountsResponse = {
     event_names: Array<EventNameAndCounts>;
 };
 
-export type EventNamesFilter = 'component_close' | 'component_open' | 'View' | 'site-followup_query' | 'Click' | 'site-add_to_cart' | 'site-checkout';
+export type EventNamesFilter = 'component_close' | 'component_open' | 'View' | 'site-followup_query' | 'Click' | 'site-add_to_cart' | 'site-checkout_end';
 
 export type EventReturn = {
     event_types: Array<(string)>;

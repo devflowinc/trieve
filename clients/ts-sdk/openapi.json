@@ -11686,7 +11686,7 @@
           "site-followup_query",
           "Click",
           "site-add_to_cart",
-          "site-checkout"
+          "site-checkout_end"
         ]
       },
       "EventReturn": {

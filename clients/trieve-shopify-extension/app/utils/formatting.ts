@@ -193,9 +193,9 @@ export const fillDate = <T>({
       return foundDataPoint
         ? foundDataPoint
         : {
-            time: d,
-            value: defaultValue,
-          };
+          time: d,
+          value: defaultValue,
+        };
     });
   } else if (granularity == "hour") {
     info = eachHourOfInterval({
@@ -220,9 +220,9 @@ export const fillDate = <T>({
       return foundDataPoint
         ? foundDataPoint
         : {
-            time: d,
-            value: defaultValue,
-          };
+          time: d,
+          value: defaultValue,
+        };
     });
   } else if (granularity == "minute") {
     info = eachMinuteOfInterval({
@@ -247,9 +247,9 @@ export const fillDate = <T>({
       return foundDataPoint
         ? foundDataPoint
         : {
-            time: d,
-            value: defaultValue,
-          };
+          time: d,
+          value: defaultValue,
+        };
     });
   }
 
@@ -278,7 +278,7 @@ export const formatTimeValueForChart = (
 export type KnownEventNames =
   | "component_load"
   | "site-add_to_cart"
-  | "site-checkout"
+  | "site-checkout_end"
   | "Click"
   | "View"
   | "searched"
@@ -295,7 +295,7 @@ export const formatEventName = (
     return "Load Modal";
   } else if (event === "site-add_to_cart") {
     return "Add to Cart";
-  } else if (event === "site-checkout") {
+  } else if (event === "site-checkout_end") {
     return "Checkout";
   } else if (event === "component_open") {
     return "Open Modal";
