@@ -7332,8 +7332,8 @@ pub enum EventNamesFilter {
     #[display(rename = "site-add_to_cart", fmt = "site-add_to_cart")]
     #[serde(rename = "site-add_to_cart")]
     AddToCart,
-    #[display(rename = "site-checkout", fmt = "site-checkout")]
-    #[serde(rename = "site-checkout")]
+    #[display(rename = "site-checkout_end", fmt = "site-checkout_end")]
+    #[serde(rename = "site-checkout_end")]
     Checkout,
 }
 
@@ -7346,7 +7346,7 @@ impl EventNamesFilter {
             "site-followup_query" => EventNamesFilter::FollowupQuery,
             "Click" => EventNamesFilter::Click,
             "site-add_to_cart" => EventNamesFilter::AddToCart,
-            "site-checkout" => EventNamesFilter::Checkout,
+            "site-checkout_end" => EventNamesFilter::Checkout,
             _ => EventNamesFilter::View,
         }
     }
@@ -7359,7 +7359,7 @@ impl EventNamesFilter {
             EventNamesFilter::FollowupQuery => String::from("site-followup_query"),
             EventNamesFilter::Click => String::from("Click"),
             EventNamesFilter::AddToCart => String::from("site-add_to_cart"),
-            EventNamesFilter::Checkout => String::from("site-checkout"),
+            EventNamesFilter::Checkout => String::from("site-checkout_end"),
         }
     }
 }

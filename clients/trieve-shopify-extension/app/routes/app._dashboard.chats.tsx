@@ -78,7 +78,7 @@ export default function ChatsPage() {
       data?.topics.map((topic) => {
         let event_names_counts: Record<string, number> = {
           "site-add_to_cart": 0,
-          "site-checkout": 0,
+          "site-checkout_end": 0,
           "Click": 0,
         };
         for (const event of topic.event_names) {

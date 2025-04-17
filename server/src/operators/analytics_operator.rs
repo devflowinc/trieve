@@ -2912,6 +2912,7 @@ pub async fn get_search_revenue_query(
         FROM events
         WHERE dataset_id = ?
         AND event_type = 'purchase' 
+        AND event_name = 'site-checkout_end'
         AND items != '[]' AND request_type = 'search'
         ",
         interval,
@@ -2969,6 +2970,7 @@ pub async fn get_chat_revenue_query(
         FROM events
         WHERE dataset_id = ?
         AND event_type = 'purchase' 
+        AND event_name = 'site-checkout_end'
         AND items != '[]' AND request_type = 'rag' 
         ",
         interval,
@@ -3122,7 +3124,7 @@ pub async fn get_rag_event_counts_query(
             COUNT(DISTINCT user_id) AS event_count
         FROM
             events
-        WHERE {} AND event_name != 'site-checkout' AND event_name != 'site-add_to_cart'
+        WHERE {} AND event_name != 'site-checkout_end' AND event_name != 'site-add_to_cart'
         GROUP BY event_name
         
         UNION ALL
@@ -3133,7 +3135,7 @@ pub async fn get_rag_event_counts_query(
             COUNT(DISTINCT user_id) AS event_count
         FROM
             events
-        WHERE {} AND event_name = 'site-checkout' AND items != '[]'
+        WHERE {} AND event_name = 'site-checkout_end' AND items != '[]'
         GROUP BY event_name
 
         UNION ALL

@@ -11,7 +11,7 @@ export const AVAILABLE_EVENT_TYPES: { label: string; value: EventNamesFilter }[]
   { label: "Followup Clicked", value: "site-followup_query" },
   { label: "Click", value: "Click" },
   { label: "Add to Cart", value: "site-add_to_cart" },
-  { label: "Checkout", value: "site-checkout" },
+  { label: "Checkout", value: "site-checkout_end" },
 ];
 
 const eventTypeSelectOptions = [
