@@ -16,7 +16,7 @@ import {
 import { toBase64 } from "./Search/UploadImage";
 import { getPresignedUrl, uploadFile } from "../utils/trieve";
 import { ModalContainer } from "./ModalContainer";
-import { useChatState } from "../utils/hooks/chat-context";
+import { retryOperation, useChatState } from "../utils/hooks/chat-context";
 import convert from "heic-convert/browser";
 
 export const ActiveFilterPills = () => {
@@ -380,23 +380,51 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             promptDescription += `\n\n[User's goal for the space (take more into account than anything else)]:\n${prevInputText}`;
           }
 
-          const replacementMaterialDescriptionReader =
-            await trieveSDK.ragOnChunkReader(
-              {
-                chunk_ids: [],
-                image_urls: Object.values(imageUrls).filter((url) => url),
-                prev_messages: [
+          let retries = 0;
+          let replacementMaterialDescriptionReader = null;
+          while (!replacementMaterialDescriptionReader) {
+            try {
+              const firstMessageInferenceAbortController =
+                new AbortController();
+              const timeoutId = setTimeout(() => {
+                firstMessageInferenceAbortController.abort(
+                  "Timeout after 10 seconds",
+                );
+              }, 10000);
+
+              replacementMaterialDescriptionReader =
+                await trieveSDK.ragOnChunkReader(
                   {
-                    content: promptDescription,
-                    role: "user",
+                    chunk_ids: [],
+                    image_urls: Object.values(imageUrls).filter((url) => url),
+                    prev_messages: [
+                      {
+                        content: promptDescription,
+                        role: "user",
+                      },
+                    ],
+                    prompt: "",
+                    stream_response: true,
+                    user_id: fingerprint.toString(),
                   },
-                ],
-                prompt: "",
-                stream_response: true,
-                user_id: fingerprint.toString(),
-              },
-              firstMessageInferenceAbortController.signal,
-            );
+                  firstMessageInferenceAbortController.signal,
+                );
+
+              clearTimeout(timeoutId);
+              break;
+            } catch (error) {
+              retries++;
+              console.error(`Attempt ${retries} failed:`, error);
+
+              if (retries >= 3) {
+                console.error("Max retries reached, giving up");
+                throw error;
+              }
+
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+          }
+
           setLoadingStates((prev) => ({
             ...prev,
             [steps[i].title]: "Generating search query...",
@@ -457,23 +485,50 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
             [steps[i].title]: "Understanding your space...",
           }));
 
-          const replacementMaterialDescriptionReader =
-            await trieveSDK.ragOnChunkReader(
-              {
-                chunk_ids: [],
-                image_urls: Object.values(imageUrls).filter((url) => url),
-                prev_messages: [
+          let retries = 0;
+          let replacementMaterialDescriptionReader = null;
+          while (!replacementMaterialDescriptionReader) {
+            try {
+              const firstMessageInferenceAbortController =
+                new AbortController();
+              const timeoutId = setTimeout(() => {
+                firstMessageInferenceAbortController.abort(
+                  "Timeout after 10 seconds",
+                );
+              }, 10000);
+
+              replacementMaterialDescriptionReader =
+                await trieveSDK.ragOnChunkReader(
                   {
-                    content: `${steps[i].prompt ?? ""}`,
-                    role: "user",
+                    chunk_ids: [],
+                    image_urls: Object.values(imageUrls).filter((url) => url),
+                    prev_messages: [
+                      {
+                        content: `${steps[i].prompt ?? ""}`,
+                        role: "user",
+                      },
+                    ],
+                    prompt: "",
+                    stream_response: true,
+                    user_id: fingerprint.toString(),
                   },
-                ],
-                prompt: "",
-                stream_response: true,
-                user_id: fingerprint.toString(),
-              },
-              textInferenceAbortController.signal,
-            );
+                  textInferenceAbortController.signal,
+                );
+
+              clearTimeout(timeoutId);
+              break;
+            } catch (error) {
+              retries++;
+              console.error(`Attempt ${retries} failed:`, error);
+
+              if (retries >= 3) {
+                console.error("Max retries reached, giving up");
+                throw error;
+              }
+
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+          }
 
           setLoadingStates((prev) => ({
             ...prev,
@@ -626,33 +681,36 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                   ...prev,
                   [step.title]: "Uploading image...",
                 }));
-                toBase64(processedFile).then((data) => {
-                  const base64File = data
-                    .split(",")[1]
-                    .replace(/\+/g, "-")
-                    .replace(/\//g, "_")
-                    .replace(/=+$/, "");
-                  uploadFile(trieveSDK, processedFile.name, base64File).then(
-                    (fileId) => {
-                      getPresignedUrl(trieveSDK, fileId).then((imageUrl) => {
-                        setImageUrls((prev) => ({
-                          ...prev,
-                          [step.title]: imageUrl,
-                        }));
+                retryOperation(() => toBase64(processedFile))
+                  .then(async (data) => {
+                    const base64File = data
+                      .split(",")[1]
+                      .replace(/\+/g, "-")
+                      .replace(/\//g, "_")
+                      .replace(/=+$/, "");
 
-                        setLoadingStates((prev) => ({
-                          ...prev,
-                          [step.title]: "idle",
-                        }));
-
-                        setCompletedSteps((prev) => ({
-                          ...prev,
-                          [step.title]: true,
-                        }));
-                      });
-                    },
-                  );
-                });
+                    const fileId = await retryOperation(() =>
+                      uploadFile(trieveSDK, processedFile.name, base64File),
+                    );
+                    const imageUrl = await retryOperation(() =>
+                      getPresignedUrl(trieveSDK, fileId),
+                    );
+                    setImageUrls((prev) => ({
+                      ...prev,
+                      [step.title]: imageUrl,
+                    }));
+                    setLoadingStates((prev) => ({
+                      ...prev,
+                      [step.title]: "idle",
+                    }));
+                    setCompletedSteps((prev) => ({
+                      ...prev,
+                      [step.title]: true,
+                    }));
+                  })
+                  .catch((error) => {
+                    console.error("Operation failed after retries:", error);
+                  });
               }}
               onClick={() => {
                 const input = document.createElement("input");
@@ -727,33 +785,36 @@ export const InferenceFiltersForm = ({ steps }: InferenceFiltersFormProps) => {
                     ...prev,
                     [step.title]: "Uploading image...",
                   }));
-                  toBase64(processedFile).then((data) => {
-                    const base64File = data
-                      .split(",")[1]
-                      .replace(/\+/g, "-")
-                      .replace(/\//g, "_")
-                      .replace(/=+$/, "");
-                    uploadFile(trieveSDK, processedFile.name, base64File).then(
-                      (fileId) => {
-                        getPresignedUrl(trieveSDK, fileId).then((imageUrl) => {
-                          setImageUrls((prev) => ({
-                            ...prev,
-                            [step.title]: imageUrl,
-                          }));
+                  retryOperation(() => toBase64(processedFile))
+                    .then(async (data) => {
+                      const base64File = data
+                        .split(",")[1]
+                        .replace(/\+/g, "-")
+                        .replace(/\//g, "_")
+                        .replace(/=+$/, "");
 
-                          setLoadingStates((prev) => ({
-                            ...prev,
-                            [step.title]: "idle",
-                          }));
-
-                          setCompletedSteps((prev) => ({
-                            ...prev,
-                            [step.title]: true,
-                          }));
-                        });
-                      },
-                    );
-                  });
+                      const fileId = await retryOperation(() =>
+                        uploadFile(trieveSDK, processedFile.name, base64File),
+                      );
+                      const imageUrl = await retryOperation(() =>
+                        getPresignedUrl(trieveSDK, fileId),
+                      );
+                      setImageUrls((prev) => ({
+                        ...prev,
+                        [step.title]: imageUrl,
+                      }));
+                      setLoadingStates((prev) => ({
+                        ...prev,
+                        [step.title]: "idle",
+                      }));
+                      setCompletedSteps((prev) => ({
+                        ...prev,
+                        [step.title]: true,
+                      }));
+                    })
+                    .catch((error) => {
+                      console.error("Operation failed after retries:", error);
+                    });
                 };
 
                 input.click();
