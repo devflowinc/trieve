@@ -118,7 +118,7 @@ export const validateTrieveAuth = async <S extends boolean = true>(
         },
         body: JSON.stringify({
           user_name: shop_name,
-          user_email: "drew.h@trieve.ai",
+          user_email: shop_email,
         }),
       },
     ).catch((e) => {
