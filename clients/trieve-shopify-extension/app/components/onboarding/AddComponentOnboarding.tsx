@@ -1,4 +1,3 @@
-import { useRouteLoaderData } from "@remix-run/react";
 import { Button, Text } from "@shopify/polaris";
 import { createPortal } from "react-dom";
 import { CheckIcon, ExternalIcon, XIcon } from "@shopify/polaris-icons";
@@ -7,19 +6,12 @@ import { useClientAdminApi } from "app/loaders/clientLoader";
 import { themeListQuery } from "app/queries/onboarding";
 import { cn } from "app/utils/cn";
 import { OnboardingBody } from "app/utils/onboarding";
-import { useShopName } from "app/utils/useShopName";
 import { ReactNode, useEffect, useState } from "react";
-import { ThemeSelect, ThemeChoice } from "./ThemeSelect"; // Import the new component
-import { useAddComponentOnboarding } from "app/hooks/add-component-onboard";
-
-const getShortThemeId = (fullGid: string): string | null => {
-  const regex = /gid:\/\/shopify\/OnlineStoreTheme\/(\d+)/;
-  const match = fullGid.match(regex);
-  if (match && match.length > 1) {
-    return match[1];
-  }
-  return null;
-};
+import { ThemeSelect, ThemeChoice } from "./ThemeSelect";
+import {
+  useAddComponentDeepLink,
+  useAddComponentOnboarding,
+} from "app/hooks/add-component-onboard";
 
 interface TutorialVideoProps {
   title: string;
@@ -96,29 +88,8 @@ export const AddComponentOnboarding: OnboardingBody = ({
     }
   }, [themes, selectedTheme]);
 
-  const shopname = useShopName();
-
-  const { shopifyThemeAppExtensionUuid } = useRouteLoaderData("routes/app") as {
-    shopifyThemeAppExtensionUuid?: string;
-  };
-
-  const getDeeplink = () => {
-    if (!shopifyThemeAppExtensionUuid) return null;
-    if (!shopname) return null;
-    if (!selectedTheme) return null;
-    const themeId = getShortThemeId(selectedTheme?.id);
-
-    return `https://${shopname}/admin/themes/${themeId}/editor?context=apps&activateAppId=${shopifyThemeAppExtensionUuid}/global_component`;
-  };
-
-  const getPdpDeepLink = () => {
-    if (!shopifyThemeAppExtensionUuid) return null;
-    if (!shopname) return null;
-    if (!selectedTheme) return null;
-    const themeId = getShortThemeId(selectedTheme?.id);
-
-    return `https://${shopname}/admin/themes/${themeId}/editor?template=product&addAppBlockId=${shopifyThemeAppExtensionUuid}/inline_component`;
-  };
+  const { getDeeplink, getPdpDeepLink } =
+    useAddComponentDeepLink(selectedTheme);
 
   const openDeepLink = () => {
     const link = getDeeplink();
