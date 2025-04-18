@@ -122,7 +122,7 @@ export const AddComponentOnboarding: OnboardingBody = ({
       <div className={cn("grid w-full pb-1 place-items-center")}>
         <div className="grid grid-cols-2 pt-4 px-8 w-full">
           <div className="flex flex-col gap-1 border-r border-r-neutral-200 items-center">
-            <Text as="h2" variant="headingMd">
+            <Text as="h2" alignment="center" variant="headingMd">
               {globalComplete === true
                 ? "Global Search"
                 : "Add the global search component"}
@@ -150,7 +150,7 @@ export const AddComponentOnboarding: OnboardingBody = ({
             )}
           </div>
           <div className="flex flex-col gap-1 items-center">
-            <Text as="h2" variant="headingMd">
+            <Text as="h2" alignment="center" variant="headingMd">
               {pdpComplete === true
                 ? "Product Chat"
                 : "Add the product chat component"}
