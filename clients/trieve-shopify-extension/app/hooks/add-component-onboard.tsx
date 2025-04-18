@@ -1,4 +1,6 @@
+import { useRouteLoaderData } from "@remix-run/react";
 import { useQuery } from "@tanstack/react-query";
+import { ThemeChoice } from "app/components/onboarding/ThemeSelect";
 import { useTrieve } from "app/context/trieveContext";
 import { useClientAdminApi } from "app/loaders/clientLoader";
 import { trackCustomerEvent } from "app/processors/shopifyTrackers";
@@ -6,6 +8,7 @@ import {
   globalComponentInstallQuery,
   pdpInstallQuery,
 } from "app/queries/onboarding";
+import { useShopName } from "app/utils/useShopName";
 import { useEffect, useMemo, useState } from "react";
 
 export const useAddComponentOnboarding = (broadcastCompletion: () => void) => {
@@ -89,4 +92,41 @@ export const useAddComponentOnboarding = (broadcastCompletion: () => void) => {
   }, [allDone]);
 
   return { allDoneGlobally: allDone, globalComplete, pdpComplete };
+};
+
+const getShortThemeId = (fullGid: string): string | null => {
+  const regex = /gid:\/\/shopify\/OnlineStoreTheme\/(\d+)/;
+  const match = fullGid.match(regex);
+  if (match && match.length > 1) {
+    return match[1];
+  }
+  return null;
+};
+
+export const useAddComponentDeepLink = (theme: ThemeChoice | null) => {
+  const shopname = useShopName();
+
+  const { shopifyThemeAppExtensionUuid } = useRouteLoaderData("routes/app") as {
+    shopifyThemeAppExtensionUuid?: string;
+  };
+
+  const getDeeplink = () => {
+    if (!shopifyThemeAppExtensionUuid) return null;
+    if (!shopname) return null;
+    if (!theme) return null;
+    const themeId = getShortThemeId(theme.id);
+
+    return `https://${shopname}/admin/themes/${themeId}/editor?context=apps&activateAppId=${shopifyThemeAppExtensionUuid}/global_component`;
+  };
+
+  const getPdpDeepLink = () => {
+    if (!shopifyThemeAppExtensionUuid) return null;
+    if (!shopname) return null;
+    if (!theme) return null;
+    const themeId = getShortThemeId(theme.id);
+
+    return `https://${shopname}/admin/themes/${themeId}/editor?template=product&addAppBlockId=${shopifyThemeAppExtensionUuid}/inline_component`;
+  };
+
+  return { getDeeplink, getPdpDeepLink };
 };
