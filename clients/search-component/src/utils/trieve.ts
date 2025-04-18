@@ -16,6 +16,7 @@ import {
 } from "./types";
 import { defaultHighlightOptions, highlightText } from "./highlight";
 import { ModalProps, ModalTypes, PagefindApi } from "./hooks/modal-context";
+import { retryOperation } from "./hooks/chat-context";
 
 export const omit = (obj: object | null | undefined, keys: string[]) => {
   if (!obj) return obj;
@@ -398,15 +399,24 @@ export const getSuggestedQueries = async ({
   count: number;
   abortController?: AbortController;
 }) => {
-  return trieve.suggestedQueries(
-    {
-      ...(query && { query }),
-      suggestion_type: "keyword",
-      suggestions_to_create: count,
-      search_type: "semantic",
-    },
-    abortController?.signal,
-  );
+  try {
+    return await retryOperation(() =>
+      trieve.suggestedQueries(
+        {
+          ...(query && { query }),
+          suggestion_type: "keyword",
+          suggestions_to_create: count,
+          search_type: "semantic",
+        },
+        abortController?.signal,
+      ),
+    );
+  } catch (error) {
+    console.error("Failed to get suggested queries:", error);
+    return {
+      queries: [],
+    };
+  }
 };
 
 export const getSuggestedQuestions = async ({
@@ -452,28 +462,37 @@ export const getSuggestedQuestions = async ({
     context = "Keep your query recommendations short, limited to 3-6 words";
   }
 
-  return trieve.suggestedQueries(
-    {
-      ...(query && { query }),
-      suggestion_type: "question",
-      search_type: "hybrid",
-      suggestions_to_create: count,
-      is_followup: is_followup ?? false,
-      context,
-      ...(groupTrackingId &&
-        groupTrackingId && {
-          filters: {
-            must: [
-              {
-                field: "group_tracking_ids",
-                match_all: [groupTrackingId],
+  try {
+    return await retryOperation(() =>
+      trieve.suggestedQueries(
+        {
+          ...(query && { query }),
+          suggestion_type: "question",
+          search_type: "hybrid",
+          suggestions_to_create: count,
+          is_followup: is_followup ?? false,
+          context,
+          ...(groupTrackingId &&
+            groupTrackingId && {
+              filters: {
+                must: [
+                  {
+                    field: "group_tracking_ids",
+                    match_all: [groupTrackingId],
+                  },
+                ],
               },
-            ],
-          },
-        }),
-    },
-    abortController?.signal,
-  );
+            }),
+        },
+        abortController?.signal,
+      ),
+    );
+  } catch (error) {
+    console.error("Failed to get suggested questions:", error);
+    return {
+      queries: [],
+    };
+  }
 };
 
 export type SimpleChunk = ChunkMetadata | ChunkMetadataStringTagSet;

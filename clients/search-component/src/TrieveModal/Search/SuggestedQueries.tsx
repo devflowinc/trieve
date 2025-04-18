@@ -19,8 +19,8 @@ export const SuggestedQueries = () => {
         query,
         count: props.numberOfSuggestions ?? 3,
         abortController,
-      }).then((queries) => {
-        setSuggestedQueries(queries.queries);
+      }).then((suggestedQueriesResp) => {
+        setSuggestedQueries(suggestedQueriesResp.queries);
         setIsLoading(false);
       });
     },

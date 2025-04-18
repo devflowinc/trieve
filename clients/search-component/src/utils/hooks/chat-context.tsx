@@ -14,6 +14,22 @@ import {
 } from "trieve-ts-sdk";
 import { defaultHighlightOptions } from "../highlight";
 
+export const retryOperation = async <T,>(
+  operation: () => Promise<T>,
+  maxRetries: number = 10,
+  delayMs: number = 100,
+): Promise<T> => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attempt === maxRetries) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error("Max retries reached");
+};
+
 export type ChunkIdWithIndex = {
   chunk_id: string;
   position: number;
@@ -113,20 +129,26 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       called.current = true;
       setIsLoading(true);
       setCurrentQuestion("");
-      const topic = await trieveSDK.createTopic({
-        name: question,
-        owner_id: fingerprint,
-        metadata: {
-          component_props: props,
-        },
-      });
-      setCurrentTopic(topic.id);
-      createQuestion({
-        id: topic.id,
-        question: question,
-        defaultMatchAnyTags,
-        defaultMatchAllTags,
-      });
+      try {
+        const topic = await retryOperation(async () => {
+          return await trieveSDK.createTopic({
+            name: question,
+            owner_id: fingerprint,
+            metadata: {
+              component_props: props,
+            },
+          });
+        });
+        setCurrentTopic(topic.id);
+        createQuestion({
+          id: topic.id,
+          question: question,
+          defaultMatchAnyTags,
+          defaultMatchAllTags,
+        });
+      } catch (error) {
+        console.error("Failed to create topic after multiple retries:", error);
+      }
     }
   };
 
@@ -339,20 +361,27 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     let transcribedQuery: string | null = null;
 
     // This only works w/ shopify rn
+    const recommendOptions = props.recommendOptions;
     if (
-      props.recommendOptions &&
-      props.recommendOptions?.queriesToTriggerRecommendations.includes(
+      recommendOptions &&
+      recommendOptions?.queriesToTriggerRecommendations.includes(
         questionProp ?? "",
       )
     ) {
-      const item = await trieveSDK.getChunkByTrackingId({
-        trackingId: props.recommendOptions.productId,
-      });
-      const metadata = item?.metadata as {
-        title: string;
-        variantName: string;
-      };
-      questionProp = `The user wants to find things similar to ${metadata.title} - ${metadata.variantName} and says ${question}. Find me some items that are just like it`;
+      try {
+        const item = await retryOperation(async () => {
+          return await trieveSDK.getChunkByTrackingId({
+            trackingId: recommendOptions.productId,
+          });
+        });
+        const metadata = item?.metadata as {
+          title: string;
+          variantName: string;
+        };
+        questionProp = `The user wants to find things similar to ${metadata.title} - ${metadata.variantName} and says ${question}. Find me some items that are just like it`;
+      } catch (error) {
+        console.error("Failed to get product by tracking ID:", error);
+      }
     }
 
     // Use group search
@@ -455,42 +484,49 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         );
 
         try {
-          const filterParamsResp = await trieveSDK.getToolCallFunctionParams(
-            {
-              user_message_text:
-                questionProp || currentQuestion
-                  ? `Get filters from the following messages: ${messages
-                      .slice(0, -1)
-                      .filter((message) => {
-                        return message.type == "user";
-                      })
-                      .map(
-                        (message) => `\n\n${message.text}`,
-                      )} \n\n ${questionProp || currentQuestion}`
-                  : null,
-              image_url: imageUrl ? imageUrl : null,
-              audio_input: curAudioBase64 ? curAudioBase64 : null,
-              tool_function: {
-                name: "get_filters",
-                description:
-                  "Decide on which filters to apply to available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
-                parameters:
-                  props.tags?.map((tag) => {
-                    return {
-                      name: tag.label,
-                      parameter_type: "boolean",
-                      description: tag.description ?? "",
-                    } as ToolFunctionParameter;
-                  }) ?? [],
-              },
-            },
-            chatMessageAbortController.current.signal,
-            (headers: Record<string, string>) => {
-              if (headers["x-tr-query"] && curAudioBase64) {
-                transcribedQuery = headers["x-tr-query"];
-              }
-            },
-          );
+          let filterParamsResp = null;
+          try {
+            filterParamsResp = await retryOperation(async () => {
+              return await trieveSDK.getToolCallFunctionParams(
+                {
+                  user_message_text:
+                    questionProp || currentQuestion
+                      ? `Get filters from the following messages: ${messages
+                          .slice(0, -1)
+                          .filter((message) => {
+                            return message.type == "user";
+                          })
+                          .map(
+                            (message) => `\n\n${message.text}`,
+                          )} \n\n ${questionProp || currentQuestion}`
+                      : null,
+                  image_url: imageUrl ? imageUrl : null,
+                  audio_input: curAudioBase64 ? curAudioBase64 : null,
+                  tool_function: {
+                    name: "get_filters",
+                    description:
+                      "Decide on which filters to apply to available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
+                    parameters:
+                      props.tags?.map((tag) => {
+                        return {
+                          name: tag.label,
+                          parameter_type: "boolean",
+                          description: tag.description ?? "",
+                        } as ToolFunctionParameter;
+                      }) ?? [],
+                  },
+                },
+                chatMessageAbortController.current.signal,
+                (headers: Record<string, string>) => {
+                  if (headers["x-tr-query"] && curAudioBase64) {
+                    transcribedQuery = headers["x-tr-query"];
+                  }
+                },
+              );
+            });
+          } catch (e) {
+            console.error("error getting getToolCallFunctionParams", e);
+          }
 
           if (transcribedQuery && curAudioBase64) {
             questionProp = transcribedQuery;
@@ -517,14 +553,16 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
 
           const match_any_tags = [];
-          for (const key of Object.keys(filterParamsResp.parameters ?? {})) {
-            const filterParam = (filterParamsResp.parameters as any)[
-              key as keyof typeof filterParamsResp.parameters
-            ];
-            if (typeof filterParam === "boolean" && filterParam) {
-              const tag = props.tags?.find((t) => t.label === key)?.tag;
-              if (tag) {
-                match_any_tags.push(tag);
+          if (filterParamsResp?.parameters) {
+            for (const key of Object.keys(filterParamsResp.parameters ?? {})) {
+              const filterParam = (filterParamsResp.parameters as any)[
+                key as keyof typeof filterParamsResp.parameters
+              ];
+              if (typeof filterParam === "boolean" && filterParam) {
+                const tag = props.tags?.find((t) => t.label === key)?.tag;
+                if (tag) {
+                  match_any_tags.push(tag);
+                }
               }
             }
           }
@@ -723,21 +761,34 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setIsDoneReading(false);
     setCurrentQuestion("");
 
-    if (props.groupTrackingId) {
-      const fetchedGroup = await trieveSDK.getGroupByTrackingId({
-        trackingId: props.groupTrackingId,
-      });
-      if (fetchedGroup) {
-        group = {
-          created_at: fetchedGroup.created_at,
-          updated_at: fetchedGroup.updated_at,
-          dataset_id: fetchedGroup.dataset_id,
-          description: fetchedGroup.description,
-          id: fetchedGroup.id,
-          metadata: fetchedGroup.metadata,
-          name: props.cleanGroupName ? props.cleanGroupName : fetchedGroup.name,
-          tag_set: fetchedGroup.tag_set,
-        } as ChunkGroup;
+    const trackingId = group?.tracking_id;
+    if (trackingId) {
+      try {
+        const fetchedGroup = await retryOperation(async () => {
+          return await trieveSDK.getGroupByTrackingId({
+            trackingId,
+          });
+        });
+
+        if (fetchedGroup) {
+          group = {
+            created_at: fetchedGroup.created_at,
+            updated_at: fetchedGroup.updated_at,
+            dataset_id: fetchedGroup.dataset_id,
+            description: fetchedGroup.description,
+            id: fetchedGroup.id,
+            metadata: fetchedGroup.metadata,
+            name: props.cleanGroupName
+              ? props.cleanGroupName
+              : fetchedGroup.name,
+            tag_set: fetchedGroup.tag_set,
+          } as ChunkGroup;
+        }
+      } catch (error) {
+        console.error(
+          "Failed to fetch group by tracking ID after multiple retries:",
+          error,
+        );
       }
     }
 
