@@ -183,3 +183,83 @@ export const shopifyVariantsCountQuery = (fetcher: AdminApiCaller) => {
     },
   } satisfies QueryOptions;
 };
+
+export const singleThemeGlobalComponentInstallQuery = (
+  fetcher: AdminApiCaller,
+  themeId: string,
+) => {
+  return {
+    queryKey: ["global-component-install"],
+    queryFn: async () => {
+      const result = await fetcher(
+        `#graphql
+query GetStoreThemes($themeId:ID!) {
+  theme(id: $themeId) {
+    files(filenames: ["templates/product.json"]) {
+      edges {
+        node {
+          body {
+            ... on OnlineStoreThemeFileBodyText {
+              content
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`,
+        {
+          variables: {
+            themeId: themeId,
+          },
+        },
+      );
+      if (result.error) {
+        console.error(result.error);
+        throw result.error;
+      }
+      return result.data;
+    },
+  } satisfies QueryOptions;
+};
+
+export const singleThemePdpComponentInstallQuery = (
+  fetcher: AdminApiCaller,
+  themeId: string,
+) => {
+  return {
+    queryKey: ["global-component-install"],
+    queryFn: async () => {
+      const result = await fetcher(
+        `#graphql
+query GetStoreThemes($themeId:ID!) {
+  theme(id: $themeId) {
+    files(filenames: ["templates/product.json"]) { 
+      edges {
+        node {
+          body {
+            ... on OnlineStoreThemeFileBodyText {
+              content
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`,
+        {
+          variables: {
+            themeId: themeId,
+          },
+        },
+      );
+      if (result.error) {
+        console.error(result.error);
+        throw result.error;
+      }
+      return result.data;
+    },
+  } satisfies QueryOptions;
+};
