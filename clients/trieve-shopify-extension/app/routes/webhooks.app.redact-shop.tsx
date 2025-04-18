@@ -2,8 +2,10 @@ import { ActionFunctionArgs } from "@remix-run/node";
 import db from "../db.server";
 import { TrieveKey } from "app/types";
 import { sdkFromKey } from "app/auth";
+import { authenticate } from "app/shopify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  await authenticate.webhook(request);
 
   const json = await request.json();
 
