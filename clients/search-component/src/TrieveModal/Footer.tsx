@@ -7,7 +7,7 @@ export const Footer = () => {
   return (
     <div
       className={cn(
-        `trieve-footer dark:tv-bg-zinc-900 tv-bg-white  tv-border-zinc-200 dark:tv-border-t-zinc-800 tv-px-3 tv-items-center tv-flex tv-flex-col`,
+        `trieve-footer tv-border-zinc-200 dark:tv-border-t-zinc-800 tv-px-3 tv-items-center tv-flex tv-flex-col`,
         mode === "search" && "tv-border-t",
       )}
     >

@@ -33,7 +33,7 @@ export const ChatInput = ({
 
   return (
     <div
-      className={`chat-footer-wrapper tv-relative tv-bottom-0 tv-flex tv-flex-col tv-bg-white tv-pb-0 ${props.type}`}
+      className={`chat-footer-wrapper tv-relative tv-bottom-0 tv-flex tv-flex-col tv-pb-0 ${props.type}`}
     >
       {(uploadingImage || imageUrl) && (
         <div className="inline:tv-ml-2 inline:tv-mb-1">
