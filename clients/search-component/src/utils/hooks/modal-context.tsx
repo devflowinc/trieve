@@ -102,6 +102,7 @@ export type ModalProps = {
   analytics?: boolean;
   ButtonEl?: JSX.ElementType;
   suggestedQueries?: boolean;
+  allowRefreshSuggestedQueries?: boolean;
   followupQuestions?: boolean;
   numberOfSuggestions?: number;
   defaultSearchQueries?: string[];
@@ -189,6 +190,7 @@ const defaultProps = {
   analytics: true,
   chat: true,
   suggestedQueries: true,
+  allowRefreshSuggestedQueries: true,
   followupQuestions: true,
   numberOfSuggestions: 3,
   openKeyCombination: [{ ctrl: true }, { key: "k", label: "K" }],
