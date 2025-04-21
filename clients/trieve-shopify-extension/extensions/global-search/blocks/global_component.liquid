@@ -1,3 +1,7 @@
+<style>
+    {{ block.settings.custom_css }}
+</style>
+
 <script type="module">
   import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
   import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
@@ -165,6 +169,12 @@
         { "label": "Right", "value": "right" }
       ],
       "default": "left"
+    },
+    {
+      "id": "custom_css",
+      "type": "textarea",
+      "label": "Custom CSS",
+      "placeholder": "#trieve-modal-search { background-color: red; }"
     }
   ]
 }
