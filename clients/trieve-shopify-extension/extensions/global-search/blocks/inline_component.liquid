@@ -1,3 +1,7 @@
+<style>
+    {{ block.settings.custom_css }}
+</style>
+
 <div class="trieve-inline-root"></div>
 
 <script type="module">
@@ -127,6 +131,12 @@
       "type": "textarea",
       "label": "Initial Questions (Separated by commas)",
       "placeholder": "What is this made of?"
+    },
+    {
+      "id": "custom_css",
+      "type": "textarea",
+      "label": "Custom CSS",
+      "placeholder": ".trieve-inline-root { background-color: red; }"
     }
   ]
 }
