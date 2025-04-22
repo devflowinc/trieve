@@ -221,7 +221,6 @@ query GetStoreThemes($themeId:ID!) {
       }
 
       const stringified = JSON.stringify(result.data);
-      console.log(stringified);
       if (stringified?.includes("global_component")) return true;
       return false;
     },
