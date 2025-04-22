@@ -31,7 +31,7 @@ export const FloatingActionButton = () => {
       className={`floating-action-button${props.theme === "dark" ? " dark" : ""}${props.floatingButtonVersion ? ` ${props.floatingButtonVersion}` : ""}`}
       style={{
         ...setButtonPosition(props.floatingButtonPosition || "bottom-right"),
-        zIndex: (props.zIndex ?? 1000) - 1,
+        zIndex: Math.min(props.zIndex ?? 1000, 2147483647) - 2,
       }}
     >
       {props.brandLogoImgSrcUrl &&

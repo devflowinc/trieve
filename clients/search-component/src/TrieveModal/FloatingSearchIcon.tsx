@@ -33,7 +33,7 @@ export const FloatingSearchIcon = () => {
       style={{
         ...setButtonPosition(props.floatingSearchIconPosition || "right"),
         display: "block",
-        zIndex: (props.zIndex ?? 1000) - 1,
+        zIndex: Math.min(props.zIndex ?? 1000, 2147483647) - 2,
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

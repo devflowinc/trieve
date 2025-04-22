@@ -296,7 +296,9 @@ const Modal = () => {
                 }}
                 id="trieve-search-modal-overlay"
                 className="tv-bg-black/60 tv-w-screen tv-fixed tv-inset-0 tv-h-screen tv-animate-overlayShow tv-backdrop-blur-sm tv-block"
-                style={{ zIndex: props.zIndex ?? 1000 }}
+                style={{
+                  zIndex: Math.min(props.zIndex ?? 1000, 2147483647) - 1,
+                }}
               ></div>,
               document.body,
             )}
