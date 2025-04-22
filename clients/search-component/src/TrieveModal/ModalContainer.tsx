@@ -35,7 +35,7 @@ export const ModalContainer = () => {
           componentClass,
         )}
         style={{
-          zIndex: (props.zIndex ?? 1000) + 1,
+          zIndex: Math.min(props.zIndex ?? 1000, 2147483647),
           display: open || props.inline ? "flex" : "none",
         }}
       >

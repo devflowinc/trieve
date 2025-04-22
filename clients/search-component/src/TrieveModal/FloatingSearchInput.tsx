@@ -18,7 +18,7 @@ export const FloatingSearchInput = () => {
       }`}
       onClick={handleOpenSearch}
       style={{
-        zIndex: (props.zIndex ?? 1000) - 1,
+        zIndex: Math.min(props.zIndex ?? 1000, 2147483647) - 2,
       }}
     >
       <div className="floating-search-icon">
