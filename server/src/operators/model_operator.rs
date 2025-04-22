@@ -934,14 +934,15 @@ pub async fn cross_encoder(
     let common_request_docs = results
         .clone()
         .into_iter()
-        .map(|x| {
-            let chunk = match x.metadata.get(0).cloned() {
-                Some(ChunkMetadataTypes::Metadata(metadata)) => Ok(metadata),
+        .map(|score_chunk_dto| {
+            let chunk_html = match score_chunk_dto.metadata.get(0).cloned() {
+                Some(ChunkMetadataTypes::Metadata(chunk_metadata_string_tag_set)) => Ok(chunk_metadata_string_tag_set.chunk_html),
+                Some(ChunkMetadataTypes::Content(content_chunk_metadata)) => Ok(content_chunk_metadata.chunk_html),
                 _ => Err(ServiceError::BadRequest(
-                    "ChunkMetadataStringTagSet not found for chunk in results".to_string(),
+                    "Cannot rerank SlimChunkMetadata ScoreChunks since they do not have any text in their chunk_html".to_string(),
                 )),
             }?;
-            Ok(convert_html_to_text(&chunk.chunk_html.unwrap_or_default())
+            Ok(convert_html_to_text(&chunk_html.unwrap_or_default())
                 .split_whitespace()
                 .take(max_words_to_rerank)
                 .join(" "))

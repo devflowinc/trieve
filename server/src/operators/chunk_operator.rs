@@ -273,7 +273,8 @@ pub async fn get_content_chunk_from_point_ids_query(
                 .filter(chunk_metadata_columns::qdrant_point_id.eq_any(&point_ids))
                 .load(&mut conn)
                 .await
-                .map_err(|_| {
+                .map_err(|e| {
+                    log::error!("Failed to load content chunk metadatas: {:?}", e);
                     ServiceError::BadRequest("Failed to load content chunk metadatas".to_string())
                 })?;
 
