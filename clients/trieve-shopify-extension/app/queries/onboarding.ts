@@ -189,7 +189,7 @@ export const singleThemeGlobalComponentInstallQuery = (
   themeId: string,
 ) => {
   return {
-    queryKey: ["global-component-install"],
+    queryKey: ["singleThemeGlobalComponentInstall", themeId],
     queryFn: async () => {
       const result = await fetcher(
         `#graphql
@@ -219,7 +219,11 @@ query GetStoreThemes($themeId:ID!) {
         console.error(result.error);
         throw result.error;
       }
-      return result.data;
+
+      const stringified = JSON.stringify(result.data);
+      console.log(stringified);
+      if (stringified?.includes("global_component")) return true;
+      return false;
     },
   } satisfies QueryOptions;
 };
@@ -229,7 +233,7 @@ export const singleThemePdpComponentInstallQuery = (
   themeId: string,
 ) => {
   return {
-    queryKey: ["global-component-install"],
+    queryKey: ["singleThemePdpComponentInstall", themeId],
     queryFn: async () => {
       const result = await fetcher(
         `#graphql
@@ -259,7 +263,10 @@ query GetStoreThemes($themeId:ID!) {
         console.error(result.error);
         throw result.error;
       }
-      return result.data;
+
+      const stringified = JSON.stringify(result.data);
+      if (stringified?.includes("inline_component")) return true;
+      return false;
     },
   } satisfies QueryOptions;
 };
