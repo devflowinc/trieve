@@ -68,65 +68,73 @@ export const AddComponentOnboarding: OnboardingBody = withSuspense(
           />
         </div>
         <div className={cn("grid w-full pb-1 place-items-center")}>
-          <div className="grid grid-cols-2 pt-4 px-8 w-full">
+          <div className="grid grid-cols-2 pb-4 pt-4 px-8 w-full">
             <div className="flex flex-col gap-1 border-r border-r-neutral-200 items-center">
-              <Text as="h2" alignment="center" variant="headingMd">
-                {globalInstalledOnSelectedTheme === true
-                  ? "Global Search"
-                  : "Add the global search component"}
-              </Text>
-              {!globalInstalledOnSelectedTheme && getDeeplink() && (
+              <div className="flex items-center gap-1">
+                <Text as="h2" alignment="center" variant="headingMd">
+                  {globalInstalledOnSelectedTheme === true
+                    ? "Global Search"
+                    : "Add the global search component"}
+                </Text>
+                {globalInstalledOnSelectedTheme && (
+                  <CheckIcon
+                    fill="#2A845A"
+                    color="#2A845A"
+                    style={{ height: "20px" }}
+                  />
+                )}
+              </div>
+              {getDeeplink() && (
                 <div className="flex flex-col gap-2">
                   <Button onClick={openDeepLink}>
-                    Add to {selectedTheme.name}
+                    {globalInstalledOnSelectedTheme ? "Edit on" : "Add to"}{" "}
+                    {selectedTheme.name}
                   </Button>
                   <TutorialVideo
                     title="Add The Global Search Component"
                     url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                     editStoreButton={
                       <Button icon={ExternalIcon} onClick={openDeepLink}>
-                        Add to {selectedTheme.name}
+                        {globalInstalledOnSelectedTheme ? "Edit on" : "Add to"}{" "}
+                        {selectedTheme.name}
                       </Button>
                     }
                   />
                 </div>
               )}
-              {globalInstalledOnSelectedTheme && (
-                <CheckIcon
-                  fill="#2A845A"
-                  color="#2A845A"
-                  style={{ height: "50px" }}
-                />
-              )}
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <Text as="h2" alignment="center" variant="headingMd">
-                {pdpInstalledOnSelectedTheme === true
-                  ? "Product Chat"
-                  : "Add the product chat component"}
-              </Text>
-              {!pdpInstalledOnSelectedTheme && getPdpDeepLink() && (
+              <div className="flex items-center gap-1">
+                <Text as="h2" alignment="center" variant="headingMd">
+                  {pdpInstalledOnSelectedTheme === true
+                    ? "Product Chat"
+                    : "Add the product chat component"}
+                </Text>
+                {pdpInstalledOnSelectedTheme && (
+                  <CheckIcon
+                    fill="#2A845A"
+                    color="#2A845A"
+                    style={{ height: "20px" }}
+                  />
+                )}
+              </div>
+              {getPdpDeepLink() && (
                 <div className="flex flex-col gap-2">
                   <Button onClick={openPdpDeepLink}>
-                    Add to {selectedTheme.name}
+                    {pdpInstalledOnSelectedTheme ? "Edit on" : "Add to"}{" "}
+                    {selectedTheme.name}
                   </Button>
                   <TutorialVideo
                     title="Add The Product Chat Component"
                     url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                     editStoreButton={
                       <Button icon={ExternalIcon} onClick={openPdpDeepLink}>
-                        Add to {selectedTheme.name}
+                        {pdpInstalledOnSelectedTheme ? "Edit on" : "Add to"}{" "}
+                        {selectedTheme.name}
                       </Button>
                     }
                   />
                 </div>
-              )}
-              {pdpInstalledOnSelectedTheme && (
-                <CheckIcon
-                  fill="#2A845A"
-                  color="#2A845A"
-                  style={{ height: "50px" }}
-                />
               )}
             </div>
           </div>
