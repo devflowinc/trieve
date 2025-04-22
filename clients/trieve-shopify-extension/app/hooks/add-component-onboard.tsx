@@ -103,7 +103,7 @@ const getShortThemeId = (fullGid: string): string | null => {
   return null;
 };
 
-export const useAddComponentDeepLink = (theme: ThemeChoice | null) => {
+export const useAddComponentDeepLink = (theme: ThemeChoice) => {
   const shopname = useShopName();
 
   const { shopifyThemeAppExtensionUuid } = useRouteLoaderData("routes/app") as {
@@ -113,7 +113,6 @@ export const useAddComponentDeepLink = (theme: ThemeChoice | null) => {
   const getDeeplink = () => {
     if (!shopifyThemeAppExtensionUuid) return null;
     if (!shopname) return null;
-    if (!theme) return null;
     const themeId = getShortThemeId(theme.id);
 
     return `https://${shopname}/admin/themes/${themeId}/editor?context=apps&activateAppId=${shopifyThemeAppExtensionUuid}/global_component`;
@@ -122,7 +121,6 @@ export const useAddComponentDeepLink = (theme: ThemeChoice | null) => {
   const getPdpDeepLink = () => {
     if (!shopifyThemeAppExtensionUuid) return null;
     if (!shopname) return null;
-    if (!theme) return null;
     const themeId = getShortThemeId(theme.id);
 
     return `https://${shopname}/admin/themes/${themeId}/editor?template=product&addAppBlockId=${shopifyThemeAppExtensionUuid}/inline_component`;
