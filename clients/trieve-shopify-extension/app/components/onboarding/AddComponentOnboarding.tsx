@@ -12,11 +12,13 @@ import { OnboardingBody } from "app/utils/onboarding";
 import { useState } from "react";
 import { ThemeSelect, ThemeChoice } from "./ThemeSelect";
 import {
+  getShortThemeId,
   useAddComponentDeepLink,
   useAddComponentOnboarding,
 } from "app/hooks/add-component-onboard";
 import { TutorialVideo } from "./TutorialVideo";
 import { withSuspense } from "app/utils/suspense";
+import { useShopName } from "app/utils/useShopName";
 
 export const AddComponentOnboarding: OnboardingBody = withSuspense(
   ({ broadcastCompletion }) => {
@@ -41,13 +43,24 @@ export const AddComponentOnboarding: OnboardingBody = withSuspense(
     const { getDeeplink, getPdpDeepLink } =
       useAddComponentDeepLink(selectedTheme);
 
+    const shopname = useShopName();
     const openDeepLink = () => {
+      if (globalInstalledOnSelectedTheme) {
+        window.open(
+          `https://admin.shopify.com/store/${shopname?.replaceAll(".myshopify.com", "")}/themes/${getShortThemeId(selectedTheme.id)}/editor`,
+        );
+      }
       const link = getDeeplink();
       if (!link) return;
       window.open(link, "_blank");
     };
 
     const openPdpDeepLink = () => {
+      if (pdpInstalledOnSelectedTheme) {
+        window.open(
+          `https://admin.shopify.com/store/${shopname?.replaceAll(".myshopify.com", "")}/themes/${getShortThemeId(selectedTheme.id)}/editor?template=product`,
+        );
+      }
       const link = getPdpDeepLink();
       if (!link) return;
       window.open(link, "_blank");

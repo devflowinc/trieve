@@ -94,7 +94,7 @@ export const useAddComponentOnboarding = (broadcastCompletion: () => void) => {
   return { allDoneGlobally: allDone, globalComplete, pdpComplete };
 };
 
-const getShortThemeId = (fullGid: string): string | null => {
+export const getShortThemeId = (fullGid: string): string | null => {
   const regex = /gid:\/\/shopify\/OnlineStoreTheme\/(\d+)/;
   const match = fullGid.match(regex);
   if (match && match.length > 1) {
