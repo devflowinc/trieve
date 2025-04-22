@@ -85,9 +85,7 @@ export const AddComponentOnboarding: OnboardingBody = withSuspense(
             <div className="flex flex-col gap-1 border-r border-r-neutral-200 items-center">
               <div className="flex items-center gap-1">
                 <Text as="h2" alignment="center" variant="headingMd">
-                  {globalInstalledOnSelectedTheme === true
-                    ? "Global Search"
-                    : "Add the global search component"}
+                  Global Search
                 </Text>
                 {globalInstalledOnSelectedTheme && (
                   <CheckIcon
@@ -100,7 +98,7 @@ export const AddComponentOnboarding: OnboardingBody = withSuspense(
               {getDeeplink() && (
                 <div className="flex flex-col gap-2">
                   <Button onClick={openDeepLink}>
-                    {globalInstalledOnSelectedTheme ? "Edit on" : "Add to"}{" "}
+                    {globalInstalledOnSelectedTheme ? "Edit" : "Add to"}{" "}
                     {selectedTheme.name}
                   </Button>
                   <TutorialVideo
@@ -108,7 +106,7 @@ export const AddComponentOnboarding: OnboardingBody = withSuspense(
                     url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                     editStoreButton={
                       <Button icon={ExternalIcon} onClick={openDeepLink}>
-                        {globalInstalledOnSelectedTheme ? "Edit on" : "Add to"}{" "}
+                        {globalInstalledOnSelectedTheme ? "Edit" : "Add to"}{" "}
                         {selectedTheme.name}
                       </Button>
                     }
@@ -119,9 +117,7 @@ export const AddComponentOnboarding: OnboardingBody = withSuspense(
             <div className="flex flex-col gap-1 items-center">
               <div className="flex items-center gap-1">
                 <Text as="h2" alignment="center" variant="headingMd">
-                  {pdpInstalledOnSelectedTheme === true
-                    ? "Product Chat"
-                    : "Add the product chat component"}
+                  Product Chat
                 </Text>
                 {pdpInstalledOnSelectedTheme && (
                   <CheckIcon
@@ -134,7 +130,7 @@ export const AddComponentOnboarding: OnboardingBody = withSuspense(
               {getPdpDeepLink() && (
                 <div className="flex flex-col gap-2">
                   <Button onClick={openPdpDeepLink}>
-                    {pdpInstalledOnSelectedTheme ? "Edit on" : "Add to"}{" "}
+                    {pdpInstalledOnSelectedTheme ? "Edit" : "Add to"}{" "}
                     {selectedTheme.name}
                   </Button>
                   <TutorialVideo
@@ -142,7 +138,7 @@ export const AddComponentOnboarding: OnboardingBody = withSuspense(
                     url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                     editStoreButton={
                       <Button icon={ExternalIcon} onClick={openPdpDeepLink}>
-                        {pdpInstalledOnSelectedTheme ? "Edit on" : "Add to"}{" "}
+                        {pdpInstalledOnSelectedTheme ? "Edit" : "Add to"}{" "}
                         {selectedTheme.name}
                       </Button>
                     }

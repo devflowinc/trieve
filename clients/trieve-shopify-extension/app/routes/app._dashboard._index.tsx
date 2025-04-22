@@ -14,7 +14,7 @@ import {
 } from "@shopify/polaris-icons";
 import { Onboarding } from "app/components/onboarding/Onboarding";
 import { Loader } from "app/loaders";
-import { lastStepIdQuery } from "app/queries/onboarding";
+import { lastStepIdQuery, themeListQuery } from "app/queries/onboarding";
 import { createServerLoader } from "app/loaders/serverLoader";
 import { createClientLoader } from "app/loaders/clientLoader";
 import { SearchFilterBar } from "app/components/analytics/FilterBar";
@@ -30,7 +30,10 @@ import { PlanView } from "app/components/PlanView";
 import { HomepageSyncStatus } from "app/components/HomepageSyncStatus";
 
 const load: Loader = async ({ adminApiFetcher, queryClient }) => {
-  await queryClient.ensureQueryData(lastStepIdQuery(adminApiFetcher));
+  await Promise.allSettled([
+    queryClient.ensureQueryData(lastStepIdQuery(adminApiFetcher)),
+    queryClient.ensureQueryData(themeListQuery(adminApiFetcher)),
+  ]);
   return;
 };
 
