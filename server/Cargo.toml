@@ -89,6 +89,10 @@ path = "src/bin/backfill-qdrant-from-pg.rs"
 name = "send-stripe-billing"
 path = "src/bin/send-stripe-billing.rs"
 
+[[bin]]
+name = "clone-qdrant-from-offset"
+path = "src/bin/clone-qdrant-from-offset.rs"
+
 [dependencies]
 actix-identity = { version = "0.7.1" }
 actix-session = { version = "0.9.0", features = [
