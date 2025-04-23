@@ -1,5 +1,3 @@
-import { useTrieve } from "app/context/trieveContext";
-import { useSubmit } from "@remix-run/react";
 import {
   Card,
   Text,
@@ -8,15 +6,12 @@ import {
   InlineStack,
   Layout,
   Link,
-  Modal,
 } from "@shopify/polaris";
 import {
   CalendarIcon,
   EnvelopeIcon,
   QuestionCircleIcon,
 } from "@shopify/polaris-icons";
-import { organizationUsageQuery } from "app/queries/usage";
-import { useQuery } from "@tanstack/react-query";
 import { Onboarding } from "app/components/onboarding/Onboarding";
 import { Loader } from "app/loaders";
 import { lastStepIdQuery } from "app/queries/onboarding";
@@ -28,7 +23,7 @@ import { TotalUniqueVisitors } from "app/components/analytics/component/TotalUni
 import { TopPages } from "app/components/analytics/component/TopPages";
 import { useState } from "react";
 import { defaultSearchAnalyticsFilter } from "app/queries/analytics/search";
-import { Granularity, StripePlan } from "trieve-ts-sdk";
+import { Granularity } from "trieve-ts-sdk";
 import { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
 import { PlanView } from "app/components/PlanView";
@@ -63,54 +58,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Dashboard() {
-  const { organization, trieve, refetch: refetchTrieve } = useTrieve();
   const [filters, setFilters] = useState(defaultSearchAnalyticsFilter);
   const [granularity, setGranularity] = useState<Granularity>("day");
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const submit = useSubmit();
-
-  const { data: organizationUsage } = useQuery(organizationUsageQuery(trieve));
-
-  let planItems = [];
-
-  if (organization?.plan?.type === "flat") {
-    planItems.push({
-      term: "Message Usage",
-      description: `${organizationUsage?.current_months_message_count?.toLocaleString() ?? 0} / ${((organization?.plan as StripePlan)?.messages_per_month ?? 1000).toLocaleString()}`,
-    });
-  }
 
   return (
     <>
-      <Modal
-        open={showCancelModal}
-        onClose={() => {
-          setShowCancelModal(false);
-        }}
-        title="Cancel Subscription"
-      >
-        <div className="flex flex-col gap-4 p-4">
-          <Text as="p">Do you want to cancel your subscription?</Text>
-          <Button
-            onClick={() => {
-              submit(
-                {
-                  action: "cancel",
-                },
-                {
-                  method: "post",
-                },
-              );
-              setShowCancelModal(false);
-              setTimeout(() => {
-                refetchTrieve();
-              }, 5000);
-            }}
-          >
-            Cancel Subscription
-          </Button>
-        </div>
-      </Modal>
       <Layout>
         <Layout.Section>
           <BlockStack gap="400">
@@ -201,17 +153,7 @@ export default function Dashboard() {
               </BlockStack>
             </Card>
             <HomepageSyncStatus />
-            <PlanView
-              plan={organization?.plan}
-              planItems={planItems}
-              setShowCancelModal={setShowCancelModal}
-              usagePercentage={
-                ((organizationUsage?.current_months_message_count ?? 0) /
-                  ((organization?.plan as StripePlan)?.messages_per_month ??
-                    1000)) *
-                100
-              }
-            />
+            <PlanView />
           </BlockStack>
         </Layout.Section>
       </Layout>
