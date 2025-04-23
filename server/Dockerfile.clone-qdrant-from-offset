@@ -21,7 +21,7 @@ FROM debian:bookworm-slim as runtime
 RUN apt-get update -y && apt-get -y install pkg-config libssl-dev libpq-dev ca-certificates 
 WORKDIR /app
 COPY ./migrations/ /app/migrations
-COPY --from=builder /app/target/release/backfill-qdrant-from-offset /app/backfill-qdrant-from-offset
+COPY --from=builder /app/target/release/clone-qdrant-from-offset /app/clone-qdrant-from-offset
 
 
 EXPOSE 8090
