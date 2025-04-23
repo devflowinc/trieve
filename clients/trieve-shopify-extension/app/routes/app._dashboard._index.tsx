@@ -4,9 +4,6 @@ import {
   Card,
   Text,
   Button,
-  SkeletonBodyText,
-  DescriptionList,
-  Box,
   BlockStack,
   InlineStack,
   Layout,
@@ -17,10 +14,9 @@ import {
   CalendarIcon,
   EnvelopeIcon,
   QuestionCircleIcon,
-  RefreshIcon,
 } from "@shopify/polaris-icons";
-import { organizationUsageQuery, datasetUsageQuery } from "app/queries/usage";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { organizationUsageQuery } from "app/queries/usage";
+import { useQuery } from "@tanstack/react-query";
 import { Onboarding } from "app/components/onboarding/Onboarding";
 import { Loader } from "app/loaders";
 import { lastStepIdQuery } from "app/queries/onboarding";
@@ -36,6 +32,7 @@ import { Granularity, StripePlan } from "trieve-ts-sdk";
 import { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
 import { PlanView } from "app/components/PlanView";
+import { HomepageSyncStatus } from "app/components/HomepageSyncStatus";
 
 const load: Loader = async ({ adminApiFetcher, queryClient }) => {
   await queryClient.ensureQueryData(lastStepIdQuery(adminApiFetcher));
@@ -72,43 +69,7 @@ export default function Dashboard() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const submit = useSubmit();
 
-  const {
-    data: datasetUsage,
-    isLoading,
-    dataUpdatedAt,
-    refetch,
-  } = useQuery(datasetUsageQuery(trieve));
-
   const { data: organizationUsage } = useQuery(organizationUsageQuery(trieve));
-
-  const statsItems = [
-    {
-      term: "Products",
-      description: isLoading ? (
-        <SkeletonBodyText lines={1} />
-      ) : (
-        <InlineStack align="space-between">
-          {datasetUsage?.chunk_count.toLocaleString()}
-          <Button
-            icon={RefreshIcon}
-            onClick={() => {
-              refetch();
-            }}
-          ></Button>
-        </InlineStack>
-      ),
-    },
-    {
-      term: "Last Synced",
-      description: isLoading ? (
-        <SkeletonBodyText lines={1} />
-      ) : dataUpdatedAt ? (
-        new Date(dataUpdatedAt).toLocaleString()
-      ) : (
-        "Never"
-      ),
-    },
-  ];
 
   let planItems = [];
 
@@ -239,34 +200,7 @@ export default function Dashboard() {
                 </InlineStack>
               </BlockStack>
             </Card>
-            <Card>
-              <BlockStack gap="400">
-                <Box paddingInline="400" paddingBlockStart="400">
-                  <InlineStack align="space-between">
-                    <Text variant="headingMd" as="h2">
-                      Sync Status
-                    </Text>
-                  </InlineStack>
-                </Box>
-
-                <Box paddingInline="400">
-                  <DescriptionList gap="tight" items={statsItems} />
-                </Box>
-
-                <Box paddingInline="400" paddingBlockEnd="400">
-                  <InlineStack align="end">
-                    <Button
-                      variant="primary"
-                      onClick={() => {
-                        fetch("/app/setup");
-                      }}
-                    >
-                      Sync Index
-                    </Button>
-                  </InlineStack>
-                </Box>
-              </BlockStack>
-            </Card>
+            <HomepageSyncStatus />
             <PlanView
               plan={organization?.plan}
               planItems={planItems}
