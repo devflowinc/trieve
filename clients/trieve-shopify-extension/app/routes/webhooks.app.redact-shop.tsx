@@ -7,16 +7,28 @@ import { authenticate } from "app/shopify.server";
 export const action = async ({ request }: ActionFunctionArgs) => {
   await authenticate.webhook(request);
 
-  const json = await request.json();
+  let json;
+  try {
+    json = await request.json();
+  } catch (error) {
+    console.error(error);
+    return new Response();
+  }
 
   const shop = json.shop_domain;
   if (!shop) {
     return new Response();
   }
 
-  const apiKey = await db.apiKey.findFirst({
-    where: { shop: json.shop_domain },
-  });
+  let apiKey;
+  try {
+    apiKey = await db.apiKey.findFirst({
+      where: { shop: json.shop_domain },
+    });
+  } catch (error) {
+    console.error(error);
+    return new Response();
+  }
 
   if (!apiKey) {
     console.error(`No API key found for ${shop}`);
@@ -34,9 +46,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   trieve.deleteDataset(trieveKey.currentDatasetId ?? "");
 
-  await db.apiKey.delete({
-    where: { id: trieveKey.id },
-  });
+  try {
+    await db.apiKey.delete({
+      where: { id: trieveKey.id },
+    });
+  } catch (error) {
+    console.error(error);
+    return new Response();
+  }
 
   return new Response();
 }
