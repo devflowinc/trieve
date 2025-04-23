@@ -45,6 +45,7 @@ async function makeGraphQLQuery(
     value?: string;
     id?: any;
     appId?: string;
+    metafieldsSetInput?: any;
   },
 ) {
   const graphQLQuery = {
@@ -79,62 +80,80 @@ export async function updateTrievePDPQuestions(
   productId: string,
   newTrievePdpQuestions: TrievePDPQuestion[],
 ) {
+  const appId = await getAppId();
   return await makeGraphQLQuery(
-    `mutation UpdateProductMetafield($id: ID!, $value: String!) {
-      productUpdate(input: {
-        id: $id
-        metafields: [
-          {
-            namespace: "trieve"
-            key: "trievePDPQuestions"
-            value: $value
-            type: "json"
+    `mutation UpdateAppMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafieldsSetInput) {
+          metafields {
+            id
+            namespace
+            key
           }
-        ]
-      }) {
-        product {
-          metafield(namespace: "trieve", key: "trievePDPQuestions") {
-            value
-            type
+          userErrors {
+            field
+            message
           }
         }
-        userErrors {
-          field
-          message
-        }
-      }
     }
   `,
     {
-      id: productId,
-      value: JSON.stringify(newTrievePdpQuestions),
+      metafieldsSetInput: [
+        {
+          namespace: "trieve",
+          key: `trievePDPQuestions-${productId.split("/")[productId.split("/").length - 1]}`,
+          value: JSON.stringify(newTrievePdpQuestions),
+          type: "json",
+          ownerId: appId.data.currentAppInstallation.id,
+        },
+      ],
     },
   );
 }
 
-export async function getTrievePDPQuestions(productId: string) {
+export async function getTrievePDPQuestions(productId: string): Promise<{
+  data: {
+    appInstallation: {
+      metafield: { value: string; updatedAt: string } | null;
+    };
+  };
+}> {
   return await makeGraphQLQuery(
-    `query Product($id: ID!) {
+    `query GetProductMetafield($key: String!) {
+      appInstallation {
+        metafield(namespace: "trieve", key: $key) {
+          value
+          updatedAt
+        }
+      }
+    }`,
+    {
+      key: `trievePDPQuestions-${productId.split("/")[productId.split("/").length - 1]}`,
+    },
+  );
+}
+
+export async function getProductDetails(productId: string): Promise<{
+  data: {
+    product: {
+      title: string;
+      description: string;
+      productType: string;
+    };
+  };
+}> {
+  return await makeGraphQLQuery(
+    `query GetProductDetails($id: ID!) {
       product(id: $id) {
         title
         description
         productType
-        metafield(namespace: "trieve", key:"trievePDPQuestions") {
-          value
-        }
-        variants(first: 2) {
-          edges {
-            node {
-              id
-            }
-          }
-        }
       }
-    }
-  `,
+    }`,
     { id: productId },
   );
 }
+
+
 
 export async function getAppId() {
   return await makeGraphQLQuery(
@@ -281,24 +300,25 @@ function App() {
 
     getTrievePDPQuestions(productId).then((productData) => {
       let pdpQuestions = JSON.parse(
-        productData.data.product.metafield?.value ?? "[]",
+        productData.data.appInstallation.metafield?.value ?? "[]",
       );
       if (!pdpQuestions) {
         pdpQuestions = [];
       }
-
-      const curProductDetails = {
-        title: productData.data.product.title,
-        description: productData.data.product.description,
-        productType: productData.data.product.productType,
-      };
-      setProductDetails(curProductDetails);
-      if (pdpQuestions.length) {
-        setPDPQuestions(pdpQuestions);
-        setLoading(false);
-      } else {
-        generateSuggestedQuestions({ curProductDetails });
-      }
+      getProductDetails(productId).then((productDetails) => {
+        const curProductDetails = {
+          title: productDetails.data.product.title,
+          description: productDetails.data.product.description,
+          productType: productDetails.data.product.productType,
+        };
+        setProductDetails(curProductDetails);
+        if (pdpQuestions.length) {
+          setPDPQuestions(pdpQuestions);
+          setLoading(false);
+        } else {
+          generateSuggestedQuestions({ curProductDetails });
+        }
+      });
     });
   }, [productId, trieveSdk]);
 

@@ -1,10 +1,12 @@
 <style>
-    {{ block.settings.custom_css }}
+  {{ block.settings.custom_css }}
 </style>
 
 <div class="trieve-inline-root"></div>
 
-<script type="module">
+<script
+  type="module"
+>
   import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
   import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
 
@@ -13,10 +15,10 @@
   const blockSettings = {{ block.settings | json }};
   const productId = {{ product.id | json }};
   const productTitle = {{ product.title | json }};
-  const productMetafieldsTrieve = {{ product.metafields.trieve | json }};
+  const productMetafieldsTrieve = {{ app.metafields.trieve | json }}[`trievePDPQuestions-${productId}`];
   let trievePDPQuestions = null;
-  if (productMetafieldsTrieve && Object.keys(productMetafieldsTrieve).includes("trievePDPQuestions")) {
-    trievePDPQuestions = productMetafieldsTrieve.trievePDPQuestions;
+  if (productMetafieldsTrieve) {
+    trievePDPQuestions = productMetafieldsTrieve;
   }
 
   let defaultAiQuestions = {{ block.settings.default_ai_questions | json }};
