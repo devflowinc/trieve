@@ -30,6 +30,12 @@
   if (trievePDPQuestions && trievePDPQuestions.length > 0) {
     defaultAiQuestions = trievePDPQuestions.map((question) => question.text);
   }
+  const currency = {{ shop.currency | json }};
+  const currencySymbol = (currency) =>
+    new Intl.NumberFormat("en-US", { style: 'currency', currency })
+      .formatToParts(1)
+      .find(x => x.type === "currency")
+      .value;
 
   const toBool = (value) => value === 'true' || value === true;
   const getValue = (value, defaultValue) => {
@@ -73,11 +79,10 @@
         typo_options: {
           correct_typos: true,
         },
-        filters: {
-        }
+        filters: {}
       },
-      chatFilters: {
-      },
+      chatFilters: {},
+      defaultCurrency: currencySymbol(currency),
       {% comment %} not on global {% endcomment %}
       inlineHeader: "",
       inline: true,

@@ -7089,11 +7089,6 @@ totalist@^3.0.0:
   resolved "https://registry.yarnpkg.com/totalist/-/totalist-3.0.1.tgz#ba3a3d600c915b1a97872348f79c127475f6acf8"
   integrity sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==
 
-trieve-ts-sdk@0.0.73:
-  version "0.0.73"
-  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.73.tgz#9de17428ddb4b1f6d68709695f371d185c4bda79"
-  integrity sha512-68iG/OlmKSGmnmI/J33S6VKleEAfq4txzARhvKv1g+CYSaG7HOH76n0cFDMtUUEEKn1PD4nV82uh5ZFtfIxD0A==
-
 trieve-ts-sdk@^0.0.50:
   version "0.0.50"
   resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.50.tgz#8b16f7a0f7f77d81811aa0e3a7ed7050b5938379"

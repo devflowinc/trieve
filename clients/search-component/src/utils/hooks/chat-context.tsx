@@ -662,6 +662,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             metadata: {
               component_props: props,
             },
+            currency: props.defaultCurrency,
             highlight_options: {
               ...defaultHighlightOptions,
               highlight_delimiters: ["?", ",", ".", "!", "\n"],

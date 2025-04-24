@@ -84,7 +84,7 @@
     "react-scan": "^0.3.2",
     "react-snap-carousel": "^0.5.0",
     "tailwind-merge": "^3.0.2",
-    "trieve-ts-sdk": "0.0.73"
+    "trieve-ts-sdk": "^0.0.90"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.0.0-rc",

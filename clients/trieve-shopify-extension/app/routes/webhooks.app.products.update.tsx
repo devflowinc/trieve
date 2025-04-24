@@ -10,6 +10,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { payload, session, topic, shop } = await authenticate.webhook(request);
   console.log(`Received ${topic} webhook for ${shop}`);
 
+  if (!session) {
+    console.error(`No session found for ${shop}`);
+    throw new Error("No session found");
+  }
+
   const current = payload as ProductWebhook;
   const apiKey = await db.apiKey.findFirst({
     where: { shop: `${shop}` },
