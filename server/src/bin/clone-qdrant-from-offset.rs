@@ -276,6 +276,9 @@ async fn main() -> Result<(), ()> {
                         })
                         .collect::<Vec<PointStruct>>();
 
+                    if point_structs_to_upsert.is_empty() {
+                        continue;
+                    }
                     log::info!(
                         "Upserting {} points into the new Qdrant collection starting at: {}",
                         point_structs_to_upsert.len(),
