@@ -193,9 +193,9 @@ export const fillDate = <T>({
       return foundDataPoint
         ? foundDataPoint
         : {
-          time: d,
-          value: defaultValue,
-        };
+            time: d,
+            value: defaultValue,
+          };
     });
   } else if (granularity == "hour") {
     info = eachHourOfInterval({
@@ -220,9 +220,9 @@ export const fillDate = <T>({
       return foundDataPoint
         ? foundDataPoint
         : {
-          time: d,
-          value: defaultValue,
-        };
+            time: d,
+            value: defaultValue,
+          };
     });
   } else if (granularity == "minute") {
     info = eachMinuteOfInterval({
@@ -247,9 +247,9 @@ export const fillDate = <T>({
       return foundDataPoint
         ? foundDataPoint
         : {
-          time: d,
-          value: defaultValue,
-        };
+            time: d,
+            value: defaultValue,
+          };
     });
   }
 

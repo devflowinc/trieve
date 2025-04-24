@@ -12,18 +12,16 @@ export const TopPages = ({
 }) => {
   const { trieve } = useTrieve();
   const [page, setPage] = useState(1);
-  const { data } = useQuery(
-    topPagesQuery(trieve, filters, page),
-  );
+  const { data } = useQuery(topPagesQuery(trieve, filters, page));
 
   const client = useQueryClient();
   useEffect(() => {
-    client.prefetchQuery(
-      topPagesQuery(trieve, filters, page + 1),
-    );
+    client.prefetchQuery(topPagesQuery(trieve, filters, page + 1));
   }, [page]);
 
-  const mappedData = data ? data.top_pages.map((query) => [query.page, query.count]) : [];
+  const mappedData = data
+    ? data.top_pages.map((query) => [query.page, query.count])
+    : [];
 
   return (
     <BasicTableComponent

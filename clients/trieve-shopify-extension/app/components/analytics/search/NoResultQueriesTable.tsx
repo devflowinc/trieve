@@ -1,8 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
-import {
-  noResultQueriesQuery,
-} from "app/queries/analytics/search";
+import { noResultQueriesQuery } from "app/queries/analytics/search";
 import { useEffect, useState } from "react";
 import { SearchAnalyticsFilter } from "trieve-ts-sdk";
 import { BasicTableComponent } from "../BasicTableComponent";
@@ -14,15 +12,11 @@ export const NoResultQueriesTable = ({
 }) => {
   const { trieve } = useTrieve();
   const [page, setPage] = useState(1);
-  const { data } = useQuery(
-    noResultQueriesQuery(trieve, filters, page),
-  );
+  const { data } = useQuery(noResultQueriesQuery(trieve, filters, page));
 
   const client = useQueryClient();
   useEffect(() => {
-    client.prefetchQuery(
-      noResultQueriesQuery(trieve, filters, page + 1),
-    );
+    client.prefetchQuery(noResultQueriesQuery(trieve, filters, page + 1));
   }, [page]);
 
   const mappedData = data ? data.queries.map((query) => [query.query]) : [];

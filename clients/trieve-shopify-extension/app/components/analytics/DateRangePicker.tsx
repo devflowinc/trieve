@@ -215,8 +215,9 @@ const getRangeLabel = (activeDateRange: DatePreset): string => {
     return "All Time";
   }
 
-  return `${activeDateRange.period.since.toLocaleDateString()} - ${activeDateRange.period.until?.toLocaleDateString() || "Now"
-    }`;
+  return `${activeDateRange.period.since.toLocaleDateString()} - ${
+    activeDateRange.period.until?.toLocaleDateString() || "Now"
+  }`;
 };
 
 interface DateRef {
@@ -317,8 +318,8 @@ export function DateRangePicker({
       setActiveDateRange((prevState) => {
         const newPeriod: DatePeriod =
           prevState.period &&
-            prevState.period.until &&
-            newSince <= prevState.period.until
+          prevState.period.until &&
+          newSince <= prevState.period.until
             ? { since: newSince, until: prevState.period.until }
             : { since: newSince, until: newSince };
 
@@ -340,8 +341,8 @@ export function DateRangePicker({
       setActiveDateRange((prevState) => {
         const newPeriod: DatePeriod =
           prevState.period &&
-            prevState.period.since &&
-            newUntil >= prevState.period.since
+          prevState.period.since &&
+          newUntil >= prevState.period.since
             ? { since: prevState.period.since, until: newUntil }
             : { since: newUntil, until: newUntil };
 

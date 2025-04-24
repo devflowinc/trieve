@@ -19,8 +19,6 @@ import { useTrieve } from "app/context/trieveContext";
 import { TrieveKey } from "app/types";
 import { AdminApiCaller } from "app/loaders";
 
-
-
 const getShortThemeId = (fullGid: string): string | null => {
   const regex = /gid:\/\/shopify\/OnlineStoreTheme\/(\d+)/;
   const match = fullGid.match(regex);

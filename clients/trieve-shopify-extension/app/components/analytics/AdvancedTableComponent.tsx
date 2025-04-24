@@ -107,7 +107,7 @@ export const AdvancedTableComponent = ({
                 }))}
                 queryValue={query}
                 cancelAction={{
-                  onAction: () => { },
+                  onAction: () => {},
                   disabled: false,
                   loading: false,
                 }}
@@ -154,7 +154,7 @@ export const AdvancedTableComponent = ({
                         {heading.sortCol && (
                           <span className="ml-1">
                             {sortSelected[0].split(" ")[0] ===
-                              heading.sortCol ? (
+                            heading.sortCol ? (
                               sortSelected[0].split(" ")[1] === "asc" ? (
                                 <Icon source={ChevronUpIcon} tone="base" />
                               ) : (
@@ -191,7 +191,13 @@ export const AdvancedTableComponent = ({
                   position={index}
                 >
                   {row.map((cell, innerIndex) => {
-                    const innerCell = cell.component ? cell.component : <Text as="span" variant="bodyMd" truncate={true}>{cell.content}</Text>;
+                    const innerCell = cell.component ? (
+                      cell.component
+                    ) : (
+                      <Text as="span" variant="bodyMd" truncate={true}>
+                        {cell.content}
+                      </Text>
+                    );
                     return (
                       <IndexTable.Cell
                         key={innerIndex}

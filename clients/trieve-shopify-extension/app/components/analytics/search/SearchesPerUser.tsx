@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
-import { RAGAnalyticsFilter, SearchAnalyticsFilter, TopicAnalyticsFilter } from "trieve-ts-sdk";
+import {
+  RAGAnalyticsFilter,
+  SearchAnalyticsFilter,
+  TopicAnalyticsFilter,
+} from "trieve-ts-sdk";
 import { Granularity } from "trieve-ts-sdk";
 import { GraphComponent } from "../GraphComponent";
 import { searchesPerUserQuery } from "app/queries/analytics/search";

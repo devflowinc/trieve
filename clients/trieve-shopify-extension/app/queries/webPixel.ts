@@ -2,9 +2,14 @@ import { TrieveKey } from "app/types";
 
 import { AdminApiCaller } from "app/loaders";
 
-export const isWebPixelInstalled = async (adminApi: AdminApiCaller, trieveKey: TrieveKey) => {
-    const response = await adminApi<{ webPixel: { id: string | null, settings: string } }>(
-        `
+export const isWebPixelInstalled = async (
+  adminApi: AdminApiCaller,
+  trieveKey: TrieveKey,
+) => {
+  const response = await adminApi<{
+    webPixel: { id: string | null; settings: string };
+  }>(
+    `
       #graphql
       query {
             webPixel {
@@ -13,18 +18,21 @@ export const isWebPixelInstalled = async (adminApi: AdminApiCaller, trieveKey: T
             }
         }
       `,
-    );
+  );
 
-    if (response.error) {
-        console.error(response.error);
-        return false;
-    }
-    return response.data.webPixel.id !== null;
+  if (response.error) {
+    console.error(response.error);
+    return false;
+  }
+  return response.data.webPixel.id !== null;
 };
 
-export const createWebPixel = async (adminApi: AdminApiCaller, trieveKey: TrieveKey) => {
-    const response = await adminApi(
-        `
+export const createWebPixel = async (
+  adminApi: AdminApiCaller,
+  trieveKey: TrieveKey,
+) => {
+  const response = await adminApi(
+    `
       #graphql
       mutation webPixelCreate($webPixel: WebPixelInput!) {
         webPixelCreate(webPixel: $webPixel) {
@@ -40,13 +48,13 @@ export const createWebPixel = async (adminApi: AdminApiCaller, trieveKey: Trieve
         }
       }
       `,
-        {
-            variables: {
-                webPixel: {
-                    settings: `{"apiKey":"${trieveKey.key}", "datasetId": "${trieveKey.currentDatasetId}"}`,
-                },
-            },
+    {
+      variables: {
+        webPixel: {
+          settings: `{"apiKey":"${trieveKey.key}", "datasetId": "${trieveKey.currentDatasetId}"}`,
         },
-    );
-    console.log("Web pixel created", response);
+      },
+    },
+  );
+  console.log("Web pixel created", response);
 };

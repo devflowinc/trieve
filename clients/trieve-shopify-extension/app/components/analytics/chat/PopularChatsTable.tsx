@@ -13,16 +13,12 @@ export const PopularChatsTable = ({
 }) => {
   const { trieve } = useTrieve();
   const [page, setPage] = useState(1);
-  const { data } = useQuery(
-    popularChatsQuery(trieve, filters, page),
-  );
+  const { data } = useQuery(popularChatsQuery(trieve, filters, page));
 
   const client = useQueryClient();
   useEffect(() => {
     // prefetch the next page
-    client.prefetchQuery(
-      popularChatsQuery(trieve, filters, page + 1),
-    );
+    client.prefetchQuery(popularChatsQuery(trieve, filters, page + 1));
   }, [page]);
 
   const mappedData = data
