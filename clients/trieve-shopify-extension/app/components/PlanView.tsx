@@ -74,13 +74,23 @@ export const PlanView = () => {
           <div className="pb-4">
             <InlineStack align="space-between">
               <Text variant="headingMd" as="h2">
-                Plan Details
+                Plan Status
               </Text>
               <Badge>{organization.plan?.name}</Badge>
             </InlineStack>
           </div>
 
-          <Box>
+          <BlockStack gap="400">
+            {(organization.plan as StripePlan | undefined)?.amount == 0 && (
+              <Box>
+                <Banner
+                  title={`You are not on a paid plan. Test before you buy!`}
+                  tone="info"
+                >
+                  <p>Trieve includes 50 AI messages per month for free.</p>
+                </Banner>
+              </Box>
+            )}
             {usagePercentage >= 80 && usagePercentage < 90 && (
               <Box>
                 <Banner
@@ -115,7 +125,7 @@ export const PlanView = () => {
                 <div>{item.description}</div>
               </div>
             ))}
-          </Box>
+          </BlockStack>
         </BlockStack>
         <div className="h-2"></div>
         <InlineStack gap="200" align="end" blockAlign="center">
@@ -131,15 +141,19 @@ export const PlanView = () => {
               );
             }}
           >
-            Modify Plan
+            {(organization.plan as StripePlan | undefined)?.amount == 0
+              ? "Upgrade"
+              : "Modify"}
           </Button>
-          <Button
-            onClick={() => {
-              setShowCancelModal(true);
-            }}
-          >
-            Cancel Plan
-          </Button>
+          {(organization.plan as StripePlan | undefined)?.amount != 0 && (
+            <Button
+              onClick={() => {
+                setShowCancelModal(true);
+              }}
+            >
+              Cancel
+            </Button>
+          )}
         </InlineStack>
       </Card>
     </>
