@@ -38,14 +38,17 @@ export const loader = createServerLoader(load);
 export const clientLoader = createClientLoader(load);
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  console.log("Receives action");
   const { redirect, billing } = await authenticate.admin(request);
   const formData = await request.formData();
   const action = formData.get("action");
   if (action === "modify") {
+    console.log("Redirecting to pricing page");
     return redirect(process.env.SHOPIFY_PRICING_URL || "", {
       target: "_top",
     });
   } else if (action === "cancel") {
+    console.log("Cancelling subscription");
     const subscription = await billing.check();
     if (subscription.hasActivePayment) {
       await billing.cancel({

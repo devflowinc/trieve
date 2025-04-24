@@ -20,7 +20,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const key = await validateTrieveAuthWehbook(shop);
   const trieve = sdkFromKey(key);
 
-  console.log(`Received ${topic} webhook for ${shop}`);
+  console.log(`Received ${topic} webhook for ${shop}`, payload);
   const organization_id = await db.apiKey.findFirst({
     where: {
       shop: `https://${shop}`,
@@ -30,17 +30,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return new Response("Organization not found", { status: 404 });
   }
 
-  const data = await admin?.graphql(
-    `
-    query {
-      currentAppInstallation {
-        activeSubscriptions {
-          currentPeriodEnd
+  let data;
+  try {
+    data = await admin?.graphql(
+      `
+      query {
+        currentAppInstallation {
+          activeSubscriptions {
+            currentPeriodEnd
+          }
         }
       }
-    }
-  `,
-  );
+    `,
+    );
+    console.log("Subscription data", data);
+  } catch (error) {
+    console.error("Failed to fetch subscription data:", error);
+    data = null;
+  }
 
   const trievePayload: ShopifyPlanChangePayload = {
     organization_id: organization_id?.organizationId,
@@ -58,6 +65,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           .activeSubscriptions?.[0]?.currentPeriodEnd ?? undefined,
     },
   };
+
+  console.log("Trieve payload", trievePayload);
 
   await trieve.handleShopifyPlanChange(
     trievePayload,
