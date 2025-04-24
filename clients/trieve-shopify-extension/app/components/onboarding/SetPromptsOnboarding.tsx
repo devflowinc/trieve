@@ -6,7 +6,11 @@ import {
 } from "@tanstack/react-query";
 import { useTrieve } from "app/context/trieveContext";
 import { shopDatasetQuery } from "app/queries/shopDataset";
-import { DEFAULT_RAG_PROMPT, DEFAULT_SYSTEM_PROMPT, OnboardingBody } from "app/utils/onboarding";
+import {
+  DEFAULT_RAG_PROMPT,
+  DEFAULT_SYSTEM_PROMPT,
+  OnboardingBody,
+} from "app/utils/onboarding";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { DatasetConfig } from "../DatasetSettings";
 import { withSuspense } from "app/utils/suspense";

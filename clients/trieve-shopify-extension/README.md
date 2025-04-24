@@ -30,7 +30,7 @@ yarn install
 
 Local development is powered by [the Shopify CLI](https://shopify.dev/docs/apps/tools/cli). It logs into your partners account, connects to an app, provides environment variables, updates remote config, creates a tunnel and provides commands to generate extensions.
 
-1) Create a shopify config `.toml`
+1. Create a shopify config `.toml`
 
 ```shell
 yarn shopify app config link
@@ -38,21 +38,21 @@ yarn shopify app config link
 
 Name your shopify app creating it as a new app.
 
-2) Run local development server.
+2. Run local development server.
 
 ```shell
 yarn dev
 ```
 
-3) Press P to open the URL to your app. Once you click install, you can start development!
+3. Press P to open the URL to your app. Once you click install, you can start development!
 
 #### Main project structure
 
 ###### Remix App
-- `clients/trieve-shopify-extension/app` - A remix application that is embedded in the "Configure App" section of shopify.
-This app currently has a lot of bloat. Database / prisma/ auth/ etc. Needs to be cut down and better integrated into Trieve.
-![image](https://github.com/user-attachments/assets/a84e3413-5240-4586-b214-8742aabbcc34)
 
+- `clients/trieve-shopify-extension/app` - A remix application that is embedded in the "Configure App" section of shopify.
+  This app currently has a lot of bloat. Database / prisma/ auth/ etc. Needs to be cut down and better integrated into Trieve.
+  ![image](https://github.com/user-attachments/assets/a84e3413-5240-4586-b214-8742aabbcc34)
 
 ###### Global Component
 
@@ -64,8 +64,7 @@ The liquid template for the global component. Can be edited via an `App Embed`
 ###### Inline Component
 
 - `clients/trieve-shopify-extension/extensions/global-search/blocks/global_component.liquid`
-![image](https://trieve.b-cdn.net/github/inline-component-add-shopify.png)
-
+  ![image](https://trieve.b-cdn.net/github/inline-component-add-shopify.png)
 
 ### Authenticating and querying data
 
@@ -207,9 +206,9 @@ pnpm run deploy
 
 ### My shop-specific webhook subscriptions aren't updated
 
-If you are registering webhooks in the `afterAuth` hook, using `shopify.registerWebhooks`, you may find that your subscriptions aren't being updated.  
+If you are registering webhooks in the `afterAuth` hook, using `shopify.registerWebhooks`, you may find that your subscriptions aren't being updated.
 
-Instead of using the `afterAuth` hook, the recommended approach is to declare app-specific webhooks in the `shopify.app.toml` file.  This approach is easier since Shopify will automatically update changes to webhook subscriptions every time you run `deploy` (e.g: `npm run deploy`).  Please read these guides to understand more:
+Instead of using the `afterAuth` hook, the recommended approach is to declare app-specific webhooks in the `shopify.app.toml` file. This approach is easier since Shopify will automatically update changes to webhook subscriptions every time you run `deploy` (e.g: `npm run deploy`). Please read these guides to understand more:
 
 1. [app-specific vs shop-specific webhooks](https://shopify.dev/docs/apps/build/webhooks/subscribe#app-specific-subscriptions)
 2. [Create a subscription tutorial](https://shopify.dev/docs/apps/build/webhooks/subscribe/get-started?framework=remix&deliveryMethod=https)
@@ -223,7 +222,7 @@ During normal development, the app won't need to re-authenticate most of the tim
 
 ### Admin created webhook failing HMAC validation
 
-Webhooks subscriptions created in the [Shopify admin](https://help.shopify.com/en/manual/orders/notifications/webhooks) will fail HMAC validation. This is because the webhook payload is not signed with your app's secret key.  There are 2 solutions:
+Webhooks subscriptions created in the [Shopify admin](https://help.shopify.com/en/manual/orders/notifications/webhooks) will fail HMAC validation. This is because the webhook payload is not signed with your app's secret key. There are 2 solutions:
 
 1. Use [app-specific webhooks](https://shopify.dev/docs/apps/build/webhooks/subscribe#app-specific-subscriptions) defined in your toml file instead (recommended)
 2. Create [webhook subscriptions](https://shopify.dev/docs/api/shopify-app-remix/v1/guide-webhooks) using the `shopifyApp` object.
@@ -354,16 +353,14 @@ This template uses [Remix](https://remix.run). The following Shopify tools are a
 
 Look at the `shopify.app.toml.dist` file and copy whatever is in there that is not inside of the `.toml` shopify config the CLI created for you.
 
-
-
 # Judge.me setup
+
 1. Create a new judge.me account at judge.me/login
 2. [Create a Judge.me developer app](https://judge.me/reviews/profile/apps/new)
 3. Set the redirect uri to https://my-remix-server-url.com/auth/judgeme/callback
-4. After creating the app you will likely have to hunt around the judge.me website to find it. 
-    Look for the "My Apps" button on https://judge.me/reviews/profile
-5. Set the `JUDGE_ME_CLIENT_ID` `JUDGE_ME_SECRET` and `JUDGE_ME_REDIRECT_URI` environment variables in remix. 
+4. After creating the app you will likely have to hunt around the judge.me website to find it.
+   Look for the "My Apps" button on https://judge.me/reviews/profile
+5. Set the `JUDGE_ME_CLIENT_ID` `JUDGE_ME_SECRET` and `JUDGE_ME_REDIRECT_URI` environment variables in remix.
 
-Note: it is quite difficult (maybe impossible) to set the redirect uri environment variable to the cloudflare tunnel when it resets the url every time you change the environment variable. You can run for local development and use tailscale + caddy as the tunnel so the redirect uri doesn't need to be changed every time. 
+Note: it is quite difficult (maybe impossible) to set the redirect uri environment variable to the cloudflare tunnel when it resets the url every time you change the environment variable. You can run for local development and use tailscale + caddy as the tunnel so the redirect uri doesn't need to be changed every time.
 ex: `yarn dev --tunnel-url https://drew-shopify2.trieve.ai:49345`
-

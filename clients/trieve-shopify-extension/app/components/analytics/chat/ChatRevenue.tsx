@@ -30,7 +30,11 @@ export const ChatRevenue = ({
       xAxis={"time_stamp"}
       yAxis={"point"}
       label={direct ? "Direct Chat Revenue" : "Indirect Chat Revenue"}
-      tooltipContent={direct ? "Sales revenue generated when customers click a Trieve-recommended product and complete the purchase of that recommended item." : "These customers messaged through Trieve at least once but but purchased products other than those recommended during their journey."}
+      tooltipContent={
+        direct
+          ? "Sales revenue generated when customers click a Trieve-recommended product and complete the purchase of that recommended item."
+          : "These customers messaged through Trieve at least once but but purchased products other than those recommended during their journey."
+      }
     />
   );
 };

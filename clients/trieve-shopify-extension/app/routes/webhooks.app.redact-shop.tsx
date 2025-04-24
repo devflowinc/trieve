@@ -56,4 +56,4 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   return new Response();
-}
+};

@@ -42,7 +42,10 @@ export const MessageEventTimeline = ({ events }: MessageEventTimelineProps) => {
               style={{
                 color: event.highlight ? "#eb4034" : undefined,
               }}
-              className="opacity-80 text-nowrap">{event.type}</span>
+              className="opacity-80 text-nowrap"
+            >
+              {event.type}
+            </span>
             {event.additional ? (
               <span className="opacity-40 truncate">{event.additional}</span>
             ) : null}

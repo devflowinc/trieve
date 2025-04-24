@@ -43,7 +43,7 @@ export const buildAdminApiFetcherForServer = (
         }),
       }),
     );
-    
+
     if (result.error) {
       return result;
     } else {

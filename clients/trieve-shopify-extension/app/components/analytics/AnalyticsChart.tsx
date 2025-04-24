@@ -19,7 +19,9 @@ interface AnalyticsChartProps<T extends Record<string, any>> {
   dataType?: "number" | "percentage" | "currency" | "time";
 }
 
-export const AnalyticsChart = <T extends Record<string, any>>(props: AnalyticsChartProps<T>) => {
+export const AnalyticsChart = <T extends Record<string, any>>(
+  props: AnalyticsChartProps<T>,
+) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
@@ -104,9 +106,9 @@ export const AnalyticsChart = <T extends Record<string, any>>(props: AnalyticsCh
                   } else if (props.dataType === "time") {
                     return `${props.label}: ${formatTimeValueForChart(value)}`;
                   } else if (props.dataType === "currency") {
-                    return `${props.label}: $${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    return `${props.label}: $${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   }
-                  return `${props.label}: ${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+                  return `${props.label}: ${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
                 },
               },
             },
@@ -146,9 +148,11 @@ export const AnalyticsChart = <T extends Record<string, any>>(props: AnalyticsCh
                   } else if (props.dataType === "time") {
                     return formatTimeValueForChart(Number(tickValue));
                   } else if (props.dataType === "currency") {
-                    return `$${Number(tickValue).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+                    return `$${Number(tickValue).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
                   }
-                  return props.wholeUnits ? Math.round(Number(tickValue)) : tickValue;
+                  return props.wholeUnits
+                    ? Math.round(Number(tickValue))
+                    : tickValue;
                 },
               },
               max: props.dataType === "percentage" ? 100 : undefined,

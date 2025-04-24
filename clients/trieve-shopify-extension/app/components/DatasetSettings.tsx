@@ -207,11 +207,18 @@ export const DatasetSettings = ({
             <BlockStack gap="200">
               <div className="max-w-fit">
                 {webPixelInstalled ? (
-                  <Button disabled fullWidth={false} icon={CheckCircleIcon} size="slim">
+                  <Button
+                    disabled
+                    fullWidth={false}
+                    icon={CheckCircleIcon}
+                    size="slim"
+                  >
                     Revenue Tracker Installed
                   </Button>
                 ) : (
-                  <Button onClick={onRevenueTrackingSettingsSave}>Install Revenue Tracker</Button>
+                  <Button onClick={onRevenueTrackingSettingsSave}>
+                    Install Revenue Tracker
+                  </Button>
                 )}
               </div>
               <Text as="p" tone="subdued" variant="bodySm">

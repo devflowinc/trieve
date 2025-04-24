@@ -50,19 +50,17 @@ export const GraphComponent = <T extends Record<string, any>>({
           <SkeletonDisplayText size="large" />
         ) : (
           <Text as="span" variant="heading2xl" fontWeight="bold">
-            {dataType === "percentage" ? (
-              `${((topLevelMetric ?? 0) * 100).toFixed(2)}%`
-            ) : dataType === "time" ? (
-              formatTimeValueForChart(topLevelMetric)
-            ) : dataType === "currency" ? (
-              `$${topLevelMetric?.toLocaleString("en-US", {
-                maximumFractionDigits: 2,
-              })}`
-            ) : (
-              topLevelMetric?.toLocaleString("en-US", {
-                maximumFractionDigits: 2,
-              })
-            )}
+            {dataType === "percentage"
+              ? `${((topLevelMetric ?? 0) * 100).toFixed(2)}%`
+              : dataType === "time"
+                ? formatTimeValueForChart(topLevelMetric)
+                : dataType === "currency"
+                  ? `$${topLevelMetric?.toLocaleString("en-US", {
+                      maximumFractionDigits: 2,
+                    })}`
+                  : topLevelMetric?.toLocaleString("en-US", {
+                      maximumFractionDigits: 2,
+                    })}
           </Text>
         )}
       </div>

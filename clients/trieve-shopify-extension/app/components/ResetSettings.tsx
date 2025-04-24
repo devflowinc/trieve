@@ -23,7 +23,8 @@ export const ResetSettings = () => {
         Reset Onboarding
       </Text>
       <Text variant="bodyMd" as="p">
-        This will reset your onboarding progress so you can view the steps again.
+        This will reset your onboarding progress so you can view the steps
+        again.
       </Text>
       <div className="h-3"></div>
       <div className="flex items-center gap-4">

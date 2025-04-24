@@ -153,8 +153,6 @@ export async function getProductDetails(productId: string): Promise<{
   );
 }
 
-
-
 export async function getAppId() {
   return await makeGraphQLQuery(
     `query {

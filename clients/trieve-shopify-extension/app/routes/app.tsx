@@ -66,9 +66,7 @@ export function ErrorBoundary() {
   if (isRouteErrorResponse(error)) {
     return (
       <AppProvider isEmbeddedApp apiKey={apiKey}>
-        <div>
-          Something bad happened
-        </div>
+        <div>Something bad happened</div>
       </AppProvider>
     );
   }

@@ -13,16 +13,12 @@ export const HeadQueriesTable = ({
 }) => {
   const { trieve } = useTrieve();
   const [page, setPage] = useState(1);
-  const { data } = useQuery(
-    headQueriesQuery(trieve, filters, page),
-  );
+  const { data } = useQuery(headQueriesQuery(trieve, filters, page));
 
   const client = useQueryClient();
   useEffect(() => {
     // prefetch the next page
-    client.prefetchQuery(
-      headQueriesQuery(trieve, filters, page + 1),
-    );
+    client.prefetchQuery(headQueriesQuery(trieve, filters, page + 1));
   }, [page]);
 
   const mappedData = data

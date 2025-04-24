@@ -5,4 +5,4 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   await authenticate.webhook(request);
   // we store no customer data to be fetched
   return new Response();
-}
+};
