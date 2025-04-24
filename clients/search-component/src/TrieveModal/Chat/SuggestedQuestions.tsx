@@ -65,18 +65,20 @@ export const SuggestedQuestions = ({
             props.inline && "inline-questions !tv-pb-0",
           )}
         >
-          {props.allowRefreshSuggestedQueries && <button
-            onClick={() => getQuestions()}
-            disabled={isLoadingSuggestedQueries}
-            className="suggested-question tv-cursor-pointer tv-border tv-rounded-md tv-p-1 tv-text-xs disabled:tv-cursor-not-allowed tv-text-center"
-            title="Refresh suggested questions"
-          >
-            <ArrowRotateRightIcon
-              height={15}
-              width={15}
-              className="refresh-suggestions-icon"
-            />
-          </button>}{" "}
+          {props.allowRefreshSuggestedQueries && (
+            <button
+              onClick={() => getQuestions()}
+              disabled={isLoadingSuggestedQueries}
+              className="suggested-question tv-cursor-pointer tv-border tv-rounded-md tv-p-1 tv-text-xs disabled:tv-cursor-not-allowed tv-text-center"
+              title="Refresh suggested questions"
+            >
+              <ArrowRotateRightIcon
+                height={15}
+                width={15}
+                className="refresh-suggestions-icon"
+              />
+            </button>
+          )}{" "}
           {!suggestedQuestions.length && (
             <span className="suggested-question tv-text-nowrap empty-state-loading">
               Loading example questions...

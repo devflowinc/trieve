@@ -23,6 +23,11 @@ export type Product = {
   category: {
     name: string;
   };
+  priceRangeV2: {
+    maxVariantPrice: {
+      currencyCode: string;
+    };
+  };
   totalInventory: number;
   variants: {
     nodes: {

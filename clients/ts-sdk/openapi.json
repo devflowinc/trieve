@@ -10381,6 +10381,11 @@
             ],
             "nullable": true
           },
+          "currency": {
+            "type": "string",
+            "description": "The currency to use for the completion. If not specified, this defaults to \"USD\".",
+            "nullable": true
+          },
           "filters": {
             "allOf": [
               {
@@ -11363,6 +11368,11 @@
                 "$ref": "#/components/schemas/ContextOptions"
               }
             ],
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "description": "The currency to use for the completion. If not specified, this defaults to \"USD\".",
             "nullable": true
           },
           "filters": {
@@ -17074,6 +17084,11 @@
                 "$ref": "#/components/schemas/ContextOptions"
               }
             ],
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "description": "The currency to use for the completion. If not specified, this defaults to \"USD\".",
             "nullable": true
           },
           "filters": {

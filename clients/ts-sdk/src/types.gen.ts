@@ -935,6 +935,10 @@ export type CreateMessageReqPayload = {
      */
     concat_user_messages_query?: (boolean) | null;
     context_options?: ((ContextOptions) | null);
+    /**
+     * The currency to use for the completion. If not specified, this defaults to "USD".
+     */
+    currency?: (string) | null;
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
     /**
@@ -1390,6 +1394,10 @@ export type EditMessageReqPayload = {
      */
     concat_user_messages_query?: (boolean) | null;
     context_options?: ((ContextOptions) | null);
+    /**
+     * The currency to use for the completion. If not specified, this defaults to "USD".
+     */
+    currency?: (string) | null;
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
     /**
@@ -3209,6 +3217,10 @@ export type RegenerateMessageReqPayload = {
      */
     concat_user_messages_query?: (boolean) | null;
     context_options?: ((ContextOptions) | null);
+    /**
+     * The currency to use for the completion. If not specified, this defaults to "USD".
+     */
+    currency?: (string) | null;
     filters?: ((ChunkFilter) | null);
     highlight_options?: ((HighlightOptions) | null);
     llm_options?: ((LLMOptions) | null);

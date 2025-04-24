@@ -92,6 +92,7 @@ function createChunkFromProduct(
     });
   }
   const metadata = {
+    currency: product.priceRangeV2?.maxVariantPrice?.currencyCode ?? "USD",
     body_html: product.descriptionHtml,
     variantName: variantTitle,
     handle: product.handle,
@@ -107,6 +108,7 @@ function createChunkFromProduct(
     variants: product.variants.nodes.map((v) => ({
       id: parseInt(v.id.split("/").pop() || "0"),
       price: v.price,
+      currency: product.priceRangeV2?.maxVariantPrice?.currencyCode ?? "USD",
       product_id: parseInt(product.id.split("/").pop() || "0"),
       title: v.title,
       inventory_quantity: v.inventoryQuantity,
@@ -148,6 +150,7 @@ function createChunkFromProduct(
 export function createChunkFromProductWebhook(
   product: ProductWebhook,
   variant: ProductWebhook["variants"][0],
+  currency: string,
   baseUrl: string,
   crawlOptions: ExtendedCrawlOptions,
 ): ChunkReqPayload {
@@ -231,6 +234,7 @@ export function createChunkFromProductWebhook(
   }
 
   const metadata = {
+    currency,
     body_html: product.body_html,
     handle: product.handle,
     id: product.id,
@@ -244,6 +248,7 @@ export function createChunkFromProductWebhook(
     variants: product.variants.map((v) => ({
       id: v.id,
       price: v.price,
+      currency: currency,
       product_id: product.id,
       title: v.title,
       inventory_quantity: v.inventory_quantity,
@@ -281,7 +286,18 @@ export async function sendChunksFromWebhook(
   crawlOptions: ExtendedCrawlOptions,
 ) {
   const dataChunks = product.variants.map(async (variant) => {
-    let response = await adminApi(
+    let response = await adminApi<{
+      productVariant: {
+        metafields: { nodes: { key: string; value: string }[] };
+        product: {
+          priceRangeV2: {
+            maxVariantPrice: {
+              currencyCode: string;
+            };
+          };
+        };
+      };
+    }>(
       `#graphql
       query{
           productVariant(id: "${variant.admin_graphql_api_id}") {
@@ -291,6 +307,13 @@ export async function sendChunksFromWebhook(
                 value
               }
             }
+            product {
+              priceRangeV2 {
+                maxVariantPrice {
+                  currencyCode
+                }
+              }
+            }
           }
         }
     `,
@@ -298,20 +321,15 @@ export async function sendChunksFromWebhook(
     if (response.error) {
       throw response.error;
     }
-    let data = (
-      response as {
-        data: {
-          productVariant?: {
-            metafields: { nodes: { key: string; value: string }[] };
-          };
-        };
-      }
-    ).data;
+    let data = response.data;
 
     variant.metafields = data?.productVariant?.metafields?.nodes ?? [];
+
     return createChunkFromProductWebhook(
       product,
       variant,
+      data?.productVariant?.product?.priceRangeV2?.maxVariantPrice
+        ?.currencyCode ?? "USD",
       `https://${session?.shop}`,
       crawlOptions,
     );
@@ -389,6 +407,11 @@ export const sendChunks = async (
             status
             category {
               name
+            }
+            priceRangeV2 {
+              maxVariantPrice {
+                currencyCode
+              }
             }
             totalInventory
             variants(first: 120) {

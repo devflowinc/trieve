@@ -99,6 +99,8 @@ pub struct CreateMessageReqPayload {
     pub no_result_message: Option<String>,
     /// Only include docs used in the completion. If not specified, this defaults to false.
     pub only_include_docs_used: Option<bool>,
+    /// The currency to use for the completion. If not specified, this defaults to "USD".
+    pub currency: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
     pub search_type: Option<SearchMethod>,
     /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
@@ -382,6 +384,8 @@ pub struct RegenerateMessageReqPayload {
     pub no_result_message: Option<String>,
     /// Only include docs used in the completion. If not specified, this defaults to false.
     pub only_include_docs_used: Option<bool>,
+    /// The currency to use for the completion. If not specified, this defaults to "USD".
+    pub currency: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
     pub search_type: Option<SearchMethod>,
     /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
@@ -432,6 +436,8 @@ pub struct EditMessageReqPayload {
     pub no_result_message: Option<String>,
     /// Only include docs used in the completion. If not specified, this defaults to false.
     pub only_include_docs_used: Option<bool>,
+    /// The currency to use for the completion. If not specified, this defaults to "USD".
+    pub currency: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
     pub search_type: Option<SearchMethod>,
     /// Query is the search query. This can be any string. The search_query will be used to create a dense embedding vector and/or sparse vector which will be used to find the result set. If not specified, will default to the last user message or HyDE if HyDE is enabled in the dataset configuration. Default is None.
@@ -471,6 +477,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             search_query: data.search_query,
             page_size: data.page_size,
             filters: data.filters,
+            currency: data.currency,
             score_threshold: data.score_threshold,
             llm_options: data.llm_options,
             user_id: data.user_id,
@@ -500,6 +507,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             search_query: data.search_query,
             page_size: data.page_size,
             filters: data.filters,
+            currency: data.currency,
             score_threshold: data.score_threshold,
             llm_options: data.llm_options,
             user_id: data.user_id,
