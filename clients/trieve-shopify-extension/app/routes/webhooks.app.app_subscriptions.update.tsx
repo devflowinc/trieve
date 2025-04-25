@@ -20,10 +20,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const key = await validateTrieveAuthWehbook(shop);
   const trieve = sdkFromKey(key);
 
-  console.log(`Received ${topic} webhook for ${shop}`, payload);
+  console.log(`Received ${topic} webhook for ${shop}`);
   const organization_id = await db.apiKey.findFirst({
     where: {
-      shop: `https://${shop}`,
+      shop,
     },
   });
   if (!organization_id) {
@@ -43,7 +43,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     `,
     );
-    console.log("Subscription data", data);
   } catch (error) {
     console.error("Failed to fetch subscription data:", error);
     data = null;
@@ -65,8 +64,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           .activeSubscriptions?.[0]?.currentPeriodEnd ?? undefined,
     },
   };
-
-  console.log("Trieve payload", trievePayload);
 
   await trieve.handleShopifyPlanChange(
     trievePayload,
