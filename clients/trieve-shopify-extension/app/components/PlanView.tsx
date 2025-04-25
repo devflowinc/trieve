@@ -12,15 +12,21 @@ import {
 } from "@shopify/polaris";
 import { ProgressBar } from "./ProgressBar";
 import { StripePlan } from "trieve-ts-sdk";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { organizationUsageQuery } from "app/queries/usage";
 import { useTrieve } from "app/context/trieveContext";
+import { shopOrganizationQuery } from "app/queries/shopDataset";
 
 export const PlanView = () => {
-  const { organization, trieve, refetch: refetchTrieve } = useTrieve();
+  const { trieve } = useTrieve();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const submit = useSubmit();
+
+  const { data: organization, refetch: refetchOrganization } = useQuery({
+    ...shopOrganizationQuery(trieve),
+    refetchInterval: 10000,
+  });
 
   const { data: organizationUsage } = useQuery(organizationUsageQuery(trieve));
 
@@ -61,7 +67,7 @@ export const PlanView = () => {
               );
               setShowCancelModal(false);
               setTimeout(() => {
-                refetchTrieve();
+                refetchOrganization();
               }, 5000);
             }}
           >
@@ -76,12 +82,12 @@ export const PlanView = () => {
               <Text variant="headingMd" as="h2">
                 Plan Status
               </Text>
-              <Badge>{organization.plan?.name}</Badge>
+              <Badge>{organization?.plan?.name}</Badge>
             </InlineStack>
           </div>
 
           <BlockStack gap="400">
-            {(organization.plan as StripePlan | undefined)?.amount == 0 && (
+            {(organization?.plan as StripePlan | undefined)?.amount == 0 && (
               <Box>
                 <Banner
                   title={`You are not on a paid plan. Test before you buy!`}
@@ -141,11 +147,11 @@ export const PlanView = () => {
               );
             }}
           >
-            {(organization.plan as StripePlan | undefined)?.amount == 0
+            {(organization?.plan as StripePlan | undefined)?.amount == 0
               ? "Upgrade"
               : "Modify"}
           </Button>
-          {(organization.plan as StripePlan | undefined)?.amount != 0 && (
+          {(organization?.plan as StripePlan | undefined)?.amount != 0 && (
             <Button
               onClick={() => {
                 setShowCancelModal(true);
