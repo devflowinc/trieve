@@ -65,7 +65,9 @@ export const JudgeMeSetup = () => {
         Connect Judge.me
       </Text>
       <Text variant="bodyMd" as="p">
-        Connect your Judge.me reviews with your products in Trieve.
+        Connect your Judge.me reviews with your products in Trieve. Trieve will
+        use your reviews to inform its responses when answering customer
+        questions about products.
       </Text>
 
       <div className="h-3"></div>
