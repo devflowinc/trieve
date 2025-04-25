@@ -13,20 +13,26 @@ export const Footer = () => {
     >
       <div className="tags-row">
         <div className="tags-spacer" />
-        <a
-          className="trieve-powered"
-          href={props.partnerSettings?.partnerCompanyUrl ?? "https://trieve.ai"}
-          target="_blank"
-        >
-          <img
-            src={
-              props.partnerSettings?.partnerCompanyFaviconUrl ??
-              "https://cdn.trieve.ai/favicon.ico"
+        {(props.showTrieve ?? true) ? (
+          <a
+            className="trieve-powered"
+            href={
+              props.partnerSettings?.partnerCompanyUrl ?? "https://trieve.ai"
             }
-            alt="logo"
-          />
-          Powered by {props.partnerSettings?.partnerCompanyName ?? "Trieve"}
-        </a>
+            target="_blank"
+          >
+            <img
+              src={
+                props.partnerSettings?.partnerCompanyFaviconUrl ??
+                "https://cdn.trieve.ai/favicon.ico"
+              }
+              alt="logo"
+            />
+            Powered by {props.partnerSettings?.partnerCompanyName ?? "Trieve"}
+          </a>
+        ) : (
+          <span> </span>
+        )}
       </div>
     </div>
   );
