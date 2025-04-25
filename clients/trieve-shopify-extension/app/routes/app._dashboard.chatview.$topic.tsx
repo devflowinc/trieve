@@ -126,22 +126,39 @@ export default function ChatRoute() {
             <Suspense fallback={null}>
               {typeof window !== "undefined" && (
                 <TrieveModalSearch
-                  baseUrl={trieve.trieve.baseUrl}
                   type="ecommerce"
+                  baseUrl={trieve.trieve.baseUrl}
+                  cssRelease="beta"
+                  useGroupSearch={true}
+                  hideOpenButton={true}
                   defaultSearchMode="chat"
-                  allowSwitchingModes={false}
                   apiKey={trieveKey.key}
+                  datasetId={dataset.id}
+                  // skip zIndex
+                  // skip defaultAiQuestions
+                  brandColor="#ae715e" // TODO: get this from the settings
+                  brandLogoImgSrcUrl="https://cdn.trieve.ai/trieve-logo.png" // TODO: brandLogoImgSrcUrl from settings
+                  // skip chatPlaceholder
+                  // skip suggestedQueries
+                  // skip followQuestions
+                  // skip numberOfSuggestions
+                  openLinksInNewTab={true}
+                  // TODO: get theme from settings
+                  showTrieve={false}
+                  // skip geCartQuantity
+                  // skip searchOptions
+                  // skip chatFilters
+                  // defaultCurrency TODO: get this from settings
+                  // ---
+                  // BELOW ARE UNIQUE TO THE ANALYTICS CHAT VIEW
+                  allowSwitchingModes={false}
                   previewTopicId={topicId}
                   inlineCarousel={true}
-                  datasetId={dataset.id}
                   inline={true}
                   debounceMs={10}
                   analytics={false}
-                  brandColor="#ae715e"
-                  brandLogoImgSrcUrl="https://cdn.trieve.ai/component/flaviar/Uncle%20Flaviar.svg"
                   hidePrice={true}
                   hideChunkHtml={true}
-                  useGroupSearch={true}
                 />
               )}
             </Suspense>

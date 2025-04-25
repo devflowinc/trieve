@@ -152,6 +152,7 @@ export type ModalProps = {
   hideOpenButton?: boolean;
   defaultImageQuestion?: string;
   onAddToCart?: (chunk: Chunk) => Promise<void> | void;
+  showTrieve?: boolean;
   getCartQuantity?: (trackingId: string) => Promise<number> | number;
   showResultHighlights?: boolean;
   initialAiMessage?: string;

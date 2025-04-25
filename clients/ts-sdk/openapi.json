@@ -11372,7 +11372,7 @@
           },
           "currency": {
             "type": "string",
-            "description": "The currency to use for the completion. If not specified, this defaults to \"USD\".",
+            "description": "The currency symbol to use for the completion. If not specified, this defaults to \"$\".",
             "nullable": true
           },
           "filters": {
@@ -17088,7 +17088,7 @@
           },
           "currency": {
             "type": "string",
-            "description": "The currency to use for the completion. If not specified, this defaults to \"USD\".",
+            "description": "The currency symbol to use for the completion. If not specified, this defaults to \"$\".",
             "nullable": true
           },
           "filters": {

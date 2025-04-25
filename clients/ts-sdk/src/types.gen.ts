@@ -1395,7 +1395,7 @@ export type EditMessageReqPayload = {
     concat_user_messages_query?: (boolean) | null;
     context_options?: ((ContextOptions) | null);
     /**
-     * The currency to use for the completion. If not specified, this defaults to "USD".
+     * The currency symbol to use for the completion. If not specified, this defaults to "$".
      */
     currency?: (string) | null;
     filters?: ((ChunkFilter) | null);
@@ -3218,7 +3218,7 @@ export type RegenerateMessageReqPayload = {
     concat_user_messages_query?: (boolean) | null;
     context_options?: ((ContextOptions) | null);
     /**
-     * The currency to use for the completion. If not specified, this defaults to "USD".
+     * The currency symbol to use for the completion. If not specified, this defaults to "$".
      */
     currency?: (string) | null;
     filters?: ((ChunkFilter) | null);

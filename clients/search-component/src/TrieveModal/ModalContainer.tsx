@@ -45,7 +45,7 @@ export const ModalContainer = () => {
         </Suspense>
         {mode === "chat" && !fullscreenPdfState && <ChatMode />}
         {fullscreenPdfState && <PdfViewer {...fullscreenPdfState} />}
-        <Footer />
+        {(props.showTrieve ?? true) && <Footer />}
       </div>
     );
   }, [props, mode, open, fullscreenPdfState, componentClass]);
