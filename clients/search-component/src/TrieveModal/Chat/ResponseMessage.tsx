@@ -133,6 +133,7 @@ export const Message = ({
     )
     .map((chunk) => ({
       chunk,
+      currencyCode: chunk.metadata?.currency ?? "USD",
       title:
         chunk.metadata.heading ||
         chunk.metadata.title ||
@@ -196,14 +197,17 @@ export const Message = ({
                     ),
               }}
             />
-            {!props.hidePrice && (
+            {!props.hidePrice && item.price && (
               <p
                 className="ecomm-item-price"
                 style={{
                   color: props.brandColor ?? "#CB53EB",
                 }}
               >
-                ${item.price}
+                {Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: item.currencyCode,
+                }).format(item.price)}
               </p>
             )}
             {!props.hideChunkHtml && props.showResultHighlights && (
