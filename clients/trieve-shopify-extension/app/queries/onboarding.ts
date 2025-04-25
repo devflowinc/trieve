@@ -195,7 +195,7 @@ export const singleThemeGlobalComponentInstallQuery = (
         `#graphql
 query GetStoreThemes($themeId:ID!) {
   theme(id: $themeId) {
-    files(filenames: ["templates/product.json"]) {
+    files(filenames: ["config/settings_data.json"]) {
       edges {
         node {
           body {
