@@ -15,6 +15,7 @@ use crate::{
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
+use actix_request_reply_cache::RedisCacheMiddlewareBuilder;
 use actix_session::{config::PersistentSession, storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::{Key, SameSite},
@@ -1101,6 +1102,14 @@ pub fn main() -> std::io::Result<()> {
                         .service(
                             web::resource("/message/get_tool_function_params")
                                 .route(web::post().to(handlers::message_handler::get_tool_function_params))
+                                    .wrap(RedisCacheMiddlewareBuilder::new(redis_url)
+                                        .cache_prefix("function_params:")
+                                        .ttl(60 * 60 * 24)
+                                        .cache_if(|ctx| {
+                                            return ctx.body.get("audio_input").is_none() || ctx.body.get("audio_input").unwrap().is_null();
+                                        })
+                                        .build()
+                                )
                         )
                         .service(
                             web::resource("/message/{message_id}")
