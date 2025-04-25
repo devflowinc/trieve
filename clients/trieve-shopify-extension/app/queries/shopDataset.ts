@@ -10,3 +10,15 @@ export const shopDatasetQuery = (trieve: TrieveSDK) => {
     },
   } satisfies QueryOptions;
 };
+
+export const shopOrganizationQuery = (trieve: TrieveSDK) => {
+  return {
+    queryKey: ["shop_organization", trieve.organizationId],
+    queryFn: async () => {
+      const shopOrganization = await trieve.getOrganizationById(
+        trieve.organizationId!,
+      );
+      return shopOrganization;
+    },
+  } satisfies QueryOptions;
+};
