@@ -1,9 +1,0 @@
-apiVersion: packages.glasskube.dev/v1alpha1
-kind: ClusterPackage
-metadata:
-  name: cloudnative-pg
-spec:
-  packageInfo:
-    name: cloudnative-pg
-    version: v1.24.0+1
-    repositoryName: glasskube

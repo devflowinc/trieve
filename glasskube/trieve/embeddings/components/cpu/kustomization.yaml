@@ -1,4 +1,0 @@
-kind: Component
-images:
-  - name: ghcr.io/huggingface/text-embeddings-inference
-    newTag: cpu-1.4

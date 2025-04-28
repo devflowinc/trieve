@@ -1,8 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: embedding-jina
-  trieve.ai/embedding: jina
-nameSuffix: -jina
-resources:
-  - ../base
-patches:
-  - path: deployment-patch.yaml

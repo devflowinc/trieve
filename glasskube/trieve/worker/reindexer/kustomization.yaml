@@ -1,8 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: worker-reindexer
-nameSuffix: -reindexer
-resources:
-  - ../base
-images:
-  - name: worker
-    newName: trieve/reindex-worker

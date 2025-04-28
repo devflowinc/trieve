@@ -1,8 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: worker-words
-nameSuffix: -word
-resources:
-  - ../base
-images:
-  - name: worker
-    newName: trieve/word-worker

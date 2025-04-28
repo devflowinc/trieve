@@ -1,8 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: embedding-reranker
-  trieve.ai/embedding: reranker
-nameSuffix: -reranker
-resources:
-  - ../base
-patches:
-  - path: deployment-patch.yaml

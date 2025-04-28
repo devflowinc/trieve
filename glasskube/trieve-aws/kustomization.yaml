@@ -1,9 +1,0 @@
-resources:
-  - ../trieve
-components:
-  - ../trieve/embeddings/components/gpu
-patches:
-  - target:
-      group: networking.k8s.io
-      kind: Ingress
-    path: ingress-patch.yaml

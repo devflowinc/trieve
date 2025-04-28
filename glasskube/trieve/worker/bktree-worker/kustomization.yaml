@@ -1,8 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: worker-bktree
-nameSuffix: -bktree
-resources:
-  - ../base
-images:
-  - name: worker
-    newName: trieve/bktree-worker

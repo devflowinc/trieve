@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: trieve-ui-dashboard-config
-data:
-  VITE_DASHBOARD_URL: "http://dashboard.localtrieve.com"

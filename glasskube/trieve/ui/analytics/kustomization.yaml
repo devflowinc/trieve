@@ -1,8 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: trieve-ui-analytics
-nameSuffix: -analytics
-resources:
-  - ../base
-images:
-  - name: ui
-    newName: trieve/analytics-site

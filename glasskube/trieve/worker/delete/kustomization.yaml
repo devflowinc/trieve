@@ -1,8 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: worker-delete
-nameSuffix: -delete
-resources:
-  - ../base
-images:
-  - name: worker
-    newName: trieve/delete-worker

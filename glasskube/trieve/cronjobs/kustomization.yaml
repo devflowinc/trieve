@@ -1,4 +1,0 @@
-resources:
-  - word-id-cronjob.yaml
-  - cluster-queries.yaml
-  - clickhouse-collapse.yaml

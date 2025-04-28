@@ -1,6 +1,0 @@
-resources:
-  - configmap.yaml
-  - analytics
-  - chat
-  - dashboard
-  - search

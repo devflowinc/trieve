@@ -1,9 +1,0 @@
-kind: Component
-images:
-  - name: ghcr.io/huggingface/text-embeddings-inference
-    newTag: 89-1.2
-patches:
-  - target:
-      kind: Deployment
-      labelSelector: "trieve.ai/embedding"
-    path: deployment-patch.yaml

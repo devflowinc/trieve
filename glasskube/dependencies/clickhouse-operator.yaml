@@ -1,9 +1,0 @@
-apiVersion: packages.glasskube.dev/v1alpha1
-kind: ClusterPackage
-metadata: 
-  name: clickhouse-operator
-spec: 
-  packageInfo:
-    name: clickhouse-operator
-    version: v0.23.7+2
-    repositoryName: glasskube

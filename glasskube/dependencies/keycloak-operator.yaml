@@ -1,9 +1,0 @@
-apiVersion: packages.glasskube.dev/v1alpha1
-kind: Package
-metadata:
-  name: trieve-keycloak-operator
-spec: 
-  packageInfo:
-    name: keycloak-operator
-    version: v25.0.2+1
-    repositoryName: glasskube

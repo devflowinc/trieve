@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: trieve-ui-search-config
-data:
-  VITE_DASHBOARD_URL: "http://search.localtrieve.com"

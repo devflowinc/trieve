@@ -1,9 +1,0 @@
-apiVersion: packages.glasskube.dev/v1alpha1
-kind: Package
-metadata:
-  name: trieve-tika
-spec:
-  packageInfo:
-    name: tika
-    repositoryName: glasskube
-    version: v2.9.2+2

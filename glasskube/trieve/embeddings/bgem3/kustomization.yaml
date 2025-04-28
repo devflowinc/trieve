@@ -1,8 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: embedding-bgem3
-  trieve.ai/embedding: bgem3
-nameSuffix: -bgem3
-resources:
-  - ../base
-patches:
-  - path: deployment-patch.yaml

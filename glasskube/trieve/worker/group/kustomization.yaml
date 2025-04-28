@@ -1,8 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: worker-file
-nameSuffix: -group
-resources:
-  - ../base
-images:
-  - name: worker
-    newName: trieve/group-worker

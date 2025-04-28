@@ -1,9 +1,0 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: not-used
-spec:
-  template:
-    spec:
-      nodeSelector:
-        cloud.google.com/gke-accelerator: nvidia-l4

@@ -1,8 +1,0 @@
-commonLabels:
-  app.kubernetes.io/component: embedding-splade-query
-  trieve.ai/embedding: splade-query
-nameSuffix: -splade-query
-resources:
-  - ../base
-patches:
-  - path: deployment-patch.yaml
