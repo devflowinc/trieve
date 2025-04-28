@@ -193,7 +193,6 @@ export function createChunkFromProductWebhook(
   if (typeof tags === "string") {
     tags = tags.split(",").map((tag) => tag.trim());
   }
-  tags.push(...variantTitle.split(" / "));
 
   if (crawlOptions.scrape_options?.tag_regexes) {
     const tagMatches = new Set<string>();

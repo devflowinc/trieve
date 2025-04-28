@@ -1,19 +1,30 @@
-import { sdkFromKey, validateTrieveAuth } from "app/auth";
+import { validateTrieveAuth } from "app/auth";
 import { getTrieveBaseUrlEnv } from "app/env.server";
 import { tryCatch } from "app/loaders";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { ChunkReqPayload } from "trieve-ts-sdk";
 
-type Review = {
+type JudgeMeReviewer = {
+  id: string;
+  email: string;
+  name: string;
+  external_id: number;
+  phone?: string;
+  tags?: string[];
+  accepts_marketing?: boolean;
+  unsubscribed_at?: string;
+};
+
+type JudgeMeReview = {
   id: number;
   title: string;
   body: string;
   rating: number;
   product_external_id: number;
-  // reviewer: [Object];
+  reviewer: JudgeMeReviewer;
   source: string;
-  curated: string;
+  curated: "not-yet" | "ok" | "spam";
   published: boolean;
   hidden: boolean;
   verified: string;
@@ -151,7 +162,6 @@ export const judgeMe = new Hono()
     let page = 1;
     const perPage = 100;
     let isDone = false;
-
     while (!isDone) {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -177,7 +187,7 @@ export const judgeMe = new Hono()
       const reviews = (await response.json()) as {
         current_page: number;
         per_page: number;
-        reviews: Review[];
+        reviews: JudgeMeReview[];
       };
 
       if (reviews.reviews.length === 0) {
@@ -186,6 +196,7 @@ export const judgeMe = new Hono()
       }
 
       const chunks = reviews.reviews.map(transformReviewToChunk);
+      console.log(`Sending ${JSON.stringify(chunks)} chunks to Trieve`);
 
       fetch(`${getTrieveBaseUrlEnv()}/api/chunk`, {
         method: "POST",
@@ -259,10 +270,11 @@ export const judgeMe = new Hono()
     return c.json({ reviewCount: 0 });
   });
 
-const transformReviewToChunk = (review: Review): ChunkReqPayload => {
+const transformReviewToChunk = (review: JudgeMeReview): ChunkReqPayload => {
   return {
-    chunk_html: review.title + "\n\n" + review.body,
+    chunk_html: `This is a Review from: ${review.reviewer.name} from ${review.created_at}. This review was given a rating of ${review.rating}/5 stars.\n\n<h1>${review.title}</h1>\n\n<p>${review.body}.</p>`,
     group_tracking_ids: [review.product_external_id.toString()],
+    upsert_by_tracking_id: true,
     metadata: {
       rating: review.rating,
     },
