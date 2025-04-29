@@ -19,6 +19,9 @@ export const ApiRoutes = {
     "POST /api/topic",
     "POST /api/message",
     "PUT /api/message",
+    "GET /api/dataset/organization/{organization_id}",
+    "GET /api/dataset/usage/{dataset_id}",
+    "GET /api/dataset/{dataset_id}",
   ],
   "Search Component Routes": [
     "POST /api/chunk/search",
