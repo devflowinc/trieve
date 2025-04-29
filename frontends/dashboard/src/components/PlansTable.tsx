@@ -593,8 +593,8 @@ export const PlansTable = (props: PlansTableProps) => {
           <p class="text-sm">
             ** For more information about our usage based plans see our pricing
             page.{" "}
-            <a class="text-magenta" href="https://trieve.ai/betapricing">
-              https://trieve.ai/betapricing
+            <a class="text-magenta" href="https://trieve.ai/pricing">
+              https://trieve.ai/pricing
             </a>
           </p>
         </Show>
