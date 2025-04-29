@@ -108,11 +108,11 @@ export const GroupPage = (props: GroupPageProps) => {
   const [deleteChunksInGroup, setDeleteChunksInGroup] = createSignal(false);
   const [totalGroupPages, setTotalGroupPages] = createSignal(1);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => {});
+  const [onDelete, setOnDelete] = createSignal(() => { });
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   const [onGroupDelete, setOnGroupDelete] = createSignal<
     (delete_chunks: boolean) => void
-  >(() => {});
+  >(() => { });
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [groupRecommendations, setGroupRecommendations] = createSignal(false);
@@ -190,7 +190,7 @@ export const GroupPage = (props: GroupPageProps) => {
     let cursor = "00000000-0000-0000-0000-000000000000";
     while (cursor != null) {
       const response = await fetch(
-        `${apiHost}/dataset/groups/${currentDataset.dataset.id}?cursor=${cursor}&use_curosr=true`,
+        `${apiHost}/dataset/groups/${currentDataset.dataset.id}?cursor=${cursor}&use_cursor=true`,
         {
           method: "GET",
           credentials: "include",
@@ -418,7 +418,7 @@ export const GroupPage = (props: GroupPageProps) => {
     if (!$currentUser?.()) return;
 
     void fetch(
-      `${apiHost}/dataset/groups/${currentDataset.dataset.id}?use_curosr=true`,
+      `${apiHost}/dataset/groups/${currentDataset.dataset.id}?use_cursor=true`,
       {
         method: "GET",
         credentials: "include",
@@ -1065,9 +1065,8 @@ export const GroupPage = (props: GroupPageProps) => {
                           </div>
                           <a
                             title="Open group to edit, view its chunks, or test group recommendations"
-                            href={`/group/${
-                              groupResult.group.id
-                            }?dataset=${dataset()?.dataset.id}`}
+                            href={`/group/${groupResult.group.id
+                              }?dataset=${dataset()?.dataset.id}`}
                           >
                             <FiEye class="h-5 w-5" />
                           </a>

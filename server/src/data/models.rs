@@ -3805,11 +3805,17 @@ pub struct Invitation {
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub role: i32,
+    pub scopes: Option<Vec<Option<String>>>,
 }
 
 // any type that implements Into<String> can be used to create Invitation
 impl Invitation {
-    pub fn from_details(email: String, organization_id: uuid::Uuid, role: i32) -> Self {
+    pub fn from_details(
+        email: String,
+        organization_id: uuid::Uuid,
+        role: i32,
+        scopes: Option<Vec<String>>,
+    ) -> Self {
         Invitation {
             id: uuid::Uuid::new_v4(),
             email,
@@ -3818,6 +3824,7 @@ impl Invitation {
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
             role,
+            scopes: scopes.map(|scopes| scopes.into_iter().map(Some).collect()),
         }
     }
 }
@@ -4329,15 +4336,22 @@ pub struct UserOrganization {
     pub role: i32,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
+    pub scopes: Option<Vec<Option<String>>>,
 }
 
 impl UserOrganization {
-    pub fn from_details(user_id: uuid::Uuid, organization_id: uuid::Uuid, role: UserRole) -> Self {
+    pub fn from_details(
+        user_id: uuid::Uuid,
+        organization_id: uuid::Uuid,
+        role: UserRole,
+        scopes: Option<Vec<String>>,
+    ) -> Self {
         UserOrganization {
             id: uuid::Uuid::new_v4(),
             user_id,
             organization_id,
             role: role.into(),
+            scopes: scopes.map(|scopes| scopes.into_iter().map(Some).collect()),
             created_at: chrono::Utc::now().naive_local(),
             updated_at: chrono::Utc::now().naive_local(),
         }

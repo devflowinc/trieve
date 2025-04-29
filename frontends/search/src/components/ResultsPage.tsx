@@ -97,7 +97,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     createSignal(false);
   const [totalCollectionPages, setTotalCollectionPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => {});
+  const [onDelete, setOnDelete] = createSignal(() => { });
   const [bookmarks, setBookmarks] = createSignal<ChunkBookmarksDTO[]>([]);
   const [openChat, setOpenChat] = createSignal(false);
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
@@ -119,7 +119,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     const dataset = $dataset?.();
     if (!dataset) return;
     void fetch(
-      `${apiHost}/dataset/groups/${dataset.dataset.id}/?use_curosr=true`,
+      `${apiHost}/dataset/groups/${dataset.dataset.id}/?use_cursor=true`,
       {
         method: "GET",
         credentials: "include",
@@ -214,7 +214,7 @@ const ResultsPage = (props: ResultsPageProps) => {
     let cursor = "00000000-0000-0000-0000-000000000000";
     while (cursor != null) {
       const response = await fetch(
-        `${apiHost}/dataset/groups/${currentDataset.dataset.id}?cursor=${cursor}&use_curosr=true`,
+        `${apiHost}/dataset/groups/${currentDataset.dataset.id}?cursor=${cursor}&use_cursor=true`,
         {
           method: "GET",
           credentials: "include",
@@ -332,15 +332,15 @@ const ResultsPage = (props: ResultsPageProps) => {
       let query: (string | number)[][] | string | { audio_base64: string } =
         props.search.debounced.audioBase64
           ? {
-              audio_base64: props.search.debounced.audioBase64,
-            }
+            audio_base64: props.search.debounced.audioBase64,
+          }
           : props.search.debounced.query;
 
       query =
         props.search.debounced.multiQueries.length > 0
           ? props.search.debounced.multiQueries
-              .map((q) => [q.query, q.weight])
-              .filter((q) => q[0] != "")
+            .map((q) => [q.query, q.weight])
+            .filter((q) => q[0] != "")
           : query;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -639,14 +639,13 @@ const ResultsPage = (props: ResultsPageProps) => {
                   Showing results for{" "}
                   <a
                     class="font-bold text-blue-500"
-                    href={`${new URL(window.location.href).origin}${
-                      new URL(window.location.href).pathname
-                    }?${new URLSearchParams({
-                      ...Object.fromEntries(
-                        new URL(window.location.href).searchParams,
-                      ),
-                      query: correctedQuery(),
-                    }).toString()}`}
+                    href={`${new URL(window.location.href).origin}${new URL(window.location.href).pathname
+                      }?${new URLSearchParams({
+                        ...Object.fromEntries(
+                          new URL(window.location.href).searchParams,
+                        ),
+                        query: correctedQuery(),
+                      }).toString()}`}
                     onClick={() => {
                       props.search.setSearch({
                         query: correctedQuery(),
@@ -660,14 +659,13 @@ const ResultsPage = (props: ResultsPageProps) => {
                   Search instead for
                   <a
                     class="pl-1 font-bold text-blue-500"
-                    href={`${new URL(window.location.href).origin}${
-                      new URL(window.location.href).pathname
-                    }?${new URLSearchParams({
-                      ...Object.fromEntries(
-                        new URL(window.location.href).searchParams,
-                      ),
-                      query: `"${props.search.debounced.query}"`,
-                    }).toString()}`}
+                    href={`${new URL(window.location.href).origin}${new URL(window.location.href).pathname
+                      }?${new URLSearchParams({
+                        ...Object.fromEntries(
+                          new URL(window.location.href).searchParams,
+                        ),
+                        query: `"${props.search.debounced.query}"`,
+                      }).toString()}`}
                     onClick={() => {
                       props.search.setSearch({
                         query: `"${props.search.debounced.query}"`,
@@ -905,7 +903,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                                     when={
                                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                       (groupResult.group.metadata as any)[
-                                        key
+                                      key
                                       ] !== undefined
                                     }
                                   >
@@ -918,7 +916,7 @@ const ResultsPage = (props: ResultsPageProps) => {
                                           {groupResult.group.metadata &&
                                             renderMetadataElements(
                                               groupResult.group.metadata[
-                                                key as keyof typeof groupResult.group.metadata
+                                              key as keyof typeof groupResult.group.metadata
                                               ],
                                             )}
                                         </span>
@@ -945,9 +943,8 @@ const ResultsPage = (props: ResultsPageProps) => {
                           <Tooltip
                             body={
                               <a
-                                href={`/group/${
-                                  groupResult.group.id
-                                }?dataset=${dataset()?.dataset.id}&edit=true`}
+                                href={`/group/${groupResult.group.id
+                                  }?dataset=${dataset()?.dataset.id}&edit=true`}
                               >
                                 <FiEdit class="h-5 w-5" />
                               </a>
@@ -956,9 +953,8 @@ const ResultsPage = (props: ResultsPageProps) => {
                           />
                           <a
                             title="Open group to edit, view its chunks, or test group recommendations"
-                            href={`/group/${
-                              groupResult.group.id
-                            }?dataset=${dataset()?.dataset.id}`}
+                            href={`/group/${groupResult.group.id
+                              }?dataset=${dataset()?.dataset.id}`}
                           >
                             <FiEye class="h-5 w-5" />
                           </a>

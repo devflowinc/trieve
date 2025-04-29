@@ -7190,7 +7190,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserOrgRoleReqPayload"
+                "$ref": "#/components/schemas/UpdateUserReqPayload"
               }
             }
           },
@@ -13771,6 +13771,14 @@
             "type": "integer",
             "format": "int32"
           },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "nullable": true
+            },
+            "nullable": true
+          },
           "updated_at": {
             "type": "string",
             "format": "date-time"
@@ -13809,6 +13817,14 @@
           "redirect_uri": {
             "type": "string",
             "description": "The url that the user will be redirected to after setting their password."
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The api route scopes the user will have in the organization.",
+            "nullable": true
           },
           "user_role": {
             "type": "integer",
@@ -21185,16 +21201,22 @@
           }
         }
       },
-      "UpdateUserOrgRoleReqPayload": {
+      "UpdateUserReqPayload": {
         "type": "object",
-        "required": [
-          "role"
-        ],
         "properties": {
           "role": {
             "type": "integer",
             "format": "int32",
-            "description": "Either 0 (user), 1 (admin), or 2 (owner). If not provided, the current role will be used. The auth'ed user must have a role greater than or equal to the role being assigned."
+            "description": "Either 0 (user), 1 (admin), or 2 (owner). If not provided, the current role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.",
+            "nullable": true
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The scopes the user will have in the organization.",
+            "nullable": true
           },
           "user_id": {
             "type": "string",
@@ -21462,6 +21484,14 @@
           "role": {
             "type": "integer",
             "format": "int32"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "nullable": true
+            },
+            "nullable": true
           },
           "updated_at": {
             "type": "string",

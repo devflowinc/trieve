@@ -23,8 +23,14 @@ export function MultiSelect<I extends Item>(props: {
   selected?: I[];
   setSelected: (selected: I[]) => void;
 }): JSX.Element {
-  // eslint-disable-next-line solid/reactivity
-  const [selected, setSelectedItems] = createSignal(props.selected ?? []);
+  const [selected, setSelectedItems] = createSignal<I[]>([]);
+
+  createEffect(() => {
+    if (props.selected) {
+      setSelectedItems(props.selected);
+    }
+  });
+
   const setSelected = (selected: I[]) => {
     props.setSelected(selected);
     setSelectedItems(selected);
@@ -80,7 +86,7 @@ export function MultiSelect<I extends Item>(props: {
             <Show when={isOpen()}>
               <ListboxOptions
                 unmount={false}
-                class="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base outline outline-1 outline-gray-300 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+                class="absolute z-[99999] mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base outline outline-1 outline-gray-300 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
               >
                 <For each={props.items}>
                   {(item): JSX.Element => (

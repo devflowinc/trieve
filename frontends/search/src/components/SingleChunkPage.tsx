@@ -54,7 +54,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     createSignal(false);
   const [totalGroupPages, setTotalGroupPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => {});
+  const [onDelete, setOnDelete] = createSignal(() => { });
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
   const [loadingRecommendations, setLoadingRecommendations] =
@@ -93,7 +93,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     if (!currentDataset) return;
 
     void fetch(
-      `${apiHost}/dataset/groups/${currentDataset.dataset.id}/?use_curosr=true`,
+      `${apiHost}/dataset/groups/${currentDataset.dataset.id}/?use_cursor=true`,
       {
         method: "GET",
         credentials: "include",
@@ -120,7 +120,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     let cursor = "00000000-0000-0000-0000-000000000000";
     while (cursor != null) {
       const response = await fetch(
-        `${apiHost}/dataset/groups/${currentDataset.dataset.id}?cursor=${cursor}&use_curosr=true`,
+        `${apiHost}/dataset/groups/${currentDataset.dataset.id}?cursor=${cursor}&use_cursor=true`,
         {
           method: "GET",
           credentials: "include",

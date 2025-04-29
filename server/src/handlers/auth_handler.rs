@@ -188,9 +188,10 @@ pub async fn create_account(
     inv_code: Option<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
-    let (mut role, org) = match organization_id {
+    let (mut role, mut scopes, org) = match organization_id {
         Some(organization_id) => (
             UserRole::User,
+            None,
             get_org_from_id_query(organization_id, pool.clone())
                 .await?
                 .organization,
@@ -205,6 +206,7 @@ pub async fn create_account(
                 .replace(' ', "-");
             (
                 UserRole::Owner,
+                None,
                 create_organization_query(org_name.as_str(), pool.clone()).await?,
             )
         }
@@ -224,10 +226,19 @@ pub async fn create_account(
         let invitation =
             check_inv_valid(inv_code, email.clone(), organization_id, pool.clone()).await?;
         role = invitation.role.into();
+        scopes = invitation.scopes;
     }
 
-    let user_org =
-        create_user_query(user_oidc_subject, email, Some(name), role, org_id, pool).await?;
+    let user_org = create_user_query(
+        user_oidc_subject,
+        email,
+        Some(name),
+        role,
+        scopes.map(|scopes| scopes.into_iter().map(|s| s.unwrap_or_default()).collect()),
+        org_id,
+        pool,
+    )
+    .await?;
 
     Ok(user_org)
 }
@@ -574,6 +585,9 @@ pub async fn oidc_callback(
                 user.id,
                 invitation.organization_id,
                 invitation.role.into(),
+                invitation
+                    .scopes
+                    .map(|scopes| scopes.into_iter().map(|s| s.unwrap_or_default()).collect()),
             );
             add_user_to_organization(None, None, user_org, pool, redis_pool.clone()).await?;
         }

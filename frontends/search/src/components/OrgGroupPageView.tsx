@@ -121,7 +121,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
       let cursor = "00000000-0000-0000-0000-000000000000";
       while (cursor != null) {
         const response = await fetch(
-          `${apiHost}/dataset/groups/${currentDataset.dataset.id}?cursor=${cursor}&use_curosr=true`,
+          `${apiHost}/dataset/groups/${currentDataset.dataset.id}?cursor=${cursor}&use_cursor=true`,
           {
             method: "GET",
             credentials: "include",
@@ -175,8 +175,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
     setLoading(true);
 
     void fetch(
-      `${apiHost}/dataset/groups/${
-        currentDataset.dataset.id
+      `${apiHost}/dataset/groups/${currentDataset.dataset.id
       }/?use_cursor=true&cursor=${groupOffset()}`,
       {
         method: "GET",
@@ -232,8 +231,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
       return (delete_chunks: boolean) => {
         setDeleting(true);
         void fetch(
-          `${apiHost}/chunk_group/${
-            group.id
+          `${apiHost}/chunk_group/${group.id
           }?delete_chunks=${delete_chunks.toString()}`,
           {
             method: "DELETE",
@@ -368,9 +366,9 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                   each={
                     searchQuery()
                       ? searchResults().slice(
-                          (groupPage() - 1) * 10,
-                          groupPage() * 10,
-                        )
+                        (groupPage() - 1) * 10,
+                        groupPage() * 10,
+                      )
                       : groups()
                   }
                 >
@@ -412,7 +410,7 @@ export const GroupUserPageView = (props: GroupUserPageViewProps) => {
                           <Show
                             when={
                               serverConfig()?.["DOCUMENT_DOWNLOAD_FEATURE"] !=
-                                false && group.file_id
+                              false && group.file_id
                             }
                           >
                             <button

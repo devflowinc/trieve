@@ -138,6 +138,7 @@ pub async fn add_existing_user_to_org(
     email: String,
     organization_id: uuid::Uuid,
     user_role: UserRole,
+    scopes: Option<Vec<String>>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<bool, ServiceError> {
@@ -161,7 +162,7 @@ pub async fn add_existing_user_to_org(
         Some(user) => Ok(add_user_to_organization(
             None,
             None,
-            UserOrganization::from_details(user.id, organization_id, user_role),
+            UserOrganization::from_details(user.id, organization_id, user_role, scopes),
             pool,
             redis_pool,
         )
@@ -171,10 +172,11 @@ pub async fn add_existing_user_to_org(
     }
 }
 
-pub async fn update_user_org_role_query(
+pub async fn update_user_query(
     user_id: uuid::Uuid,
     organization_id: uuid::Uuid,
-    role: UserRole,
+    role: Option<UserRole>,
+    scopes: Option<Vec<String>>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<(), ServiceError> {
@@ -184,15 +186,48 @@ pub async fn update_user_org_role_query(
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
-    diesel::update(
-        user_organizations_columns::user_organizations
-            .filter(user_organizations_columns::user_id.eq(user_id))
-            .filter(user_organizations_columns::organization_id.eq(organization_id)),
-    )
-    .set(user_organizations_columns::role.eq(Into::<i32>::into(role)))
-    .execute(&mut conn)
-    .await
-    .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
+    match (role, scopes) {
+        (Some(role_val), Some(scopes_val)) => {
+            diesel::update(
+                user_organizations_columns::user_organizations
+                    .filter(user_organizations_columns::user_id.eq(user_id))
+                    .filter(user_organizations_columns::organization_id.eq(organization_id)),
+            )
+            .set((
+                user_organizations_columns::role.eq(Into::<i32>::into(role_val)),
+                user_organizations_columns::scopes.eq(scopes_val),
+            ))
+            .execute(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
+        }
+        (Some(role_val), None) => {
+            diesel::update(
+                user_organizations_columns::user_organizations
+                    .filter(user_organizations_columns::user_id.eq(user_id))
+                    .filter(user_organizations_columns::organization_id.eq(organization_id)),
+            )
+            .set(user_organizations_columns::role.eq(Into::<i32>::into(role_val)))
+            .execute(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
+        }
+        (None, Some(scopes_val)) => {
+            diesel::update(
+                user_organizations_columns::user_organizations
+                    .filter(user_organizations_columns::user_id.eq(user_id))
+                    .filter(user_organizations_columns::organization_id.eq(organization_id)),
+            )
+            .set(user_organizations_columns::scopes.eq(scopes_val))
+            .execute(&mut conn)
+            .await
+            .map_err(|_| ServiceError::BadRequest("Error updating user".to_string()))?;
+        }
+        (None, None) => {
+            // Nothing to update
+            return Ok(());
+        }
+    }
 
     let mut redis_conn = redis_pool.get().await.map_err(|_| {
         ServiceError::InternalServerError("Failed to get redis connection".to_string())
@@ -233,6 +268,7 @@ pub async fn create_user_query(
     email: String,
     name: Option<String>,
     role: UserRole,
+    scopes: Option<Vec<String>>,
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
 ) -> Result<(User, Vec<UserOrganization>, Vec<Organization>), ServiceError> {
@@ -244,7 +280,7 @@ pub async fn create_user_query(
     })?;
 
     let user = User::from_details_with_oidc_subject(user_oidc_subject, email, name);
-    let user_org = UserOrganization::from_details(user.id, org_id, role);
+    let user_org = UserOrganization::from_details(user.id, org_id, role, scopes);
 
     let user_org = conn
         .transaction::<_, diesel::result::Error, _>(|conn| {
@@ -433,7 +469,7 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
             ServiceError::BadRequest("Failed to create default organization".to_string())
         })?;
 
-    let user_org = UserOrganization::from_details(user.id, org.id, UserRole::Owner);
+    let user_org = UserOrganization::from_details(user.id, org.id, UserRole::Owner, None);
 
     diesel::insert_into(user_organizations_columns::user_organizations)
         .values(&user_org)
