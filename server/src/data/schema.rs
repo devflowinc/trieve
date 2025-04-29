@@ -156,6 +156,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         role -> Int4,
+        scopes -> Nullable<Array<Nullable<Text>>>,
     }
 }
 
@@ -335,6 +336,7 @@ diesel::table! {
         role -> Int4,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        scopes -> Nullable<Array<Nullable<Text>>>,
     }
 }
 

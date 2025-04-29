@@ -211,7 +211,7 @@ pub async fn create_organization(
     add_user_to_organization(
         Some(&req),
         Some(user.id),
-        UserOrganization::from_details(user.id, created_organization.id, UserRole::Owner),
+        UserOrganization::from_details(user.id, created_organization.id, UserRole::Owner, None),
         pool,
         redis_pool,
     )

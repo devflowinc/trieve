@@ -2341,6 +2341,7 @@ export type Invitation = {
     id: string;
     organization_id: string;
     role: number;
+    scopes?: Array<((string) | null)> | null;
     updated_at: string;
     used: boolean;
 };
@@ -2358,6 +2359,10 @@ export type InvitationData = {
      * The url that the user will be redirected to after setting their password.
      */
     redirect_uri: string;
+    /**
+     * The api route scopes the user will have in the organization.
+     */
+    scopes?: Array<(string)> | null;
     /**
      * The role the user will have in the organization. 0 = User, 1 = Admin, 2 = Owner.
      */
@@ -4433,11 +4438,15 @@ export type UpdateTopicReqPayload = {
     topic_id: string;
 };
 
-export type UpdateUserOrgRoleReqPayload = {
+export type UpdateUserReqPayload = {
     /**
      * Either 0 (user), 1 (admin), or 2 (owner). If not provided, the current role will be used. The auth'ed user must have a role greater than or equal to the role being assigned.
      */
-    role: number;
+    role?: (number) | null;
+    /**
+     * The scopes the user will have in the organization.
+     */
+    scopes?: Array<(string)> | null;
     /**
      * The id of the user to update, if not provided, the auth'ed user will be updated. If provided, the role of the auth'ed user or api key must be an admin (1) or owner (2) of the organization.
      */
@@ -4532,6 +4541,7 @@ export type UserOrganization = {
     id: string;
     organization_id: string;
     role: number;
+    scopes?: Array<((string) | null)> | null;
     updated_at: string;
     user_id: string;
 };
@@ -6061,7 +6071,7 @@ export type UpdateUserData = {
     /**
      * JSON request payload to update user information for the auth'ed user
      */
-    requestBody: UpdateUserOrgRoleReqPayload;
+    requestBody: UpdateUserReqPayload;
     /**
      * The organization id to use for the request
      */

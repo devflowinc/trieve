@@ -1,10 +1,16 @@
 import { Accessor, createMemo, onMount, Show, useContext } from "solid-js";
 import { createSignal } from "solid-js";
-import { Dialog, DialogOverlay, DialogPanel, DialogTitle } from "terracotta";
+import { Dialog, DialogOverlay, DialogPanel, DialogTitle, DisclosurePanel, DisclosureButton, Disclosure, DisclosureStateProperties } from "terracotta";
 import { UserContext } from "../contexts/UserContext";
 import { DefaultError, fromI32ToUserRole } from "shared/types";
 import { UserRole, fromUserRoleToI32, stringToUserRole } from "shared/types";
 import { createToast } from "./ShowToasts";
+import { Item } from "./MultiSelect";
+import { MultiSelect } from "./MultiSelect";
+import { FaSolidChevronDown } from "solid-icons/fa";
+import { FaRegularCircleQuestion } from "solid-icons/fa";
+import { Tooltip } from "shared/ui";
+import { ApiRoutes, RouteScope } from "./Routes";
 
 export interface InviteUserModalProps {
   isOpen: Accessor<boolean>;
@@ -17,6 +23,11 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
   const [email, setEmail] = createSignal<string>("");
   const [sendingEmail, setSendingEmail] = createSignal<boolean>(false);
   const [role, setRole] = createSignal<UserRole>(UserRole.Owner);
+  const [scopes, setScopes] = createSignal<Item[]>([]);
+  const availableRoutes = Object.keys(ApiRoutes).map((item, index) => ({
+    id: `${index}`,
+    name: item,
+  }));
 
   const userContext = useContext(UserContext);
 
@@ -55,10 +66,15 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
         organization_id: userContext.selectedOrg().id,
         email: email(),
         user_role: fromUserRoleToI32(role()),
+        scopes:
+          scopes().length > 0
+            ? scopes()
+              .map((route) => ApiRoutes[route.name as RouteScope])
+              .flat()
+            : undefined,
         app_url: apiHost,
-        redirect_uri: `${window.location.origin}/?org=${
-          userContext.selectedOrg().id
-        }`,
+        redirect_uri: `${window.location.origin}/?org=${userContext.selectedOrg().id
+          }`,
       }),
     }).then((res) => {
       setSendingEmail(false);
@@ -85,7 +101,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
     <Show when={props.isOpen()}>
       <Dialog
         isOpen
-        class="fixed inset-0 z-10 overflow-y-auto"
+        class="fixed inset-0 z-10 overflow-y-scroll"
         onClose={handleCloseModal}
       >
         <div class="flex min-h-screen items-center justify-center px-4">
@@ -95,7 +111,7 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
           <span class="inline-block h-screen align-middle" aria-hidden="true">
             &#8203;
           </span>
-          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md border bg-white p-6 text-left align-middle shadow-xl transition-all">
+          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-visible rounded-md border bg-white p-6 text-left align-middle shadow-xl transition-all">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -164,6 +180,46 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
                         </select>
                       </div>
                     </div>
+                    <Disclosure defaultOpen={false} as="div" class="py-2">
+                      <DisclosureButton
+                        as="div"
+                        class="flex w-full justify-between rounded-l py-2 text-left text-sm focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75"
+                      >
+                        {({ isOpen }: DisclosureStateProperties) => (
+                          <>
+                            <div class="flex items-center gap-x-2">
+                              <span class="font-medium">User Permissions</span>
+                              <Tooltip
+                                body={<FaRegularCircleQuestion />}
+                                tooltipText="If not selected or empty, the User will have access to all routes."
+                              />
+                            </div>
+                            <FaSolidChevronDown
+                              class={`${isOpen() ? "rotate-180 transform" : ""
+                                } h-4 w-4`}
+                              title={isOpen() ? "Close" : "Open"}
+                            />
+                          </>
+                        )}
+                      </DisclosureButton>
+                      <DisclosurePanel class="space-y-2 pb-2 pt-1">
+                        <div class="flex items-center space-x-2">
+                          <label
+                            for="organization"
+                            class="block text-sm font-medium leading-6"
+                          >
+                            Routes:
+                          </label>
+                          <MultiSelect
+                            items={availableRoutes}
+                            selected={scopes()}
+                            setSelected={(selected: Item[]) => {
+                              setScopes(selected);
+                            }}
+                          />
+                        </div>
+                      </DisclosurePanel>
+                    </Disclosure>
                   </div>
                 </div>
               </div>

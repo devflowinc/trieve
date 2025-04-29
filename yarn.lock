@@ -7094,6 +7094,11 @@ trieve-ts-sdk@^0.0.50:
   resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.50.tgz#8b16f7a0f7f77d81811aa0e3a7ed7050b5938379"
   integrity sha512-AbV41cEzxNSJ+gXUAOFK5OoMl4Kgu/DGkIU/fRS+k8rH+s0ePwBK6CYSPKBxGvNajbZ9hoqiUgN9/qZJX+k0yA==
 
+trieve-ts-sdk@^0.0.90:
+  version "0.0.90"
+  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.90.tgz#6e4defaa59cb421ca83c0625408f8ed5fca242d4"
+  integrity sha512-dy7Z1cwVuo4loKrEKTOXZFAV5Lkw8vf1bFGX0yTPG9RmXSw4F6ipEup2FoKRHb0WXY8aIOX3B/dnxnlb0pMjSw==
+
 trim-lines@^3.0.0:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/trim-lines/-/trim-lines-3.0.1.tgz#d802e332a07df861c48802c04321017b1bd87338"

@@ -1,11 +1,18 @@
 import { Show, createEffect, createMemo, useContext } from "solid-js";
 import { createSignal } from "solid-js";
-import { Dialog, DialogOverlay, DialogPanel, DialogTitle } from "terracotta";
+import { Dialog, DialogOverlay, DialogPanel, DialogTitle, DisclosurePanel, DisclosureStateProperties, DisclosureButton, Disclosure } from "terracotta";
 import { UserContext } from "../contexts/UserContext";
 import { DefaultError, fromI32ToUserRole } from "shared/types";
 import { UserRole, fromUserRoleToI32, stringToUserRole } from "shared/types";
 import { createToast } from "./ShowToasts";
 import { SlimUser } from "trieve-ts-sdk";
+import { Item } from "./MultiSelect";
+import { FaSolidChevronDown } from "solid-icons/fa";
+import { MultiSelect } from "./MultiSelect";
+import { FaRegularCircleQuestion } from "solid-icons/fa";
+import { Tooltip } from "shared/ui";
+import { ApiRoutes, RouteScope } from "./Routes";
+import { g } from "shiki/dist/types/wasm-dynamic.mjs";
 
 export interface InviteUserModalProps {
   editingUser: SlimUser | null;
@@ -17,9 +24,28 @@ export const EditUserModal = (props: InviteUserModalProps) => {
 
   const userContext = useContext(UserContext);
   const [role, setRole] = createSignal<UserRole>(UserRole.User);
+  const [scopes, setScopes] = createSignal<Item[]>([]);
+  const availableRoutes = Object.keys(ApiRoutes).map((item) => ({
+    id: item,
+    name: item,
+  }));
+
+  const getScopePresets = (scopes: (string | null)[]) => {
+    return Object.keys(ApiRoutes).filter(presetName => {
+      const presetRoutes = ApiRoutes[presetName as RouteScope];
+      return presetRoutes.every(route => scopes.includes(route));
+    });
+  };
 
   createEffect(() => {
     setRole(fromI32ToUserRole(editingUserRole() ?? 0));
+
+    const matchedPresets = getScopePresets(editingUserScopes() ?? []);
+
+    setScopes(matchedPresets.map((name) => ({
+      id: name,
+      name,
+    })));
   });
 
   const currentUserRole = createMemo(() => {
@@ -34,6 +60,12 @@ export const EditUserModal = (props: InviteUserModalProps) => {
     })?.role;
   });
 
+  const editingUserScopes = createMemo(() => {
+    return props.editingUser?.user_orgs.find((val) => {
+      return val.organization_id === userContext.selectedOrg().id;
+    })?.scopes;
+  });
+
   const inviteUser = () => {
     void fetch(`${apiHost}/user`, {
       method: "PUT",
@@ -46,6 +78,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
         organization_id: userContext.selectedOrg().id,
         user_id: props.editingUser?.id,
         role: fromUserRoleToI32(role()),
+        scopes: scopes().length > 0 ? scopes().map((val) => ApiRoutes[val.name as RouteScope]).flat() : undefined,
       }),
     }).then((res) => {
       createEffect(() => {
@@ -73,7 +106,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
     <Show when={props.editingUser}>
       <Dialog
         isOpen
-        class="fixed inset-0 z-10 overflow-y-auto"
+        class="fixed inset-0 z-[100] overflow-y-scroll"
         onClose={props.closeModal}
       >
         <div class="flex min-h-screen items-center justify-center px-4">
@@ -83,7 +116,7 @@ export const EditUserModal = (props: InviteUserModalProps) => {
           <span class="inline-block h-screen align-middle" aria-hidden="true">
             &#8203;
           </span>
-          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-hidden rounded-md bg-white p-6 pb-2 text-left align-middle shadow-xl transition-all">
+          <DialogPanel class="my-8 inline-block w-full max-w-2xl transform overflow-visible rounded-md bg-white p-6 pb-2 text-left align-middle shadow-xl transition-all">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -153,6 +186,46 @@ export const EditUserModal = (props: InviteUserModalProps) => {
                         </select>
                       </div>
                     </div>
+                    <Disclosure defaultOpen={false} as="div" class="py-2">
+                      <DisclosureButton
+                        as="div"
+                        class="flex w-full justify-between rounded-l py-2 text-left text-sm focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75"
+                      >
+                        {({ isOpen }: DisclosureStateProperties) => (
+                          <>
+                            <div class="flex items-center gap-x-2">
+                              <span class="font-medium">User Permissions</span>
+                              <Tooltip
+                                body={<FaRegularCircleQuestion />}
+                                tooltipText="If not selected or empty, the User will have access to all routes."
+                              />
+                            </div>
+                            <FaSolidChevronDown
+                              class={`${isOpen() ? "rotate-180 transform" : ""
+                                } h-4 w-4`}
+                              title={isOpen() ? "Close" : "Open"}
+                            />
+                          </>
+                        )}
+                      </DisclosureButton>
+                      <DisclosurePanel class="space-y-2 pb-2 pt-1">
+                        <div class="flex items-center space-x-2">
+                          <label
+                            for="organization"
+                            class="block text-sm font-medium leading-6"
+                          >
+                            Routes:
+                          </label>
+                          <MultiSelect
+                            items={availableRoutes}
+                            selected={scopes()}
+                            setSelected={(selected: Item[]) => {
+                              setScopes(selected);
+                            }}
+                          />
+                        </div>
+                      </DisclosurePanel>
+                    </Disclosure>
                   </div>
                 </div>
               </div>
@@ -166,12 +239,12 @@ export const EditUserModal = (props: InviteUserModalProps) => {
                 </button>
                 <button
                   disabled={
-                    role() === fromI32ToUserRole(editingUserRole() ?? 0)
+                    role() === fromI32ToUserRole(editingUserRole() ?? 0) && scopes().every(scope => getScopePresets(editingUserScopes() ?? []).includes(scope.id))
                   }
                   type="submit"
                   class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200"
                 >
-                  Change Role
+                  Update User
                 </button>
               </div>
             </form>

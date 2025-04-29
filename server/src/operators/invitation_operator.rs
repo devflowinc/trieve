@@ -12,6 +12,7 @@ pub async fn create_invitation_query(
     email: String,
     organization_id: uuid::Uuid,
     user_role: i32,
+    scopes: Option<Vec<String>>,
     pool: web::Data<Pool>,
 ) -> Result<Invitation, ServiceError> {
     use crate::data::schema::invitations::dsl::invitations;
@@ -20,7 +21,7 @@ pub async fn create_invitation_query(
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
-    let new_invitation = Invitation::from_details(email, organization_id, user_role);
+    let new_invitation = Invitation::from_details(email, organization_id, user_role, scopes);
 
     let inserted_invitation = diesel::insert_into(invitations)
         .values(&new_invitation)

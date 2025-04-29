@@ -6,13 +6,13 @@
 
 import { TrieveSDK } from "../../sdk";
 import {
-  UpdateUserOrgRoleReqPayload,
+  UpdateUserReqPayload,
 } from "../../types.gen";
 
 export async function updateUserRole(
   /** @hidden */
   this: TrieveSDK,
-  props: UpdateUserOrgRoleReqPayload,
+  props: UpdateUserReqPayload,
   signal?: AbortSignal
 ): Promise<void> {
   if (!this.organizationId) {

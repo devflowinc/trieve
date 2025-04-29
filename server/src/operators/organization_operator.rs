@@ -1156,6 +1156,7 @@ pub async fn get_assumed_user_by_organization_api_key(
             user_id: fake_user_id,
             organization_id: org_sub_plan.organization.id,
             role: api_key.role,
+            scopes: api_key.scopes.clone(),
             created_at: chrono::Utc::now().naive_utc(),
             updated_at: chrono::Utc::now().naive_utc(),
         }],

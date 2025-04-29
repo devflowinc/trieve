@@ -372,7 +372,7 @@ impl Modify for SecurityAddon {
             handlers::analytics_handler::RateQueryRequest,
             handlers::group_handler::AddChunkToGroupReqPayload,
             handlers::group_handler::RecommendGroupsResponseBody,
-            handlers::user_handler::UpdateUserOrgRoleReqPayload,
+            handlers::user_handler::UpdateUserReqPayload,
             handlers::organization_handler::CreateApiKeyReqPayload,
             handlers::organization_handler::CreateApiKeyResponse,
             handlers::organization_handler::ExtendedOrganizationUsageCount,

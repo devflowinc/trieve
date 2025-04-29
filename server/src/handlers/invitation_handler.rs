@@ -31,6 +31,8 @@ pub struct InvitationResponse {
 pub struct InvitationData {
     /// The role the user will have in the organization. 0 = User, 1 = Admin, 2 = Owner.
     pub user_role: i32,
+    /// The api route scopes the user will have in the organization.
+    pub scopes: Option<Vec<String>>,
     /// The email of the user to invite. Must be a valid email as they will be sent an email to register.
     pub email: String,
     /// The url of the app that the user will be directed to in order to set their password. Usually admin.trieve.ai, but may differ for local dev or self-hosted setups.
@@ -111,6 +113,7 @@ pub async fn post_invitation(
         email.clone(),
         existing_user_org_id,
         existing_user_role.into(),
+        invitation_data.scopes.clone(),
         pool.clone(),
         redis_pool,
     )
@@ -147,6 +150,7 @@ pub async fn post_invitation(
         existing_user_org_id,
         invitation_data.redirect_uri,
         invitation_data.user_role,
+        invitation_data.scopes.clone(),
         pool,
     )
     .await?;
@@ -173,9 +177,11 @@ pub async fn create_invitation(
     organization_id: uuid::Uuid,
     redirect_uri: String,
     user_role: i32,
+    scopes: Option<Vec<String>>,
     pool: web::Data<Pool>,
 ) -> Result<InvitationWithUrl, ServiceError> {
-    let invitation = create_invitation_query(email, organization_id, user_role, pool).await?;
+    let invitation =
+        create_invitation_query(email, organization_id, user_role, scopes, pool).await?;
     // send_invitation(app_url, &invitation)
 
     //TODO:figure out how to get redirect_uri
