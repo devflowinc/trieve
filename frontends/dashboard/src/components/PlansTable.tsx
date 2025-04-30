@@ -539,8 +539,8 @@ export const PlansTable = (props: PlansTableProps) => {
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
                             {numberFormatter.format(
-                              // @ts-expect-error Typecheck done above
-                              plan.message_count as unknown as number,
+                              (plan as StripePlan)
+                                .message_count as unknown as number,
                             )}
                           </td>
                           <td class="whitespace-nowrap px-3 py-4">
@@ -552,15 +552,13 @@ export const PlansTable = (props: PlansTableProps) => {
                         <>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
                             **
-                            {
-                              // @ts-expect-error Typecheck done above
-                              plan.platform_price_amount != null
-                                ? usdFormatter.format(
-                                    // @ts-expect-error Typecheck done above
-                                    plan.platform_price_amount as unknown as number,
-                                  )
-                                : "Usage Based"
-                            }
+                            {(plan as StripeUsageBasedPlan)
+                              .platform_price_amount != null
+                              ? usdFormatter.format(
+                                  (plan as StripeUsageBasedPlan)
+                                    .platform_price_amount as unknown as number,
+                                )
+                              : "Usage Based"}
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-neutral-800">
                             Charged on usage

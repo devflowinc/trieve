@@ -1,6 +1,15 @@
 import { Show, createEffect, createMemo, useContext } from "solid-js";
 import { createSignal } from "solid-js";
-import { Dialog, DialogOverlay, DialogPanel, DialogTitle, DisclosurePanel, DisclosureStateProperties, DisclosureButton, Disclosure } from "terracotta";
+import {
+  Dialog,
+  DialogOverlay,
+  DialogPanel,
+  DialogTitle,
+  DisclosurePanel,
+  DisclosureStateProperties,
+  DisclosureButton,
+  Disclosure,
+} from "terracotta";
 import { UserContext } from "../contexts/UserContext";
 import { DefaultError, fromI32ToUserRole } from "shared/types";
 import { UserRole, fromUserRoleToI32, stringToUserRole } from "shared/types";
@@ -12,7 +21,6 @@ import { MultiSelect } from "./MultiSelect";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { Tooltip } from "shared/ui";
 import { ApiRoutes, RouteScope } from "./Routes";
-import { g } from "shiki/dist/types/wasm-dynamic.mjs";
 
 export interface InviteUserModalProps {
   editingUser: SlimUser | null;
@@ -31,9 +39,9 @@ export const EditUserModal = (props: InviteUserModalProps) => {
   }));
 
   const getScopePresets = (scopes: (string | null)[]) => {
-    return Object.keys(ApiRoutes).filter(presetName => {
+    return Object.keys(ApiRoutes).filter((presetName) => {
       const presetRoutes = ApiRoutes[presetName as RouteScope];
-      return presetRoutes.every(route => scopes.includes(route));
+      return presetRoutes.every((route) => scopes.includes(route));
     });
   };
 
@@ -42,10 +50,12 @@ export const EditUserModal = (props: InviteUserModalProps) => {
 
     const matchedPresets = getScopePresets(editingUserScopes() ?? []);
 
-    setScopes(matchedPresets.map((name) => ({
-      id: name,
-      name,
-    })));
+    setScopes(
+      matchedPresets.map((name) => ({
+        id: name,
+        name,
+      })),
+    );
   });
 
   const currentUserRole = createMemo(() => {
@@ -60,10 +70,12 @@ export const EditUserModal = (props: InviteUserModalProps) => {
     })?.role;
   });
 
-  const editingUserScopes = createMemo(() => {
-    return props.editingUser?.user_orgs.find((val) => {
-      return val.organization_id === userContext.selectedOrg().id;
-    })?.scopes;
+  const editingUserScopes = createMemo((): string[] => {
+    return (
+      (props.editingUser?.user_orgs.find((val) => {
+        return val.organization_id === userContext.selectedOrg().id;
+      })?.scopes as string[]) ?? []
+    );
   });
 
   const inviteUser = () => {
@@ -78,7 +90,12 @@ export const EditUserModal = (props: InviteUserModalProps) => {
         organization_id: userContext.selectedOrg().id,
         user_id: props.editingUser?.id,
         role: fromUserRoleToI32(role()),
-        scopes: scopes().length > 0 ? scopes().map((val) => ApiRoutes[val.name as RouteScope]).flat() : undefined,
+        scopes:
+          scopes().length > 0
+            ? scopes()
+                .map((val) => ApiRoutes[val.name as RouteScope])
+                .flat()
+            : undefined,
       }),
     }).then((res) => {
       createEffect(() => {
@@ -201,8 +218,9 @@ export const EditUserModal = (props: InviteUserModalProps) => {
                               />
                             </div>
                             <FaSolidChevronDown
-                              class={`${isOpen() ? "rotate-180 transform" : ""
-                                } h-4 w-4`}
+                              class={`${
+                                isOpen() ? "rotate-180 transform" : ""
+                              } h-4 w-4`}
                               title={isOpen() ? "Close" : "Open"}
                             />
                           </>
@@ -239,7 +257,12 @@ export const EditUserModal = (props: InviteUserModalProps) => {
                 </button>
                 <button
                   disabled={
-                    role() === fromI32ToUserRole(editingUserRole() ?? 0) && scopes().every(scope => getScopePresets(editingUserScopes() ?? []).includes(scope.id))
+                    role() === fromI32ToUserRole(editingUserRole() ?? 0) &&
+                    scopes().every((scope) =>
+                      getScopePresets(editingUserScopes() ?? []).includes(
+                        scope.id,
+                      ),
+                    )
                   }
                   type="submit"
                   class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 font-semibold text-white shadow-sm hover:bg-magenta-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-600 disabled:bg-magenta-200"
