@@ -17,11 +17,13 @@ export const ApiRoutes = {
   ],
   "RAG (non-destructive)": [
     "POST /api/topic",
+    "GET /api/topic/owner/{owner_id}",
     "POST /api/message",
     "PUT /api/message",
     "GET /api/dataset/organization/{organization_id}",
     "GET /api/dataset/usage/{dataset_id}",
     "GET /api/dataset/{dataset_id}",
+    "GET /api/messages/{messages_topic_id}",
   ],
   "Search Component Routes": [
     "POST /api/chunk/search",

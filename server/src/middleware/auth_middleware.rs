@@ -160,23 +160,26 @@ where
                 }
             };
 
-            if let Some(ref user) = user {
+            if let Some(ref mut user) = user {
+                let return_user = user.clone();
                 let user_org = user
                     .user_orgs
-                    .iter()
+                    .iter_mut()
                     .find(|org| org.organization_id == org_id)
                     .ok_or(ServiceError::Forbidden)?;
 
                 let route = format!("{} {}", req.method(), req.match_info().as_str());
                 if let Some(scopes) = &user_org.scopes {
-                    if !check_scopes(scopes, &route) {
+                    if check_scopes(scopes, &route) {
+                        user_org.role = UserRole::Owner.into();
+                    } else {
                         return Err(ServiceError::Forbidden.into());
                     }
                 }
 
                 let org_role = if user_org.role >= UserRole::User.into() {
                     Ok(OrganizationRole {
-                        user: user.clone(),
+                        user: return_user,
                         role: UserRole::from(user_org.role),
                     })
                 } else {
