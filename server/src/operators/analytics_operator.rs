@@ -1857,11 +1857,11 @@ pub async fn get_topic_queries_query(
             COUNT(rag_queries.id) as message_count,
             AVG(rag_queries.top_score) as top_score,
             AVG(rag_queries.hallucination_score) as hallucination_score,
-            AVG(JSONExtract(query_rating, 'rating', 'Nullable(Float64)')) as query_rating,
+            AVG(JSONExtract(rag_queries.query_rating, 'rating', 'Nullable(Float64)')) as query_rating,
             groupArray(topic_events.event_name) as event_names
         FROM topics 
         JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
-        JOIN events as topic_events ON rag_queries.id = toUUID(topic_events.request_id)
+        LEFT JOIN events as topic_events ON rag_queries.id = toUUID(topic_events.request_id)
         ",
     );
 
@@ -1990,13 +1990,12 @@ pub async fn get_topics_over_time_query(
 
     let mut query_string = format!(
         "SELECT 
-	        CAST(toStartOfInterval(created_at, INTERVAL {}) AS DateTime) AS time_stamp,
+	    CAST(toStartOfInterval(created_at, INTERVAL {interval}) AS DateTime) AS time_stamp,
             count(*) AS requests
         FROM 
             topics
         JOIN rag_queries ON topics.topic_id = rag_queries.topic_id
-        ",
-        interval
+        "
     );
 
     if let Some(filter_params) = &filter {
