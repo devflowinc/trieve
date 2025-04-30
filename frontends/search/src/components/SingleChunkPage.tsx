@@ -54,7 +54,7 @@ export const SingleChunkPage = (props: SingleChunkPageProps) => {
     createSignal(false);
   const [totalGroupPages, setTotalGroupPages] = createSignal(0);
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const [onDelete, setOnDelete] = createSignal(() => { });
+  const [onDelete, setOnDelete] = createSignal(() => {});
   const [clientSideRequestFinished, setClientSideRequestFinished] =
     createSignal(false);
   const [loadingRecommendations, setLoadingRecommendations] =

@@ -1,6 +1,15 @@
 import { Accessor, createMemo, onMount, Show, useContext } from "solid-js";
 import { createSignal } from "solid-js";
-import { Dialog, DialogOverlay, DialogPanel, DialogTitle, DisclosurePanel, DisclosureButton, Disclosure, DisclosureStateProperties } from "terracotta";
+import {
+  Dialog,
+  DialogOverlay,
+  DialogPanel,
+  DialogTitle,
+  DisclosurePanel,
+  DisclosureButton,
+  Disclosure,
+  DisclosureStateProperties,
+} from "terracotta";
 import { UserContext } from "../contexts/UserContext";
 import { DefaultError, fromI32ToUserRole } from "shared/types";
 import { UserRole, fromUserRoleToI32, stringToUserRole } from "shared/types";
@@ -69,12 +78,13 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
         scopes:
           scopes().length > 0
             ? scopes()
-              .map((route) => ApiRoutes[route.name as RouteScope])
-              .flat()
+                .map((route) => ApiRoutes[route.name as RouteScope])
+                .flat()
             : undefined,
         app_url: apiHost,
-        redirect_uri: `${window.location.origin}/?org=${userContext.selectedOrg().id
-          }`,
+        redirect_uri: `${window.location.origin}/?org=${
+          userContext.selectedOrg().id
+        }`,
       }),
     }).then((res) => {
       setSendingEmail(false);
@@ -195,8 +205,9 @@ export const InviteUserModal = (props: InviteUserModalProps) => {
                               />
                             </div>
                             <FaSolidChevronDown
-                              class={`${isOpen() ? "rotate-180 transform" : ""
-                                } h-4 w-4`}
+                              class={`${
+                                isOpen() ? "rotate-180 transform" : ""
+                              } h-4 w-4`}
                               title={isOpen() ? "Close" : "Open"}
                             />
                           </>

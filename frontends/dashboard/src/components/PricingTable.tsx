@@ -43,12 +43,8 @@ export const PricingTable = (props: PricingTableProps) => {
           },
           body: JSON.stringify({
             date_range: {
-              gte: formatDateForApi(
-                startOfBill,
-              ),
-              lte: formatDateForApi(
-                addMonths(startOfBill, 1),
-              ),
+              gte: formatDateForApi(startOfBill),
+              lte: formatDateForApi(addMonths(startOfBill, 1)),
             },
           }),
           signal: availablePlansAbortController.signal,
