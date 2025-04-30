@@ -91,6 +91,8 @@ export default function ChatsPage() {
         };
         for (const event of topic.event_names) {
           if (event == "View") continue;
+          if (event == "") continue;
+          if (event == " ") continue;
 
           event_names_counts[event] = (event_names_counts[event] ?? 0) + 1;
         }
