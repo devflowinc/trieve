@@ -15,6 +15,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "./routes/__root";
 import { Route as SearchpageImport } from "./routes/searchpage";
 import { Route as RecsImport } from "./routes/recs";
+import { Route as InlineImport } from "./routes/inline";
 import { Route as EcommerceImport } from "./routes/ecommerce";
 
 // Create Virtual Routes
@@ -32,6 +33,12 @@ const SearchpageRoute = SearchpageImport.update({
 const RecsRoute = RecsImport.update({
   id: "/recs",
   path: "/recs",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const InlineRoute = InlineImport.update({
+  id: "/inline",
+  path: "/inline",
   getParentRoute: () => rootRoute,
 } as any);
 
@@ -65,6 +72,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof EcommerceImport;
       parentRoute: typeof rootRoute;
     };
+    "/inline": {
+      id: "/inline";
+      path: "/inline";
+      fullPath: "/inline";
+      preLoaderRoute: typeof InlineImport;
+      parentRoute: typeof rootRoute;
+    };
     "/recs": {
       id: "/recs";
       path: "/recs";
@@ -87,6 +101,7 @@ declare module "@tanstack/react-router" {
 export interface FileRoutesByFullPath {
   "/": typeof IndexLazyRoute;
   "/ecommerce": typeof EcommerceRoute;
+  "/inline": typeof InlineRoute;
   "/recs": typeof RecsRoute;
   "/searchpage": typeof SearchpageRoute;
 }
@@ -94,6 +109,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexLazyRoute;
   "/ecommerce": typeof EcommerceRoute;
+  "/inline": typeof InlineRoute;
   "/recs": typeof RecsRoute;
   "/searchpage": typeof SearchpageRoute;
 }
@@ -102,22 +118,24 @@ export interface FileRoutesById {
   __root__: typeof rootRoute;
   "/": typeof IndexLazyRoute;
   "/ecommerce": typeof EcommerceRoute;
+  "/inline": typeof InlineRoute;
   "/recs": typeof RecsRoute;
   "/searchpage": typeof SearchpageRoute;
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/ecommerce" | "/recs" | "/searchpage";
+  fullPaths: "/" | "/ecommerce" | "/inline" | "/recs" | "/searchpage";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/ecommerce" | "/recs" | "/searchpage";
-  id: "__root__" | "/" | "/ecommerce" | "/recs" | "/searchpage";
+  to: "/" | "/ecommerce" | "/inline" | "/recs" | "/searchpage";
+  id: "__root__" | "/" | "/ecommerce" | "/inline" | "/recs" | "/searchpage";
   fileRoutesById: FileRoutesById;
 }
 
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute;
   EcommerceRoute: typeof EcommerceRoute;
+  InlineRoute: typeof InlineRoute;
   RecsRoute: typeof RecsRoute;
   SearchpageRoute: typeof SearchpageRoute;
 }
@@ -125,6 +143,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
   EcommerceRoute: EcommerceRoute,
+  InlineRoute: InlineRoute,
   RecsRoute: RecsRoute,
   SearchpageRoute: SearchpageRoute,
 };
@@ -141,6 +160,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/ecommerce",
+        "/inline",
         "/recs",
         "/searchpage"
       ]
@@ -150,6 +170,9 @@ export const routeTree = rootRoute
     },
     "/ecommerce": {
       "filePath": "ecommerce.tsx"
+    },
+    "/inline": {
+      "filePath": "inline.tsx"
     },
     "/recs": {
       "filePath": "recs.tsx"

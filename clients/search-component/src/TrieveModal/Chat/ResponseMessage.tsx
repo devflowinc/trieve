@@ -1,5 +1,6 @@
-import React, { lazy, useEffect } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 const Markdown = lazy(() => import("react-markdown"));
+import remarkGfm from "remark-gfm";
 
 import { useChatState } from "../../utils/hooks/chat-context";
 import { useModalState } from "../../utils/hooks/modal-context";
@@ -75,7 +76,17 @@ export const ResponseMessage = ({
             </p>
           </span>
         )}
-        <Message key={idx} message={message} idx={idx} />
+        <Suspense
+          fallback={
+            <div
+              className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
+            >
+              <LoadingIcon className="loading" />
+            </div>
+          }
+        >
+          <Message key={`msg-${idx}`} message={message} idx={idx} />
+        </Suspense>
       </div>
     </motion.div>
   );
@@ -412,6 +423,7 @@ export const Message = ({
                   );
                 },
               }}
+              remarkPlugins={[remarkGfm]}
               key={idx}
             >
               {message.text.length > 0
