@@ -457,6 +457,41 @@ body {
       hr {
         @apply tv-mb-4;
       }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1em;
+        margin-bottom: 1em;
+        border: 1px solid #ddd;
+        font-size: 0.9em;
+
+        th,
+        td {
+          border: 1px solid #ddd;
+          padding: 8px 12px;
+          text-align: left;
+          vertical-align: top;
+        }
+
+        th {
+          background-color: #f2f2f2;
+          font-weight: bold;
+          white-space: nowrap;
+        }
+
+        tr {
+          border-bottom: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+          background-color: #f9f9f9;
+        }
+
+        tr:hover {
+          background-color: #f1f1f1;
+        }
+      }
     }
 
     .system.ecommerce {
