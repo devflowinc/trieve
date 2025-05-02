@@ -916,7 +916,11 @@ pub async fn cross_encoder(
         "RERANKER_SERVER_ORIGIN must be set"
     );
 
-    let server_origin: String = dataset_config.RERANKER_BASE_URL.clone();
+    let mut server_origin: String = dataset_config.RERANKER_BASE_URL.clone();
+
+    if server_origin == "http://embedding-reranker.default.svc.cluster.local" {
+        server_origin = default_server_origin.to_string();
+    }
 
     let embedding_server_call = format!("{}/rerank", server_origin);
 
