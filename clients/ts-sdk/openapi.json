@@ -17727,6 +17727,10 @@
               "type"
             ],
             "properties": {
+              "count_collapsed_queries": {
+                "type": "boolean",
+                "nullable": true
+              },
               "filter": {
                 "allOf": [
                   {
