@@ -281,10 +281,14 @@ pub async fn get_search_analytics(
 
             SearchAnalyticsResponse::QueryDetails(query)
         }
-        SearchAnalytics::CountQueries { filter } => {
+        SearchAnalytics::CountQueries {
+            filter,
+            count_collapsed_queries,
+        } => {
             let count_queries = get_query_counts_query(
                 dataset_org_plan_sub.dataset.id,
                 filter,
+                count_collapsed_queries,
                 clickhouse_client.get_ref(),
             )
             .await?;

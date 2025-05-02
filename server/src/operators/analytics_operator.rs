@@ -404,16 +404,22 @@ pub struct QueryCountResponse {
 pub async fn get_query_counts_query(
     dataset_id: uuid::Uuid,
     filter: Option<SearchAnalyticsFilter>,
+    count_collapsed_queries: Option<bool>,
     clickhouse_client: &clickhouse::Client,
 ) -> Result<QueryCountResponse, ServiceError> {
-    let mut query_string = String::from(
+    let mut query_string = format!(
         "SELECT 
             search_type,
             JSONExtractString(request_params, 'search_type') as search_method, 
             COUNT(*) as search_count
         FROM 
             search_queries
-        WHERE dataset_id = ?",
+        WHERE dataset_id = ? {}",
+        if !count_collapsed_queries.unwrap_or(false) {
+            "AND is_duplicate = 0"
+        } else {
+            ""
+        }
     );
 
     if let Some(filter) = filter {
