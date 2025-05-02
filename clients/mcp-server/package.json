@@ -20,8 +20,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "0.6.0",
-    "trieve-ts-sdk": "^0.0.50",
-    "dotenv": "^16.4.1"
+    "trieve-ts-sdk": "^0.0.92",
+    "dotenv": "^16.4.1",
+    "mcp-evals": "^1.0.18"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
