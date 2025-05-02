@@ -237,6 +237,15 @@ Reach out to us on [discord](https://discord.gg/E9sPRZqpDT) for assistance. We a
 
 `diesel::debug_query(&query).to_string();`
 
+
+
+## Running evals
+
+The evals package loads an mcp client that then runs the index.ts file, so there is no need to rebuild between tests. You can load environment variables by prefixing the npx command. Full documentation can be found [here](https://www.mcpevals.io/docs).
+
+```bash
+OPENAI_API_KEY=your-key  npx mcp-eval evals.ts clients/mcp-server/src/index.ts
+```
 ## Local Setup for Testing Stripe Features
 
 Install Stripe CLI.
