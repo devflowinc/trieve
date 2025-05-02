@@ -50,6 +50,7 @@
       brandColor: getValue("{{ block.settings.brand_color }}", ""),
       brandLogoImgSrcUrl: getValue("{{ block.settings.brand_logo_img_src_url }}", undefined),
       chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask anything..."),
+      allowRefreshSuggestedQueries: toBool(getValue("{{ block.settings.show_sugestions_refresh }}", true)),
       suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
       followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
       numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
@@ -149,6 +150,12 @@
       "type": "checkbox",
       "id": "open_links_new_tab",
       "label": "Open Links in New Tab",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sugestions_refresh",
+      "label": "Show Refresh Suggested Queries Button",
       "default": true
     },
     {
