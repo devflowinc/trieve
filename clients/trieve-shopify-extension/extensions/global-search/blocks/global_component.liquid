@@ -104,6 +104,8 @@
       showFloatingSearchIcon: toBool(getValue("{{ block.settings.show_floating_search_icon }}", true)),
       floatingSearchIconPosition: getValue("{{ block.settings.floating_icon_pos }}", "left"),
       allowSwitchingModes: false,
+      hidePrice: !toBool(getValue("{{ block.settings.display_price }}", true)), 
+      hideChunkHtml: !toBool(getValue("{{ block.settings.display_description }}", true)),
     });
   }
 </script>
@@ -179,6 +181,18 @@
         { "label": "Right", "value": "right" }
       ],
       "default": "left"
+    },
+    {
+      "type": "checkbox",
+      "id": "display_price",
+      "label": "Display Product Price",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "display_description",
+      "label": "Display Product Description",
+      "default": true
     },
     {
       "id": "custom_css",
