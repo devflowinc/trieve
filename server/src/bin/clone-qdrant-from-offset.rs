@@ -344,7 +344,10 @@ async fn main() -> Result<(), ()> {
                         }
                     }
                 }
-                _ => unreachable!(),
+                Err(e) => {
+                    log::error!("Failed to fetch points from Qdrant: {}", e);
+                    unreachable!();
+                }
             }
         }
     }
