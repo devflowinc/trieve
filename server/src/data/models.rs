@@ -7695,6 +7695,7 @@ pub enum SearchAnalytics {
     #[schema(title = "CountQueries")]
     CountQueries {
         filter: Option<SearchAnalyticsFilter>,
+        count_collapsed_queries: Option<bool>,
     },
     #[schema(title = "QueryDetails")]
     QueryDetails { request_id: uuid::Uuid },

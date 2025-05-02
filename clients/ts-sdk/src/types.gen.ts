@@ -3376,6 +3376,7 @@ export type SearchAnalytics = {
     sort_order?: ((SortOrder) | null);
     type: 'search_queries';
 } | {
+    count_collapsed_queries?: (boolean) | null;
     filter?: ((SearchAnalyticsFilter) | null);
     type: 'count_queries';
 } | {
