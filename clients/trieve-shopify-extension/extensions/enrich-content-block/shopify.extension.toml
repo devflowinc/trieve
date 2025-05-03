@@ -1,0 +1,61 @@
+
+api_version = "2025-04"
+[[extensions]]
+# Change the merchant-facing name of the extension in locales/en.default.json
+name = "t:name"
+handle = "enrich-content-block"
+type = "ui_extension"
+
+
+# Only 1 target can be specified for each Admin action extension
+[[extensions.targeting]]
+module = "./src/ActionExtension.tsx"
+target = "admin.product-details.block.render"
+
+
+# Valid extension targets:
+
+# Abandoned checkout details page
+# - admin.abandoned-checkout-details.action.render
+
+# Catalog detail page
+# - admin.catalog-details.action.render
+
+# Collection index and detail pages
+# - admin.collection-details.action.render
+# - admin.collection-index.action.render
+
+# Company detail page
+# - admin.company-details.action.render
+
+# Customer index and detail pages
+# - admin.customer-index.action.render
+# - admin.customer-index.selection-action.render
+# - admin.customer-details.action.render
+# - admin.customer-segment-details.action.render
+
+# Discount index and detail pages
+# - admin.discount-index.action.render
+# - admin.discount-details.action.render
+
+# Draft order index and detail pages
+# - admin.draft-order-details.action.render
+# - admin.draft-order-index.action.render
+# - admin.draft-order-index.selection-action.render
+
+# Gift card detail page
+# - admin.gift-card-details.action.render
+
+# Order index, detail pages and order fulfilled card
+# - admin.order-index.action.render
+# - admin.order-index.selection-action.render
+# - admin.order-details.action.render
+# - admin.order-fulfilled-card.action.render
+
+# Product index and detail pages
+# - admin.product-index.action.render
+# - admin.product-index.selection-action.render
+# - admin.product-details.action.render
+
+# Product variant detail pages
+# - admin.product-variant-details.action.render
