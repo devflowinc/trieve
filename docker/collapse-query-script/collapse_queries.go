@@ -19,17 +19,21 @@ import (
 
 type SearchQuery struct {
 	ID          uuid.UUID
-	Query       string
-	TopScore    float64
-	CreatedAt   time.Time
 	SearchType  string
+	Query       string
 	ReqParams   string
 	Latency     float64
+	TopScore    float64
 	Results     []string
 	QueryVector []float32
+	DatasetID   uuid.UUID
+	CreatedAt   time.Time
 	IsDuplicate int
 	QueryRating string
-	DatasetID   uuid.UUID
+	UserID      string
+	Metadata    string
+	Tokens      int
+	OrgID       string
 }
 
 type DatasetLastCollapsed struct {
@@ -157,8 +161,7 @@ func getSearchQueries(conn *sql.DB, datasetID uuid.UUID, limit int, offset *time
 
 	if offset != nil {
 		query = `
-			SELECT id, query, top_score, created_at, search_type, request_params, latency, results, 
-			       query_vector, is_duplicate, query_rating, dataset_id
+			SELECT *
 			FROM default.search_queries 
 			WHERE dataset_id = ? AND created_at >= ? AND search_type != 'rag'
 			ORDER BY created_at DESC
@@ -167,8 +170,7 @@ func getSearchQueries(conn *sql.DB, datasetID uuid.UUID, limit int, offset *time
 		args = []any{datasetID, *offset, limit}
 	} else {
 		query = `
-			SELECT id, query, top_score, created_at, search_type, request_params, latency, results, 
-			       query_vector, is_duplicate, query_rating, dataset_id
+			SELECT *
 			FROM default.search_queries 
 			WHERE dataset_id = ? AND is_duplicate = 0 AND search_type != 'rag'
 			ORDER BY created_at DESC
@@ -187,9 +189,9 @@ func getSearchQueries(conn *sql.DB, datasetID uuid.UUID, limit int, offset *time
 	for rows.Next() {
 		var sq SearchQuery
 		if err := rows.Scan(
-			&sq.ID, &sq.Query, &sq.TopScore, &sq.CreatedAt, &sq.SearchType,
-			&sq.ReqParams, &sq.Latency, &sq.Results, &sq.QueryVector,
-			&sq.IsDuplicate, &sq.QueryRating, &sq.DatasetID,
+			&sq.ID, &sq.SearchType, &sq.Query, &sq.ReqParams, &sq.Latency, &sq.TopScore,
+			&sq.Results, &sq.QueryVector, &sq.DatasetID, &sq.CreatedAt, &sq.IsDuplicate,
+			&sq.QueryRating, &sq.UserID, &sq.Metadata, &sq.Tokens, &sq.OrgID,
 		); err != nil {
 			return nil, fmt.Errorf("scan error: %v", err)
 		}
@@ -324,9 +326,9 @@ func insertDuplicateRows(conn *sql.DB, duplicates []SearchQuery) error {
 
 	stmt, err := tx.Prepare(`
 		INSERT INTO default.search_queries (
-			id, query, top_score, created_at, search_type, request_params, latency, 
-			results, query_vector, is_duplicate, query_rating, dataset_id
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			id, search_type, query, req_params, latency, top_score, results, query_vector, 
+			dataset_id, created_at, is_duplicate, query_rating, user_id, metadata, tokens, org_id
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		tx.Rollback()
@@ -358,9 +360,8 @@ func insertDuplicateRows(conn *sql.DB, duplicates []SearchQuery) error {
 				defer func() { <-sem }()
 
 				_, err := stmt.Exec(
-					d.ID, d.Query, d.TopScore, d.CreatedAt, d.SearchType,
-					d.ReqParams, d.Latency, d.Results, d.QueryVector,
-					d.IsDuplicate, d.QueryRating, d.DatasetID,
+					d.ID, d.SearchType, d.Query, d.ReqParams, d.Latency, d.TopScore, d.Results, d.QueryVector,
+					d.DatasetID, d.CreatedAt, d.IsDuplicate, d.QueryRating, d.UserID, d.Metadata, d.Tokens, d.OrgID,
 				)
 
 				if err != nil {
