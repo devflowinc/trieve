@@ -2574,6 +2574,7 @@ pub async fn get_searches_per_user_query(
                 search_queries
             WHERE
                 dataset_id = ?
+                AND is_duplicate = 0
         ",
         interval,
     );
