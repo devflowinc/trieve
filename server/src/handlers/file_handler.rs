@@ -374,6 +374,49 @@ pub enum SegmentationStrategy {
     Page,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Default)]
+/// Specifies the fallback strategy for LLM processing
+///
+/// This can be:
+/// 1. None - No fallback will be used
+/// 2. Default - The system default fallback model will be used
+/// 3. Model - A specific model ID will be used as fallback (check the documentation for the models.)
+pub enum FallbackStrategy {
+    /// No fallback will be used
+    None,
+    /// Use the system default fallback model
+    #[default]
+    Default,
+    /// Use a specific model as fallback
+    Model(String),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+/// Controls the LLM used for the task.
+pub struct LlmProcessing {
+    /// The ID of the model to use for the task. If not provided, the default model will be used.
+    /// Please check the documentation for the model you want to use.
+    pub model_id: Option<String>,
+    /// The fallback strategy to use for the LLMs in the task.
+    #[serde(default)]
+    pub fallback_strategy: FallbackStrategy,
+    /// The maximum number of tokens to generate.
+    pub max_completion_tokens: Option<u32>,
+    /// The temperature to use for the LLM.
+    #[serde(default)]
+    pub temperature: f32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Display, Eq, PartialEq, ToSchema, Default)]
+/// Controls how errors are handled during processing:
+/// - `Fail`: Stops processing and fails the task when any error occurs
+/// - `Continue`: Attempts to continue processing despite non-critical errors (eg. LLM refusals etc.)
+pub enum ErrorHandlingStrategy {
+    #[default]
+    Fail,
+    Continue,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, ToSchema, Display, Default)]
 pub enum PipelineType {
     Azure,
@@ -417,6 +460,8 @@ pub struct CreateFormWithoutFile {
     pub segment_processing: Option<SegmentProcessing>,
     #[schema(default = "LayoutAnalysis")]
     pub segmentation_strategy: Option<SegmentationStrategy>,
+    pub error_handling: Option<ErrorHandlingStrategy>,
+    pub llm_processing: Option<LlmProcessing>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
