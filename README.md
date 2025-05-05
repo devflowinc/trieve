@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/trieve-mcp-server-badge.png)](https://mseep.ai/app/trieve-mcp-server)
+
 <p align="center">
   <img height="100" src="https://cdn.trieve.ai/trieve-logo.png" alt="Trieve Logo">
 </p>
