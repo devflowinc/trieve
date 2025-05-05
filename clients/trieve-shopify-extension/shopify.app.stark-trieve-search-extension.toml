@@ -1,15 +1,13 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "39654580026bc6aa0906bea48fd3f77d"
+client_id = "93ba837a488ce6c4715156ff18cd6a25"
 application_url = "https://stark-shopify.trieve.ai"
 embedded = true
-name = "stark-trieve-search-extension"
-handle = "stark-trieve-search-extension"
+name = "stark-trieve-extension"
+handle = "stark-trieve-extension"
 
 [build]
 include_config_on_deploy = true
-dev_store_url = "trieveai.myshopify.com"
-automatically_update_urls_on_dev = true
 
 [webhooks]
 api_version = "2025-01"
@@ -34,9 +32,17 @@ api_version = "2025-01"
   topics = [ "products/delete" ]
   uri = "/webhooks/app/products/delete"
 
+  [[webhooks.subscriptions]]
+  topics = [ "app_subscriptions/update" ]
+  uri = "/webhooks/app/app_subscriptions/update"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "write_products,read_products,read_themes"
+
+[access.admin]
+direct_api_mode = "online"
+embedded_app_direct_api_access = true
 
 [auth]
 redirect_urls = [

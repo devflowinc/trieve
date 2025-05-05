@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "ad09426456b93ddc34996cfd0ba2db0b"
-application_url = "https://replacing-rocks-tee-functionality.trycloudflare.com"
+application_url = "https://stark-shopify.trieve.ai"
 embedded = true
 name = "stark-dev-trieve-extension"
 handle = "stark-dev-trieve-extension"
@@ -19,9 +19,9 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://replacing-rocks-tee-functionality.trycloudflare.com/auth/callback",
-  "https://replacing-rocks-tee-functionality.trycloudflare.com/auth/shopify/callback",
-  "https://replacing-rocks-tee-functionality.trycloudflare.com/api/auth/callback"
+  "https://stark-shopify.trieve.ai/auth/callback",
+  "https://stark-shopify.trieve.ai/auth/shopify/callback",
+  "https://stark-shopify.trieve.ai/api/auth/callback"
 ]
 
 [pos]

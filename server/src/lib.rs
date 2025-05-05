@@ -184,6 +184,7 @@ impl Modify for SecurityAddon {
         handlers::message_handler::regenerate_message_patch,
         handlers::message_handler::get_suggested_queries,
         handlers::message_handler::get_tool_function_params,
+        handlers::message_handler::edit_image,
         handlers::chunk_handler::create_chunk,
         handlers::chunk_handler::update_chunk,
         handlers::chunk_handler::delete_chunk,
@@ -302,6 +303,12 @@ impl Modify for SecurityAddon {
             handlers::message_handler::ToolFunction,
             handlers::message_handler::GetToolFunctionParamsReqPayload,
             handlers::message_handler::GetToolFunctionParamsRespBody,
+            handlers::message_handler::EditImageReqPayload,
+            handlers::message_handler::InputImageSize,
+            handlers::message_handler::InputImageQuality,
+            handlers::message_handler::ImageUpload,
+            handlers::message_handler::ImageEditResponse,
+            handlers::message_handler::ImageResponseData,
             handlers::chunk_handler::FullTextBoost,
             handlers::chunk_handler::ChunkReqPayload,
             handlers::chunk_handler::CreateChunkReqPayloadEnum,
@@ -1110,6 +1117,10 @@ pub fn main() -> std::io::Result<()> {
                                         })
                                         .build()
                                 )
+                        )
+                        .service(
+                            web::resource("/message/edit_image")
+                                .route(web::post().to(handlers::message_handler::edit_image))
                         )
                         .service(
                             web::resource("/message/{message_id}")

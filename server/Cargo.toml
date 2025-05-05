@@ -126,7 +126,7 @@ time = { version = "0.3" }
 uuid = { version = "1", features = ["v4", "serde", "v5"] }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
-openai_dive = { version = "0.7.1", features = ["stream"] }
+openai_dive = { git = "https://github.com/devflowinc/openai-client.git", rev = "b50742b160a98b14a57119d742ed754e8b6acc15",  features = ["stream"] }
 tokio = { version = "1.27.0", features = ["rt-multi-thread"] }
 tokio-stream = "0.1.12"
 futures-util = "0.3.28"
