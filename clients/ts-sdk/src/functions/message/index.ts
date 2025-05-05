@@ -5,6 +5,7 @@
  */
 import {
   CreateMessageReqPayload,
+  EditImageReqPayload,
   EditMessageReqPayload,
   GetAllTopicMessagesData,
   GetMessageByIdData,
@@ -479,5 +480,25 @@ export async function getToolCallFunctionParams(
     },
     signal,
     parseHeaders
+  );
+}
+
+export async function editImage(
+  this: TrieveSDK,
+  data: EditImageReqPayload,
+  signal?: AbortSignal,
+) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
+  return await this.trieve.fetch(
+    "/api/message/edit_image",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal
   );
 }

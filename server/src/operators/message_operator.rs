@@ -1,6 +1,7 @@
 use crate::operators::chunk_operator::get_random_chunk_qdrant_point_id_query;
 use crate::operators::message_operator::models::DatasetAndOrgWithSubAndPlan;
 use itertools::Itertools;
+use openai_dive::v1::models::WhisperModel;
 use simple_server_timing_header::Timer;
 use simsearch::SimSearch;
 use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
@@ -35,7 +36,6 @@ use futures::StreamExt;
 use futures_util::stream;
 #[cfg(feature = "hallucination-detection")]
 use hallucination_detection::{HallucinationDetector, HallucinationScore};
-use openai_dive::v1::models::WhisperEngine;
 use openai_dive::v1::resources::audio::{AudioOutputFormat, AudioTranscriptionParametersBuilder};
 use openai_dive::v1::resources::chat::{
     ChatCompletionChoice, ChatMessageContentPart, ChatMessageImageContentPart,
@@ -905,6 +905,8 @@ pub async fn stream_response(
                         content: Some(last_message.clone()),
                         name,
                         tool_calls: None,
+                        audio: None,
+                        reasoning_content: None,
                         refusal: None,
                     },
                     ChatMessage::System { name, .. } => ChatMessage::System {
@@ -1093,7 +1095,7 @@ pub async fn stream_response(
             assistant_completion
                 .usage
                 .as_ref()
-                .map(|usg| usg.prompt_tokens as i32),
+                .map(|usg| usg.prompt_tokens.unwrap_or(0) as i32),
             assistant_completion
                 .usage
                 .map(|usg| usg.completion_tokens.unwrap_or(0) as i32),
@@ -1628,7 +1630,7 @@ pub async fn get_text_from_audio(audio_base64: &str) -> Result<String, ServiceEr
             filename: "audio.mp3".to_string(),
             bytes: audio_bytes.into(),
         }))
-        .model(WhisperEngine::Whisper1.to_string())
+        .model(WhisperModel::Whisper1.to_string())
         .response_format(AudioOutputFormat::Text)
         .language("en".to_string())
         .build()
@@ -1649,7 +1651,7 @@ pub async fn get_text_from_audio(audio_base64: &str) -> Result<String, ServiceEr
     Ok(text.replace("\n", ""))
 }
 
-fn get_llm_api_key(dataset_config: &DatasetConfiguration) -> String {
+pub fn get_llm_api_key(dataset_config: &DatasetConfiguration) -> String {
     if !dataset_config.LLM_API_KEY.is_empty() {
         dataset_config.LLM_API_KEY.clone()
     } else if dataset_config.LLM_BASE_URL.contains("openai.com") {

@@ -12,23 +12,28 @@ use crate::{
     operators::{
         clickhouse_operator::EventQueue,
         message_operator::{
-            create_topic_message_query, delete_message_query, get_message_by_id_query,
-            get_message_by_sort_for_topic_query, get_messages_for_topic_query, get_text_from_audio,
-            get_topic_messages_query, stream_response, suggested_followp_questions,
-            suggested_new_queries,
+            create_topic_message_query, delete_message_query, get_llm_api_key,
+            get_message_by_id_query, get_message_by_sort_for_topic_query,
+            get_messages_for_topic_query, get_text_from_audio, get_topic_messages_query,
+            stream_response, suggested_followp_questions, suggested_new_queries,
         },
         organization_operator::get_message_org_count,
     },
 };
 use actix_web::{web, HttpResponse};
+use base64::Engine;
 #[cfg(feature = "hallucination-detection")]
 use hallucination_detection::HallucinationDetector;
 use openai_dive::v1::{
     api::Client,
-    resources::chat::{
-        ChatCompletionFunction, ChatCompletionParametersBuilder, ChatCompletionTool,
-        ChatCompletionToolType, ChatMessage, ChatMessageContent, ChatMessageContentPart,
-        ChatMessageImageContentPart, ChatMessageTextContentPart, ImageUrlType,
+    resources::{
+        chat::{
+            ChatCompletionFunction, ChatCompletionParametersBuilder, ChatCompletionTool,
+            ChatCompletionToolType, ChatMessage, ChatMessageContent, ChatMessageContentPart,
+            ChatMessageImageContentPart, ChatMessageTextContentPart, ImageUrlType,
+        },
+        image::{EditImageParametersBuilder, ImageData, ImageQuality, ImageSize},
+        shared::{FileUpload, FileUploadBytes},
     },
 };
 use serde::{Deserialize, Serialize};
@@ -1141,4 +1146,174 @@ pub async fn get_tool_function_params(
     }
 
     Ok(HttpResponse::Ok().json(resp_body))
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct EditImageReqPayload {
+    /// The images to edit
+    pub input_images: Vec<ImageUpload>,
+    /// The prompt describing the desired edit
+    pub prompt: String,
+    /// The number of images to generate (default: 1)
+    pub n: Option<u32>,
+    /// The size of the generated image as a string (e.g. "256x256", "512x512", "1024x1024", "1792x1024", "1024x1792")
+    pub size: Option<InputImageSize>,
+    // /// The quality of the generated image. (e.g. "low", "medium", "high")
+    pub quality: Option<InputImageQuality>,
+    /// The mime type of the uploaded image(s)
+    pub mime_type: Option<String>,
+}
+
+#[derive(Default, Debug, Serialize, Deserialize, ToSchema, Copy, Clone)]
+pub enum InputImageQuality {
+    #[default]
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "high")]
+    High,
+}
+
+impl From<InputImageQuality> for ImageQuality {
+    fn from(quality: InputImageQuality) -> Self {
+        match quality {
+            InputImageQuality::Low => ImageQuality::Low,
+            InputImageQuality::Medium => ImageQuality::Medium,
+            InputImageQuality::High => ImageQuality::High,
+        }
+    }
+}
+
+#[derive(Default, Debug, Serialize, Deserialize, ToSchema, Copy, Clone)]
+pub enum InputImageSize {
+    #[default]
+    #[serde(rename = "1024x1024")]
+    Size1024X1024,
+    #[serde(rename = "1024x1536")]
+    Size1024x1536,
+    #[serde(rename = "1536x1024")]
+    Size1536x1024,
+}
+
+impl From<InputImageSize> for ImageSize {
+    fn from(size: InputImageSize) -> Self {
+        match size {
+            InputImageSize::Size1024X1024 => ImageSize::Size1024X1024,
+            InputImageSize::Size1024x1536 => ImageSize::Size1024X1536,
+            InputImageSize::Size1536x1024 => ImageSize::Size1536X1024,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ImageUpload {
+    /// The image base64 encoded
+    pub base64_image: String,
+    /// The file name of the image
+    pub file_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ImageEditResponse {
+    /// The URL of the generated image
+    pub images: Vec<ImageResponseData>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ImageResponseData {
+    /// The base64-encoded JSON of the generated image.
+    b64_json: String,
+}
+
+/// Edit Image
+///
+/// Uses `gpt-image-1` to edit an images based on a given prompt. Note that the images must be
+/// base64 encoded and all must have the same mime type.
+#[utoipa::path(
+    post,
+    path = "/message/edit_image",
+    context_path = "/api",
+    tag = "Message",
+    request_body(content = EditImageReqPayload, description = "JSON request payload to edit an image", content_type = "application/json"),
+    responses(
+        (status = 200, description = "A list of base64 encoded images",
+            headers(
+                ("TR-QueryID" = uuid::Uuid, description = "Query ID that is used for tracking analytics")
+            )
+        ),
+        (status = 400, description = "Service error relating to editing the image", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn edit_image(
+    data: web::Json<EditImageReqPayload>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _user: AdminOnly,
+) -> Result<HttpResponse, ServiceError> {
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.clone().server_configuration);
+    log::info!("Dataset config: {dataset_config:#?}");
+
+    let llm_api_key = get_llm_api_key(&dataset_config);
+    let base_url = dataset_config.LLM_BASE_URL.clone();
+
+    let client = Client {
+        headers: None,
+        api_key: llm_api_key,
+        project: None,
+        http_client: reqwest::Client::new(),
+        base_url,
+        organization: None,
+    };
+
+    let parameters = EditImageParametersBuilder::default()
+        .image(FileUpload::BytesArray(
+            data.input_images
+                .iter()
+                .map(|image| {
+                    let image_bytes = base64::prelude::BASE64_STANDARD
+                        .decode(image.base64_image.clone())
+                        .unwrap();
+
+                    FileUploadBytes {
+                        bytes: bytes::Bytes::from(image_bytes),
+                        filename: image.file_name.clone(),
+                    }
+                })
+                .collect(),
+        ))
+        .model("gpt-image-1")
+        .quality::<ImageQuality>(data.quality.unwrap_or_default().into())
+        .prompt(data.prompt.clone())
+        .mime_type(data.mime_type.clone().unwrap_or("image/png".to_string()))
+        .n(data.n.unwrap_or(1))
+        .size::<ImageSize>(data.size.unwrap_or_default().into())
+        .build()
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+    let result = client
+        .images()
+        .edit(parameters)
+        .await
+        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+    let images = result.data.iter().filter_map(|image| {
+        if let ImageData::B64Json { b64_json, .. } = &image {
+            Some(ImageResponseData {
+                b64_json: b64_json.clone(),
+            })
+        } else {
+            None
+        }
+    });
+
+    Ok(HttpResponse::Ok().json(ImageEditResponse {
+        images: images.collect(),
+    }))
 }

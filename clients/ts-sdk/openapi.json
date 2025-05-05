@@ -5578,6 +5578,70 @@
         ]
       }
     },
+    "/api/message/edit_image": {
+      "post": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Edit Image",
+        "description": "Uses `gpt-image-1` to edit an images based on a given prompt. Note that the images must be\nbase64 encoded and all must have the same mime type.",
+        "operationId": "edit_image",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to edit an image",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditImageReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A list of base64 encoded images",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to editing the image",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/message/get_tool_function_params": {
       "post": {
         "tags": [
@@ -11345,6 +11409,54 @@
           }
         }
       },
+      "EditImageReqPayload": {
+        "type": "object",
+        "required": [
+          "input_images",
+          "prompt"
+        ],
+        "properties": {
+          "input_images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImageUpload"
+            },
+            "description": "The images to edit"
+          },
+          "mime_type": {
+            "type": "string",
+            "description": "The mime type of the uploaded image(s)",
+            "nullable": true
+          },
+          "n": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The number of images to generate (default: 1)",
+            "nullable": true,
+            "minimum": 0
+          },
+          "prompt": {
+            "type": "string",
+            "description": "The prompt describing the desired edit"
+          },
+          "quality": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InputImageQuality"
+              }
+            ],
+            "nullable": true
+          },
+          "size": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InputImageSize"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
       "EditMessageReqPayload": {
         "type": "object",
         "required": [
@@ -13723,6 +13835,66 @@
           "images_per_chunk": 1,
           "use_images": true
         }
+      },
+      "ImageEditResponse": {
+        "type": "object",
+        "required": [
+          "images"
+        ],
+        "properties": {
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImageResponseData"
+            },
+            "description": "The URL of the generated image"
+          }
+        }
+      },
+      "ImageResponseData": {
+        "type": "object",
+        "required": [
+          "b64_json"
+        ],
+        "properties": {
+          "b64_json": {
+            "type": "string",
+            "description": "The base64-encoded JSON of the generated image."
+          }
+        }
+      },
+      "ImageUpload": {
+        "type": "object",
+        "required": [
+          "base64_image",
+          "file_name"
+        ],
+        "properties": {
+          "base64_image": {
+            "type": "string",
+            "description": "The image base64 encoded"
+          },
+          "file_name": {
+            "type": "string",
+            "description": "The file name of the image"
+          }
+        }
+      },
+      "InputImageQuality": {
+        "type": "string",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "InputImageSize": {
+        "type": "string",
+        "enum": [
+          "1024x1024",
+          "1024x1536",
+          "1536x1024"
+        ]
       },
       "IntegerTimePoint": {
         "type": "object",

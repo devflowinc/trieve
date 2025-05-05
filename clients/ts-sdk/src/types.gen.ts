@@ -1384,6 +1384,27 @@ export type Document = {
     screenshot?: (string) | null;
 };
 
+export type EditImageReqPayload = {
+    /**
+     * The images to edit
+     */
+    input_images: Array<ImageUpload>;
+    /**
+     * The mime type of the uploaded image(s)
+     */
+    mime_type?: (string) | null;
+    /**
+     * The number of images to generate (default: 1)
+     */
+    n?: (number) | null;
+    /**
+     * The prompt describing the desired edit
+     */
+    prompt: string;
+    quality?: ((InputImageQuality) | null);
+    size?: ((InputImageSize) | null);
+};
+
 export type EditMessageReqPayload = {
     /**
      * The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.
@@ -2329,6 +2350,35 @@ export type ImageConfig = {
      */
     use_images?: (boolean) | null;
 };
+
+export type ImageEditResponse = {
+    /**
+     * The URL of the generated image
+     */
+    images: Array<ImageResponseData>;
+};
+
+export type ImageResponseData = {
+    /**
+     * The base64-encoded JSON of the generated image.
+     */
+    b64_json: string;
+};
+
+export type ImageUpload = {
+    /**
+     * The image base64 encoded
+     */
+    base64_image: string;
+    /**
+     * The file name of the image
+     */
+    file_name: string;
+};
+
+export type InputImageQuality = 'low' | 'medium' | 'high';
+
+export type InputImageSize = '1024x1024' | '1024x1536' | '1536x1024';
 
 export type IntegerTimePoint = {
     point: number;
@@ -5744,6 +5794,19 @@ export type RegenerateMessagePatchData = {
 
 export type RegenerateMessagePatchResponse = (string);
 
+export type EditImageData = {
+    /**
+     * JSON request payload to edit an image
+     */
+    requestBody: EditImageReqPayload;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type EditImageResponse = (string);
+
 export type GetToolFunctionParamsData = {
     /**
      * JSON request payload to get the parameters for a tool function
@@ -7423,6 +7486,21 @@ export type $OpenApiTs = {
                 200: string;
                 /**
                  * Service error relating to getting a chat completion
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/message/edit_image': {
+        post: {
+            req: EditImageData;
+            res: {
+                /**
+                 * A list of base64 encoded images
+                 */
+                200: string;
+                /**
+                 * Service error relating to editing the image
                  */
                 400: ErrorResponseBody;
             };

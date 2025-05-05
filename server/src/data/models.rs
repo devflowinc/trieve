@@ -202,6 +202,8 @@ impl From<Message> for ChatMessage {
             _ => ChatMessage::Assistant {
                 content: Some(ChatMessageContent::Text(message.content)),
                 refusal: None,
+                audio: None,
+                reasoning_content: None,
                 tool_calls: None,
                 name: None,
             },
@@ -242,6 +244,8 @@ impl From<ChatMessageProxy> for ChatMessage {
                 content: Some(ChatMessageContent::Text(message.content)),
                 refusal: None,
                 tool_calls: None,
+                audio: None,
+                reasoning_content: None,
                 name: None,
             },
         }

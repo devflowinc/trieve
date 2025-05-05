@@ -44,6 +44,10 @@ pub async fn timeout_15secs(
         timeout_secs = 300;
     }
 
+    if method == "POST" && path == "/api/message/edit_image" {
+        timeout_secs = 300;
+    }
+
     match tokio::time::timeout(
         std::time::Duration::from_secs(timeout_secs),
         next.call(service_req),
