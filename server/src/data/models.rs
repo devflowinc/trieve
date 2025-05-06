@@ -2809,7 +2809,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             RERANKER_MODEL_NAME: dto.RERANKER_MODEL_NAME.unwrap_or("bge-reranker-large".to_string()),
             EMBEDDING_BASE_URL: dto.EMBEDDING_BASE_URL.unwrap_or("https://embedding.trieve.ai".to_string()),
             EMBEDDING_MODEL_NAME: dto.EMBEDDING_MODEL_NAME.clone().unwrap_or("jina-base-en".to_string()),
-            RERANKER_BASE_URL: dto.RERANKER_BASE_URL.unwrap_or("".to_string()),
+            RERANKER_BASE_URL: dto.RERANKER_BASE_URL.unwrap_or("http://embedding-reranker.default.svc.cluster.local".to_string()),
             MESSAGE_TO_QUERY_PROMPT: dto.MESSAGE_TO_QUERY_PROMPT.unwrap_or("Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string()),
             RAG_PROMPT: dto.RAG_PROMPT.unwrap_or("Use the following retrieved documents to respond briefly and accurately:".to_string()),
             N_RETRIEVALS_TO_INCLUDE: dto.N_RETRIEVALS_TO_INCLUDE.unwrap_or(8),
@@ -2920,7 +2920,7 @@ impl Default for DatasetConfiguration {
             RERANKER_MODEL_NAME: "bge-reranker-large".to_string(),
             EMBEDDING_BASE_URL: "https://embedding.trieve.ai".to_string(),
             EMBEDDING_MODEL_NAME: "jina-base-en".to_string(),
-            RERANKER_BASE_URL: "".to_string(),
+            RERANKER_BASE_URL: "http://embedding-reranker.default.svc.cluster.local".to_string(),
             MESSAGE_TO_QUERY_PROMPT: "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n".to_string(),
             RAG_PROMPT: "Use the following retrieved documents to respond briefly and accurately:".to_string(),
             N_RETRIEVALS_TO_INCLUDE: 8,
@@ -3102,11 +3102,11 @@ impl DatasetConfiguration {
                 .unwrap_or("jina-base-en".to_string()),
             RERANKER_BASE_URL: configuration
                 .get("RERANKER_BASE_URL")
-                .unwrap_or(&json!(get_env!("RERANKER_SERVER_ORIGIN", "RERANKER_SERVER_ORIGIN must be set").to_string()))
+                .unwrap_or(&json!("".to_string()))
                 .as_str()
                 .map(|s| {
                     if s.is_empty() {
-                        get_env!("RERANKER_SERVER_ORIGIN", "RERANKER_BASE_URL must be set").to_string()
+                        "http://embedding-reranker.default.svc.cluster.local".to_string()
                     } else {
                         s.to_string()
                     }
