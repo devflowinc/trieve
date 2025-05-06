@@ -5,6 +5,10 @@ import {
   Text,
   AdminBlock,
   useApi,
+  TextField,
+  Button,
+  InlineStack,
+  Banner,
 } from "@shopify/ui-extensions-react/admin";
 import { TrieveProvider, useTrieve } from "./TrieveProvider";
 import { useChunkExtraContent } from "./useChunkExtraContent";
@@ -29,15 +33,49 @@ function App() {
   const { data } = useApi(TARGET);
   const productId = data.selected[0].id;
   const simplifiedProductId = extractShopifyProductId(productId);
+  const [content, setContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const { extraContent, loading, updateContent } =
     useChunkExtraContent(simplifiedProductId);
 
+  useEffect(() => {
+    if (extraContent) {
+      setContent(extraContent);
+    }
+  }, [extraContent]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await updateContent(content);
+      setShowSuccess(true);
+      // Hide success message after 3 seconds
+      setTimeout(() => setShowSuccess(false), 3000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <AdminBlock title="Enrich Content">
-      <BlockStack>
-        <Text fontWeight="bold">Hi</Text>
-        <Text>Current product:{simplifiedProductId}</Text>
+      <BlockStack gap="base">
+        {showSuccess && (
+          <Banner tone="success" onDismiss={() => setShowSuccess(false)}>
+            Content saved successfully
+          </Banner>
+        )}
+        <TextField
+          label="Product Content"
+          value={content}
+          onChange={setContent}
+        />
+        <InlineStack gap="base" inlineAlignment="end">
+          <Button onPress={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Content"}
+          </Button>
+        </InlineStack>
       </BlockStack>
     </AdminBlock>
   );

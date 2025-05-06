@@ -3,7 +3,7 @@ import { useTrieve } from "./TrieveProvider";
 
 export const useChunkExtraContent = (productId: string | undefined) => {
   const trieve = useTrieve();
-  const [extraContent, setExtraContent] = useState<string | null>(null);
+  const [extraContent, setExtraContent] = useState<string>("");
 
   const [loading, setLoading] = useState(true);
 
@@ -16,7 +16,12 @@ export const useChunkExtraContent = (productId: string | undefined) => {
     const result = await trieve.getChunkByTrackingId({
       trackingId: `${productId}-pdp-content`,
     });
+    if (!result) {
+      setExtraContent("");
+      return;
+    }
     if (!result.chunk_html) {
+      setExtraContent("");
       return;
     }
     setExtraContent(result.chunk_html);
@@ -28,15 +33,11 @@ export const useChunkExtraContent = (productId: string | undefined) => {
       return;
     }
 
-    // const result = await trieve.updateChunkByTrackingId({
-    //   trackingId: `${productId}-pdp-content`,
-    //   chunk_html: content,
-    // });
-    //
-    // if (!result.chunk_html) {
-    //   return;
-    // }
-    // setExtraContent(result.chunk_html);
+    const result = await trieve.createChunk({
+      chunk_html: content,
+      tracking_id: productId,
+      upsert_by_tracking_id: true,
+    });
   };
 
   useEffect(() => {
