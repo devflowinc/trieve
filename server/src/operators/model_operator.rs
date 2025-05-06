@@ -1000,8 +1000,8 @@ pub async fn cross_encoder(
                         }
                     }
                 }
-            } else {
-                // Assume Cohere integration for small batch.
+            } else if server_origin.contains("cohere") {
+                // Use Cohere API
                 let resp = ureq_agent
                     .post(&embedding_server_call)
                     .set("Content-Type", "application/json")
@@ -1029,6 +1029,35 @@ pub async fn cross_encoder(
                     })?;
                 resp.results.into_iter().for_each(|pair| {
                     results.index_mut(pair.index).score = pair.relevance_score as f64;
+                });
+            } else {
+                let resp = ureq_agent
+                    .post(&embedding_server_call)
+                    .set("Content-Type", "application/json")
+                    .set(
+                        "Authorization",
+                        &format!("Bearer {}", reranker_api_key.clone()),
+                    )
+                    .send_json(CrossEncoderData {
+                        query: query.clone(),
+                        texts: common_request_docs.clone(),
+                        truncate: true,
+                    })
+                    .map_err(|err| {
+                        ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
+                    })?
+                    .into_json::<Vec<ScorePair>>()
+                    .map_err(|_e| {
+                        log::error!(
+                            "Failed parsing response from custom embedding server: {:?}",
+                            _e
+                        );
+                        ServiceError::BadRequest(
+                            "Failed parsing response from custom embedding server".to_string(),
+                        )
+                    })?;
+                resp.into_iter().for_each(|pair| {
+                    results.index_mut(pair.index).score = pair.score as f64;
                 });
             }
         } else {
@@ -1089,7 +1118,6 @@ pub async fn cross_encoder(
                         let reranker_model_name = dataset_config.RERANKER_MODEL_NAME.clone();
                         if reranker_model_name == "aimon-rerank" {
                             // --- AIMon Integration for larger chunks ---
-
                             let aimon_body = AIMonRequestBody {
                                 queries: vec![query.clone()],
                                 context_docs: request_docs.clone(),
@@ -1131,7 +1159,8 @@ pub async fn cross_encoder(
                                     }
                                 }
                             }
-                        } else {
+                        } else if url.contains("cohere") {
+                            // --- Cohere Integration for larger chunks ---
                             let parameters = CohereRerankCall {
                                 model: reranker_model_name.clone(),
                                 query: query.clone(),
@@ -1171,6 +1200,47 @@ pub async fn cross_encoder(
                             rankings.results.into_iter().for_each(|pair| {
                                 docs_chunk.index_mut(pair.index).score =
                                     pair.relevance_score as f64;
+                            });
+                        } else {
+                            let parameters = CrossEncoderData {
+                                query: query.clone(),
+                                texts: request_docs.clone(),
+                                truncate: true,
+                            };
+                            let embeddings_resp = cur_client
+                                .post(&url)
+                                .timeout(std::time::Duration::from_secs(5))
+                                .header("Authorization", &format!("Bearer {}", reranker_api_key))
+                                .header("api-key", reranker_api_key.to_string())
+                                .header("Content-Type", "application/json")
+                                .json(&parameters)
+                                .send()
+                                .await
+                                .map_err(|_| {
+                                    ServiceError::BadRequest(
+                                        "Failed to send message to embedding server".to_string(),
+                                    )
+                                })?
+                                .text()
+                                .await
+                                .map_err(|_| {
+                                    ServiceError::BadRequest(
+                                        "Failed to get text from embeddings".to_string(),
+                                    )
+                                })?;
+                            let embeddings: Vec<ScorePair> = serde_json::from_str(&embeddings_resp)
+                                .map_err(|e| {
+                                    log::error!(
+                                        "Failed to format response from embeddings server: {:?}",
+                                        e
+                                    );
+                                    ServiceError::InternalServerError(
+                                        "Failed to format response from embeddings server"
+                                            .to_owned(),
+                                    )
+                                })?;
+                            embeddings.into_iter().for_each(|pair| {
+                                docs_chunk.index_mut(pair.index).score = pair.score as f64;
                             });
                         }
                     } else {
