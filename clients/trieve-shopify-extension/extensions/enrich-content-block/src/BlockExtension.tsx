@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import {
   reactExtension,
   BlockStack,
-  Text,
   AdminBlock,
   useApi,
   TextField,
   Button,
   InlineStack,
   Banner,
+  TextArea,
 } from "@shopify/ui-extensions-react/admin";
-import { TrieveProvider, useTrieve } from "./TrieveProvider";
+import { TrieveProvider } from "./TrieveProvider";
 import { useChunkExtraContent } from "./useChunkExtraContent";
 
 const TARGET = "admin.product-details.block.render";
@@ -37,7 +37,7 @@ function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const { extraContent, loading, updateContent } =
+  const { extraContent, updateContent } =
     useChunkExtraContent(simplifiedProductId);
 
   useEffect(() => {
@@ -51,8 +51,6 @@ function App() {
     try {
       await updateContent(content);
       setShowSuccess(true);
-      // Hide success message after 3 seconds
-      setTimeout(() => setShowSuccess(false), 3000);
     } finally {
       setIsSaving(false);
     }
@@ -66,7 +64,7 @@ function App() {
             Content saved successfully
           </Banner>
         )}
-        <TextField
+        <TextArea
           label="Product Content"
           value={content}
           onChange={setContent}

@@ -9,7 +9,7 @@ type = "ui_extension"
 
 # Only 1 target can be specified for each Admin action extension
 [[extensions.targeting]]
-module = "./src/ActionExtension.tsx"
+module = "./src/BlockExtension.tsx"
 target = "admin.product-details.block.render"
 
 
