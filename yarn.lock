@@ -7865,10 +7865,10 @@ tr46@~0.0.3:
   resolved "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
 
-trieve-ts-sdk@^0.0.93:
-  version "0.0.93"
-  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.93.tgz#57168b4d4d5822e0e3947ebef86cec2371123ac0"
-  integrity sha512-LLshhGlRRStPU5FfFW2I1AVt7/aHKm4cCO0Bd8PMfpHVJv7vAOkn1KDu/NVoI4seY3K3DJg3NyEUwcKoymoauQ==
+trieve-ts-sdk@^0.0.92:
+  version "0.0.92"
+  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.92.tgz#d290d81e9961eb2f9d87100f0c9f648f7789ef5c"
+  integrity sha512-V0gMzr/o0Zv7MWptqItmM5Q1oGwzS452S0WSUBH2C8k1q63bz2UcBNm743pbTHLkZ0Bw54oM3yct+hLPGJQ6Cg==
 
 trim-lines@^3.0.0:
   version "3.0.1"

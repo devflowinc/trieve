@@ -301,6 +301,7 @@ body {
       scroll-snap-align: start;
       box-sizing: border-box;
       border-color: var(--tv-zinc-200);
+      border-style: solid;
 
       a {
         @apply tv-rounded tv-px-2 tv-text-xs tv-py-1 tv-flex tv-flex-col tv-gap-y-1 tv-h-full;
