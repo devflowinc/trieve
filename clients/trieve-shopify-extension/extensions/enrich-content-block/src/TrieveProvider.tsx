@@ -1,11 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { TrieveSDK } from "trieve-ts-sdk";
-import {
-  getAppId,
-  getTrieveApiKeyDatasetId,
-  sdkFromKey,
-  TrieveKey,
-} from "extensions/admin-block-pdp-questions/src/BlockExtension";
 import { InlineStack } from "@shopify/ui-extensions-react/admin";
 import { Text } from "@shopify/ui-extensions-react/admin";
 import { ProgressIndicator } from "@shopify/ui-extensions-react/admin";
@@ -14,6 +8,88 @@ import { BlockStack } from "@shopify/ui-extensions-react/admin";
 type TrieveContextShape = {
   trieveSdk: TrieveSDK;
 } | null;
+
+export const sdkFromKey = (key: TrieveKey): TrieveSDK => {
+  const trieve = new TrieveSDK({
+    baseUrl: "https://api.trieve.ai",
+    apiKey: key.key,
+    datasetId: key.currentDatasetId ? key.currentDatasetId : undefined,
+    organizationId: key.organizationId,
+    omitCredentials: true,
+  });
+
+  return trieve;
+};
+
+export type TrieveKey = {
+  id?: string;
+  userId?: string;
+  organizationId?: string;
+  currentDatasetId: string | null;
+  key: string;
+};
+async function makeGraphQLQuery(
+  query: string,
+  variables: {
+    ownerId?: any;
+    namespace?: string;
+    key?: string;
+    type?: string;
+    value?: string;
+    id?: any;
+    appId?: string;
+    metafieldsSetInput?: any;
+  },
+) {
+  const graphQLQuery = {
+    query,
+    variables,
+  };
+
+  const res = await fetch("shopify:admin/api/graphql.json", {
+    method: "POST",
+    body: JSON.stringify(graphQLQuery),
+  });
+
+  if (!res.ok) {
+    console.error("Network error");
+  }
+
+  return await res.json();
+}
+export async function getAppId() {
+  return await makeGraphQLQuery(
+    `query {
+      currentAppInstallation {
+        id
+      }
+    }
+  `,
+    {},
+  );
+}
+
+export async function getTrieveApiKeyDatasetId(appId: string) {
+  return await makeGraphQLQuery(
+    `query GetAppMetafields($appId: ID!) {
+      appInstallation(id: $appId) {
+        id
+        metafields(first: 10, namespace: "trieve") {
+          edges {
+            node {
+              id
+              namespace
+              key
+              value
+              type
+            }
+          }
+        }
+      }
+    }`,
+    { appId },
+  );
+}
 
 const TrieveContext = createContext<TrieveContextShape>(null);
 
