@@ -476,7 +476,13 @@ pub async fn update_all_org_dataset_configs(
     let new_dataset_config = req_payload.to_configuration.clone();
     let from_configuration = req_payload.from_configuration.clone();
 
-    update_all_org_dataset_configs_query(organization_id, new_dataset_config, from_configuration, pool).await?;
+    update_all_org_dataset_configs_query(
+        organization_id,
+        new_dataset_config,
+        from_configuration,
+        pool,
+    )
+    .await?;
 
     Ok(HttpResponse::NoContent().finish())
 }
