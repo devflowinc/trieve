@@ -1005,7 +1005,7 @@ pub async fn update_all_org_dataset_configs_query(
             .iter()
             .map(|(key, value)| {
                 format!(
-                    "server_configuration::jsonb->>'{}' = '{}'",
+                    "server_configuration::json->>'{}' = '{}'",
                     key,
                     value.as_str().unwrap().replace('\'', "''")
                 )
