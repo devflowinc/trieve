@@ -802,6 +802,7 @@ pub async fn bulk_upload_chunks(
         .await?;
     }
 
+    log::info!("----- Finished inserting batch of chunks ------");
     Ok(())
 }
 
