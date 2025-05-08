@@ -800,6 +800,8 @@ pub async fn bulk_insert_chunk_metadata_query(
         .unique_by(|boost| boost.chunk_id)
         .collect::<Vec<ChunkBoost>>();
 
+    log::info!("Inserting {:?} chunk boosts", boosts_to_insert.len());
+
     diesel::insert_into(chunk_boosts_columns::chunk_boosts)
         .values(boosts_to_insert)
         .on_conflict(chunk_boosts_columns::chunk_id)
@@ -838,6 +840,11 @@ pub async fn bulk_insert_chunk_metadata_query(
         .flatten()
         .collect();
 
+    log::info!(
+        "Inserting chunk group bookmarks: {}",
+        chunk_group_bookmarks_to_insert.len()
+    );
+
     diesel::insert_into(chunk_group_bookmarks_columns::chunk_group_bookmarks)
         .values(chunk_group_bookmarks_to_insert)
         .on_conflict_do_nothing()
@@ -871,6 +878,7 @@ pub async fn bulk_insert_chunk_metadata_query(
 
     use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
     use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
+    log::info!("Inserting chunk tags: {}", chunk_tags_to_chunk_id.len());
     // TODO, dedupe and bulk insert this.
     for (dataset_tags, chunk_uuid) in chunk_tags_to_chunk_id {
         diesel::insert_into(dataset_tags_columns::dataset_tags)
