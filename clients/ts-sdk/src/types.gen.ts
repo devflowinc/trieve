@@ -910,6 +910,7 @@ export type CreateDatasetReqPayload = {
  */
 export type CreateFormWithoutFile = {
     chunk_processing?: ((ChunkProcessing) | null);
+    error_handling?: ((ErrorHandlingStrategy) | null);
     /**
      * The number of seconds until task is deleted.
      * Expried tasks can **not** be updated, polled or accessed via web interface.
@@ -919,6 +920,7 @@ export type CreateFormWithoutFile = {
      * Whether to use high-resolution images for cropping and post-processing. (Latency penalty: ~7 seconds per page)
      */
     high_resolution?: (boolean) | null;
+    llm_processing?: ((LlmProcessing) | null);
     ocr_strategy?: ((OcrStrategy) | null);
     pipeline?: ((PipelineType) | null);
     segment_processing?: ((SegmentProcessing) | null);
@@ -1482,6 +1484,13 @@ export type EditMessageReqPayload = {
 
 export type EmbedSource = 'HTML' | 'Markdown' | 'LLM' | 'Content';
 
+/**
+ * Controls how errors are handled during processing:
+ * - `Fail`: Stops processing and fails the task when any error occurs
+ * - `Continue`: Attempts to continue processing despite non-critical errors (eg. LLM refusals etc.)
+ */
+export type ErrorHandlingStrategy = 'Fail' | 'Continue';
+
 export type ErrorResponseBody = {
     message: string;
 };
@@ -1849,6 +1858,21 @@ export type ExtendedOrganizationUsageCount = {
     tokens_ingested: number;
     user_count: number;
     website_pages_scraped: number;
+};
+
+/**
+ * Specifies the fallback strategy for LLM processing
+ *
+ * This can be:
+ * 1. None - No fallback will be used
+ * 2. Default - The system default fallback model will be used
+ * 3. Model - A specific model ID will be used as fallback (check the documentation for the models.)
+ */
+export type FallbackStrategy = 'None' | 'Default' | {
+    /**
+     * Use a specific model as fallback
+     */
+    Model: string;
 };
 
 /**
@@ -2483,6 +2507,26 @@ export type LlmGenerationConfig = {
      */
     llm?: (string) | null;
     markdown?: (GenerationStrategy);
+};
+
+/**
+ * Controls the LLM used for the task.
+ */
+export type LlmProcessing = {
+    fallback_strategy?: FallbackStrategy;
+    /**
+     * The maximum number of tokens to generate.
+     */
+    max_completion_tokens?: (number) | null;
+    /**
+     * The ID of the model to use for the task. If not provided, the default model will be used.
+     * Please check the documentation for the model you want to use.
+     */
+    model_id?: (string) | null;
+    /**
+     * The temperature to use for the LLM.
+     */
+    temperature?: number;
 };
 
 export type LocationBoundingBox = {

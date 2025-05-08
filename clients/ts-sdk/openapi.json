@@ -10372,6 +10372,14 @@
             ],
             "nullable": true
           },
+          "error_handling": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ErrorHandlingStrategy"
+              }
+            ],
+            "nullable": true
+          },
           "expires_in": {
             "type": "integer",
             "format": "int32",
@@ -10382,6 +10390,14 @@
             "type": "boolean",
             "description": "Whether to use high-resolution images for cropping and post-processing. (Latency penalty: ~7 seconds per page)",
             "default": false,
+            "nullable": true
+          },
+          "llm_processing": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LlmProcessing"
+              }
+            ],
             "nullable": true
           },
           "ocr_strategy": {
@@ -11620,6 +11636,14 @@
           "Content"
         ]
       },
+      "ErrorHandlingStrategy": {
+        "type": "string",
+        "description": "Controls how errors are handled during processing:\n- `Fail`: Stops processing and fails the task when any error occurs\n- `Continue`: Attempts to continue processing despite non-critical errors (eg. LLM refusals etc.)",
+        "enum": [
+          "Fail",
+          "Continue"
+        ]
+      },
       "ErrorResponseBody": {
         "type": "object",
         "required": [
@@ -12494,6 +12518,37 @@
             "minimum": 0
           }
         }
+      },
+      "FallbackStrategy": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "No fallback will be used",
+            "enum": [
+              "None"
+            ]
+          },
+          {
+            "type": "string",
+            "description": "Use the system default fallback model",
+            "enum": [
+              "Default"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "Model"
+            ],
+            "properties": {
+              "Model": {
+                "type": "string",
+                "description": "Use a specific model as fallback"
+              }
+            }
+          }
+        ],
+        "description": "Specifies the fallback strategy for LLM processing\n\nThis can be:\n1. None - No fallback will be used\n2. Default - The system default fallback model will be used\n3. Model - A specific model ID will be used as fallback (check the documentation for the models.)"
       },
       "FieldCondition": {
         "type": "object",
@@ -14121,6 +14176,32 @@
               }
             ],
             "default": "LLM"
+          }
+        }
+      },
+      "LlmProcessing": {
+        "type": "object",
+        "description": "Controls the LLM used for the task.",
+        "properties": {
+          "fallback_strategy": {
+            "$ref": "#/components/schemas/FallbackStrategy"
+          },
+          "max_completion_tokens": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The maximum number of tokens to generate.",
+            "nullable": true,
+            "minimum": 0
+          },
+          "model_id": {
+            "type": "string",
+            "description": "The ID of the model to use for the task. If not provided, the default model will be used.\nPlease check the documentation for the model you want to use.",
+            "nullable": true
+          },
+          "temperature": {
+            "type": "number",
+            "format": "float",
+            "description": "The temperature to use for the LLM."
           }
         }
       },
