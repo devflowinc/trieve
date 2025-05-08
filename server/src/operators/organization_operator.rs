@@ -987,22 +987,39 @@ pub async fn delete_actual_organization_query(
 
     Ok(())
 }
-
 pub async fn update_all_org_dataset_configs_query(
     org_id: uuid::Uuid,
     new_config: serde_json::Value,
+    from_config: Option<serde_json::Value>,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
-    let concat_configs_raw_query = sql_query(format!(
-        "UPDATE datasets SET server_configuration = server_configuration || '{}' WHERE organization_id = '{}';",
+    let mut concat_configs_raw_query = format!(
+        "UPDATE datasets SET server_configuration = server_configuration || '{}' WHERE organization_id = '{}'",
         new_config.to_string().replace('\'', "''"), org_id
-    ));
+    );
+
+    if let Some(from_config) = from_config {
+        let from_config_query = from_config.as_object().unwrap().iter().map(|(key, value)| {
+            format!(
+                "server_configuration::jsonb->>'{}' = '{}'",
+                key,
+                value.as_str().unwrap().replace('\'', "''")
+            )
+        }).collect::<Vec<String>>().join(" AND ");
+
+        concat_configs_raw_query.push_str(&format!(
+            " AND ({})",
+            from_config_query
+        ));
+    }
+
+    concat_configs_raw_query.push(';');
 
     let mut conn = pool.get().await.map_err(|_e| {
         ServiceError::InternalServerError("Failed to get postgres connection".to_string())
     })?;
 
-    concat_configs_raw_query
+    sql_query(concat_configs_raw_query)
         .execute(&mut conn)
         .await
         .map_err(|e| {
