@@ -999,18 +999,21 @@ pub async fn update_all_org_dataset_configs_query(
     );
 
     if let Some(from_config) = from_config {
-        let from_config_query = from_config.as_object().unwrap().iter().map(|(key, value)| {
-            format!(
-                "server_configuration::jsonb->>'{}' = '{}'",
-                key,
-                value.as_str().unwrap().replace('\'', "''")
-            )
-        }).collect::<Vec<String>>().join(" AND ");
+        let from_config_query = from_config
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(key, value)| {
+                format!(
+                    "server_configuration::jsonb->>'{}' = '{}'",
+                    key,
+                    value.as_str().unwrap().replace('\'', "''")
+                )
+            })
+            .collect::<Vec<String>>()
+            .join(" AND ");
 
-        concat_configs_raw_query.push_str(&format!(
-            " AND ({})",
-            from_config_query
-        ));
+        concat_configs_raw_query.push_str(&format!(" AND ({})", from_config_query));
     }
 
     concat_configs_raw_query.push(';');
