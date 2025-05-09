@@ -13901,13 +13901,13 @@
       "ImageEditResponse": {
         "type": "object",
         "required": [
-          "images"
+          "image_urls"
         ],
         "properties": {
-          "images": {
+          "image_urls": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ImageResponseData"
+              "type": "string"
             },
             "description": "The URL of the generated image"
           }
@@ -13925,20 +13925,49 @@
           }
         }
       },
+      "ImageSourceType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "title": "Base64",
+            "required": [
+              "base64"
+            ],
+            "properties": {
+              "base64": {
+                "type": "string",
+                "description": "Base64 encoded image data"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "URL",
+            "required": [
+              "url"
+            ],
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "URL of the image"
+              }
+            }
+          }
+        ]
+      },
       "ImageUpload": {
         "type": "object",
         "required": [
-          "base64_image",
+          "image_src",
           "file_name"
         ],
         "properties": {
-          "base64_image": {
-            "type": "string",
-            "description": "The image base64 encoded"
-          },
           "file_name": {
             "type": "string",
             "description": "The file name of the image"
+          },
+          "image_src": {
+            "$ref": "#/components/schemas/ImageSourceType"
           }
         }
       },
