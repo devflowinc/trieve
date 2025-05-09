@@ -11,6 +11,7 @@ use crate::{
     get_env,
     operators::{
         clickhouse_operator::EventQueue,
+        file_operator::put_file_in_s3_get_signed_url,
         message_operator::{
             create_topic_message_query, delete_message_query, get_llm_api_key,
             get_message_by_id_query, get_message_by_sort_for_topic_query,
@@ -1206,18 +1207,65 @@ impl From<InputImageSize> for ImageSize {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub enum ImageSourceType {
+    #[serde(rename = "base64")]
+    #[schema(title = "Base64")]
+    /// Base64 encoded image data
+    Base64(String),
+    #[serde(rename = "url")]
+    #[schema(title = "URL")]
+    /// URL of the image
+    Url(String),
+}
+
+// impl a to base64 function for the ImageDTO enum
+impl ImageSourceType {
+    pub async fn to_image_bytes(&self) -> Result<Vec<u8>, ServiceError> {
+        match self {
+            ImageSourceType::Base64(base64_string) => {
+                let decoded_bytes = base64::prelude::BASE64_STANDARD
+                    .decode(base64_string)
+                    .map_err(|_| ServiceError::BadRequest("Invalid base64 string".to_string()))?;
+                Ok(decoded_bytes)
+            }
+            ImageSourceType::Url(url) => {
+                let response = reqwest::get(url)
+                    .await
+                    .map_err(|_| ServiceError::BadRequest("Invalid URL".to_string()))?;
+                let bytes = response.bytes().await.map_err(|_| {
+                    ServiceError::BadRequest("Failed to read bytes from URL".to_string())
+                })?;
+                Ok(bytes.to_vec())
+            }
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ImageUpload {
     /// The image base64 encoded
-    pub base64_image: String,
+    /// The image data - either a base64-encoded string or a URL
+    pub image_src: ImageSourceType,
     /// The file name of the image
     pub file_name: String,
+}
+
+impl ImageUpload {
+    pub async fn to_file_upload_bytes(&self) -> Result<FileUploadBytes, ServiceError> {
+        let image_bytes = self.image_src.to_image_bytes().await?;
+        let file_upload_bytes = FileUploadBytes {
+            bytes: image_bytes.into(),
+            filename: self.file_name.clone(),
+        };
+        Ok(file_upload_bytes)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ImageEditResponse {
     /// The URL of the generated image
-    pub images: Vec<ImageResponseData>,
+    pub image_urls: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -1271,22 +1319,15 @@ pub async fn edit_image(
         organization: None,
     };
 
-    let parameters = EditImageParametersBuilder::default()
-        .image(FileUpload::BytesArray(
-            data.input_images
-                .iter()
-                .map(|image| {
-                    let image_bytes = base64::prelude::BASE64_STANDARD
-                        .decode(image.base64_image.clone())
-                        .unwrap();
+    let mut file_upload_bytes_futures = Vec::new();
+    for input_image in &data.input_images {
+        let fut = input_image.to_file_upload_bytes();
+        file_upload_bytes_futures.push(fut);
+    }
+    let file_upload_bytes = futures::future::try_join_all(file_upload_bytes_futures).await?;
 
-                    FileUploadBytes {
-                        bytes: bytes::Bytes::from(image_bytes),
-                        filename: image.file_name.clone(),
-                    }
-                })
-                .collect(),
-        ))
+    let parameters = EditImageParametersBuilder::default()
+        .image(FileUpload::BytesArray(file_upload_bytes))
         .model("gpt-image-1")
         .quality::<ImageQuality>(data.quality.unwrap_or_default().into())
         .prompt(data.prompt.clone())
@@ -1302,17 +1343,33 @@ pub async fn edit_image(
         .await
         .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
 
-    let images = result.data.iter().filter_map(|image| {
-        if let ImageData::B64Json { b64_json, .. } = &image {
-            Some(ImageResponseData {
-                b64_json: b64_json.clone(),
-            })
-        } else {
-            None
-        }
+    let images: Vec<ImageResponseData> = result
+        .data
+        .iter()
+        .filter_map(|image| {
+            if let ImageData::B64Json { b64_json, .. } = &image {
+                Some(ImageResponseData {
+                    b64_json: b64_json.clone(),
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let image_signed_url_futures = images.iter().map(|image| {
+        let file_id = uuid::Uuid::new_v4();
+        let b64_json = image.b64_json.clone();
+        let decoded_bytes = base64::prelude::BASE64_STANDARD
+            .decode(b64_json)
+            .unwrap_or_default();
+        put_file_in_s3_get_signed_url(file_id, decoded_bytes)
     });
 
-    Ok(HttpResponse::Ok().json(ImageEditResponse {
-        images: images.collect(),
-    }))
+    let image_urls = futures::future::join_all(image_signed_url_futures)
+        .await
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(HttpResponse::Ok().json(ImageEditResponse { image_urls }))
 }
