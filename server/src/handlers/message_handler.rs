@@ -1237,7 +1237,7 @@ pub struct ImageResponseData {
     tag = "Message",
     request_body(content = EditImageReqPayload, description = "JSON request payload to edit an image", content_type = "application/json"),
     responses(
-        (status = 200, description = "A list of base64 encoded images",
+        (status = 200, description = "A list of base64 encoded images", body = ImageEditResponse,
             headers(
                 ("TR-QueryID" = uuid::Uuid, description = "Query ID that is used for tracking analytics")
             )
@@ -1258,7 +1258,6 @@ pub async fn edit_image(
 ) -> Result<HttpResponse, ServiceError> {
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.clone().server_configuration);
-    log::info!("Dataset config: {dataset_config:#?}");
 
     let llm_api_key = get_llm_api_key(&dataset_config);
     let base_url = dataset_config.LLM_BASE_URL.clone();
