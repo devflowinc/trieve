@@ -5849,7 +5849,7 @@ export type EditImageData = {
     trDataset: string;
 };
 
-export type EditImageResponse = (string);
+export type EditImageResponse = (ImageEditResponse);
 
 export type GetToolFunctionParamsData = {
     /**
@@ -7542,7 +7542,7 @@ export type $OpenApiTs = {
                 /**
                  * A list of base64 encoded images
                  */
-                200: string;
+                200: ImageEditResponse;
                 /**
                  * Service error relating to editing the image
                  */

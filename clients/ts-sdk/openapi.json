@@ -5620,6 +5620,13 @@
                 },
                 "description": "Query ID that is used for tracking analytics"
               }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageEditResponse"
+                }
+              }
             }
           },
           "400": {
