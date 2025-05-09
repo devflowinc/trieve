@@ -642,3 +642,33 @@ pub async fn delete_file_query(
 
     Ok(())
 }
+
+pub async fn put_file_in_s3_get_signed_url(
+    file_id: uuid::Uuid,
+    file_data: Vec<u8>,
+) -> Result<String, ServiceError> {
+    let bucket = get_aws_bucket().unwrap();
+
+    bucket
+        .put_object(file_id.to_string(), &file_data)
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Could not upload file to S3 before getting signed URL {:?}",
+                e
+            );
+            ServiceError::BadRequest(
+                "Could not upload file to S3 before getting signed URL".to_string(),
+            )
+        })?;
+
+    let signed_url = bucket
+        .presign_get(file_id.to_string(), 86400, None)
+        .await
+        .map_err(|e| {
+            log::error!("Could not get presigned url after putting object {:?}", e);
+            ServiceError::BadRequest("Could not get presigned url after putting object".to_string())
+        })?;
+
+    Ok(signed_url)
+}
