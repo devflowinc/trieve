@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, expectTypeOf } from "vitest";
 import { TrieveSDK } from "../../sdk";
-import { Message } from "../../types.gen";
+import { ImageEditResponse, Message } from "../../types.gen";
 import { TRIEVE } from "../../__tests__/constants";
 import { test } from "../../__tests__/utils";
 
@@ -168,5 +168,30 @@ describe("Message Tests", async () => {
       jackets: true,
       shirts: false,
     });
+  });
+
+  test("editImage", async () => {
+    const prompt = `Create a lovely room design where specifically the countertop is replaced with the Bahia Granite material`;
+    const data = await trieve.editImage({
+      input_images: [
+        {
+          image_src: {
+            url: "https://trieve.b-cdn.net/sdk-tests/102024_KIT_80_PS_4.webp",
+          },
+          file_name: "room_photo",
+        },
+        {
+          image_src: {
+            url: "https://trieve.b-cdn.net/sdk-tests/black-granite-countertop.webp",
+          },
+          file_name: "picture_of_sample",
+        },
+      ],
+      prompt: prompt,
+      quality: "medium",
+      n: 1,
+    });
+
+    expectTypeOf(data).toEqualTypeOf<ImageEditResponse>();
   });
 });

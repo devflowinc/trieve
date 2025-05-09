@@ -10,8 +10,8 @@ export const TRIEVE = new TrieveSDK({
 
 // export const TRIEVE = new TrieveSDK({
 //   baseUrl: "http://localhost:8090",
-//   organizationId: "310e51a2-4bb4-4317-9661-b5ef3ca85713",
-//   datasetId: "e390d3b2-7c51-4695-a3ec-4487c32220b0",
+//   organizationId: "ad2a06d2-c229-4322-a77c-ed45b2a39d94",
+//   datasetId: "af0893e8-9e1c-4bfd-8ceb-ed9863fc96fb",
 //   apiKey: "admin",
 // });
 
