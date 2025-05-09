@@ -306,6 +306,7 @@ impl Modify for SecurityAddon {
             handlers::message_handler::EditImageReqPayload,
             handlers::message_handler::InputImageSize,
             handlers::message_handler::InputImageQuality,
+            handlers::message_handler::ImageSourceType,
             handlers::message_handler::ImageUpload,
             handlers::message_handler::ImageEditResponse,
             handlers::message_handler::ImageResponseData,

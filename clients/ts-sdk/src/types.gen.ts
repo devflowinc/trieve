@@ -2379,7 +2379,7 @@ export type ImageEditResponse = {
     /**
      * The URL of the generated image
      */
-    images: Array<ImageResponseData>;
+    image_urls: Array<(string)>;
 };
 
 export type ImageResponseData = {
@@ -2389,15 +2389,24 @@ export type ImageResponseData = {
     b64_json: string;
 };
 
-export type ImageUpload = {
+export type ImageSourceType = {
     /**
-     * The image base64 encoded
+     * Base64 encoded image data
      */
-    base64_image: string;
+    base64: string;
+} | {
+    /**
+     * URL of the image
+     */
+    url: string;
+};
+
+export type ImageUpload = {
     /**
      * The file name of the image
      */
     file_name: string;
+    image_src: ImageSourceType;
 };
 
 export type InputImageQuality = 'low' | 'medium' | 'high';
