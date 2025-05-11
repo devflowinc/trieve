@@ -1,8 +1,8 @@
 use crate::data::models::{
-    uuid_between, ChunkBoost, ChunkBoostChangeset, ChunkData, ChunkGroupBookmark,
-    ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes, ContentChunkMetadata, Dataset,
-    DatasetConfiguration, DatasetTags, DatasetUsageCount, IngestSpecificChunkMetadata,
-    SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
+    uuid_between, ChunkBoost, ChunkBoostChangeset, ChunkData, ChunkGroup, ChunkGroupAndFileId,
+    ChunkGroupBookmark, ChunkMetadataTable, ChunkMetadataTags, ChunkMetadataTypes,
+    ContentChunkMetadata, Dataset, DatasetConfiguration, DatasetTags, DatasetUsageCount,
+    IngestSpecificChunkMetadata, SlimChunkMetadata, SlimChunkMetadataTable, UnifiedId,
 };
 use crate::handlers::chunk_handler::{BulkUploadIngestionMessage, ChunkReqPayload};
 use crate::handlers::chunk_handler::{ChunkFilter, UploadIngestionMessage};
@@ -2680,6 +2680,200 @@ pub async fn scroll_chunks_from_pg(
     let offset_id = chunk_metadatas.last().map(|x| x.id);
 
     Ok((chunk_metadatas, offset_id))
+}
+
+pub async fn scroll_chunks_with_boosts_and_groups(
+    pool: web::Data<Pool>,
+    dataset_id: uuid::Uuid,
+    limit: i64,
+    offset: Option<uuid::Uuid>,
+) -> Result<
+    (
+        Vec<(
+            ChunkMetadata,
+            Option<ChunkBoost>,
+            Option<Vec<ChunkGroupAndFileId>>,
+        )>,
+        Option<uuid::Uuid>,
+    ),
+    ServiceError,
+> {
+    use crate::data::schema::chunk_boosts::dsl as chunk_boosts_columns;
+    use crate::data::schema::chunk_group::dsl as chunk_group_columns;
+    use crate::data::schema::chunk_group_bookmarks::dsl as chunk_group_bookmarks_columns;
+    use crate::data::schema::chunk_metadata::dsl as chunk_metadata_columns;
+    use crate::data::schema::chunk_metadata_tags::dsl as chunk_metadata_tags_columns;
+    use crate::data::schema::dataset_tags::dsl as dataset_tags_columns;
+    use crate::data::schema::groups_from_files::dsl as groups_from_files_columns;
+
+    let mut conn = pool
+        .get()
+        .await
+        .map_err(|_| ServiceError::BadRequest("Could not get database connection".to_string()))?;
+
+    let chunk_metadata_pairs: Vec<(ChunkMetadataTable, Option<Vec<String>>)> =
+        chunk_metadata_columns::chunk_metadata
+            .left_join(
+                chunk_metadata_tags_columns::chunk_metadata_tags
+                    .on(chunk_metadata_tags_columns::chunk_metadata_id
+                        .eq(chunk_metadata_columns::id)),
+            )
+            .left_join(
+                dataset_tags_columns::dataset_tags
+                    .on(dataset_tags_columns::id.eq(chunk_metadata_tags_columns::tag_id)),
+            )
+            .filter(chunk_metadata_columns::dataset_id.eq(dataset_id))
+            .filter(chunk_metadata_columns::id.gt(offset.unwrap_or(uuid::Uuid::nil())))
+            .select((
+                ChunkMetadataTable::as_select(),
+                sql::<sql_types::Array<sql_types::Text>>(
+                    "array_remove(array_agg(dataset_tags.tag), null)",
+                )
+                .nullable(),
+            ))
+            .group_by(chunk_metadata_columns::id)
+            .order_by(chunk_metadata_columns::id)
+            .limit(limit)
+            .load::<(ChunkMetadataTable, Option<Vec<String>>)>(&mut conn)
+            .await
+            .map_err(|_| {
+                log::error!("Failed to scroll dataset ids for dictionary");
+                ServiceError::InternalServerError(
+                    "Failed to scroll dataset ids for dictionary".to_string(),
+                )
+            })?;
+
+    let chunk_ids = chunk_metadata_pairs
+        .iter()
+        .map(|(table, _)| table.id)
+        .collect::<Vec<uuid::Uuid>>();
+
+    if chunk_ids.is_empty() {
+        return Ok((Vec::new(), None));
+    }
+
+    let boosts: Vec<ChunkBoost> = chunk_boosts_columns::chunk_boosts
+        .filter(chunk_boosts_columns::chunk_id.eq_any(&chunk_ids))
+        .select(ChunkBoost::as_select())
+        .load::<ChunkBoost>(&mut conn)
+        .await?;
+
+    let boost_map: Option<HashMap<uuid::Uuid, ChunkBoost>> = if boosts.is_empty() {
+        None
+    } else {
+        let mut boost_map: HashMap<uuid::Uuid, ChunkBoost> = HashMap::new();
+
+        for boost in boosts {
+            boost_map.insert(boost.chunk_id, boost);
+        }
+
+        Some(boost_map)
+    };
+
+    let mut group_cursor = Some(uuid::Uuid::nil());
+    let mut groups: Vec<(ChunkGroup, uuid::Uuid)> = vec![];
+
+    while let Some(offset_id) = group_cursor {
+        let inner_groups = chunk_group_bookmarks_columns::chunk_group_bookmarks
+            .inner_join(
+                chunk_group_columns::chunk_group
+                    .on(chunk_group_columns::id.eq(chunk_group_bookmarks_columns::group_id)),
+            )
+            .select((
+                ChunkGroup::as_select(),
+                chunk_group_bookmarks_columns::chunk_metadata_id,
+            ))
+            .filter(chunk_group_bookmarks_columns::chunk_metadata_id.eq_any(&chunk_ids))
+            .filter(chunk_group_columns::id.gt(offset_id))
+            .order_by(chunk_group_columns::id)
+            .limit(100)
+            .load::<(ChunkGroup, uuid::Uuid)>(&mut conn)
+            .await
+            .map_err(|_err| {
+                ServiceError::BadRequest("Error getting groups for dataset".to_string())
+            })?;
+
+        if inner_groups.is_empty() {
+            break;
+        }
+
+        let last_group_id = inner_groups.last().map(|(group, _)| group.id);
+
+        groups.extend(inner_groups);
+
+        group_cursor = last_group_id;
+    }
+
+    let group_map = if groups.is_empty() {
+        None
+    } else {
+        let file_ids = groups_from_files_columns::groups_from_files
+            .filter(
+                groups_from_files_columns::group_id.eq_any(
+                    groups
+                        .iter()
+                        .map(|(x, _)| x.id)
+                        .collect::<Vec<uuid::Uuid>>(),
+                ),
+            )
+            .select((
+                groups_from_files_columns::group_id,
+                groups_from_files_columns::file_id,
+            ))
+            .load::<(uuid::Uuid, uuid::Uuid)>(&mut conn)
+            .await
+            .map_err(|_err| ServiceError::BadRequest("Error getting file ids".to_string()))?;
+
+        let mut group_map: HashMap<uuid::Uuid, Vec<ChunkGroupAndFileId>> = HashMap::new();
+
+        groups.into_iter().for_each(|(group, chunk_id)| {
+            let file_id = file_ids
+                .iter()
+                .find(|(group_id, _)| group.id == *group_id)
+                .map(|(_, file_id)| *file_id);
+
+            let chunk_group_and_file_id = ChunkGroupAndFileId {
+                id: group.id,
+                dataset_id: group.dataset_id,
+                name: group.name,
+                description: group.description,
+                tracking_id: group.tracking_id,
+                tag_set: group.tag_set,
+                metadata: group.metadata,
+                file_id,
+                created_at: group.created_at,
+                updated_at: group.updated_at,
+            };
+
+            group_map
+                .entry(chunk_id)
+                .or_default()
+                .push(chunk_group_and_file_id);
+        });
+
+        Some(group_map)
+    };
+
+    let chunk_metadatas_with_boosts_and_groups = chunk_metadata_pairs
+        .into_iter()
+        .map(|(table, tag_set)| {
+            let boost = boost_map.as_ref().and_then(|m| m.get(&table.id).cloned());
+
+            let groups = group_map.as_ref().and_then(|m| m.get(&table.id).cloned());
+
+            (
+                ChunkMetadata::from_table_and_tag_set(table, tag_set.unwrap_or(vec![])),
+                boost,
+                groups,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let offset_id = chunk_metadatas_with_boosts_and_groups
+        .last()
+        .map(|(x, _, _)| x.id);
+
+    Ok((chunk_metadatas_with_boosts_and_groups, offset_id))
 }
 
 pub async fn update_dataset_chunk_count(

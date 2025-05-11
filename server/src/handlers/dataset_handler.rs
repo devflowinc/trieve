@@ -21,6 +21,7 @@ use crate::{
     },
 };
 use actix_web::{web, FromRequest, HttpMessage, HttpResponse};
+use broccoli_queue::queue::BroccoliQueue;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::future::{ready, Ready};
@@ -107,50 +108,13 @@ pub struct CreateDatasetReqPayload {
     pub server_configuration: Option<DatasetConfigurationDTO>,
 }
 
-/// Create Dataset
-///
-/// Dataset will be created in the org specified via the TR-Organization header. Auth'ed user must be an owner of the organization to create a dataset.
-#[utoipa::path(
-    post,
-    path = "/dataset",
-    context_path = "/api",
-    tag = "Dataset",
-    request_body(content = CreateDatasetReqPayload, description = "JSON request payload to create a new dataset", content_type = "application/json"),
-    responses(
-        (status = 200, description = "Dataset created successfully", body = Dataset),
-        (status = 400, description = "Service error relating to creating the dataset", body = ErrorResponseBody),
-    ),
-    params(
-        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
-    ),
-    security(
-        ("ApiKey" = ["owner"]),
-    )
-)]
-pub async fn create_dataset(
-    data: web::Json<CreateDatasetReqPayload>,
+async fn create_dataset_helper(
+    data: CreateDatasetReqPayload,
     pool: web::Data<Pool>,
     org_with_sub_and_plan: OrganizationWithSubAndPlan,
     user: OwnerOnly,
-) -> Result<HttpResponse, ServiceError> {
+) -> Result<Dataset, ServiceError> {
     let org_id = org_with_sub_and_plan.organization.id;
-
-    let organization_sub_plan = get_org_from_id_query(org_id, pool.clone()).await?;
-
-    let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
-    if unlimited == "false" {
-        let dataset_count = get_org_dataset_count(org_id, pool.clone()).await?;
-        if dataset_count
-            >= organization_sub_plan
-                .plan
-                .unwrap_or_default()
-                .dataset_count()
-        {
-            return Ok(HttpResponse::UpgradeRequired().json(
-                json!({"message": "Your plan must be upgraded to create additional datasets"}),
-            ));
-        }
-    }
 
     let dataset = Dataset::from_details(
         data.dataset_name.clone(),
@@ -180,6 +144,54 @@ pub async fn create_dataset(
             log::error!("Error sending ditto event: {}", e);
         }
     };
+    Ok(d)
+}
+
+/// Create Dataset
+///
+/// Dataset will be created in the org specified via the TR-Organization header. Auth'ed user must be an owner of the organization to create a dataset.
+#[utoipa::path(
+    post,
+    path = "/dataset",
+    context_path = "/api",
+    tag = "Dataset",
+    request_body(content = CreateDatasetReqPayload, description = "JSON request payload to create a new dataset", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Dataset created successfully", body = Dataset),
+        (status = 400, description = "Service error relating to creating the dataset", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
+    ),
+    security(
+        ("ApiKey" = ["owner"]),
+    )
+)]
+pub async fn create_dataset(
+    data: web::Json<CreateDatasetReqPayload>,
+    pool: web::Data<Pool>,
+    org_with_sub_and_plan: OrganizationWithSubAndPlan,
+    user: OwnerOnly,
+) -> Result<HttpResponse, ServiceError> {
+    let org_id = org_with_sub_and_plan.organization.id;
+    let organization_sub_plan = get_org_from_id_query(org_id, pool.clone()).await?;
+
+    let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
+    if unlimited == "false" {
+        let dataset_count = get_org_dataset_count(org_id, pool.clone()).await?;
+        if dataset_count
+            >= organization_sub_plan
+                .plan
+                .unwrap_or_default()
+                .dataset_count()
+        {
+            return Ok(HttpResponse::UpgradeRequired().json(
+                json!({"message": "Your plan must be upgraded to create additional datasets"}),
+            ));
+        }
+    }
+
+    let d = create_dataset_helper(data.into_inner(), pool, org_with_sub_and_plan, user).await?;
 
     Ok(HttpResponse::Ok().json(d))
 }
@@ -336,6 +348,136 @@ pub async fn delete_dataset(
 
     soft_delete_dataset_by_id_query(data.into_inner(), config, pool, redis_pool).await?;
     Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[schema(example = json!({
+    "dataset_to_clone": "00000000-0000-0000-0000-000000000000",
+    "dataset_name": "My Dataset",
+    "organization_id": "00000000-0000-0000-0000-000000000000",
+    "server_configuration": {
+        "LLM_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+        "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
+        "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
+        "N_RETRIEVALS_TO_INCLUDE": 8,
+        "EMBEDDING_SIZE": 1536,
+        "DISTANCE_METRIC": "cosine",
+        "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+        "BM25_ENABLED": true,
+        "BM25_B": 0.75,
+        "BM25_K": 0.75,
+        "BM25_AVG_LEN": 256.0,
+        "FULLTEXT_ENABLED": true,
+        "SEMANTIC_ENABLED": true,
+        "QDRANT_ONLY": false,
+        "EMBEDDING_QUERY_PREFIX": "",
+        "USE_MESSAGE_TO_QUERY_PROMPT": false,
+        "FREQUENCY_PENALTY": 0.0,
+        "TEMPERATURE": 0.5,
+        "PRESENCE_PENALTY": 0.0,
+        "STOP_TOKENS": ["\n\n", "\n"],
+        "INDEXED_ONLY": false,
+        "LOCKED": false,
+        "SYSTEM_PROMPT": "You are a helpful assistant",
+        "MAX_LIMIT": 10000,
+        "AIMON_RERANKER_TASK_DEFINITION":"Your task is to grade the relevance of context document(s) against the specified user query."
+    }
+}))]
+pub struct CloneDatasetRequest {
+    /// The id of the dataset you want to clone.
+    pub dataset_to_clone: uuid::Uuid,
+    /// Name of the dataset.
+    pub dataset_name: String,
+    /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
+    pub tracking_id: Option<String>,
+    /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously setting this field. We recommend setting through creating a dataset at dashboard.trieve.ai and managing it's settings there.
+    pub server_configuration: Option<DatasetConfigurationDTO>,
+}
+
+impl From<CloneDatasetRequest> for CreateDatasetReqPayload {
+    fn from(request: CloneDatasetRequest) -> Self {
+        CreateDatasetReqPayload {
+            dataset_name: request.dataset_name,
+            tracking_id: request.tracking_id,
+            server_configuration: request.server_configuration,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+pub struct CloneDatasetMessage {
+    pub dataset_to_clone: uuid::Uuid,
+    pub new_dataset: uuid::Uuid,
+}
+
+/// Clone Dataset
+///
+/// Clones a dataset and creates a new dataset with the same configuration and chunks. The auth'ed user must be an owner of the organization to clone a dataset.
+#[utoipa::path(
+    post,
+    path = "/dataset/clone",
+    context_path = "/api",
+    tag = "Dataset",
+    responses(
+        (status = 200, description = "Dataset cloned successfully", body = Dataset),
+        (status = 400, description = "Service error relating to cloning the dataset", body = ErrorResponseBody),
+        (status = 404, description = "Dataset not found", body = ErrorResponseBody)
+    ),
+    request_body(content = CloneDatasetRequest, description = "JSON request payload to clone a dataset", content_type = "application/json"),
+    params(
+        ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request"),
+    ),
+)]
+pub async fn clone_dataset(
+    data: web::Json<CloneDatasetRequest>,
+    pool: web::Data<Pool>,
+    broccoli_queue: web::Data<BroccoliQueue>,
+    org_with_sub_and_plan: OrganizationWithSubAndPlan,
+    user: OwnerOnly,
+) -> Result<HttpResponse, ServiceError> {
+    let data = data.into_inner();
+    let dataset_to_clone = data.dataset_to_clone;
+    let create_dataset_payload = CreateDatasetReqPayload::from(data);
+
+    let org_id = org_with_sub_and_plan.organization.id;
+    let organization_sub_plan = get_org_from_id_query(org_id, pool.clone()).await?;
+
+    let unlimited = std::env::var("UNLIMITED").unwrap_or("false".to_string());
+    if unlimited == "false" {
+        let dataset_count = get_org_dataset_count(org_id, pool.clone()).await?;
+        if dataset_count
+            >= organization_sub_plan
+                .plan
+                .unwrap_or_default()
+                .dataset_count()
+        {
+            return Ok(HttpResponse::UpgradeRequired().json(
+                json!({"message": "Your plan must be upgraded to create additional datasets"}),
+            ));
+        }
+    }
+
+    let new_dataset = create_dataset_helper(
+        create_dataset_payload,
+        pool.clone(),
+        org_with_sub_and_plan.clone(),
+        user,
+    )
+    .await?;
+
+    let message = CloneDatasetMessage {
+        dataset_to_clone,
+        new_dataset: new_dataset.id,
+    };
+
+    broccoli_queue
+        .publish("clone_dataset", None, &message, None)
+        .await
+        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    Ok(HttpResponse::Ok().json(new_dataset))
 }
 
 /// Clear Dataset

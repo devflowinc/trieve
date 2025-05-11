@@ -573,6 +573,22 @@ export type ClickhouseTopicAnalyticsSummary = {
     updated_at: string;
 };
 
+export type CloneDatasetRequest = {
+    /**
+     * Name of the dataset.
+     */
+    dataset_name: string;
+    /**
+     * The id of the dataset you want to clone.
+     */
+    dataset_to_clone: string;
+    server_configuration?: ((DatasetConfigurationDTO) | null);
+    /**
+     * Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
+     */
+    tracking_id?: (string) | null;
+};
+
 export type CloneTopicReqPayload = {
     /**
      * The name of the topic. If this is not provided, the topic name is the same as the previous topic
@@ -1928,6 +1944,8 @@ export type FileDTO = {
     metadata?: unknown;
     s3_url: string;
     size: number;
+    tag_set?: Array<(string)> | null;
+    time_stamp?: (string) | null;
     updated_at: string;
 };
 
@@ -5479,6 +5497,19 @@ export type ClearDatasetData = {
 
 export type ClearDatasetResponse = (void);
 
+export type CloneDatasetData = {
+    /**
+     * JSON request payload to clone a dataset
+     */
+    requestBody: CloneDatasetRequest;
+    /**
+     * The organization id to use for the request
+     */
+    trOrganization: string;
+};
+
+export type CloneDatasetResponse = (Dataset);
+
 export type GetEventsData2 = {
     /**
      * JSON request payload to get events for a dataset
@@ -7117,6 +7148,25 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to deleting the dataset
+                 */
+                400: ErrorResponseBody;
+                /**
+                 * Dataset not found
+                 */
+                404: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/dataset/clone': {
+        post: {
+            req: CloneDatasetData;
+            res: {
+                /**
+                 * Dataset cloned successfully
+                 */
+                200: Dataset;
+                /**
+                 * Service error relating to cloning the dataset
                  */
                 400: ErrorResponseBody;
                 /**

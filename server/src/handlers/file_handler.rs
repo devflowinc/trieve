@@ -464,7 +464,7 @@ pub struct CreateFormWithoutFile {
     pub llm_processing: Option<LlmProcessing>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Default)]
 #[schema(example = json!({
     "file_name": "example.pdf",
     "base64_file": "<base64_encoded_file>",
@@ -531,6 +531,73 @@ pub struct UploadFileResponseBody {
     pub file_metadata: File,
 }
 
+pub async fn upload_file_helper(
+    upload_file_data: UploadFileReqPayload,
+    file_data: Vec<u8>,
+    pool: web::Data<Pool>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<uuid::Uuid, ServiceError> {
+    let file_size_sum_pool = pool.clone();
+    let file_size_sum = get_file_size_sum_org(
+        dataset_org_plan_sub.organization.organization.id,
+        file_size_sum_pool,
+    )
+    .await
+    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    if file_size_sum
+        >= dataset_org_plan_sub
+            .clone()
+            .organization
+            .plan
+            .unwrap_or_default()
+            .file_storage()
+    {
+        return Err(ServiceError::BadRequest(
+            "File size limit reached".to_string(),
+        ));
+    }
+
+    let file_id = uuid::Uuid::new_v4();
+
+    let bucket = get_aws_bucket()?;
+
+    if upload_file_data.file_name.clone().ends_with(".pdf") {
+        bucket
+            .put_object_with_content_type(
+                file_id.to_string(),
+                file_data.as_slice(),
+                "application/pdf",
+            )
+            .await
+            .map_err(|e| {
+                log::error!("Could not upload file to S3 {:?}", e);
+                ServiceError::BadRequest("Could not upload file to S3".to_string())
+            })?;
+    } else {
+        bucket
+            .put_object(file_id.to_string(), file_data.as_slice())
+            .await
+            .map_err(|e| {
+                log::error!("Could not upload file to S3 {:?}", e);
+                ServiceError::BadRequest("Could not upload file to S3".to_string())
+            })?;
+    }
+
+    let file_size_mb = (file_data.len() as f64 / 1024.0).ceil() as i64;
+
+    create_file_query(
+        file_id,
+        file_size_mb,
+        upload_file_data.clone(),
+        dataset_org_plan_sub.dataset.id,
+        pool.clone(),
+    )
+    .await?;
+
+    Ok(file_id)
+}
+
 /// Upload File
 ///
 /// Upload a file to S3 bucket attached to your dataset. You can select between a naive chunking strategy where the text is extracted with Apache Tika and split into segments with a target number of segments per chunk OR you can use a vision LLM to convert the file to markdown and create chunks per page. You must specifically use a base64url encoding. Auth'ed user must be an admin or owner of the dataset's organization to upload a file.
@@ -568,25 +635,6 @@ pub async fn upload_file_handler(
         }
     }
 
-    let file_size_sum_pool = pool.clone();
-    let file_size_sum = get_file_size_sum_org(
-        dataset_org_plan_sub.organization.organization.id,
-        file_size_sum_pool,
-    )
-    .await
-    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-    if file_size_sum
-        >= dataset_org_plan_sub
-            .clone()
-            .organization
-            .plan
-            .unwrap_or_default()
-            .file_storage()
-    {
-        return Err(ServiceError::BadRequest("File size limit reached".to_string()).into());
-    }
-
     let upload_file_data = data.into_inner();
 
     let mut cleaned_base64 = upload_file_data
@@ -610,40 +658,11 @@ pub async fn upload_file_handler(
             })?,
     };
 
-    let file_id = uuid::Uuid::new_v4();
-
-    let bucket = get_aws_bucket()?;
-
-    if upload_file_data.file_name.clone().ends_with(".pdf") {
-        bucket
-            .put_object_with_content_type(
-                file_id.to_string(),
-                decoded_file_data.as_slice(),
-                "application/pdf",
-            )
-            .await
-            .map_err(|e| {
-                log::error!("Could not upload file to S3 {:?}", e);
-                ServiceError::BadRequest("Could not upload file to S3".to_string())
-            })?;
-    } else {
-        bucket
-            .put_object(file_id.to_string(), decoded_file_data.as_slice())
-            .await
-            .map_err(|e| {
-                log::error!("Could not upload file to S3 {:?}", e);
-                ServiceError::BadRequest("Could not upload file to S3".to_string())
-            })?;
-    }
-
-    let file_size_mb = (decoded_file_data.len() as f64 / 1024.0).ceil() as i64;
-
-    create_file_query(
-        file_id,
-        file_size_mb,
+    let file_id = upload_file_helper(
         upload_file_data.clone(),
-        dataset_org_plan_sub.dataset.id,
-        pool.clone(),
+        decoded_file_data.clone(),
+        pool,
+        dataset_org_plan_sub.clone(),
     )
     .await?;
 

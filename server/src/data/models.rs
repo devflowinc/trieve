@@ -1758,7 +1758,7 @@ impl From<ChunkMetadata> for ContentChunkMetadata {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, Default)]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "name": "Trieve",
@@ -1889,7 +1889,7 @@ impl ChunkGroup {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Queryable, ToSchema)]
+#[derive(Debug, Default, Serialize, Deserialize, Queryable, ToSchema, Clone)]
 #[schema(example=json!({
     "id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
     "dataset_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3",
@@ -1913,6 +1913,22 @@ pub struct ChunkGroupAndFileId {
     pub updated_at: chrono::NaiveDateTime,
 }
 
+impl From<ChunkGroupAndFileId> for ChunkGroup {
+    fn from(group: ChunkGroupAndFileId) -> Self {
+        ChunkGroup {
+            id: group.id,
+            dataset_id: group.dataset_id,
+            name: group.name,
+            description: group.description,
+            tracking_id: group.tracking_id,
+            tag_set: group.tag_set,
+            metadata: group.metadata,
+            created_at: group.created_at,
+            updated_at: group.updated_at,
+        }
+    }
+}
+
 impl ChunkGroupAndFileId {
     pub fn from_group(group: ChunkGroup, file_id: Option<uuid::Uuid>) -> Self {
         Self {
@@ -1929,13 +1945,13 @@ impl ChunkGroupAndFileId {
         }
     }
 
-    pub fn to_group(&self) -> ChunkGroup {
+    pub fn clone_group(&self, dataset_id: uuid::Uuid) -> ChunkGroup {
         ChunkGroup {
-            id: self.id,
-            dataset_id: self.dataset_id,
+            id: uuid::Uuid::new_v4(),
+            dataset_id,
             name: self.name.clone(),
             description: self.description.clone(),
-            tracking_id: self.tracking_id.clone(),
+            tracking_id: self.tracking_id.clone().or(Some(self.id.to_string())),
             tag_set: self.tag_set.clone(),
             metadata: self.metadata.clone(),
             created_at: self.created_at,
@@ -2201,6 +2217,8 @@ pub struct FileDTO {
     pub s3_url: String,
     pub metadata: Option<serde_json::Value>,
     pub link: Option<String>,
+    pub time_stamp: Option<chrono::NaiveDateTime>,
+    pub tag_set: Option<Vec<String>>,
 }
 
 impl From<File> for FileDTO {
@@ -2214,6 +2232,10 @@ impl From<File> for FileDTO {
             s3_url: "".to_string(),
             metadata: file.metadata,
             link: file.link,
+            time_stamp: file.time_stamp,
+            tag_set: file
+                .tag_set
+                .map(|tags| tags.into_iter().flatten().collect()),
         }
     }
 }
