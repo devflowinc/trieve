@@ -3851,6 +3851,71 @@
         ]
       }
     },
+    "/api/dataset/clone": {
+      "post": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Clone Dataset",
+        "description": "Clones a dataset and creates a new dataset with the same configuration and chunks. The auth'ed user must be an owner of the organization to clone a dataset.",
+        "operationId": "clone_dataset",
+        "parameters": [
+          {
+            "name": "TR-Organization",
+            "in": "header",
+            "description": "The organization id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to clone a dataset",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloneDatasetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Dataset cloned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dataset"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to cloning the dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dataset not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/dataset/events": {
       "post": {
         "tags": [
@@ -9267,6 +9332,74 @@
           }
         }
       },
+      "CloneDatasetRequest": {
+        "type": "object",
+        "required": [
+          "dataset_to_clone",
+          "dataset_name"
+        ],
+        "properties": {
+          "dataset_name": {
+            "type": "string",
+            "description": "Name of the dataset."
+          },
+          "dataset_to_clone": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The id of the dataset you want to clone."
+          },
+          "server_configuration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DatasetConfigurationDTO"
+              }
+            ],
+            "nullable": true
+          },
+          "tracking_id": {
+            "type": "string",
+            "description": "Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.",
+            "nullable": true
+          }
+        },
+        "example": {
+          "dataset_name": "My Dataset",
+          "dataset_to_clone": "00000000-0000-0000-0000-000000000000",
+          "organization_id": "00000000-0000-0000-0000-000000000000",
+          "server_configuration": {
+            "AIMON_RERANKER_TASK_DEFINITION": "Your task is to grade the relevance of context document(s) against the specified user query.",
+            "BM25_AVG_LEN": 256.0,
+            "BM25_B": 0.75,
+            "BM25_ENABLED": true,
+            "BM25_K": 0.75,
+            "DISTANCE_METRIC": "cosine",
+            "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+            "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
+            "EMBEDDING_QUERY_PREFIX": "",
+            "EMBEDDING_SIZE": 1536,
+            "FREQUENCY_PENALTY": 0.0,
+            "FULLTEXT_ENABLED": true,
+            "INDEXED_ONLY": false,
+            "LLM_BASE_URL": "https://api.openai.com/v1",
+            "LLM_DEFAULT_MODEL": "gpt-3.5-turbo-1106",
+            "LOCKED": false,
+            "MAX_LIMIT": 10000,
+            "MESSAGE_TO_QUERY_PROMPT": "Write a 1-2 sentence semantic search query along the lines of a hypothetical response to: \n\n",
+            "N_RETRIEVALS_TO_INCLUDE": 8,
+            "PRESENCE_PENALTY": 0.0,
+            "QDRANT_ONLY": false,
+            "RAG_PROMPT": "Use the following retrieved documents to respond briefly and accurately:",
+            "SEMANTIC_ENABLED": true,
+            "STOP_TOKENS": [
+              "\n\n",
+              "\n"
+            ],
+            "SYSTEM_PROMPT": "You are a helpful assistant",
+            "TEMPERATURE": 0.5,
+            "USE_MESSAGE_TO_QUERY_PROMPT": false
+          }
+        }
+      },
       "CloneTopicReqPayload": {
         "type": "object",
         "required": [
@@ -12765,6 +12898,18 @@
           "size": {
             "type": "integer",
             "format": "int64"
+          },
+          "tag_set": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "time_stamp": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           },
           "updated_at": {
             "type": "string",

@@ -127,7 +127,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             },
             {
-                move |msg| async move {
+                move |msg, _| async move {
                     log::info!("Uploaded file: {:?}", msg.payload.file_id);
 
                     Ok(())

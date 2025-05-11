@@ -135,7 +135,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             {
                 let web_pool = web_pool.clone();
                 let redis_pool = redis_pool.clone();
-                move |msg: BrokerMessage<BulkUploadIngestionMessage>| {
+                move |msg: BrokerMessage<BulkUploadIngestionMessage>, _| {
                     let web_pool = web_pool.clone();
                     let redis_pool = redis_pool.clone();
                     let event_queue = web_event_queue.clone();

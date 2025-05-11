@@ -21,7 +21,7 @@ use trieve_server::{
     },
 };
 use trieve_server::{
-    data::models::{CrawlRequest, CrawlShopifyOptions, RedisPool, ScrapeOptions},
+    data::models::{CrawlRequest, CrawlShopifyOptions, ScrapeOptions},
     operators::crawl_operator::{get_crawl_from_firecrawl, Status},
 };
 use trieve_server::{
@@ -1170,75 +1170,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             )
         })
         .await?;
-
-    Ok(())
-}
-
-pub async fn readd_error_to_queue(
-    mut payload: CrawlRequest,
-    error: ServiceError,
-    redis_pool: actix_web::web::Data<RedisPool>,
-) -> Result<(), ServiceError> {
-    let old_payload_message = serde_json::to_string(&payload).map_err(|_| {
-        ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
-    })?;
-
-    payload.attempt_number += 1;
-
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-    let _ = redis::cmd("LREM")
-        .arg("scrape_processing")
-        .arg(1)
-        .arg(old_payload_message.clone())
-        .query_async::<redis::aio::MultiplexedConnection, usize>(&mut *redis_conn)
-        .await;
-
-    if payload.attempt_number == 3 {
-        log::error!("Failed to insert data 3 times quitting {:?}", error);
-
-        let mut redis_conn = redis_pool
-            .get()
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-        redis::cmd("lpush")
-            .arg("dead_letters_scrape")
-            .arg(old_payload_message)
-            .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
-            .await
-            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-        return Err(ServiceError::InternalServerError(format!(
-            "Failed to create new qdrant point: {:?}",
-            error
-        )));
-    }
-
-    let new_payload_message = serde_json::to_string(&payload).map_err(|_| {
-        ServiceError::InternalServerError("Failed to reserialize input for retry".to_string())
-    })?;
-
-    let mut redis_conn = redis_pool
-        .get()
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
-    log::error!(
-        "Failed to insert data, re-adding {:?} retry: {:?}",
-        error,
-        payload.attempt_number
-    );
-
-    redis::cmd("lpush")
-        .arg("scrape_queue")
-        .arg(&new_payload_message)
-        .query_async::<redis::aio::MultiplexedConnection, ()>(&mut *redis_conn)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
 
     Ok(())
 }

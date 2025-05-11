@@ -12,7 +12,11 @@ import {
   createMemo,
 } from "solid-js";
 import { useDatasetPages } from "../hooks/useDatasetPages";
-import { AiFillCaretLeft, AiFillCaretRight } from "solid-icons/ai";
+import {
+  AiFillCaretLeft,
+  AiFillCaretRight,
+  AiOutlineCopy,
+} from "solid-icons/ai";
 import NewDatasetModal from "./NewDatasetModal";
 import { UserContext } from "../contexts/UserContext";
 import { MagicSuspense } from "./MagicBox";
@@ -91,15 +95,13 @@ export const DatasetOverview = () => {
       createToast({
         title: "Updated",
         type: "success",
-        message: `Successfully updated chunk count: ${countDifference} chunk${
-          Math.abs(countDifference) === 1 ? " has" : "s have"
-        } been ${
-          countDifference > 0
+        message: `Successfully updated chunk count: ${countDifference} chunk${Math.abs(countDifference) === 1 ? " has" : "s have"
+          } been ${countDifference > 0
             ? "added"
             : countDifference < 0
               ? "removed"
               : "added or removed"
-        } since last update.`,
+          } since last update.`,
         timeout: 3000,
       });
     } catch (_) {
@@ -180,6 +182,44 @@ export const DatasetOverview = () => {
       });
   };
 
+  const cloneDataset = async (datasetId: string) => {
+    const confirmBox = confirm(
+      "This will clone the dataset and all of its chunks, groups, and files. \n\nProceed?",
+    );
+    if (!confirmBox) return;
+
+    await fetch(`${apiHost}/dataset/clone`, {
+      method: "POST",
+      body: JSON.stringify({
+        dataset_to_clone: datasetId,
+        dataset_name:
+          datasets().find((dataset) => dataset.dataset.id === datasetId)
+            ?.dataset.name + " (Clone)",
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        "TR-Dataset": datasetId,
+      },
+      credentials: "include",
+    })
+      .then(() => {
+        createToast({
+          title: "Success",
+          message: "Dataset cloned successfully!",
+          type: "success",
+        });
+
+        void refetchDatasets();
+      })
+      .catch(() => {
+        createToast({
+          title: "Error",
+          message: "Error cloning dataset!",
+          type: "error",
+        });
+      });
+  };
+
   const currentUserRole = createMemo(() => {
     return (
       userContext.user().user_orgs.find((val) => {
@@ -250,13 +290,13 @@ export const DatasetOverview = () => {
             <Show when={currentUserRole() === 2}>
               <div class="justify-left flex content-center gap-2">
                 <button
-                  class="flex items-center gap-1 text-lg text-red-500 opacity-70 hover:text-red-800"
+                  class="flex items-center gap-1 text-lg opacity-70 hover:text-fuchsia-500"
                   onClick={(e) => {
                     e.stopPropagation();
-                    void deleteDataset(datasetId);
+                    void cloneDataset(datasetId);
                   }}
                 >
-                  <AiOutlineDelete />
+                  <AiOutlineCopy />
                 </button>
                 <button
                   class="flex items-center gap-1 text-lg opacity-70 hover:text-fuchsia-500"
@@ -266,6 +306,15 @@ export const DatasetOverview = () => {
                   }}
                 >
                   <AiOutlineClear />
+                </button>
+                <button
+                  class="flex items-center gap-1 text-lg text-red-500 opacity-70 hover:text-red-800"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void deleteDataset(datasetId);
+                  }}
+                >
+                  <AiOutlineDelete />
                 </button>
               </div>
             </Show>

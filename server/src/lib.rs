@@ -257,6 +257,7 @@ impl Modify for SecurityAddon {
         handlers::dataset_handler::create_pagefind_index_for_dataset,
         handlers::dataset_handler::get_pagefind_index_for_dataset,
         handlers::dataset_handler::clear_dataset,
+        handlers::dataset_handler::clone_dataset,
         handlers::payment_handler::direct_to_payment_link,
         handlers::payment_handler::cancel_subscription,
         handlers::payment_handler::update_subscription_plan,
@@ -465,6 +466,7 @@ impl Modify for SecurityAddon {
             handlers::shopify_handler::ShopifyCustomerEvent,
             handlers::payment_handler::ShopifyPlanChangePayload,
             handlers::payment_handler::ShopifyPlan,
+            handlers::dataset_handler::CloneDatasetRequest,
             data::models::UserApiKey,
             data::models::CrawlStatus,
             data::models::CrawlType,
@@ -1022,6 +1024,7 @@ pub fn main() -> std::io::Result<()> {
                                     web::resource("/events")
                                         .route(web::post().to(handlers::event_handler::get_events)),
                                 )
+                                .route("/clone", web::post().to(handlers::dataset_handler::clone_dataset))
                                 .route("/scroll_files", web::get().to(handlers::file_handler::get_files_cursor_handler))
                                 .service(
                                     web::resource("/{dataset_id}")

@@ -322,7 +322,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             },
             {
                 let event_queue = event_queue.clone();
-                move |msg| {
+                move |msg, _| {
                     let event_queue = event_queue.clone();
                     async move {
                         match msg.payload {

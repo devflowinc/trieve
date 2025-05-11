@@ -539,7 +539,7 @@ pub async fn create_chunk_bookmark_query(
     Ok(qdrant_point_id)
 }
 
-pub async fn get_bookmarks_for_group_query(
+pub async fn get_chunks_for_group_query(
     group_id: UnifiedId,
     page: u64,
     limit: Option<u64>,

@@ -98,7 +98,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             },
             {
                 let event_queue = event_queue.clone();
-                move |msg| {
+                move |msg, _| {
                     let value = event_queue.clone();
                     async move {
                         log::info!("Updated chunk: {:?}", msg.payload.chunk_metadata.id);

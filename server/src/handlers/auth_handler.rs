@@ -71,7 +71,7 @@ pub struct OrganizationRole {
     pub role: UserRole,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AdminOnly(pub SlimUser);
 
 impl FromRequest for AdminOnly {

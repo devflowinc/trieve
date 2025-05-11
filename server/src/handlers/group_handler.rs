@@ -785,14 +785,14 @@ pub async fn update_chunk_group(
             .collect::<Vec<Option<String>>>()
     });
 
-    let group = if let Some(group_id) = group_id {
+    let group: ChunkGroup = if let Some(group_id) = group_id {
         dataset_owns_group(
             UnifiedId::TrieveUuid(group_id),
             dataset_org_plan_sub.dataset.id,
             pool.clone(),
         )
         .await?
-        .to_group()
+        .into()
     } else if let Some(tracking_id) = data.tracking_id.clone() {
         dataset_owns_group(
             UnifiedId::TrackingId(tracking_id),
@@ -800,7 +800,7 @@ pub async fn update_chunk_group(
             pool.clone(),
         )
         .await?
-        .to_group()
+        .into()
     } else {
         return Err(ServiceError::BadRequest("No group id or tracking id provided".into()).into());
     };
@@ -1024,7 +1024,7 @@ pub async fn get_chunks_in_group(
     let limit = group_data.limit.unwrap_or(10);
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
-    let bookmarks = get_bookmarks_for_group_query(
+    let chunks = get_chunks_for_group_query(
         UnifiedId::TrieveUuid(group_data.group_id),
         page,
         Some(limit),
@@ -1034,8 +1034,8 @@ pub async fn get_chunks_in_group(
     .await?;
 
     let response = match api_version {
-        APIVersion::V1 => GetChunksInGroupResponse::V1(bookmarks),
-        APIVersion::V2 => GetChunksInGroupResponse::V2(bookmarks.into()),
+        APIVersion::V1 => GetChunksInGroupResponse::V1(chunks),
+        APIVersion::V2 => GetChunksInGroupResponse::V2(chunks.into()),
     };
 
     Ok(HttpResponse::Ok().json(response))
@@ -1081,7 +1081,7 @@ pub async fn get_chunks_in_group_by_tracking_id(
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let bookmarks = {
-        get_bookmarks_for_group_query(
+        get_chunks_for_group_query(
             UnifiedId::TrackingId(path_data.tracking_id.clone()),
             page,
             None,
