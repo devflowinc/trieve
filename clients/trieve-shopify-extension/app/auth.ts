@@ -125,13 +125,12 @@ export const validateTrieveAuth = async <S extends boolean = true>(
       console.error(e);
       throw e;
     });
-
     const userCredentials =
       (await userCredentialsResponse.json()) as CreateApiUserResponse;
 
     if (!userCredentials.api_key) {
       console.error(
-        "SHopify secret key is not set",
+        "Shopify secret key is not set",
         process.env.SHOPIFY_SECRET_KEY,
       );
       throw new Error(

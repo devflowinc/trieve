@@ -85,7 +85,6 @@ export const useChunkExtraContent = (productId: string | undefined) => {
       chunk_html: content,
       tracking_id: `${productId}-pdp-content`,
       upsert_by_tracking_id: true,
-      weight: 100,
       group_tracking_ids: [productId],
     });
     setLoading(false);
