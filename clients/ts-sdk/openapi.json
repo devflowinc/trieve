@@ -13640,6 +13640,15 @@
           "image_url": {
             "type": "string",
             "description": "Image URL to attach to the message to generate the parameters for the tool function.",
+            "deprecated": true,
+            "nullable": true
+          },
+          "image_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Image URLs to attach to the message to generate the parameters for the tool function.",
             "nullable": true
           },
           "model": {
