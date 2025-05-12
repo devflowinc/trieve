@@ -299,6 +299,7 @@ impl Modify for SecurityAddon {
             handlers::message_handler::EditMessageReqPayload,
             handlers::message_handler::SuggestedQueriesReqPayload,
             handlers::message_handler::SuggestedQueriesResponse,
+            handlers::message_handler::StringOrVec,
             handlers::message_handler::ToolFunctionParameterType,
             handlers::message_handler::ToolFunctionParameter,
             handlers::message_handler::ToolFunction,
