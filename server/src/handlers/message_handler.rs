@@ -869,6 +869,20 @@ pub async fn get_suggested_queries(
     Ok(HttpResponse::Ok().json(SuggestedQueriesResponse { queries }))
 }
 
+#[derive(Deserialize, Serialize, Debug, ToSchema, Clone)]
+/// Enum allowing for a single URL or a list of URLs
+#[schema(example = "https://example.com/jacket.jpg")]
+pub enum StringOrVec {
+    /// A single URL of an image
+    #[serde(rename = "string")]
+    #[schema(title = "string")]
+    String(String),
+    /// A list of URLs of images
+    #[serde(rename = "string[]")]
+    #[schema(title = "string[]")]
+    Vec(Vec<String>),
+}
+
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 /// Type of a given parameter for a LLM tool call
 pub enum ToolFunctionParameterType {
@@ -947,7 +961,7 @@ pub struct GetToolFunctionParamsReqPayload {
     /// Text of the user's message to the assistant which will be used to generate the parameters for the tool function.
     pub user_message_text: Option<String>,
     /// Image URL to attach to the message to generate the parameters for the tool function.
-    pub image_url: Option<String>,
+    pub image_url: Option<StringOrVec>,
     /// The base64 encoded audio input of the user message to attach to the topic and then generate an assistant message in response to.
     pub audio_input: Option<String>,
     /// Function to get the parameters for.
@@ -1038,17 +1052,35 @@ pub async fn get_tool_function_params(
             r#type: "text".to_string(),
             text: message_content.clone(),
         })];
-    if let Some(image_url) = data.image_url.clone() {
-        message_content_parts.insert(
-            0,
-            ChatMessageContentPart::Image(ChatMessageImageContentPart {
-                r#type: "image_url".to_string(),
-                image_url: ImageUrlType {
-                    url: image_url,
-                    detail: None,
-                },
-            }),
-        );
+    if let Some(image_url_or_uls) = data.image_url.clone() {
+        match image_url_or_uls {
+            StringOrVec::String(image_url) => {
+                message_content_parts.insert(
+                    0,
+                    ChatMessageContentPart::Image(ChatMessageImageContentPart {
+                        r#type: "image_url".to_string(),
+                        image_url: ImageUrlType {
+                            url: image_url,
+                            detail: None,
+                        },
+                    }),
+                );
+            }
+            StringOrVec::Vec(image_urls) => {
+                for image_url in image_urls.iter() {
+                    message_content_parts.insert(
+                        0,
+                        ChatMessageContentPart::Image(ChatMessageImageContentPart {
+                            r#type: "image_url".to_string(),
+                            image_url: ImageUrlType {
+                                url: image_url.clone(),
+                                detail: None,
+                            },
+                        }),
+                    );
+                }
+            }
+        }
     }
 
     let client = Client {
