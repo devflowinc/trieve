@@ -1,7 +1,9 @@
 import { useSubmit } from "@remix-run/react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import {
+  Badge,
   BlockStack,
+  Box,
   Button,
   Card,
   FormLayout,
@@ -10,9 +12,12 @@ import {
   Select,
   Text,
   TextField,
+  useBreakpoints,
 } from "@shopify/polaris";
-import { CheckCircleIcon } from "@shopify/polaris-icons";
-import { useEffect, useState } from "react";
+import { CheckCircleIcon, InfoIcon } from "@shopify/polaris-icons";
+import { useClientAdminApi } from "app/loaders/clientLoader";
+import { setAppMetafields } from "app/queries/metafield";
+import { useCallback, useEffect, useState } from "react";
 import { CrawlOptions, Dataset, DatasetConfigurationDTO } from "trieve-ts-sdk";
 
 export type ExtendedCrawlOptions = Omit<CrawlOptions, "webhook_metadata"> & {
@@ -68,13 +73,18 @@ export const defaultServerEnvsConfiguration: DatasetConfig = {
   BM25_AVG_LEN: 256,
 };
 
+export interface ShopifyDatasetSettings {
+  webPixelInstalled: boolean;
+  devMode: boolean;
+}
+
 export const DatasetSettings = ({
   initalCrawlOptions,
-  webPixelInstalled,
+  shopifyDatasetSettings,
   shopDataset,
 }: {
   initalCrawlOptions: ExtendedCrawlOptions;
-  webPixelInstalled: boolean;
+  shopifyDatasetSettings: ShopifyDatasetSettings;
   shopDataset: Dataset;
 }) => {
   const [unsavedCrawlOptions, setUnsavedCrawlOptions] =
@@ -84,6 +94,30 @@ export const DatasetSettings = ({
   const [datasetSettings, setDatasetSettings] = useState<DatasetConfig>(
     shopDataset.server_configuration ?? ({} as DatasetConfig),
   );
+
+  const adminApi = useClientAdminApi();
+
+
+  const [devModeEnabled, setDevModeEnabled] = useState(
+    shopifyDatasetSettings.devMode ?? false,
+  );
+
+
+  const handleToggle = useCallback(
+    () =>{ 
+      setDevModeEnabled((enabled) => {
+        setAppMetafields(adminApi, [
+          {
+            key: "dev_mode",
+            value: (!enabled).toString(),
+            type: "boolean",
+          },
+        ]);
+        return !enabled
+      })
+    },
+    [devModeEnabled],
+  )
 
   useEffect(() => {
     // Quickly set the nonnegotiable options for shopify to work
@@ -206,7 +240,7 @@ export const DatasetSettings = ({
           <FormLayout>
             <BlockStack gap="200">
               <div className="max-w-fit">
-                {webPixelInstalled ? (
+                {shopifyDatasetSettings.webPixelInstalled ? (
                   <Button
                     disabled
                     fullWidth={false}
@@ -309,6 +343,76 @@ export const DatasetSettings = ({
           <InlineStack align="end">
             <Button onClick={onLLMSettingsSave}>Save</Button>
           </InlineStack>
+        </BlockStack>
+      </Card>
+      <Card>
+        <BlockStack gap="200">
+          <Text variant="headingLg" as="h1">
+            Advanced Settings
+          </Text>
+
+          <FormLayout>
+            <BlockStack>
+              <Box width="100%">
+                <BlockStack>
+                  <Box width="100%">
+                    <InlineStack
+                      gap="1200"
+                      align="space-between"
+                      blockAlign="start"
+                      wrap={false}
+                    >
+                      <InlineStack gap="200" wrap={false}>
+                        <InlineStack
+                          gap="200"
+                          align="start"
+                          blockAlign="baseline"
+                        >
+                          <label>
+                            <Text variant="headingMd" as="h6">
+                              Dev Mode
+                            </Text>
+                          </label>
+                          <InlineStack
+                            gap="200"
+                            align="center"
+                            blockAlign="center"
+                          >
+                            <Badge
+                              tone={devModeEnabled ? "success" : undefined}
+                              toneAndProgressLabelOverride={`Setting is ${devModeEnabled ? "success" : undefined}`}
+                            >
+                              {devModeEnabled ? "On" : "Off"}
+                            </Badge>
+                          </InlineStack>
+                        </InlineStack>
+                      </InlineStack>
+                      <Box minWidth="fit-content">
+                        <InlineStack align="end">
+                          <Button
+                            role="switch"
+                            ariaChecked={devModeEnabled ? "true" : "false"}
+                            onClick={handleToggle}
+                            size="slim"
+                          >
+                            {devModeEnabled ? "Turn off" : "Turn on"}
+                          </Button>
+                        </InlineStack>
+                      </Box>
+                    </InlineStack>
+                  </Box>
+                  <BlockStack gap="400">
+                    <Text variant="bodyMd" as="p" tone="subdued">
+                      Enables dev mode for the shop embeds. This points the
+                      extension at the local dev server instead of the
+                      production server. This is useful for testing and
+                      debugging.{" "}
+                    </Text>
+                  </BlockStack>
+                </BlockStack>
+              </Box>
+            </BlockStack>
+          </FormLayout>
         </BlockStack>
       </Card>
     </BlockStack>

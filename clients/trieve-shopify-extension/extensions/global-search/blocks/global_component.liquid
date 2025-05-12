@@ -2,8 +2,20 @@
   {{ block.settings.custom_css }}
 </style>
 
-<script type="module">
-  import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
+{% assign dev_mode = app.metafields.dev_mode | json %}
+
+<script
+  type="module"
+>
+  {% if dev_mode == 'true' %}
+    import { renderToDiv } from "http://localhost:8000/dist/vanilla/index.js";
+    let cssRelease = "local";
+  {% else %}
+    import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';   
+    let cssRelease = "beta";
+  {% endif %}
+
+
   import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
 
   const root = document.createElement('div');
@@ -17,7 +29,6 @@
   } else {
     defaultAiQuestions = null;
   }
-
   const currency = {{ shop.currency | json }};
   const currencySymbol = (currency) =>
     new Intl.NumberFormat("en-US", { style: 'currency', currency })
@@ -39,7 +50,7 @@
     renderToDiv(root, {
       type: "ecommerce",
       baseUrl: "https://api.trieve.ai",
-      cssRelease: "beta",
+      cssRelease: cssRelease,
       useGroupSearch: true,
       hideOpenButton: true,
       defaultSearchMode: "chat",
@@ -104,7 +115,7 @@
       showFloatingSearchIcon: toBool(getValue("{{ block.settings.show_floating_search_icon }}", true)),
       floatingSearchIconPosition: getValue("{{ block.settings.floating_icon_pos }}", "left"),
       allowSwitchingModes: false,
-      hidePrice: !toBool(getValue("{{ block.settings.display_price }}", true)), 
+      hidePrice: !toBool(getValue("{{ block.settings.display_price }}", true)),
       hideChunkHtml: !toBool(getValue("{{ block.settings.display_description }}", true)),
     });
   }

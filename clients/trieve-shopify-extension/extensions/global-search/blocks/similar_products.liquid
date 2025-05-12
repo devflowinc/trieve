@@ -1,8 +1,14 @@
-<div class="trieve-recommendations">
-</div>
+<div class="trieve-recommendations"></div>
 
+{% assign dev_mode = app.metafields.dev_mode | json %}
 <script type="module">
-  import {renderRecommendationsToDiv} from 'https://unpkg.com/trieve-search-component@0.4.24/dist/vanilla/index.js';
+  {% if dev_mode == 'true' %}
+    import { renderRecommendationsToDiv } from "http://localhost:8000/dist/vanilla/index.js";
+    let cssRelease = "local";
+  {% else %}
+    import {renderRecommendationsToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
+    let cssRelease = "beta";
+  {% endif %}
 
   const inlineRoot = document.querySelector(".trieve-recommendations");
 
@@ -47,7 +53,7 @@
   if (shouldShow) {
     renderRecommendationsToDiv(inlineRoot, {
       apiKey: getValue("{{ app.metafields.trieve.api_key }}", ""),
-      cssRelease: "beta",
+      cssRelease: cssRelease,
       datasetId: getValue("{{ app.metafields.trieve.dataset_id }}", ""),
       baseUrl: getValue("{{ block.settings.base_url }}", "https://api.trieve.ai"),
       productId: getValue("{{ product.id }}", ""),
@@ -58,9 +64,7 @@
       theme: theme,
     });
   }
-
 </script>
-
 
 {% comment %}
   see more about the schema section here. https://shopify.dev/docs/storefronts/themes/architecture/sections/section-schema#schema
@@ -83,8 +87,8 @@
       "id": "orientation",
       "label": "Orientation",
       "options": [
-        {"label": "Horizontal", "value": "horizontal"},
-        {"label": "Vertical", "value": "vertical"}
+        { "label": "Horizontal", "value": "horizontal" },
+        { "label": "Vertical", "value": "vertical" }
       ],
       "default": "horizontal"
     },
@@ -122,8 +126,8 @@
       "id": "theme_mode",
       "label": "Mode",
       "options": [
-        {"label": "Light", "value": "light"},
-        {"label": "Dark", "value": "dark"}
+        { "label": "Light", "value": "light" },
+        { "label": "Dark", "value": "dark" }
       ],
       "default": "light"
     },
@@ -132,10 +136,10 @@
       "id": "theme_rounded",
       "label": "Theme Rounded",
       "options": [
-        {"label": "Small", "value": "sm"},
-        {"label": "Medium", "value": "md"},
-        {"label": "Large", "value": "lg"},
-        {"label": "None", "value": "none"}
+        { "label": "Small", "value": "sm" },
+        { "label": "Medium", "value": "md" },
+        { "label": "Large", "value": "lg" },
+        { "label": "None", "value": "none" }
       ],
       "default": "md"
     },
@@ -149,10 +153,10 @@
       "id": "theme_padding",
       "label": "Padding",
       "options": [
-        {"label": "Small", "value": "sm"},
-        {"label": "Medium", "value": "md"},
-        {"label": "Large", "value": "lg"},
-        {"label": "Extra Large", "value": "xl"}
+        { "label": "Small", "value": "sm" },
+        { "label": "Medium", "value": "md" },
+        { "label": "Large", "value": "lg" },
+        { "label": "Extra Large", "value": "xl" }
       ],
       "default": "md"
     },
@@ -161,10 +165,10 @@
       "id": "theme_shadow",
       "label": "Shadow",
       "options": [
-        {"label": "Small", "value": "sm"},
-        {"label": "Medium", "value": "md"},
-        {"label": "Large", "value": "lg"},
-        {"label": "None", "value": "none"}
+        { "label": "Small", "value": "sm" },
+        { "label": "Medium", "value": "md" },
+        { "label": "Large", "value": "lg" },
+        { "label": "None", "value": "none" }
       ],
       "default": "md"
     },

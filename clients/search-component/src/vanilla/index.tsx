@@ -13,6 +13,14 @@ export function renderToDiv(element: HTMLElement, props: ModalProps) {
       case "none": {
         break;
       }
+      case "local": {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = "http://localhost:8000/dist/index.css";
+        document.head.appendChild(link);
+        console.log("local css");
+        break;
+      }
       case "stable": {
         const link = document.createElement("link");
         link.rel = "stylesheet";
@@ -45,6 +53,13 @@ export function renderRecommendationsToDiv(
   if (props.cssRelease) {
     switch (props.cssRelease) {
       case "none": {
+        break;
+      }
+      case "local": {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = "http://localhost:8000/dist/recommendations.css";
+        document.head.appendChild(link);
         break;
       }
       case "stable": {
