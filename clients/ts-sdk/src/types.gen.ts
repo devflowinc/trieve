@@ -2233,8 +2233,13 @@ export type GetToolFunctionParamsReqPayload = {
     audio_input?: (string) | null;
     /**
      * Image URL to attach to the message to generate the parameters for the tool function.
+     * @deprecated
      */
     image_url?: (string) | null;
+    /**
+     * Image URLs to attach to the message to generate the parameters for the tool function.
+     */
+    image_urls?: Array<(string)> | null;
     /**
      * Model name to use for the completion. If not specified, this defaults to the dataset's model.
      */
