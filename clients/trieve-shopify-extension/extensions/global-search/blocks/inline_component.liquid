@@ -4,10 +4,18 @@
 
 <div class="trieve-inline-root"></div>
 
+{% assign dev_mode = app.metafields.dev_mode | json %}
 <script
   type="module"
 >
-  import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
+  {% if dev_mode == 'true' %}
+    import { renderToDiv } from "http://localhost:8000/dist/vanilla/index.js";
+    let cssRelease = "local";
+  {% else %}
+    import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';   
+    let cssRelease = "beta";
+  {% endif %}
+
   import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
 
   const inlineRoot = document.querySelector(".trieve-inline-root");
@@ -51,7 +59,7 @@
     renderToDiv(inlineRoot, {
       type: "ecommerce",
       baseUrl: "https://api.trieve.ai",
-      cssRelease: "beta",
+      cssRelease: cssRelease,
       useGroupSearch: false,
       hideOpenButton: true,
       defaultSearchMode: "chat",

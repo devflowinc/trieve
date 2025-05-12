@@ -18,101 +18,15 @@ import { AppInstallData } from "./app.setup";
 import { ResetSettings } from "app/components/ResetSettings";
 import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
 import { JudgeMeSetup } from "app/components/judgeme/JudgeMeSetup";
+import { getAppMetafields, setAppMetafields } from "app/queries/metafield";
 
-const setAppMetafields = async (
-  adminApi: AdminApiCaller,
-  valuesToSet: {
-    key: string;
-    value: string;
-  }[],
-) => {
-  const response = await adminApi<AppInstallData>(`
-      #graphql
-      query {
-        currentAppInstallation {
-          id
-        }
-      }
-      `);
-
-  if (response.error) {
-    throw response.error;
-  }
-
-  const appId = response.data;
-
-  await adminApi(
-    `#graphql
-    mutation CreateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafieldsSetInput) {
-          metafields {
-            id
-            namespace
-            key
-          }
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `,
-    {
-      variables: {
-        metafieldsSetInput: valuesToSet.map((value) => ({
-          namespace: "trieve",
-          key: value.key,
-          value: value.value,
-          type: "single_line_text_field",
-          ownerId: appId.currentAppInstallation.id,
-        })),
-      },
-    },
-  );
-};
-
-type Metafields = {
-  currentAppInstallation: {
-    metafields: {
-      nodes: {
-        id: string;
-        namespace: string;
-        key: string;
-        value: string;
-      }[];
-    };
-  };
-};
-
-const getAppMetafields = async (adminApi: AdminApiCaller) => {
-  const response = await adminApi<Metafields>(`
-    #graphql
-    query {
-      currentAppInstallation {
-        metafields(first: 10) {
-          nodes {
-            id
-            namespace
-            key
-            value
-          }
-        }
-      }
-    }
-    `);
-
-  if (response.error) {
-    throw response.error;
-  }
-
-  return response.data.currentAppInstallation.metafields.nodes;
-};
 
 export const loader = async ({
   request,
 }: LoaderFunctionArgs): Promise<{
   crawlSettings: ExtendedCrawlOptions | undefined;
   webPixelInstalled: boolean;
+  devMode: boolean;
 }> => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
@@ -125,10 +39,12 @@ export const loader = async ({
     {
       key: "dataset_id",
       value: key.currentDatasetId || "",
+      type:"single_line_text_field"
     },
     {
       key: "api_key",
       value: key.key,
+      type:"single_line_text_field"
     },
   ]).catch(console.error);
 
@@ -143,11 +59,14 @@ export const loader = async ({
 
   const webPixelInstalled = await isWebPixelInstalled(fetcher, key);
 
+  const devMode = await getAppMetafields<boolean>(fetcher, "dev_mode");
+
   return {
     crawlSettings: crawlSettings?.crawlSettings,
     webPixelInstalled,
+    devMode,
   };
-};
+}
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -188,10 +107,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       {
         key: "dataset_id",
         value: key.currentDatasetId || "",
+        type:"single_line_text_field"
       },
       {
         key: "api_key",
         value: key.key,
+        type:"single_line_text_field"
       },
     ]).catch(console.error);
 
@@ -216,13 +137,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Dataset() {
   const { trieve } = useTrieve();
   const { data: shopDataset } = useSuspenseQuery(shopDatasetQuery(trieve));
-  const { crawlSettings, webPixelInstalled } = useLoaderData<typeof loader>();
+  const { crawlSettings, webPixelInstalled, devMode } = useLoaderData<typeof loader>();
 
   return (
     <Box paddingBlockStart="400">
       <DatasetSettings
         initalCrawlOptions={crawlSettings as ExtendedCrawlOptions}
-        webPixelInstalled={webPixelInstalled}
+        shopifyDatasetSettings={{
+          devMode,
+          webPixelInstalled,
+        }}
         shopDataset={shopDataset as Dataset}
       />
       <div className="h-4"></div>
