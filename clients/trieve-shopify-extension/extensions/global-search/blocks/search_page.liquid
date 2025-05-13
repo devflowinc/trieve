@@ -2,6 +2,8 @@
   {{ block.settings.custom_css }}
 </style>
 
+<div class="trieve-inline-root"></div>
+
 {% assign dev_mode = app.metafields.trieve.dev_mode %}
 <script
   type="module"
@@ -10,23 +12,31 @@
     import { renderToDiv } from "http://localhost:8000/dist/vanilla/index.js";
     let cssRelease = "local";
   {% else %}
-    import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';
+    import {renderToDiv} from 'https://cdn.trieve.ai/beta/search-component/vanilla/index.js';   
     let cssRelease = "beta";
   {% endif %}
 
-
   import {addToCart, checkCartQuantity} from '{{'cart-manager.js' | asset_url}}';
 
-  const root = document.createElement('div');
-  root.id = "trieve-global-root";
-  document.body.appendChild(root);
-
+  const inlineRoot = document.querySelector(".trieve-inline-root");
   const appMetafieldTrieve = {{ app.metafields.trieve | json }};
+  const blockSettings = {{ block.settings | json }};
+  const productId = {{ product.id | json }};
+  const productTitle = {{ product.title | json }};
+  const productMetafieldsTrieve = {{ app.metafields.trieve | json }}[`trievePDPQuestions-${productId}`];
+  let trievePDPQuestions = null;
+  if (productMetafieldsTrieve) {
+    trievePDPQuestions = productMetafieldsTrieve;
+  }
+
   let defaultAiQuestions = {{ block.settings.default_ai_questions | json }};
   if (defaultAiQuestions && typeof defaultAiQuestions === "string") {
     defaultAiQuestions = defaultAiQuestions.split(",").map((question) => question.trim());
   } else {
     defaultAiQuestions = null;
+  }
+  if (trievePDPQuestions && trievePDPQuestions.length > 0) {
+    defaultAiQuestions = trievePDPQuestions.map((question) => question.text);
   }
   const currency = {{ shop.currency | json }};
   const currencySymbol = (currency) =>
@@ -44,24 +54,24 @@
   };
 
   if (!appMetafieldTrieve.dataset_id || !appMetafieldTrieve.api_key) {
-    console.error("Trieve: Cannot render global Trieve comopnent due to missing dataset_id or api_key in the app metafields");
+    console.error("Trieve: Cannot render inline Trieve comopnent due to missing dataset_id or api_key in the app metafields");
   } else {
-    renderToDiv(root, {
+    renderToDiv(inlineRoot, {
       type: "ecommerce",
       baseUrl: "https://api.trieve.ai",
       cssRelease: cssRelease,
-      useGroupSearch: true,
+      useGroupSearch: false,
       hideOpenButton: true,
-      defaultSearchMode: "chat",
+      defaultSearchMode: "search",
       apiKey: appMetafieldTrieve.api_key,
       datasetId: appMetafieldTrieve.dataset_id,
       zIndex: Number(getValue(appMetafieldTrieve.z_index, 2147483645)),
       defaultAiQuestions,
-      brandColor: getValue("{{ block.settings.brand_color }}", ""),
+      brandColor: getValue("{{ block.settings.brand_color }}", "#ff0000"),
       brandLogoImgSrcUrl: getValue("{{ block.settings.brand_logo_img_src_url }}", undefined),
       chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask anything..."),
-      allowRefreshSuggestedQueries: toBool(getValue("{{ block.settings.show_sugestions_refresh }}", true)),
       suggestedQueries: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
+      allowRefreshSuggestedQueries: toBool(getValue("{{ block.settings.show_sugestions_refresh }}", true)),
       followupQuestions: toBool(getValue("{{ block.settings.suggested_queries }}", true)),
       numberOfSuggestions: Number(getValue("{{ block.settings.number_of_suggestions }}", 3)),
       openLinksInNewTab: toBool(getValue("{{ block.settings.open_links_new_tab }}", true)),
@@ -76,46 +86,22 @@
         typo_options: {
           correct_typos: true,
         },
-        filters: {
-          must: [
-            {
-              field: "metadata.variant_inventory",
-              range: {
-                gt: 0
-              }
-            },
-            {
-              field: "metadata.status",
-              match_all: [
-                "ACTIVE"
-              ]
-            }
-          ]
-        }
+        filters: {}
       },
-      chatFilters: {
-        must: [
-          {
-            field: "metadata.variant_inventory",
-            range: {
-              gt: 0
-            }
-          },
-          {
-            field: "metadata.status",
-            match_all: [
-              "ACTIVE"
-            ]
-          }
-        ]
-      },
+      chatFilters: {},
       defaultCurrency: currencySymbol(currency),
-      {% comment %} not on inline {% endcomment %}
-      showFloatingSearchIcon: toBool(getValue("{{ block.settings.show_floating_search_icon }}", true)),
-      floatingSearchIconPosition: getValue("{{ block.settings.floating_icon_pos }}", "left"),
-      allowSwitchingModes: false,
-      hidePrice: !toBool(getValue("{{ block.settings.display_price }}", true)),
-      hideChunkHtml: !toBool(getValue("{{ block.settings.display_description }}", true)),
+      {% comment %} not on global {% endcomment %}
+      inlineHeader: "",
+      inline: true,
+      groupTrackingId: productId ? productId.toString() : undefined,
+      cleanGroupName: productTitle ?? undefined,
+      analyticsSelectors: {
+        checkout: {
+          querySelector: appMetafieldTrieve.checkout_selector,
+        },
+      },
+      hidePrice: false,
+      hideChunkHtml: false
     });
   }
 </script>
@@ -127,8 +113,8 @@
 {% endcomment %}
 {% schema %}
 {
-  "name": "Trieve Global component",
-  "target": "body",
+  "name": "Trieve Search Page",
+  "target": "section",
   "settings": [
     {
       "type": "select",
@@ -145,12 +131,6 @@
       "id": "brand_color",
       "label": "Brand Color",
       "default": "#ff0000"
-    },
-    {
-      "type": "text",
-      "id": "brand_logo_img_src_url",
-      "label": "Brand Logo Image URL",
-      "placeholder": "https://cdn.trieve.ai/trieve-logo.png"
     },
     {
       "type": "text",
@@ -174,41 +154,13 @@
       "id": "default_ai_questions",
       "type": "textarea",
       "label": "Initial Questions (Separated by commas)",
-      "placeholder": "What is your flagship product?, Surprise me!, Best items for gifts?"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_floating_search_icon",
-      "label": "Show Floating Search Icon",
-      "default": true
-    },
-    {
-      "type": "select",
-      "id": "floating_icon_pos",
-      "label": "Floating Icon Position",
-      "options": [
-        { "label": "Left", "value": "left" },
-        { "label": "Right", "value": "right" }
-      ],
-      "default": "left"
-    },
-    {
-      "type": "checkbox",
-      "id": "display_price",
-      "label": "Display Product Price",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "display_description",
-      "label": "Display Product Description",
-      "default": true
+      "placeholder": "What is this made of?"
     },
     {
       "id": "custom_css",
       "type": "textarea",
       "label": "Custom CSS",
-      "placeholder": "#trieve-modal-search { background-color: red; }"
+      "placeholder": ".trieve-inline-root { background-color: red; }"
     }
   ]
 }

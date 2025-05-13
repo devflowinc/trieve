@@ -4,11 +4,11 @@
 
 <div class="trieve-inline-root"></div>
 
-{% assign dev_mode = app.metafields.dev_mode | json %}
+{% assign dev_mode = app.metafields.trieve.dev_mode %}
 <script
   type="module"
 >
-  {% if dev_mode == 'true' %}
+  {% if dev_mode %}
     import { renderToDiv } from "http://localhost:8000/dist/vanilla/index.js";
     let cssRelease = "local";
   {% else %}

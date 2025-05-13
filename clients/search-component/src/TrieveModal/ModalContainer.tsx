@@ -31,7 +31,7 @@ export const ModalContainer = () => {
               : " trieve-popup-modal"
           } ${props.type}`.trim(),
           !props.inline && "md:tv-resize-y",
-          props.inline && "tv-border-2",
+          props.inline && props.defaultSearchMode !== "search" && "tv-border-2",
           componentClass,
         )}
         style={{

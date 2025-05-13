@@ -1,8 +1,10 @@
 <div class="trieve-recommendations"></div>
 
-{% assign dev_mode = app.metafields.dev_mode | json %}
-<script type="module">
-  {% if dev_mode == 'true' %}
+{% assign dev_mode = app.metafields.trieve.dev_mode %}
+<script
+  type="module"
+>
+  {% if dev_mode %}
     import { renderRecommendationsToDiv } from "http://localhost:8000/dist/vanilla/index.js";
     let cssRelease = "local";
   {% else %}
