@@ -11,8 +11,6 @@ export const SuggestedQueries = () => {
     SuggestedQueriesResponse["queries"]
   >([]);
 
-  console.log(props.suggestedQueries && query);
-
   const getQueries = useCallback(
     (abortController: AbortController) => {
       setIsLoading(true);

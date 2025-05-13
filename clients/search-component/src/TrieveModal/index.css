@@ -106,9 +106,8 @@ body {
     }
 
     .trieve-elements-ecommerce {
-      @apply tv-h-fit;
       > li > .product > div {
-        @apply tv-flex tv-flex-col tv-h-fit;
+        @apply tv-flex tv-flex-col;
       }
     }
 
@@ -767,7 +766,7 @@ body {
     }
 
     .item {
-      @apply tv-select-none tv-cursor-pointer tv-py-2 tv-text-left tv-flex tv-flex-col tv-items-center tv-gap-2 tv-w-full tv-h-full tv-text-sm tv-outline-none tv-rounded-lg tv-px-5 tv-overflow-ellipsis;
+      @apply tv-select-none tv-cursor-pointer tv-py-2 tv-text-left tv-flex tv-items-start tv-gap-2 tv-w-full tv-h-full tv-text-sm tv-outline-none tv-rounded-lg tv-px-5 tv-overflow-ellipsis;
 
       background-color: white;
 
