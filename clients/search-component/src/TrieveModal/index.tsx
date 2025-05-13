@@ -16,31 +16,10 @@ import { FloatingActionButton } from "./FloatingActionButton";
 import { FloatingSearchIcon } from "./FloatingSearchIcon";
 import { FloatingSearchInput } from "./FloatingSearchInput";
 import { ModalContainer } from "./ModalContainer";
-import { InferenceFiltersForm } from "./FilterSidebarComponents";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { createPortal } from "react-dom";
 
-const SearchPage = () => {
-  const { props } = useModalState();
-  if (!props.searchPageProps?.display) return null;
 
-  return (
-    <div
-      className="trieve-search-page"
-      data-display={props.searchPageProps?.display ? "true" : "false"}
-    >
-      <div className="trieve-search-page-main-section">
-        <div className="trieve-filter-main-section">
-          <InferenceFiltersForm
-            steps={
-              props.searchPageProps?.inferenceFiltersFormProps?.steps ?? []
-            }
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const Modal = () => {
   useKeyboardNavigation();
@@ -364,8 +343,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
   return (
     <ModalProvider onLoadProps={props}>
       <ChatProvider>
-        <Modal />
-        <SearchPage />
+          <Modal />
       </ChatProvider>
     </ModalProvider>
   );

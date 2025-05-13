@@ -58,7 +58,6 @@ export interface TagProp {
   iconClassName?: string;
   icon?: () => JSX.Element;
   description?: string;
-  child?: FilterSidebarSection;
 }
 
 export interface FilterSidebarSection {
@@ -377,6 +376,12 @@ const ModalProvider = ({
       return;
     }
 
+    if (props.type === "ecommerce" && props.inline && props.defaultSearchMode === "search") {
+      const url = new URL(window.location.href);
+      url.searchParams.set('q', query);
+      window.history.replaceState({}, '', url.toString());
+    }
+
     try {
       setLoadingResults(true);
       if (props.useGroupSearch && !props.usePagefind) {
@@ -548,6 +553,16 @@ const ModalProvider = ({
       abortController.abort("AbortError on component_close");
     };
   }, [open, props.analytics, props]);
+
+  useEffect(() => {
+    if (props.type === "ecommerce" && props.inline && props.defaultSearchMode === "search") {
+      const url = new URL(window.location.href);
+      const initialQuery = url.searchParams.get('q');
+      if (initialQuery) {
+        setQuery(initialQuery);
+      }
+    }
+  }, [props.type, props.inline, props.defaultSearchMode]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
