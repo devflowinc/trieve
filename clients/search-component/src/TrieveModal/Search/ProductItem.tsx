@@ -179,7 +179,7 @@ export const ProductItem = ({
             </div>
           )}
           {title ? (
-            <div className="tv-w-full tv-pt-2">
+            <div>
               <h4
                 className={`chunk-title ${props.type}`}
                 dangerouslySetInnerHTML={{
@@ -253,9 +253,8 @@ export const ProductItem = ({
               }}
             />
           )}
-          {/* <div className="tv-flex-1" /> */}
-          <AddToCartButton item={item} />
           <div className="tv-flex-1" />
+          <AddToCartButton item={item} />
         </div>
       </a>
     </li>
