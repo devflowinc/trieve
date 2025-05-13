@@ -6,6 +6,7 @@ import { ChunkGroup, CTRType } from "trieve-ts-sdk";
 import { guessTitleAndDesc, uniquifyVariants } from "../../utils/estimation";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { AddToCartButton } from "../AddToCartButton";
+import { cn } from "../../utils/styles";
 
 type Props = {
   item: ChunkWithHighlights;
@@ -144,7 +145,10 @@ export const ProductItem = ({
       <a
         ref={itemRef}
         id={`trieve-search-item-${index + 1}`}
-        className={className ?? "item product"}
+        className={cn(
+          className ?? "item product",
+          props.type === "ecommerce" && props.inline && props.defaultSearchMode === "search" && "tv-border"
+        )}
         onClick={(event) => {
           event.preventDefault();
           onResultClick(
@@ -175,7 +179,7 @@ export const ProductItem = ({
             </div>
           )}
           {title ? (
-            <div>
+            <div className="tv-w-full tv-pt-2">
               <h4
                 className={`chunk-title ${props.type}`}
                 dangerouslySetInnerHTML={{
@@ -208,17 +212,19 @@ export const ProductItem = ({
                   </button>
                 )}
               </div>
-              <p
-                className="description"
-                dangerouslySetInnerHTML={{
-                  __html: props.showResultHighlights
-                    ? descriptionHtml
-                    : descriptionHtml.replace(
-                        /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
-                        "",
-                      ),
-                }}
-              />
+              {!props.hideChunkHtml && (
+                  <p
+                    className="description"
+                    dangerouslySetInnerHTML={{
+                    __html: props.showResultHighlights
+                      ? descriptionHtml
+                      : descriptionHtml.replace(
+                          /<mark>|<\/mark>|<span class="highlight">|<\/span>/g,
+                          "",
+                        ),
+                  }}
+                />
+              )}
               <>
                 {filteredVariants.length > 1 ? (
                   <div className="variants">
@@ -247,8 +253,9 @@ export const ProductItem = ({
               }}
             />
           )}
-          <div className="tv-flex-1" />
+          {/* <div className="tv-flex-1" /> */}
           <AddToCartButton item={item} />
+          <div className="tv-flex-1" />
         </div>
       </a>
     </li>
