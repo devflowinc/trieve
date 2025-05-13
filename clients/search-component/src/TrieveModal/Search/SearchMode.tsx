@@ -120,12 +120,13 @@ export const SearchMode = () => {
       <ul
         className={cn(
           `trieve-elements-${props.type} tv-grow`,
-          props.type === "ecommerce" &&
+          props.type === "ecommerce" && (!props.inline || props.defaultSearchMode === "search") &&
             "tv-grid tv-grid-cols-2 sm:tv-grid-cols-3 md:tv-grid-cols-4 lg:tv-grid-cols-5 tv-gap-2 tv-mt-0.5 tv-py-2 tv-pr-0.5",
+          props.type === "ecommerce" && props.inline && props.defaultSearchMode !== "search" && "tv-grid tv-grid-cols-1",
           "tv-overflow-y-auto",
         )}
       >
-        {resultsLength && props.chat && imageUrl.length == 0 ? (
+        {resultsLength && props.chat && imageUrl.length == 0 && props.defaultSearchMode !== "search" ? (
           <GoToChatPrompt />
         ) : null}
         {props.type === "pdf" ? (

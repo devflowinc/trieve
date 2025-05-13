@@ -50,6 +50,10 @@ const inlineClass = cva(
         docs: [],
         pdf: [],
       },
+      mode: {
+        search: ["!tv-max-h-[1000vh]"],
+        chat: [],
+      },
     },
   },
 );
@@ -58,7 +62,7 @@ export const useSizing = () => {
   const { props, mode } = useModalState();
 
   if (props.inline) {
-    return inlineClass({ type: props.type });
+    return inlineClass({ type: props.type, mode: mode as "search" | "chat" });
   } else {
     return popupClass({
       type: props.type,
