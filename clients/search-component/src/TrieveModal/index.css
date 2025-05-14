@@ -355,7 +355,7 @@ body {
     }
 
     .ecomm-item-title {
-      @apply tv-p-0 tv-line-clamp-4 tv-text-base tv-mb-0;
+      @apply tv-p-0 tv-line-clamp-4 tv-text-base tv-mb-0 tv-w-4/5;
 
       mark {
         @apply tv-bg-inherit;
@@ -1419,8 +1419,8 @@ body {
     }
 
     .trieve-filter-sidebar {
-        @apply tv-p-2 tv-border-r tv-min-h-full tv-mr-5 tv-min-w-fit;
-      }
+      @apply tv-p-2 tv-border-r tv-min-h-full tv-mr-5 tv-min-w-fit;
+    }
 
     .trieve-filter-sidebar-section {
       @apply tv-flex tv-flex-col tv-min-w-fit tv-w-fit tv-min-h-full;

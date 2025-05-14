@@ -109,6 +109,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const called = useRef(false);
   const [messages, setMessages] = useState<ComponentMessages>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const relevanceToolCallAbortController = useRef<AbortController>(
+    new AbortController(),
+  );
   const chatMessageAbortController = useRef<AbortController>(
     new AbortController(),
   );
@@ -690,12 +693,21 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       try {
         const searchOverGroupsResp = await trieveSDK.searchOverGroups({
           query: questionProp || currentQuestion,
-          search_type: "hybrid",
+          search_type: "fulltext",
           filters: filters,
           page_size: 20,
           group_size: 1,
           user_id: await getFingerprint(),
         });
+
+        relevanceToolCallAbortController.current = new AbortController();
+        const createMessageTimeout = setTimeout(() => {
+          console.error(
+            "createMessageReaderWithQueryId timeout on retry: ",
+            messageReaderRetries,
+          );
+          relevanceToolCallAbortController.current?.abort();
+        }, 5000);
 
         const highlyRelevantGroupIds: string[] = [];
         const mediumRelevantGroupIds: string[] = [];
@@ -707,34 +719,45 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               : null;
             const descriptionOfFirstChunk = `Title: ${(firstChunk?.metadata as any)["title"]}\nDescription: ${firstChunk?.chunk_html}\nPrice: ${firstChunk?.num_value}`;
             return trieveSDK
-              .getToolCallFunctionParams({
-                user_message_text: `Be extra picky and detailed. Thoroughly examine all details of the query and product. Determine the relevance of the below product for this query that user sent:\n\n${questionProp || currentQuestion}.\n\nHere are the details of the product you need to rank the relevance of:\n\n${descriptionOfFirstChunk}`,
-                tool_function: {
-                  name: "determine_relevance",
-                  description:
-                    "Mark the relevance of product based on the user's query.",
-                  parameters: [
-                    {
-                      name: "high",
-                      description:
-                        "Highly relevant and very good fit for the given query taking all details of both the query and the product into account",
-                      parameter_type: "boolean",
-                    },
-                    {
-                      name: "medium",
-                      description:
-                        "Somewhat relevant and a decent or okay fit for the given query taking all details of both the query and the product into account",
-                      parameter_type: "boolean",
-                    },
-                    {
-                      name: "low",
-                      description:
-                        "Not relevant and not a good fit for the given query taking all details of both the query and the product into account",
-                      parameter_type: "boolean",
-                    },
-                  ],
+              .getToolCallFunctionParams(
+                {
+                  user_message_text: `Be extra picky and detailed. Thoroughly examine all details of the query and product. Determine the relevance of the below product for this query that user sent:\n\n${questionProp || currentQuestion}.\n\nHere are the details of the product you need to rank the relevance of:\n\n${descriptionOfFirstChunk}`,
+                  image_urls: (
+                    (firstChunk?.image_urls?.filter(
+                      (stringOrNull): stringOrNull is string =>
+                        Boolean(stringOrNull),
+                    ) ||
+                      []) ??
+                    []
+                  ).splice(0, 1),
+                  tool_function: {
+                    name: "determine_relevance",
+                    description:
+                      "Mark the relevance of product based on the user's query.",
+                    parameters: [
+                      {
+                        name: "high",
+                        description:
+                          "Highly relevant and very good fit for the given query taking all details of both the query and the product into account",
+                        parameter_type: "boolean",
+                      },
+                      {
+                        name: "medium",
+                        description:
+                          "Somewhat relevant and a decent or okay fit for the given query taking all details of both the query and the product into account",
+                        parameter_type: "boolean",
+                      },
+                      {
+                        name: "low",
+                        description:
+                          "Not relevant and not a good fit for the given query taking all details of both the query and the product into account",
+                        parameter_type: "boolean",
+                      },
+                    ],
+                  },
                 },
-              })
+                relevanceToolCallAbortController.current?.signal,
+              )
               .then((res) => {
                 if ((res.parameters as any)["high"] == true) {
                   highlyRelevantGroupIds.push(group.group.id);
@@ -810,7 +833,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 highlight_window: props.type === "ecommerce" ? 5 : 10,
                 highlight_results: true,
               },
-              only_include_docs_used: false,
+              only_include_docs_used: true,
             },
             chatMessageAbortController.current.signal,
             (headers: Record<string, string>) => {

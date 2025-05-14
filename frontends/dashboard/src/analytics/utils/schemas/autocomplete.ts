@@ -78,6 +78,17 @@ export const publicPageSearchOptionsSchema = z
   })
   .strict();
 
+export const tagPropSchema = z.array(
+  z.object({
+    tag: z.string(),
+    label: z.string().nullish(),
+    selected: z.boolean().nullish(),
+    iconClassName: z.string().nullish(),
+    icon: z.function().args().returns(z.void()).nullish(),
+    description: z.string().nullish(),
+  }),
+);
+
 // Type test to stay consistent
 type LibraryOptions = Omit<
   SearchChunksReqPayload,
