@@ -783,16 +783,20 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               );
 
             setLoadingText((prev) => {
+              const contentType =
+                props.type === "ecommerce" ? "product" : "section";
               const match = prev.match(
-                /Verifying relevance for product (\d+) of \d+/,
+                new RegExp(
+                  `Verifying relevance for ${contentType} (\\d+) of \\d+`,
+                ),
               );
               if (prev === "Determing relevance of the results...") {
-                return "Searching for relevant products...";
-              } else if (prev === "Searching for relevant products...") {
-                return `Verifying relevance for product 1 of ${searchOverGroupsResp.results.length}...`;
+                return `Searching for relevant ${contentType}s...`;
+              } else if (prev === `Searching for relevant ${contentType}s...`) {
+                return `Verifying relevance for ${contentType} 1 of ${searchOverGroupsResp.results.length}...`;
               } else if (match) {
                 const currentNumber = parseInt(match[1], 10);
-                return `Verifying relevance for product ${currentNumber + 1} of ${searchOverGroupsResp.results.length}...`;
+                return `Verifying relevance for ${contentType} ${currentNumber + 1} of ${searchOverGroupsResp.results.length}...`;
               }
               return prev;
             });
