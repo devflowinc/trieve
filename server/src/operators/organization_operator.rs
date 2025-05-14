@@ -6,7 +6,9 @@ use crate::{
         TrieveSubscription, User, UserApiKey, UserOrganization,
     },
     errors::ServiceError,
-    handlers::organization_handler::{CreateApiKeyReqPayload, ExtendedOrganizationUsageCount},
+    handlers::organization_handler::{
+        CreateApiKeyReqPayload, ExtendedOrganizationUsageCount, GetOrganizationApiKeysResponse,
+    },
     operators::dataset_operator::soft_delete_dataset_by_id_query,
     randutil,
 };
@@ -1075,8 +1077,10 @@ pub async fn create_organization_api_key_query(
 
 pub async fn get_organization_api_keys_query(
     organization_id: uuid::Uuid,
+    cursor: uuid::Uuid,
+    limit: i32,
     pool: web::Data<Pool>,
-) -> Result<Vec<ApiKeyRespBody>, ServiceError> {
+) -> Result<GetOrganizationApiKeysResponse, ServiceError> {
     use crate::data::schema::organization_api_key::dsl as organization_api_key_columns;
 
     let mut conn = pool.get().await.map_err(|_e| {
@@ -1085,6 +1089,9 @@ pub async fn get_organization_api_keys_query(
 
     let api_keys = organization_api_key_columns::organization_api_key
         .filter(organization_api_key_columns::organization_id.eq(organization_id))
+        .order(organization_api_key_columns::id.asc())
+        .filter(organization_api_key_columns::id.gt(cursor))
+        .limit(limit.into())
         .select(OrganizationApiKey::as_select())
         .load::<OrganizationApiKey>(&mut conn)
         .await
@@ -1094,7 +1101,12 @@ pub async fn get_organization_api_keys_query(
         .into_iter()
         .map(|api_key| api_key.into())
         .collect::<Vec<ApiKeyRespBody>>();
-    Ok(api_keys)
+    let next_cursor = api_keys.last().map(|api_key| api_key.id);
+
+    Ok(GetOrganizationApiKeysResponse {
+        api_keys,
+        cursor: next_cursor,
+    })
 }
 
 pub async fn delete_organization_api_keys_query(
