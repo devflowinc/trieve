@@ -209,6 +209,7 @@ export type ModalProps = {
   usePortal?: boolean;
   previewTopicId?: string;
   overrideFetch?: boolean;
+  searchBar?: boolean;
 };
 
 const defaultProps = {
@@ -280,6 +281,7 @@ const defaultProps = {
   } as SearchPageProps,
   usePortal: true,
   previewTopicId: undefined,
+  searchBar: false,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{

@@ -107,7 +107,7 @@ declare module "solid-js" {
 | floatingSearchIconPosition | "left" or "right"                                                                              | "right"                                                               |
 | showFloatingSearchIcon     | boolean                                                                                        | false                                                                 |
 | showFloatingInput          | boolean                                                                                        | false                                                                 |
-| buttonTriggers             | [{ selector: <"query-selector">, mode: "chat"}]                                                |                                                                       |
+| buttonTriggers             | [{ selector: <"query-selector">, mode: "chat", removeListeners: true}]                                                |                                                                       |
 | hideOpenButton             | boolean                                                                                        | false                                                                 |
 | showResultHighlights       | boolean                                                                                        | true                                                                  |
 | initialAiMessage           | string (example: "<p>Hi! How can I help</p>")                                                  | null                                                                  |

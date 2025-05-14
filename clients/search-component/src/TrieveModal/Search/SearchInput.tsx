@@ -30,6 +30,11 @@ export const SearchInput = () => {
             setLoadingResults(true);
             setQuery(e.target.value);
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && props.searchBar) {
+              window.location.href = "/search?q=" + query;
+            }
+          }}
           placeholder={
             imageUrl.length > 0
               ? "Using Image for Search"
