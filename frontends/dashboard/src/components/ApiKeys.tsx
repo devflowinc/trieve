@@ -156,7 +156,7 @@ export const ApiKeys = () => {
     ];
     return createSolidTable({
       columns: columns,
-      data: apiKeysQuery.data.api_keys as ApiKeyRespBody[],
+      data: apiKeysQuery.data.api_keys,
       getCoreRowModel: getCoreRowModel(),
     });
   });

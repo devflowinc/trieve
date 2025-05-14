@@ -1202,8 +1202,8 @@ const PublicPageControls = () => {
                 </div>
                 <textarea
                   value={
-                    (extraParams.relevanceToolCallOptions?.toolDescription ||
-                      defaultRelevanceToolCallOptions.toolDescription) as string
+                    extraParams.relevanceToolCallOptions?.toolDescription ||
+                    defaultRelevanceToolCallOptions.toolDescription
                   }
                   onInput={(e) =>
                     setExtraParams(
