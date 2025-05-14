@@ -82,6 +82,21 @@ export interface RelevanceToolCallOptions {
   lowDescription?: string;
 }
 
+export const defaultPriceToolCallOptions: PriceToolCallOptions = {
+  toolDescription:
+    "Only call this function if the query includes details about a price. Decide on which price filters to apply to the available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
+  minPriceDescription:
+    "Minimum price of the product. Only set this if a minimum price is mentioned in the query.",
+  maxPriceDescription:
+    "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
+};
+
+export interface PriceToolCallOptions {
+  toolDescription: string;
+  minPriceDescription?: string;
+  maxPriceDescription?: string;
+}
+
 export interface FilterSidebarSection {
   key: string;
   title: string;
@@ -136,6 +151,7 @@ export type ModalProps = {
   openKeyCombination?: { key?: string; label?: string; ctrl?: boolean }[];
   tags?: TagProp[];
   relevanceToolCallOptions?: RelevanceToolCallOptions;
+  priceToolCallOptions?: PriceToolCallOptions;
   defaultSearchMode?: SearchModes;
   usePagefind?: boolean;
   type?: ModalTypes;
@@ -200,6 +216,7 @@ const defaultProps = {
   apiKey: "",
   baseUrl: "https://api.trieve.ai",
   relevanceToolCallOptions: defaultRelevanceToolCallOptions,
+  priceToolCallOptions: defaultPriceToolCallOptions,
   defaultSearchMode: "search" as SearchModes,
   placeholder: "Search...",
   chatPlaceholder: "Ask Anything...",

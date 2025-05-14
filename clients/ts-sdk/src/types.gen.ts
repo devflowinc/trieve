@@ -2873,6 +2873,12 @@ export type PopularFiltersResponse = {
     popular_filters: Array<PopularFilters>;
 };
 
+export type PriceToolCallOptions = {
+    maxPriceDescription?: (string) | null;
+    minPriceDescription?: (string) | null;
+    toolDescription: string;
+};
+
 export type PublicDatasetOptions = {
     enabled: boolean;
     extra_params?: ((PublicPageParameters) | null);
@@ -2915,6 +2921,7 @@ export type PublicPageParameters = {
     openGraphMetadata?: ((OpenGraphMetadata) | null);
     openLinksInNewTab?: (boolean) | null;
     placeholder?: (string) | null;
+    priceToolCallOptions?: ((PriceToolCallOptions) | null);
     problemLink?: (string) | null;
     relevanceToolCallOptions?: ((RelevanceToolCallOptions) | null);
     responsive?: (boolean) | null;

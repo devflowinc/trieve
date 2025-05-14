@@ -15461,6 +15461,25 @@
           }
         }
       },
+      "PriceToolCallOptions": {
+        "type": "object",
+        "required": [
+          "toolDescription"
+        ],
+        "properties": {
+          "maxPriceDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "minPriceDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "toolDescription": {
+            "type": "string"
+          }
+        }
+      },
       "PublicDatasetOptions": {
         "type": "object",
         "required": [
@@ -15645,6 +15664,14 @@
           },
           "placeholder": {
             "type": "string",
+            "nullable": true
+          },
+          "priceToolCallOptions": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PriceToolCallOptions"
+              }
+            ],
             "nullable": true
           },
           "problemLink": {

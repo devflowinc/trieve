@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useRef, useState } from "react";
 import {
+  defaultPriceToolCallOptions,
   defaultRelevanceToolCallOptions,
   useModalState,
 } from "./modal-context";
@@ -510,19 +511,22 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             tool_function: {
               name: "get_price_filters",
               description:
-                "Only call this function if the query includes details about a price. Decide on which price filters to apply to the available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
+                props.priceToolCallOptions?.toolDescription ??
+                defaultPriceToolCallOptions.toolDescription,
               parameters: [
                 {
                   name: "min_price",
                   parameter_type: "number",
-                  description:
-                    "Minimum price of the product. Only set this if a minimum price is mentioned in the query.",
+                  description: (props.priceToolCallOptions
+                    ?.minPriceDescription ??
+                    defaultPriceToolCallOptions.minPriceDescription) as string,
                 },
                 {
                   name: "max_price",
                   parameter_type: "number",
-                  description:
-                    "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
+                  description: (props.priceToolCallOptions
+                    ?.maxPriceDescription ??
+                    defaultPriceToolCallOptions.maxPriceDescription) as string,
                 },
               ],
             },
@@ -834,10 +838,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 } else if (
                   prev === `Searching for relevant ${contentType}s...`
                 ) {
-                  return `Verifying relevance for ${contentType} 1 of ${searchOverGroupsResp.results.length}...`;
+                  return `Verifying relevance for ${contentType} 1 of ${searchOverGroupsResp.results.length + 1}...`;
                 } else if (match) {
                   const currentNumber = parseInt(match[1], 10);
-                  return `Verifying relevance for ${contentType} ${currentNumber + 1} of ${searchOverGroupsResp.results.length}...`;
+                  return `Verifying relevance for ${contentType} ${currentNumber + 1} of ${searchOverGroupsResp.results.length + 1}...`;
                 }
                 return prev;
               });

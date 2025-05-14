@@ -15,7 +15,11 @@ import {
   usePublicPage,
 } from "../../hooks/usePublicPageSettings";
 import { createStore } from "solid-js/store";
-import { PublicPageTabMessage, RelevanceToolCallOptions } from "trieve-ts-sdk";
+import {
+  PriceToolCallOptions,
+  PublicPageTabMessage,
+  RelevanceToolCallOptions,
+} from "trieve-ts-sdk";
 
 export const PublicPageSettingsPage = () => {
   return (
@@ -48,6 +52,15 @@ export const defaultRelevanceToolCallOptions: RelevanceToolCallOptions = {
     "Somewhat relevant and a decent or okay fit for the given query taking all details of both the query and the product into account",
   lowDescription:
     "Not relevant and not a good fit for the given query taking all details of both the query and the product into account",
+};
+
+export const defaultPriceToolCallOptions: PriceToolCallOptions = {
+  toolDescription:
+    "Only call this function if the query includes details about a price. Decide on which price filters to apply to the available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
+  minPriceDescription:
+    "Minimum price of the product. Only set this if a minimum price is mentioned in the query.",
+  maxPriceDescription:
+    "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
 };
 
 const searchTypeOptions = [
@@ -1324,6 +1337,106 @@ const PublicPageControls = () => {
                       e.currentTarget.checked,
                     );
                   }}
+                />
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="my-4">
+          <summary class="cursor-pointer text-sm font-medium">
+            Price Tool Options
+          </summary>
+          <div class="mt-4 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Tool Description
+                  </label>
+                  <Tooltip
+                    tooltipText="Description of the price tool provided to the model."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    extraParams.priceToolCallOptions?.toolDescription ||
+                    defaultPriceToolCallOptions.toolDescription
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "priceToolCallOptions",
+                      "toolDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Min Price Description
+                  </label>
+                  <Tooltip
+                    tooltipText="Description of how and when to set the min price given to the model."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    (extraParams.priceToolCallOptions?.minPriceDescription ||
+                      defaultPriceToolCallOptions.minPriceDescription) as string
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "priceToolCallOptions",
+                      "minPriceDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Max Price Description
+                  </label>
+                  <Tooltip
+                    tooltipText="Description of how and when to set the max price given to the model."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    (extraParams.priceToolCallOptions?.maxPriceDescription ||
+                      defaultPriceToolCallOptions.maxPriceDescription) as string
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "priceToolCallOptions",
+                      "maxPriceDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
                 />
               </div>
             </div>

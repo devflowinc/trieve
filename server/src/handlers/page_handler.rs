@@ -189,6 +189,16 @@ pub struct RelevanceToolCallOptions {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct PriceToolCallOptions {
+    pub tool_description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min_price_description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_price_description: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dataset_id: Option<uuid::Uuid>,
@@ -204,6 +214,8 @@ pub struct PublicPageParameters {
     pub tags: Option<Vec<PublicPageTag>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub relevance_tool_call_options: Option<RelevanceToolCallOptions>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub price_tool_call_options: Option<PriceToolCallOptions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_queries: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -18,7 +18,10 @@ import { createToast } from "../components/ShowToasts";
 import { ApiRoutes } from "../components/Routes";
 import { HeroPatterns } from "../pages/dataset/HeroPatterns";
 import { createInitializedContext } from "../utils/initialize";
-import { defaultRelevanceToolCallOptions } from "../pages/dataset/PublicPageSettings";
+import {
+  defaultPriceToolCallOptions,
+  defaultRelevanceToolCallOptions,
+} from "../pages/dataset/PublicPageSettings";
 
 export type DatasetWithPublicPage = Dataset & {
   server_configuration: {
@@ -80,6 +83,12 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
       if (!extraParams.relevanceToolCallOptions) {
         setExtraParams("relevanceToolCallOptions", {
           ...defaultRelevanceToolCallOptions,
+        });
+      }
+
+      if (!extraParams.priceToolCallOptions) {
+        setExtraParams("priceToolCallOptions", {
+          ...defaultPriceToolCallOptions,
         });
       }
 
