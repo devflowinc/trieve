@@ -433,6 +433,10 @@ const ResultsPage = (props: ResultsPageProps) => {
           searchRoute = "chunk/autocomplete";
           requestBody["extend_results"] =
             props.search.debounced.extendResults ?? false;
+          groupUnique = props.search.debounced.groupUniqueSearch;
+          if (groupUnique) {
+            searchRoute = "chunk_group/group_oriented_autocomplete";
+          }
         }
       }
 
