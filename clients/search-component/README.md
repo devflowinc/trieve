@@ -113,6 +113,8 @@ declare module "solid-js" {
 | initialAiMessage           | string (example: "<p>Hi! How can I help</p>")                                                  | null                                                                  |
 | ignoreEventListeners       | boolean                                                                                        | false                                                                 |
 | hideOverlay                | boolean                                                                                        | false                                                                 |
+| overrideFetch              | boolean                                                                                        | false                                                                 | 
+
 
 ### Search Results
 

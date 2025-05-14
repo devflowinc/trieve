@@ -5,7 +5,6 @@ import {
   useModalState,
 } from "./modal-context";
 import { Chunk } from "../types";
-import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
 import { trackViews } from "../trieve";
 import {
@@ -722,7 +721,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             filters: filtersWithoutGroupIds,
             page_size: 10,
             group_id: curGroup.id,
-            user_id: await getFingerprint(),
+            user_id: fingerprint,
           },
           searchAbortController.current.signal,
         );
@@ -749,7 +748,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               filters: filters,
               page_size: 20,
               group_size: 1,
-              user_id: await getFingerprint(),
+              user_id: fingerprint,
             },
             searchAbortController.current.signal,
           );
@@ -917,9 +916,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               : "OpenAI is down unfortunately. Please try again later.",
           );
         },
-        imageUrl || curAudioBase64 ? 20000 : 10000,
+        imageUrl || curAudioBase64 ? 20000 : 1000000,
       );
       try {
+        // wait 5 seconds
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         const createMessageResp =
           await trieveSDK.createMessageReaderWithQueryId(
             {
@@ -934,7 +935,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 completion_first: false,
               },
               concat_user_messages_query: true,
-              user_id: await getFingerprint(),
+              user_id: fingerprint,
               page_size: props.searchOptions?.page_size ?? (curGroup ? 10 : 8),
               score_threshold: props.searchOptions?.score_threshold || null,
               use_group_search: props.useGroupSearch,
@@ -957,6 +958,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 transcribedQuery = headers["x-tr-query"];
               }
             },
+            props.overrideFetch ?? false
           );
         reader = createMessageResp.reader;
         queryId = createMessageResp.queryId;
