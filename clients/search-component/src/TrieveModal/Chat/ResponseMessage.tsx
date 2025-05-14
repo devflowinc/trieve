@@ -34,6 +34,7 @@ export const ResponseMessage = ({
   idx: number;
 }) => {
   const { props } = useModalState();
+  const { loadingText } = useChatState();
   return (
     <motion.div
       initial={{ height: 0 }}
@@ -81,6 +82,7 @@ export const ResponseMessage = ({
             <div
               className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
             >
+              <span className="tv-animate-pulse">{loadingText}</span>
               <LoadingIcon className="loading" />
             </div>
           }
@@ -101,7 +103,8 @@ export const Message = ({
   idx: number;
   message: Message;
 }) => {
-  const { rateChatCompletion, messages, productsWithClicks } = useChatState();
+  const { rateChatCompletion, messages, productsWithClicks, loadingText } =
+    useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
   const { props, trieveSDK, fingerprint } = useModalState();
@@ -368,6 +371,7 @@ export const Message = ({
         <div
           className={`system ${props.type === "ecommerce" ? "ecommerce" : ""}`}
         >
+          <span className="tv-animate-pulse">{loadingText}</span>
           <LoadingIcon className="loading" />
         </div>
       ) : null}

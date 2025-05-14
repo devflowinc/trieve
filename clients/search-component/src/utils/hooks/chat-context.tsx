@@ -20,14 +20,25 @@ import { defaultHighlightOptions } from "../highlight";
 
 export const retryOperation = async <T,>(
   operation: () => Promise<T>,
-  maxRetries: number = 10,
+  maxRetries: number = 3,
   delayMs: number = 100,
 ): Promise<T> => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
-      if (attempt === maxRetries) throw error;
+      if (
+        attempt === maxRetries ||
+        (error instanceof DOMException && error.name === "AbortError") ||
+        (typeof error === "string" && error.includes("AbortError"))
+      ) {
+        console.error(
+          `Trieve operation failed after ${attempt} attempts:`,
+          error,
+        );
+        throw error;
+      }
+
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
@@ -64,6 +75,7 @@ const ChatContext = createContext<{
     match_any_tags?: string[],
   ) => Promise<void>;
   isLoading: boolean;
+  loadingText: string;
   messages: ComponentMessages;
   currentQuestion: string;
   setCurrentQuestion: React.Dispatch<React.SetStateAction<string>>;
@@ -79,6 +91,7 @@ const ChatContext = createContext<{
   askQuestion: async () => {},
   currentQuestion: "",
   isLoading: false,
+  loadingText: "",
   messages: [],
   setCurrentQuestion: () => {},
   cancelGroupChat: () => {},
@@ -112,6 +125,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const called = useRef(false);
   const [messages, setMessages] = useState<ComponentMessages>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState("");
+  const searchOverGroupsAbortController = useRef<AbortController>(
+    new AbortController(),
+  );
   const relevanceToolCallAbortController = useRef<AbortController>(
     new AbortController(),
   );
@@ -135,6 +152,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     if (!currentTopic) {
       called.current = true;
       setIsLoading(true);
+      setLoadingText("Getting the AI's attention...");
       setCurrentQuestion("");
       try {
         const topic = await retryOperation(async () => {
@@ -474,37 +492,46 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     const toolCallTimeout = setTimeout(
       () => {
         console.error("getToolCallFunctionParams timeout on retry: ");
-        chatMessageAbortController.current.abort();
+        chatMessageAbortController.current.abort(
+          "AbortError timeout for price filters tool call",
+        );
       },
       imageUrl || curAudioBase64 ? 20000 : 10000,
     );
 
+    setLoadingText("Thinking about filter criteria...");
     try {
       const priceFiltersPromise = retryOperation(async () => {
-        return await trieveSDK.getToolCallFunctionParams({
-          user_message_text: questionProp || currentQuestion,
-          image_url: imageUrl ? imageUrl : null,
-          audio_input: curAudioBase64 ? curAudioBase64 : null,
-          tool_function: {
-            name: "get_price_filters",
-            description:
-              "Only call this function if the query includes details about a price. Decide on which price filters to apply to the available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
-            parameters: [
-              {
-                name: "min_price",
-                parameter_type: "number",
-                description:
-                  "Minimum price of the product. Only set this if a minimum price is mentioned in the query.",
-              },
-              {
-                name: "max_price",
-                parameter_type: "number",
-                description:
-                  "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
-              },
-            ],
-          },
-        });
+        if (props.type === "ecommerce") {
+          return await trieveSDK.getToolCallFunctionParams({
+            user_message_text: questionProp || currentQuestion,
+            image_url: imageUrl ? imageUrl : null,
+            audio_input: curAudioBase64 ? curAudioBase64 : null,
+            tool_function: {
+              name: "get_price_filters",
+              description:
+                "Only call this function if the query includes details about a price. Decide on which price filters to apply to the available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
+              parameters: [
+                {
+                  name: "min_price",
+                  parameter_type: "number",
+                  description:
+                    "Minimum price of the product. Only set this if a minimum price is mentioned in the query.",
+                },
+                {
+                  name: "max_price",
+                  parameter_type: "number",
+                  description:
+                    "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
+                },
+              ],
+            },
+          });
+        } else {
+          return {
+            parameters: null,
+          };
+        }
       });
 
       const tagFiltersPromise = retryOperation(async () => {
@@ -670,69 +697,55 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       filters = null;
     }
 
-    let messageReaderRetries = 0;
-    let {
-      reader,
-      queryId,
-    }: {
-      reader: ReadableStreamDefaultReader<Uint8Array> | null;
-      queryId: string | null;
-    } = { reader: null, queryId: null };
+    let groupIdFilter: ChunkFilter | null = null;
+    try {
+      setLoadingText("Searching for relevant products...");
+      searchOverGroupsAbortController.current = new AbortController();
+      const searchOverGroupsResp = await retryOperation(async () => {
+        return await trieveSDK.searchOverGroups(
+          {
+            query: questionProp || currentQuestion,
+            search_type: "fulltext",
+            filters: filters,
+            page_size: 20,
+            group_size: 1,
+            user_id: await getFingerprint(),
+          },
+          searchOverGroupsAbortController.current.signal,
+        );
+      });
 
-    while (!stoppedGeneratingMessage && messageReaderRetries < 5) {
-      messageReaderRetries++;
-      chatMessageAbortController.current = new AbortController();
-      const createMessageTimeout = setTimeout(
-        () => {
-          console.error(
-            "createMessageReaderWithQueryId timeout on retry: ",
-            messageReaderRetries,
-          );
-          chatMessageAbortController.current.abort();
-        },
-        imageUrl || curAudioBase64 ? 20000 : 10000,
-      );
-
-      try {
-        const searchOverGroupsResp = await trieveSDK.searchOverGroups({
-          query: questionProp || currentQuestion,
-          search_type: "fulltext",
-          filters: filters,
-          page_size: 20,
-          group_size: 1,
-          user_id: await getFingerprint(),
-        });
-
-        relevanceToolCallAbortController.current = new AbortController();
-        const createMessageTimeout = setTimeout(() => {
-          console.error(
-            "createMessageReaderWithQueryId timeout on retry: ",
-            messageReaderRetries,
-          );
-          relevanceToolCallAbortController.current?.abort();
-        }, 5000);
-
-        const highlyRelevantGroupIds: string[] = [];
-        const mediumRelevantGroupIds: string[] = [];
-        const lowlyRelevantGroupIds: string[] = [];
-        const rankingPromises = searchOverGroupsResp.results.map(
-          async (group) => {
-            const firstChunk = group.chunks.length
-              ? (group.chunks[0].chunk as ChunkMetadata)
-              : null;
-            const imageUrls = props.relevanceToolCallOptions?.includeImages
-              ? (
-                  (firstChunk?.image_urls?.filter(
-                    (stringOrNull): stringOrNull is string =>
-                      Boolean(stringOrNull),
-                  ) ||
-                    []) ??
-                  []
-                ).splice(0, 1)
-              : undefined;
-            const descriptionOfFirstChunk = `Title: ${(firstChunk?.metadata as any)["title"]}\nDescription: ${firstChunk?.chunk_html}\nPrice: ${firstChunk?.num_value}`;
-            return trieveSDK
-              .getToolCallFunctionParams(
+      setLoadingText("Determing relevance of the results...");
+      relevanceToolCallAbortController.current = new AbortController();
+      // add a 5s timeout to the relevance tool call
+      const relevanceToolCallTimeout = setTimeout(() => {
+        console.error("relevanceToolCall timeout on retry: ");
+        relevanceToolCallAbortController.current.abort(
+          "AbortError timeout on relevanceToolCall",
+        );
+      }, 5000);
+      const highlyRelevantGroupIds: string[] = [];
+      const mediumRelevantGroupIds: string[] = [];
+      const lowlyRelevantGroupIds: string[] = [];
+      const rankingPromises = searchOverGroupsResp.results.map(
+        async (group) => {
+          const firstChunk = group.chunks.length
+            ? (group.chunks[0].chunk as ChunkMetadata)
+            : null;
+          const imageUrls = props.relevanceToolCallOptions?.includeImages
+            ? (
+                (firstChunk?.image_urls?.filter(
+                  (stringOrNull): stringOrNull is string =>
+                    Boolean(stringOrNull),
+                ) ||
+                  []) ??
+                []
+              ).splice(0, 1)
+            : undefined;
+          const descriptionOfFirstChunk = `Title: ${(firstChunk?.metadata as any)["title"]}\nDescription: ${firstChunk?.chunk_html}\nPrice: ${firstChunk?.num_value}`;
+          return retryOperation(async () => {
+            const relevanceToolCallResp =
+              await trieveSDK.getToolCallFunctionParams(
                 {
                   user_message_text: `${props.relevanceToolCallOptions?.userMessageTextPrefix ?? defaultRelevanceToolCallOptions.userMessageTextPrefix} Determine the relevance of the below product for this query that user sent:\n\n${questionProp || currentQuestion}.\n\nHere are the details of the product you need to rank the relevance of:\n\n${descriptionOfFirstChunk}`,
                   image_urls: imageUrls,
@@ -767,53 +780,96 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                   },
                 },
                 relevanceToolCallAbortController.current?.signal,
-              )
-              .then((res) => {
-                if ((res.parameters as any)["high"] == true) {
-                  highlyRelevantGroupIds.push(group.group.id);
-                } else if ((res.parameters as any)["medium"] == true) {
-                  mediumRelevantGroupIds.push(group.group.id);
-                } else if ((res.parameters as any)["low"] == true) {
-                  lowlyRelevantGroupIds.push(group.group.id);
-                }
-              })
-              .catch((e) => {
-                console.error(
-                  "error getting determine_relevance",
-                  e,
-                  group.group.id,
-                  descriptionOfFirstChunk,
-                );
-              });
+              );
+
+            setLoadingText((prev) => {
+              const match = prev.match(
+                /Verifying relevance for product (\d+) of \d+/,
+              );
+              if (prev === "Determing relevance of the results...") {
+                return "Searching for relevant products...";
+              } else if (prev === "Searching for relevant products...") {
+                return `Verifying relevance for product 1 of ${searchOverGroupsResp.results.length}...`;
+              } else if (match) {
+                const currentNumber = parseInt(match[1], 10);
+                return `Verifying relevance for product ${currentNumber + 1} of ${searchOverGroupsResp.results.length}...`;
+              }
+              return prev;
+            });
+
+            if ((relevanceToolCallResp.parameters as any)["high"] == true) {
+              highlyRelevantGroupIds.push(group.group.id);
+            } else if (
+              (relevanceToolCallResp.parameters as any)["medium"] == true
+            ) {
+              mediumRelevantGroupIds.push(group.group.id);
+            } else if (
+              (relevanceToolCallResp.parameters as any)["low"] == true
+            ) {
+              lowlyRelevantGroupIds.push(group.group.id);
+            }
+          });
+        },
+      );
+      await Promise.all(rankingPromises);
+      setLoadingText("Finished verifying relevance");
+      clearTimeout(relevanceToolCallTimeout);
+      let groupIdsToUse = highlyRelevantGroupIds;
+
+      if (highlyRelevantGroupIds.length > 1) {
+        groupIdsToUse = [...highlyRelevantGroupIds];
+      } else if (highlyRelevantGroupIds.length === 1) {
+        groupIdsToUse = [...highlyRelevantGroupIds, ...mediumRelevantGroupIds];
+      } else if (
+        highlyRelevantGroupIds.length === 0 &&
+        mediumRelevantGroupIds.length > 0
+      ) {
+        groupIdsToUse = mediumRelevantGroupIds;
+      }
+
+      const topGroupIds = groupIdsToUse.slice(0, 8);
+      groupIdFilter = {
+        must: [
+          {
+            field: "group_ids",
+            match_any: topGroupIds,
           },
-        );
-        await Promise.all(rankingPromises);
-        let groupIdsToUse = highlyRelevantGroupIds;
+        ],
+      };
+    } catch (e) {
+      console.error("error getting determine_relevance", e);
+    }
 
-        if (highlyRelevantGroupIds.length > 1) {
-          groupIdsToUse = [...highlyRelevantGroupIds];
-        } else if (highlyRelevantGroupIds.length === 1) {
-          groupIdsToUse = [
-            ...highlyRelevantGroupIds,
-            ...mediumRelevantGroupIds,
-          ];
-        } else if (
-          highlyRelevantGroupIds.length === 0 &&
-          mediumRelevantGroupIds.length > 0
-        ) {
-          groupIdsToUse = mediumRelevantGroupIds;
-        }
-
-        const topGroupIds = groupIdsToUse.slice(0, 10);
-        const groupIdFilter: ChunkFilter = {
-          must: [
-            {
-              field: "group_ids",
-              match_any: topGroupIds,
-            },
-          ],
-        };
-
+    setLoadingText("AI is generating a response...");
+    let messageReaderRetries = 0;
+    let {
+      reader,
+      queryId,
+    }: {
+      reader: ReadableStreamDefaultReader<Uint8Array> | null;
+      queryId: string | null;
+    } = { reader: null, queryId: null };
+    while (!stoppedGeneratingMessage && messageReaderRetries < 5) {
+      messageReaderRetries++;
+      chatMessageAbortController.current = new AbortController();
+      const createMessageTimeout = setTimeout(
+        () => {
+          console.error(
+            "createMessageReaderWithQueryId timeout on retry: ",
+            messageReaderRetries,
+          );
+          chatMessageAbortController.current.abort(
+            "AbortError on createMessage call",
+          );
+          setLoadingText(
+            messageReaderRetries < 5
+              ? `OpenAI failed to respond. Retry attempt ${messageReaderRetries}...`
+              : "OpenAI is down unfortunately. Please try again later.",
+          );
+        },
+        imageUrl || curAudioBase64 ? 20000 : 10000,
+      );
+      try {
         const createMessageResp =
           await trieveSDK.createMessageReaderWithQueryId(
             {
@@ -909,9 +965,20 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   };
 
   const stopGeneratingMessage = () => {
-    chatMessageAbortController.current.abort("Stopped generating message");
+    chatMessageAbortController.current.abort(
+      "Stopped generating message AbortError",
+    );
+    relevanceToolCallAbortController.current.abort(
+      "Stopped generating message AbortError",
+    );
+    searchOverGroupsAbortController.current.abort(
+      "Stopped generating message AbortError",
+    );
     chatMessageAbortController.current = new AbortController();
+    relevanceToolCallAbortController.current = new AbortController();
+    searchOverGroupsAbortController.current = new AbortController();
     setIsDoneReading(true);
+    setLoadingText("");
     setIsLoading(false);
 
     if (messages.at(-1)?.text === "Loading...") {
@@ -1056,6 +1123,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       value={{
         askQuestion,
         isLoading,
+        loadingText,
         cancelGroupChat,
         messages,
         currentQuestion,
