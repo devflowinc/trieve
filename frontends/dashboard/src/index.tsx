@@ -1,8 +1,7 @@
 /* @refresh reload */
 import "./index.css";
 import { render } from "solid-js/web";
-import * as Sentry from "@sentry/browser";
-import { DEV, Show } from "solid-js";
+import { Show } from "solid-js";
 import { Router, RouteDefinition } from "@solidjs/router";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { SolidQueryDevtools } from "@tanstack/solid-query-devtools";
@@ -40,23 +39,6 @@ import { SingleEventQueryPage } from "./analytics/pages/SingleEventQueryPage.tsx
 import { PublicPageSettingsPage } from "./pages/dataset/PublicPageSettings.tsx";
 import { CrawlOptionsTabs } from "./analytics/layouts/CrawlOptionsTabs.tsx";
 import { CrawlingHistory } from "./components/CrawlingHistory.tsx";
-
-if (!DEV) {
-  Sentry.init({
-    dsn: `${import.meta.env.VITE_SENTRY_DASHBOARD_DSN as string}`,
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration(),
-    ],
-
-    tracesSampleRate: 1.0,
-
-    tracePropagationTargets: ["localhost", /^https:\/\/trieve\.ai\/api/],
-
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-  });
-}
 
 Chart.register(...registerables);
 

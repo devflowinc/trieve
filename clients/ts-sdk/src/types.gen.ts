@@ -154,10 +154,6 @@ export type AutocompleteSearchOverGroupsReqPayload = {
     group_size?: (number) | null;
     highlight_options?: ((HighlightOptions) | null);
     /**
-     * Metadata is any metadata you want to associate w/ the event that is created from this request
-     */
-    metadata?: unknown;
-    /**
      * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
      */
     page_size?: (number) | null;
@@ -2260,9 +2256,32 @@ export type GetGroupsForChunksReqPayload = {
     chunk_tracking_ids?: Array<(string)> | null;
 };
 
+<<<<<<< Updated upstream
 export type GetOrganizationUsageReqPayload = {
     date_range?: ((DateRange) | null);
     v1_usage?: (boolean) | null;
+=======
+export type GetOrganizationApiKeysQuery = {
+    /**
+     * The cursor to start the pagination from.
+     */
+    cursor?: (string) | null;
+    /**
+     * The number of items to return per page.
+     */
+    limit?: (number) | null;
+};
+
+export type GetOrganizationApiKeysResponse = {
+    /**
+     * The api keys which belong to the organization.
+     */
+    api_keys: Array<ApiKeyRespBody>;
+    /**
+     * The cursor to start the pagination from.
+     */
+    cursor?: (string) | null;
+>>>>>>> Stashed changes
 };
 
 export type GetPagefindIndexResponse = {
@@ -6024,12 +6043,20 @@ export type UpdateOrganizationResponse = (Organization);
 
 export type GetOrganizationApiKeysData = {
     /**
+     * The cursor to start the pagination from.
+     */
+    cursor?: (string) | null;
+    /**
+     * The number of items to return per page.
+     */
+    limit?: (number) | null;
+    /**
      * The organization id to use for the request.
      */
     trOrganization: string;
 };
 
-export type GetOrganizationApiKeysResponse = (Array<ApiKeyRespBody>);
+export type GetOrganizationApiKeysResponse2 = (Array<ApiKeyRespBody>);
 
 export type CreateOrganizationApiKeyData = {
     /**

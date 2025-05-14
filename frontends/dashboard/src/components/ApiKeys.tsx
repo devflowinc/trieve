@@ -12,7 +12,8 @@ import {
   getCoreRowModel,
 } from "@tanstack/solid-table";
 import { TanStackTable } from "shared/ui";
-import { ApiKeyRespBody } from "trieve-ts-sdk";
+import { ApiKeyRespBody, GetOrganizationApiKeysResponse } from "trieve-ts-sdk";
+import { PaginationArrows } from "./DatasetOverview";
 
 const colHelp = createColumnHelper<ApiKeyRespBody>();
 
@@ -34,12 +35,33 @@ export const ApiKeys = () => {
 
   const trieve = useTrieve();
 
+  const [cursors, setCursors] = createSignal<(string | undefined)[]>([
+    undefined,
+  ]);
+
+  const [page, setPage] = createSignal<number>(0);
   const apiKeysQuery = createQuery(() => ({
     queryKey: ["apiKeys", userContext.selectedOrg().id],
-    queryFn: () => {
-      return trieve.fetch(`/api/organization/api_key`, "get", {
-        organizationId: userContext.selectedOrg().id,
+    queryFn: async () => {
+      const url =
+        page() === 0 || cursors()[page()] === undefined
+          ? "/api/organization/api_key"
+          : `/api/organization/api_key?cursor=${cursors()[page()]}`;
+
+      const response = (await trieve.fetch<"eject">(
+        //@ts-expect-error Argument of type '`/api/organization/api_key?cursor=${string}`' is not assignable to parameter of type 'keyof $OpenApiTs'.ts(2345)
+        url,
+        "get",
+        {
+          organizationId: userContext.selectedOrg().id,
+        },
+      )) as GetOrganizationApiKeysResponse;
+
+      setCursors((prevCursors) => {
+        return [...prevCursors, response.cursor as string];
       });
+
+      return response;
     },
   }));
 
@@ -134,7 +156,7 @@ export const ApiKeys = () => {
     ];
     return createSolidTable({
       columns: columns,
-      data: apiKeysQuery.data,
+      data: apiKeysQuery.data.api_keys as ApiKeyRespBody[],
       getCoreRowModel: getCoreRowModel(),
     });
   });
@@ -227,15 +249,39 @@ export const ApiKeys = () => {
             Create New Key +
           </button>
         </div>
-        <Show when={apiKeysQuery.data?.length === 0}>
+        <Show
+          when={(apiKeysQuery.data?.api_keys as ApiKeyRespBody[])?.length === 0}
+        >
           <div class="rounded-md border-[0.5px] border-neutral-300 bg-white py-4 text-center text-sm text-gray-500 shadow-sm">
             No API Keys
           </div>
         </Show>
-        <Show when={(apiKeysQuery.data?.length || -1) > 0}>
+        <Show
+          when={(apiKeysQuery.data?.api_keys as ApiKeyRespBody[])?.length > 0}
+        >
           <div class="inline-block w-full overflow-x-auto rounded-md border-[0.5px] border-neutral-300 bg-white align-middle shadow-sm">
             <Show when={table()}>
               {(table) => <TanStackTable table={table()} />}
+            </Show>
+            <Show
+              when={
+                (apiKeysQuery.data?.api_keys as ApiKeyRespBody[])?.length >=
+                  10 || cursors()[page()] !== undefined
+              }
+            >
+              <PaginationArrows
+                page={page}
+                setPage={(newPage) => {
+                  setPage(newPage);
+                  void apiKeysQuery.refetch();
+                }}
+                maxPageDiscovered={() => {
+                  return (apiKeysQuery.data?.api_keys as ApiKeyRespBody[])
+                    ?.length < 10
+                    ? page()
+                    : null;
+                }}
+              />
             </Show>
           </div>
         </Show>
