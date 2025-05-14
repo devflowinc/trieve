@@ -801,12 +801,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                   []
                 ).splice(0, 1)
               : undefined;
-            const descriptionOfFirstChunk = `Title: ${(firstChunk?.metadata as any)["title"]}\nDescription: ${firstChunk?.chunk_html}\nPrice: ${firstChunk?.num_value}`;
+            const jsonOfFirstChunk = {title: (firstChunk?.metadata as any)["title"], "Description": firstChunk?.chunk_html,"price": firstChunk?.num_value};
             return retryOperation(async () => {
               const relevanceToolCallResp =
                 await trieveSDK.getToolCallFunctionParams(
                   {
-                    user_message_text: `${props.relevanceToolCallOptions?.userMessageTextPrefix ?? defaultRelevanceToolCallOptions.userMessageTextPrefix} Determine the relevance of the below product for this query that user sent:\n\n${questionProp || currentQuestion}.\n\nHere are the details of the product you need to rank the relevance of:\n\n${descriptionOfFirstChunk}`,
+                    user_message_text: `Rank the relevance of this product given the following query: ${questionProp || currentQuestion}. Here are the details of the product you need to rank the relevance of:\n\n${JSON.stringify(jsonOfFirstChunk)}. ${props.relevanceToolCallOptions?.userMessageTextPrefix ?? defaultRelevanceToolCallOptions.userMessageTextPrefix}`,
                     image_urls: imageUrls,
                     tool_function: {
                       name: "determine_relevance",
