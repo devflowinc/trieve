@@ -185,7 +185,6 @@ const NoResults = ({ props, query }: { props: ModalProps; query: string }) => {
 const SearchPage = () => {
   const { props } = useModalState();
   if (!props.searchPageProps?.display) return null;
-  console.log(props.searchPageProps?.filterSidebarProps?.sections);
   return (
     <div
       className="trieve-search-page"

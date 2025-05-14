@@ -1156,7 +1156,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
     const defaultMatchAllTags = Object.keys(selectedSidebarFilters)
       .map((key) => selectedSidebarFilters[key])
-      .flat();
+      .flat() as string[];
     if (!currentTopic) {
       await createTopic({
         question: questionProp || currentQuestion,

@@ -20,7 +20,6 @@ import {
   searchWithTrieve,
   getPagefindIndex,
 } from "../trieve";
-import { InferenceFilterFormStep } from "../../TrieveModal/FilterSidebarComponents";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 
 export const ALL_TAG = {
@@ -58,6 +57,10 @@ export interface TagProp {
   iconClassName?: string;
   icon?: () => JSX.Element;
   description?: string;
+  range?: {
+    min?: number;
+    max?: number;
+  };
 }
 
 export const defaultRelevanceToolCallOptions: RelevanceToolCallOptions = {
@@ -100,22 +103,16 @@ export interface PriceToolCallOptions {
 export interface FilterSidebarSection {
   key: string;
   title: string;
-  selectionType: "single" | "multiple";
-  filterType: "match_any" | "match_all";
+  selectionType: "single" | "multiple" | "range";
+  filterType: "match_any" | "match_all" | "range";
   options: TagProp[];
 }
 
 export interface FilterSidebarProps {
   sections: FilterSidebarSection[];
 }
-
-export interface InferenceFiltersFormProps {
-  steps: InferenceFilterFormStep[];
-}
-
 export interface SearchPageProps {
   filterSidebarProps?: FilterSidebarProps;
-  inferenceFiltersFormProps?: InferenceFiltersFormProps;
   display?: boolean;
 }
 
@@ -320,9 +317,9 @@ const ModalContext = createContext<{
   isRecording: boolean;
   setIsRecording: React.Dispatch<React.SetStateAction<boolean>>;
   // sidebar filter specific state
-  selectedSidebarFilters: Record<string, string[]>; // hashmap where key is the section key and value are the selected labels
+  selectedSidebarFilters: Record<string, string[] | { min?: number; max?: number }>; // hashmap where key is the section key and value are the selected labels
   setSelectedSidebarFilters: React.Dispatch<
-    React.SetStateAction<Record<string, string[]>>
+    React.SetStateAction<Record<string, string[] | { min?: number; max?: number }>>
   >;
   minHeight: number;
   resetHeight: () => void;
@@ -401,7 +398,7 @@ const ModalProvider = ({
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
   const [currentGroup, setCurrentGroup] = useState<ChunkGroup | null>(null);
   const [selectedSidebarFilters, setSelectedSidebarFilters] = useState<
-    Record<string, string[]>
+    Record<string, string[] | { min?: number; max?: number }>
   >({});
   const [minHeight, setMinHeight] = useState(0);
   const [chatHeight, setChatHeight] = useState(0);
