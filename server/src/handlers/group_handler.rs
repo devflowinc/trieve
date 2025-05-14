@@ -1,18 +1,14 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
-    chunk_handler::{is_audio, ChunkFilter, SearchChunksReqPayload},
-};
-use crate::operators::{
-    chunk_operator::get_metadata_from_tracking_ids_query, model_operator::count_tokens,
+    chunk_handler::{is_audio, ChunkFilter, ScoringOptions, SearchChunksReqPayload},
 };
 use crate::{
     data::models::{
         escape_quotes, ChunkGroup, ChunkGroupAndFileId, ChunkGroupBookmark, ChunkMetadata,
         ChunkMetadataStringTagSet, DatasetAndOrgWithSubAndPlan, DatasetConfiguration,
-        HighlightOptions, MultiQuery, Pool, QueryTypes, RecommendType,
-        RecommendationEventClickhouse, RecommendationStrategy, RedisPool, ScoreChunk,
-        ScoreChunkDTO, SearchMethod, SearchQueryEventClickhouse, SortOptions, TypoOptions,
-        UnifiedId,
+        HighlightOptions, Pool, QueryTypes, RecommendType, RecommendationEventClickhouse,
+        RecommendationStrategy, RedisPool, ScoreChunk, ScoreChunkDTO, SearchMethod,
+        SearchQueryEventClickhouse, SortOptions, TypoOptions, UnifiedId,
     },
     errors::ServiceError,
     middleware::api_version::APIVersion,
@@ -26,9 +22,17 @@ use crate::{
         },
         search_operator::{
             get_metadata_from_groups, hybrid_search_over_groups, parse_query, search_groups_query,
-            search_hybrid_groups, search_over_groups_query, GroupScoreChunk, ParsedQuery,
-            ParsedQueryTypes, SearchOverGroupsQueryResult, SearchOverGroupsResults,
+            search_hybrid_groups, search_over_groups_query, GroupScoreChunk,
+            SearchOverGroupsQueryResult, SearchOverGroupsResults,
         },
+    },
+};
+use crate::{
+    data::models::{MultiQuery, SearchModalities},
+    operators::{
+        chunk_operator::get_metadata_from_tracking_ids_query,
+        model_operator::count_tokens,
+        search_operator::{autocomplete_search_over_groups_query, ParsedQuery, ParsedQueryTypes},
     },
 };
 use actix_web::{web, HttpResponse};
@@ -1426,8 +1430,8 @@ pub async fn get_recommended_groups(
 
     let group_qdrant_query_result = SearchOverGroupsQueryResult {
         search_results: recommended_groups_from_qdrant.clone(),
-        corrected_query: None,
         total_chunk_pages: (recommended_groups_from_qdrant.len() as f64 / 10.0).ceil() as i64,
+        batch_lengths: vec![],
     };
 
     timer.add("recommend_qdrant_groups_query");
@@ -1521,6 +1525,8 @@ pub struct SearchWithinGroupReqPayload {
     pub filters: Option<ChunkFilter>,
     /// Group specifies the group to search within. Results will only consist of chunks which are bookmarks within the specified group.
     pub group_id: Option<uuid::Uuid>,
+    /// Scoring options provides ways to modify the sparse or dense vector created for the query in order to change how potential matches are scored. If not specified, this defaults to no modifications.
+    pub scoring_options: Option<ScoringOptions>,
     /// Group_tracking_id specifies the group to search within by tracking id. Results will only consist of chunks which are bookmarks within the specified group. If both group_id and group_tracking_id are provided, group_id will be used.
     pub group_tracking_id: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE.
@@ -1710,6 +1716,10 @@ pub async fn search_within_group(
         .unwrap_or_default(),
     };
 
+    if query.is_empty() {
+        return Err(ServiceError::BadRequest("Query cannot be empty".to_string()).into());
+    }
+
     let result_chunks = match data.search_type {
         SearchMethod::Hybrid => {
             search_hybrid_groups(
@@ -1809,6 +1819,8 @@ pub struct SearchOverGroupsReqPayload {
     pub get_total_pages: Option<bool>,
     /// Filters is a JSON object which can be used to filter chunks. The values on each key in the object will be used to check for an exact substring match on the metadata values for each existing chunk. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
+    /// Scoring options provides ways to modify the sparse or dense vector created for the query in order to change how potential matches are scored. If not specified, this defaults to no modifications.
+    pub scoring_options: Option<ScoringOptions>,
     /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
     pub highlight_options: Option<HighlightOptions>,
     /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
@@ -1990,6 +2002,233 @@ pub async fn search_over_groups(
             .insert_header((
                 "X-TR-Query",
                 query.replace(|c: char| c.is_ascii_control(), ""),
+            ))
+            .json(result_chunks.into_v2(search_id)));
+    } else {
+        return Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .json(result_chunks.into_v2(search_id)));
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[schema(example = json!({
+    "search_type": "semantic",
+    "query": "Some search query",
+    "page": 1,
+    "page_size": 10,
+    "filters": {
+        "should": [
+            {
+                "field": "metadata.key1",
+                "match": ["value1", "value2"],
+                "range": {
+                    "gte": 0.0,
+                    "lte": 1.0,
+                    "gt": 0.0,
+                    "lt": 1.0
+                }
+            }
+        ],
+        "must": [
+            {
+                "field": "metadata.key2",
+                "match": ["value3", "value4"],
+                "range": {
+                    "gte": 0.0,
+                    "lte": 1.0,
+                    "gt": 0.0,
+                    "lt": 1.0
+                }
+            }
+        ],
+        "must_not": [
+            {
+                "field": "metadata.key3",
+                "match": ["value5", "value6"],
+                "range": {
+                    "gte": 0.0,
+                    "lte": 1.0,
+                    "gt": 0.0,
+                    "lt": 1.0
+                }
+            }
+        ]
+    },
+    "recency_bias": 1.0,
+    "use_weights": true,
+    "highlight_results": true,
+    "highlight_delimiters": ["?", ",", ".", "!"],
+    "score_threshold": 0.5
+}))]
+pub struct AutocompleteSearchOverGroupsReqPayload {
+    /// Can be either "semantic", or "fulltext". "semantic" will pull in one page_size of the nearest cosine distant vectors. "fulltext" will pull in one page_size of full-text results based on SPLADE. "bm25" will pull in one page_size of results based on the BM25 algorithim
+    pub search_type: SearchMethod,
+    /// If specified to true, this will extend the search results to include non-exact prefix matches of the same search_type such that a full page_size of results are returned. Default is false.
+    pub extend_results: Option<bool>,
+    /// Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.
+    pub query: SearchModalities,
+    /// Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+    pub page_size: Option<u64>,
+    /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
+    pub filters: Option<ChunkFilter>,
+    /// Sort Options lets you specify different methods to rerank the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub sort_options: Option<SortOptions>,
+    /// Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.
+    pub group_size: Option<u64>,
+    /// Scoring options provides ways to modify the sparse or dense vector created for the query in order to change how potential matches are scored. If not specified, this defaults to no modifications.
+    pub scoring_options: Option<ScoringOptions>,
+    /// Highlight Options lets you specify different methods to highlight the chunks in the result set. If not specified, this defaults to the score of the chunks.
+    pub highlight_options: Option<HighlightOptions>,
+    /// Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
+    pub score_threshold: Option<f32>,
+    /// Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
+    pub slim_chunks: Option<bool>,
+    /// If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+    pub use_quote_negated_terms: Option<bool>,
+    /// If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
+    pub remove_stop_words: Option<bool>,
+    /// User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
+    pub user_id: Option<String>,
+    /// If true, the query will be corrected for typos. Default is false.
+    pub typo_options: Option<TypoOptions>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
+}
+
+impl From<AutocompleteSearchOverGroupsReqPayload> for SearchOverGroupsReqPayload {
+    fn from(value: AutocompleteSearchOverGroupsReqPayload) -> Self {
+        SearchOverGroupsReqPayload {
+            page: Some(1),
+            query: QueryTypes::Single(value.clone().query),
+            page_size: value.page_size,
+            filters: value.filters,
+            sort_options: value.sort_options,
+            group_size: value.group_size,
+            scoring_options: value.scoring_options,
+            highlight_options: value.highlight_options,
+            score_threshold: value.score_threshold,
+            slim_chunks: value.slim_chunks,
+            use_quote_negated_terms: value.use_quote_negated_terms,
+            remove_stop_words: value.remove_stop_words,
+            user_id: value.user_id,
+            typo_options: value.typo_options,
+            metadata: value.metadata,
+            get_total_pages: Some(false),
+            search_type: value.search_type,
+        }
+    }
+}
+
+/// Autocomplete Search Over Groups
+///
+/// This route provides the primary autocomplete functionality for the API. This prioritize prefix matching with semantic or full-text search.
+#[utoipa::path(
+    post,
+    path = "/chunk_group/group_oriented_autocomplete",
+    context_path = "/api",
+    tag = "Group",
+    request_body(content = AutocompleteSearchOverGroupsReqPayload, description = "JSON request payload to semantically search for groups", content_type = "application/json"),
+    responses(
+        (status = 200, description = "Groups with embedding vectors which are similar to those in the request body", body = SearchOverGroupsResponseBody),
+        (status = 400, description = "Service error relating to searching", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+        ("X-API-Version" = Option<APIVersion>, Header, description = "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.")
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn autocomplete_search_over_groups(
+    data: web::Json<AutocompleteSearchOverGroupsReqPayload>,
+    _user: LoggedUser,
+    pool: web::Data<Pool>,
+    event_queue: web::Data<EventQueue>,
+    redis_pool: web::Data<RedisPool>,
+    api_version: APIVersion,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, actix_web::Error> {
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
+
+    let parsed_query = parse_query(
+        data.query.clone(),
+        &dataset_org_plan_sub.dataset,
+        data.use_quote_negated_terms,
+        data.remove_stop_words,
+    )
+    .await?;
+
+    if parsed_query.query.is_empty() {
+        return Err(ServiceError::BadRequest("Query cannot be empty".to_string()).into());
+    }
+
+    let mut timer = Timer::new();
+
+    let result_chunks = autocomplete_search_over_groups_query(
+        data.clone(),
+        parsed_query.clone(),
+        pool,
+        redis_pool,
+        dataset_org_plan_sub.dataset.clone(),
+        &dataset_config,
+        &mut timer,
+    )
+    .await?;
+
+    timer.add("autocomplete_chunks");
+
+    let search_id = uuid::Uuid::new_v4();
+    if !dataset_config.DISABLE_ANALYTICS {
+        let clickhouse_event = SearchQueryEventClickhouse {
+            id: search_id,
+            search_type: String::from("autocomplete"),
+            tokens: count_tokens(&parsed_query.query),
+            query: parsed_query.query.clone(),
+            request_params: serde_json::to_string(&data.clone()).unwrap_or_default(),
+            latency: get_latency_from_header(timer.header_value()),
+            top_score: result_chunks
+                .group_chunks
+                .first()
+                .map(|x| x.metadata.first().map(|y| y.score as f32).unwrap_or(0.0))
+                .unwrap_or(0.0),
+            results: result_chunks
+                .group_chunks
+                .clone()
+                .into_iter()
+                .map(|x| {
+                    let mut json = serde_json::to_value(&x).unwrap_or_default();
+                    escape_quotes(&mut json);
+                    json.to_string()
+                })
+                .collect(),
+            metadata: serde_json::to_string(&data.metadata.clone()).unwrap_or_default(),
+            dataset_id: dataset_org_plan_sub.dataset.id,
+            organization_id: dataset_org_plan_sub.dataset.organization_id,
+            created_at: time::OffsetDateTime::now_utc(),
+            query_rating: String::from(""),
+            user_id: data.user_id.clone().unwrap_or_default(),
+        };
+
+        event_queue
+            .send(ClickHouseEvent::SearchQueryEvent(clickhouse_event))
+            .await;
+    }
+
+    timer.add("send_to_clickhouse");
+
+    if api_version == APIVersion::V1 {
+        Ok(HttpResponse::Ok().json(result_chunks))
+    } else if is_audio(QueryTypes::Single(data.query.clone())) {
+        return Ok(HttpResponse::Ok()
+            .insert_header((Timer::header_key(), timer.header_value()))
+            .insert_header((
+                "X-TR-Query",
+                parsed_query
+                    .query
+                    .replace(|c: char| c.is_ascii_control(), ""),
             ))
             .json(result_chunks.into_v2(search_id)));
     } else {

@@ -227,6 +227,7 @@ impl Modify for SecurityAddon {
         handlers::group_handler::add_chunk_to_group_by_tracking_id,
         handlers::group_handler::get_chunks_in_group_by_tracking_id,
         handlers::group_handler::search_within_group,
+        handlers::group_handler::autocomplete_search_over_groups,
         handlers::file_handler::get_dataset_files_and_group_ids_handler,
         handlers::file_handler::get_files_cursor_handler,
         handlers::file_handler::upload_file_handler,
@@ -381,6 +382,7 @@ impl Modify for SecurityAddon {
             handlers::analytics_handler::RateQueryRequest,
             handlers::group_handler::AddChunkToGroupReqPayload,
             handlers::group_handler::RecommendGroupsResponseBody,
+            handlers::group_handler::AutocompleteSearchOverGroupsReqPayload,
             handlers::user_handler::UpdateUserReqPayload,
             handlers::organization_handler::CreateApiKeyReqPayload,
             handlers::organization_handler::CreateApiKeyResponse,
@@ -1241,6 +1243,12 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/group_oriented_search").route(
                                         web::post().to(handlers::group_handler::search_over_groups),
+                                    )
+                                    .wrap(Compress::default())
+                                )
+                                .service(
+                                    web::resource("/group_oriented_autocomplete").route(
+                                        web::post().to(handlers::group_handler::autocomplete_search_over_groups),
                                     )
                                     .wrap(Compress::default())
                                 )

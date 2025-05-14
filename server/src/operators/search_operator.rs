@@ -27,7 +27,8 @@ use crate::handlers::chunk_handler::{
     ScoringOptions, SearchChunkQueryResponseBody, SearchChunksReqPayload,
 };
 use crate::handlers::group_handler::{
-    SearchOverGroupsReqPayload, SearchWithinGroupReqPayload, SearchWithinGroupResults,
+    AutocompleteSearchOverGroupsReqPayload, SearchOverGroupsReqPayload,
+    SearchWithinGroupReqPayload, SearchWithinGroupResults,
 };
 use crate::operators::qdrant_operator::search_qdrant_query;
 use crate::{
@@ -1177,8 +1178,8 @@ pub async fn get_group_tag_set_filter_condition(
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SearchOverGroupsQueryResult {
     pub search_results: Vec<GroupSearchResults>,
-    pub corrected_query: Option<String>,
     pub total_chunk_pages: i64,
+    pub batch_lengths: Vec<usize>,
 }
 
 pub async fn retrieve_group_qdrant_points_query(
@@ -1190,7 +1191,7 @@ pub async fn retrieve_group_qdrant_points_query(
 ) -> Result<SearchOverGroupsQueryResult, ServiceError> {
     let page = if page == 0 { 1 } else { page };
     let use_mmr = mmr_options.is_some_and(|mmr| mmr.use_mmr && mmr.mmr_lambda.unwrap_or(0.5) > 0.0);
-    let (point_ids, count) = search_over_groups_qdrant_query(
+    let (point_ids, count, batch_lengths) = search_over_groups_qdrant_query(
         page,
         qdrant_searches.clone(),
         config.clone(),
@@ -1210,7 +1211,7 @@ pub async fn retrieve_group_qdrant_points_query(
     Ok(SearchOverGroupsQueryResult {
         search_results: point_ids,
         total_chunk_pages: pages,
-        corrected_query: None,
+        batch_lengths,
     })
 }
 
@@ -2601,8 +2602,13 @@ pub async fn search_groups_query(
     config: &DatasetConfiguration,
     timer: &mut Timer,
 ) -> Result<SearchWithinGroupResults, actix_web::Error> {
-    let vector =
-        get_qdrant_vector(data.clone().search_type, parsed_query.clone(), None, config).await?;
+    let vector = get_qdrant_vector(
+        data.clone().search_type,
+        parsed_query.clone(),
+        data.clone().scoring_options,
+        config,
+    )
+    .await?;
 
     let mut parsed_query = parsed_query.clone();
     let mut corrected_query = None;
@@ -2756,14 +2762,26 @@ pub async fn search_hybrid_groups(
         timer.add("corrected query");
     }
 
+    let semantic_boost = data
+        .scoring_options
+        .clone()
+        .map(|options| options.semantic_boost)
+        .unwrap_or(None);
+    let fulltext_boost = data
+        .scoring_options
+        .clone()
+        .map(|options| options.fulltext_boost)
+        .unwrap_or(None);
+
     let dense_vector_future = get_dense_vector(
         parsed_query.query.clone(),
-        None,
+        semantic_boost,
         "query",
         dataset_config.clone(),
     );
 
-    let sparse_vector_future = get_sparse_vector(parsed_query.query.clone(), None, "query");
+    let sparse_vector_future =
+        get_sparse_vector(parsed_query.query.clone(), fulltext_boost, "query");
 
     let (dense_vector, sparse_vector) =
         futures::try_join!(dense_vector_future, sparse_vector_future)?;
@@ -2905,6 +2923,171 @@ pub async fn search_hybrid_groups(
     })
 }
 
+pub async fn autocomplete_search_over_groups_query(
+    mut data: AutocompleteSearchOverGroupsReqPayload,
+    parsed_query: ParsedQuery,
+    pool: web::Data<Pool>,
+    redis_pool: web::Data<RedisPool>,
+    dataset: Dataset,
+    config: &DatasetConfiguration,
+    timer: &mut Timer,
+) -> Result<DeprecatedSearchOverGroupsResponseBody, actix_web::Error> {
+    let mut parsed_query = parsed_query.clone();
+    let mut corrected_query = None;
+
+    if let Some(options) = &data.typo_options {
+        timer.add("start correcting query");
+        let typo_corrected_query =
+            correct_query(parsed_query.clone(), dataset.id, redis_pool, options).await?;
+        if typo_corrected_query.corrected {
+            corrected_query.clone_from(&typo_corrected_query.query);
+        }
+        parsed_query = typo_corrected_query
+            .query
+            .clone()
+            .unwrap_or(parsed_query.clone());
+        data.query = SearchModalities::Text(parsed_query.query.clone());
+        timer.add("corrected query");
+    }
+
+    let vector = get_qdrant_vector(
+        data.clone().search_type,
+        ParsedQueryTypes::Single(parsed_query.clone()),
+        data.clone().scoring_options,
+        config,
+    )
+    .await?;
+    timer.add("computed dense embedding");
+
+    let (sort_by, rerank_by) = match data.sort_options.as_ref().map(|d| d.sort_by.clone()) {
+        Some(Some(sort_by)) => match sort_by {
+            QdrantSortBy::Field(field) => (Some(field.clone()), None),
+            QdrantSortBy::SearchType(search_type) => (None, Some(search_type)),
+        },
+        _ => (None, None),
+    };
+
+    let mut qdrant_query = vec![
+        RetrievePointQuery {
+            vector: vector.clone(),
+            score_threshold: if rerank_by.clone().map(|r| r.rerank_type)
+                == Some(ReRankOptions::CrossEncoder)
+            {
+                None
+            } else {
+                data.score_threshold
+            },
+            limit: data.page_size.unwrap_or(10),
+            sort_by: sort_by.clone(),
+            rerank_by: rerank_by.clone(),
+            filter: data.filters.clone(),
+            group_size: data.group_size,
+        }
+        .into_qdrant_query(
+            ParsedQueryTypes::Single(parsed_query.clone()),
+            dataset.id,
+            None,
+            config,
+            pool.clone(),
+        )
+        .await?,
+    ];
+
+    if let Some(q) = qdrant_query.get_mut(0) {
+        q.filter.must.push(Condition::matches_text(
+            "content",
+            parsed_query.query.clone(),
+        ));
+    }
+
+    if data.extend_results.unwrap_or(false) {
+        qdrant_query.push(
+            RetrievePointQuery {
+                vector,
+                score_threshold: data.score_threshold,
+                sort_by: sort_by.clone(),
+                rerank_by: rerank_by.clone(),
+                limit: data.page_size.unwrap_or(10),
+                filter: data.filters.clone(),
+                group_size: data.group_size,
+            }
+            .into_qdrant_query(
+                ParsedQueryTypes::Single(parsed_query.clone()),
+                dataset.id,
+                None,
+                config,
+                pool.clone(),
+            )
+            .await?,
+        );
+    };
+
+    let search_over_groups_qdrant_result = retrieve_group_qdrant_points_query(
+        qdrant_query,
+        1,
+        data.sort_options.as_ref().and_then(|d| d.mmr.clone()),
+        false,
+        config,
+    )
+    .await?;
+
+    timer.add("fetched from qdrant");
+
+    let mut result_chunks = retrieve_chunks_for_groups(
+        search_over_groups_qdrant_result.clone(),
+        &data.clone().into(),
+        pool.clone(),
+    )
+    .await?;
+
+    result_chunks.group_chunks = search_over_groups_qdrant_result
+        .search_results
+        .iter()
+        .filter_map(|search_result| {
+            result_chunks
+                .group_chunks
+                .iter()
+                .find(|group| group.group_id == search_result.group_id)
+                .cloned()
+        })
+        .collect();
+
+    timer.add("fetched from postgres");
+
+    let first_increase = *search_over_groups_qdrant_result
+        .batch_lengths
+        .get(0)
+        .unwrap_or(&0) as usize;
+
+    let (before_increase, after_increase) = if first_increase < result_chunks.group_chunks.len() {
+        result_chunks.group_chunks.split_at(first_increase)
+    } else {
+        let empty_vec: &[GroupScoreChunk] = &[];
+
+        (result_chunks.group_chunks.as_slice(), empty_vec)
+    };
+
+    let mut reranked_chunks = rerank_groups(
+        before_increase.to_vec(),
+        search_over_groups_qdrant_result.search_results.clone(),
+        data.sort_options.clone(),
+    );
+
+    reranked_chunks.extend(rerank_groups(
+        after_increase.to_vec(),
+        search_over_groups_qdrant_result.search_results,
+        data.sort_options,
+    ));
+
+    reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
+
+    result_chunks.group_chunks = reranked_chunks;
+
+    result_chunks.corrected_query = corrected_query.map(|c| c.query);
+
+    Ok(result_chunks)
+}
+
 pub async fn search_over_groups_query(
     mut data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQueryTypes,
@@ -2946,8 +3129,13 @@ pub async fn search_over_groups_query(
         timer.add("corrected query");
     }
 
-    let vector =
-        get_qdrant_vector(data.clone().search_type, parsed_query.clone(), None, config).await?;
+    let vector = get_qdrant_vector(
+        data.clone().search_type,
+        parsed_query.clone(),
+        data.clone().scoring_options,
+        config,
+    )
+    .await?;
 
     timer.add("computed dense embedding");
 
@@ -3096,15 +3284,26 @@ pub async fn hybrid_search_over_groups(
         timer.add("corrected query");
     }
 
+    let semantic_boost = data
+        .scoring_options
+        .clone()
+        .map(|options| options.semantic_boost)
+        .unwrap_or(None);
+    let fulltext_boost = data
+        .scoring_options
+        .clone()
+        .map(|options| options.fulltext_boost)
+        .unwrap_or(None);
+
     let dense_embedding_vectors_future = get_dense_vector(
         parsed_query.query.clone(),
-        None,
+        semantic_boost,
         "query",
         dataset_config.clone(),
     );
 
     let sparse_embedding_vector_future =
-        get_sparse_vector(parsed_query.query.clone(), None, "query");
+        get_sparse_vector(parsed_query.query.clone(), fulltext_boost, "query");
 
     let (dense_vector, sparse_vector) = futures::try_join!(
         dense_embedding_vectors_future,
