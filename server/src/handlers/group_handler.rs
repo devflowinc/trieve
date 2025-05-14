@@ -2127,7 +2127,7 @@ impl From<AutocompleteSearchOverGroupsReqPayload> for SearchOverGroupsReqPayload
     post,
     path = "/chunk_group/group_oriented_autocomplete",
     context_path = "/api",
-    tag = "Group",
+    tag = "Chunk Group",
     request_body(content = AutocompleteSearchOverGroupsReqPayload, description = "JSON request payload to semantically search for groups", content_type = "application/json"),
     responses(
         (status = 200, description = "Groups with embedding vectors which are similar to those in the request body", body = SearchOverGroupsResponseBody),
