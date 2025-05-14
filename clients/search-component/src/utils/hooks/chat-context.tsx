@@ -717,8 +717,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }),
       };
 
-      const searchWithinGroupResp = await retryOperation(async () => {
-        return await trieveSDK.searchInGroup(
+      const chunkIds = await retryOperation(async () => {
+        const fulltextSearchPromise = trieveSDK.searchInGroup(
           {
             query: questionProp || currentQuestion,
             search_type: "fulltext",
@@ -729,10 +729,27 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           },
           searchAbortController.current.signal,
         );
+
+        const chunksInGroupPromise = trieveSDK.getChunksInGroup(
+          {
+            groupId: curGroup.id,
+            page: 1,
+          },
+          searchAbortController.current.signal,
+        );
+
+        const [fulltextSearchResp, chunksInGroupResp] = await Promise.all([
+          fulltextSearchPromise,
+          chunksInGroupPromise,
+        ]);
+        const chunkIds = fulltextSearchResp.chunks.map(
+          (score_chunk) => score_chunk.chunk.id,
+        );
+        if (!chunkIds.length) {
+          chunkIds.push(...chunksInGroupResp.chunks.map((chunk) => chunk.id));
+        }
+        return chunkIds;
       });
-      const chunkIds = searchWithinGroupResp.chunks.map(
-        (score_chunk) => score_chunk.chunk.id,
-      );
       createMessageFilter = {
         must: [
           {
@@ -962,7 +979,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 transcribedQuery = headers["x-tr-query"];
               }
             },
-            props.overrideFetch ?? false
+            props.overrideFetch ?? false,
           );
         reader = createMessageResp.reader;
         queryId = createMessageResp.queryId;
