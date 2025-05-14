@@ -1,7 +1,6 @@
 import { TbDatabasePlus } from "solid-icons/tb";
 import {
   Show,
-  Setter,
   Accessor,
   createSignal,
   createEffect,
@@ -452,10 +451,10 @@ export const DatasetOverview = () => {
   );
 };
 
-const PaginationArrows = (props: {
+export const PaginationArrows = (props: {
   page: Accessor<number>;
-  setPage: Setter<number>;
-  maxPageDiscovered: Accessor<number | null>;
+  setPage: (page: number | ((page: number) => number)) => void;
+  maxPageDiscovered?: Accessor<number | null>;
 }) => {
   return (
     <div class="flex items-center justify-end gap-2 border-t border-t-neutral-200 p-1">
@@ -469,7 +468,9 @@ const PaginationArrows = (props: {
       <div class="text-sm">Page {props.page() + 1}</div>
       <button
         onClick={() => props.setPage((page) => page + 1)}
-        disabled={props.page() === props.maxPageDiscovered()}
+        disabled={
+          props.maxPageDiscovered && props.page() === props.maxPageDiscovered()
+        }
         class="p-2 text-lg font-semibold text-neutral-600 disabled:opacity-50"
       >
         <AiFillCaretRight />
