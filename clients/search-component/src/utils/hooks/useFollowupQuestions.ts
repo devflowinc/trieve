@@ -6,13 +6,13 @@ import { useChatState } from "./chat-context";
 export const useFollowupQuestions = () => {
   const { trieveSDK, currentGroup, props } = useModalState();
   const { messages, isDoneReading } = useChatState();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSuggestedQueries, setIsLoadingSuggestedQueries] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
     Record<string, string[]>
   >({});
 
   const getFollowUpQuestions = async () => {
-    setIsLoading(true);
+    setIsLoadingSuggestedQueries(true);
     const prevUserMessages =
       messages.filter((msg) => {
         return msg.type == "user";
@@ -28,7 +28,7 @@ export const useFollowupQuestions = () => {
     const prevMessage = prevUserMessages?.slice(-1)[0];
 
     if (!prevMessage) {
-      setIsLoading(false);
+      setIsLoadingSuggestedQueries(false);
       return;
     }
 
@@ -50,14 +50,14 @@ export const useFollowupQuestions = () => {
         return q.replace(/^[\d.-]+\s*/, "").trim();
       }),
     }));
-    setIsLoading(false);
+    setIsLoadingSuggestedQueries(false);
   };
 
   useEffect(() => {
     if (!isDoneReading) {
       return;
     }
-    setIsLoading(true);
+    setIsLoadingSuggestedQueries(true);
     const abortController = new AbortController();
 
     const timeoutId = setTimeout(async () => {
@@ -89,6 +89,6 @@ export const useFollowupQuestions = () => {
 
   return {
     suggestedQuestions: filteredSuggestedQuestions,
-    isLoadingSuggestedQueries: isLoading,
+    isLoadingSuggestedQueries: isLoadingSuggestedQueries,
   };
 };

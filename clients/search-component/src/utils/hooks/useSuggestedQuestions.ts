@@ -5,13 +5,14 @@ import { useModalState } from "./modal-context";
 
 export const useSuggestedQuestions = () => {
   const { props, query, trieveSDK, currentGroup } = useModalState();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSuggestedQueries, setIsLoadingSuggestedQueries] =
+    useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
     SuggestedQueriesResponse["queries"]
   >(props.defaultAiQuestions ?? []);
 
   const getQuestions = async () => {
-    setIsLoading(true);
+    setIsLoadingSuggestedQueries(true);
     const queries = await getSuggestedQuestions({
       trieve: trieveSDK,
       count: props.numberOfSuggestions ?? 3,
@@ -26,7 +27,7 @@ export const useSuggestedQuestions = () => {
         return q.replace(/^[\d.-]+\s*/, "").trim();
       }),
     );
-    setIsLoading(false);
+    setIsLoadingSuggestedQueries(false);
   };
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export const useSuggestedQuestions = () => {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingSuggestedQueries(true);
     const abortController = new AbortController();
 
     const timeoutId = setTimeout(async () => {
@@ -54,7 +55,7 @@ export const useSuggestedQuestions = () => {
           return q.replace(/^[\d.-]+\s*/, "").trim();
         }),
       );
-      setIsLoading(false);
+      setIsLoadingSuggestedQueries(false);
     });
 
     return () => {
@@ -66,6 +67,6 @@ export const useSuggestedQuestions = () => {
   return {
     suggestedQuestions,
     getQuestions,
-    isLoadingSuggestedQueries: isLoading,
+    isLoadingSuggestedQueries,
   };
 };
