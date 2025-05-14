@@ -6105,6 +6105,27 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "The cursor to start the pagination from.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The number of items to return per page.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            }
           }
         ],
         "responses": {
@@ -13836,6 +13857,44 @@
             "items": {
               "type": "string"
             },
+            "nullable": true
+          }
+        }
+      },
+      "GetOrganizationApiKeysQuery": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The cursor to start the pagination from.",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The number of items to return per page.",
+            "nullable": true
+          }
+        }
+      },
+      "GetOrganizationApiKeysResponse": {
+        "type": "object",
+        "required": [
+          "api_keys"
+        ],
+        "properties": {
+          "api_keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyRespBody"
+            },
+            "description": "The api keys which belong to the organization."
+          },
+          "cursor": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The cursor to start the pagination from.",
             "nullable": true
           }
         }

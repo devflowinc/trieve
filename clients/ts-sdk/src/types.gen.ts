@@ -2260,6 +2260,28 @@ export type GetGroupsForChunksReqPayload = {
     chunk_tracking_ids?: Array<(string)> | null;
 };
 
+export type GetOrganizationApiKeysQuery = {
+    /**
+     * The cursor to start the pagination from.
+     */
+    cursor?: (string) | null;
+    /**
+     * The number of items to return per page.
+     */
+    limit?: (number) | null;
+};
+
+export type GetOrganizationApiKeysResponse = {
+    /**
+     * The api keys which belong to the organization.
+     */
+    api_keys: Array<ApiKeyRespBody>;
+    /**
+     * The cursor to start the pagination from.
+     */
+    cursor?: (string) | null;
+};
+
 export type GetOrganizationUsageReqPayload = {
     date_range?: ((DateRange) | null);
     v1_usage?: (boolean) | null;
@@ -6024,12 +6046,20 @@ export type UpdateOrganizationResponse = (Organization);
 
 export type GetOrganizationApiKeysData = {
     /**
+     * The cursor to start the pagination from.
+     */
+    cursor?: (string) | null;
+    /**
+     * The number of items to return per page.
+     */
+    limit?: (number) | null;
+    /**
      * The organization id to use for the request.
      */
     trOrganization: string;
 };
 
-export type GetOrganizationApiKeysResponse = (Array<ApiKeyRespBody>);
+export type GetOrganizationApiKeysResponse2 = (Array<ApiKeyRespBody>);
 
 export type CreateOrganizationApiKeyData = {
     /**
