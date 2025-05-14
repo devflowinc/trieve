@@ -192,6 +192,7 @@ export type ModalProps = {
   };
   usePortal?: boolean;
   previewTopicId?: string;
+  overrideFetch?: boolean;
 };
 
 const defaultProps = {

@@ -73,14 +73,18 @@ export async function createMessageReader(
   this: TrieveSDK,
   data: CreateMessageReqPayload,
   signal?: AbortSignal,
-  parseHeaders?: (headers: Record<string, string>) => void
+  parseHeaders?: (headers: Record<string, string>) => void,
+  overrideFetch: boolean = false
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
   }
 
-  const cleanFetch = getCleanFetch();
-  const fetchToUse = cleanFetch ?? fetch;
+  let fetchToUse = fetch;
+  if (overrideFetch) {
+    const cleanFetch = getCleanFetch();
+    fetchToUse = cleanFetch ?? fetch;
+  }
 
   const response = await fetchToUse(this.trieve.baseUrl + "/api/message", {
     method: "post",
@@ -122,14 +126,18 @@ export async function createMessageReaderWithQueryId(
   this: TrieveSDK,
   data: CreateMessageReqPayload,
   signal?: AbortSignal,
-  parseHeaders?: (headers: Record<string, string>) => void
+  parseHeaders?: (headers: Record<string, string>) => void,
+  overrideFetch: boolean = false,
 ) {
   if (!this.datasetId) {
     throw new Error("datasetId is required");
   }
 
-  const cleanFetch = getCleanFetch();
-  const fetchToUse = cleanFetch ?? fetch;
+  let fetchToUse = fetch;
+  if (overrideFetch) {
+    const cleanFetch = getCleanFetch();
+    fetchToUse = cleanFetch ?? fetch;
+  }
 
   const response = await fetchToUse(this.trieve.baseUrl + "/api/message", {
     method: "post",
