@@ -31,6 +31,7 @@
     "solid-js": "^1.8.11",
     "terracotta": "^1.0.3",
     "trieve-ts-sdk": "*",
+    "turbo": "^2.0.4",
     "vite-plugin-runtime-env": "^0.1.1",
     "zod": "^3.23.8"
   },

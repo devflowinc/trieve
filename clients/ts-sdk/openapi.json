@@ -15651,6 +15651,14 @@
             "type": "string",
             "nullable": true
           },
+          "relevanceToolCallOptions": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RelevanceToolCallOptions"
+              }
+            ],
+            "nullable": true
+          },
           "responsive": {
             "type": "boolean",
             "nullable": true
@@ -17955,6 +17963,37 @@
           "user_id": {
             "type": "string",
             "description": "The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.",
+            "nullable": true
+          }
+        }
+      },
+      "RelevanceToolCallOptions": {
+        "type": "object",
+        "required": [
+          "toolDescription"
+        ],
+        "properties": {
+          "highDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "includeImages": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "lowDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "mediumDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "toolDescription": {
+            "type": "string"
+          },
+          "userMessageTextPrefix": {
+            "type": "string",
             "nullable": true
           }
         }
