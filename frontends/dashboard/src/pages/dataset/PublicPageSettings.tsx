@@ -2,7 +2,10 @@ import { createEffect, createSignal, For, Show } from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { JsonInput, MultiStringInput, Select, Tooltip } from "shared/ui";
-import { publicPageSearchOptionsSchema } from "../../analytics/utils/schemas/autocomplete";
+import {
+  publicPageSearchOptionsSchema,
+  tagPropSchema,
+} from "../../analytics/utils/schemas/autocomplete";
 import { FiExternalLink, FiPlus, FiTrash } from "solid-icons/fi";
 
 import {
@@ -768,45 +771,6 @@ const PublicPageControls = () => {
               <div class="grow">
                 <div class="flex items-center gap-1">
                   <label class="block" for="">
-                    Tags
-                  </label>
-                  <Tooltip
-                    tooltipText="Default tag filters for the search component. Each field has a `tag, label, iconClassName, description` separated by commas. Only tag is required."
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <MultiStringInput
-                  placeholder={`documentation,docs,fa-solid fa-info, general inspecific information about the product`}
-                  value={
-                    extraParams.tags?.map((tag) => {
-                      return `${tag.tag},${tag.label},${tag.iconClassName},${tag.description}`;
-                    }) ?? []
-                  }
-                  onChange={(e) => {
-                    setExtraParams(
-                      "tags",
-                      e.map((tag) => {
-                        const [tagStr, label, iconClassName, description] =
-                          tag.split(",");
-                        return {
-                          tag: tagStr,
-                          label,
-                          iconClassName,
-                          description,
-                        };
-                      }),
-                    );
-                  }}
-                  addLabel="Add Tag"
-                  addClass="text-sm"
-                  inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-              <div class="grow">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
                     Button Triggers
                   </label>
                   <Tooltip
@@ -1149,6 +1113,7 @@ const PublicPageControls = () => {
               />
             </div>
             <SearchOptions />
+            <TagOptions />
             <div class="grow">
               <div class="flex items-center gap-1">
                 <label class="block" for="">
@@ -1529,6 +1494,49 @@ export const SearchOptions = () => {
       />
       <Show when={searchOptionsError()}>
         <div class="text-red-500">{searchOptionsError()}</div>
+      </Show>
+    </div>
+  );
+};
+
+export const TagOptions = () => {
+  const { extraParams, setExtraParams, tagOptionsError, setTagOptionsError } =
+    usePublicPage();
+  return (
+    <div class="mt-1">
+      <div class="flex items-baseline justify-between">
+        <div>Tag Options</div>
+        <a
+          href="https://github.com/devflowinc/trieve/blob/main/clients/search-component/src/utils/hooks/modal-context.tsx#L53-L62"
+          target="_blank"
+          class="text-sm opacity-65"
+        >
+          View Schema
+        </a>
+      </div>
+      <JsonInput
+        theme="light"
+        onValueChange={(value) => {
+          const result = tagPropSchema.safeParse(value);
+
+          if (result.success) {
+            setExtraParams("tags", result.data);
+            setTagOptionsError(null);
+          } else {
+            setTagOptionsError(
+              result.error.errors.at(0)?.message || "Invalid Search Options",
+            );
+          }
+        }}
+        value={() => {
+          return extraParams?.searchOptions || [];
+        }}
+        onError={(message) => {
+          setTagOptionsError(message);
+        }}
+      />
+      <Show when={tagOptionsError()}>
+        <div class="text-red-500">{tagOptionsError()}</div>
       </Show>
     </div>
   );

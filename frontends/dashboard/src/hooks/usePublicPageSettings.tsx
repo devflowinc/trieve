@@ -34,7 +34,9 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
     const [searchOptionsError, setSearchOptionsError] = createSignal<
       string | null
     >(null);
-
+    const [tagOptionsError, setTagOptionsError] = createSignal<string | null>(
+      null,
+    );
     const [isPublic, setisPublic] = createSignal<boolean>(false);
     const [hasLoaded, setHasLoaded] = createSignal(false);
 
@@ -245,6 +247,8 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
       setExtraParams,
       searchOptionsError,
       setSearchOptionsError,
+      tagOptionsError,
+      setTagOptionsError,
       isPublic,
       publicUrl,
       unpublishDataset,
