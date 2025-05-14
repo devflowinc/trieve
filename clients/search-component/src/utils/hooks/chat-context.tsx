@@ -126,9 +126,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<ComponentMessages>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("");
-  const searchOverGroupsAbortController = useRef<AbortController>(
-    new AbortController(),
-  );
+  const searchAbortController = useRef<AbortController>(new AbortController());
   const relevanceToolCallAbortController = useRef<AbortController>(
     new AbortController(),
   );
@@ -178,6 +176,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearConversation = () => {
+    searchAbortController.current.abort("Aborted");
+    relevanceToolCallAbortController.current.abort("Aborted");
+    chatMessageAbortController.current.abort("Aborted");
     setCurrentTopic("");
     setMessages([]);
   };
@@ -502,7 +503,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     setLoadingText("Thinking about filter criteria...");
     try {
       const priceFiltersPromise = retryOperation(async () => {
-        if (props.type === "ecommerce") {
+        if (props.type === "ecommerce" && !curGroup) {
           return await trieveSDK.getToolCallFunctionParams({
             user_message_text: questionProp || currentQuestion,
             image_url: imageUrl ? imageUrl : null,
@@ -697,151 +698,196 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       filters = null;
     }
 
-    let groupIdFilter: ChunkFilter | null = null;
-    try {
-      setLoadingText("Searching for relevant products...");
-      searchOverGroupsAbortController.current = new AbortController();
-      const searchOverGroupsResp = await retryOperation(async () => {
-        return await trieveSDK.searchOverGroups(
+    let createMessageFilter: ChunkFilter | null = null;
+    searchAbortController.current = new AbortController();
+    if (curGroup) {
+      setLoadingText("Reading the product's information...");
+      const filtersWithoutGroupIds = {
+        must: filters?.must?.filter((f) => {
+          return "field" in f && f.field !== "group_ids";
+        }),
+        must_not: filters?.must_not?.filter((f) => {
+          return "field" in f && f.field !== "group_ids";
+        }),
+        should: filters?.should?.filter((f) => {
+          return "field" in f && f.field !== "group_ids";
+        }),
+      };
+
+      const searchWithinGroupResp = await retryOperation(async () => {
+        return await trieveSDK.searchInGroup(
           {
             query: questionProp || currentQuestion,
             search_type: "fulltext",
-            filters: filters,
-            page_size: 20,
-            group_size: 1,
+            filters: filtersWithoutGroupIds,
+            page_size: 10,
+            group_id: curGroup.id,
             user_id: await getFingerprint(),
           },
-          searchOverGroupsAbortController.current.signal,
+          searchAbortController.current.signal,
         );
       });
-
-      setLoadingText("Determing relevance of the results...");
-      relevanceToolCallAbortController.current = new AbortController();
-      // add a 5s timeout to the relevance tool call
-      const relevanceToolCallTimeout = setTimeout(() => {
-        console.error("relevanceToolCall timeout on retry: ");
-        relevanceToolCallAbortController.current.abort(
-          "AbortError timeout on relevanceToolCall",
-        );
-      }, 5000);
-      const highlyRelevantGroupIds: string[] = [];
-      const mediumRelevantGroupIds: string[] = [];
-      const lowlyRelevantGroupIds: string[] = [];
-      const rankingPromises = searchOverGroupsResp.results.map(
-        async (group) => {
-          const firstChunk = group.chunks.length
-            ? (group.chunks[0].chunk as ChunkMetadata)
-            : null;
-          const imageUrls = props.relevanceToolCallOptions?.includeImages
-            ? (
-                (firstChunk?.image_urls?.filter(
-                  (stringOrNull): stringOrNull is string =>
-                    Boolean(stringOrNull),
-                ) ||
-                  []) ??
-                []
-              ).splice(0, 1)
-            : undefined;
-          const descriptionOfFirstChunk = `Title: ${(firstChunk?.metadata as any)["title"]}\nDescription: ${firstChunk?.chunk_html}\nPrice: ${firstChunk?.num_value}`;
-          return retryOperation(async () => {
-            const relevanceToolCallResp =
-              await trieveSDK.getToolCallFunctionParams(
-                {
-                  user_message_text: `${props.relevanceToolCallOptions?.userMessageTextPrefix ?? defaultRelevanceToolCallOptions.userMessageTextPrefix} Determine the relevance of the below product for this query that user sent:\n\n${questionProp || currentQuestion}.\n\nHere are the details of the product you need to rank the relevance of:\n\n${descriptionOfFirstChunk}`,
-                  image_urls: imageUrls,
-                  tool_function: {
-                    name: "determine_relevance",
-                    description:
-                      props.relevanceToolCallOptions?.toolDescription ??
-                      defaultRelevanceToolCallOptions.toolDescription,
-                    parameters: [
-                      {
-                        name: "high",
-                        description: (props.relevanceToolCallOptions
-                          ?.highDescription ??
-                          defaultRelevanceToolCallOptions.highDescription) as string,
-                        parameter_type: "boolean",
-                      },
-                      {
-                        name: "medium",
-                        description: (props.relevanceToolCallOptions
-                          ?.mediumDescription ??
-                          defaultRelevanceToolCallOptions.mediumDescription) as string,
-                        parameter_type: "boolean",
-                      },
-                      {
-                        name: "low",
-                        description: (props.relevanceToolCallOptions
-                          ?.lowDescription ??
-                          defaultRelevanceToolCallOptions.lowDescription) as string,
-                        parameter_type: "boolean",
-                      },
-                    ],
-                  },
-                },
-                relevanceToolCallAbortController.current?.signal,
-              );
-
-            setLoadingText((prev) => {
-              const contentType =
-                props.type === "ecommerce" ? "product" : "section";
-              const match = prev.match(
-                new RegExp(
-                  `Verifying relevance for ${contentType} (\\d+) of \\d+`,
-                ),
-              );
-              if (prev === "Determing relevance of the results...") {
-                return `Searching for relevant ${contentType}s...`;
-              } else if (prev === `Searching for relevant ${contentType}s...`) {
-                return `Verifying relevance for ${contentType} 1 of ${searchOverGroupsResp.results.length}...`;
-              } else if (match) {
-                const currentNumber = parseInt(match[1], 10);
-                return `Verifying relevance for ${contentType} ${currentNumber + 1} of ${searchOverGroupsResp.results.length}...`;
-              }
-              return prev;
-            });
-
-            if ((relevanceToolCallResp.parameters as any)["high"] == true) {
-              highlyRelevantGroupIds.push(group.group.id);
-            } else if (
-              (relevanceToolCallResp.parameters as any)["medium"] == true
-            ) {
-              mediumRelevantGroupIds.push(group.group.id);
-            } else if (
-              (relevanceToolCallResp.parameters as any)["low"] == true
-            ) {
-              lowlyRelevantGroupIds.push(group.group.id);
-            }
-          });
-        },
+      const chunkIds = searchWithinGroupResp.chunks.map(
+        (score_chunk) => score_chunk.chunk.id,
       );
-      await Promise.all(rankingPromises);
-      setLoadingText("Finished verifying relevance");
-      clearTimeout(relevanceToolCallTimeout);
-      let groupIdsToUse = highlyRelevantGroupIds;
-
-      if (highlyRelevantGroupIds.length > 1) {
-        groupIdsToUse = [...highlyRelevantGroupIds];
-      } else if (highlyRelevantGroupIds.length === 1) {
-        groupIdsToUse = [...highlyRelevantGroupIds, ...mediumRelevantGroupIds];
-      } else if (
-        highlyRelevantGroupIds.length === 0 &&
-        mediumRelevantGroupIds.length > 0
-      ) {
-        groupIdsToUse = mediumRelevantGroupIds;
-      }
-
-      const topGroupIds = groupIdsToUse.slice(0, 8);
-      groupIdFilter = {
+      createMessageFilter = {
         must: [
           {
-            field: "group_ids",
-            match_any: topGroupIds,
+            field: "ids",
+            match_any: chunkIds,
           },
         ],
       };
-    } catch (e) {
-      console.error("error getting determine_relevance", e);
+    } else {
+      try {
+        setLoadingText("Searching for relevant products...");
+        const searchOverGroupsResp = await retryOperation(async () => {
+          return await trieveSDK.searchOverGroups(
+            {
+              query: questionProp || currentQuestion,
+              search_type: "fulltext",
+              filters: filters,
+              page_size: 20,
+              group_size: 1,
+              user_id: await getFingerprint(),
+            },
+            searchAbortController.current.signal,
+          );
+        });
+
+        setLoadingText("Determing relevance of the results...");
+        relevanceToolCallAbortController.current = new AbortController();
+        // add a 5s timeout to the relevance tool call
+        const relevanceToolCallTimeout = setTimeout(() => {
+          console.error("relevanceToolCall timeout on retry: ");
+          relevanceToolCallAbortController.current.abort(
+            "AbortError timeout on relevanceToolCall",
+          );
+        }, 5000);
+        const highlyRelevantGroupIds: string[] = [];
+        const mediumRelevantGroupIds: string[] = [];
+        const lowlyRelevantGroupIds: string[] = [];
+        const rankingPromises = searchOverGroupsResp.results.map(
+          async (group) => {
+            const firstChunk = group.chunks.length
+              ? (group.chunks[0].chunk as ChunkMetadata)
+              : null;
+            const imageUrls = props.relevanceToolCallOptions?.includeImages
+              ? (
+                  (firstChunk?.image_urls?.filter(
+                    (stringOrNull): stringOrNull is string =>
+                      Boolean(stringOrNull),
+                  ) ||
+                    []) ??
+                  []
+                ).splice(0, 1)
+              : undefined;
+            const descriptionOfFirstChunk = `Title: ${(firstChunk?.metadata as any)["title"]}\nDescription: ${firstChunk?.chunk_html}\nPrice: ${firstChunk?.num_value}`;
+            return retryOperation(async () => {
+              const relevanceToolCallResp =
+                await trieveSDK.getToolCallFunctionParams(
+                  {
+                    user_message_text: `${props.relevanceToolCallOptions?.userMessageTextPrefix ?? defaultRelevanceToolCallOptions.userMessageTextPrefix} Determine the relevance of the below product for this query that user sent:\n\n${questionProp || currentQuestion}.\n\nHere are the details of the product you need to rank the relevance of:\n\n${descriptionOfFirstChunk}`,
+                    image_urls: imageUrls,
+                    tool_function: {
+                      name: "determine_relevance",
+                      description:
+                        props.relevanceToolCallOptions?.toolDescription ??
+                        defaultRelevanceToolCallOptions.toolDescription,
+                      parameters: [
+                        {
+                          name: "high",
+                          description: (props.relevanceToolCallOptions
+                            ?.highDescription ??
+                            defaultRelevanceToolCallOptions.highDescription) as string,
+                          parameter_type: "boolean",
+                        },
+                        {
+                          name: "medium",
+                          description: (props.relevanceToolCallOptions
+                            ?.mediumDescription ??
+                            defaultRelevanceToolCallOptions.mediumDescription) as string,
+                          parameter_type: "boolean",
+                        },
+                        {
+                          name: "low",
+                          description: (props.relevanceToolCallOptions
+                            ?.lowDescription ??
+                            defaultRelevanceToolCallOptions.lowDescription) as string,
+                          parameter_type: "boolean",
+                        },
+                      ],
+                    },
+                  },
+                  relevanceToolCallAbortController.current?.signal,
+                );
+
+              setLoadingText((prev) => {
+                const contentType =
+                  props.type === "ecommerce" ? "product" : "section";
+                const match = prev.match(
+                  new RegExp(
+                    `Verifying relevance for ${contentType} (\\d+) of \\d+`,
+                  ),
+                );
+                if (prev === "Determing relevance of the results...") {
+                  return `Searching for relevant ${contentType}s...`;
+                } else if (
+                  prev === `Searching for relevant ${contentType}s...`
+                ) {
+                  return `Verifying relevance for ${contentType} 1 of ${searchOverGroupsResp.results.length}...`;
+                } else if (match) {
+                  const currentNumber = parseInt(match[1], 10);
+                  return `Verifying relevance for ${contentType} ${currentNumber + 1} of ${searchOverGroupsResp.results.length}...`;
+                }
+                return prev;
+              });
+
+              if ((relevanceToolCallResp.parameters as any)["high"] == true) {
+                highlyRelevantGroupIds.push(group.group.id);
+              } else if (
+                (relevanceToolCallResp.parameters as any)["medium"] == true
+              ) {
+                mediumRelevantGroupIds.push(group.group.id);
+              } else if (
+                (relevanceToolCallResp.parameters as any)["low"] == true
+              ) {
+                lowlyRelevantGroupIds.push(group.group.id);
+              }
+            });
+          },
+        );
+        await Promise.all(rankingPromises);
+        setLoadingText("Finished verifying relevance");
+        clearTimeout(relevanceToolCallTimeout);
+        let groupIdsToUse = highlyRelevantGroupIds;
+
+        if (highlyRelevantGroupIds.length > 1) {
+          groupIdsToUse = [...highlyRelevantGroupIds];
+        } else if (highlyRelevantGroupIds.length === 1) {
+          groupIdsToUse = [
+            ...highlyRelevantGroupIds,
+            ...mediumRelevantGroupIds,
+          ];
+        } else if (
+          highlyRelevantGroupIds.length === 0 &&
+          mediumRelevantGroupIds.length > 0
+        ) {
+          groupIdsToUse = mediumRelevantGroupIds;
+        }
+
+        const topGroupIds = groupIdsToUse.slice(0, 8);
+        createMessageFilter = {
+          must: [
+            {
+              field: "group_ids",
+              match_any: topGroupIds,
+            },
+          ],
+        };
+      } catch (e) {
+        console.error("error getting determine_relevance", e);
+      }
     }
 
     setLoadingText("AI is generating a response...");
@@ -889,10 +935,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               },
               concat_user_messages_query: true,
               user_id: await getFingerprint(),
-              page_size: props.searchOptions?.page_size ?? 8,
+              page_size: props.searchOptions?.page_size ?? (curGroup ? 10 : 8),
               score_threshold: props.searchOptions?.score_threshold || null,
               use_group_search: props.useGroupSearch,
-              filters: groupIdFilter,
+              filters: createMessageFilter,
               metadata: {
                 component_props: props,
               },
@@ -975,12 +1021,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     relevanceToolCallAbortController.current.abort(
       "Stopped generating message AbortError",
     );
-    searchOverGroupsAbortController.current.abort(
+    searchAbortController.current.abort(
       "Stopped generating message AbortError",
     );
     chatMessageAbortController.current = new AbortController();
     relevanceToolCallAbortController.current = new AbortController();
-    searchOverGroupsAbortController.current = new AbortController();
+    searchAbortController.current = new AbortController();
     setIsDoneReading(true);
     setLoadingText("");
     setIsLoading(false);
