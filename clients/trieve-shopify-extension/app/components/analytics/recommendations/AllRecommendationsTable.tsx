@@ -353,7 +353,6 @@ export const AllRecommendationsTable = () => {
       page={page}
       setPage={setPage}
       label="Recommendations"
-      tooltipContent="View and filter all your recommendations."
       tableHeadings={[
         {
           heading: "Positive Tracking IDs",
@@ -374,7 +373,6 @@ export const AllRecommendationsTable = () => {
         { heading: "Results", tooltip: "The number of results returned" },
       ]}
       hasNext={data?.queries.length == 10}
-      tabs={tabs}
       filters={shopifyFilters}
       query={query}
       setQuery={setQuery}

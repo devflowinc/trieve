@@ -2,11 +2,7 @@ import React from "react";
 import { useChatState } from "../../utils/hooks/chat-context";
 import { useModalState } from "../../utils/hooks/modal-context";
 
-export const InlineChatHeader = ({
-  resetHeight,
-}: {
-  resetHeight: () => void;
-}) => {
+export const InlineChatHeader = () => {
   const { props } = useModalState();
   const { messages, clearConversation, isDoneReading, stopGeneratingMessage } =
     useChatState();
@@ -23,7 +19,6 @@ export const InlineChatHeader = ({
       className={`tv-text-xs tv-rounded-md !tv-bg-transparent tv-flex !hover:bg-tv-zinc-200 tv-px-2 tv-justify-end tv-items-center tv-p-2 tv-gap-0.5 tv-cursor-pointer ${props.type}`}
       onClick={() => {
         if (isDoneReading) {
-          resetHeight();
           clearConversation();
         } else {
           stopGeneratingMessage();
