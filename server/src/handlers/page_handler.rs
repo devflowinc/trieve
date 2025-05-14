@@ -162,10 +162,29 @@ pub struct SingleProductOptions {
 #[serde(rename_all = "camelCase")]
 pub struct PublicPageTag {
     tag: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     label: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     selected: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     icon_class_name: Option<String>,
     description: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct RelevanceToolCallOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_message_text_prefix: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_images: Option<bool>,
+    pub tool_description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub high_description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub medium_description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub low_description: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
@@ -183,6 +202,8 @@ pub struct PublicPageParameters {
     pub analytics: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<PublicPageTag>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub relevance_tool_call_options: Option<RelevanceToolCallOptions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_queries: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]

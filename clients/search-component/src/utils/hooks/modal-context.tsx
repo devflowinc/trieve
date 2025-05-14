@@ -60,6 +60,28 @@ export interface TagProp {
   description?: string;
 }
 
+export const defaultRelevanceToolCallOptions: RelevanceToolCallOptions = {
+  userMessageTextPrefix:
+    "Be extra picky and detailed. Thoroughly examine all details of the query and product.",
+  includeImages: false,
+  toolDescription: "Mark the relevance of product based on the user's query.",
+  highDescription:
+    "Highly relevant and very good fit for the given query taking all details of both the query and the product into account",
+  mediumDescription:
+    "Somewhat relevant and a decent or okay fit for the given query taking all details of both the query and the product into account",
+  lowDescription:
+    "Not relevant and not a good fit for the given query taking all details of both the query and the product into account",
+};
+
+export interface RelevanceToolCallOptions {
+  userMessageTextPrefix?: string;
+  includeImages?: boolean;
+  toolDescription: string;
+  highDescription?: string;
+  mediumDescription?: string;
+  lowDescription?: string;
+}
+
 export interface FilterSidebarSection {
   key: string;
   title: string;
@@ -113,6 +135,7 @@ export type ModalProps = {
   brandFontFamily?: string;
   openKeyCombination?: { key?: string; label?: string; ctrl?: boolean }[];
   tags?: TagProp[];
+  relevanceToolCallOptions?: RelevanceToolCallOptions;
   defaultSearchMode?: SearchModes;
   usePagefind?: boolean;
   type?: ModalTypes;
@@ -175,6 +198,7 @@ const defaultProps = {
   datasetId: "",
   apiKey: "",
   baseUrl: "https://api.trieve.ai",
+  relevanceToolCallOptions: defaultRelevanceToolCallOptions,
   defaultSearchMode: "search" as SearchModes,
   placeholder: "Search...",
   chatPlaceholder: "Ask Anything...",
@@ -376,10 +400,14 @@ const ModalProvider = ({
       return;
     }
 
-    if (props.type === "ecommerce" && props.inline && props.defaultSearchMode === "search") {
+    if (
+      props.type === "ecommerce" &&
+      props.inline &&
+      props.defaultSearchMode === "search"
+    ) {
       const url = new URL(window.location.href);
-      url.searchParams.set('q', query);
-      window.history.replaceState({}, '', url.toString());
+      url.searchParams.set("q", query);
+      window.history.replaceState({}, "", url.toString());
     }
 
     try {
@@ -555,9 +583,13 @@ const ModalProvider = ({
   }, [open, props.analytics, props]);
 
   useEffect(() => {
-    if (props.type === "ecommerce" && props.inline && props.defaultSearchMode === "search") {
+    if (
+      props.type === "ecommerce" &&
+      props.inline &&
+      props.defaultSearchMode === "search"
+    ) {
       const url = new URL(window.location.href);
-      const initialQuery = url.searchParams.get('q');
+      const initialQuery = url.searchParams.get("q");
       if (initialQuery) {
         setQuery(initialQuery);
       }
