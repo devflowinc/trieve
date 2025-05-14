@@ -2259,6 +2259,82 @@
         ]
       }
     },
+    "/api/chunk_group/group_oriented_autocomplete": {
+      "post": {
+        "tags": [
+          "Group"
+        ],
+        "summary": "Autocomplete Search Over Groups",
+        "description": "This route provides the primary autocomplete functionality for the API. This prioritize prefix matching with semantic or full-text search.",
+        "operationId": "autocomplete_search_over_groups",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-API-Version",
+            "in": "header",
+            "description": "The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.",
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/APIVersion"
+                }
+              ],
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to semantically search for groups",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutocompleteSearchOverGroupsReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Groups with embedding vectors which are similar to those in the request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchOverGroupsResponseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to searching",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      }
+    },
     "/api/chunk_group/group_oriented_search": {
       "post": {
         "tags": [
@@ -7163,6 +7239,173 @@
                 "$ref": "#/components/schemas/HighlightOptions"
               }
             ],
+            "nullable": true
+          },
+          "page_size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.",
+            "nullable": true,
+            "minimum": 0
+          },
+          "query": {
+            "$ref": "#/components/schemas/SearchModalities"
+          },
+          "remove_stop_words": {
+            "type": "boolean",
+            "description": "If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.",
+            "nullable": true
+          },
+          "score_threshold": {
+            "type": "number",
+            "format": "float",
+            "description": "Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.",
+            "nullable": true
+          },
+          "scoring_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScoringOptions"
+              }
+            ],
+            "nullable": true
+          },
+          "search_type": {
+            "$ref": "#/components/schemas/SearchMethod"
+          },
+          "slim_chunks": {
+            "type": "boolean",
+            "description": "Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.",
+            "nullable": true
+          },
+          "sort_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SortOptions"
+              }
+            ],
+            "nullable": true
+          },
+          "typo_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TypoOptions"
+              }
+            ],
+            "nullable": true
+          },
+          "use_quote_negated_terms": {
+            "type": "boolean",
+            "description": "If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.",
+            "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "User ID is the id of the user who is making the request. This is used to track user interactions with the search results.",
+            "nullable": true
+          }
+        },
+        "example": {
+          "filters": {
+            "must": [
+              {
+                "field": "metadata.key2",
+                "match": [
+                  "value3",
+                  "value4"
+                ],
+                "range": {
+                  "gt": 0.0,
+                  "gte": 0.0,
+                  "lt": 1.0,
+                  "lte": 1.0
+                }
+              }
+            ],
+            "must_not": [
+              {
+                "field": "metadata.key3",
+                "match": [
+                  "value5",
+                  "value6"
+                ],
+                "range": {
+                  "gt": 0.0,
+                  "gte": 0.0,
+                  "lt": 1.0,
+                  "lte": 1.0
+                }
+              }
+            ],
+            "should": [
+              {
+                "field": "metadata.key1",
+                "match": [
+                  "value1",
+                  "value2"
+                ],
+                "range": {
+                  "gt": 0.0,
+                  "gte": 0.0,
+                  "lt": 1.0,
+                  "lte": 1.0
+                }
+              }
+            ]
+          },
+          "highlight_delimiters": [
+            "?",
+            ",",
+            ".",
+            "!"
+          ],
+          "highlight_results": true,
+          "page": 1,
+          "page_size": 10,
+          "query": "Some search query",
+          "recency_bias": 1.0,
+          "score_threshold": 0.5,
+          "search_type": "semantic",
+          "use_weights": true
+        }
+      },
+      "AutocompleteSearchOverGroupsReqPayload": {
+        "type": "object",
+        "required": [
+          "search_type",
+          "query"
+        ],
+        "properties": {
+          "extend_results": {
+            "type": "boolean",
+            "description": "If specified to true, this will extend the search results to include non-exact prefix matches of the same search_type such that a full page_size of results are returned. Default is false.",
+            "nullable": true
+          },
+          "filters": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChunkFilter"
+              }
+            ],
+            "nullable": true
+          },
+          "group_size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.",
+            "nullable": true,
+            "minimum": 0
+          },
+          "highlight_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HighlightOptions"
+              }
+            ],
+            "nullable": true
+          },
+          "metadata": {
+            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
             "nullable": true
           },
           "page_size": {
@@ -15853,6 +16096,14 @@
             "description": "Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.",
             "nullable": true
           },
+          "scoring_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScoringOptions"
+              }
+            ],
+            "nullable": true
+          },
           "search_type": {
             "$ref": "#/components/schemas/SearchMethod"
           },
@@ -16267,6 +16518,14 @@
             "type": "number",
             "format": "float",
             "description": "Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.",
+            "nullable": true
+          },
+          "scoring_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScoringOptions"
+              }
+            ],
             "nullable": true
           },
           "search_type": {

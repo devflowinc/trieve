@@ -4190,6 +4190,7 @@ impl ApiKeyRequestParams {
             user_id: payload.user_id,
             typo_options: self.typo_options.or(payload.typo_options),
             sort_options: payload.sort_options,
+            scoring_options: payload.scoring_options,
         }
     }
 
@@ -4217,6 +4218,7 @@ impl ApiKeyRequestParams {
             remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
             user_id: payload.user_id,
             typo_options: self.typo_options.or(payload.typo_options),
+            scoring_options: payload.scoring_options,
         }
     }
 }
@@ -7799,6 +7801,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             remove_stop_words: Option<bool>,
             user_id: Option<String>,
             typo_options: Option<TypoOptions>,
+            scoring_options: Option<ScoringOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -7832,6 +7835,7 @@ impl<'de> Deserialize<'de> for SearchWithinGroupReqPayload {
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
             typo_options: helper.typo_options,
+            scoring_options: helper.scoring_options,
         })
     }
 }
@@ -7858,6 +7862,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             user_id: Option<String>,
             typo_options: Option<TypoOptions>,
             sort_options: Option<SortOptions>,
+            scoring_options: Option<ScoringOptions>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
         }
@@ -7888,6 +7893,7 @@ impl<'de> Deserialize<'de> for SearchOverGroupsReqPayload {
             sort_options,
             remove_stop_words: helper.remove_stop_words,
             user_id: helper.user_id,
+            scoring_options: helper.scoring_options,
         })
     }
 }

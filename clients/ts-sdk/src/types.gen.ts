@@ -115,6 +115,52 @@ export type AutocompleteReqPayload = {
     user_id?: (string) | null;
 };
 
+export type AutocompleteSearchOverGroupsReqPayload = {
+    /**
+     * If specified to true, this will extend the search results to include non-exact prefix matches of the same search_type such that a full page_size of results are returned. Default is false.
+     */
+    extend_results?: (boolean) | null;
+    filters?: ((ChunkFilter) | null);
+    /**
+     * Group_size is the number of chunks to fetch for each group. The default is 3. If a group has less than group_size chunks, all chunks will be returned. If this is set to a large number, we recommend setting slim_chunks to true to avoid returning the content and chunk_html of the chunks so as to lower the amount of time required for content download and serialization.
+     */
+    group_size?: (number) | null;
+    highlight_options?: ((HighlightOptions) | null);
+    /**
+     * Metadata is any metadata you want to associate w/ the event that is created from this request
+     */
+    metadata?: unknown;
+    /**
+     * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
+     */
+    page_size?: (number) | null;
+    query: SearchModalities;
+    /**
+     * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
+     */
+    remove_stop_words?: (boolean) | null;
+    /**
+     * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
+     */
+    score_threshold?: (number) | null;
+    scoring_options?: ((ScoringOptions) | null);
+    search_type: SearchMethod;
+    /**
+     * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typically 10-50ms). Default is false.
+     */
+    slim_chunks?: (boolean) | null;
+    sort_options?: ((SortOptions) | null);
+    typo_options?: ((TypoOptions) | null);
+    /**
+     * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
+     */
+    use_quote_negated_terms?: (boolean) | null;
+    /**
+     * User ID is the id of the user who is making the request. This is used to track user interactions with the search results.
+     */
+    user_id?: (string) | null;
+};
+
 export type BatchQueuedChunkResponse = {
     chunk_metadata: Array<ChunkMetadata>;
 };
@@ -2940,6 +2986,7 @@ export type SearchOverGroupsReqPayload = {
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
     score_threshold?: (number) | null;
+    scoring_options?: ((ScoringOptions) | null);
     search_type: SearchMethod;
     /**
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
@@ -3071,6 +3118,7 @@ export type SearchWithinGroupReqPayload = {
      * Set score_threshold to a float to filter out chunks with a score below the threshold. This threshold applies before weight and bias modifications. If not specified, this defaults to 0.0.
      */
     score_threshold?: (number) | null;
+    scoring_options?: ((ScoringOptions) | null);
     search_type: SearchMethod;
     /**
      * Set slim_chunks to true to avoid returning the content and chunk_html of the chunks. This is useful for when you want to reduce amount of data over the wire for latency improvement (typicall 10-50ms). Default is false.
@@ -4201,6 +4249,23 @@ export type CountGroupChunksData = {
 };
 
 export type CountGroupChunksResponse = (GetChunkGroupCountResponse);
+
+export type AutocompleteSearchOverGroupsData = {
+    /**
+     * JSON request payload to semantically search for groups
+     */
+    requestBody: AutocompleteSearchOverGroupsReqPayload;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+    /**
+     * The API version to use for this request. Defaults to V2 for orgs created after July 12, 2024 and V1 otherwise.
+     */
+    xApiVersion?: ((APIVersion) | null);
+};
+
+export type AutocompleteSearchOverGroupsResponse = (SearchOverGroupsResponseBody);
 
 export type SearchOverGroupsData = {
     /**
@@ -5740,6 +5805,21 @@ export type $OpenApiTs = {
                  * Group not found
                  */
                 404: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/chunk_group/group_oriented_autocomplete': {
+        post: {
+            req: AutocompleteSearchOverGroupsData;
+            res: {
+                /**
+                 * Groups with embedding vectors which are similar to those in the request body
+                 */
+                200: SearchOverGroupsResponseBody;
+                /**
+                 * Service error relating to searching
+                 */
+                400: ErrorResponseBody;
             };
         };
     };

@@ -814,9 +814,9 @@ pub async fn search_over_groups_qdrant_query(
     dataset_config: DatasetConfiguration,
     get_total_pages: bool,
     use_mmr: bool,
-) -> Result<(Vec<GroupSearchResults>, u64), ServiceError> {
+) -> Result<(Vec<GroupSearchResults>, u64, Vec<usize>), ServiceError> {
     if queries.is_empty() || queries.iter().all(|query| query.limit == 0) {
-        return Ok((vec![], 0));
+        return Ok((vec![], 0, vec![]));
     }
 
     let group_size = queries
@@ -904,6 +904,18 @@ pub async fn search_over_groups_qdrant_query(
     let (count, search_batch_response) =
         futures::future::join(count_future, search_batch_futures).await;
 
+    let batch_lengths: Vec<usize> = search_batch_response
+        .iter()
+        .flatten()
+        .map(|batch_result| {
+            batch_result
+                .result
+                .as_ref()
+                .map(|x| x.groups.len())
+                .unwrap_or(0)
+        })
+        .collect();
+
     let point_ids: Vec<GroupSearchResults> = search_batch_response
         .map_err(|e| {
             log::error!("Failed to search points on Qdrant {:?}", e);
@@ -963,7 +975,7 @@ pub async fn search_over_groups_qdrant_query(
         })
         .collect_vec();
 
-    Ok((point_ids, count?))
+    Ok((point_ids, count?, batch_lengths))
 }
 
 fn get_qdrant_vector(query: QdrantSearchQuery) -> (String, VectorInput) {
