@@ -2372,7 +2372,7 @@
     "/api/chunk_group/group_oriented_autocomplete": {
       "post": {
         "tags": [
-          "Group"
+          "Chunk Group"
         ],
         "summary": "Autocomplete Search Over Groups",
         "description": "This route provides the primary autocomplete functionality for the API. This prioritize prefix matching with semantic or full-text search.",
