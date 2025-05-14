@@ -147,7 +147,6 @@ export const SearchMode = () => {
               resultsDisplay
             )}
           </ul>
-        </div>
           {hasQuery && !resultsLength && !loadingResults && (
             <NoResults props={props} query={query} />
           )}
@@ -156,6 +155,7 @@ export const SearchMode = () => {
               <p className="">Searching...</p>
             </div>
           )}
+        </div>
     </>
   );
 };

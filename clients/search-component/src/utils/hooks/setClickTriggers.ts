@@ -15,6 +15,20 @@ export const setClickTriggers = (
     // @ts-expect-error Property 'href' does not exist on type 'Element'. [2339]
     element.href = "#";
 
+  const detailsElement = element.querySelector('details');
+  
+  if (detailsElement) {
+    // Find and remove the summary element
+    const summaryElement = detailsElement.querySelector('summary');
+    
+    if (summaryElement) {
+      //keep everything under the summary element
+      summaryElement.querySelector(".header__icon-close")?.remove();
+      const newDetailsChild = summaryElement.cloneNode(true);
+      detailsElement.replaceChildren(newDetailsChild);
+    }
+  }
+
     const newElement = element.cloneNode(true);
     element?.parentNode?.replaceChild(newElement, element);
     return newElement as unknown as Element;
