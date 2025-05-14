@@ -127,10 +127,6 @@ export type AutocompleteSearchOverGroupsReqPayload = {
     group_size?: (number) | null;
     highlight_options?: ((HighlightOptions) | null);
     /**
-     * Metadata is any metadata you want to associate w/ the event that is created from this request
-     */
-    metadata?: unknown;
-    /**
      * Page size is the number of chunks to fetch. This can be used to fetch more than 10 chunks at a time.
      */
     page_size?: (number) | null;
@@ -419,6 +415,10 @@ export type ChunkReqPayload = {
     convert_html_to_text?: (boolean) | null;
     fulltext_boost?: ((FullTextBoost) | null);
     /**
+     * If fulltext_content is present, it will be used for creating the fulltext and bm25 sparse vectors instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and used for semantic functionality unless the corresponding `semantic_content` field is defined. `chunk_html` must still be present for the chunk to be created properly.
+     */
+    fulltext_content?: (string) | null;
+    /**
      * Group ids are the Trieve generated ids of the groups that the chunk should be placed into. This is useful for when you want to create a chunk and add it to a group or multiple groups in one request. Groups with these Trieve generated ids must be created first, it cannot be arbitrarily created through this route.
      */
     group_ids?: Array<(string)> | null;
@@ -449,7 +449,7 @@ export type ChunkReqPayload = {
     num_value?: (number) | null;
     semantic_boost?: ((SemanticBoost) | null);
     /**
-     * If semantic_content is present, it will be used for creating semantic embeddings instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and always used for fulltext functionality. `chunk_html` must still be present for the chunk to be created properly.
+     * If semantic_content is present, it will be used for creating semantic embeddings instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and used for fulltext functionality unless the corresponding `fulltext_content` field is defined. `chunk_html` must still be present for the chunk to be created properly.
      */
     semantic_content?: (string) | null;
     /**
@@ -1849,6 +1849,28 @@ export type GetGroupsForChunksReqPayload = {
     chunk_tracking_ids?: Array<(string)> | null;
 };
 
+export type GetOrganizationApiKeysQuery = {
+    /**
+     * The cursor to start the pagination from.
+     */
+    cursor?: (string) | null;
+    /**
+     * The number of items to return per page.
+     */
+    limit?: (number) | null;
+};
+
+export type GetOrganizationApiKeysResponse = {
+    /**
+     * The api keys which belong to the organization.
+     */
+    api_keys: Array<ApiKeyRespBody>;
+    /**
+     * The cursor to start the pagination from.
+     */
+    cursor?: (string) | null;
+};
+
 export type GetPagefindIndexResponse = {
     url: string;
 };
@@ -2848,6 +2870,7 @@ export type SearchAnalytics = {
     sort_order?: ((SortOrder) | null);
     type: 'search_queries';
 } | {
+    count_collapsed_queries?: (boolean) | null;
     filter?: ((SearchAnalyticsFilter) | null);
     type: 'count_queries';
 } | {
@@ -4994,12 +5017,20 @@ export type UpdateOrganizationResponse = (Organization);
 
 export type GetOrganizationApiKeysData = {
     /**
+     * The cursor to start the pagination from.
+     */
+    cursor?: (string) | null;
+    /**
+     * The number of items to return per page.
+     */
+    limit?: (number) | null;
+    /**
      * The organization id to use for the request.
      */
     trOrganization: string;
 };
 
-export type GetOrganizationApiKeysResponse = (Array<ApiKeyRespBody>);
+export type GetOrganizationApiKeysResponse2 = (Array<ApiKeyRespBody>);
 
 export type CreateOrganizationApiKeyData = {
     /**

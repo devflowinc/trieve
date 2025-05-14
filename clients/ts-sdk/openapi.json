@@ -5750,6 +5750,27 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "The cursor to start the pagination from.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The number of items to return per page.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            }
           }
         ],
         "responses": {
@@ -7404,10 +7425,6 @@
             ],
             "nullable": true
           },
-          "metadata": {
-            "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
-            "nullable": true
-          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -8526,6 +8543,11 @@
             ],
             "nullable": true
           },
+          "fulltext_content": {
+            "type": "string",
+            "description": "If fulltext_content is present, it will be used for creating the fulltext and bm25 sparse vectors instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and used for semantic functionality unless the corresponding `semantic_content` field is defined. `chunk_html` must still be present for the chunk to be created properly.",
+            "nullable": true
+          },
           "group_ids": {
             "type": "array",
             "items": {
@@ -8589,7 +8611,7 @@
           },
           "semantic_content": {
             "type": "string",
-            "description": "If semantic_content is present, it will be used for creating semantic embeddings instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and always used for fulltext functionality. `chunk_html` must still be present for the chunk to be created properly.",
+            "description": "If semantic_content is present, it will be used for creating semantic embeddings instead of the innerText `chunk_html`. `chunk_html` will still be the only thing stored and used for fulltext functionality unless the corresponding `fulltext_content` field is defined. `chunk_html` must still be present for the chunk to be created properly.",
             "nullable": true
           },
           "split_avg": {
@@ -12058,6 +12080,44 @@
             "items": {
               "type": "string"
             },
+            "nullable": true
+          }
+        }
+      },
+      "GetOrganizationApiKeysQuery": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The cursor to start the pagination from.",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The number of items to return per page.",
+            "nullable": true
+          }
+        }
+      },
+      "GetOrganizationApiKeysResponse": {
+        "type": "object",
+        "required": [
+          "api_keys"
+        ],
+        "properties": {
+          "api_keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyRespBody"
+            },
+            "description": "The api keys which belong to the organization."
+          },
+          "cursor": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The cursor to start the pagination from.",
             "nullable": true
           }
         }
@@ -15574,6 +15634,10 @@
               "type"
             ],
             "properties": {
+              "count_collapsed_queries": {
+                "type": "boolean",
+                "nullable": true
+              },
               "filter": {
                 "allOf": [
                   {
