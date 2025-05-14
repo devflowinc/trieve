@@ -37,6 +37,9 @@
       {% if params.tags -%}
       tags: {{ params.tags | tojson }},
       {% endif -%}
+      {% if params.relevanceToolCallOptions -%}
+      relevanceToolCallOptions: {{ params.relevanceToolCallOptions | tojson }},
+      {% endif -%}
       {% if params.responsive -%}
       responsive: {{ params.responsive }},
       {% endif -%}

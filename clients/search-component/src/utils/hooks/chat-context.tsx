@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useRef, useState } from "react";
-import { useModalState } from "./modal-context";
+import {
+  defaultRelevanceToolCallOptions,
+  useModalState,
+} from "./modal-context";
 import { Chunk } from "../types";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { useEffect } from "react";
@@ -717,40 +720,47 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             const firstChunk = group.chunks.length
               ? (group.chunks[0].chunk as ChunkMetadata)
               : null;
+            const imageUrls = props.relevanceToolCallOptions?.includeImages
+              ? (
+                  (firstChunk?.image_urls?.filter(
+                    (stringOrNull): stringOrNull is string =>
+                      Boolean(stringOrNull),
+                  ) ||
+                    []) ??
+                  []
+                ).splice(0, 1)
+              : undefined;
             const descriptionOfFirstChunk = `Title: ${(firstChunk?.metadata as any)["title"]}\nDescription: ${firstChunk?.chunk_html}\nPrice: ${firstChunk?.num_value}`;
             return trieveSDK
               .getToolCallFunctionParams(
                 {
-                  user_message_text: `Be extra picky and detailed. Thoroughly examine all details of the query and product. Determine the relevance of the below product for this query that user sent:\n\n${questionProp || currentQuestion}.\n\nHere are the details of the product you need to rank the relevance of:\n\n${descriptionOfFirstChunk}`,
-                  image_urls: (
-                    (firstChunk?.image_urls?.filter(
-                      (stringOrNull): stringOrNull is string =>
-                        Boolean(stringOrNull),
-                    ) ||
-                      []) ??
-                    []
-                  ).splice(0, 1),
+                  user_message_text: `${props.relevanceToolCallOptions?.userMessageTextPrefix ?? defaultRelevanceToolCallOptions.userMessageTextPrefix} Determine the relevance of the below product for this query that user sent:\n\n${questionProp || currentQuestion}.\n\nHere are the details of the product you need to rank the relevance of:\n\n${descriptionOfFirstChunk}`,
+                  image_urls: imageUrls,
                   tool_function: {
                     name: "determine_relevance",
                     description:
-                      "Mark the relevance of product based on the user's query.",
+                      props.relevanceToolCallOptions?.toolDescription ??
+                      defaultRelevanceToolCallOptions.toolDescription,
                     parameters: [
                       {
                         name: "high",
-                        description:
-                          "Highly relevant and very good fit for the given query taking all details of both the query and the product into account",
+                        description: (props.relevanceToolCallOptions
+                          ?.highDescription ??
+                          defaultRelevanceToolCallOptions.highDescription) as string,
                         parameter_type: "boolean",
                       },
                       {
                         name: "medium",
-                        description:
-                          "Somewhat relevant and a decent or okay fit for the given query taking all details of both the query and the product into account",
+                        description: (props.relevanceToolCallOptions
+                          ?.mediumDescription ??
+                          defaultRelevanceToolCallOptions.mediumDescription) as string,
                         parameter_type: "boolean",
                       },
                       {
                         name: "low",
-                        description:
-                          "Not relevant and not a good fit for the given query taking all details of both the query and the product into account",
+                        description: (props.relevanceToolCallOptions
+                          ?.lowDescription ??
+                          defaultRelevanceToolCallOptions.lowDescription) as string,
                         parameter_type: "boolean",
                       },
                     ],

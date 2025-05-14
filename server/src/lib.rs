@@ -462,6 +462,7 @@ impl Modify for SecurityAddon {
             handlers::page_handler::OpenGraphMetadata,
             handlers::page_handler::SingleProductOptions,
             handlers::page_handler::PublicPageTag,
+            handlers::page_handler::RelevanceToolCallOptions,
             handlers::page_handler::PublicPageTheme,
             handlers::page_handler::PublicPageParameters,
             handlers::page_handler::PublicPageTabMessage,

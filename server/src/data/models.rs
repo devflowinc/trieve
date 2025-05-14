@@ -3470,6 +3470,9 @@ impl DatasetConfigurationDTO {
                         .analytics
                         .or(page_parameters_curr.analytics),
                     tags: page_parameters_self.tags.or(page_parameters_curr.tags),
+                    relevance_tool_call_options: page_parameters_self
+                        .relevance_tool_call_options
+                        .or(page_parameters_curr.relevance_tool_call_options),
                     suggested_queries: page_parameters_self
                         .suggested_queries
                         .or(page_parameters_curr.suggested_queries),
