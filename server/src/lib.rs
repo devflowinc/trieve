@@ -383,6 +383,8 @@ impl Modify for SecurityAddon {
             handlers::organization_handler::CreateOrganizationReqPayload,
             handlers::organization_handler::UpdateOrganizationReqPayload,
             handlers::organization_handler::UpdateAllOrgDatasetConfigsReqPayload,
+            handlers::organization_handler::GetOrganizationApiKeysQuery,
+            handlers::organization_handler::GetOrganizationApiKeysResponse,
             operators::event_operator::EventReturn,
             operators::search_operator::DeprecatedSearchOverGroupsResponseBody,
             operators::search_operator::GroupScoreChunk,

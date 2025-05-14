@@ -1,8 +1,8 @@
 use super::auth_handler::{AdminOnly, LoggedUser, OwnerOnly};
 use crate::{
     data::models::{
-        ApiKeyRequestParams, OrganizationWithSubAndPlan, Pool, RedisPool, UserOrganization,
-        UserRole,
+        ApiKeyRequestParams, ApiKeyRespBody, OrganizationWithSubAndPlan, Pool, RedisPool,
+        UserOrganization, UserRole,
     },
     errors::ServiceError,
     middleware::auth_middleware::{get_role_for_org, verify_admin, verify_owner},
@@ -473,6 +473,22 @@ pub async fn create_organization_api_key(
     }))
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct GetOrganizationApiKeysQuery {
+    /// The cursor to start the pagination from.
+    cursor: Option<uuid::Uuid>,
+    /// The number of items to return per page.
+    limit: Option<i32>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct GetOrganizationApiKeysResponse {
+    /// The api keys which belong to the organization.
+    pub api_keys: Vec<ApiKeyRespBody>,
+    /// The cursor to start the pagination from.
+    pub cursor: Option<uuid::Uuid>,
+}
+
 /// Get Organization Api Keys
 ///
 /// Get the api keys which belong to the organization. The actual api key values are not returned, only the ids, names, and creation dates.
@@ -487,19 +503,26 @@ pub async fn create_organization_api_key(
     ),
     params(
         ("TR-Organization" = uuid::Uuid, Header, description = "The organization id to use for the request."),
+        ("cursor" = Option<String>, Query, description = "The cursor to start the pagination from."),
+        ("limit" = Option<i32>, Query, description = "The number of items to return per page."),
     ),
     security(
         ("ApiKey" = ["readonly"]),
     )
 )]
 pub async fn get_organization_api_keys(
+    query: web::Query<GetOrganizationApiKeysQuery>,
     _user: AdminOnly,
     organization: OrganizationWithSubAndPlan,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let api_keys = get_organization_api_keys_query(organization.organization.id, pool)
-        .await
-        .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
+    let data = query.into_inner();
+    let cursor = data.cursor.unwrap_or(uuid::Uuid::nil());
+    let limit = data.limit.unwrap_or(10);
+    let api_keys =
+        get_organization_api_keys_query(organization.organization.id, cursor, limit, pool)
+            .await
+            .map_err(|_err| ServiceError::BadRequest("Failed to get API keys for user".into()))?;
 
     Ok(HttpResponse::Ok().json(api_keys))
 }
