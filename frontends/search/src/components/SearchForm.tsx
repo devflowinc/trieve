@@ -99,6 +99,16 @@ const SearchForm = (props: {
       isSelected: false,
       route: "semantic",
     },
+    {
+      name: "AutoComplete Semantic",
+      isSelected: false,
+      route: "autocomplete-semantic",
+    },
+    {
+      name: "AutoComplete FullText",
+      isSelected: false,
+      route: "autocomplete-fulltext",
+    },
   ];
 
   if (bm25Active) {
@@ -123,36 +133,6 @@ const SearchForm = (props: {
       value: "num_value",
     },
   ]);
-
-  createEffect(() => {
-    if (!props.search.state.groupUniqueSearch) {
-      console.log("groupUniqueSearch is false");
-
-      setSearchTypes((prev) => {
-        return prev.concat([
-          {
-            name: "AutoComplete Semantic",
-            isSelected: false,
-            route: "autocomplete-semantic",
-          },
-          {
-            name: "AutoComplete FullText",
-            isSelected: false,
-            route: "autocomplete-fulltext",
-          },
-        ]);
-      });
-    } else {
-      console.log("groupUniqueSearch is true");
-      setSearchTypes((prev) => {
-        return prev.filter(
-          (type) =>
-            type.route !== "autocomplete-semantic" &&
-            type.route !== "autocomplete-fulltext",
-        );
-      });
-    }
-  });
 
   const defaultRerankTypes = [
     {
