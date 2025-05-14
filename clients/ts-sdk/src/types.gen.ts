@@ -2916,6 +2916,7 @@ export type PublicPageParameters = {
     openLinksInNewTab?: (boolean) | null;
     placeholder?: (string) | null;
     problemLink?: (string) | null;
+    relevanceToolCallOptions?: ((RelevanceToolCallOptions) | null);
     responsive?: (boolean) | null;
     searchOptions?: ((PublicPageSearchOptions) | null);
     showFloatingButton?: (boolean) | null;
@@ -3470,6 +3471,15 @@ export type RegenerateMessageReqPayload = {
      * The user_id is the id of the user who is making the request. This is used to track user interactions with the RAG results.
      */
     user_id?: (string) | null;
+};
+
+export type RelevanceToolCallOptions = {
+    highDescription?: (string) | null;
+    includeImages?: (boolean) | null;
+    lowDescription?: (string) | null;
+    mediumDescription?: (string) | null;
+    toolDescription: string;
+    userMessageTextPrefix?: (string) | null;
 };
 
 export type RemoveChunkFromGroupReqPayload = {

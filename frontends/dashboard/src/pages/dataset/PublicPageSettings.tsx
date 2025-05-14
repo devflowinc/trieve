@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { createEffect, createSignal, For, Show } from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
@@ -13,7 +15,7 @@ import {
   usePublicPage,
 } from "../../hooks/usePublicPageSettings";
 import { createStore } from "solid-js/store";
-import { PublicPageTabMessage } from "trieve-ts-sdk";
+import { PublicPageTabMessage, RelevanceToolCallOptions } from "trieve-ts-sdk";
 
 export const PublicPageSettingsPage = () => {
   return (
@@ -33,6 +35,19 @@ export const PublicPageSettingsPage = () => {
       </PublicPageProvider>
     </div>
   );
+};
+
+export const defaultRelevanceToolCallOptions: RelevanceToolCallOptions = {
+  userMessageTextPrefix:
+    "Be extra picky and detailed. Thoroughly examine all details of the query and product.",
+  includeImages: false,
+  toolDescription: "Mark the relevance of product based on the user's query.",
+  highDescription:
+    "Highly relevant and very good fit for the given query taking all details of both the query and the product into account",
+  mediumDescription:
+    "Somewhat relevant and a decent or okay fit for the given query taking all details of both the query and the product into account",
+  lowDescription:
+    "Not relevant and not a good fit for the given query taking all details of both the query and the product into account",
 };
 
 const searchTypeOptions = [
@@ -1136,6 +1151,185 @@ const PublicPageControls = () => {
           </div>
         </details>
 
+        <details class="my-4">
+          <summary class="cursor-pointer text-sm font-medium">
+            Relevance Tool Options
+          </summary>
+          <div class="mt-4 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    User Message Text Prefix
+                  </label>
+                  <Tooltip
+                    tooltipText="Details provided to the model about how to grade relevance of the chunk compared to the user message."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    (extraParams.relevanceToolCallOptions
+                      ?.userMessageTextPrefix ||
+                      defaultRelevanceToolCallOptions.userMessageTextPrefix) as string
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "relevanceToolCallOptions",
+                      "userMessageTextPrefix",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Tool Description
+                  </label>
+                  <Tooltip
+                    tooltipText="Description of the relevance tool provided to the model."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    (extraParams.relevanceToolCallOptions?.toolDescription ||
+                      defaultRelevanceToolCallOptions.toolDescription) as string
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "relevanceToolCallOptions",
+                      "toolDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    High Relevance Description
+                  </label>
+                  <Tooltip
+                    tooltipText="Description of the high relevance tag provided to the model."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    (extraParams.relevanceToolCallOptions?.highDescription ||
+                      defaultRelevanceToolCallOptions.highDescription) as string
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "relevanceToolCallOptions",
+                      "highDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Medium Relevance Description
+                  </label>
+                  <Tooltip
+                    tooltipText="Description of the medium relevance tag provided to the model."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    (extraParams.relevanceToolCallOptions?.mediumDescription ||
+                      defaultRelevanceToolCallOptions.mediumDescription) as string
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "relevanceToolCallOptions",
+                      "lowDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Low Relevance Description
+                  </label>
+                  <Tooltip
+                    tooltipText="Description of the low relevance tag provided to the model."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    (extraParams.relevanceToolCallOptions?.lowDescription ||
+                      defaultRelevanceToolCallOptions.lowDescription) as string
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "relevanceToolCallOptions",
+                      "lowDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="flex items-end gap-2">
+                <label>Include Images</label>
+                <input
+                  type="checkbox"
+                  class="-translate-y-1"
+                  checked={
+                    (extraParams.relevanceToolCallOptions?.includeImages ??
+                      defaultRelevanceToolCallOptions.includeImages) as boolean
+                  }
+                  onChange={(e) => {
+                    setExtraParams(
+                      "relevanceToolCallOptions",
+                      "includeImages",
+                      e.currentTarget.checked,
+                    );
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </details>
+
         <div class="space-x-1.5 pt-8">
           <button
             class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900 disabled:opacity-40"
@@ -1161,16 +1355,9 @@ const PublicPageControls = () => {
 
 export const SingleProductOptions = () => {
   const { extraParams, setExtraParams } = usePublicPage();
-  const [defaultDetailOpen] = createSignal(
-    !!extraParams.singleProductOptions?.productTrackingId ||
-      !!extraParams.singleProductOptions?.groupTrackingId ||
-      !!extraParams.singleProductOptions?.productName ||
-      !!extraParams.singleProductOptions?.productDescriptionHtml ||
-      !!extraParams.singleProductOptions?.productPrimaryImageUrl,
-  );
 
   return (
-    <details class="my-4" open={defaultDetailOpen()}>
+    <details class="my-4">
       <summary class="cursor-pointer text-sm font-medium">
         Single Product View
       </summary>
@@ -1396,7 +1583,7 @@ export const TabOptions = () => {
   };
 
   return (
-    <details class="my-4" open={messages.length > 0}>
+    <details class="my-4">
       <summary class="cursor-pointer text-sm font-medium">Tab Messages</summary>
       <div class="flex items-end gap-2 overflow-y-auto pt-2">
         <For each={messages}>

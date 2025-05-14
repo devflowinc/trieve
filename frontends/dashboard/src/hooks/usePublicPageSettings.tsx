@@ -18,6 +18,7 @@ import { createToast } from "../components/ShowToasts";
 import { ApiRoutes } from "../components/Routes";
 import { HeroPatterns } from "../pages/dataset/HeroPatterns";
 import { createInitializedContext } from "../utils/initialize";
+import { defaultRelevanceToolCallOptions } from "../pages/dataset/PublicPageSettings";
 
 export type DatasetWithPublicPage = Dataset & {
   server_configuration: {
@@ -76,6 +77,12 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
     }));
 
     createEffect(() => {
+      if (!extraParams.relevanceToolCallOptions) {
+        setExtraParams("relevanceToolCallOptions", {
+          ...defaultRelevanceToolCallOptions,
+        });
+      }
+
       // manually set the array for rolemessages to simplify logic
       // context blocks until it's set
       if (
