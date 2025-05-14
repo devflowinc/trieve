@@ -426,6 +426,15 @@ export const Message = ({
                     </a>
                   );
                 },
+                table: (tableProps) => {
+                  const { children } = tableProps || {};
+                  if (!children) return null;
+                  return (
+                    <div className="trieve-md-table">
+                      <table>{children}</table>
+                    </div>
+                  );
+                },
               }}
               remarkPlugins={[remarkGfm]}
               key={idx}

@@ -459,38 +459,40 @@ body {
         @apply tv-mb-4;
       }
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1em;
+      .trieve-md-table {
+        overflow-x: auto;
         margin-bottom: 1em;
-        border: 1px solid #ddd;
-        font-size: 0.9em;
+        margin-top: 1em;
 
-        th,
-        td {
+        table {
+          width: 100%;
+          border-collapse: collapse;
           border: 1px solid #ddd;
-          padding: 8px 12px;
-          text-align: left;
-          vertical-align: top;
-        }
+          font-size: 0.9em;
+          margin-bottom: 0.5em;
+          overflow-x: auto;
 
-        th {
-          background-color: #f2f2f2;
-          font-weight: bold;
-          white-space: nowrap;
-        }
+          th,
+          td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+          }
 
-        tr {
-          border-bottom: 1px solid #ddd;
-        }
+          th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            white-space: nowrap;
+          }
 
-        tr:nth-child(even) {
-          background-color: #f9f9f9;
-        }
+          tr {
+            border-bottom: 1px solid #ddd;
+          }
 
-        tr:hover {
-          background-color: #f1f1f1;
+          tr:nth-child(even) {
+            background-color: #f9f9f9;
+          }
         }
       }
     }
