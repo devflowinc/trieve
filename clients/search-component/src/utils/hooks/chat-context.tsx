@@ -954,7 +954,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 highlight_window: props.type === "ecommerce" ? 5 : 10,
                 highlight_results: true,
               },
-              only_include_docs_used: true,
+              only_include_docs_used: false,
             },
             chatMessageAbortController.current.signal,
             (headers: Record<string, string>) => {
