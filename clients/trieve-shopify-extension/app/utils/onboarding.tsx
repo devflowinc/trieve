@@ -7,8 +7,8 @@ import { AddComponentOnboarding } from "app/components/onboarding/AddComponentOn
 import { DoChatOnboarding } from "app/components/onboarding/DoChatOnboarding";
 import { SetPromptsOnboarding } from "app/components/onboarding/SetPromptsOnboarding";
 import { WelcomeOnboarding } from "app/components/onboarding/WelcomeOnboarding";
-import { setMetafield } from "app/loaders";
 import { useClientAdminApi } from "app/loaders/clientLoader";
+import { setAppMetafields } from "app/queries/metafield";
 import {
   lastStepIdQuery,
   ONBOARD_STEP_META_FIELD,
@@ -98,7 +98,11 @@ export const useOnboarding = () => {
   const nextStepMutation = useMutation({
     mutationKey: ["next_step"],
     mutationFn: async ({ stepId }: { stepId: string }) => {
-      setMetafield(adminApi, ONBOARD_STEP_META_FIELD, stepId);
+      setAppMetafields(adminApi, [{
+        key: ONBOARD_STEP_META_FIELD,
+        value: stepId,
+        type: "single_line_text_field",
+      }]);
     },
     onMutate({ stepId }) {
       utils.setQueryData(

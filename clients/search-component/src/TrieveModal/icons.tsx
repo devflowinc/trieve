@@ -222,17 +222,15 @@ export const ShoppingCart = () => {
 
 export const CheckIcon = () => (
   <svg
+    fill="currentColor"
+    stroke-width="0"
     xmlns="http://www.w3.org/2000/svg"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+    viewBox="0 0 448 512"
+    height="1em"
+    width="1em"
+    style={{ overflow: "visible", color: "currentcolor" }}
   >
-    <path d="M20 6 9 17l-5-5" />
+    <path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7l233.4-233.3c12.5-12.5 32.8-12.5 45.3 0z"></path>
   </svg>
 );
 

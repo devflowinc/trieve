@@ -18,6 +18,7 @@ export const SearchInput = () => {
     imageUrl,
     audioBase64,
     isRecording,
+    selectedSidebarFilters,
   } = useModalState();
 
   return (
@@ -75,9 +76,9 @@ export const SearchInput = () => {
         </div>
       </div>
       <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
-      {props.suggestedQueries && (!query || (query && !results.length)) && (
-        <SuggestedQueries />
-      )}
+      {props.suggestedQueries &&
+        (!query || (query && !results.length)) &&
+        selectedSidebarFilters.length === 0 && <SuggestedQueries />}
     </div>
   );
 };

@@ -53,61 +53,6 @@
     return value;
   };
 
-const filterSidebarProps = {
-  sections: [
-    {
-      key: "color",
-      filterKey: "tag_set",
-      title: "Color",
-      selectionType: "multiple",
-      filterType: "match_any",
-      options: [
-        {
-          label: "Ice",
-          tag: "Ice",
-        },
-        {
-          label: "Blue",
-          tag: "Blue",
-        },
-        {
-          label: "Green",
-          tag: "Green",
-        },
-        {
-          label: "Yellow",
-          tag: "Yellow",
-        },
-        {
-          label: "Orange",
-          tag: "Orange",
-        },
-      ]
-    },
-            {
-          key: 'price', // Unique key for the price filter section
-          filterKey: "num_value",
-          title: 'Price Range', // Title for the accordion
-          selectionType: 'range', // This makes it a range/slider filter
-          filterType: 'range',    // Corresponding filter type
-          options: [
-            {
-              tag: 'num_value', // Unique tag for the UI control itself
-              label: 'Adjust Price',        // Label displayed above the slider
-              range: {
-                min: 0,
-                max: 1000
-              }
-            }
-          ],
-          // Note: To customize the min/max bounds of the slider (e.g., 0-1000),
-          // you would currently need to modify SLIDER_MIN_BOUND and SLIDER_MAX_BOUND
-          // directly in the FilterButton component.
-          // Future enhancements could allow passing these limits via this configuration.
-        },
-  ]
-};
-
 
   if (!appMetafieldTrieve.dataset_id || !appMetafieldTrieve.api_key) {
     console.error("Trieve: Cannot render inline Trieve comopnent due to missing dataset_id or api_key in the app metafields");
@@ -147,7 +92,7 @@ const filterSidebarProps = {
       chatFilters: {},
       defaultCurrency: currencySymbol(currency),
       searchPageProps: {
-        filterSidebarProps: filterSidebarProps,
+        filterSidebarProps: {{ app.metafields.trieve.trieve_filter_settings }},
         display: true,
       },
       {% comment %} not on global {% endcomment %}

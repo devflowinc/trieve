@@ -52,10 +52,8 @@ export interface PagefindOptions {
 
 export interface TagProp {
   tag: string;
-  label?: string;
+  label: string;
   selected?: boolean;
-  iconClassName?: string;
-  icon?: () => JSX.Element;
   description?: string;
   range?: {
     min?: number;
@@ -448,6 +446,9 @@ const ModalProvider = ({
     ) {
       const url = new URL(window.location.href);
       url.searchParams.set("q", query);
+      if (selectedSidebarFilters.length > 0) {
+        url.searchParams.set("filters", JSON.stringify(selectedSidebarFilters));
+      }
       window.history.replaceState({}, "", url.toString());
     }
 
@@ -691,6 +692,10 @@ const ModalProvider = ({
       const initialQuery = url.searchParams.get("q");
       if (initialQuery) {
         setQuery(initialQuery);
+      }
+      const initialFilters = url.searchParams.get("filters");
+      if (initialFilters) {
+        setSelectedSidebarFilters(JSON.parse(initialFilters));
       }
     }
   }, [props.type, props.inline, props.defaultSearchMode]);
