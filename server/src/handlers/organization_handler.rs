@@ -435,7 +435,7 @@ pub async fn remove_user_from_org(
 }))]
 pub struct UpdateAllOrgDatasetConfigsReqPayload {
     /// The configuration to provide a filter on what datasets to update.
-    pub from_configuration: Option<serde_json::Value>,
+    pub match_configuration: Option<serde_json::Value>,
     /// The new configuration for all datasets in the organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values.
     pub to_configuration: serde_json::Value,
 }
@@ -474,12 +474,12 @@ pub async fn update_all_org_dataset_configs(
     let req_payload = req_payload.into_inner();
 
     let new_dataset_config = req_payload.to_configuration.clone();
-    let from_configuration = req_payload.from_configuration.clone();
+    let match_configuration = req_payload.match_configuration.clone();
 
     update_all_org_dataset_configs_query(
         organization_id,
         new_dataset_config,
-        from_configuration,
+        match_configuration,
         pool,
     )
     .await?;
