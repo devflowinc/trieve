@@ -147,7 +147,10 @@ export const ProductItem = ({
         id={`trieve-search-item-${index + 1}`}
         className={cn(
           className ?? "item product",
-          props.type === "ecommerce" && props.inline && props.defaultSearchMode === "search" && "tv-border"
+          props.type === "ecommerce" &&
+            props.inline &&
+            props.defaultSearchMode === "search" &&
+            "tv-border",
         )}
         onClick={(event) => {
           event.preventDefault();
@@ -213,9 +216,9 @@ export const ProductItem = ({
                 )}
               </div>
               {!props.hideChunkHtml && (
-                  <p
-                    className="description"
-                    dangerouslySetInnerHTML={{
+                <p
+                  className="description"
+                  dangerouslySetInnerHTML={{
                     __html: props.showResultHighlights
                       ? descriptionHtml
                       : descriptionHtml.replace(

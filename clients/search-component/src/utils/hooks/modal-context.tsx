@@ -102,6 +102,7 @@ export interface PriceToolCallOptions {
 
 export interface FilterSidebarSection {
   key: string;
+  filterKey: string;
   title: string;
   selectionType: "single" | "multiple" | "range";
   filterType: "match_any" | "match_all" | "range";
@@ -317,9 +318,25 @@ const ModalContext = createContext<{
   isRecording: boolean;
   setIsRecording: React.Dispatch<React.SetStateAction<boolean>>;
   // sidebar filter specific state
-  selectedSidebarFilters: Record<string, string[] | { min?: number; max?: number }>; // hashmap where key is the section key and value are the selected labels
+  selectedSidebarFilters: {
+    section: FilterSidebarSection;
+    range?: {
+      min?: number;
+      max?: number;
+    };
+    tags?: string[];
+  }[];
   setSelectedSidebarFilters: React.Dispatch<
-    React.SetStateAction<Record<string, string[] | { min?: number; max?: number }>>
+    React.SetStateAction<
+      {
+        section: FilterSidebarSection;
+        range?: {
+          min?: number;
+          max?: number;
+        };
+        tags?: string[];
+      }[]
+    >
   >;
   minHeight: number;
   resetHeight: () => void;
@@ -358,7 +375,7 @@ const ModalContext = createContext<{
   isRecording: false,
   setIsRecording: () => {},
   // sidebar filter specific state
-  selectedSidebarFilters: {},
+  selectedSidebarFilters: [],
   setSelectedSidebarFilters: () => {},
   minHeight: 0,
   resetHeight: () => {},
@@ -398,8 +415,15 @@ const ModalProvider = ({
   const [pagefind, setPagefind] = useState<PagefindApi | null>(null);
   const [currentGroup, setCurrentGroup] = useState<ChunkGroup | null>(null);
   const [selectedSidebarFilters, setSelectedSidebarFilters] = useState<
-    Record<string, string[] | { min?: number; max?: number }>
-  >({});
+    {
+      section: FilterSidebarSection;
+      range?: {
+        min?: number;
+        max?: number;
+      };
+      tags?: string[];
+    }[]
+  >([]);
   const [minHeight, setMinHeight] = useState(0);
   const [chatHeight, setChatHeight] = useState(0);
   const [enabled, setEnabled] = useState(true);
@@ -427,6 +451,53 @@ const ModalProvider = ({
       window.history.replaceState({}, "", url.toString());
     }
 
+    const filters: ChunkFilter | undefined =
+      selectedSidebarFilters.length > 0
+        ? {
+            must: [
+              ...selectedSidebarFilters
+                .map(({ section, range, tags }) => {
+                  if (
+                    section.filterType === "match_any" &&
+                    tags &&
+                    tags.length > 0
+                  ) {
+                    return {
+                      field: section.filterKey,
+                      match_any: tags,
+                    };
+                  }
+                  if (
+                    section.filterType === "match_all" &&
+                    tags &&
+                    tags.length > 0
+                  ) {
+                    return {
+                      field: section.filterKey,
+                      match_all: tags,
+                    };
+                  }
+                  if (
+                    section.filterType === "range" &&
+                    range &&
+                    range.min !== undefined &&
+                    range.max !== undefined
+                  ) {
+                    return {
+                      field: section.filterKey,
+                      range: {
+                        gte: range.min,
+                        lte: range.max,
+                      },
+                    };
+                  }
+                  return null;
+                })
+                .filter((filter) => filter !== null),
+            ],
+          }
+        : undefined;
+
     try {
       setLoadingResults(true);
       if (props.useGroupSearch && !props.usePagefind) {
@@ -438,7 +509,7 @@ const ModalProvider = ({
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
-          ...(selectedTags?.map((t) => t.tag) ?? []),
+          filters,
           type: props.type,
         });
         const groupMap = new Map<string, GroupChunk[]>();
@@ -462,7 +533,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          selectedTags?.map((t) => t.tag),
+          filters,
         );
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
@@ -479,7 +550,7 @@ const ModalProvider = ({
           pagefind,
           query,
           props.datasetId,
-          selectedTags?.map((t) => t.tag),
+          filters,
         );
         setResults(results);
       } else {
@@ -491,7 +562,7 @@ const ModalProvider = ({
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
-          tags: selectedTags?.map((t) => t.tag),
+          filters,
           type: props.type,
         });
         if (results.transcribedQuery && audioBase64) {
@@ -509,6 +580,17 @@ const ModalProvider = ({
       setLoadingResults(false);
     }
   };
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => {
+      search(abortController);
+    }, 10);
+    return () => {
+      clearTimeout(timeout);
+      abortController.abort();
+    };
+  }, [selectedSidebarFilters]);
 
   useEffect(() => {
     setProps((p) => ({

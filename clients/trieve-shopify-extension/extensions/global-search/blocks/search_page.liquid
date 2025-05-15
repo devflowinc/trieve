@@ -56,81 +56,43 @@
 const filterSidebarProps = {
   sections: [
     {
-      key: "department",
-      title: "Department",
-      selectionType: "single",
+      key: "color",
+      filterKey: "tag_set",
+      title: "Color",
+      selectionType: "multiple",
       filterType: "match_any",
       options: [
         {
-          tag: "Wallcovering",
-          label: "Wallcovering",
+          label: "Ice",
+          tag: "Ice",
         },
         {
-          tag: "Countertops",
-          label: "Countertops",
+          label: "Blue",
+          tag: "Blue",
         },
         {
-          tag: "Tile",
-          label: "Tile",
+          label: "Green",
+          tag: "Green",
         },
         {
-          tag: "Flooring",
-          label: "Flooring",
+          label: "Yellow",
+          tag: "Yellow",
         },
         {
-          tag: "Paint",
-          label: "Paint",
+          label: "Orange",
+          tag: "Orange",
         },
-        {
-          tag: "Carpet",
-          label: "Carpet",
-        },
-        {
-          tag: "Fabric",
-          label: "Fabric",
-        },
-        {
-          tag: "Paneling",
-          label: "Paneling",
-        },
-        {
-          tag: "Hardware",
-          label: "Hardware",
-        },
-        {
-          tag: "Faucets",
-          label: "Faucets",
-        },
-        {
-          tag: "Cabinets",
-          label: "Cabinets",
-        },
-        {
-          tag: "Floor & Deck",
-          label: "Decking",
-        },
-        {
-          tag: "Area Rugs",
-          label: "Area Rugs",
-        },
-        {
-          tag: "Window Shade",
-          label: "Window Shade",
-        },
-        {
-          tag: "Ceiling",
-          label: "Ceiling",
-        }
       ]
     },
             {
           key: 'price', // Unique key for the price filter section
+          filterKey: "num_value",
           title: 'Price Range', // Title for the accordion
           selectionType: 'range', // This makes it a range/slider filter
           filterType: 'range',    // Corresponding filter type
           options: [
             {
-              tag: 'price_slider_control', // Unique tag for the UI control itself
+              tag: 'num_value', // Unique tag for the UI control itself
               label: 'Adjust Price',        // Label displayed above the slider
               range: {
                 min: 0,
@@ -143,162 +105,6 @@ const filterSidebarProps = {
           // directly in the FilterButton component.
           // Future enhancements could allow passing these limits via this configuration.
         },
-    {
-      key: "wallcoveringChild",
-      title: "Wallcovering Type",
-      selectionType: "single",
-      filterType: "match_all",
-      options: [
-        {
-          label: "Natural",
-          tag: "Natural",
-        },
-        {
-          label: "Paper",
-          tag: "Paper",
-        },
-        {
-          label: "Synthetic",
-          tag: "Synthetic",
-        },
-        {
-          label: "Vinyl",
-          tag: "Vinyl",
-        }
-      ]
-    },
-    {
-      key: "countertopsChild",
-      title: "Countertop Type",
-      selectionType: "single",
-      filterType: "match_all",
-      options: [
-        {
-          label: "Engineered & Composite",
-          tag: "Engineered & Composite",
-        },
-        {
-          label: "Laminate",
-          tag: "Laminate",
-        },
-        {
-          label: "Solid Surface",
-          tag: "Solid Surface",
-        },
-        {
-          label: "Stone",
-          tag: "Stone",
-        }
-      ]
-    },
-    {
-      key: "tileChild",
-      title: "Tile Application",
-      selectionType: "single",
-      filterType: "match_all",
-      options: [
-        {
-          label: "Backsplash",
-          tag: "Backsplash",
-        },
-        {
-          label: "Shower Flooring",
-          tag: "Shower Flooring",
-        },
-        {
-          label: "Shower Wall",
-          tag: "Shower Wall",
-        },
-        {
-          label: "Bathroom Flooring",
-          tag: "Bathroom Flooring",
-        },
-        {
-          label: "Bathroom Wall",
-          tag: "Bathroom Wall",
-        }
-      ]
-    },
-    {
-      key: "flooringChild",
-      title: "Flooring Type",
-      selectionType: "single",
-      filterType: "match_all",
-      options: [
-        {
-          label: "Laminate",
-          tag: "Laminate",
-        },
-        {
-          label: "Luxury Vinyl Tile",
-          tag: "Luxury Vinyl Tile",
-        },
-        {
-          label: "Wood",
-          tag: "Wood",
-        }
-      ]
-    },
-    {
-      key: "fabricChild",
-      title: "Fabric Type",
-      selectionType: "single",
-      filterType: "match_all",
-      options: [
-        {
-          label: "Cotton",
-          tag: "Cotton",
-        },
-        {
-          label: "Leather",
-          tag: "Leather",
-        },
-        {
-          label: "Linen",
-          tag: "Linen",
-        },
-        {
-          label: "Sheer",
-          tag: "Sheer",
-        },
-        {
-          label: "Synthetic",
-          tag: "Synthetic",
-        },
-        {
-          label: "Velvet",
-          tag: "Velvet|DesignShop",
-        },
-        {
-          label: "Wool",
-          tag: "Wool",
-        }
-      ]
-    },
-    {
-      key: "panelingChild",
-      title: "Paneling Type",
-      selectionType: "single",
-      filterType: "match_all",
-      options: [
-        {
-          label: "Cork",
-          tag: "Cork",
-        },
-        {
-          label: "Laminate",
-          tag: "Laminate",
-        },
-        {
-          label: "Plastic & Synthetics",
-          tag: "Plastic & Synthetics",
-        },
-        {
-          label: "Wood & Wood Alternatives",
-          tag: "Wood & Wood Alternatives",
-        }
-      ]
-    }
   ]
 };
 

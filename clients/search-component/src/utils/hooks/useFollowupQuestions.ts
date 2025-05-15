@@ -6,7 +6,8 @@ import { useChatState } from "./chat-context";
 export const useFollowupQuestions = () => {
   const { trieveSDK, currentGroup, props } = useModalState();
   const { messages, isDoneReading } = useChatState();
-  const [isLoadingSuggestedQueries, setIsLoadingSuggestedQueries] = useState(false);
+  const [isLoadingSuggestedQueries, setIsLoadingSuggestedQueries] =
+    useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
     Record<string, string[]>
   >({});
