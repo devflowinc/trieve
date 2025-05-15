@@ -24,6 +24,7 @@ import {
   SuggestedQueriesReqPayload,
   UpdateChunkByTrackingIdData,
   UpdateChunkReqPayload,
+  BulkDeleteChunkPayload
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 import { getCleanFetch } from "../message";
@@ -610,6 +611,22 @@ export async function deleteChunkById(
     },
     signal,
   );
+}
+
+export async function bulkDeleteChunks(
+  /** @hidden */
+  this: TrieveSDK,
+  props: BulkDeleteChunkPayload,
+  signal?: AbortSignal,
+) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
+  return this.trieve.fetch("/api/chunk", "delete", {
+    data: props,
+    datasetId: this.datasetId,
+  }, signal);
 }
 
 /**
