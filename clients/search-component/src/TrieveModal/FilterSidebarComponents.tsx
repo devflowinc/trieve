@@ -332,6 +332,9 @@ export const FilterButton = ({
   }, [activeRangeFilters, sectionKey]);
 
   const handleChange = (values: [number, number]) => {
+    if (values[0] > values[1]) {
+      return;
+    }
     setSelectedSidebarFilters((prev) => ({
       ...prev,
       [sectionKey]: { min: values[0], max: values[1] },
@@ -358,25 +361,15 @@ export const FilterButton = ({
     </button>
     )}
     {type === "range" && (
-      <div className="tv-p-3">
+      <div className="tv-pb-3">
         <div className="tv-flex tv-flex-col tv-gap-2">  
-          <TwoThumbInputRange 
-            onChange={handleChange} 
-            values={[min, max]} 
-            min={range?.min ?? 0} 
-            max={range?.max ?? 10000} 
-            trackColor={getCssVar("--tv-prop-brand-color")} 
-            thumbColor={getCssVar("--tv-prop-brand-color")} 
-            showLabels={false}
-          />    
-           <div className="flex justify-between items-center gap-3 mt-1">
-                  <div className="tv-flex tv-justify-between tv-items-center tv-gap-3 tv-mt-1">
+                    <div className="tv-flex tv-justify-between tv-items-center tv-gap-3">
           <div className="tv-relative tv-flex-1">
-            <div className="tv-flex tv-items-center tv-rounded-md tv-border tv-border-gray-200 tv-bg-gray-50 tv-overflow-hidden">
+            <div className="tv-w-[90%] tv-flex tv-items-center tv-rounded-md tv-border tv-border-gray-200 tv-bg-gray-50 tv-overflow-hidden">
               <span className="tv-pl-3 tv-pr-1 tv-text-gray-500">$</span>
               <input
                 type="number"
-                className="tv-w-full tv-p-2 tv-bg-transparent tv-focus:outline-none"
+                className="tv-w-full !tv-shadow-none tv-bg-transparent focus:tv-outline-none tv-outline-none tv-border-none"
                 value={min}
                 onChange={(e) => handleChange([parseInt(e.target.value), max])}
               />
@@ -388,19 +381,32 @@ export const FilterButton = ({
           </div>
           
           <div className="tv-relative tv-flex-1">
-            <div className="tv-flex tv-items-center tv-rounded-md tv-border tv-border-gray-200 tv-bg-gray-50 tv-overflow-hidden">
+            <div className="tv-w-[90%] tv-flex tv-items-center tv-rounded-md tv-border tv-border-gray-200 tv-bg-gray-50 tv-overflow-hidden">
               <span className="tv-pl-3 tv-pr-1 tv-text-gray-500">$</span>
               <input
                 type="number"
-                className="tv-w-full tv-p-2 tv-bg-transparent tv-focus:outline-none"
+                className="tv-w-full !tv-shadow-none tv-bg-transparent tv-focus:outline-none"
                 value={max}
                 onChange={(e) => handleChange([min, parseInt(e.target.value)])}
                 />
               </div>
             </div>
           </div>
+          <div className="tv-mt-1 tv-w-[100%]">
+            <TwoThumbInputRange 
+              onChange={handleChange} 
+              values={[min, max]} 
+              min={range?.min ?? 0} 
+              max={range?.max ?? 10000} 
+              trackColor={getCssVar("--tv-prop-brand-color")} 
+              thumbColor={getCssVar("--tv-prop-brand-color")} 
+              showLabels={false}
+              inputStyle={{
+                "width": "225px"
+              }}
+            />    
         </div>
-      </div>
+        </div>
       </div>
     )}
     </>
