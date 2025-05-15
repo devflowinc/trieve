@@ -77,7 +77,7 @@ export type Metafields = {
   };
 };
 
-export const getAppMetafields = async <T>(adminApi: AdminApiCaller, field: string): Promise<T> => {
+export const getAppMetafields = async <T>(adminApi: AdminApiCaller, field: string): Promise<T | null> => {
   const response = await adminApi<Metafields>(`
     #graphql
     query {
@@ -102,8 +102,9 @@ export const getAppMetafields = async <T>(adminApi: AdminApiCaller, field: strin
     (metafield) => metafield.key === field
   );
 
+
   if (!metafield) {
-    throw new Error(`Metafield ${field} not found`);
+    return null;
   }
 
   try {

@@ -1,6 +1,7 @@
 import { QueryOptions } from "@tanstack/react-query";
-import { AdminApiCaller, getMetafield } from "app/loaders";
+import { AdminApiCaller } from "app/loaders";
 import { onboardingSteps } from "app/utils/onboarding";
+import { getAppMetafields } from "./metafield";
 
 export const globalComponentInstallQuery = (fetcher: AdminApiCaller) => {
   return {
@@ -122,36 +123,20 @@ query GetStoreThemes {
   } satisfies QueryOptions;
 };
 
-export const testStringQuery = (fetcher: AdminApiCaller) => {
-  return {
-    queryKey: ["test_string"],
-    queryFn: async () => {
-      const result = await getMetafield(fetcher, "test-field");
-      if (result.error) {
-        console.error(result.error);
-        throw result.error;
-      }
-      return result.data || "";
-    },
-  };
-};
-
 export const ONBOARD_STEP_META_FIELD = "last-onboard-step-id";
 
 export const lastStepIdQuery = (fetcher: AdminApiCaller) => {
   return {
     queryKey: ["last_step_id"],
     queryFn: async () => {
-      const result = await getMetafield(fetcher, ONBOARD_STEP_META_FIELD);
+      const result = await getAppMetafields<string>(fetcher, ONBOARD_STEP_META_FIELD);
       if (
         !result ||
-        result.error ||
-        !result.data ||
-        !onboardingSteps.some((s) => s.id === result.data)
+        !onboardingSteps.some((s) => s.id === result)
       ) {
         return onboardingSteps[0].id;
       }
-      return result.data;
+      return result;
     },
   };
 };

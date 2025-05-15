@@ -59,7 +59,7 @@ export const loader = async ({
 
   const webPixelInstalled = await isWebPixelInstalled(fetcher, key);
 
-  const devMode = await getAppMetafields<boolean>(fetcher, "dev_mode");
+  const devMode = await getAppMetafields<boolean>(fetcher, "dev_mode") || false;
 
   return {
     crawlSettings: crawlSettings?.crawlSettings,

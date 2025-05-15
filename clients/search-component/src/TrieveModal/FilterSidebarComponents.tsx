@@ -63,16 +63,42 @@ export const ActiveFilterPills = () => {
     return count;
   }, [selectedSidebarFilters]);
 
+  const handleRemove = (sectionKey: string, tagToRemove: string) => {
+    const sectionToModify = selectedSidebarFilters.find(
+      ({ section }) => section.key === sectionKey,
+    )?.section;
+    if (sectionToModify?.selectionType === "single") {
+      setSelectedSidebarFilters((prev) => {
+        return prev.filter(({ section }) => section.key !== sectionKey);
+      });
+    } else if (sectionToModify?.selectionType === "multiple") {
+      setSelectedSidebarFilters((prev) => {
+        return prev.map((filter) =>
+          filter.section.key === sectionKey
+            ? {
+                ...filter,
+                tags: filter.tags?.filter((tag) => tag !== tagToRemove),
+              }
+            : filter,
+        );
+      });
+    } else if (sectionToModify?.selectionType === "range") {
+      setSelectedSidebarFilters((prev) => {
+        return prev.filter(({ section }) => section.key !== sectionKey);
+      });
+    }
+  };
+
+  // If no filters are selected, don't render anything
+  if (numberOfSelectedFilters === 0) return null;
+
   return (
-    <div
-      className="trieve-active-filter-pills-container"
-      data-number-selected-filters={numberOfSelectedFilters}
-    >
-      <div className="trieve-all-active-filters">
+    <div className="tv-py-2 tv-px-4 tv-bg-white tv-border-b tv-border-zinc-200 tv-flex tv-flex-wrap tv-items-center tv-justify-between tv-w-full">
+      <div className="tv-flex tv-flex-wrap tv-gap-2">
         {activeTagFilters.map(({ sectionKey, tags }) =>
           tags?.map((tag) => (
             <button
-              className="trieve-active-filter-pill"
+              className="tv-inline-flex tv-items-center tv-px-3 tv-py-1.5 tv-rounded-md tv-bg-gray-100 hover:tv-bg-gray-200 tv-text-sm tv-transition-colors"
               key={tag}
               onClick={() => {
                 setSelectedSidebarFilters((prev) =>
@@ -80,43 +106,41 @@ export const ActiveFilterPills = () => {
                 );
               }}
             >
-              <span>{tag}</span>
-              <i
-                className="trieve-active-filter-pill-remove-icon"
+              <span className="tv-text-gray-800">{tag}</span>
+              <span
+                className="tv-ml-2 tv-flex tv-items-center tv-justify-center"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedSidebarFilters((prev) =>
-                    prev.filter(({ section }) => section.key !== sectionKey),
-                  );
+                  handleRemove(sectionKey, tag);
                 }}
               >
-                <XIcon />
-              </i>
+                <XIcon className="tv-w-4 tv-h-4 tv-text-gray-500" />
+              </span>
             </button>
           )),
         )}
         {activeRangeFilters.map(({ sectionKey, range }) => (
           <button
-            className="trieve-active-filter-pill"
+            className="tv-inline-flex tv-items-center tv-px-3 tv-py-1.5 tv-rounded-md tv-bg-gray-100 hover:tv-bg-gray-200 tv-text-sm tv-transition-colors"
             key={`${sectionKey}-${range?.min}-${range?.max}`}
           >
-            {range?.min} - {range?.max}
-            <i
-              className="trieve-active-filter-pill-remove-icon"
+            <span className="tv-text-gray-800">
+              ${range?.min} - ${range?.max}
+            </span>
+            <span
+              className="tv-ml-2 tv-flex tv-items-center tv-justify-center"
               onClick={() => {
-                setSelectedSidebarFilters((prev) =>
-                  prev.filter(({ section }) => section.key !== sectionKey),
-                );
+                handleRemove(sectionKey, `${range?.min}-${range?.max}`);
               }}
             >
-              <XIcon />
-            </i>
+              <XIcon className="tv-w-4 tv-h-4 tv-text-gray-500" />
+            </span>
           </button>
         ))}
       </div>
+
       <button
-        className="trieve-clear-filters-button"
-        data-number-selected-filters={numberOfSelectedFilters}
+        className="tv-px-3 tv-py-1.5 tv-rounded-md tv-text-sm tv-text-gray-800 tv-bg-white tv-border tv-border-gray-300 hover:tv-bg-gray-50 tv-transition-colors"
         onClick={() => {
           setSelectedSidebarFilters([]);
         }}
@@ -126,7 +150,6 @@ export const ActiveFilterPills = () => {
     </div>
   );
 };
-
 export interface AccordionProps {
   sectionKey: string;
   title: string;
@@ -149,8 +172,9 @@ export const Accordion = ({
   }[] = useMemo(() => {
     const filters = selectedSidebarFilters.filter(
       ({ section }) =>
-        section.filterType === "match_any" ||
-        (section.filterType === "match_all" && section.key === sectionKey),
+        (section.filterType === "match_any" ||
+          section.filterType === "match_all") &&
+        section.key === sectionKey,
     );
     return filters.map(({ section, tags }) => ({
       sectionKey: section.key,
@@ -178,7 +202,12 @@ export const Accordion = ({
   const [open, setOpen] = useState(defaultOpen);
 
   const numberOfSelectedFilters = useMemo(() => {
-    return activeTagFilters.length + activeRangeFilters.length;
+    let count = 0;
+    for (const item of activeTagFilters) {
+      count += item.tags?.length ?? 0;
+    }
+    count += activeRangeFilters.length;
+    return count;
   }, [activeTagFilters, activeRangeFilters]);
 
   return (
@@ -295,7 +324,7 @@ export const FilterButton = ({
           setSelectedSidebarFilters((prev) => {
             return prev.map((filter) =>
               filter.section.key === sectionKey
-                ? { ...filter, tags: [...(filter.tags ?? []), filterKey] }
+                ? { ...filter, tags: [filterKey] }
                 : filter,
             );
           });
@@ -466,51 +495,9 @@ export const FilterButton = ({
   );
 };
 
-export interface CollapsibleSectionProps {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}
-
-export const CollapsibleSection = ({
-  title,
-  children,
-  defaultOpen = false,
-}: CollapsibleSectionProps) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div
-      className="trieve-collapsible-section-container"
-      data-open={isOpen ? "true" : "false"}
-    >
-      <div
-        className="trieve-collapsible-section-header"
-        data-open={isOpen ? "true" : "false"}
-        onClick={() => setIsOpen(!isOpen)}
-        style={{ cursor: "pointer" }}
-      >
-        <h4 className="trieve-collapsible-section-title">{title}</h4>
-        <div className="trieve-collapsible-section-icon-container">
-          {isOpen ? <ChevronUpicon /> : <ChevronDownIcon />}
-        </div>
-      </div>
-      {isOpen && (
-        <div
-          className="trieve-collapsible-section-content-container"
-          data-open={isOpen ? "true" : "false"}
-        >
-          <div className="trieve-collapsible-section-content">{children}</div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 export const FilterSidebar = ({ sections }: FilterSidebarProps) => {
   return (
     <aside className="trieve-filter-sidebar">
-      <ActiveFilterPills />
       <div className="trieve-filter-sidebar-section">
         <div className="">Filters</div>
         {sections.map((section) => (
@@ -528,7 +515,7 @@ export const FilterSidebar = ({ sections }: FilterSidebarProps) => {
                         key={option.tag}
                         section={section}
                         filterKey={option.tag}
-                        label={option.label ?? ""}
+                        label={option.label}
                         type={section.selectionType}
                         range={option.range}
                       />

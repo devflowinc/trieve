@@ -13,7 +13,7 @@ import { PdfItem } from "./PdfItem";
 import { cn } from "../../utils/styles";
 import { SearchInput } from "./SearchInput";
 import { GoToChatPrompt } from "./GoToChatPrompt";
-import { FilterSidebar } from "../FilterSidebarComponents";
+import { ActiveFilterPills, FilterSidebar } from "../FilterSidebarComponents";
 
 export const SearchMode = () => {
   const {
@@ -27,6 +27,7 @@ export const SearchMode = () => {
     mode,
     imageUrl,
     audioBase64,
+    selectedSidebarFilters,
   } = useModalState();
 
   const getItemComponent = (
@@ -114,6 +115,7 @@ export const SearchMode = () => {
   }, [results]);
 
   const hasQuery = imageUrl || query || audioBase64;
+  const hasActiveFilters = selectedSidebarFilters.length > 0;
 
   return (
     <>
@@ -127,6 +129,10 @@ export const SearchMode = () => {
           </div>
         )}
       <SearchInput />
+
+      {/* Filter Pills Bar */}
+      {hasActiveFilters && <ActiveFilterPills />}
+
       <div className="tv-flex tv-flex-grow tv-overflow-y-auto">
         <SearchPage />
         <ul
