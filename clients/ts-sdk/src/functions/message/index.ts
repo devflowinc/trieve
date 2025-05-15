@@ -83,7 +83,7 @@ export async function createMessageReader(
   let fetchToUse = fetch;
   if (overrideFetch) {
     const cleanFetch = getCleanFetch();
-    fetchToUse = cleanFetch ?? fetch;
+    fetchToUse = cleanFetch as typeof fetch ?? fetch;
   }
 
   const response = await fetchToUse(this.trieve.baseUrl + "/api/message", {
@@ -136,7 +136,7 @@ export async function createMessageReaderWithQueryId(
   let fetchToUse = fetch;
   if (overrideFetch) {
     const cleanFetch = getCleanFetch();
-    fetchToUse = cleanFetch ?? fetch;
+    fetchToUse = cleanFetch as typeof fetch ?? fetch;
   }
 
   const response = await fetchToUse(this.trieve.baseUrl + "/api/message", {
