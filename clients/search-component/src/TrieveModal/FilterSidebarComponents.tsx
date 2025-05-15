@@ -1,25 +1,20 @@
 import React, { useMemo } from "react";
 import { useState } from "react";
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronUpicon,
-  XIcon,
-} from "./icons";
+import { CheckIcon, ChevronDownIcon, ChevronUpicon, XIcon } from "./icons";
 import {
   FilterSidebarProps,
+  FilterSidebarSection,
   useModalState,
 } from "../utils/hooks/modal-context";
 import { TwoThumbInputRange } from "react-two-thumb-input-range";
 
-
 function getCssVar(varName: string) {
   // Get the root element (or any other element that has the variable)
   const root = document.documentElement;
-  
+
   // Get the computed style
   const styles = getComputedStyle(root);
-  
+
   // Get the value of the CSS variable
   // Note: varName should include the -- prefix
   return styles.getPropertyValue(varName).trim();
@@ -30,48 +25,39 @@ export const ActiveFilterPills = () => {
 
   const activeTagFilters: {
     sectionKey: string;
-    tags: string[];
+    tags?: string[];
   }[] = useMemo(() => {
-    const filters = Object.entries(selectedSidebarFilters).map(
-      ([sectionKey, tags]) => {
-        if (Array.isArray(tags)) {
-          return {
-            sectionKey,
-            tags,
-          };
-        } else {
-          return null;
-        }
-      },
+    const filters = selectedSidebarFilters.filter(
+      ({ section }) =>
+        section.filterType === "match_any" ||
+        section.filterType === "match_all",
     );
-    return filters.filter((item) => item !== null);
+    return filters.map(({ section, tags }) => ({
+      sectionKey: section.key,
+      tags,
+    }));
   }, [selectedSidebarFilters]);
 
   const activeRangeFilters: {
     sectionKey: string;
-    min: number;
-    max: number;
+    range?: {
+      min?: number;
+      max?: number;
+    };
   }[] = useMemo(() => {
-    const filters = Object.entries(selectedSidebarFilters).map(
-      ([sectionKey, tags]) => {
-        if (typeof tags === 'object' && 'min' in tags && 'max' in tags && tags.min !== undefined && tags.max !== undefined) {
-          return {
-            sectionKey,
-            min: tags.min ?? 0,
-            max: tags.max ?? 0,
-          };
-        } else {
-          return null;
-        }
-      },
+    const filters = selectedSidebarFilters.filter(
+      ({ section }) => section.filterType === "range",
     );
-    return filters.filter((item) => item !== null);
+    return filters.map(({ section, range }) => ({
+      sectionKey: section.key,
+      range: range ?? { min: 0, max: 0 },
+    }));
   }, [selectedSidebarFilters]);
 
   const numberOfSelectedFilters = useMemo(() => {
     let count = 0;
     for (const item of activeTagFilters) {
-      count += item.tags.length;
+      count += item.tags?.length ?? 0;
     }
     count += activeRangeFilters.length;
     return count;
@@ -84,25 +70,24 @@ export const ActiveFilterPills = () => {
     >
       <div className="trieve-all-active-filters">
         {activeTagFilters.map(({ sectionKey, tags }) =>
-          tags.map((tag) => (
+          tags?.map((tag) => (
             <button
               className="trieve-active-filter-pill"
               key={tag}
               onClick={() => {
-                setSelectedSidebarFilters((prev) => ({
-                  ...prev,
-                  [sectionKey]: (prev[sectionKey] as string[]).filter((t) => t !== tag),
-                }));
+                setSelectedSidebarFilters((prev) =>
+                  prev.filter(({ section }) => section.key !== sectionKey),
+                );
               }}
             >
               <span>{tag}</span>
-              <i className="trieve-active-filter-pill-remove-icon"
+              <i
+                className="trieve-active-filter-pill-remove-icon"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedSidebarFilters((prev) => ({
-                    ...prev,
-                    [sectionKey]: (prev[sectionKey] as string[]).filter((t) => t !== tag),
-                  }));
+                  setSelectedSidebarFilters((prev) =>
+                    prev.filter(({ section }) => section.key !== sectionKey),
+                  );
                 }}
               >
                 <XIcon />
@@ -110,18 +95,18 @@ export const ActiveFilterPills = () => {
             </button>
           )),
         )}
-        {activeRangeFilters.map(({ sectionKey, min, max }) => (
+        {activeRangeFilters.map(({ sectionKey, range }) => (
           <button
             className="trieve-active-filter-pill"
-            key={`${sectionKey}-${min}-${max}`}
+            key={`${sectionKey}-${range?.min}-${range?.max}`}
           >
-            {min} - {max}
-            <i className="trieve-active-filter-pill-remove-icon"
+            {range?.min} - {range?.max}
+            <i
+              className="trieve-active-filter-pill-remove-icon"
               onClick={() => {
-                setSelectedSidebarFilters((prev) => ({
-                  ...prev,
-                  [sectionKey]: { min: undefined, max: undefined },
-                }));
+                setSelectedSidebarFilters((prev) =>
+                  prev.filter(({ section }) => section.key !== sectionKey),
+                );
               }}
             >
               <XIcon />
@@ -133,7 +118,7 @@ export const ActiveFilterPills = () => {
         className="trieve-clear-filters-button"
         data-number-selected-filters={numberOfSelectedFilters}
         onClick={() => {
-          setSelectedSidebarFilters({});
+          setSelectedSidebarFilters([]);
         }}
       >
         Clear all
@@ -158,28 +143,42 @@ export const Accordion = ({
   onToggle,
 }: AccordionProps) => {
   const { selectedSidebarFilters } = useModalState();
-  const activeTagFilters = useMemo(() => {
-    return Object.entries(selectedSidebarFilters).map(([selectedSectionKey, tags]) => {
-      if (Array.isArray(tags) && tags.length > 0 && selectedSectionKey === sectionKey) {
-        return { sectionKey, tags };
-      }
-      return null;
-    }).filter((item) => item !== null);
+  const activeTagFilters: {
+    sectionKey: string;
+    tags?: string[];
+  }[] = useMemo(() => {
+    const filters = selectedSidebarFilters.filter(
+      ({ section }) =>
+        section.filterType === "match_any" ||
+        (section.filterType === "match_all" && section.key === sectionKey),
+    );
+    return filters.map(({ section, tags }) => ({
+      sectionKey: section.key,
+      tags,
+    }));
   }, [selectedSidebarFilters]);
 
-  const activeRangeFilters = useMemo(() => {
-    return Object.entries(selectedSidebarFilters).map(([selectedSectionKey, tags]) => {
-      if (typeof tags === 'object' && 'min' in tags && 'max' in tags && selectedSectionKey === sectionKey) {
-        return { sectionKey, min: tags.min, max: tags.max };
-      }
-      return null;
-    }).filter((item) => item !== null);
+  const activeRangeFilters: {
+    sectionKey: string;
+    range?: {
+      min?: number;
+      max?: number;
+    };
+  }[] = useMemo(() => {
+    const filters = selectedSidebarFilters.filter(
+      ({ section }) =>
+        section.filterType === "range" && section.key === sectionKey,
+    );
+    return filters.map(({ section, range }) => ({
+      sectionKey: section.key,
+      range: range ?? { min: 0, max: 0 },
+    }));
   }, [selectedSidebarFilters]);
 
   const [open, setOpen] = useState(defaultOpen);
 
   const numberOfSelectedFilters = useMemo(() => {
-      return activeTagFilters.length + activeRangeFilters.length;
+    return activeTagFilters.length + activeRangeFilters.length;
   }, [activeTagFilters, activeRangeFilters]);
 
   return (
@@ -221,13 +220,12 @@ export const Accordion = ({
 };
 
 export interface FilterButtonProps {
-  sectionKey: string;
+  section: FilterSidebarSection;
   filterKey: string;
   label: string;
   type: "single" | "multiple" | "range";
   description?: string;
   onClick?: () => void;
-  isChild?: boolean;
   range?: {
     min?: number;
     max?: number;
@@ -235,36 +233,49 @@ export interface FilterButtonProps {
 }
 
 export const FilterButton = ({
-  sectionKey,
+  section,
   filterKey,
   label,
   description,
   type,
   onClick,
-  isChild,
   range,
 }: FilterButtonProps) => {
   const { selectedSidebarFilters, setSelectedSidebarFilters } = useModalState();
-  const activeTagFilters = useMemo(() => {
-    return Object.entries(selectedSidebarFilters).map(([selectedSectionKey, tags]) => {
-      if (Array.isArray(tags) && tags.length > 0 && selectedSectionKey === sectionKey) {
-        return { sectionKey, tags };
-      }
-      return null;
-    }).filter((item) => item !== null);
+  const sectionKey = section.key;
+  const activeTagFilters: {
+    sectionKey: string;
+    tags?: string[];
+  }[] = useMemo(() => {
+    const filters = selectedSidebarFilters.filter(
+      ({ section }) =>
+        section.filterType === "match_any" ||
+        (section.filterType === "match_all" && section.key === sectionKey),
+    );
+    return filters.map(({ section, tags }) => ({
+      sectionKey: section.key,
+      tags,
+    }));
   }, [selectedSidebarFilters]);
 
-  const activeRangeFilters = useMemo(() => {
-    return Object.entries(selectedSidebarFilters).map(([selectedSectionKey, tags]) => {
-      if (typeof tags === 'object' && 'min' in tags && 'max' in tags && selectedSectionKey === sectionKey) {
-        return { sectionKey, min: tags.min, max: tags.max };
-      }
-      return null;
-    }).filter((item) => item !== null);
+  const activeRangeFilters: {
+    sectionKey: string;
+    range?: {
+      min?: number;
+      max?: number;
+    };
+  }[] = useMemo(() => {
+    const filters = selectedSidebarFilters.filter(
+      ({ section }) =>
+        section.filterType === "range" && section.key === sectionKey,
+    );
+    return filters.map(({ section, range }) => ({
+      sectionKey: section.key,
+      range: range ?? { min: 0, max: 0 },
+    }));
   }, [selectedSidebarFilters]);
-
   const active = useMemo(() => {
-    if (activeTagFilters.some(({ tags }) => tags.includes(filterKey))) {
+    if (activeTagFilters.some(({ tags }) => tags && tags.includes(filterKey))) {
       return true;
     }
     return false;
@@ -274,60 +285,77 @@ export const FilterButton = ({
     if (type === "single") {
       if (active) {
         setSelectedSidebarFilters((prev) => {
-          if (isChild) {
-            return {
-              ...prev,
-              [sectionKey]: (prev[sectionKey] as string[]).filter(
-                (item) => item !== filterKey,
-              ),
-            };
-          }
-
-          return {
-            ...prev,
-            [sectionKey]: [],
-          };
+          return prev.filter(({ section }) => section.key !== sectionKey);
         });
       } else {
-        setSelectedSidebarFilters(() => {
-          if (isChild) {
-            return {
-              ...selectedSidebarFilters, // keep other sections
-              [sectionKey]: [filterKey], // only this child for this section
-            };
-          }
-          // For top-level single select
-          return {
-            ...selectedSidebarFilters,
-            [sectionKey]: [filterKey],
-          };
-        });
+        const existingFilter = selectedSidebarFilters.filter(
+          ({ section }) => section.key === sectionKey,
+        );
+        if (existingFilter.length > 0) {
+          setSelectedSidebarFilters((prev) => {
+            return prev.map((filter) =>
+              filter.section.key === sectionKey
+                ? { ...filter, tags: [...(filter.tags ?? []), filterKey] }
+                : filter,
+            );
+          });
+        } else {
+          setSelectedSidebarFilters((prev) => {
+            return prev.concat([
+              {
+                section: section,
+                tags: [filterKey],
+              },
+            ]);
+          });
+        }
       }
-    } else if (type === "multiple") { // Multiple selection type
+    } else if (type === "multiple") {
+      // Multiple selection type
       if (active) {
-        setSelectedSidebarFilters({
-          ...selectedSidebarFilters,
-          [sectionKey]: (selectedSidebarFilters[sectionKey] as string[]).filter(
-            (item) => item !== filterKey,
-          ),
+        setSelectedSidebarFilters((prev) => {
+          return prev.map((filter) =>
+            filter.section.key === sectionKey
+              ? {
+                  ...filter,
+                  tags: filter.tags?.filter((tag) => tag !== filterKey),
+                }
+              : filter,
+          );
         });
       } else {
-        setSelectedSidebarFilters({
-          ...selectedSidebarFilters,
-          [sectionKey]: [
-            ...(selectedSidebarFilters[sectionKey] as string[]),
-            filterKey,
-          ],
-        });
+        const existingFilter = selectedSidebarFilters.filter(
+          ({ section }) => section.key === sectionKey,
+        );
+        if (existingFilter.length > 0) {
+          setSelectedSidebarFilters((prev) => {
+            return prev.map((filter) =>
+              filter.section.key === sectionKey
+                ? { ...filter, tags: [...(filter.tags ?? []), filterKey] }
+                : filter,
+            );
+          });
+        } else {
+          setSelectedSidebarFilters((prev) => {
+            return prev.concat([
+              {
+                section: section,
+                tags: [filterKey],
+              },
+            ]);
+          });
+        }
       }
-    } 
+    }
     if (onClick) onClick();
   };
 
   const [min, max] = useMemo(() => {
     return [
-      activeRangeFilters.find(({ sectionKey }) => sectionKey === sectionKey)?.min ?? 0,
-      activeRangeFilters.find(({ sectionKey }) => sectionKey === sectionKey)?.max ?? 10000,
+      activeRangeFilters.find(({ sectionKey }) => sectionKey === sectionKey)
+        ?.range?.min ?? 0,
+      activeRangeFilters.find(({ sectionKey }) => sectionKey === sectionKey)
+        ?.range?.max ?? 10000,
     ];
   }, [activeRangeFilters, sectionKey]);
 
@@ -335,80 +363,105 @@ export const FilterButton = ({
     if (values[0] > values[1]) {
       return;
     }
-    setSelectedSidebarFilters((prev) => ({
-      ...prev,
-      [sectionKey]: { min: values[0], max: values[1] },
-    }));
+    setSelectedSidebarFilters((prev) => {
+      const existingRangeFilter = prev.find(
+        ({ section }) =>
+          section.key === sectionKey && section.filterType === "range",
+      );
+      if (existingRangeFilter) {
+        return prev.map((filter) =>
+          filter.section.key === sectionKey
+            ? { ...filter, range: { min: values[0], max: values[1] } }
+            : filter,
+        );
+      } else {
+        return prev.concat([
+          {
+            section: section,
+            range: { min: values[0], max: values[1] },
+          },
+        ]);
+      }
+    });
   };
   return (
     <>
-    {type !== "range" && (
-    <button className="trieve-filter-button-container" onClick={handleClick}>
-      <div
-        className={`trieve-${type}-button`} // This class can be 'trieve-single-button' or 'trieve-multiple-button'
-        data-active={active ? "true" : "false"}
-      >
-        {type === "multiple" && active && (
-          <i className="trieve-checkbox-icon">
-            <CheckIcon />
-          </i>
-        )}
-        {type === "single" && <div className="trieve-circle" />} 
-      </div>
-      <label className="trieve-filter-button-label" title={description}>
-        {label}
-      </label>
-    </button>
-    )}
-    {type === "range" && (
-      <div className="tv-pb-3">
-        <div className="tv-flex tv-flex-col tv-gap-2">  
-                    <div className="tv-flex tv-justify-between tv-items-center tv-gap-3">
-          <div className="tv-relative tv-flex-1">
-            <div className="tv-w-[90%] tv-flex tv-items-center tv-rounded-md tv-border tv-border-gray-200 tv-bg-gray-50 tv-overflow-hidden">
-              <span className="tv-pl-3 tv-pr-1 tv-text-gray-500">$</span>
-              <input
-                type="number"
-                className="tv-w-full !tv-shadow-none tv-bg-transparent focus:tv-outline-none tv-outline-none tv-border-none"
-                value={min}
-                onChange={(e) => handleChange([parseInt(e.target.value), max])}
+      {type !== "range" && (
+        <button
+          className="trieve-filter-button-container"
+          onClick={handleClick}
+        >
+          <div
+            className={`trieve-${type}-button`} // This class can be 'trieve-single-button' or 'trieve-multiple-button'
+            data-active={active ? "true" : "false"}
+          >
+            {type === "multiple" && active && (
+              <i className="trieve-checkbox-icon">
+                <CheckIcon />
+              </i>
+            )}
+            {type === "single" && <div className="trieve-circle" />}
+          </div>
+          <label className="trieve-filter-button-label" title={description}>
+            {label}
+          </label>
+        </button>
+      )}
+      {type === "range" && (
+        <div className="tv-pb-3">
+          <div className="tv-flex tv-flex-col tv-gap-2">
+            <div className="tv-flex tv-justify-between tv-items-center tv-gap-3">
+              <div className="tv-relative tv-flex-1">
+                <div className="tv-w-[90%] tv-flex tv-items-center tv-rounded-md tv-border tv-border-gray-200 tv-bg-gray-50 tv-overflow-hidden">
+                  <span className="tv-pl-3 tv-pr-1 tv-text-gray-500">$</span>
+                  <input
+                    type="number"
+                    className="tv-w-full !tv-shadow-none tv-bg-transparent focus:tv-outline-none tv-outline-none tv-border-none"
+                    value={min}
+                    onChange={(e) =>
+                      handleChange([parseInt(e.target.value), max])
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="tv-flex tv-items-center tv-justify-center">
+                <div className="tv-w-4 tv-h-0.5 tv-bg-gray-300"></div>
+              </div>
+
+              <div className="tv-relative tv-flex-1">
+                <div className="tv-w-[90%] tv-flex tv-items-center tv-rounded-md tv-border tv-border-gray-200 tv-bg-gray-50 tv-overflow-hidden">
+                  <span className="tv-pl-3 tv-pr-1 tv-text-gray-500">$</span>
+                  <input
+                    type="number"
+                    className="tv-w-full !tv-shadow-none tv-bg-transparent tv-focus:outline-none"
+                    value={max}
+                    onChange={(e) =>
+                      handleChange([min, parseInt(e.target.value)])
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="tv-mt-1 tv-w-[100%] !tv-shadow-none">
+              <TwoThumbInputRange
+                onChange={handleChange}
+                values={[min, max]}
+                min={range?.min ?? 0}
+                max={range?.max ?? 10000}
+                trackColor={getCssVar("--tv-prop-brand-color")}
+                thumbColor={getCssVar("--tv-prop-brand-color")}
+                showLabels={false}
+                inputStyle={{
+                  width: "225px",
+                  boxShadow: "none",
+                  textShadow: "none",
+                }}
               />
             </div>
           </div>
-          
-          <div className="tv-flex tv-items-center tv-justify-center">
-            <div className="tv-w-4 tv-h-0.5 tv-bg-gray-300"></div>
-          </div>
-          
-          <div className="tv-relative tv-flex-1">
-            <div className="tv-w-[90%] tv-flex tv-items-center tv-rounded-md tv-border tv-border-gray-200 tv-bg-gray-50 tv-overflow-hidden">
-              <span className="tv-pl-3 tv-pr-1 tv-text-gray-500">$</span>
-              <input
-                type="number"
-                className="tv-w-full !tv-shadow-none tv-bg-transparent tv-focus:outline-none"
-                value={max}
-                onChange={(e) => handleChange([min, parseInt(e.target.value)])}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="tv-mt-1 tv-w-[100%]">
-            <TwoThumbInputRange 
-              onChange={handleChange} 
-              values={[min, max]} 
-              min={range?.min ?? 0} 
-              max={range?.max ?? 10000} 
-              trackColor={getCssVar("--tv-prop-brand-color")} 
-              thumbColor={getCssVar("--tv-prop-brand-color")} 
-              showLabels={false}
-              inputStyle={{
-                "width": "225px"
-              }}
-            />    
         </div>
-        </div>
-      </div>
-    )}
+      )}
     </>
   );
 };
@@ -447,9 +500,7 @@ export const CollapsibleSection = ({
           className="trieve-collapsible-section-content-container"
           data-open={isOpen ? "true" : "false"}
         >
-          <div className="trieve-collapsible-section-content">
-            {children}
-          </div>
+          <div className="trieve-collapsible-section-content">{children}</div>
         </div>
       )}
     </div>
@@ -461,9 +512,7 @@ export const FilterSidebar = ({ sections }: FilterSidebarProps) => {
     <aside className="trieve-filter-sidebar">
       <ActiveFilterPills />
       <div className="trieve-filter-sidebar-section">
-        <div className="">
-          Filters
-        </div>
+        <div className="">Filters</div>
         {sections.map((section) => (
           <Accordion
             key={section.key}
@@ -473,18 +522,18 @@ export const FilterSidebar = ({ sections }: FilterSidebarProps) => {
             <div className="trieve-filter-sidebar-options">
               {section.options.map((option) => (
                 <div key={option.tag}>
-                    <div className="trieve-filter-sidebar-child-options">
-                        <div className="trieve-filter-sidebar-child-options-list">
-                            <FilterButton
-                              key={option.tag}
-                              sectionKey={section.key}
-                              filterKey={option.tag}
-                              label={option.label ?? ""}
-                              type={section.selectionType}
-                              range={option.range}
-                            />
-                        </div>
+                  <div className="trieve-filter-sidebar-child-options">
+                    <div className="trieve-filter-sidebar-child-options-list">
+                      <FilterButton
+                        key={option.tag}
+                        section={section}
+                        filterKey={option.tag}
+                        label={option.label ?? ""}
+                        type={section.selectionType}
+                        range={option.range}
+                      />
                     </div>
+                  </div>
                 </div>
               ))}
             </div>

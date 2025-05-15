@@ -1,4 +1,5 @@
 import {
+  ChunkFilter,
   ChunkMetadata,
   ChunkMetadataStringTagSet,
   CountChunkQueryResponseBody,
@@ -36,7 +37,7 @@ export const searchWithTrieve = async ({
     search_type: "fulltext",
   },
   abortController,
-  tags,
+  filters,
   type,
   fingerprint,
 }: {
@@ -47,7 +48,7 @@ export const searchWithTrieve = async ({
   audioBase64?: string;
   searchOptions: Props["searchOptions"];
   abortController?: AbortController;
-  tags?: string[];
+  filters?: ChunkFilter;
   type?: ModalTypes;
   fingerprint?: string;
 }) => {
@@ -76,6 +77,7 @@ export const searchWithTrieve = async ({
   if (searchOptions.use_autocomplete === true) {
     results = (await trieve.autocomplete(
       {
+        ...omit(searchOptions, ["use_autocomplete"]),
         query,
         highlight_options: {
           ...defaultHighlightOptions,
@@ -85,11 +87,7 @@ export const searchWithTrieve = async ({
         extend_results: true,
         score_threshold: scoreThreshold,
         page_size: searchOptions.page_size ?? 15,
-        ...(tags?.length && {
-          filters: {
-            must: [{ field: "tag_set", match_any: tags }],
-          },
-        }),
+        filters,
         metadata: {
           component_props: props,
         },
@@ -98,7 +96,6 @@ export const searchWithTrieve = async ({
           correct_typos: true,
         },
         search_type: searchOptions.search_type ?? "fulltext",
-        ...omit(searchOptions, ["use_autocomplete"]),
       },
       abortController?.signal,
       (headers: Record<string, string>) => {
@@ -110,6 +107,7 @@ export const searchWithTrieve = async ({
   } else {
     results = (await trieve.search(
       {
+        ...omit(searchOptions, ["use_autocomplete"]),
         query,
         highlight_options: {
           ...defaultHighlightOptions,
@@ -118,11 +116,7 @@ export const searchWithTrieve = async ({
         },
         score_threshold: scoreThreshold,
         page_size: searchOptions.page_size ?? 15,
-        ...(tags?.length && {
-          filters: {
-            must: [{ field: "tag_set", match_any: tags }],
-          },
-        }),
+        filters,
         metadata: {
           component_props: props,
         },
@@ -131,7 +125,6 @@ export const searchWithTrieve = async ({
           correct_typos: true,
         },
         search_type: searchOptions.search_type ?? "fulltext",
-        ...omit(searchOptions, ["use_autocomplete"]),
       },
       abortController?.signal,
       (headers: Record<string, string>) => {
@@ -171,7 +164,7 @@ export const groupSearchWithTrieve = async ({
     search_type: "fulltext",
   },
   abortController,
-  tags,
+  filters,
   type,
   fingerprint,
 }: {
@@ -182,7 +175,7 @@ export const groupSearchWithTrieve = async ({
   audioBase64?: string;
   searchOptions: Props["searchOptions"];
   abortController?: AbortController;
-  tags?: string[];
+  filters?: ChunkFilter;
   type?: ModalTypes;
   fingerprint?: string;
 }) => {
@@ -216,11 +209,7 @@ export const groupSearchWithTrieve = async ({
       },
       score_threshold: scoreThreshold,
       page_size: searchOptions.page_size ?? 15,
-      ...(tags?.length && {
-        filters: {
-          must: [{ field: "tag_set", match_any: tags }],
-        },
-      }),
+      filters,
       group_size: 1,
       metadata: {
         component_props: props,
@@ -501,16 +490,9 @@ export const searchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
   datasetId: string,
-  tags?: string[],
+  filters?: ChunkFilter,
 ) => {
-  const response = await pagefind.search(
-    query,
-    tags && {
-      filters: {
-        tag_set: tags,
-      },
-    },
-  );
+  const response = await pagefind.search(query, filters);
 
   const results = await Promise.all(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -551,16 +533,9 @@ export const groupSearchWithPagefind = async (
   pagefind: PagefindApi,
   query: string,
   datasetId: string,
-  tags?: string[],
+  filters?: ChunkFilter,
 ): Promise<GroupSearchResults> => {
-  const response = await pagefind.search(
-    query,
-    tags && {
-      filters: {
-        tag_set: tags,
-      },
-    },
-  );
+  const response = await pagefind.search(query, filters);
 
   const results = await Promise.all(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

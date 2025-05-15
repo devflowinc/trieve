@@ -19,8 +19,6 @@ import { ModalContainer } from "./ModalContainer";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { createPortal } from "react-dom";
 
-
-
 const Modal = () => {
   useKeyboardNavigation();
   const { open, setOpen, setMode, setQuery, props } = useModalState();
@@ -343,7 +341,7 @@ export const TrieveModalSearch = (props: ModalProps) => {
   return (
     <ModalProvider onLoadProps={props}>
       <ChatProvider>
-          <Modal />
+        <Modal />
       </ChatProvider>
     </ModalProvider>
   );

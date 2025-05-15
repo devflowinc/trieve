@@ -29,8 +29,7 @@ export default function Inline() {
   const defaultTags: any[] = JSON.parse(
     import.meta.env.VITE_DEFAULT_TAGS ?? "[]",
   );
-  const defaultSearchMode =
-    import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "chat`";
+  const defaultSearchMode = import.meta.env.VITE_DEFAULT_SEARCH_MODE ?? "chat`";
   const defaultAIQuestions = (
     import.meta.env.VITE_DEFAULT_AI_QUESTIONS ?? ""
   ).split(",");

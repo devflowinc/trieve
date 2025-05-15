@@ -1421,7 +1421,7 @@ body {
     }
 
     .trieve-filter-sidebar {
-      @apply tv-p-2 tv-border-r tv-min-h-full tv-mr-5 tv-min-w-fit;
+      @apply tv-p-2 tv-border-r tv-min-h-full tv-mr-5 tv-min-w-fit tv-max-w-[30%];
     }
 
     .trieve-filter-sidebar-section {
@@ -1609,7 +1609,7 @@ body {
   }
 
   .trieve-filter-main-section {
-    @apply tv-w-full;
+    @apply tv-w-full tv-max-w-[30%];
   }
 
   .trieve-inference-filters-form {

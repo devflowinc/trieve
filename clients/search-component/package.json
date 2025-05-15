@@ -35,8 +35,8 @@
     "build:css": "npx postcss src/app.css -o dist/index.css && cp src/styles.d.ts dist/",
     "build:clean": "rm -rf dist && yarn type:dts && yarn build",
     "prepublish": "yarn build:clean",
-    "lint": "eslint",
-    "format": "prettier --write .",
+    "lint": "eslint && npx prettier --write . '!dist/**'",
+    "format": "prettier --write . '!dist/**'",
     "serve": "./serve-component",
     "push:cdn:beta": "curl --request PUT --url https://ny.storage.bunnycdn.com/trieve/beta/search-component/index.css --header \"AccessKey: ${BUNNY_API_KEY}\"  --header 'Content-Type: application/octet-stream' --header 'accept: application/json' --data-binary @dist/index.css && curl --request PUT --url https://ny.storage.bunnycdn.com/trieve/beta/search-component/index.js --header \"AccessKey: ${BUNNY_API_KEY}\"  --header 'Content-Type: application/octet-stream' --header 'accept: application/json' --data-binary @dist/index.js && curl --request PUT --url https://ny.storage.bunnycdn.com/trieve/beta/search-component/vanilla/index.js --header \"AccessKey: ${BUNNY_API_KEY}\"  --header 'Content-Type: application/octet-stream' --header 'accept: application/json' --data-binary @dist/vanilla/index.js ",
     "push:cdn:stable": "curl --request PUT --url https://ny.storage.bunnycdn.com/trieve/stable/search-component/index.css --header \"AccessKey: ${BUNNY_API_KEY}\"  --header 'Content-Type: application/octet-stream' --header 'accept: application/json' --data-binary @dist/index.css && curl --request PUT --url https://ny.storage.bunnycdn.com/trieve/stable/search-component/index.js --header \"AccessKey: ${BUNNY_API_KEY}\"  --header 'Content-Type: application/octet-stream' --header 'accept: application/json' --data-binary @dist/index.js && curl --request PUT --url https://ny.storage.bunnycdn.com/trieve/stable/search-component/vanilla/index.js --header \"AccessKey: ${BUNNY_API_KEY}\"  --header 'Content-Type: application/octet-stream' --header 'accept: application/json' --data-binary @dist/vanilla/index.js "

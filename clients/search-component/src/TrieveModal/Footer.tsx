@@ -9,7 +9,9 @@ export const Footer = () => {
       className={cn(
         `trieve-footer tv-border-zinc-200 dark:tv-border-t-zinc-800 tv-px-3 tv-items-center tv-flex tv-flex-col`,
         mode === "search" && "tv-border-t",
-        props.inline && props.defaultSearchMode === "search" && "tv-border-none",
+        props.inline &&
+          props.defaultSearchMode === "search" &&
+          "tv-border-none",
       )}
     >
       <div className="tags-row">

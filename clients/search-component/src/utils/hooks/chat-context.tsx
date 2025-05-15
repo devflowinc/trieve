@@ -118,7 +118,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     selectedTags,
     currentGroup,
     props,
-    selectedSidebarFilters,
   } = useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
@@ -1154,19 +1153,14 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
     scrollToBottomOfChatModalWrapper();
 
-    const defaultMatchAllTags = Object.keys(selectedSidebarFilters)
-      .map((key) => selectedSidebarFilters[key])
-      .flat() as string[];
     if (!currentTopic) {
       await createTopic({
         question: questionProp || currentQuestion,
-        defaultMatchAllTags,
       });
     } else {
       await createQuestion({
         question: questionProp || currentQuestion,
         group,
-        defaultMatchAllTags,
       });
     }
   };
