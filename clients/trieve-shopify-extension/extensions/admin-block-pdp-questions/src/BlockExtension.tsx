@@ -14,6 +14,7 @@ import {
   TextField,
 } from "@shopify/ui-extensions-react/admin";
 import { SuggestedQueriesResponse, TrieveSDK } from "trieve-ts-sdk";
+import React from "react";
 
 export type TrieveKey = {
   id?: string;
