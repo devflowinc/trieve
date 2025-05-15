@@ -990,7 +990,7 @@ pub async fn delete_actual_organization_query(
 pub async fn update_all_org_dataset_configs_query(
     org_id: uuid::Uuid,
     new_config: serde_json::Value,
-    from_config: Option<serde_json::Value>,
+    match_config: Option<serde_json::Value>,
     pool: web::Data<Pool>,
 ) -> Result<(), ServiceError> {
     let mut concat_configs_raw_query = format!(
@@ -998,8 +998,8 @@ pub async fn update_all_org_dataset_configs_query(
         new_config.to_string().replace('\'', "''"), org_id
     );
 
-    if let Some(from_config) = from_config {
-        let from_config_query = from_config
+    if let Some(match_config) = match_config {
+        let match_config_query = match_config
             .as_object()
             .unwrap()
             .iter()
@@ -1013,7 +1013,7 @@ pub async fn update_all_org_dataset_configs_query(
             .collect::<Vec<String>>()
             .join(" AND ");
 
-        concat_configs_raw_query.push_str(&format!(" AND ({})", from_config_query));
+        concat_configs_raw_query.push_str(&format!(" AND ({})", match_config_query));
     }
 
     concat_configs_raw_query.push(';');
@@ -1027,7 +1027,7 @@ pub async fn update_all_org_dataset_configs_query(
         .await
         .map_err(|e| {
             log::error!(
-                "Error updating datasets in update_all_org_dataset_server_configs: {:?}",
+                "Error updating datasets in update_all_org_dataset_configs: {:?}",
                 e
             );
             ServiceError::BadRequest("Error updating datasets".to_string())
