@@ -801,7 +801,11 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                   []
                 ).splice(0, 1)
               : undefined;
-            const jsonOfFirstChunk = {title: (firstChunk?.metadata as any)["title"], "Description": firstChunk?.chunk_html,"price": firstChunk?.num_value};
+            const jsonOfFirstChunk = {
+              title: (firstChunk?.metadata as any)["title"],
+              Description: firstChunk?.chunk_html,
+              price: firstChunk?.num_value,
+            };
             return retryOperation(async () => {
               const relevanceToolCallResp =
                 await trieveSDK.getToolCallFunctionParams(
