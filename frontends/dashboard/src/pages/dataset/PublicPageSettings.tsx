@@ -20,6 +20,7 @@ import {
   PublicPageTabMessage,
   RelevanceToolCallOptions,
 } from "trieve-ts-sdk";
+import FilterSidebarBuilder from "../../components/FilterSidebarBuilder";
 
 export const PublicPageSettingsPage = () => {
   return (
@@ -789,6 +790,8 @@ const PublicPageControls = () => {
         <SingleProductOptions />
 
         <TabOptions />
+
+        <SerpPageOptions />
 
         <details class="my-4">
           <summary class="cursor-pointer text-sm font-medium">
@@ -1916,6 +1919,64 @@ export const OgOptions = () => {
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
         </div>
+      </div>
+    </details>
+  );
+};
+
+export const SerpPageOptions = () => {
+  const { extraParams, setExtraParams } = usePublicPage();
+  const [showFilters, setShowFilters] = createSignal(false);
+
+  const handleDisplayToggle = (checked: boolean) => {
+    setExtraParams("searchPageProps", {
+      ...extraParams.searchPageProps,
+      display: checked,
+    });
+
+    setExtraParams("inline", checked);
+    setExtraParams(
+      "defaultSearchMode",
+      checked ? "search" : extraParams.defaultSearchMode,
+    );
+
+    if (checked && !showFilters()) {
+      setShowFilters(true);
+    }
+  };
+
+  return (
+    <details class="my-4">
+      <summary class="cursor-pointer text-sm font-medium">
+        SERP Page Options
+      </summary>
+
+      <div class="mt-4 space-y-4">
+        <div class="flex gap-4">
+          <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1">
+              <label class="block">Enable SERP Page</label>
+              <Tooltip
+                tooltipText="Enable the Search Engine Results Page with filters"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
+            <input
+              type="checkbox"
+              checked={extraParams.searchPageProps?.display || false}
+              onChange={(e) => {
+                handleDisplayToggle(e.currentTarget.checked);
+              }}
+              class="block h-4 w-4 rounded border border-neutral-300 shadow-sm focus:outline-magenta-500"
+            />
+          </div>
+        </div>
+
+        {extraParams.searchPageProps?.display && (
+          <>
+            <FilterSidebarBuilder />
+          </>
+        )}
       </div>
     </details>
   );

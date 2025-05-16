@@ -2014,6 +2014,15 @@ export type FileWithChunkGroups = {
     updated_at: string;
 };
 
+export type FilterSidebarSection = {
+    filterKey: string;
+    filterType: string;
+    key: string;
+    options: Array<TagProp>;
+    selectionType: string;
+    title: string;
+};
+
 export type FloatRange = {
     gt?: (number) | null;
     gte?: (number) | null;
@@ -2926,6 +2935,7 @@ export type PublicPageParameters = {
     relevanceToolCallOptions?: ((RelevanceToolCallOptions) | null);
     responsive?: (boolean) | null;
     searchOptions?: ((PublicPageSearchOptions) | null);
+    searchPageProps?: ((SearchPageProps) | null);
     showFloatingButton?: (boolean) | null;
     showFloatingInput?: (boolean) | null;
     showFloatingSearchIcon?: (boolean) | null;
@@ -3186,6 +3196,11 @@ export type Range = {
 };
 
 export type RangeCondition = number;
+
+export type RangeSliderConfig = {
+    max?: (number) | null;
+    min?: (number) | null;
+};
 
 export type RateQueryRequest = {
     metadata?: unknown;
@@ -3799,6 +3814,11 @@ export type SearchOverGroupsResults = {
     group: ChunkGroup;
 };
 
+export type SearchPageProps = {
+    display?: (boolean) | null;
+    filterSidebarProps?: ((SidebarFilters) | null);
+};
+
 export type SearchQueriesWithClicksCTRResponse = {
     clicked_chunk: ChunkMetadataWithPosition;
     created_at: string;
@@ -4008,6 +4028,10 @@ export type ShopifyPlanChangePayload = {
     idempotency_key: string;
     organization_id: string;
     shopify_plan: ShopifyPlan;
+};
+
+export type SidebarFilters = {
+    sections?: Array<FilterSidebarSection> | null;
 };
 
 export type SingleProductOptions = {
@@ -4229,6 +4253,12 @@ export type SuggestedQueriesReqPayload = {
 
 export type SuggestedQueriesResponse = {
     queries: Array<(string)>;
+};
+
+export type TagProp = {
+    label?: (string) | null;
+    range?: ((RangeSliderConfig) | null);
+    tag?: (string) | null;
 };
 
 export type TagsWithCount = {

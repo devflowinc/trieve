@@ -13302,6 +13302,40 @@
           "updated_at": "2021-01-01 00:00:00.000"
         }
       },
+      "FilterSidebarSection": {
+        "type": "object",
+        "required": [
+          "key",
+          "filterKey",
+          "title",
+          "selectionType",
+          "filterType",
+          "options"
+        ],
+        "properties": {
+          "filterKey": {
+            "type": "string"
+          },
+          "filterType": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagProp"
+            }
+          },
+          "selectionType": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "FloatRange": {
         "type": "object",
         "properties": {
@@ -15698,6 +15732,14 @@
             ],
             "nullable": true
           },
+          "searchPageProps": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SearchPageProps"
+              }
+            ],
+            "nullable": true
+          },
           "showFloatingButton": {
             "type": "boolean",
             "nullable": true
@@ -16955,6 +16997,21 @@
             "format": "int64"
           }
         ]
+      },
+      "RangeSliderConfig": {
+        "type": "object",
+        "properties": {
+          "max": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "min": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        }
       },
       "RateQueryRequest": {
         "type": "object",
@@ -19417,6 +19474,23 @@
           }
         }
       },
+      "SearchPageProps": {
+        "type": "object",
+        "properties": {
+          "display": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "filterSidebarProps": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SidebarFilters"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
       "SearchQueriesWithClicksCTRResponse": {
         "type": "object",
         "required": [
@@ -20070,6 +20144,18 @@
           },
           "shopify_plan": {
             "$ref": "#/components/schemas/ShopifyPlan"
+          }
+        }
+      },
+      "SidebarFilters": {
+        "type": "object",
+        "properties": {
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterSidebarSection"
+            },
+            "nullable": true
           }
         }
       },
@@ -20979,6 +21065,27 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "TagProp": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "range": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RangeSliderConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "tag": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

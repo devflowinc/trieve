@@ -278,8 +278,9 @@ export const FilterButton = ({
   }[] = useMemo(() => {
     const filters = selectedSidebarFilters.filter(
       ({ section }) =>
-        section.filterType === "match_any" ||
-        (section.filterType === "match_all" && section.key === sectionKey),
+        (section.filterType === "match_any" ||
+          section.filterType === "match_all") &&
+        section.key === sectionKey,
     );
     return filters.map(({ section, tags }) => ({
       sectionKey: section.key,
