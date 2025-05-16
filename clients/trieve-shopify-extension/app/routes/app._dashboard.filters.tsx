@@ -16,6 +16,7 @@ export interface TagProp {
     min?: number;
     max?: number;
   };
+  description?: string;
 }
 
 export interface FilterSidebarSection {

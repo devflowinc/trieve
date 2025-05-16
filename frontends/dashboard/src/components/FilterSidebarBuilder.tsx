@@ -323,6 +323,27 @@ const FilterSidebarBuilder = () => {
                         />
                       </div>
                     </Show>
+                    <div>
+                      <label class="block text-sm">
+                        Description (This will be used to help the AI filter the
+                        options)
+                      </label>
+                      <textarea
+                        placeholder="Description"
+                        value={option.description || ""}
+                        onInput={(e) => {
+                          setSections(
+                            props.index,
+                            "options",
+                            optionIndex(),
+                            "description",
+                            e.currentTarget.value,
+                          );
+                          updateSerpPageOptions();
+                        }}
+                        class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                      />
+                    </div>
                   </div>
                 </div>
               )}

@@ -167,6 +167,17 @@ export function FilterBlock({ section, onChange, onDelete }: {
                                   helpText="Visible label to users"
                                 />
                               </FormLayout.Group>
+
+                              <FormLayout.Group condensed>
+                                <TextField
+                                  label="Description"
+                                  value={option.description}
+                                  onChange={(value) => handleOptionChange(index, "description", value)}
+                                  autoComplete="off"
+                                  helpText="Description of this option. This will used to help the AI filter the options."
+                                  multiline={2}
+                                />
+                              </FormLayout.Group>
                               
 
                               {section.selectionType === 'range' && (
@@ -225,6 +236,17 @@ export function FilterBlock({ section, onChange, onDelete }: {
                               onChange={(value) => setNewOption({...newOption, label: value})}
                               autoComplete="off"
                               helpText="Visible label to users"
+                            />
+                          </FormLayout.Group>
+
+                          <FormLayout.Group condensed>
+                            <TextField
+                              label="Description"
+                              value={newOption.description}
+                              onChange={(value) => setNewOption({...newOption, description: value})}
+                              autoComplete="off"
+                              helpText="Description of this option. This will used to help the AI filter the options."
+                              multiline={2}
                             />
                           </FormLayout.Group>
 

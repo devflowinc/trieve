@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useState } from "react";
 import { CheckIcon, ChevronDownIcon, ChevronUpicon, XIcon } from "./icons";
 import {
@@ -7,6 +7,7 @@ import {
   useModalState,
 } from "../utils/hooks/modal-context";
 import { TwoThumbInputRange } from "react-two-thumb-input-range";
+import { GetToolFunctionParamsReqPayload } from "trieve-ts-sdk";
 
 function getCssVar(varName: string) {
   // Get the root element (or any other element that has the variable)
@@ -209,6 +210,12 @@ export const Accordion = ({
     count += activeRangeFilters.length;
     return count;
   }, [activeTagFilters, activeRangeFilters]);
+
+  useEffect(() => {
+    if (numberOfSelectedFilters > 0) {
+      setOpen(true);
+    }
+  }, [numberOfSelectedFilters]);
 
   return (
     <div
@@ -496,11 +503,190 @@ export const FilterButton = ({
   );
 };
 
+const SendIcon = () => {
+  return (
+    <svg fill="currentColor" strokeWidth="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" height="1em" width="1em" style={{overflow: "visible", color: "currentColor"}}><path d="m1 1.91.78-.41L15 7.449v.95L1.78 14.33 1 13.91 2.583 8 1 1.91ZM3.612 8.5 2.33 13.13 13.5 7.9 2.33 2.839l1.282 4.6L9 7.5v1H3.612Z"></path></svg>
+  );
+};
+
+const LoadingIcon = () => {
+  return (
+   <svg fill="currentColor" stroke-width="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" height="1em" width="1em" style={{overflow: "visible", color: "currentColor"}}><path d="M988 548c-19.9 0-36-16.1-36-36 0-59.4-11.6-117-34.6-171.3a440.45 440.45 0 0 0-94.3-139.9 437.71 437.71 0 0 0-139.9-94.3C629 83.6 571.4 72 512 72c-19.9 0-36-16.1-36-36s16.1-36 36-36c69.1 0 136.2 13.5 199.3 40.3C772.3 66 827 103 874 150c47 47 83.9 101.8 109.7 162.7 26.7 63.1 40.2 130.2 40.2 199.3.1 19.9-16 36-35.9 36z"></path></svg>
+  );
+};
+
 export const FilterSidebar = ({ sections }: FilterSidebarProps) => {
+  const [sidebarText, setSidebarText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { trieveSDK, setSelectedSidebarFilters } = useModalState();
+
+const handleSubmit = async() => {
+  if (sidebarText.trim() === "") return;
+  
+  try {
+    setIsLoading(true);
+    const toolCallPromises = sections.map((section) => {
+      let toolCallData: GetToolFunctionParamsReqPayload;
+      
+      if (section.filterType === "match_any" || section.filterType === "match_all") {
+        toolCallData = {
+          user_message_text: sidebarText,
+          tool_function: {
+            name: "infer_filters",
+            description: `
+              Analyze the user's query to determine relevant filters for "${section.title}".
+              ${section.selectionType === "single" 
+                ? "Select only the single most relevant filter that best matches the query intent." 
+                : "Select all filters that directly relate to the query's explicit or implied needs."}
+              If the query contains no clear relation to these filters, return all as false.
+              Consider synonyms and related concepts when matching filters to query terms.
+            `,
+            parameters: section.options.map((option) => ({
+              name: option.tag,
+              parameter_type: "boolean",
+              description: `${option.label}: ${option.description}
+                Select this filter only if the user's query explicitly mentions or strongly implies a need for content related to this specific category.`,
+            })),
+          },
+        };
+        return trieveSDK.getToolCallFunctionParams(toolCallData);
+      } else if (section.filterType === "range" && section.selectionType === "range") {
+        toolCallData = {
+          user_message_text: sidebarText,
+          tool_function: {
+            name: "infer_filters",
+            description: `
+              Analyze the user's query for numerical range preferences related to "${section.title}".
+              Valid range: ${section.options[0].range?.min} to ${section.options[0].range?.max}.
+              If the query specifies or implies a numerical range (e.g., "under 50", "between 100-200", "at least 300"):
+                - Extract the minimum and maximum values that satisfy the user's intent
+                - Keep values within allowed bounds
+              If no range is specified or implied, don't apply this filter (return null for both values).
+              Interpret qualitative terms appropriately (e.g., "affordable" = lower range, "premium" = higher range).
+            `,
+            parameters: [
+              {
+                name: "min_value",
+                parameter_type: "number",
+                description: `Minimum value for ${section.title}. 
+                  Extract from explicit values ("over 50") or implied ranges ("affordable").
+                  Return null if the query doesn't specify or imply a minimum.`,
+              },
+              {
+                name: "max_value",
+                parameter_type: "number",
+                description: `Maximum value for ${section.title}.
+                  Extract from explicit values ("under 100") or implied ranges ("budget-friendly").
+                  Return null if the query doesn't specify or imply a maximum.`,
+              },
+            ],
+          },
+        };
+        return trieveSDK.getToolCallFunctionParams(toolCallData);
+      } 
+      
+      return Promise.resolve(null); 
+    });
+
+    const toolCalls = await Promise.all(toolCallPromises);
+
+    setSelectedSidebarFilters((prev) => {
+      if (prev.length !== 0) {
+        return prev.map((filter, index) => {
+          const toolCall = toolCalls[index];
+
+        if (!toolCall) return filter;
+        if (sections[index].filterType === "range" && sections[index].selectionType === "range") {
+          const parameters = toolCall.parameters as { min_value: number, max_value: number };
+          const minValue = Math.max(parameters.min_value, sections[index].options[0].range?.min || 0);
+          const maxValue = Math.min(parameters.max_value, sections[index].options[0].range?.max || Infinity);
+          if (filter.section.key === sections[index].key) {
+            return { ...filter, range: { min: minValue, max: maxValue } };
+          }
+        } else {
+          const selectedTags = Object.entries(toolCall.parameters as Record<string, boolean>)
+            .filter(([, isSelected]) => isSelected)
+            .map(([tag]) => tag);
+            
+          if (filter.section.key === sections[index].key) {
+            return { ...filter, tags: selectedTags };
+          }
+        }
+        
+        return filter;
+      });
+    } else {
+     return sections.map((section, index) => {
+       const toolCall = toolCalls[index];
+
+        if (!toolCall) return { section: section };
+        if (sections[index].filterType === "range" && sections[index].selectionType === "range") {
+          const parameters = toolCall.parameters as { min_value: number, max_value: number };
+          const minValue = Math.max(parameters.min_value, sections[index].options[0].range?.min || 0);
+          const maxValue = Math.min(parameters.max_value, sections[index].options[0].range?.max || Infinity);
+          if (section.key === sections[index].key) {
+            return { section, range: { min: minValue, max: maxValue } };
+          }
+        } else {
+          const selectedTags = Object.entries(toolCall.parameters as Record<string, boolean>)
+            .filter(([, isSelected]) => isSelected)
+            .map(([tag]) => tag);
+            
+          if (section.key === sections[index].key) {
+            return { section, tags: selectedTags };
+          }
+        }
+        
+        return { section: section };
+     })
+    }
+    });
+  } catch (error) {
+    console.error("Error processing filters:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault(); 
+      handleSubmit();
+    }
+  };
+
+
   return (
     <aside className="trieve-filter-sidebar">
+      <div className="trieve-filter-sidebar-textarea-container tv-p-2.5 tv-border-b tv-border-gray-200">
+        <div className="tv-flex tv-flex-col tv-mb-2">
+        <div className="tv-text-sm tv-text-black-500">
+            Choose your filters with AI
+          </div>
+        <div className="tv-relative tv-flex tv-items-center">
+          <textarea
+            value={sidebarText}
+            onChange={(e) => setSidebarText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="blue or red under 100"
+            className="tv-w-full tv-min-h-[40px] tv-p-1 tv-pr-10 tv-border tv-border-gray-300 tv-rounded-md focus:tv-outline-none focus:tv-ring-1 focus:tv-ring-blue-500 focus:tv-border-blue-500 tv-resize-none"
+          />
+          {isLoading ? (
+            <div className="tv-absolute tv-right-2 tv-p-2 tv-h-[40px] tv-flex tv-items-center tv-justify-center tv-text-gray-500 tv-animate-spin">
+              <LoadingIcon />
+            </div>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              className="tv-absolute tv-right-2 tv-p-2 tv-h-[40px] tv-flex tv-items-center tv-justify-center tv-text-gray-500 hover:tv-text-blue-500 focus:tv-outline-none"
+          >
+            <SendIcon />
+          </button>
+          )}
+        </div>
+        </div>
+      </div>      
       <div className="trieve-filter-sidebar-section">
-        <div className="">Filters</div>
         {sections.map((section) => (
           <Accordion
             key={section.key}

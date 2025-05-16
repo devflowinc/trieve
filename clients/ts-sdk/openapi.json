@@ -21076,6 +21076,10 @@
       "TagProp": {
         "type": "object",
         "properties": {
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
           "label": {
             "type": "string",
             "nullable": true

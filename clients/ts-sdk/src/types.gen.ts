@@ -4261,6 +4261,7 @@ export type SuggestedQueriesResponse = {
 };
 
 export type TagProp = {
+    description?: (string) | null;
     label?: (string) | null;
     range?: ((RangeSliderConfig) | null);
     tag?: (string) | null;
