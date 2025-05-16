@@ -392,8 +392,8 @@ pub struct CloneDatasetRequest {
     pub dataset_name: String,
     /// Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
     pub tracking_id: Option<String>,
-    /// The configuration of the dataset. See the example request payload for the potential keys which can be set. It is possible to break your dataset's functionality by erroneously setting this field. We recommend setting through creating a dataset at dashboard.trieve.ai and managing it's settings there.
-    pub server_configuration: Option<DatasetConfigurationDTO>,
+    /// Parameter to Clone Chunks from the original dataset to the new dataset. defaults to true.
+    pub clone_chunks: Option<bool>,
 }
 
 impl From<CloneDatasetRequest> for CreateDatasetReqPayload {
@@ -401,7 +401,7 @@ impl From<CloneDatasetRequest> for CreateDatasetReqPayload {
         CreateDatasetReqPayload {
             dataset_name: request.dataset_name,
             tracking_id: request.tracking_id,
-            server_configuration: request.server_configuration,
+            server_configuration: None,
         }
     }
 }
@@ -438,8 +438,14 @@ pub async fn clone_dataset(
     user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let data = data.into_inner();
-    let dataset_to_clone = data.dataset_to_clone;
-    let create_dataset_payload = CreateDatasetReqPayload::from(data);
+    let dataset_uuid_to_clone = data.dataset_to_clone;
+    let og_dataset = get_dataset_by_id_query(dataset_uuid_to_clone, pool.clone()).await?;
+
+    let clone_chunks = data.clone_chunks.unwrap_or(true);
+    let mut create_dataset_payload = CreateDatasetReqPayload::from(data);
+
+    create_dataset_payload.server_configuration =
+        Some(DatasetConfiguration::from_json(og_dataset.server_configuration.clone()).into());
 
     let org_id = org_with_sub_and_plan.organization.id;
     let organization_sub_plan = get_org_from_id_query(org_id, pool.clone()).await?;
@@ -467,15 +473,17 @@ pub async fn clone_dataset(
     )
     .await?;
 
-    let message = CloneDatasetMessage {
-        dataset_to_clone,
-        new_dataset: new_dataset.id,
-    };
+    if clone_chunks {
+        let message = CloneDatasetMessage {
+            dataset_to_clone: dataset_uuid_to_clone,
+            new_dataset: new_dataset.id,
+        };
 
-    broccoli_queue
-        .publish("clone_dataset", None, &message, None)
-        .await
-        .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+        broccoli_queue
+            .publish("clone_dataset", None, &message, None)
+            .await
+            .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    }
 
     Ok(HttpResponse::Ok().json(new_dataset))
 }

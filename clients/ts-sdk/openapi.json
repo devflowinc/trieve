@@ -9603,6 +9603,11 @@
           "dataset_name"
         ],
         "properties": {
+          "clone_chunks": {
+            "type": "boolean",
+            "description": "Parameter to Clone Chunks from the original dataset to the new dataset. defaults to true.",
+            "nullable": true
+          },
           "dataset_name": {
             "type": "string",
             "description": "Name of the dataset."
@@ -9611,14 +9616,6 @@
             "type": "string",
             "format": "uuid",
             "description": "The id of the dataset you want to clone."
-          },
-          "server_configuration": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/DatasetConfigurationDTO"
-              }
-            ],
-            "nullable": true
           },
           "tracking_id": {
             "type": "string",
