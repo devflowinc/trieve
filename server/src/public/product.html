@@ -36,34 +36,8 @@
         <div class="mt-2 text-gray-500 dark:text-gray-300 paragraph-text">
           {{ params.singleProductOptions.productDescriptionHtml|safe }}
         </div>
-        {% endif %} {% if params.inline and params.singleProductOptions and
-        params.singleProductOptions.productName %}
+        {% endif %} {% if params.inline and params.singleProductOptions %}
         <div id="inline-root"></div>
-        {% else %}
-        <div class="mt-4 border-t border-gray-200">
-          <h3 class="text-brand-color text-sm font-medium mt-4">
-            <span class="text-brand-color"
-              ><i class="fa-solid fa-wand-magic-sparkles"></i
-            ></span>
-            Ask AI
-          </h3>
-          <div class="starter-questions flex flex-wrap gap-1 mt-2">
-            {% for question in params.singleProductOptions.productQuestions %}
-            <button
-              type="button"
-              class="px-3 py-1.5 text-sm rounded-lg text-brand-color"
-            >
-              {{ question }}
-            </button>
-            {% endfor %}
-            <button
-              type="button"
-              class="bg-brand-color px-3 py-1.5 text-sm rounded-lg text-white"
-            >
-              Ask something else
-            </button>
-          </div>
-        </div>
         {% endif %}
       </div>
     </section>
@@ -143,7 +117,7 @@
 
   const getGroupRecommendations = async (
     positiveGroupTrackingIds,
-    negativeGroupTrackingIds
+    negativeGroupTrackingIds,
   ) => {
     const recommendations = await fetch(
       `${window.paramsData.baseUrl}/api/chunk_group/recommend`,
@@ -165,7 +139,7 @@
           negative_group_tracking_ids: negativeGroupTrackingIds,
         }),
         credentials: "omit",
-      }
+      },
     );
 
     const recommendationsData = await recommendations.json();
@@ -212,16 +186,16 @@
             curWindowRecData[oppositeField] = curWindowRecData[
               oppositeField
             ]?.filter(
-              (id) => id !== recProduct.getAttribute("x-group-tracking-id")
+              (id) => id !== recProduct.getAttribute("x-group-tracking-id"),
             );
 
             if (isActive) {
               curWindowRecData[field] = curWindowRecData[field].filter(
-                (id) => id !== recProduct.getAttribute("x-group-tracking-id")
+                (id) => id !== recProduct.getAttribute("x-group-tracking-id"),
               );
             } else {
               curWindowRecData[field].push(
-                recProduct.getAttribute("x-group-tracking-id")
+                recProduct.getAttribute("x-group-tracking-id"),
               );
             }
             window.recData = curWindowRecData;
@@ -233,7 +207,7 @@
             ]);
             getGroupRecommendations(
               window.recData.positiveGroupTrackingIds ?? [],
-              window.recData.negativeGroupTrackingIds ?? []
+              window.recData.negativeGroupTrackingIds ?? [],
             );
           });
         });
@@ -264,7 +238,7 @@
       const chunkHtmlElement = document.createElement("div");
       chunkHtmlElement.innerHTML = chunk.chunk_html;
       const firstHeading = chunkHtmlElement.querySelector(
-        "h1, h2, h3, h4, h5, h6"
+        "h1, h2, h3, h4, h5, h6",
       );
       if (firstHeading) {
         firstHeading.remove();
@@ -287,7 +261,7 @@
 
       const chunkElement = document.createElement("div");
       chunkElement.classList.add(
-        ...["rec", "w-64", "flex-shrink-0", "flex", "flex-col"]
+        ...["rec", "w-64", "flex-shrink-0", "flex", "flex-col"],
       );
       chunkElement.setAttribute("x-group-tracking-id", groupTrackingId);
       chunkElement.innerHTML = `
@@ -348,7 +322,7 @@
             page_size: 15,
           }),
           credentials: "omit",
-        }
+        },
       );
       const recommendationsData = await recommendations.json();
       replaceLoadingStateProducts(recommendationsData.results);
@@ -369,12 +343,12 @@
         "TR-Dataset": window.paramsData.datasetId,
       },
       credentials: "omit",
-    }
+    },
   );
   const group = await getGroupByTrackingIdResp.json();
 
   const starterQuestions = document.querySelectorAll(
-    ".starter-questions button"
+    ".starter-questions button",
   );
   starterQuestions.forEach((button) => {
     button.addEventListener("click", async () => {
@@ -392,7 +366,7 @@
             betterGroupName,
             message,
           },
-        })
+        }),
       );
     });
   });

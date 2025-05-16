@@ -18,10 +18,12 @@ import {
 import { createStore } from "solid-js/store";
 import {
   $OpenApiTs,
+  ChunkMetadata,
   CrawlRequest,
   PriceToolCallOptions,
   PublicPageTabMessage,
   RelevanceToolCallOptions,
+  SearchOverGroupsResponseBody,
 } from "trieve-ts-sdk";
 import FilterSidebarBuilder from "../../components/FilterSidebarBuilder";
 import { DatasetContext } from "../../contexts/DatasetContext";
@@ -252,6 +254,15 @@ const PublicPageControls = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
+  });
+
+  createEffect(() => {
+    const singleProductOptions = extraParams.singleProductOptions;
+    const hasKey =
+      singleProductOptions &&
+      Object.keys(singleProductOptions).length > 0 &&
+      Object.values(singleProductOptions).some((option) => option);
+    setExtraParams("inline", hasKey);
   });
 
   return (
@@ -1650,7 +1661,10 @@ const PublicPageControls = () => {
 };
 
 export const SingleProductOptions = () => {
+  const [loadingAutoFill, setLoadingAutoFill] = createSignal(false);
   const { extraParams, setExtraParams } = usePublicPage();
+  const datasetContext = useContext(DatasetContext);
+  const trieve = useTrieve();
 
   return (
     <details class="my-4">
@@ -1690,17 +1704,63 @@ export const SingleProductOptions = () => {
         </div>
         <div class="grow">
           <label class="block">Product Name</label>
-          <input
-            placeholder="Name of the product to display"
-            value={extraParams.singleProductOptions?.productName || ""}
-            onInput={(e) => {
-              setExtraParams("singleProductOptions", {
-                ...extraParams.singleProductOptions,
-                productName: e.currentTarget.value,
-              });
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
+          <div class="flex items-center gap-2">
+            <input
+              placeholder="Name of the product to display"
+              value={extraParams.singleProductOptions?.productName || ""}
+              onInput={(e) => {
+                setExtraParams("singleProductOptions", {
+                  ...extraParams.singleProductOptions,
+                  productName: e.currentTarget.value,
+                });
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+            <button
+              onClick={() => {
+                setLoadingAutoFill(true);
+                void trieve
+                  .fetch("/api/chunk_group/group_oriented_search", "post", {
+                    data: {
+                      query:
+                        extraParams.singleProductOptions?.productName || "",
+                      page_size: 10,
+                      search_type: "fulltext",
+                    },
+                    datasetId: datasetContext.datasetId(),
+                  })
+                  .then((res) => {
+                    const typedRes: SearchOverGroupsResponseBody =
+                      res as SearchOverGroupsResponseBody;
+                    const firstGroup = typedRes.results?.length
+                      ? typedRes.results[0]
+                      : null;
+                    const firstChunk = firstGroup?.chunks?.length
+                      ? firstGroup.chunks[0]
+                      : null;
+                    if (!firstGroup || !firstChunk) {
+                      return;
+                    }
+                    setExtraParams("singleProductOptions", {
+                      groupTrackingId: firstGroup.group.tracking_id,
+                      productTrackingId: firstChunk.chunk.tracking_id,
+                      productPrimaryImageUrl: firstChunk.chunk.image_urls
+                        ?.length
+                        ? firstChunk.chunk.image_urls[0]
+                        : "",
+                      productDescriptionHtml: (
+                        firstChunk.chunk as ChunkMetadata
+                      ).chunk_html,
+                    });
+                    setLoadingAutoFill(false);
+                  });
+              }}
+              disabled={loadingAutoFill()}
+              class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900 disabled:animate-pulse min-w-[130px]"
+            >
+              {loadingAutoFill() ? "Loading..." : "Auto Fill"}
+            </button>
+          </div>
         </div>
       </div>
       <div class="flex gap-4 pb-2 pt-2">
@@ -1733,29 +1793,12 @@ export const SingleProductOptions = () => {
             value={extraParams.singleProductOptions?.productQuestions || []}
             onChange={(e) => {
               setExtraParams("singleProductOptions", {
-                ...extraParams.singleProductOptions,
                 productQuestions: e,
               });
             }}
             addLabel="Add Product Question"
             addClass="text-sm"
             inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
-        </div>
-      </div>
-      <div class="flex gap-4 pb-2 pt-2">
-        <div class="grow">
-          <label class="block">Recommendation Search Query</label>
-          <input
-            placeholder="Search query to use for recommendations"
-            value={extraParams.singleProductOptions?.recSearchQuery || ""}
-            onInput={(e) => {
-              setExtraParams("singleProductOptions", {
-                ...extraParams.singleProductOptions,
-                recSearchQuery: e.currentTarget.value,
-              });
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />
         </div>
       </div>
@@ -1774,6 +1817,22 @@ export const SingleProductOptions = () => {
                 productDescriptionHtml: e.currentTarget.value,
               });
               setExtraParams("inline", !!e.currentTarget.value);
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+        </div>
+      </div>
+      <div class="flex gap-4 pb-2 pt-2">
+        <div class="grow">
+          <label class="block">Recommendation Search Query</label>
+          <input
+            placeholder="Search query to use for recommendations"
+            value={extraParams.singleProductOptions?.recSearchQuery || ""}
+            onInput={(e) => {
+              setExtraParams("singleProductOptions", {
+                ...extraParams.singleProductOptions,
+                recSearchQuery: e.currentTarget.value,
+              });
             }}
             class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
           />

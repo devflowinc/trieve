@@ -564,7 +564,7 @@
           </div>
           {% endif %}
         </div>
-        {% if params.searchPageProps.display %}
+        {% if params.searchPageProps and params.searchPageProps.display %}
         <div id="inline-serp-root"></div>
         {% endif %}
         {% if params.videoLink and params.videoPosition == "static" %}
