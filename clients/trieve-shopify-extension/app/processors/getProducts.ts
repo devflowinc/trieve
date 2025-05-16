@@ -1,6 +1,7 @@
 import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
 import { getTrieveBaseUrlEnv } from "app/env.server";
-import { AdminApiCaller, setMetafield } from "app/loaders";
+import { AdminApiCaller } from "app/loaders";
+import { setAppMetafields } from "app/queries/metafield";
 import {
   Product,
   TrieveKey,
@@ -467,26 +468,35 @@ export const sendChunks = async (
       chunkSendPromises.push(sendPromise);
     }
 
-    setMetafield(
+    setAppMetafields(
       adminApiFetcher,
-      "crawlStatus",
-      JSON.stringify({
-        done: false,
-      }),
+      [
+        {
+          key: "crawlStatus",
+          value: JSON.stringify({
+            done: false,
+          }),
+          type: "single_line_text_field",
+        },
+      ],
     );
-
     next_page = response.data.products.pageInfo.hasNextPage
       ? response.data.products.pageInfo.endCursor
       : null;
   }
 
   await Promise.all(chunkSendPromises);
-  setMetafield(
+  setAppMetafields(
     adminApiFetcher,
-    "crawlStatus",
-    JSON.stringify({
-      done: true,
-    }),
+    [
+      {
+        key: "crawlStatus",
+        value: JSON.stringify({
+          done: true,
+        }),
+        type: "single_line_text_field",
+      },
+    ],
   );
   return chunks;
 };

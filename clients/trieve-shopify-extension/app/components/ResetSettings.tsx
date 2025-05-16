@@ -1,7 +1,7 @@
 import { Button, Card, Text } from "@shopify/polaris";
 import { useMutation } from "@tanstack/react-query";
-import { setMetafield } from "app/loaders";
 import { useClientAdminApi } from "app/loaders/clientLoader";
+import { setAppMetafields } from "app/queries/metafield";
 import { ONBOARD_STEP_META_FIELD } from "app/queries/onboarding";
 import { onboardingSteps } from "app/utils/onboarding";
 
@@ -13,7 +13,13 @@ export const ResetSettings = () => {
       console.error("Error clearing app metafields", e);
     },
     mutationFn: async () => {
-      setMetafield(adminApi, ONBOARD_STEP_META_FIELD, onboardingSteps[0].id);
+      setAppMetafields(adminApi, [
+        {
+          key: ONBOARD_STEP_META_FIELD,
+          value: onboardingSteps[0].id,
+          type: "single_line_text_field",
+        },
+      ]);
     },
   });
 
