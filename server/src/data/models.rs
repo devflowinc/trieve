@@ -3355,7 +3355,6 @@ impl DatasetConfigurationDTO {
         if public_dataset_api_key.is_none() {
             public_dataset_api_key = curr_dataset_config.PUBLIC_DATASET.api_key;
         }
-        println!("public_dataset {:?}", public_dataset_api_key);
 
         DatasetConfiguration {
             LLM_BASE_URL: self
@@ -3620,6 +3619,9 @@ impl DatasetConfigurationDTO {
                     show_result_highlights: page_parameters_self
                         .show_result_highlights
                         .or(page_parameters_curr.show_result_highlights),
+                    search_page_props: page_parameters_self
+                        .search_page_props
+                        .or(page_parameters_curr.search_page_props),
                 }),
             },
             DISABLE_ANALYTICS: self

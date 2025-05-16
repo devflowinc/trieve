@@ -199,6 +199,52 @@ pub struct PriceToolCallOptions {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct TagProp {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub range: Option<RangeSliderConfig>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct RangeSliderConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterSidebarSection {
+    pub key: String,
+    pub filter_key: String,
+    pub title: String,
+    pub selection_type: String,
+    pub filter_type: String,
+    pub options: Vec<TagProp>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SidebarFilters {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sections: Option<Vec<FilterSidebarSection>>,
+}
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchPageProps {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filter_sidebar_props: Option<SidebarFilters>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PublicPageParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dataset_id: Option<uuid::Uuid>,
@@ -314,6 +360,8 @@ pub struct PublicPageParameters {
     pub use_local: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_result_highlights: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_page_props: Option<SearchPageProps>,
 }
 
 #[utoipa::path(
