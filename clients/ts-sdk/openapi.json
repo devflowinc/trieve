@@ -15627,6 +15627,10 @@
             },
             "nullable": true
           },
+          "defaultSearchQuery": {
+            "type": "string",
+            "nullable": true
+          },
           "floatingButtonPosition": {
             "type": "string",
             "nullable": true
@@ -15721,6 +15725,10 @@
             "nullable": true
           },
           "responsive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "searchBar": {
             "type": "boolean",
             "nullable": true
           },
