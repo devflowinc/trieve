@@ -1939,6 +1939,7 @@ export const SerpPageOptions = () => {
       "defaultSearchMode",
       checked ? "search" : extraParams.defaultSearchMode,
     );
+    setExtraParams("searchBar", checked);
 
     if (checked && !showFilters()) {
       setShowFilters(true);
@@ -1968,6 +1969,20 @@ export const SerpPageOptions = () => {
                 handleDisplayToggle(e.currentTarget.checked);
               }}
               class="block h-4 w-4 rounded border border-neutral-300 shadow-sm focus:outline-magenta-500"
+            />
+          </div>
+        </div>
+
+        <div class="flex gap-4">
+          <div class="grow">
+            <label class="block">Default Search Query</label>
+            <input
+              placeholder="Default search query"
+              value={extraParams.defaultSearchQuery || ""}
+              onInput={(e) => {
+                setExtraParams("defaultSearchQuery", e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
           </div>
         </div>

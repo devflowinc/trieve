@@ -362,6 +362,10 @@ pub struct PublicPageParameters {
     pub show_result_highlights: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_page_props: Option<SearchPageProps>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_bar: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_search_query: Option<String>,
 }
 
 #[utoipa::path(

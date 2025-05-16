@@ -3622,6 +3622,12 @@ impl DatasetConfigurationDTO {
                     search_page_props: page_parameters_self
                         .search_page_props
                         .or(page_parameters_curr.search_page_props),
+                    default_search_query: page_parameters_self
+                        .default_search_query
+                        .or(page_parameters_curr.default_search_query),
+                    search_bar: page_parameters_self
+                        .search_bar
+                        .or(page_parameters_curr.search_bar),
                 }),
             },
             DISABLE_ANALYTICS: self

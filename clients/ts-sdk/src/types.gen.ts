@@ -2914,6 +2914,7 @@ export type PublicPageParameters = {
     defaultImageQuestion?: (string) | null;
     defaultSearchMode?: (string) | null;
     defaultSearchQueries?: Array<(string)> | null;
+    defaultSearchQuery?: (string) | null;
     floatingButtonPosition?: (string) | null;
     floatingButtonVersion?: (string) | null;
     floatingSearchIconPosition?: (string) | null;
@@ -2934,6 +2935,7 @@ export type PublicPageParameters = {
     problemLink?: (string) | null;
     relevanceToolCallOptions?: ((RelevanceToolCallOptions) | null);
     responsive?: (boolean) | null;
+    searchBar?: (boolean) | null;
     searchOptions?: ((PublicPageSearchOptions) | null);
     searchPageProps?: ((SearchPageProps) | null);
     showFloatingButton?: (boolean) | null;

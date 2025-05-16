@@ -206,6 +206,7 @@ export type ModalProps = {
   previewTopicId?: string;
   overrideFetch?: boolean;
   searchBar?: boolean;
+  defaultSearchQuery?: string;
 };
 
 const defaultProps = {
@@ -278,6 +279,7 @@ const defaultProps = {
   usePortal: true,
   previewTopicId: undefined,
   searchBar: false,
+  defaultSearchQuery: undefined,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
@@ -689,7 +691,7 @@ const ModalProvider = ({
       props.defaultSearchMode === "search"
     ) {
       const url = new URL(window.location.href);
-      const initialQuery = url.searchParams.get("q");
+      const initialQuery = url.searchParams.get("q") || props.defaultSearchQuery;
       if (initialQuery) {
         setQuery(initialQuery);
       }
