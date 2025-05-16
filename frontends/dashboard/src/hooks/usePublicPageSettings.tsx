@@ -19,6 +19,7 @@ import { ApiRoutes } from "../components/Routes";
 import { HeroPatterns } from "../pages/dataset/HeroPatterns";
 import { createInitializedContext } from "../utils/initialize";
 import {
+  defaultOpenGraphMetadata,
   defaultPriceToolCallOptions,
   defaultRelevanceToolCallOptions,
 } from "../pages/dataset/PublicPageSettings";
@@ -92,6 +93,12 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
         });
       }
 
+      if (!extraParams.openGraphMetadata) {
+        setExtraParams("openGraphMetadata", {
+          ...defaultOpenGraphMetadata,
+        });
+      }
+
       // manually set the array for rolemessages to simplify logic
       // context blocks until it's set
       if (
@@ -113,10 +120,6 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
         ) {
           setExtraParams("useGroupSearch", true);
         }
-      }
-
-      if (extraParams.inline == undefined || extraParams.inline == null) {
-        setExtraParams("inline", true);
       }
 
       if (
@@ -210,6 +213,7 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
                   placeholder: "Search...",
                   defaultSearchMode: "chat",
                   type: "ecommerce",
+                  inline: false,
                   openLinksInNewTab: true,
                 },
               },
