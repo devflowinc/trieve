@@ -621,6 +621,10 @@ export type ClickhouseTopicAnalyticsSummary = {
 
 export type CloneDatasetRequest = {
     /**
+     * Parameter to Clone Chunks from the original dataset to the new dataset. defaults to true.
+     */
+    clone_chunks?: (boolean) | null;
+    /**
      * Name of the dataset.
      */
     dataset_name: string;
@@ -628,7 +632,6 @@ export type CloneDatasetRequest = {
      * The id of the dataset you want to clone.
      */
     dataset_to_clone: string;
-    server_configuration?: ((DatasetConfigurationDTO) | null);
     /**
      * Optional tracking ID for the dataset. Can be used to track the dataset in external systems. Must be unique within the organization. Strongly recommended to not use a valid uuid value as that will not work with the TR-Dataset header.
      */
