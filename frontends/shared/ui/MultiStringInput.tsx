@@ -13,6 +13,11 @@ interface MultiStringInputProps {
   disabled?: boolean;
 }
 
+type TEntry = {
+  value: string;
+  id: string;
+};
+
 const addBlankStringIfEmpty = (value: string[]) => {
   if (value.length === 0) {
     return [""];
@@ -21,13 +26,16 @@ const addBlankStringIfEmpty = (value: string[]) => {
 };
 
 export const MultiStringInput = (props: MultiStringInputProps) => {
-  const [proxyStore, setProxyStore] = createStore(
-    // eslint-disable-next-line solid/reactivity
-    addBlankStringIfEmpty(props.value).map((value) => ({
-      value,
-      id: Math.random().toString(36).slice(2),
-    })),
-  );
+  const [proxyStore, setProxyStore] = createStore<TEntry[]>([]);
+
+  createEffect(() => {
+    setProxyStore(
+      addBlankStringIfEmpty(props.value).map((value) => ({
+        value,
+        id: Math.random().toString(36).slice(2),
+      })),
+    );
+  });
 
   createEffect(() => {
     props.onChange(

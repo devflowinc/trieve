@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { createEffect, createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, For, Show, useContext } from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { JsonInput, MultiStringInput, Select, Tooltip } from "shared/ui";
@@ -16,11 +17,16 @@ import {
 } from "../../hooks/usePublicPageSettings";
 import { createStore } from "solid-js/store";
 import {
+  $OpenApiTs,
+  CrawlRequest,
   PriceToolCallOptions,
   PublicPageTabMessage,
   RelevanceToolCallOptions,
 } from "trieve-ts-sdk";
 import FilterSidebarBuilder from "../../components/FilterSidebarBuilder";
+import { DatasetContext } from "../../contexts/DatasetContext";
+import { useTrieve } from "../../hooks/useTrieve";
+import { UserContext } from "../../contexts/UserContext";
 
 export const PublicPageSettingsPage = () => {
   return (
@@ -40,6 +46,13 @@ export const PublicPageSettingsPage = () => {
       </PublicPageProvider>
     </div>
   );
+};
+
+export const defaultOpenGraphMetadata = {
+  title: "Trieve AI Sitesearch",
+  description:
+    "Trieve AI Sitesearch is ChatGPT for your website and content. Replicate the experience of a human sales associate with AI.",
+  image: "",
 };
 
 export const defaultRelevanceToolCallOptions: RelevanceToolCallOptions = {
@@ -95,6 +108,11 @@ const componentVersionOptions = [
 ];
 
 const PublicPageControls = () => {
+  const [prospectiveCustomerUrl, setProspectiveCustomerUrl] = createSignal("");
+  const [docColors, setDocColors] = createSignal<string[]>([]);
+  const [loadingDefaultConfig, setLoadingDefaultConfig] = createSignal(false);
+  const userContext = useContext(UserContext);
+  const datasetContext = useContext(DatasetContext);
   const {
     extraParams,
     setExtraParams,
@@ -103,6 +121,138 @@ const PublicPageControls = () => {
     unpublishDataset,
     publicUrl,
   } = usePublicPage();
+  const trieve = useTrieve();
+
+  const updateTrackingId = async (newTrackingId: string) => {
+    const result = await trieve.fetch("/api/dataset", "put", {
+      data: {
+        dataset_id: datasetContext.datasetId(),
+        new_tracking_id: newTrackingId,
+      },
+      organizationId: userContext.selectedOrg().id,
+    });
+    await userContext.invalidate();
+    return result;
+  };
+
+  const autoConfigure = async (url: string) => {
+    setLoadingDefaultConfig(true);
+    const domain = url.replace(/^(?:https?:\/\/)?(?:www\.)?/, "").split("/")[0];
+    const domainParts = domain.split(".");
+    const domainName = domainParts.slice(0, -1).join(".");
+    void updateTrackingId(domainName);
+
+    const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+    const pageResponse = await fetch(proxyUrl);
+    const pageText = await pageResponse.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(pageText, "text/html");
+
+    const titleQuerysSelectors = [
+      "title",
+      "meta[property='og:title']",
+      "meta[name='twitter:title']",
+    ];
+    const title = titleQuerysSelectors
+      .map((selector) => doc.querySelector(selector))
+      .find((title) => title?.getAttribute("content") || title?.textContent);
+    const titleText = title?.getAttribute("content") || title?.textContent;
+    if (titleText) {
+      setExtraParams("brandName", titleText);
+      setExtraParams("forBrandName", titleText);
+      setExtraParams("headingPrefix", `Demo For`);
+      setExtraParams("openGraphMetadata", "title", titleText);
+    }
+
+    const faviconQuerySelectors = [
+      "link[rel='shortcut icon']",
+      "link[rel='icon']",
+      "link[rel='apple-touch-icon']",
+    ];
+    const faviconHref = faviconQuerySelectors
+      .map((selector) => doc.querySelector(selector))
+      .find((link) => link?.getAttribute("href"))
+      ?.getAttribute("href");
+    if (faviconHref) {
+      const url = new URL(faviconHref, pageResponse.url);
+      const faviconUrl = url.href.replace(/^\//, "");
+      setExtraParams("navLogoImgSrcUrl", faviconUrl);
+      setExtraParams("brandLogoImgSrcUrl", faviconUrl);
+    }
+
+    const ogDescriptionQuerySelectors = [
+      "meta[property='og:description']",
+      "meta[name='twitter:description']",
+    ];
+    const ogDescription = ogDescriptionQuerySelectors
+      .map((selector) => doc.querySelector(selector))
+      .find((description) => description?.getAttribute("content"))
+      ?.getAttribute("content");
+    if (ogDescription) {
+      setExtraParams("openGraphMetadata", "description", ogDescription);
+    }
+
+    const ogImageQuerySelectors = [
+      "meta[property='og:image']",
+      "meta[name='twitter:image']",
+    ];
+    const ogImage = ogImageQuerySelectors
+      .map((selector) => doc.querySelector(selector))
+      .find((image) => image?.getAttribute("content"))
+      ?.getAttribute("content");
+    if (ogImage) {
+      setExtraParams("openGraphMetadata", "image", ogImage);
+    }
+
+    const hexColorRegex = /#([0-9A-Fa-f]{3,6})/g;
+    const hexColors = Array.from(pageText.matchAll(hexColorRegex)).map(
+      (match) => match[0],
+    );
+    const uniqueColors = new Set(hexColors);
+    const range = 64;
+    const sortedColors = Array.from(uniqueColors).sort((a, b) => {
+      const [ar, ag, ab] = [
+        Math.floor(parseInt(a.slice(1, 3), 16) / range),
+        Math.floor(parseInt(a.slice(3, 5), 16) / range),
+        Math.floor(parseInt(a.slice(5, 7), 16) / range),
+      ];
+      const [br, bg, bb] = [
+        Math.floor(parseInt(b.slice(1, 3), 16) / range),
+        Math.floor(parseInt(b.slice(3, 5), 16) / range),
+        Math.floor(parseInt(b.slice(5, 7), 16) / range),
+      ];
+      return ar - br || ag - bg || ab - bb;
+    });
+    setDocColors(sortedColors);
+
+    setLoadingDefaultConfig(false);
+  };
+
+  createEffect(() => {
+    void (
+      trieve.fetch<"eject">(
+        `/api/crawl?limit=10&page=1` as keyof $OpenApiTs,
+        "get",
+        {
+          datasetId: datasetContext.datasetId(),
+        },
+      ) as Promise<CrawlRequest[]>
+    ).then((result) => {
+      const lastUrl = result.length ? result[0].url : "";
+      setProspectiveCustomerUrl(lastUrl);
+    });
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+        event.preventDefault();
+        void publishDataset();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  });
 
   return (
     <>
@@ -123,7 +273,26 @@ const PublicPageControls = () => {
         </div>
       </Show>
       <Show when={isPublic()}>
-        <div class="mt-4 flex content-center items-center gap-1.5 gap-x-2.5">
+        <div class="flex items-center space-x-2">
+          <input
+            placeholder="https://www.prospectivecustomer.com"
+            value={prospectiveCustomerUrl()}
+            onInput={(e) => {
+              setProspectiveCustomerUrl(e.currentTarget.value);
+            }}
+            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+          />
+          <button
+            onClick={() => {
+              void autoConfigure(prospectiveCustomerUrl());
+            }}
+            disabled={loadingDefaultConfig()}
+            class="inline-flex w-[200px] justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900 disabled:animate-pulse"
+          >
+            {loadingDefaultConfig() ? "Loading..." : "Auto Configure"}
+          </button>
+        </div>
+        <div class="mb-6 py-2 flex content-center items-center gap-1.5 gap-x-2.5">
           <span class="font-medium">Published Url:</span>{" "}
           <a class="text-magenta-400" href={publicUrl()} target="_blank">
             {publicUrl()}
@@ -179,7 +348,18 @@ const PublicPageControls = () => {
               options={["light", "dark"]}
             />
           </div>
-          <div class="grow">
+          <div class="grow max-w-[50%]">
+            <For each={docColors()}>
+              {(color) => (
+                <button
+                  class="w-6 h-6 rounded-lg"
+                  style={{ "background-color": color }}
+                  onClick={() => {
+                    setExtraParams("brandColor", color);
+                  }}
+                />
+              )}
+            </For>
             <div class="flex items-center gap-1">
               <label class="block" for="">
                 Brand Color
@@ -1864,14 +2044,9 @@ const HtmlEditor = (props: {
 
 export const OgOptions = () => {
   const { extraParams, setExtraParams } = usePublicPage();
-  const [defaultDetailOpen] = createSignal(
-    !!extraParams.openGraphMetadata?.title ||
-      !!extraParams.openGraphMetadata?.image ||
-      !!extraParams.openGraphMetadata?.description,
-  );
 
   return (
-    <details class="my-4" open={defaultDetailOpen()}>
+    <details class="my-4">
       <summary class="cursor-pointer text-sm font-medium">Open Graph</summary>
       <div class="flex gap-4 pt-2">
         <div class="grow">
