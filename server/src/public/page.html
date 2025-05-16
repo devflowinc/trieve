@@ -458,6 +458,11 @@
 
         if (params.inline && !params.searchPageProps?.display) {
           const inlineParams = {{ params | tojson }};
+          inlineParams.partnerSettings = {
+            "partnerCompanyName": "{{ partner_configuration.COMPANY_NAME }}",
+            "partnerCompanyUrl": "{{ partner_configuration.COMPANY_URL | safe }}",
+            "partnerCompanyFaviconUrl": "{{ partner_configuration.FAVICON_URL | safe }}",
+          }
           const inlineRoot = document.querySelector("#inline-root");
           inlineParams.cssRelease = mode;
           inlineParams.groupTrackingId = params.singleProductOptions?.groupTrackingId;
@@ -566,8 +571,8 @@
         </div>
         {% if params.searchPageProps and params.searchPageProps.display %}
         <div id="inline-serp-root"></div>
-        {% endif %}
-        {% if params.videoLink and params.videoPosition == "static" %}
+        {% endif %} {% if params.videoLink and params.videoPosition == "static"
+        %}
         <div
           class="mx-auto py-4 px-8 sm:px-12 lg:max-w-7xl lg:px-20 w-full blurb-html"
         >
@@ -586,8 +591,7 @@
             ></iframe>
           </div>
         </div>
-        {% endif %} 
-        {% if params.singleProductOptions and
+        {% endif %} {% if params.singleProductOptions and
         params.singleProductOptions.productName %} {% include "product.html" %}
         {% endif %} {% if tabs and tabs|length > 0 %} {% include "tabs.html" %}
         {% endif %} {% if params.videoLink and params.videoPosition ==
