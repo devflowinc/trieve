@@ -448,9 +448,7 @@ const ModalProvider = ({
     ) {
       const url = new URL(window.location.href);
       url.searchParams.set("q", query);
-      if (selectedSidebarFilters.length > 0) {
-        url.searchParams.set("filters", JSON.stringify(selectedSidebarFilters));
-      }
+      url.searchParams.set("filters", JSON.stringify(selectedSidebarFilters));
       window.history.replaceState({}, "", url.toString());
     }
 
