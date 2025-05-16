@@ -458,6 +458,11 @@
 
         if (params.inline && !params.searchPageProps?.display) {
           const inlineParams = {{ params | tojson }};
+          inlineParams.partnerSettings = {
+            "partnerCompanyName": "{{ partner_configuration.COMPANY_NAME }}",
+            "partnerCompanyUrl": "{{ partner_configuration.COMPANY_URL | safe }}",
+            "partnerCompanyFaviconUrl": "{{ partner_configuration.FAVICON_URL | safe }}",
+          }
           const inlineRoot = document.querySelector("#inline-root");
           inlineParams.cssRelease = mode;
           inlineParams.groupTrackingId = params.singleProductOptions?.groupTrackingId;
