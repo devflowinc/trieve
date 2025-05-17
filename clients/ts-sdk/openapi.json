@@ -4935,6 +4935,295 @@
         ]
       }
     },
+    "/api/experiment": {
+      "get": {
+        "tags": [
+          "Experiment"
+        ],
+        "summary": "Get Experiments",
+        "description": "Get all experiments for a dataset. Auth'ed user must be an owner of the organization to get experiments.",
+        "operationId": "get_experiments",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Experiments retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Experiment"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting the experiments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "owner"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Experiment"
+        ],
+        "summary": "Create Experiment",
+        "description": "Experiment will be created in the dataset specified via the TR-Dataset header. Auth'ed user must be an owner of the organization to create an experiment.",
+        "operationId": "create_experiment",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to create a new experiment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExperimentReqBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Experiment created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Experiment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to creating the experiment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "owner"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Experiment"
+        ],
+        "summary": "Update Experiment",
+        "description": "Update an experiment. Auth'ed user must be an owner of the organization to update an experiment.",
+        "operationId": "update_experiment",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to update an experiment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExperimentReqBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Experiment updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Experiment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to updating the experiment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "owner"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/experiment/ab-test": {
+      "post": {
+        "tags": [
+          "Experiment"
+        ],
+        "summary": "Ab Test",
+        "description": "Get a user's treatment for an experiment. Auth'ed user must be an owner of the organization to get a user's treatment.",
+        "operationId": "ab_test",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to get a user's treatment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbTestReqBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "User treatment response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserTreatmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting the user's treatment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "owner"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/experiment/{experiment_id}": {
+      "delete": {
+        "tags": [
+          "Experiment"
+        ],
+        "summary": "Delete Experiment",
+        "description": "Delete an experiment. Auth'ed user must be an owner of the organization to delete an experiment.",
+        "operationId": "delete_experiment",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Experiment deleted successfully"
+          },
+          "400": {
+            "description": "Service error relating to deleting the experiment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "owner"
+            ]
+          }
+        ]
+      }
+    },
     "/api/file": {
       "post": {
         "tags": [
@@ -7585,6 +7874,22 @@
           "V1",
           "V2"
         ]
+      },
+      "AbTestReqBody": {
+        "type": "object",
+        "required": [
+          "experiment_id",
+          "user_id"
+        ],
+        "properties": {
+          "experiment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
       },
       "AddChunkToGroupReqPayload": {
         "type": "object",
@@ -10761,6 +11066,21 @@
           }
         }
       },
+      "CreateExperimentReqBody": {
+        "type": "object",
+        "required": [
+          "name",
+          "experiment_config"
+        ],
+        "properties": {
+          "experiment_config": {
+            "$ref": "#/components/schemas/ExperimentConfig"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "CreateFormWithoutFile": {
         "type": "object",
         "description": "Will use [chunkr.ai](https://chunkr.ai) to process the file when this object is defined. See [docs.chunkr.ai/api-references/task/create-task](https://docs.chunkr.ai/api-references/task/create-task) for detailed information about what each field on this request payload does.",
@@ -12830,6 +13150,80 @@
             "items": {
               "$ref": "#/components/schemas/EventData"
             }
+          }
+        }
+      },
+      "Experiment": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "t1_name",
+          "t1_split",
+          "control_name",
+          "control_split",
+          "dataset_id",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "control_name": {
+            "type": "string"
+          },
+          "control_split": {
+            "type": "number",
+            "format": "float"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "t1_name": {
+            "type": "string"
+          },
+          "t1_split": {
+            "type": "number",
+            "format": "float"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ExperimentConfig": {
+        "type": "object",
+        "required": [
+          "t1_name",
+          "t1_split",
+          "control_name",
+          "control_split"
+        ],
+        "properties": {
+          "control_name": {
+            "type": "string"
+          },
+          "control_split": {
+            "type": "number",
+            "format": "float"
+          },
+          "t1_name": {
+            "type": "string"
+          },
+          "t1_split": {
+            "type": "number",
+            "format": "float"
           }
         }
       },
@@ -22082,6 +22476,30 @@
           }
         }
       },
+      "UpdateExperimentReqBody": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "experiment_config": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExperimentConfig"
+              }
+            ],
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "UpdateGroupByTrackingIDReqPayload": {
         "type": "object",
         "required": [
@@ -22458,6 +22876,26 @@
           "user_id": "e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3"
         }
       },
+      "UserTreatmentResponse": {
+        "type": "object",
+        "required": [
+          "treatment_name",
+          "experiment_id",
+          "user_id"
+        ],
+        "properties": {
+          "experiment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "treatment_name": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
       "V1RecommendChunksResponseBody": {
         "type": "array",
         "items": {
@@ -22587,6 +23025,10 @@
     {
       "name": "Analytics",
       "description": "Analytics endpoint. Used to get information for search and RAG analytics"
+    },
+    {
+      "name": "Experiment",
+      "description": "Experiment endpoint. Used to create and manage experiments"
     }
   ]
 }
