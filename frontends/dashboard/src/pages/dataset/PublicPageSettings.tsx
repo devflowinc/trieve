@@ -303,7 +303,7 @@ const PublicPageControls = () => {
             {loadingDefaultConfig() ? "Loading..." : "Auto Configure"}
           </button>
         </div>
-        <div class="mb-6 py-2 flex content-center items-center gap-1.5 gap-x-2.5">
+        <div class="mb-6 flex content-center items-center gap-1.5 gap-x-2.5 py-2">
           <span class="font-medium">Published Url:</span>{" "}
           <a class="text-magenta-400" href={publicUrl()} target="_blank">
             {publicUrl()}
@@ -359,11 +359,11 @@ const PublicPageControls = () => {
               options={["light", "dark"]}
             />
           </div>
-          <div class="grow max-w-[50%]">
+          <div class="max-w-[50%] grow">
             <For each={docColors()}>
               {(color) => (
                 <button
-                  class="w-6 h-6 rounded-lg"
+                  class="h-6 w-6 rounded-lg"
                   style={{ "background-color": color }}
                   onClick={() => {
                     setExtraParams("brandColor", color);
@@ -1756,7 +1756,7 @@ export const SingleProductOptions = () => {
                   });
               }}
               disabled={loadingAutoFill()}
-              class="inline-flex justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900 disabled:animate-pulse min-w-[130px]"
+              class="inline-flex min-w-[130px] justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900 disabled:animate-pulse"
             >
               {loadingAutoFill() ? "Loading..." : "Auto Fill"}
             </button>

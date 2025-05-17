@@ -285,6 +285,11 @@ impl Modify for SecurityAddon {
         handlers::page_handler::public_page,
         handlers::etl_handler::create_etl_job,
         handlers::payment_handler::handle_shopify_plan_change,
+        handlers::experiment_handler::create_experiment,
+        handlers::experiment_handler::get_experiments,
+        handlers::experiment_handler::update_experiment,
+        handlers::experiment_handler::delete_experiment,
+        handlers::experiment_handler::ab_test,
     ),
     components(
         schemas(
@@ -478,6 +483,12 @@ impl Modify for SecurityAddon {
             handlers::payment_handler::ShopifyPlanChangePayload,
             handlers::payment_handler::ShopifyPlan,
             handlers::dataset_handler::CloneDatasetRequest,
+            handlers::experiment_handler::UpdateExperimentReqBody,
+            handlers::experiment_handler::AbTestReqBody,
+            handlers::experiment_handler::UserTreatmentResponse,
+            handlers::experiment_handler::CreateExperimentReqBody,
+            handlers::experiment_handler::ExperimentConfig,
+            data::models::Experiment,
             data::models::UserApiKey,
             data::models::CrawlStatus,
             data::models::CrawlType,
@@ -695,6 +706,7 @@ impl Modify for SecurityAddon {
         (name = "Health", description = "Health check endpoint. Used to check if the server is up and running."),
         (name = "Metrics", description = "Metrics endpoint. Used to get information for monitoring"),
         (name = "Analytics", description = "Analytics endpoint. Used to get information for search and RAG analytics"),
+        (name = "Experiment", description = "Experiment endpoint. Used to create and manage experiments"),
     ),
 )]
 pub struct ApiDoc;
@@ -1526,7 +1538,24 @@ pub fn main() -> std::io::Result<()> {
                                 web::resource("/ctr")
                                     .route(web::put().to(handlers::analytics_handler::send_ctr_data))
                             )
-                        ),
+                        )
+                        .service(
+                            web::scope("/experiment")
+                                .service(
+                                    web::resource("/ab-test")
+                                        .route(web::post().to(handlers::experiment_handler::ab_test)),
+                                )
+                                .service(
+                                    web::resource("")
+                                        .route(web::post().to(handlers::experiment_handler::create_experiment))
+                                        .route(web::get().to(handlers::experiment_handler::get_experiments))
+                                        .route(web::put().to(handlers::experiment_handler::update_experiment))
+                                )
+                                .service(
+                                    web::resource("/{experiment_id}")
+                                        .route(web::delete().to(handlers::experiment_handler::delete_experiment))
+                                )
+                        )
                 )
         })
         .workers(num_workers)

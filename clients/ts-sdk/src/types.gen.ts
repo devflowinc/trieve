@@ -2,6 +2,11 @@
 
 export type APIVersion = 'V1' | 'V2';
 
+export type AbTestReqBody = {
+    experiment_id: string;
+    user_id: string;
+};
+
 export type AddChunkToGroupReqPayload = {
     /**
      * Id of the chunk to make a member of the group.
@@ -970,6 +975,11 @@ export type CreateDatasetReqPayload = {
     tracking_id?: (string) | null;
 };
 
+export type CreateExperimentReqBody = {
+    experiment_config: ExperimentConfig;
+    name: string;
+};
+
 /**
  * Will use [chunkr.ai](https://chunkr.ai) to process the file when this object is defined. See [docs.chunkr.ai/api-references/task/create-task](https://docs.chunkr.ai/api-references/task/create-task) for detailed information about what each field on this request payload does.
  */
@@ -1906,6 +1916,25 @@ export type EventTypesFilter = 'view' | 'filter_clicked' | 'click' | 'add_to_car
 
 export type EventsForTopicResponse = {
     events: Array<EventData>;
+};
+
+export type Experiment = {
+    control_name: string;
+    control_split: number;
+    created_at: string;
+    dataset_id: string;
+    id: string;
+    name: string;
+    t1_name: string;
+    t1_split: number;
+    updated_at: string;
+};
+
+export type ExperimentConfig = {
+    control_name: string;
+    control_split: number;
+    t1_name: string;
+    t1_split: number;
 };
 
 export type ExtendedOrganizationUsageCount = {
@@ -4643,6 +4672,12 @@ export type UpdateDatasetReqPayload = {
     tracking_id?: (string) | null;
 };
 
+export type UpdateExperimentReqBody = {
+    experiment_config?: ((ExperimentConfig) | null);
+    id: string;
+    name?: (string) | null;
+};
+
 export type UpdateGroupByTrackingIDReqPayload = {
     /**
      * Description to assign to the chunk_group. Convenience field for you to avoid having to remember what the group is for. If not provided, the description will not be updated.
@@ -4793,6 +4828,12 @@ export type UserOrganization = {
     role: number;
     scopes?: Array<((string) | null)> | null;
     updated_at: string;
+    user_id: string;
+};
+
+export type UserTreatmentResponse = {
+    experiment_id: string;
+    treatment_name: string;
     user_id: string;
 };
 
@@ -5856,6 +5897,64 @@ export type CreateEtlJobData = {
 };
 
 export type CreateEtlJobResponse = (void);
+
+export type GetExperimentsData = {
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type GetExperimentsResponse = (Array<Experiment>);
+
+export type CreateExperimentData = {
+    /**
+     * JSON request payload to create a new experiment
+     */
+    requestBody: CreateExperimentReqBody;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type CreateExperimentResponse = (Experiment);
+
+export type UpdateExperimentData = {
+    /**
+     * JSON request payload to update an experiment
+     */
+    requestBody: UpdateExperimentReqBody;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type UpdateExperimentResponse = (Experiment);
+
+export type AbTestData = {
+    /**
+     * JSON request payload to get a user's treatment
+     */
+    requestBody: AbTestReqBody;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type AbTestResponse = (UserTreatmentResponse);
+
+export type DeleteExperimentData = {
+    experimentId: string;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type DeleteExperimentResponse = (void);
 
 export type UploadFileHandlerData = {
     /**
@@ -7567,6 +7666,77 @@ export type $OpenApiTs = {
                 204: void;
                 /**
                  * Service error relating to creating the dataset
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/experiment': {
+        get: {
+            req: GetExperimentsData;
+            res: {
+                /**
+                 * Experiments retrieved successfully
+                 */
+                200: Array<Experiment>;
+                /**
+                 * Service error relating to getting the experiments
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+        post: {
+            req: CreateExperimentData;
+            res: {
+                /**
+                 * Experiment created successfully
+                 */
+                200: Experiment;
+                /**
+                 * Service error relating to creating the experiment
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+        put: {
+            req: UpdateExperimentData;
+            res: {
+                /**
+                 * Experiment updated successfully
+                 */
+                200: Experiment;
+                /**
+                 * Service error relating to updating the experiment
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/experiment/ab-test': {
+        post: {
+            req: AbTestData;
+            res: {
+                /**
+                 * User treatment response
+                 */
+                200: UserTreatmentResponse;
+                /**
+                 * Service error relating to getting the user's treatment
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/experiment/{experiment_id}': {
+        delete: {
+            req: DeleteExperimentData;
+            res: {
+                /**
+                 * Experiment deleted successfully
+                 */
+                204: void;
+                /**
+                 * Service error relating to deleting the experiment
                  */
                 400: ErrorResponseBody;
             };

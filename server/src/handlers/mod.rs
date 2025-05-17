@@ -5,6 +5,7 @@ pub mod crawl_handler;
 pub mod dataset_handler;
 pub mod etl_handler;
 pub mod event_handler;
+pub mod experiment_handler;
 pub mod file_handler;
 pub mod group_handler;
 pub mod invitation_handler;
