@@ -8901,6 +8901,92 @@ impl Default for ContextOptions {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Row)]
+pub struct ExperimentClickhouse {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub t1_name: String,
+    pub t1_split: f32,
+    pub control_name: String,
+    pub control_split: f32,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct Experiment {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub t1_name: String,
+    pub t1_split: f32,
+    pub control_name: String,
+    pub control_split: f32,
+    pub dataset_id: uuid::Uuid,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+}
+
+impl From<Experiment> for ExperimentClickhouse {
+    fn from(experiment: Experiment) -> Self {
+        ExperimentClickhouse {
+            id: experiment.id,
+            name: experiment.name,
+            t1_name: experiment.t1_name,
+            t1_split: experiment.t1_split,
+            control_name: experiment.control_name,
+            control_split: experiment.control_split,
+            dataset_id: experiment.dataset_id,
+            created_at: OffsetDateTime::from_unix_timestamp(experiment.created_at.timestamp())
+                .unwrap(),
+            updated_at: OffsetDateTime::from_unix_timestamp(experiment.updated_at.timestamp())
+                .unwrap(),
+        }
+    }
+}
+
+impl From<ExperimentClickhouse> for Experiment {
+    fn from(experiment: ExperimentClickhouse) -> Self {
+        Experiment {
+            id: experiment.id,
+            name: experiment.name,
+            t1_name: experiment.t1_name,
+            t1_split: experiment.t1_split,
+            control_name: experiment.control_name,
+            control_split: experiment.control_split,
+            dataset_id: experiment.dataset_id,
+            created_at: chrono::NaiveDateTime::from_timestamp(
+                experiment.created_at.unix_timestamp(),
+                0,
+            ),
+            updated_at: chrono::NaiveDateTime::from_timestamp(
+                experiment.updated_at.unix_timestamp(),
+                0,
+            ),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Row, ToSchema)]
+pub struct ExperimentUserAssignment {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub id: uuid::Uuid,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub experiment_id: uuid::Uuid,
+    pub user_id: String,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub dataset_id: uuid::Uuid,
+    pub treatment_name: String,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "clickhouse::serde::time::datetime")]
+    pub updated_at: OffsetDateTime,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
 /// LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
 pub struct LLMOptions {
