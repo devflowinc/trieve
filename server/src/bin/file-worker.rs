@@ -265,10 +265,14 @@ pub struct PdfToMdPage {
     pub created_at: String,
 }
 
-async fn send_webhook (webhook_url: &String, data: &FileStatusResponse) -> Result<(), BroccoliError>{
+async fn send_webhook(
+    webhook_url: &String,
+    data: &FileStatusResponse,
+) -> Result<(), BroccoliError> {
     let client = reqwest::Client::new();
 
-    let send_data = serde_json::to_string(&data).map_err(|e| BroccoliError::Job(format!("Invalid JSON in metadata: {}", e)))?;
+    let send_data = serde_json::to_string(&data)
+        .map_err(|e| BroccoliError::Job(format!("Invalid JSON in metadata: {}", e)))?;
 
     client
         .post(webhook_url)
@@ -276,13 +280,9 @@ async fn send_webhook (webhook_url: &String, data: &FileStatusResponse) -> Resul
         .body(send_data)
         .send()
         .await
-        .map_err(|e| {
-            BroccoliError::Job(format!("Failed to send webhook: {}", e))
-        })?
+        .map_err(|e| BroccoliError::Job(format!("Failed to send webhook: {}", e)))?
         .error_for_status()
-        .map_err(|e| {
-            BroccoliError::Job(format!("Failed to send webhook: {}", e))
-        })?;
+        .map_err(|e| BroccoliError::Job(format!("Failed to send webhook: {}", e)))?;
 
     Ok(())
 }
@@ -540,7 +540,8 @@ async fn upload_file(
 
                 if let Some(webhook_url) = webhook_url {
                     let mut current_response = task_response.clone();
-                    current_response.status_message = format!("Processing page {}", total_pages + 1).into();
+                    current_response.status_message =
+                        format!("Processing page {}", total_pages + 1).into();
                     current_response.pages_processed = processed_pages.len() as u32;
                     send_webhook(&webhook_url, &current_response).await?;
                 }
@@ -605,7 +606,8 @@ async fn upload_file(
                 if !new_chunks.is_empty() {
                     if let Some(webhook_url) = webhook_url {
                         let mut current_response = task_response.clone();
-                        current_response.status_message = "Queuing chunks for creation".to_string().into();
+                        current_response.status_message =
+                            "Queuing chunks for creation".to_string().into();
                         current_response.pages_processed = processed_pages.len() as u32;
                         send_webhook(&webhook_url, &current_response).await?;
                     }
@@ -645,7 +647,8 @@ async fn upload_file(
             if completed {
                 if let Some(webhook_url) = webhook_url {
                     let mut current_response = task_response.clone();
-                    current_response.status_message = "Completed processing file".to_string().into();
+                    current_response.status_message =
+                        "Completed processing file".to_string().into();
                     current_response.pages_processed = processed_pages.len() as u32;
                     send_webhook(&webhook_url, &current_response).await?;
                 }
