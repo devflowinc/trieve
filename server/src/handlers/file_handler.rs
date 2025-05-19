@@ -512,6 +512,8 @@ pub struct UploadFileReqPayload {
     pub pdf2md_options: Option<Pdf2MdOptions>,
     /// Split average will automatically split your file into multiple chunks and average all of the resulting vectors into a single output chunk. Default is false. Explicitly enabling this will cause each file to only produce a single chunk.
     pub split_avg: Option<bool>,
+    /// Optional webhook URL to receive notifications for each page processed.
+    pub webhook_url: Option<String>,
 }
 
 /// We plan to deprecate pdf2md in favor of chunkr.ai. This is a legacy option for using a vision LLM to convert a given file into markdown and then ingest it.

@@ -193,7 +193,7 @@ pub enum FileTaskStatus {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct PollTaskResponse {
+pub struct FileStatusResponse {
     pub id: String,
     pub file_name: String,
     pub file_url: Option<String>,
@@ -203,6 +203,7 @@ pub struct PollTaskResponse {
     pub created_at: String,
     pub pages: Option<Vec<PdfToMdPage>>,
     pub pagination_token: Option<u32>,
+    pub status_message: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -262,6 +263,28 @@ pub struct PdfToMdPage {
     pub page_num: u32,
     pub usage: serde_json::Value,
     pub created_at: String,
+}
+
+async fn send_webhook (webhook_url: &String, data: &FileStatusResponse) -> Result<(), BroccoliError>{
+    let client = reqwest::Client::new();
+
+    let send_data = serde_json::to_string(&data).map_err(|e| BroccoliError::Job(format!("Invalid JSON in metadata: {}", e)))?;
+
+    client
+        .post(webhook_url)
+        .header("Content-Type", "application/json")
+        .body(send_data)
+        .send()
+        .await
+        .map_err(|e| {
+            BroccoliError::Job(format!("Failed to send webhook: {}", e))
+        })?
+        .error_for_status()
+        .map_err(|e| {
+            BroccoliError::Job(format!("Failed to send webhook: {}", e))
+        })?;
+
+    Ok(())
 }
 
 async fn upload_file(
@@ -378,6 +401,8 @@ async fn upload_file(
 
         let pdf2md_client = reqwest::Client::new();
         let encoded_file = base64::prelude::BASE64_STANDARD.encode(file_data.clone());
+
+        let webhook_url = &file_worker_message.upload_file_data.webhook_url;
 
         let mut json_value = serde_json::json!({
             "file_name": file_name,
@@ -503,15 +528,22 @@ async fn upload_file(
                     })?
             };
 
-            let task_response = request.json::<PollTaskResponse>().await.map_err(|err| {
+            let task_response = request.json::<FileStatusResponse>().await.map_err(|err| {
                 log::error!("Could not parse response from pdf2md {:?}", err);
                 BroccoliError::Job(format!("Could not parse response from pdf2md {:?}", err))
             })?;
 
             let mut new_chunks = Vec::new();
-            if let Some(pages) = task_response.pages {
+            if let Some(ref pages) = task_response.pages {
                 log::info!("Got {} pages from task {}", pages.len(), task_id);
                 total_pages = pages.len();
+
+                if let Some(webhook_url) = webhook_url {
+                    let mut current_response = task_response.clone();
+                    current_response.status_message = format!("Processing page {}", total_pages + 1).into();
+                    current_response.pages_processed = processed_pages.len() as u32;
+                    send_webhook(&webhook_url, &current_response).await?;
+                }
 
                 for page in pages {
                     let page_id = format!("{}", page.page_num);
@@ -571,6 +603,13 @@ async fn upload_file(
                 }
 
                 if !new_chunks.is_empty() {
+                    if let Some(webhook_url) = webhook_url {
+                        let mut current_response = task_response.clone();
+                        current_response.status_message = "Queuing chunks for creation".to_string().into();
+                        current_response.pages_processed = processed_pages.len() as u32;
+                        send_webhook(&webhook_url, &current_response).await?;
+                    }
+
                     create_file_chunks(
                         file_worker_message.file_id,
                         file_worker_message.upload_file_data.clone(),
@@ -601,6 +640,15 @@ async fn upload_file(
                 tokio::time::sleep(std::time::Duration::from_secs(5)).await;
             } else if !has_complete_range && !completed {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+
+            if completed {
+                if let Some(webhook_url) = webhook_url {
+                    let mut current_response = task_response.clone();
+                    current_response.status_message = "Completed processing file".to_string().into();
+                    current_response.pages_processed = processed_pages.len() as u32;
+                    send_webhook(&webhook_url, &current_response).await?;
+                }
             }
         }
 
