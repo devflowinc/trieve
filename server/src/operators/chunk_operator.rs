@@ -1570,7 +1570,7 @@ pub fn get_slice_from_vec_string(vec: Vec<String>, index: usize) -> Result<Strin
 }
 
 static STOP_WORDS: once_cell::sync::Lazy<Vec<String>> = once_cell::sync::Lazy::new(|| {
-    include_str!("../stop-words.txt")
+    include_str!("../resources/stop-words.txt")
         .lines()
         .map(|x| x.to_string())
         .collect()

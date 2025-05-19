@@ -25,6 +25,56 @@
     }
   ],
   "paths": {
+    "/api/analytics": {
+      "post": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Analytics",
+        "description": "This route allows you to view the analytics for a dataset using a structured query.",
+        "operationId": "get_analytics",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to filter the graph",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClickhouseQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The analytics for the dataset",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/analytics/ctr": {
       "put": {
         "tags": [
@@ -7907,6 +7957,16 @@
           }
         }
       },
+      "AggregationType": {
+        "type": "string",
+        "enum": [
+          "SUM",
+          "COUNT",
+          "AVG",
+          "MIN",
+          "MAX"
+        ]
+      },
       "ApiKeyRequestParams": {
         "type": "object",
         "description": "The default parameters which will be forcibly used when the api key is given on a request. If not provided, the api key will not have default parameters.",
@@ -9816,6 +9876,88 @@
           ]
         }
       },
+      "ClickhouseQuery": {
+        "type": "object",
+        "description": "Represents a complete ClickHouse query with parameters",
+        "required": [
+          "columns",
+          "table"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Column"
+            },
+            "description": "Simple columns to select"
+          },
+          "cte_query": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommonTableExpression"
+              }
+            ],
+            "nullable": true
+          },
+          "expressions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Expression"
+            },
+            "description": "Complex expressions to select",
+            "nullable": true
+          },
+          "filter_conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterCondition"
+            },
+            "description": "WHERE clause conditions",
+            "nullable": true
+          },
+          "group_by": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupBy"
+              }
+            ],
+            "nullable": true
+          },
+          "joins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JoinClause"
+            },
+            "description": "Tables to join with",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "LIMIT clause",
+            "nullable": true,
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int32",
+            "description": "OFFSET clause",
+            "nullable": true,
+            "minimum": 0
+          },
+          "order_by": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderBy"
+              }
+            ],
+            "nullable": true
+          },
+          "table": {
+            "$ref": "#/components/schemas/TableName"
+          }
+        }
+      },
       "ClickhouseRagTypes": {
         "type": "string",
         "enum": [
@@ -10067,6 +10209,49 @@
             "$ref": "#/components/schemas/SearchQueryResponse"
           }
         ]
+      },
+      "Column": {
+        "type": "object",
+        "description": "Represents a column with optional aggregation and alias",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "aggregation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AggregationType"
+              }
+            ],
+            "nullable": true
+          },
+          "alias": {
+            "type": "string",
+            "nullable": true
+          },
+          "distinct": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CommonTableExpression": {
+        "type": "object",
+        "required": [
+          "alias",
+          "query"
+        ],
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "query": {
+            "$ref": "#/components/schemas/ClickhouseQuery"
+          }
+        }
       },
       "ComponentAnalytics": {
         "oneOf": [
@@ -12099,6 +12284,13 @@
           }
         }
       },
+      "Direction": {
+        "type": "string",
+        "enum": [
+          "asc",
+          "desc"
+        ]
+      },
       "DistanceMetric": {
         "type": "string",
         "enum": [
@@ -13227,6 +13419,22 @@
           }
         }
       },
+      "Expression": {
+        "type": "object",
+        "description": "Represents a SQL function or expression",
+        "required": [
+          "expression"
+        ],
+        "properties": {
+          "alias": {
+            "type": "string",
+            "nullable": true
+          },
+          "expression": {
+            "type": "string"
+          }
+        }
+      },
       "ExtendedOrganizationUsageCount": {
         "type": "object",
         "required": [
@@ -13693,6 +13901,58 @@
           "updated_at": "2021-01-01 00:00:00.000"
         }
       },
+      "FilterCondition": {
+        "type": "object",
+        "description": "Represents a query filter condition",
+        "required": [
+          "column",
+          "operator",
+          "value"
+        ],
+        "properties": {
+          "and_filter": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterCondition"
+            },
+            "nullable": true
+          },
+          "column": {
+            "type": "string"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/FilterOperator"
+          },
+          "or_filter": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterCondition"
+            },
+            "nullable": true
+          },
+          "value": {
+            "$ref": "#/components/schemas/FilterValue"
+          }
+        }
+      },
+      "FilterOperator": {
+        "type": "string",
+        "enum": [
+          "=",
+          "!=",
+          "<>",
+          ">",
+          "<",
+          ">=",
+          "<=",
+          "like",
+          "not like",
+          "in",
+          "not in",
+          "is null",
+          "is not null"
+        ]
+      },
       "FilterSidebarSection": {
         "type": "object",
         "required": [
@@ -13726,6 +13986,26 @@
             "type": "string"
           }
         }
+      },
+      "FilterValue": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterValue"
+            }
+          }
+        ]
       },
       "FloatRange": {
         "type": "object",
@@ -14472,6 +14752,25 @@
           "month"
         ]
       },
+      "GroupBy": {
+        "type": "object",
+        "description": "Represents a GROUP BY clause",
+        "required": [
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "having": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "GroupData": {
         "type": "object",
         "required": [
@@ -14976,6 +15275,42 @@
             "description": "The role the user will have in the organization. 0 = User, 1 = Admin, 2 = Owner."
           }
         }
+      },
+      "JoinClause": {
+        "type": "object",
+        "description": "Represents a join condition between tables",
+        "required": [
+          "table",
+          "on_clause"
+        ],
+        "properties": {
+          "join_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/JoinType"
+              }
+            ],
+            "nullable": true
+          },
+          "on_clause": {
+            "type": "string"
+          },
+          "table": {
+            "$ref": "#/components/schemas/TableName"
+          }
+        }
+      },
+      "JoinType": {
+        "type": "string",
+        "description": "Represents the type of join between tables",
+        "enum": [
+          "inner",
+          "left",
+          "right",
+          "full",
+          "cross",
+          "anti"
+        ]
       },
       "LLMOptions": {
         "type": "object",
@@ -15500,6 +15835,28 @@
           },
           "title": {
             "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "OrderBy": {
+        "type": "object",
+        "required": [
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "direction": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Direction"
+              }
+            ],
             "nullable": true
           }
         }
@@ -21466,6 +21823,63 @@
             }
           }
         }
+      },
+      "TableName": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "search_queries"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "rag_queries"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "recommendations"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "events"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "cluster_topics"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "search_cluster_memberships"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "topics"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "Custom"
+            ],
+            "properties": {
+              "Custom": {
+                "type": "string"
+              }
+            }
+          }
+        ]
       },
       "TagProp": {
         "type": "object",

@@ -13,6 +13,7 @@ use crate::{
         analytics_operator::*,
         clickhouse_operator::{ClickHouseEvent, EventQueue},
     },
+    utils::clickhouse_query::ClickhouseQuery,
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -636,6 +637,41 @@ pub async fn get_rag_analytics(
     };
 
     Ok(HttpResponse::Ok().json(response))
+}
+
+/// Get Analytics
+///
+/// This route allows you to view the analytics for a dataset using a structured query.
+#[utoipa::path(
+    post,
+    path = "/analytics",
+    context_path = "/api",
+    tag = "Analytics",
+    request_body(content = ClickhouseQuery, description = "JSON request payload to filter the graph", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The analytics for the dataset", body = serde_json::Value),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn get_analytics(
+    _user: AdminOnly,
+    data: web::Json<ClickhouseQuery>,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let result = data
+        .into_inner()
+        .execute(
+            &dataset_org_plan_sub.dataset.id.to_string(),
+            &clickhouse_client,
+        )
+        .await?;
+    Ok(HttpResponse::Ok().json(result))
 }
 
 /// Get Recommendation Analytics
