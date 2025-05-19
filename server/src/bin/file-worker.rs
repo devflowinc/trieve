@@ -543,7 +543,7 @@ async fn upload_file(
                     current_response.status_message =
                         format!("Processing page {}", total_pages + 1).into();
                     current_response.pages_processed = processed_pages.len() as u32;
-                    send_webhook(&webhook_url, &current_response).await?;
+                    send_webhook(webhook_url, &current_response).await?;
                 }
 
                 for page in pages {
@@ -609,7 +609,7 @@ async fn upload_file(
                         current_response.status_message =
                             "Queuing chunks for creation".to_string().into();
                         current_response.pages_processed = processed_pages.len() as u32;
-                        send_webhook(&webhook_url, &current_response).await?;
+                        send_webhook(webhook_url, &current_response).await?;
                     }
 
                     create_file_chunks(
@@ -650,7 +650,7 @@ async fn upload_file(
                     current_response.status_message =
                         "Completed processing file".to_string().into();
                     current_response.pages_processed = processed_pages.len() as u32;
-                    send_webhook(&webhook_url, &current_response).await?;
+                    send_webhook(webhook_url, &current_response).await?;
                 }
             }
         }
