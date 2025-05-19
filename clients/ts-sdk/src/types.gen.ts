@@ -723,7 +723,7 @@ export type Column = {
 
 export type CommonTableExpression = {
     alias: string;
-    query: ClickhouseQuery;
+    query: SubQuery;
 };
 
 export type ComponentAnalytics = {
@@ -1988,7 +1988,8 @@ export type ExperimentConfig = {
     control_split: number;
     t1_name: string;
     t1_split: number;
-}
+};
+
 /**
  * Represents a SQL function or expression
  */
@@ -4366,6 +4367,39 @@ export type StripeUsageBasedSubscription = {
     usage_based_plan_id: string;
 };
 
+/**
+ * Represents a complete ClickHouse query with parameters
+ */
+export type SubQuery = {
+    /**
+     * Simple columns to select
+     */
+    columns: Array<Column>;
+    /**
+     * Complex expressions to select
+     */
+    expressions?: Array<Expression> | null;
+    /**
+     * WHERE clause conditions
+     */
+    filter_conditions?: Array<FilterCondition> | null;
+    group_by?: ((GroupBy) | null);
+    /**
+     * Tables to join with
+     */
+    joins?: Array<JoinClause> | null;
+    /**
+     * LIMIT clause
+     */
+    limit?: (number) | null;
+    /**
+     * OFFSET clause
+     */
+    offset?: (number) | null;
+    order_by?: ((OrderBy) | null);
+    table: TableName;
+};
+
 export type SuggestType = 'question' | 'keyword' | 'semantic';
 
 export type SuggestedQueriesReqPayload = {
@@ -4899,6 +4933,10 @@ export type UploadFileReqPayload = {
      * Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.
      */
     time_stamp?: (string) | null;
+    /**
+     * Optional webhook URL to receive notifications for each page processed.
+     */
+    webhook_url?: (string) | null;
 };
 
 export type UploadFileResponseBody = {

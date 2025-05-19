@@ -10249,7 +10249,7 @@
             "type": "string"
           },
           "query": {
-            "$ref": "#/components/schemas/ClickhouseQuery"
+            "$ref": "#/components/schemas/SubQuery"
           }
         }
       },
@@ -21753,6 +21753,80 @@
           }
         }
       },
+      "SubQuery": {
+        "type": "object",
+        "description": "Represents a complete ClickHouse query with parameters",
+        "required": [
+          "columns",
+          "table"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Column"
+            },
+            "description": "Simple columns to select"
+          },
+          "expressions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Expression"
+            },
+            "description": "Complex expressions to select",
+            "nullable": true
+          },
+          "filter_conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterCondition"
+            },
+            "description": "WHERE clause conditions",
+            "nullable": true
+          },
+          "group_by": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupBy"
+              }
+            ],
+            "nullable": true
+          },
+          "joins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JoinClause"
+            },
+            "description": "Tables to join with",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "LIMIT clause",
+            "nullable": true,
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int32",
+            "description": "OFFSET clause",
+            "nullable": true,
+            "minimum": 0
+          },
+          "order_by": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderBy"
+              }
+            ],
+            "nullable": true
+          },
+          "table": {
+            "$ref": "#/components/schemas/TableName"
+          }
+        }
+      },
       "SuggestType": {
         "type": "string",
         "enum": [
@@ -23095,6 +23169,11 @@
           "time_stamp": {
             "type": "string",
             "description": "Time stamp should be an ISO 8601 combined date and time without timezone. Time_stamp is used for time window filtering and recency-biasing search results. Will be passed down to the file's chunks.",
+            "nullable": true
+          },
+          "webhook_url": {
+            "type": "string",
+            "description": "Optional webhook URL to receive notifications for each page processed.",
             "nullable": true
           }
         },
