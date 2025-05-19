@@ -399,10 +399,68 @@ impl OrderBy {
     }
 }
 
+/// Represents a complete ClickHouse query with parameters
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct SubQuery {
+    /// Simple columns to select
+    pub columns: Vec<Column>,
+
+    /// Complex expressions to select
+    pub expressions: Option<Vec<Expression>>,
+
+    /// Main table to query from
+    pub table: TableName,
+
+    /// Tables to join with
+    pub joins: Option<Vec<JoinClause>>,
+
+    /// WHERE clause conditions
+    pub filter_conditions: Option<Vec<FilterCondition>>,
+
+    /// GROUP BY clause
+    pub group_by: Option<GroupBy>,
+
+    /// ORDER BY clause
+    pub order_by: Option<OrderBy>,
+
+    /// LIMIT clause
+    pub limit: Option<u32>,
+
+    /// OFFSET clause
+    pub offset: Option<u32>,
+}
+
+impl From<&SubQuery> for ClickhouseQuery {
+    fn from(sub_query: &SubQuery) -> Self {
+        ClickhouseQuery {
+            columns: sub_query.columns.clone(),
+            expressions: sub_query.expressions.clone(),
+            table: sub_query.table.clone(),
+            joins: sub_query.joins.clone(),
+            filter_conditions: sub_query.filter_conditions.clone(),
+            group_by: sub_query.group_by.clone(),
+            order_by: sub_query.order_by.clone(),
+            limit: sub_query.limit,
+            offset: sub_query.offset,
+            cte_query: None,
+        }
+    }
+}
+impl SubQuery {
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        let clickhouse_query = ClickhouseQuery::from(self);
+        clickhouse_query.validate()
+    }
+
+    pub fn to_parameterized_sql(&self) -> SqlQuery {
+        let clickhouse_query = ClickhouseQuery::from(self);
+        clickhouse_query.to_parameterized_sql()
+    }
+}
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct CommonTableExpression {
     pub alias: String,
-    pub query: Box<ClickhouseQuery>,
+    pub query: Box<SubQuery>,
 }
 
 impl CommonTableExpression {

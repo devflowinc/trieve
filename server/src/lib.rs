@@ -491,6 +491,7 @@ impl Modify for SecurityAddon {
             handlers::experiment_handler::ExperimentConfig,
             data::models::Experiment,
             utils::clickhouse_query::ClickhouseQuery,
+            utils::clickhouse_query::SubQuery,
             utils::clickhouse_query::JoinClause,
             utils::clickhouse_query::FilterCondition,
             utils::clickhouse_query::Column,
