@@ -10,7 +10,7 @@ use crate::{
         CreateApiKeyReqPayload, ExtendedOrganizationUsageCount, GetOrganizationApiKeysResponse,
     },
     operators::dataset_operator::soft_delete_dataset_by_id_query,
-    randutil,
+    utils::randutil,
 };
 use actix_web::{web, HttpRequest};
 use chrono::NaiveDateTime;

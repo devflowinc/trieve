@@ -50,7 +50,7 @@ pub mod errors;
 pub mod handlers;
 pub mod middleware;
 pub mod operators;
-pub mod randutil;
+pub mod utils;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub const SECONDS_IN_MINUTE: u64 = 60;
@@ -280,6 +280,7 @@ impl Modify for SecurityAddon {
         handlers::analytics_handler::get_all_events,
         handlers::analytics_handler::get_event_by_id,
         handlers::analytics_handler::get_component_analytics,
+        handlers::analytics_handler::get_analytics,
         handlers::shopify_handler::send_shopify_user_event,
         handlers::metrics_handler::get_metrics,
         handlers::page_handler::public_page,
@@ -489,6 +490,20 @@ impl Modify for SecurityAddon {
             handlers::experiment_handler::CreateExperimentReqBody,
             handlers::experiment_handler::ExperimentConfig,
             data::models::Experiment,
+            utils::clickhouse_query::ClickhouseQuery,
+            utils::clickhouse_query::JoinClause,
+            utils::clickhouse_query::FilterCondition,
+            utils::clickhouse_query::Column,
+            utils::clickhouse_query::AggregationType,
+            utils::clickhouse_query::Expression,
+            utils::clickhouse_query::TableName,
+            utils::clickhouse_query::JoinType,
+            utils::clickhouse_query::FilterOperator,
+            utils::clickhouse_query::GroupBy,
+            utils::clickhouse_query::OrderBy,
+            utils::clickhouse_query::Direction,
+            utils::clickhouse_query::CommonTableExpression,
+            utils::clickhouse_query::FilterValue,
             data::models::UserApiKey,
             data::models::CrawlStatus,
             data::models::CrawlType,
@@ -1490,6 +1505,7 @@ pub fn main() -> std::io::Result<()> {
                         )
                         .service(
                             web::scope("/analytics")
+                            .route("", web::post().to(handlers::analytics_handler::get_analytics))
                             .service(
                                 web::resource("/search")
                                 .route(web::post().to(handlers::analytics_handler::get_search_analytics))

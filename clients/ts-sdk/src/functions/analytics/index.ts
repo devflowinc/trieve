@@ -5,17 +5,24 @@
  */
 
 import {
+  AggregationType,
+  ClickhouseQuery,
   ClusterAnalytics,
+  Column,
   ComponentAnalytics,
   CTRAnalytics,
   CTRDataRequestBody,
+  Direction,
   EventTypes,
+  FilterCondition,
   GetEventsRequestBody,
   GetTopDatasetsRequestBody,
+  JoinType,
   RAGAnalytics,
   RateQueryRequest,
   RecommendationAnalytics,
   SearchAnalytics,
+  TableName,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
@@ -461,3 +468,181 @@ export async function getAllAnalyticsEvents(
     signal,
   );
 }
+
+export class ClickhouseQueryBuilder {
+  private query: ClickhouseQuery;
+
+  constructor() {
+    this.query = {
+      columns: [],
+      table: 'events'
+    };
+  }
+
+  /**
+   * Add a column to select
+   */
+  select(name: string, options: { alias?: string; aggregation?: AggregationType; distinct?: boolean } = {}): ClickhouseQueryBuilder {
+    this.query.columns.push({
+      name,
+      alias: options.alias,
+      aggregation: options.aggregation,
+      distinct: options.distinct
+    });
+    return this;
+  }
+
+  /**
+   * Add multiple columns to select
+   */
+  selectMultiple(columns: Column[]): ClickhouseQueryBuilder {
+    this.query.columns.push(...columns);
+    return this;
+  }
+
+  /**
+   * Add an expression to select
+   */
+  selectExpression(expression: string, alias?: string): ClickhouseQueryBuilder {
+    if (!this.query.expressions) {
+      this.query.expressions = [];
+    }
+    this.query.expressions.push({ expression, alias });
+    return this;
+  }
+
+  /**
+   * Set the table to query from
+   */
+  from(table: TableName): ClickhouseQueryBuilder {
+    this.query.table = table;
+    return this;
+  }
+
+  /**
+   * Add a join clause
+   */
+  join(table: TableName, onClause: string, joinType: JoinType = 'inner'): ClickhouseQueryBuilder {
+    if (!this.query.joins) {
+      this.query.joins = [];
+    }
+    this.query.joins.push({
+      table,
+      join_type: joinType,
+      on_clause: onClause
+    });
+    return this;
+  }
+
+
+  /**
+   * Add a complex filter condition
+   */
+  where(condition: FilterCondition): ClickhouseQueryBuilder {
+    if (!this.query.filter_conditions) {
+      this.query.filter_conditions = [];
+    }
+    this.query.filter_conditions.push(condition);
+    return this;
+  }
+
+  /**
+   * Create a nested 'AND' filter condition
+   */
+  static and(conditions: FilterCondition[]): FilterCondition {
+    return {
+      column: conditions[0].column,
+      operator: conditions[0].operator,
+      value: conditions[0].value,
+      and_filter: conditions.slice(1)
+    };
+  }
+
+  /**
+   * Create a nested 'OR' filter condition
+   */
+  static or(conditions: FilterCondition[]): FilterCondition {
+    return {
+      column: conditions[0].column,
+      operator: conditions[0].operator,
+      value: conditions[0].value,
+      or_filter: conditions.slice(1)
+    };
+  }
+
+  /**
+   * Add a GROUP BY clause
+   */
+  groupBy(columns: string[], having?: string): ClickhouseQueryBuilder {
+    this.query.group_by = { columns, having };
+    return this;
+  }
+
+  /**
+   * Add an ORDER BY clause
+   */
+  orderBy(columns: string[], direction: Direction = 'desc'): ClickhouseQueryBuilder {
+    this.query.order_by = { columns, direction };
+    return this;
+  }
+
+  /**
+   * Set a LIMIT clause
+   */
+  limit(limit: number): ClickhouseQueryBuilder {
+    this.query.limit = limit;
+    return this;
+  }
+
+  /**
+   * Set an OFFSET clause
+   */
+  offset(offset: number): ClickhouseQueryBuilder {
+    this.query.offset = offset;
+    return this;
+  }
+
+  /**
+   * Add a Common Table Expression (CTE)
+   */
+  withCte(alias: string, query: ClickhouseQuery): ClickhouseQueryBuilder {
+    this.query.cte_query = { alias, query };
+    return this;
+  }
+
+  /**
+   * Build the final query object
+   */
+  build(): ClickhouseQuery {
+    return this.query;
+  }
+}
+
+
+/**
+ * Function that allows you to run a custom clickhouse query
+ * 
+ * Example:
+ * ```js
+ *const data = await trieve.getAnalytics({
+  query: "SELECT * FROM events WHERE event_type = 'view'",
+});
+ * ```
+ */
+export async function getAnalytics(
+  /** @hidden */
+  this: TrieveSDK,
+  data: ClickhouseQuery,
+  signal?: AbortSignal,
+) {
+  return this.trieve.fetch(
+    "/api/analytics",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId || "",
+    },
+    signal,
+  );
+}
+ 

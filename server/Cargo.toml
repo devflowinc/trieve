@@ -126,7 +126,9 @@ time = { version = "0.3" }
 uuid = { version = "1", features = ["v4", "serde", "v5"] }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
-openai_dive = { git = "https://github.com/devflowinc/openai-client.git", rev = "b50742b160a98b14a57119d742ed754e8b6acc15",  features = ["stream"] }
+openai_dive = { git = "https://github.com/devflowinc/openai-client.git", rev = "b50742b160a98b14a57119d742ed754e8b6acc15", features = [
+    "stream",
+] }
 tokio = { version = "1.27.0", features = ["rt-multi-thread"] }
 tokio-stream = "0.1.12"
 futures-util = "0.3.28"
@@ -172,7 +174,7 @@ bb8-redis = "0.15.0"
 signal-hook = "0.3.17"
 blake3 = "1.5.1"
 actix-http = "3.10.0"
-clickhouse = { version = "0.12.0", features = ["time", "uuid"] }
+clickhouse = { version = "0.13.2", features = ["time", "uuid"] }
 prometheus = "0.13.4"
 chm = "0.1.16"
 murmur3 = "0.5.2"

@@ -915,9 +915,9 @@ dependencies = [
 
 [[package]]
 name = "bstr"
-version = "1.9.1"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05efc5cfd9110c8416e471df0e96702d58690178e206e61b7173706673c93706"
+checksum = "234113d19d0d7d613b40e86fb654acf958910802bcceab913a4f9e7cda03b1a4"
 dependencies = [
  "memchr",
 ]
@@ -1071,6 +1071,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cityhash-rs"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93a719913643003b84bd13022b4b7e703c09342cd03b679c4641c7d2e50dc34d"
+
+[[package]]
 name = "clap"
 version = "4.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1116,7 +1122,7 @@ version = "0.11.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0875e527e299fc5f4faba42870bf199a39ab0bb2dbba1b8aef0a2151451130f"
 dependencies = [
- "bstr 1.9.1",
+ "bstr 1.12.0",
  "bytes",
  "clickhouse-derive 0.1.1",
  "clickhouse-rs-cityhash-sys",
@@ -1135,21 +1141,22 @@ dependencies = [
 
 [[package]]
 name = "clickhouse"
-version = "0.12.0"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eab6d70c534d5e54680aae99712800fca8d048cdfad3fbd154daf823d444f08b"
+checksum = "d9894248c4c5a4402f76a56c273836a0c32547ec8a68166aedee7e01b7b8d102"
 dependencies = [
- "bstr 1.9.1",
+ "bstr 1.12.0",
  "bytes",
+ "cityhash-rs",
  "clickhouse-derive 0.2.0",
- "clickhouse-rs-cityhash-sys",
  "futures",
  "futures-channel",
  "http-body-util",
  "hyper 1.4.1",
  "hyper-util",
- "lz4",
- "sealed 0.5.0",
+ "lz4_flex",
+ "replace_with",
+ "sealed 0.6.0",
  "serde",
  "static_assertions",
  "thiserror 1.0.65",
@@ -5121,6 +5128,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
+name = "replace_with"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3a8614ee435691de62bcffcf4a66d91b3594bf1428a5722e79103249a095690"
+
+[[package]]
 name = "reqwest"
 version = "0.11.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5744,11 +5757,10 @@ dependencies = [
 
 [[package]]
 name = "sealed"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4a8caec23b7800fb97971a1c6ae365b6239aaeddfb934d6265f8505e795699d"
+checksum = "22f968c5ea23d555e670b449c1c5e7b2fc399fdaec1d304a17cd48e288abc107"
 dependencies = [
- "heck 0.4.1",
  "proc-macro2",
  "quote",
  "syn 2.0.90",
@@ -7094,7 +7106,7 @@ dependencies = [
  "bytes",
  "chm",
  "chrono",
- "clickhouse 0.12.0",
+ "clickhouse 0.13.2",
  "crossbeam-channel",
  "dashmap",
  "dateparser",

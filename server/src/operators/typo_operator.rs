@@ -423,7 +423,7 @@ pub struct BKTreeCache {
 lazy_static! {
     static ref BKTREE_CACHE: BKTreeCache = BKTreeCache::new();
     static ref ENGLISH_WORDS: HashSet<String> = {
-        include_str!("../words.txt")
+        include_str!("../resources/words.txt")
             .lines()
             .map(|s| s.to_lowercase())
             .collect()

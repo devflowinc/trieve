@@ -18,6 +18,8 @@ export type AddChunkToGroupReqPayload = {
     chunk_tracking_id?: (string) | null;
 };
 
+export type AggregationType = 'SUM' | 'COUNT' | 'AVG' | 'MIN' | 'MAX';
+
 /**
  * The default parameters which will be forcibly used when the api key is given on a request. If not provided, the api key will not have default parameters.
  */
@@ -601,6 +603,40 @@ export type ChunkedContent = {
     headings: Array<(string)>;
 };
 
+/**
+ * Represents a complete ClickHouse query with parameters
+ */
+export type ClickhouseQuery = {
+    /**
+     * Simple columns to select
+     */
+    columns: Array<Column>;
+    cte_query?: ((CommonTableExpression) | null);
+    /**
+     * Complex expressions to select
+     */
+    expressions?: Array<Expression> | null;
+    /**
+     * WHERE clause conditions
+     */
+    filter_conditions?: Array<FilterCondition> | null;
+    group_by?: ((GroupBy) | null);
+    /**
+     * Tables to join with
+     */
+    joins?: Array<JoinClause> | null;
+    /**
+     * LIMIT clause
+     */
+    limit?: (number) | null;
+    /**
+     * OFFSET clause
+     */
+    offset?: (number) | null;
+    order_by?: ((OrderBy) | null);
+    table: TableName;
+};
+
 export type ClickhouseRagTypes = 'chosen_chunks' | 'all_chunks';
 
 export type ClickhouseRecommendationTypes = 'Chunk' | 'Group';
@@ -674,6 +710,21 @@ export type ClusterAnalyticsFilter = {
 };
 
 export type ClusterAnalyticsResponse = SearchClusterResponse | SearchQueryResponse;
+
+/**
+ * Represents a column with optional aggregation and alias
+ */
+export type Column = {
+    aggregation?: ((AggregationType) | null);
+    alias?: (string) | null;
+    distinct?: (boolean) | null;
+    name: string;
+};
+
+export type CommonTableExpression = {
+    alias: string;
+    query: ClickhouseQuery;
+};
 
 export type ComponentAnalytics = {
     filter?: ((ComponentAnalyticsFilter) | null);
@@ -1449,6 +1500,8 @@ export type DeprecatedSearchOverGroupsResponseBody = {
     total_chunk_pages: number;
 };
 
+export type Direction = 'asc' | 'desc';
+
 export type DistanceMetric = 'euclidean' | 'cosine' | 'manhattan' | 'dot';
 
 export type Document = {
@@ -1935,6 +1988,13 @@ export type ExperimentConfig = {
     control_split: number;
     t1_name: string;
     t1_split: number;
+}
+/**
+ * Represents a SQL function or expression
+ */
+export type Expression = {
+    alias?: (string) | null;
+    expression: string;
 };
 
 export type ExtendedOrganizationUsageCount = {
@@ -2046,6 +2106,19 @@ export type FileWithChunkGroups = {
     updated_at: string;
 };
 
+/**
+ * Represents a query filter condition
+ */
+export type FilterCondition = {
+    and_filter?: Array<FilterCondition> | null;
+    column: string;
+    operator: FilterOperator;
+    or_filter?: Array<FilterCondition> | null;
+    value: FilterValue;
+};
+
+export type FilterOperator = '=' | '!=' | '<>' | '>' | '<' | '>=' | '<=' | 'like' | 'not like' | 'in' | 'not in' | 'is null' | 'is not null';
+
 export type FilterSidebarSection = {
     filterKey: string;
     filterType: string;
@@ -2054,6 +2127,8 @@ export type FilterSidebarSection = {
     selectionType: string;
     title: string;
 };
+
+export type FilterValue = string | number | boolean | Array<FilterValue>;
 
 export type FloatRange = {
     gt?: (number) | null;
@@ -2381,6 +2456,14 @@ export type GetTrackingChunksData = {
 
 export type Granularity = 'minute' | 'second' | 'hour' | 'day' | 'month';
 
+/**
+ * Represents a GROUP BY clause
+ */
+export type GroupBy = {
+    columns: Array<(string)>;
+    having?: (string) | null;
+};
+
 export type GroupData = {
     /**
      * The list of all the groups.
@@ -2585,6 +2668,20 @@ export type InvitationData = {
 };
 
 /**
+ * Represents a join condition between tables
+ */
+export type JoinClause = {
+    join_type?: ((JoinType) | null);
+    on_clause: string;
+    table: TableName;
+};
+
+/**
+ * Represents the type of join between tables
+ */
+export type JoinType = 'inner' | 'left' | 'right' | 'full' | 'cross' | 'anti';
+
+/**
  * LLM options to use for the completion. If not specified, this defaults to the dataset's LLM options.
  */
 export type LLMOptions = {
@@ -2780,6 +2877,11 @@ export type OpenGraphMetadata = {
     description?: (string) | null;
     image?: (string) | null;
     title?: (string) | null;
+};
+
+export type OrderBy = {
+    columns: Array<(string)>;
+    direction?: ((Direction) | null);
 };
 
 export type Organization = {
@@ -4289,6 +4391,10 @@ export type SuggestedQueriesResponse = {
     queries: Array<(string)>;
 };
 
+export type TableName = 'search_queries' | 'rag_queries' | 'recommendations' | 'events' | 'cluster_topics' | 'search_cluster_memberships' | 'topics' | {
+    Custom: string;
+};
+
 export type TagProp = {
     description?: (string) | null;
     label?: (string) | null;
@@ -4847,6 +4953,19 @@ export type WorkerEvent = {
     id: string;
     organization_id?: (string) | null;
 };
+
+export type GetAnalyticsData = {
+    /**
+     * JSON request payload to filter the graph
+     */
+    requestBody: ClickhouseQuery;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetAnalyticsResponse = (unknown);
 
 export type SendCtrDataData = {
     /**
@@ -6494,6 +6613,17 @@ export type DeleteUserApiKeyResponse = (void);
 export type GetMetricsResponse = (string);
 
 export type $OpenApiTs = {
+    '/api/analytics': {
+        post: {
+            req: GetAnalyticsData;
+            res: {
+                /**
+                 * The analytics for the dataset
+                 */
+                200: unknown;
+            };
+        };
+    };
     '/api/analytics/ctr': {
         put: {
             req: SendCtrDataData;
