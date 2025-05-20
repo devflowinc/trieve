@@ -2182,15 +2182,13 @@ export const SerpPageOptions = () => {
 
   return (
     <details class="my-4">
-      <summary class="cursor-pointer text-sm font-medium">
-        SERP Page Options
-      </summary>
+      <summary class="cursor-pointer text-sm font-medium">SERP Options</summary>
 
       <div class="mt-4 space-y-4">
         <div class="flex gap-4">
           <div class="flex items-center gap-2">
             <div class="flex items-center gap-1">
-              <label class="block">Enable SERP Page</label>
+              <label class="block">Enable SERP</label>
               <Tooltip
                 tooltipText="Enable the Search Engine Results Page with filters"
                 body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}

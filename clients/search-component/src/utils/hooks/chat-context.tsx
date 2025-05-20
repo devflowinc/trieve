@@ -858,10 +858,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 } else if (
                   prev === `Searching for relevant ${contentType}s...`
                 ) {
-                  return `Verifying relevance for ${contentType} 1 of ${searchOverGroupsResp.results.length + 1}...`;
+                  return `Verifying relevance for ${contentType} 1 of ${searchOverGroupsResp.results.length}...`;
                 } else if (match) {
                   const currentNumber = parseInt(match[1], 10);
-                  return `Verifying relevance for ${contentType} ${currentNumber + 1} of ${searchOverGroupsResp.results.length + 1}...`;
+                  return `Verifying relevance for ${contentType} ${currentNumber + 1} of ${searchOverGroupsResp.results.length}...`;
                 }
                 return prev;
               });
