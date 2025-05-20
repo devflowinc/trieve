@@ -21,7 +21,7 @@ import { createPortal } from "react-dom";
 
 const Modal = () => {
   useKeyboardNavigation();
-  const { open, setOpen, setMode, setQuery, props } = useModalState();
+  const { open, setOpen, setMode, setQuery, props, display } = useModalState();
   const { askQuestion, chatWithGroup, cancelGroupChat, clearConversation } =
     useChatState();
 
@@ -281,7 +281,7 @@ const Modal = () => {
             )}
           </>
         )}
-        {(props.displayModal ?? true) && <ModalContainer />}
+        {(props.displayModal ?? true) && display && <ModalContainer />}
       </>
       {props.showFloatingSearchIcon &&
         props.usePortal &&

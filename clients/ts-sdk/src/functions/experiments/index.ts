@@ -1,5 +1,5 @@
 import { TrieveSDK } from "../../sdk";
-import { CreateExperimentReqBody, UpdateExperimentReqBody } from "../../types.gen";
+import { AbTestReqBody, CreateExperimentReqBody, UpdateExperimentReqBody } from "../../types.gen";
 
 /**
  * Function that allows you to view the experiments for a dataset.
@@ -124,6 +124,39 @@ export async function deleteExperiment(
     {
       datasetId: this.datasetId,
       experimentId,
+    },
+    signal,
+  );
+}
+
+
+/**
+ * Function that allows you to get the treatment for a user for an experiment.
+ * 
+ * Example:
+ * ```js
+ * const treatment = await trieve.getTreatment({
+ *   experimentId: "123",
+ *   userId: "123",
+ * });
+ * ```
+ */
+export async function getTreatment(
+  /** @hidden */
+  this: TrieveSDK,
+  data: AbTestReqBody,
+  signal?: AbortSignal,
+) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
+  return await this.trieve.fetch(
+    `/api/experiment/ab-test`,
+    "post",
+    {
+      datasetId: this.datasetId,
+      data,
     },
     signal,
   );

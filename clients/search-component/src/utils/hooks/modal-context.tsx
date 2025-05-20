@@ -207,6 +207,7 @@ export type ModalProps = {
   overrideFetch?: boolean;
   searchBar?: boolean;
   defaultSearchQuery?: string;
+  experimentIds?: string[];
 };
 
 const defaultProps = {
@@ -280,6 +281,7 @@ const defaultProps = {
   previewTopicId: undefined,
   searchBar: false,
   defaultSearchQuery: undefined,
+  experimentIds: [],
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
@@ -341,6 +343,7 @@ const ModalContext = createContext<{
   minHeight: number;
   resetHeight: () => void;
   addHeight: (height: number) => void;
+  display: boolean;
 }>({
   props: defaultProps,
   trieveSDK: (() => {}) as unknown as TrieveSDK,
@@ -381,6 +384,7 @@ const ModalContext = createContext<{
   resetHeight: () => {},
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   addHeight: (height: number) => {},
+  display: true,
 });
 
 const ModalProvider = ({
@@ -427,6 +431,7 @@ const ModalProvider = ({
   const [minHeight, setMinHeight] = useState(0);
   const [chatHeight, setChatHeight] = useState(0);
   const [enabled, setEnabled] = useState(true);
+  const [display, setDisplay] = useState(!props.experimentIds || props.experimentIds.length === 0);
 
   const trieve = new TrieveSDK({
     baseUrl: props.baseUrl,
@@ -611,6 +616,23 @@ const ModalProvider = ({
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (props.experimentIds && props.experimentIds.length > 0 && fingerprint !== "") {
+      for (const experimentId of props.experimentIds) {
+        trieve.getTreatment({
+          experiment_id: experimentId,
+          user_id: fingerprint,
+        }).then((treatment) => {
+          if (treatment.treatment_name === "Don't show") {
+            setDisplay(false);
+          } else {
+            setDisplay(true);
+          }
+        });
+      }
+    }
+  }, [props.experimentIds, fingerprint]);
 
   useEffect(() => {
     getFingerprint().then((fingerprint) => {
@@ -815,6 +837,7 @@ const ModalProvider = ({
         minHeight,
         resetHeight,
         addHeight,
+        display
       }}
     >
       {children}
