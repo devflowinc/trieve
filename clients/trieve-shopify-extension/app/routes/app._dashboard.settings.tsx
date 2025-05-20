@@ -128,7 +128,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       server_configuration: datasetSettings,
     });
     const pdpPrompt = formData.get("pdp_prompt");
-    if (pdpPrompt && pdpPrompt !== "") {
+    if (pdpPrompt) {
       await setAppMetafields(fetcher, [
         {
           key: "pdp_prompt",
