@@ -1850,6 +1850,24 @@ export const SingleProductOptions = () => {
         </div>
         <div class="flex gap-4 pb-2 pt-2">
           <div class="grow">
+            <label class="block">PDP Prompt</label>
+            <textarea
+              cols={2}
+              placeholder="Prompt for the PDP"
+              value={extraParams.singleProductOptions?.pdpPrompt || ""}
+              onInput={(e) => {
+                setExtraParams("singleProductOptions", {
+                  ...extraParams.singleProductOptions,
+                  pdpPrompt: e.currentTarget.value,
+                });
+                setExtraParams("inline", !!e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+        </div>
+        <div class="flex gap-4 pb-2 pt-2">
+          <div class="grow">
             <label class="block">Recommendation Search Query</label>
             <input
               placeholder="Search query to use for recommendations"
