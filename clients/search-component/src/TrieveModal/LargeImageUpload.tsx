@@ -90,7 +90,7 @@ export const LargeImageUpload = () => {
         onChange={handleFileChange}
       />
       <UploadIcon className="tv-text-zinc-700 upload-icon" />
-      <p className="tv-text-zinc-700 tv-text-sm">
+      <p className="tv-text-zinc-700 tv-text-sm tv-text-center">
         {props.imageStarterText ||
           "Drag and drop an image here or click to upload"}
       </p>
