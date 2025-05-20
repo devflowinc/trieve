@@ -837,20 +837,25 @@ pub async fn stream_response(
             .streaming(response_stream));
     }
 
-    let rag_content = score_chunks
-        .iter()
-        .enumerate()
-        .map(|(idx, score_chunk)| {
-            json!({
-                "doc": idx + 1,
-                "text": convert_html_to_text(&(ChunkMetadata::from(score_chunk.chunk.clone()).chunk_html.clone().unwrap_or_default())),
-                "num_value": ChunkMetadata::from(score_chunk.chunk.clone()).num_value.map(|x| format!("{} {}", create_message_req_payload.currency.clone().unwrap_or("".to_string()), x)).unwrap_or("".to_string()),
-                "link": ChunkMetadata::from(score_chunk.chunk.clone()).link.clone().unwrap_or_default()
+    let rag_content = match create_message_req_payload.rag_context {
+        Some(rag_context) => rag_context,
+        None => {
+            score_chunks
+            .iter()
+            .enumerate()
+            .map(|(idx, score_chunk)| {
+                json!({
+                    "doc": idx + 1,
+                    "text": convert_html_to_text(&(ChunkMetadata::from(score_chunk.chunk.clone()).chunk_html.clone().unwrap_or_default())),
+                    "num_value": ChunkMetadata::from(score_chunk.chunk.clone()).num_value.map(|x| format!("{} {}", create_message_req_payload.currency.clone().unwrap_or("".to_string()), x)).unwrap_or("".to_string()),
+                    "link": ChunkMetadata::from(score_chunk.chunk.clone()).link.clone().unwrap_or_default()
+                })
+                .to_string()
             })
-            .to_string()
-        })
-        .collect::<Vec<String>>()
-        .join("\n\n");
+            .collect::<Vec<String>>()
+            .join("\n\n")
+        }
+    };
 
     let user_message = match &openai_messages
         .last()

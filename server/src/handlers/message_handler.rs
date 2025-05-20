@@ -129,6 +129,8 @@ pub struct CreateMessageReqPayload {
     pub typo_options: Option<TypoOptions>,
     /// Metadata is any metadata you want to associate w/ the event that is created from this request
     pub metadata: Option<serde_json::Value>,
+    /// Overrides what the way chunks are placed into the context window
+    pub rag_context: Option<String>,
 }
 
 /// Create message
@@ -414,6 +416,8 @@ pub struct RegenerateMessageReqPayload {
     pub typo_options: Option<TypoOptions>,
     /// Metadata is any metadata you want to associate w/ the event that is created from this request
     pub metadata: Option<serde_json::Value>,
+    /// Overrides what the way chunks are placed into the context window
+    pub rag_context: Option<String>,
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -466,6 +470,8 @@ pub struct EditMessageReqPayload {
     pub typo_options: Option<TypoOptions>,
     /// Metadata is any metadata you want to associate w/ the event that is created from this request
     pub metadata: Option<serde_json::Value>,
+    /// Overrides what the way chunks are placed into the context window
+    pub rag_context: Option<String>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -494,6 +500,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             remove_stop_words: data.remove_stop_words,
             typo_options: data.typo_options,
             metadata: data.metadata,
+            rag_context: data.rag_context,
         }
     }
 }
@@ -524,6 +531,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             remove_stop_words: data.remove_stop_words,
             typo_options: data.typo_options,
             metadata: data.metadata,
+            rag_context: data.rag_context,
         }
     }
 }
