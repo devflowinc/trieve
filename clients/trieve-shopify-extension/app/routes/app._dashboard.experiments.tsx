@@ -30,12 +30,144 @@ import {
   type UpdateExperimentReqBody,
   type ExperimentConfig,
 } from "trieve-ts-sdk";
-import { TrieveContext } from "app/context/trieveContext";
-import { Link, useNavigate, Form, useFetcher, useLoaderData } from "@remix-run/react";
+import { TrieveContext, useTrieve } from "app/context/trieveContext";
+import { Link, useNavigate, Form, useFetcher, useLoaderData, json } from "@remix-run/react";
+import { ActionFunctionArgs } from "@remix-run/node";
+import { authenticate } from "../shopify.server";
+import { getAppMetafields, setAppMetafields } from "../queries/metafield";
+import { validateTrieveAuth } from "app/auth";
+import { sdkFromKey } from "app/auth";
+import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
+
+const METAFIELD_KEY_AB_TESTS = "ab_tests";
+
+interface AbTestMetafieldValue {
+  pdpExperimentIds: string[];
+  globalExperimentIds: string[];
+}
+
+async function updateShopAbTestMetafield(
+  admin: any,
+  experimentId: string,
+  area: string,
+  operation: "add" | "remove"
+) {
+  // 1. Get current metafield using getAppMetafields
+  let abTestData: AbTestMetafieldValue | null = await getAppMetafields<AbTestMetafieldValue>(
+    admin,
+    METAFIELD_KEY_AB_TESTS
+  );
+
+  if (!abTestData) {
+    abTestData = { pdpExperimentIds: [], globalExperimentIds: [] };
+  }
+
+  abTestData.pdpExperimentIds = abTestData.pdpExperimentIds || [];
+  abTestData.globalExperimentIds = abTestData.globalExperimentIds || [];
+
+  abTestData.pdpExperimentIds = abTestData.pdpExperimentIds.filter(id => id !== experimentId);
+  abTestData.globalExperimentIds = abTestData.globalExperimentIds.filter(id => id !== experimentId);
+
+  if (operation === "add") {
+    if (area === "PDP") {
+      abTestData.pdpExperimentIds.push(experimentId);
+    } else if (area === "Global Search") {
+      abTestData.globalExperimentIds.push(experimentId);
+    } else {
+      console.warn(`Unknown experiment area: ${area} for experiment ${experimentId}. Not adding to metafield.`);
+    }
+  }
+
+  try {
+    await setAppMetafields(admin, [
+      {
+        key: METAFIELD_KEY_AB_TESTS,
+        value: JSON.stringify(abTestData),
+        type: "json",
+      },
+    ]);
+  } catch (error) {
+    console.error("Error setting A/B test metafield via setAppMetafields:", error);
+    throw new Error("Failed to update Shopify A/B test metafield using helper.");
+  }
+}
+
+export async function action({ request, context }: ActionFunctionArgs) {
+  const { session } = await authenticate.admin(request);
+  const key = await validateTrieveAuth(request);
+  const trieve = sdkFromKey(key);
+  const fetcher = buildAdminApiFetcherForServer(
+    session.shop,
+    session.accessToken!
+  )
+  
+  if (!trieve) {
+    return Response.json({ error: "Trieve SDK not available" }, { status: 500 });
+  }
+
+  const formData = await request.formData();
+  const intent = formData.get("intent") as string;
+  
+  try {
+    if (intent === "createExperiment" || intent === "updateExperiment") {
+      const name = formData.get("name") as string;
+      const area = formData.get("area") as string;
+      const controlName = formData.get("control_name") as string;
+      const t1Name = formData.get("t1_name") as string;
+      const controlSplit = parseFloat(formData.get("control_split") as string);
+      const t1Split = parseFloat(formData.get("t1_split") as string);
+
+      if (!name || !area || !controlName || !t1Name || isNaN(controlSplit) || isNaN(t1Split)) {
+        return Response.json({ error: "Missing required experiment fields." }, { status: 400 });
+      }
+
+      const experimentConfig: ExperimentConfig = {
+        area,
+        control_name: controlName,
+        control_split: controlSplit,
+        t1_name: t1Name,
+        t1_split: t1Split,
+      };
+
+      let savedExperiment: Experiment;
+
+      if (intent === "createExperiment") {
+        const payload: CreateExperimentReqBody = { name, experiment_config: experimentConfig };
+        savedExperiment = await trieve.createExperiment(payload);
+        await updateShopAbTestMetafield(fetcher, String(savedExperiment.id), area, "add");
+        return Response.json({ experiment: savedExperiment, intent: "createExperiment" });
+      } else {
+        const experimentId = formData.get("experimentId") as string;
+        if (!experimentId) return Response.json({ error: "Experiment ID is required for update."}, {status: 400});
+        
+        const updatePayload: UpdateExperimentReqBody = { id: experimentId };
+        updatePayload.name = name; 
+        updatePayload.experiment_config = experimentConfig; 
+
+        savedExperiment = await trieve.updateExperiment(updatePayload);
+        await updateShopAbTestMetafield(fetcher, String(savedExperiment.id), area, "add");
+        return Response.json({ experiment: savedExperiment, intent: "updateExperiment" });
+      }
+    } else if (intent === "deleteExperiment") {
+      const experimentId = formData.get("experimentId") as string;
+      if (!experimentId) return json({ error: "Experiment ID is required for delete."}, {status: 400});
+      
+      await trieve.deleteExperiment(experimentId);
+      await updateShopAbTestMetafield(fetcher, experimentId, "", "remove");
+      return Response.json({ deletedExperimentId: experimentId });
+    }
+    return Response.json({ error: "Invalid intent" }, { status: 400 });
+  } catch (error: any) {
+    console.error(`Failed to ${intent}:`, error);
+    return json({ error: error.message || "Failed to process experiment action" }, { status: 500 });
+  }
+}
 
 export default function Experiments() {
   const { trieve } = useContext(TrieveContext);
   const navigate = useNavigate();
+  const fetcher = useFetcher();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,8 +176,8 @@ export default function Experiments() {
   const [currentExperiment, setCurrentExperiment] = useState<Experiment | null>(null);
   const [experimentName, setExperimentName] = useState("");
   const [experimentArea, setExperimentArea] = useState("Global Search");
-  const [controlName, setControlName] = useState("Control");
-  const [treatmentName, setTreatmentName] = useState("Treatment 1");
+  const [controlName, setControlName] = useState("Don't show");
+  const [treatmentName, setTreatmentName] = useState("Show");
   const [treatmentSplit, setTreatmentSplit] = useState(50);
 
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
@@ -55,6 +187,37 @@ export default function Experiments() {
   const [toastActive, setToastActive] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastIsError, setToastIsError] = useState(false);
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data) {
+      const data = fetcher.data as any;
+      if (data.error) {
+        showToast(`Error: ${data.error}`, true);
+      } else if (data.experiment) {
+        const savedExp = data.experiment as Experiment;
+        if (data.intent === "createExperiment") {
+          setExperiments((prev) => [...prev, { ...savedExp, id: String(savedExp.id), area: savedExp.area || "Global Search" }]);
+          showToast("Experiment created successfully!");
+        } else {
+          setExperiments((prev) =>
+            prev.map((exp) => (exp.id === String(savedExp.id) ? { ...savedExp, id: String(savedExp.id), area: savedExp.area || "Global Search" } : exp))
+          );
+          showToast("Experiment updated successfully!");
+        }
+        handleModalClose();
+      } else if (data.deletedExperimentId) {
+        setExperiments((prev) => prev.filter((exp) => exp.id !== data.deletedExperimentId));
+        showToast("Experiment deleted successfully!");
+        handleCloseDeleteConfirmModal();
+      }
+    }
+    if (fetcher.state === "submitting" || fetcher.state === "loading") {
+        setIsSubmitting(true);
+    } else {
+        setIsSubmitting(false);
+        setIsDeleting(false);
+    }
+  }, [fetcher.state, fetcher.data]);
 
   const showToast = (message: string, isError = false) => {
     setToastMessage(message);
@@ -92,8 +255,8 @@ export default function Experiments() {
   const resetForm = () => {
     setExperimentName("");
     setExperimentArea("Global Search");
-    setControlName("Control");
-    setTreatmentName("Treatment 1");
+    setControlName("Don't show");
+    setTreatmentName("Show");
     setTreatmentSplit(50);
     setCurrentExperiment(null);
   };
@@ -107,8 +270,8 @@ export default function Experiments() {
     setCurrentExperiment(experiment);
     setExperimentName(experiment.name);
     setExperimentArea(experiment.area || "Global Search");
-    setControlName(experiment.control_name);
-    setTreatmentName(experiment.t1_name);
+    setControlName(experiment.control_name === "Show" || experiment.control_name === "Don't show" ? experiment.control_name : "Don't show");
+    setTreatmentName(experiment.t1_name === "Show" || experiment.t1_name === "Don't show" ? experiment.t1_name : "Show");
     setTreatmentSplit(experiment.t1_split * 100);
     setIsModalOpen(true);
   };
@@ -120,80 +283,36 @@ export default function Experiments() {
   };
 
   const handleSubmitExperiment = useCallback(async () => {
-    if (!trieve) {
-      showToast("Trieve SDK is not initialized.", true);
-      return;
-    }
     if (!experimentName || !controlName || !treatmentName) {
       showToast("Please fill in all required name fields.", true);
       return;
     }
 
-    setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append("name", experimentName);
+    formData.append("area", experimentArea);
+    formData.append("control_name", controlName);
+    formData.append("t1_name", treatmentName);
+    formData.append("control_split", String(parseFloat(((100 - treatmentSplit) / 100).toFixed(4))));
+    formData.append("t1_split", String(parseFloat((treatmentSplit / 100).toFixed(4))));
 
-    const currentConfigFromForm: ExperimentConfig = {
-        area: experimentArea,
-        control_name: controlName,
-        control_split: parseFloat(((100 - treatmentSplit) / 100).toFixed(4)),
-        t1_name: treatmentName,
-        t1_split: parseFloat((treatmentSplit / 100).toFixed(4)),
-    };
-
-    try {
-      if (currentExperiment && currentExperiment.id) {
-        let updatePayload: UpdateExperimentReqBody = { id: String(currentExperiment.id) };
-
-        if (experimentName !== currentExperiment.name) {
-            updatePayload.name = experimentName;
-        }
-
-        const configChanged = 
-            currentConfigFromForm.area !== (currentExperiment.area || "Global Search") ||
-            currentConfigFromForm.control_name !== currentExperiment.control_name ||
-            currentConfigFromForm.control_split !== currentExperiment.control_split ||
-            currentConfigFromForm.t1_name !== currentExperiment.t1_name ||
-            currentConfigFromForm.t1_split !== currentExperiment.t1_split;
-
-        if (configChanged) {
-            updatePayload.experiment_config = currentConfigFromForm;
-        }
-
-        if (!updatePayload.name && !updatePayload.experiment_config) {
-            showToast("No changes detected.", false);
-            setIsSubmitting(false);
-            handleModalClose();
-            return; 
-        }
-        const updatedExperiment = await trieve.updateExperiment(updatePayload);
-        setExperiments((prev) =>
-          prev.map((exp) => (exp.id === updatedExperiment.id ? {...updatedExperiment, id: String(updatedExperiment.id), area: experimentArea } : exp)),
-        );
-        showToast("Experiment updated successfully!");
-      } else {
-        const payload: CreateExperimentReqBody = {
-          name: experimentName,
-          experiment_config: currentConfigFromForm,
-        };
-        const newApiExperiment = await trieve.createExperiment(payload);
-        setExperiments((prev) => [...prev, {...newApiExperiment, id: String(newApiExperiment.id), area: experimentArea}]);
-        showToast("Experiment created successfully!");
-      }
-      handleModalClose();
-    } catch (error) {
-      console.error("Failed to save experiment:", error);
-      showToast(`Failed to save experiment: ${error instanceof Error ? error.message : String(error)}`, true);
-    } finally {
-      setIsSubmitting(false);
+    if (currentExperiment && currentExperiment.id) {
+      formData.append("intent", "updateExperiment");
+      formData.append("experimentId", String(currentExperiment.id));
+    } else {
+      formData.append("intent", "createExperiment");
     }
+    
+    fetcher.submit(formData, { method: "POST" });
+    handleModalClose();
   }, [
-    trieve,
-    currentExperiment,
     experimentName,
     experimentArea,
     controlName,
     treatmentName,
     treatmentSplit,
-    handleModalClose,
+    currentExperiment,
+    fetcher,
   ]);
 
   const handleOpenDeleteConfirmModal = (id: string) => {
@@ -208,22 +327,16 @@ export default function Experiments() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!trieve || !experimentToDeleteId) {
-      showToast("Cannot delete experiment: SDK not available or no experiment selected.", true);
+    if (!experimentToDeleteId) {
+      showToast("Cannot delete experiment: No experiment selected.", true);
       return;
     }
-    setIsDeleting(true);
-    try {
-      await trieve.deleteExperiment(experimentToDeleteId);
-      setExperiments((prev) => prev.filter((exp) => exp.id !== experimentToDeleteId));
-      showToast("Experiment deleted successfully!");
-      handleCloseDeleteConfirmModal();
-    } catch (error) {
-      console.error("Failed to delete experiment:", error);
-      showToast(`Failed to delete experiment: ${error instanceof Error ? error.message : String(error)}`, true);
-    } finally {
-      setIsDeleting(false);
-    }
+
+    const formData = new FormData();
+    formData.append("intent", "deleteExperiment");
+    formData.append("experimentId", experimentToDeleteId);
+
+    fetcher.submit(formData, { method: "POST" });
   };
 
   const controlSplitPercentage = 100 - treatmentSplit;
@@ -339,17 +452,17 @@ export default function Experiments() {
             content: currentExperiment ? "Save Changes" : "Create Experiment",
             onAction: handleSubmitExperiment,
             disabled:
-              isSubmitting ||
+              (fetcher.state === 'submitting' || fetcher.state === 'loading') ||
               !experimentName ||
               !controlName ||
               !treatmentName,
-            loading: isSubmitting,
+            loading: (fetcher.state === 'submitting' || fetcher.state === 'loading'),
           }}
           secondaryActions={[
             {
               content: "Cancel",
               onAction: handleModalClose,
-              disabled: isSubmitting,
+              disabled: (fetcher.state === 'submitting' || fetcher.state === 'loading'),
             },
           ]}
         >
@@ -378,21 +491,25 @@ export default function Experiments() {
               <Text variant="headingMd" as="h3">
                 Define Variants & Traffic Split
               </Text>
-              <TextField
+              <Select
                 label="Control Group Name"
+                options= {[
+                  { label: "Show", value: "Show" },
+                  { label: "Don't show", value: "Don't show" },
+                ]}
+                onChange={(value) => setControlName(value)}
                 value={controlName}
-                onChange={setControlName}
-                autoComplete="off"
-                placeholder="e.g., Current PDP Layout"
                 requiredIndicator
                 disabled={isSubmitting}
               />
-              <TextField
+              <Select
                 label="Treatment Group Name"
+                options= {[
+                  { label: "Show", value: "Show" },
+                  { label: "Don't show", value: "Don't show" },
+                ]}
+                onChange={(value) => setTreatmentName(value)}
                 value={treatmentName}
-                onChange={setTreatmentName}
-                autoComplete="off"
-                placeholder="e.g., New PDP Layout with Video"
                 requiredIndicator
                 disabled={isSubmitting}
               />
@@ -425,14 +542,14 @@ export default function Experiments() {
             content: "Delete",
             onAction: handleConfirmDelete,
             destructive: true,
-            loading: isDeleting,
-            disabled: isDeleting,
+            loading: (fetcher.state === 'submitting' || fetcher.state === 'loading'),
+            disabled: (fetcher.state === 'submitting' || fetcher.state === 'loading'),
           }}
           secondaryActions={[
             {
               content: "Cancel",
               onAction: handleCloseDeleteConfirmModal,
-              disabled: isDeleting,
+              disabled: (fetcher.state === 'submitting' || fetcher.state === 'loading'),
             },
           ]}
         >

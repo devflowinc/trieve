@@ -212,14 +212,20 @@ pub async fn ab_test_query(
         updated_at: OffsetDateTime::now_utc(),
     };
 
-    clickhouse_client
+    let mut assignment_insert = clickhouse_client
         .insert("experiment_user_assignments") // Ensure this table name matches your schema
-        .map_err(|e| ServiceError::InternalServerError(format!("Insert setup failed: {}", e)))?
+        .map_err(|e| ServiceError::InternalServerError(format!("Insert setup failed: {}", e)))?;
+
+    assignment_insert
         .write(&new_assignment)
         .await
         .map_err(|e| {
             ServiceError::InternalServerError(format!("Error inserting user assignment: {}", e))
         })?;
+
+    assignment_insert.end().await.map_err(|e| {
+        ServiceError::InternalServerError(format!("Failed to end experiment insert: {}", e))
+    })?;
 
     Ok(UserTreatmentResponse {
         treatment_name: assigned_treatment_name,

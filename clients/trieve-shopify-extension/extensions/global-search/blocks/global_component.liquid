@@ -48,7 +48,7 @@
   } else {
     renderToDiv(root, {
       type: "ecommerce",
-      baseUrl: "https://api.trieve.ai",
+      baseUrl: {% if dev_mode %} "http://localhost:8090" {% else %} "https://api.trieve.ai" {% endif %},
       cssRelease: cssRelease,
       useGroupSearch: true,
       hideOpenButton: true,
