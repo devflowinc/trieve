@@ -157,6 +157,7 @@ pub struct SingleProductOptions {
     product_primary_image_url: Option<String>,
     rec_search_query: Option<String>,
     product_questions: Option<Vec<String>>,
+    pdp_prompt: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]

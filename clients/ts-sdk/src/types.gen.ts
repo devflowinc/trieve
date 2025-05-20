@@ -1095,6 +1095,10 @@ export type CreateMessageReqPayload = {
      */
     page_size?: (number) | null;
     /**
+     * Overrides what the way chunks are placed into the context window
+     */
+    rag_context?: (string) | null;
+    /**
      * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
      */
     remove_stop_words?: (boolean) | null;
@@ -1580,6 +1584,10 @@ export type EditMessageReqPayload = {
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
     page_size?: (number) | null;
+    /**
+     * Overrides what the way chunks are placed into the context window
+     */
+    rag_context?: (string) | null;
     /**
      * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
      */
@@ -3602,6 +3610,10 @@ export type RegenerateMessageReqPayload = {
      */
     page_size?: (number) | null;
     /**
+     * Overrides what the way chunks are placed into the context window
+     */
+    rag_context?: (string) | null;
+    /**
      * If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.
      */
     remove_stop_words?: (boolean) | null;
@@ -4176,6 +4188,7 @@ export type SidebarFilters = {
 export type SingleProductOptions = {
     enabled?: (boolean) | null;
     groupTrackingId?: (string) | null;
+    pdpPrompt?: (string) | null;
     productDescriptionHtml?: (string) | null;
     productName?: (string) | null;
     productPrimaryImageUrl?: (string) | null;

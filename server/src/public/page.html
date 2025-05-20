@@ -475,6 +475,10 @@
             inlineParams.defaultAiQuestions = inlineParams.singleProductOptions.productQuestions;
           }
 
+          if (inlineParams.singleProductOptions && inlineParams.singleProductOptions.pdpPrompt) {
+            inlineParams.systemPrompt = inlineParams.singleProductOptions.pdpPrompt;
+          }
+
           renderToDiv(inlineRoot, {
             ...inlineParams,
           })

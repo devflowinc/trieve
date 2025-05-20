@@ -11430,6 +11430,11 @@
             "nullable": true,
             "minimum": 0
           },
+          "rag_context": {
+            "type": "string",
+            "description": "Overrides what the way chunks are placed into the context window",
+            "nullable": true
+          },
           "remove_stop_words": {
             "type": "boolean",
             "description": "If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.",
@@ -12478,6 +12483,11 @@
             "description": "Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.",
             "nullable": true,
             "minimum": 0
+          },
+          "rag_context": {
+            "type": "string",
+            "description": "Overrides what the way chunks are placed into the context window",
+            "nullable": true
           },
           "remove_stop_words": {
             "type": "boolean",
@@ -18753,6 +18763,11 @@
             "nullable": true,
             "minimum": 0
           },
+          "rag_context": {
+            "type": "string",
+            "description": "Overrides what the way chunks are placed into the context window",
+            "nullable": true
+          },
           "remove_stop_words": {
             "type": "boolean",
             "description": "If true, stop words (specified in server/src/stop-words.txt in the git repo) will be removed. Queries that are entirely stop words will be preserved.",
@@ -20931,6 +20946,10 @@
             "nullable": true
           },
           "groupTrackingId": {
+            "type": "string",
+            "nullable": true
+          },
+          "pdpPrompt": {
             "type": "string",
             "nullable": true
           },
