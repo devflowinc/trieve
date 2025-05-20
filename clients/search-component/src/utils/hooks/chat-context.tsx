@@ -898,9 +898,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         ) {
           groupIdsToUse = mediumRelevantGroupIds;
         } else if (lowlyRelevantGroupIds.length > 0) {
-          groupIdsToUse = [
-            ...lowlyRelevantGroupIds,
-          ]
+          groupIdsToUse = [...lowlyRelevantGroupIds];
         }
 
         const topGroupIds = groupIdsToUse.slice(0, 8);
