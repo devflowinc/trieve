@@ -13,7 +13,7 @@ use crate::{
         analytics_operator::*,
         clickhouse_operator::{ClickHouseEvent, EventQueue},
     },
-    utils::clickhouse_query::ClickhouseQuery,
+    utils::clickhouse_query::AnalyticsQuery,
 };
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -647,7 +647,7 @@ pub async fn get_rag_analytics(
     path = "/analytics",
     context_path = "/api",
     tag = "Analytics",
-    request_body(content = ClickhouseQuery, description = "JSON request payload to filter the graph", content_type = "application/json"),
+    request_body(content = AnalyticsQuery, description = "JSON request payload to filter the graph", content_type = "application/json"),
     responses(
         (status = 200, description = "The analytics for the dataset", body = serde_json::Value),
     ),
@@ -660,7 +660,7 @@ pub async fn get_rag_analytics(
 )]
 pub async fn get_analytics(
     _user: AdminOnly,
-    data: web::Json<ClickhouseQuery>,
+    data: web::Json<AnalyticsQuery>,
     clickhouse_client: web::Data<clickhouse::Client>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {

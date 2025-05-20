@@ -21,6 +21,40 @@ export type AddChunkToGroupReqPayload = {
 export type AggregationType = 'SUM' | 'COUNT' | 'AVG' | 'MIN' | 'MAX';
 
 /**
+ * Represents a complete Analytics query with parameters
+ */
+export type AnalyticsQuery = {
+    /**
+     * Simple columns to select
+     */
+    columns: Array<Column>;
+    cte_query?: ((CommonTableExpression) | null);
+    /**
+     * Complex expressions to select
+     */
+    expressions?: Array<Expression> | null;
+    /**
+     * WHERE clause conditions
+     */
+    filter_conditions?: Array<FilterCondition> | null;
+    group_by?: ((GroupBy) | null);
+    /**
+     * Tables to join with
+     */
+    joins?: Array<JoinClause> | null;
+    /**
+     * LIMIT clause
+     */
+    limit?: (number) | null;
+    /**
+     * OFFSET clause
+     */
+    offset?: (number) | null;
+    order_by?: ((OrderBy) | null);
+    table: TableName;
+};
+
+/**
  * The default parameters which will be forcibly used when the api key is given on a request. If not provided, the api key will not have default parameters.
  */
 export type ApiKeyRequestParams = {
@@ -601,40 +635,6 @@ export type ChunkedContent = {
      * The headings of the content in order of when they appear
      */
     headings: Array<(string)>;
-};
-
-/**
- * Represents a complete ClickHouse query with parameters
- */
-export type ClickhouseQuery = {
-    /**
-     * Simple columns to select
-     */
-    columns: Array<Column>;
-    cte_query?: ((CommonTableExpression) | null);
-    /**
-     * Complex expressions to select
-     */
-    expressions?: Array<Expression> | null;
-    /**
-     * WHERE clause conditions
-     */
-    filter_conditions?: Array<FilterCondition> | null;
-    group_by?: ((GroupBy) | null);
-    /**
-     * Tables to join with
-     */
-    joins?: Array<JoinClause> | null;
-    /**
-     * LIMIT clause
-     */
-    limit?: (number) | null;
-    /**
-     * OFFSET clause
-     */
-    offset?: (number) | null;
-    order_by?: ((OrderBy) | null);
-    table: TableName;
 };
 
 export type ClickhouseRagTypes = 'chosen_chunks' | 'all_chunks';
@@ -1972,6 +1972,7 @@ export type EventsForTopicResponse = {
 };
 
 export type Experiment = {
+    area: string;
     control_name: string;
     control_split: number;
     created_at: string;
@@ -1984,6 +1985,7 @@ export type Experiment = {
 };
 
 export type ExperimentConfig = {
+    area: string;
     control_name: string;
     control_split: number;
     t1_name: string;
@@ -4425,7 +4427,7 @@ export type SuggestedQueriesResponse = {
     queries: Array<(string)>;
 };
 
-export type TableName = 'search_queries' | 'rag_queries' | 'recommendations' | 'events' | 'cluster_topics' | 'search_cluster_memberships' | 'topics' | {
+export type TableName = 'search_queries' | 'rag_queries' | 'recommendations' | 'events' | 'cluster_topics' | 'search_cluster_memberships' | 'topics' | 'experiments' | 'experiment_user_assignments' | {
     Custom: string;
 };
 
@@ -4996,7 +4998,7 @@ export type GetAnalyticsData = {
     /**
      * JSON request payload to filter the graph
      */
-    requestBody: ClickhouseQuery;
+    requestBody: AnalyticsQuery;
     /**
      * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
      */

@@ -10,7 +10,7 @@ import * as userMethods from "./user/index";
 import * as organizationMethods from "./organization/index";
 import * as crawlMethods from "./crawl/index.ts";
 import * as stripeMethods from "./stripe/index";
-
+import * as experimentMethods from "./experiments/index";
 export default {
   ...chunkMethods,
   ...groupsMethods,
@@ -24,4 +24,5 @@ export default {
   ...organizationMethods,
   ...crawlMethods,
   ...stripeMethods,
+  ...experimentMethods,
 };

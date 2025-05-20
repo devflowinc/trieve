@@ -8906,6 +8906,7 @@ pub struct ExperimentClickhouse {
     #[serde(with = "clickhouse::serde::uuid")]
     pub id: uuid::Uuid,
     pub name: String,
+    pub area: String,
     pub t1_name: String,
     pub t1_split: f32,
     pub control_name: String,
@@ -8922,6 +8923,7 @@ pub struct ExperimentClickhouse {
 pub struct Experiment {
     pub id: uuid::Uuid,
     pub name: String,
+    pub area: String,
     pub t1_name: String,
     pub t1_split: f32,
     pub control_name: String,
@@ -8936,6 +8938,7 @@ impl From<Experiment> for ExperimentClickhouse {
         ExperimentClickhouse {
             id: experiment.id,
             name: experiment.name,
+            area: experiment.area,
             t1_name: experiment.t1_name,
             t1_split: experiment.t1_split,
             control_name: experiment.control_name,
@@ -8954,6 +8957,7 @@ impl From<ExperimentClickhouse> for Experiment {
         Experiment {
             id: experiment.id,
             name: experiment.name,
+            area: experiment.area,
             t1_name: experiment.t1_name,
             t1_split: experiment.t1_split,
             control_name: experiment.control_name,

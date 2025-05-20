@@ -9384,10 +9384,8 @@ trieve-search-component@0.4.65:
     tailwind-merge "^3.0.2"
     trieve-ts-sdk "^0.0.90"
 
-trieve-ts-sdk@^0.0.103:
-  version "0.0.103"
-  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.103.tgz#a15ad933110e6df6b23b9710338fe0eebfc33677"
-  integrity sha512-LOqliNMpiuT7FdvNZYad+BTh4ku1F9j1WeMBLQZnrLRg1gGB+W6/iZnD3OJ2AqEoc/W43U102S150Jt1HdqYNg==
+trieve-ts-sdk@../ts-sdk:
+  version "0.0.105"
 
 trieve-ts-sdk@^0.0.90:
   version "0.0.90"

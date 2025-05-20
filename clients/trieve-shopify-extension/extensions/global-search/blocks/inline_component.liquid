@@ -53,6 +53,24 @@
     return value;
   };
 
+  const abTreatment = () => {
+    fetch("https://api.trieve.ai/api/experiment", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${appMetafieldTrieve.api_key}`,
+        "TR-Dataset": appMetafieldTrieve.dataset_id
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log(data);
+    })
+    .catch(error => {
+      console.error("Trieve: Cannot render inline Trieve comopnent due to missing dataset_id or api_key in the app metafields");
+    });
+  }
+
   if (!appMetafieldTrieve.dataset_id || !appMetafieldTrieve.api_key) {
     console.error("Trieve: Cannot render inline Trieve comopnent due to missing dataset_id or api_key in the app metafields");
   } else {
