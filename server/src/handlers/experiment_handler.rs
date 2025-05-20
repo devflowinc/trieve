@@ -15,6 +15,7 @@ use super::auth_handler::AdminOnly;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ExperimentConfig {
+    pub area: String,
     pub t1_name: String,
     pub t1_split: f32,
     pub control_name: String,
@@ -36,6 +37,7 @@ impl CreateExperimentReqBody {
             t1_split: self.experiment_config.t1_split,
             control_name: self.experiment_config.control_name.clone(),
             control_split: self.experiment_config.control_split,
+            area: self.experiment_config.area.clone(),
             dataset_id,
             created_at: chrono::Utc::now().naive_utc(),
             updated_at: chrono::Utc::now().naive_utc(),

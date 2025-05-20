@@ -50,7 +50,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ClickhouseQuery"
+                "$ref": "#/components/schemas/AnalyticsQuery"
               }
             }
           },
@@ -7967,6 +7967,88 @@
           "MAX"
         ]
       },
+      "AnalyticsQuery": {
+        "type": "object",
+        "description": "Represents a complete Analytics query with parameters",
+        "required": [
+          "columns",
+          "table"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Column"
+            },
+            "description": "Simple columns to select"
+          },
+          "cte_query": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommonTableExpression"
+              }
+            ],
+            "nullable": true
+          },
+          "expressions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Expression"
+            },
+            "description": "Complex expressions to select",
+            "nullable": true
+          },
+          "filter_conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterCondition"
+            },
+            "description": "WHERE clause conditions",
+            "nullable": true
+          },
+          "group_by": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GroupBy"
+              }
+            ],
+            "nullable": true
+          },
+          "joins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JoinClause"
+            },
+            "description": "Tables to join with",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "LIMIT clause",
+            "nullable": true,
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int32",
+            "description": "OFFSET clause",
+            "nullable": true,
+            "minimum": 0
+          },
+          "order_by": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderBy"
+              }
+            ],
+            "nullable": true
+          },
+          "table": {
+            "$ref": "#/components/schemas/TableName"
+          }
+        }
+      },
       "ApiKeyRequestParams": {
         "type": "object",
         "description": "The default parameters which will be forcibly used when the api key is given on a request. If not provided, the api key will not have default parameters.",
@@ -9874,88 +9956,6 @@
             "Sub Heading 1",
             "Last SubHeading"
           ]
-        }
-      },
-      "ClickhouseQuery": {
-        "type": "object",
-        "description": "Represents a complete ClickHouse query with parameters",
-        "required": [
-          "columns",
-          "table"
-        ],
-        "properties": {
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Column"
-            },
-            "description": "Simple columns to select"
-          },
-          "cte_query": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CommonTableExpression"
-              }
-            ],
-            "nullable": true
-          },
-          "expressions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Expression"
-            },
-            "description": "Complex expressions to select",
-            "nullable": true
-          },
-          "filter_conditions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FilterCondition"
-            },
-            "description": "WHERE clause conditions",
-            "nullable": true
-          },
-          "group_by": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/GroupBy"
-              }
-            ],
-            "nullable": true
-          },
-          "joins": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/JoinClause"
-            },
-            "description": "Tables to join with",
-            "nullable": true
-          },
-          "limit": {
-            "type": "integer",
-            "format": "int32",
-            "description": "LIMIT clause",
-            "nullable": true,
-            "minimum": 0
-          },
-          "offset": {
-            "type": "integer",
-            "format": "int32",
-            "description": "OFFSET clause",
-            "nullable": true,
-            "minimum": 0
-          },
-          "order_by": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/OrderBy"
-              }
-            ],
-            "nullable": true
-          },
-          "table": {
-            "$ref": "#/components/schemas/TableName"
-          }
         }
       },
       "ClickhouseRagTypes": {
@@ -13350,6 +13350,7 @@
         "required": [
           "id",
           "name",
+          "area",
           "t1_name",
           "t1_split",
           "control_name",
@@ -13359,6 +13360,9 @@
           "updated_at"
         ],
         "properties": {
+          "area": {
+            "type": "string"
+          },
           "control_name": {
             "type": "string"
           },
@@ -13397,12 +13401,16 @@
       "ExperimentConfig": {
         "type": "object",
         "required": [
+          "area",
           "t1_name",
           "t1_split",
           "control_name",
           "control_split"
         ],
         "properties": {
+          "area": {
+            "type": "string"
+          },
           "control_name": {
             "type": "string"
           },
@@ -21940,6 +21948,18 @@
             "type": "string",
             "enum": [
               "topics"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "experiments"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "experiment_user_assignments"
             ]
           },
           {

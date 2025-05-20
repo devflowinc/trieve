@@ -1,0 +1,1 @@
+ALTER TABLE experiments DROP COLUMN IF EXISTS area;

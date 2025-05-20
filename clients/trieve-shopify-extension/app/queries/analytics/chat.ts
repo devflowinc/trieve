@@ -1,5 +1,4 @@
 import { QueryOptions } from "@tanstack/react-query";
-import { ClickhouseQueryBuilder } from "node_modules/trieve-ts-sdk/dist/functions/analytics";
 import {
   TrieveSDK,
   Granularity,

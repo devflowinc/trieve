@@ -193,6 +193,12 @@ pub enum TableName {
     #[serde(rename = "topics")]
     #[display(fmt = "topics")]
     Topics,
+    #[serde(rename = "experiments")]
+    #[display(fmt = "experiments")]
+    Experiments,
+    #[serde(rename = "experiment_user_assignments")]
+    #[display(fmt = "experiment_user_assignments")]
+    ExperimentUserAssignments,
     #[display(fmt = "{_0}")]
     #[serde(untagged)]
     Custom(String),
@@ -430,9 +436,9 @@ pub struct SubQuery {
     pub offset: Option<u32>,
 }
 
-impl From<&SubQuery> for ClickhouseQuery {
+impl From<&SubQuery> for AnalyticsQuery {
     fn from(sub_query: &SubQuery) -> Self {
-        ClickhouseQuery {
+        AnalyticsQuery {
             columns: sub_query.columns.clone(),
             expressions: sub_query.expressions.clone(),
             table: sub_query.table.clone(),
@@ -448,12 +454,12 @@ impl From<&SubQuery> for ClickhouseQuery {
 }
 impl SubQuery {
     pub fn validate(&self) -> Result<(), ValidationError> {
-        let clickhouse_query = ClickhouseQuery::from(self);
+        let clickhouse_query = AnalyticsQuery::from(self);
         clickhouse_query.validate()
     }
 
     pub fn to_parameterized_sql(&self) -> SqlQuery {
-        let clickhouse_query = ClickhouseQuery::from(self);
+        let clickhouse_query = AnalyticsQuery::from(self);
         clickhouse_query.to_parameterized_sql()
     }
 }
@@ -471,9 +477,9 @@ impl CommonTableExpression {
     }
 }
 
-/// Represents a complete ClickHouse query with parameters
+/// Represents a complete Analytics query with parameters
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
-pub struct ClickhouseQuery {
+pub struct AnalyticsQuery {
     /// Simple columns to select
     pub columns: Vec<Column>,
 
@@ -558,7 +564,7 @@ impl SqlQuery {
     }
 }
 
-impl ClickhouseQuery {
+impl AnalyticsQuery {
     pub fn validate(&self) -> Result<(), ValidationError> {
         // Validate columns
         for column in &self.columns {
