@@ -689,7 +689,8 @@ const ModalProvider = ({
       props.defaultSearchMode === "search"
     ) {
       const url = new URL(window.location.href);
-      const initialQuery = url.searchParams.get("q") || props.defaultSearchQuery;
+      const initialQuery =
+        url.searchParams.get("q") || props.defaultSearchQuery;
       if (initialQuery) {
         setQuery(initialQuery);
       }
