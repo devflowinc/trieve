@@ -700,7 +700,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       filters = null;
     }
 
-    let createMessageFilter: ChunkFilter | null = null;
+    let createMessageFilters: ChunkFilter | null = null;
     searchAbortController.current = new AbortController();
     if (curGroup) {
       setLoadingText("Reading the product's information...");
@@ -749,7 +749,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }
         return chunkIds;
       });
-      createMessageFilter = {
+      createMessageFilters = {
         must: [
           {
             field: "ids",
@@ -897,10 +897,14 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           mediumRelevantGroupIds.length > 0
         ) {
           groupIdsToUse = mediumRelevantGroupIds;
+        } else if (lowlyRelevantGroupIds.length > 0) {
+          groupIdsToUse = [
+            ...lowlyRelevantGroupIds,
+          ]
         }
 
         const topGroupIds = groupIdsToUse.slice(0, 8);
-        createMessageFilter = {
+        createMessageFilters = {
           must: [
             {
               field: "group_ids",
@@ -943,8 +947,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         imageUrl || curAudioBase64 ? 20000 : 1000000,
       );
       try {
-        // wait 5 seconds
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (createMessageFilters == null) {
+          createMessageFilters = filters;
+        }
         const createMessageResp =
           await trieveSDK.createMessageReaderWithQueryId(
             {
@@ -963,7 +968,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               page_size: props.searchOptions?.page_size ?? (curGroup ? 10 : 8),
               score_threshold: props.searchOptions?.score_threshold || null,
               use_group_search: props.useGroupSearch,
-              filters: createMessageFilter,
+              filters: createMessageFilters,
               metadata: {
                 component_props: props,
               },
