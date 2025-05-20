@@ -367,7 +367,7 @@ const FilterSidebarBuilder = () => {
         <div class="flex items-center gap-1">
           <h3 class="font-medium">Filter Sidebar Sections</h3>
           <Tooltip
-            tooltipText="Create filter sections that will appear in the sidebar of the SERP page"
+            tooltipText="Create filter sections that will appear in the sidebar of the SERP (Search Engine Results Page)."
             body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
           />
         </div>
