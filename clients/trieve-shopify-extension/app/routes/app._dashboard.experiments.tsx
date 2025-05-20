@@ -13,13 +13,9 @@ import {
   Box,
   ButtonGroup,
   Spinner,
-  SkeletonPage,
   SkeletonBodyText,
   Toast,
   Frame,
-  ActionList,
-  ResourceItem,
-  ResourceList,
   Select,
 } from "@shopify/polaris";
 import { useState, useCallback, useContext, useEffect } from "react";
@@ -32,7 +28,7 @@ import {
 } from "trieve-ts-sdk";
 import { TrieveContext, useTrieve } from "app/context/trieveContext";
 import { Link, useNavigate, Form, useFetcher, useLoaderData, json } from "@remix-run/react";
-import { ActionFunctionArgs } from "@remix-run/node";
+import { ActionFunctionArgs, data } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { getAppMetafields, setAppMetafields } from "../queries/metafield";
 import { validateTrieveAuth } from "app/auth";
@@ -100,10 +96,6 @@ export async function action({ request, context }: ActionFunctionArgs) {
     session.shop,
     session.accessToken!
   )
-  
-  if (!trieve) {
-    return Response.json({ error: "Trieve SDK not available" }, { status: 500 });
-  }
 
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
@@ -118,7 +110,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       const t1Split = parseFloat(formData.get("t1_split") as string);
 
       if (!name || !area || !controlName || !t1Name || isNaN(controlSplit) || isNaN(t1Split)) {
-        return Response.json({ error: "Missing required experiment fields." }, { status: 400 });
+        return data({ error: "Missing required experiment fields." }, { status: 400 });
       }
 
       const experimentConfig: ExperimentConfig = {
@@ -135,10 +127,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const payload: CreateExperimentReqBody = { name, experiment_config: experimentConfig };
         savedExperiment = await trieve.createExperiment(payload);
         await updateShopAbTestMetafield(fetcher, String(savedExperiment.id), area, "add");
-        return Response.json({ experiment: savedExperiment, intent: "createExperiment" });
+        return data({ experiment: savedExperiment, intent: "createExperiment" });
       } else {
         const experimentId = formData.get("experimentId") as string;
-        if (!experimentId) return Response.json({ error: "Experiment ID is required for update."}, {status: 400});
+        if (!experimentId) return data({ error: "Experiment ID is required for update."}, {status: 400});
         
         const updatePayload: UpdateExperimentReqBody = { id: experimentId };
         updatePayload.name = name; 
@@ -146,7 +138,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         savedExperiment = await trieve.updateExperiment(updatePayload);
         await updateShopAbTestMetafield(fetcher, String(savedExperiment.id), area, "add");
-        return Response.json({ experiment: savedExperiment, intent: "updateExperiment" });
+        return data({ experiment: savedExperiment, intent: "updateExperiment" });
       }
     } else if (intent === "deleteExperiment") {
       const experimentId = formData.get("experimentId") as string;
@@ -154,9 +146,9 @@ export async function action({ request, context }: ActionFunctionArgs) {
       
       await trieve.deleteExperiment(experimentId);
       await updateShopAbTestMetafield(fetcher, experimentId, "", "remove");
-      return Response.json({ deletedExperimentId: experimentId });
+      return data({ deletedExperimentId: experimentId });
     }
-    return Response.json({ error: "Invalid intent" }, { status: 400 });
+    return data({ error: "Invalid intent" }, { status: 400 });
   } catch (error: any) {
     console.error(`Failed to ${intent}:`, error);
     return json({ error: error.message || "Failed to process experiment action" }, { status: 500 });
