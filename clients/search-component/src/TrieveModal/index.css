@@ -68,6 +68,13 @@ body {
       margin: 0;
     }
 
+    .upload-icon {
+      height: 32px;
+      width: 32px;
+      fill: currentColor;
+      margin: 0;
+    }
+
     ol,
     ul,
     strong {

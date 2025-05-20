@@ -133,6 +133,7 @@ export default function ECommerce() {
                   ],
                 },
               }}
+              imageStarterText="Feeling lost? Upload an image and let us help you find the right product."
             />
           </>
         ) : (

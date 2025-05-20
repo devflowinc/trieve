@@ -9,10 +9,18 @@ import { FollowupQueries } from "./FollowupQueries";
 import { UserMessage } from "./UserMessage";
 import { InlineChatHeader } from "./InlineChatHeader";
 import { ChatInput } from "./ChatInput";
+import { LargeImageUpload } from "../LargeImageUpload";
 
 export const ChatMode = () => {
-  const { props, modalRef, minHeight, resetHeight, addHeight } =
-    useModalState();
+  const {
+    props,
+    modalRef,
+    minHeight,
+    resetHeight,
+    addHeight,
+    imageUrl,
+    uploadingImage,
+  } = useModalState();
   const { messages } = useChatState();
 
   const actualChatRef = useRef<HTMLDivElement>(null);
@@ -116,6 +124,7 @@ export const ChatMode = () => {
         >
           {/* Only shows with zero messages */}
           <SuggestedQuestions onMessageSend={onMessageSend} />{" "}
+          {!imageUrl && !uploadingImage && <LargeImageUpload />}
           {messages.map((message, i) => {
             if (message.type === "user") {
               return <UserMessage key={i} message={message} idx={i} />;

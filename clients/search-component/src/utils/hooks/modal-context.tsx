@@ -224,6 +224,7 @@ export type ModalProps = {
   defaultSearchQuery?: string;
   experimentIds?: string[];
   systemPrompt?: string;
+  imageStarterText?: string;
 };
 
 const defaultProps = {
@@ -299,6 +300,7 @@ const defaultProps = {
   defaultSearchQuery: undefined,
   experimentIds: [],
   systemPrompt: undefined,
+  imageStarterText: "Drag and drop an image here or click to upload",
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
@@ -401,7 +403,7 @@ const ModalContext = createContext<{
   resetHeight: () => {},
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   addHeight: (height: number) => {},
-  display: true,
+display: true,
 });
 
 const ModalProvider = ({
@@ -627,7 +629,7 @@ const ModalProvider = ({
   useEffect(() => {
     if (props.usePagefind) {
       getPagefindIndex(trieve).then((pagefind_base_url) => {
-        import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
+        import(`${/* @vite-ignore */ pagefind_base_url}/pagefind.js`).then((pagefind) => {
           // @vite-ignore
           setPagefind(pagefind);
           pagefind.filters().then(() => {});
