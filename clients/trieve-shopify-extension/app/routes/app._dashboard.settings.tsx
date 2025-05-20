@@ -27,6 +27,7 @@ export const loader = async ({
   crawlSettings: ExtendedCrawlOptions | undefined;
   webPixelInstalled: boolean;
   devMode: boolean;
+  pdpPrompt: string;
 }> => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
@@ -60,11 +61,12 @@ export const loader = async ({
   const webPixelInstalled = await isWebPixelInstalled(fetcher, key);
 
   const devMode = await getAppMetafields<boolean>(fetcher, "dev_mode") || false;
-
+  const pdpPrompt = await getAppMetafields<string>(fetcher, "pdp_prompt") || "";
   return {
     crawlSettings: crawlSettings?.crawlSettings,
     webPixelInstalled,
     devMode,
+    pdpPrompt,
   };
 }
 
@@ -125,7 +127,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       dataset_id: datasetId as string,
       server_configuration: datasetSettings,
     });
-
+    const pdpPrompt = formData.get("pdp_prompt");
+    if (pdpPrompt && pdpPrompt !== "") {
+      await setAppMetafields(fetcher, [
+        {
+          key: "pdp_prompt",
+          value: pdpPrompt as string,
+          type: "single_line_text_field",
+        },
+      ]);
+    }
     return { success: true };
   } else if (type === "revenue_tracking") {
     await createWebPixel(fetcher, key);
@@ -137,7 +148,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Dataset() {
   const { trieve } = useTrieve();
   const { data: shopDataset } = useSuspenseQuery(shopDatasetQuery(trieve));
-  const { crawlSettings, webPixelInstalled, devMode } = useLoaderData<typeof loader>();
+  const { crawlSettings, webPixelInstalled, devMode, pdpPrompt } = useLoaderData<typeof loader>();
 
   return (
     <Box paddingBlockStart="400">
@@ -146,6 +157,7 @@ export default function Dataset() {
         shopifyDatasetSettings={{
           devMode,
           webPixelInstalled,
+          pdpPrompt,
         }}
         shopDataset={shopDataset as Dataset}
       />
