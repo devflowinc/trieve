@@ -20926,6 +20926,10 @@
       "SingleProductOptions": {
         "type": "object",
         "properties": {
+          "enabled": {
+            "type": "boolean",
+            "nullable": true
+          },
           "groupTrackingId": {
             "type": "string",
             "nullable": true

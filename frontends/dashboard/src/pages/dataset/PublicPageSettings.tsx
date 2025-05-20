@@ -1666,178 +1666,205 @@ export const SingleProductOptions = () => {
   const datasetContext = useContext(DatasetContext);
   const trieve = useTrieve();
 
+  const toggleEnableSingleProductView = (checked: boolean) => {
+    setExtraParams("singleProductOptions", {
+      ...extraParams.singleProductOptions,
+      enabled: checked,
+    });
+
+    if (checked) {
+      setExtraParams("inline", true);
+      if (extraParams.type !== "ecommerce") {
+        setExtraParams("type", "ecommerce");
+      }
+    }
+  };
+
   return (
     <details class="my-4">
       <summary class="cursor-pointer text-sm font-medium">
         Single Product View
       </summary>
-      <div class="flex gap-4 pt-2">
-        <div class="grow">
-          <label class="block">Product Tracking ID</label>
-          <input
-            placeholder="Tracking ID of the product to display"
-            value={extraParams.singleProductOptions?.productTrackingId || ""}
-            onInput={(e) => {
-              setExtraParams("singleProductOptions", {
-                ...extraParams.singleProductOptions,
-                productTrackingId: e.currentTarget.value,
-              });
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
-        </div>
-        <div class="grow">
-          <label class="block">Product Image URL</label>
-          <input
-            placeholder="URL of the product image to display"
-            value={
-              extraParams.singleProductOptions?.productPrimaryImageUrl || ""
-            }
-            onInput={(e) => {
-              setExtraParams("singleProductOptions", {
-                ...extraParams.singleProductOptions,
-                productPrimaryImageUrl: e.currentTarget.value,
-              });
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
-        </div>
-        <div class="grow">
-          <label class="block">Product Name</label>
-          <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 py-2">
+        <input
+          type="checkbox"
+          checked={extraParams.singleProductOptions?.enabled || false}
+          onChange={(e) => {
+            toggleEnableSingleProductView(e.currentTarget.checked);
+          }}
+          class="block h-4 w-4 rounded border border-neutral-300 shadow-sm focus:outline-magenta-500"
+        />
+        <label class="block">Enable Single Product View</label>
+      </div>
+      <Show when={extraParams.singleProductOptions?.enabled}>
+        <div class="flex gap-4 pt-2">
+          <div class="grow">
+            <label class="block">Product Tracking ID</label>
             <input
-              placeholder="Name of the product to display"
-              value={extraParams.singleProductOptions?.productName || ""}
+              placeholder="Tracking ID of the product to display"
+              value={extraParams.singleProductOptions?.productTrackingId || ""}
               onInput={(e) => {
                 setExtraParams("singleProductOptions", {
                   ...extraParams.singleProductOptions,
-                  productName: e.currentTarget.value,
+                  productTrackingId: e.currentTarget.value,
                 });
               }}
               class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
-            <button
-              onClick={() => {
-                setLoadingAutoFill(true);
-                void trieve
-                  .fetch("/api/chunk_group/group_oriented_search", "post", {
-                    data: {
-                      query:
-                        extraParams.singleProductOptions?.productName || "",
-                      page_size: 10,
-                      search_type: "fulltext",
-                    },
-                    datasetId: datasetContext.datasetId(),
-                  })
-                  .then((res) => {
-                    const typedRes: SearchOverGroupsResponseBody =
-                      res as SearchOverGroupsResponseBody;
-                    const firstGroup = typedRes.results?.length
-                      ? typedRes.results[0]
-                      : null;
-                    const firstChunk = firstGroup?.chunks?.length
-                      ? firstGroup.chunks[0]
-                      : null;
-                    if (!firstGroup || !firstChunk) {
-                      return;
-                    }
-                    setExtraParams("singleProductOptions", {
-                      groupTrackingId: firstGroup.group.tracking_id,
-                      productTrackingId: firstChunk.chunk.tracking_id,
-                      productPrimaryImageUrl: firstChunk.chunk.image_urls
-                        ?.length
-                        ? firstChunk.chunk.image_urls[0]
-                        : "",
-                      productDescriptionHtml: (
-                        firstChunk.chunk as ChunkMetadata
-                      ).chunk_html,
-                    });
-                    setLoadingAutoFill(false);
-                  });
-              }}
-              disabled={loadingAutoFill()}
-              class="inline-flex min-w-[130px] justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900 disabled:animate-pulse"
-            >
-              {loadingAutoFill() ? "Loading..." : "Auto Fill"}
-            </button>
           </div>
-        </div>
-      </div>
-      <div class="flex gap-4 pb-2 pt-2">
-        <div class="grow">
-          <label class="block">Group Tracking ID</label>
-          <input
-            placeholder="Tracking ID of the product to display"
-            value={extraParams.singleProductOptions?.groupTrackingId || ""}
-            onInput={(e) => {
-              setExtraParams("singleProductOptions", {
-                ...extraParams.singleProductOptions,
-                groupTrackingId: e.currentTarget.value,
-              });
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
-        </div>
-        <div class="grow">
-          <div class="flex items-center gap-1">
-            <label class="block" for="">
-              Product Questions
-            </label>
-            <Tooltip
-              tooltipText="Example AI questions which may be asked about the product"
-              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+          <div class="grow">
+            <label class="block">Product Image URL</label>
+            <input
+              placeholder="URL of the product image to display"
+              value={
+                extraParams.singleProductOptions?.productPrimaryImageUrl || ""
+              }
+              onInput={(e) => {
+                setExtraParams("singleProductOptions", {
+                  ...extraParams.singleProductOptions,
+                  productPrimaryImageUrl: e.currentTarget.value,
+                });
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
             />
           </div>
-          <MultiStringInput
-            placeholder="What does it do?..."
-            value={extraParams.singleProductOptions?.productQuestions || []}
-            onChange={(e) => {
-              setExtraParams("singleProductOptions", {
-                productQuestions: e,
-              });
-            }}
-            addLabel="Add Product Question"
-            addClass="text-sm"
-            inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
+          <div class="grow">
+            <label class="block">Product Name</label>
+            <div class="flex items-center gap-2">
+              <input
+                placeholder="Name of the product to display"
+                value={extraParams.singleProductOptions?.productName || ""}
+                onInput={(e) => {
+                  setExtraParams("singleProductOptions", {
+                    ...extraParams.singleProductOptions,
+                    productName: e.currentTarget.value,
+                  });
+                }}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+              <button
+                onClick={() => {
+                  setLoadingAutoFill(true);
+                  void trieve
+                    .fetch("/api/chunk_group/group_oriented_search", "post", {
+                      data: {
+                        query:
+                          extraParams.singleProductOptions?.productName || "",
+                        page_size: 10,
+                        search_type: "fulltext",
+                      },
+                      datasetId: datasetContext.datasetId(),
+                    })
+                    .then((res) => {
+                      const typedRes: SearchOverGroupsResponseBody =
+                        res as SearchOverGroupsResponseBody;
+                      const firstGroup = typedRes.results?.length
+                        ? typedRes.results[0]
+                        : null;
+                      const firstChunk = firstGroup?.chunks?.length
+                        ? firstGroup.chunks[0]
+                        : null;
+                      if (!firstGroup || !firstChunk) {
+                        return;
+                      }
+                      setExtraParams("singleProductOptions", {
+                        groupTrackingId: firstGroup.group.tracking_id,
+                        productTrackingId: firstChunk.chunk.tracking_id,
+                        productPrimaryImageUrl: firstChunk.chunk.image_urls
+                          ?.length
+                          ? firstChunk.chunk.image_urls[0]
+                          : "",
+                        productDescriptionHtml: (
+                          firstChunk.chunk as ChunkMetadata
+                        ).chunk_html,
+                      });
+                      setLoadingAutoFill(false);
+                    });
+                }}
+                disabled={loadingAutoFill()}
+                class="inline-flex min-w-[130px] justify-center rounded-md bg-magenta-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-magenta-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-magenta-900 disabled:animate-pulse"
+              >
+                {loadingAutoFill() ? "Loading..." : "Auto Fill"}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="flex gap-4 pb-2 pt-2">
-        <div class="grow">
-          <label class="block">Product Description HTML</label>
-          <textarea
-            cols={2}
-            placeholder="Description of the page"
-            value={
-              extraParams.singleProductOptions?.productDescriptionHtml || ""
-            }
-            onInput={(e) => {
-              setExtraParams("singleProductOptions", {
-                ...extraParams.singleProductOptions,
-                productDescriptionHtml: e.currentTarget.value,
-              });
-              setExtraParams("inline", !!e.currentTarget.value);
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
+        <div class="flex gap-4 pb-2 pt-2">
+          <div class="grow">
+            <label class="block">Group Tracking ID</label>
+            <input
+              placeholder="Tracking ID of the product to display"
+              value={extraParams.singleProductOptions?.groupTrackingId || ""}
+              onInput={(e) => {
+                setExtraParams("singleProductOptions", {
+                  ...extraParams.singleProductOptions,
+                  groupTrackingId: e.currentTarget.value,
+                });
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+          <div class="grow">
+            <div class="flex items-center gap-1">
+              <label class="block" for="">
+                Product Questions
+              </label>
+              <Tooltip
+                tooltipText="Example AI questions which may be asked about the product"
+                body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+              />
+            </div>
+            <MultiStringInput
+              placeholder="What does it do?..."
+              value={extraParams.singleProductOptions?.productQuestions || []}
+              onChange={(e) => {
+                setExtraParams("singleProductOptions", {
+                  productQuestions: e,
+                });
+              }}
+              addLabel="Add Product Question"
+              addClass="text-sm"
+              inputClass="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
         </div>
-      </div>
-      <div class="flex gap-4 pb-2 pt-2">
-        <div class="grow">
-          <label class="block">Recommendation Search Query</label>
-          <input
-            placeholder="Search query to use for recommendations"
-            value={extraParams.singleProductOptions?.recSearchQuery || ""}
-            onInput={(e) => {
-              setExtraParams("singleProductOptions", {
-                ...extraParams.singleProductOptions,
-                recSearchQuery: e.currentTarget.value,
-              });
-            }}
-            class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-          />
+        <div class="flex gap-4 pb-2 pt-2">
+          <div class="grow">
+            <label class="block">Product Description HTML</label>
+            <textarea
+              cols={2}
+              placeholder="Description of the page"
+              value={
+                extraParams.singleProductOptions?.productDescriptionHtml || ""
+              }
+              onInput={(e) => {
+                setExtraParams("singleProductOptions", {
+                  ...extraParams.singleProductOptions,
+                  productDescriptionHtml: e.currentTarget.value,
+                });
+                setExtraParams("inline", !!e.currentTarget.value);
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
         </div>
-      </div>
+        <div class="flex gap-4 pb-2 pt-2">
+          <div class="grow">
+            <label class="block">Recommendation Search Query</label>
+            <input
+              placeholder="Search query to use for recommendations"
+              value={extraParams.singleProductOptions?.recSearchQuery || ""}
+              onInput={(e) => {
+                setExtraParams("singleProductOptions", {
+                  ...extraParams.singleProductOptions,
+                  recSearchQuery: e.currentTarget.value,
+                });
+              }}
+              class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+            />
+          </div>
+        </div>
+      </Show>
     </details>
   );
 };
@@ -2168,7 +2195,6 @@ export const SerpPageOptions = () => {
       display: checked,
     });
 
-    setExtraParams("inline", checked);
     setExtraParams(
       "defaultSearchMode",
       checked ? "search" : extraParams.defaultSearchMode,

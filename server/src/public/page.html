@@ -456,7 +456,7 @@
           "partnerCompanyFaviconUrl": "{{ partner_configuration.FAVICON_URL | safe }}",
         }
 
-        if (params.inline && !params.searchPageProps?.display) {
+        if (params.inline && params.singleProductOptions?.enabled) {
           const inlineParams = {{ params | tojson }};
           inlineParams.partnerSettings = {
             "partnerCompanyName": "{{ partner_configuration.COMPANY_NAME }}",
@@ -593,7 +593,7 @@
         </div>
         {% endif %} 
         {% if params.singleProductOptions and
-        params.singleProductOptions.productName %} {% include "product.html" %}
+        params.singleProductOptions.productName and params.singleProductOptions.enabled %} {% include "product.html" %}
         {% endif %} {% if tabs and tabs|length > 0 %} {% include "tabs.html" %}
         {% endif %} {% if params.videoLink and params.videoPosition ==
         "floating" %}

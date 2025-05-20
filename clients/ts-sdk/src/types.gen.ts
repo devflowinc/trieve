@@ -4174,6 +4174,7 @@ export type SidebarFilters = {
 };
 
 export type SingleProductOptions = {
+    enabled?: (boolean) | null;
     groupTrackingId?: (string) | null;
     productDescriptionHtml?: (string) | null;
     productName?: (string) | null;
