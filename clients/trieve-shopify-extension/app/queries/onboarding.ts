@@ -84,7 +84,7 @@ export const themeListQuery = (fetcher: AdminApiCaller) => {
       const result = await fetcher(
         `#graphql
 query GetStoreThemes {
-  themes(first:50){
+  themes(first:250){
     nodes{
       name
       prefix
