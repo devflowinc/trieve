@@ -149,6 +149,7 @@ pub struct ButtonTrigger {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SingleProductOptions {
+    enabled: Option<bool>,
     product_tracking_id: Option<String>,
     group_tracking_id: Option<String>,
     product_name: Option<String>,
