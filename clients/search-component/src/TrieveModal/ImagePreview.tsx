@@ -35,7 +35,7 @@ const ImagePreview = ({
               </button>
             )}
             <div
-              className={`tv-max-h-96 overflow-hidden tv-max-w-32 ${active ? "tv-border tv-p-2" : ""}`}
+              className={`tv-max-h-96 overflow-hidden tv-max-w-min tv-rounded-t-lg ${active ? "tv-border tv-p-2" : ""}`}
             >
               <img src={imageUrl} className="tv-max-h-96 tv-max-w-32" alt="" />
             </div>
