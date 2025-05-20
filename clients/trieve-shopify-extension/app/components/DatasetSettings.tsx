@@ -76,6 +76,7 @@ export const defaultServerEnvsConfiguration: DatasetConfig = {
 export interface ShopifyDatasetSettings {
   webPixelInstalled: boolean;
   devMode: boolean;
+  pdpPrompt: string;  
 }
 
 export const DatasetSettings = ({
@@ -94,6 +95,7 @@ export const DatasetSettings = ({
   const [datasetSettings, setDatasetSettings] = useState<DatasetConfig>(
     shopDataset.server_configuration ?? ({} as DatasetConfig),
   );
+  const [pdpPrompt, setPdpPrompt] = useState(shopifyDatasetSettings.pdpPrompt ?? "");
 
   const adminApi = useClientAdminApi();
 
@@ -159,6 +161,7 @@ export const DatasetSettings = ({
     submit(
       {
         dataset_settings: JSON.stringify(datasetSettings),
+        pdp_prompt: pdpPrompt,
         dataset_id: shopDataset.id,
         type: "dataset",
       },
@@ -324,6 +327,14 @@ export const DatasetSettings = ({
                   SYSTEM_PROMPT: e,
                 })
               }
+              autoComplete="off"
+            />
+            <TextField
+              label="PDP Prompt"
+              helpText="The system prompt to guide the RAG model for the PDP pages (Will override the system prompt for PDP pages)"
+              value={pdpPrompt}
+              multiline={5}
+              onChange={(e) => setPdpPrompt(e)}
               autoComplete="off"
             />
             <TextField

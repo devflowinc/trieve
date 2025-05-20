@@ -208,6 +208,7 @@ export type ModalProps = {
   searchBar?: boolean;
   defaultSearchQuery?: string;
   experimentIds?: string[];
+  systemPrompt?: string;
 };
 
 const defaultProps = {
@@ -282,6 +283,7 @@ const defaultProps = {
   searchBar: false,
   defaultSearchQuery: undefined,
   experimentIds: [],
+  systemPrompt: undefined,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{

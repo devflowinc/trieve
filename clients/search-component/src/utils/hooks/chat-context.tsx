@@ -948,6 +948,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         if (createMessageFilters == null) {
           createMessageFilters = filters;
         }
+
         const createMessageResp =
           await trieveSDK.createMessageReaderWithQueryId(
             {
@@ -960,6 +961,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               image_urls: imageUrl ? [imageUrl] : [],
               llm_options: {
                 completion_first: false,
+                system_prompt:
+                  props.systemPrompt && props.systemPrompt !== ""
+                    ? props.systemPrompt
+                    : undefined,
               },
               concat_user_messages_query: true,
               user_id: fingerprint,
