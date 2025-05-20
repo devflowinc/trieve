@@ -11,6 +11,7 @@ import {
 import {
 	ChunkFilter,
 	SearchMethod,
+	ToolFunctionParameter,
 	TrieveSDK
 } from "trieve-ts-sdk";
 
@@ -31,6 +32,11 @@ const operations: INodeProperties[] = [
 				value: 'search_chunks',
 				action: 'Search chunks',
 			},
+			{
+				name: 'Tool Call',
+				value: 'tool_call',
+				action: 'Tool call',
+			}
 		],
 		default: 'create_chunk',
 		noDataExpression: true,
@@ -48,6 +54,7 @@ const resources: INodeProperties[] = [
 			show: {
 				operation: [
 					'create_chunk',
+					'tool_call',
 				],
 			},
 		},
@@ -56,6 +63,10 @@ const resources: INodeProperties[] = [
 				name: 'Chunk',
 				value: 'chunk',
 			},
+			{
+				name: 'Tool Call',
+				value: 'tool_call',
+			}
 		],
 	},
 	{
@@ -158,6 +169,7 @@ const resources: INodeProperties[] = [
 				displayName: 'Tag Set',
 				name: 'tag_set',
 				type: 'string',
+				requiresDataPath: 'multiple',
 				default: '',
 			},
 			{
@@ -171,6 +183,63 @@ const resources: INodeProperties[] = [
 				name: 'tracking_id',
 				type: 'string',
 				default: '',
+			},
+		],
+	},
+	{
+		displayName: 'Function Input',
+		name: 'function_input',
+		type: 'string',
+		default: '',
+		displayOptions: {
+			show: {
+				operation: [
+					'tool_call',
+				],
+			},
+		},
+	},
+	{
+		displayName: 'Tool Call Parameters',
+		name: 'tool_function',
+		type: 'collection',
+		noDataExpression: false,
+		default: {
+			function_description: '',
+			function_name: '',
+		},
+		displayOptions: {
+			show: {
+				operation: [
+					'tool_call',
+				],
+			},
+		},
+		options: [
+			{
+				displayName: 'Function Description',
+				name: 'description',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Function Name',
+				name: 'name',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Parameters',
+				name: 'parameters',
+				type: 'json',
+				default: `
+[
+	{
+		"name": "",
+		"parameter_type": "boolean",
+		"description": ""
+	}
+]`,
 			},
 		],
 	}
@@ -272,6 +341,21 @@ export class Trieve implements INodeType {
 
 				returnData.push(response as any);
 			} else if (operation === 'tool_call') {
+
+				const toolFunction = this.getNodeParameter('tool_function', itemIndex) as IDataObject;
+				const functionInput = this.getNodeParameter('function_input', itemIndex) as string;
+
+				console.log(toolFunction);
+				const response = await trieve.getToolCallFunctionParams({
+					user_message_text: functionInput,
+					tool_function: {
+						name: toolFunction.name as string,
+						description: toolFunction.description as string,
+						parameters: JSON.parse(toolFunction.parameters) as ToolFunctionParameter[]
+					}
+				});
+
+				returnData.push(response as any);
 
 			}
 		}
