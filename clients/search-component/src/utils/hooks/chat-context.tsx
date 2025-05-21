@@ -885,17 +885,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(relevanceToolCallTimeout);
         let groupIdsToUse = highlyRelevantGroupIds;
 
-        if (highlyRelevantGroupIds.length > 1) {
+        if (highlyRelevantGroupIds.length > 0) {
           groupIdsToUse = [...highlyRelevantGroupIds];
-        } else if (highlyRelevantGroupIds.length === 1) {
-          groupIdsToUse = [
-            ...highlyRelevantGroupIds,
-            ...mediumRelevantGroupIds,
-          ];
-        } else if (
-          highlyRelevantGroupIds.length === 0 &&
-          mediumRelevantGroupIds.length > 0
-        ) {
+        } else if (mediumRelevantGroupIds.length > 0) {
           groupIdsToUse = mediumRelevantGroupIds;
         } else if (lowlyRelevantGroupIds.length > 0) {
           groupIdsToUse = [...lowlyRelevantGroupIds];
