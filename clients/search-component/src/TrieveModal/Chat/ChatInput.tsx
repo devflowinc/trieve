@@ -19,6 +19,7 @@ export const ChatInput = ({
     imageUrl,
     isRecording,
     open,
+    setImageUrl,
   } = useModalState();
 
   const { askQuestion, currentQuestion, cancelGroupChat, setCurrentQuestion } =
@@ -30,6 +31,16 @@ export const ChatInput = ({
       chatInput.current?.focus();
     }
   }, [chatInput, mode, open]);
+
+  const handleSendMessage = () => {
+    if (currentQuestion || imageUrl !== "") {
+      if (onMessageSend) {
+        onMessageSend();
+      }
+      askQuestion(currentQuestion);
+      setImageUrl("");
+    }
+  };
 
   return (
     <div
@@ -74,12 +85,7 @@ export const ChatInput = ({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (currentQuestion || imageUrl !== "") {
-              if (onMessageSend) {
-                onMessageSend();
-              }
-              askQuestion(currentQuestion);
-            }
+            handleSendMessage();
           }}
           className="tv-w-full tv-max-w-full tv-m-0"
         >
@@ -99,14 +105,7 @@ export const ChatInput = ({
           />
         </form>
         <button
-          onClick={() => {
-            if (currentQuestion || imageUrl !== "") {
-              if (onMessageSend) {
-                onMessageSend();
-              }
-              askQuestion(currentQuestion);
-            }
-          }}
+          onClick={handleSendMessage}
           className="tv-top-[0.825rem] tv-right-3 tv-absolute tv-z-20 tv-bg-transparent tv-text-zinc-700 tv-block tv-dark-text-white paper-plane-button-container"
         >
           <i className="fa-solid fa-paper-plane"></i>
