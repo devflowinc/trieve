@@ -629,7 +629,7 @@ const ModalProvider = ({
   useEffect(() => {
     if (props.usePagefind) {
       getPagefindIndex(trieve).then((pagefind_base_url) => {
-        import(`${/* @vite-ignore */ pagefind_base_url}/pagefind.js`).then((pagefind) => {
+        import(`${pagefind_base_url}/pagefind.js`).then((pagefind) => {
           // @vite-ignore
           setPagefind(pagefind);
           pagefind.filters().then(() => {});
