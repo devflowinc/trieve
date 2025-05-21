@@ -824,7 +824,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                   ).splice(0, 1)
                 : undefined;
               const jsonOfFirstChunk = {
-                title: (firstChunk?.metadata as any)["title"],
+                title: (firstChunk?.metadata as any)?.title ?? "",
                 Description: firstChunk?.chunk_html,
                 price: firstChunk?.num_value,
               };
@@ -866,7 +866,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                     },
                     relevanceToolCallAbortController.current?.signal,
                   );
-                console.log("verifying relavance");
                 setLoadingText((prev) => {
                   const contentType =
                     props.type === "ecommerce" ? "product" : "section";
@@ -902,7 +901,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               });
             },
           );
-          await Promise.all(rankingPromises);
+
+          try {
+            await Promise.all(rankingPromises);
+          } catch (e) {
+            console.error("error getting determine_relevance", e);
+          }
+
           setLoadingText("Finished verifying relevance");
           clearTimeout(relevanceToolCallTimeout);
           let groupIdsToUse = highlyRelevantGroupIds;
