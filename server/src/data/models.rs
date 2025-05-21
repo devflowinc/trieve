@@ -3628,6 +3628,9 @@ impl DatasetConfigurationDTO {
                     search_bar: page_parameters_self
                         .search_bar
                         .or(page_parameters_curr.search_bar),
+                    image_starter_text: page_parameters_self
+                        .image_starter_text
+                        .or(page_parameters_curr.image_starter_text),
                 }),
             },
             DISABLE_ANALYTICS: self

@@ -16433,6 +16433,10 @@
             "type": "boolean",
             "nullable": true
           },
+          "imageStarterText": {
+            "type": "string",
+            "nullable": true
+          },
           "inline": {
             "type": "boolean",
             "nullable": true

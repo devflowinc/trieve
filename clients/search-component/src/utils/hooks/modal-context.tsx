@@ -300,7 +300,7 @@ const defaultProps = {
   defaultSearchQuery: undefined,
   experimentIds: [],
   systemPrompt: undefined,
-  imageStarterText: "Drag and drop an image here or click to upload",
+  imageStarterText: undefined,
 } satisfies ModalProps;
 
 const ModalContext = createContext<{
@@ -403,7 +403,7 @@ const ModalContext = createContext<{
   resetHeight: () => {},
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   addHeight: (height: number) => {},
-display: true,
+  display: true,
 });
 
 const ModalProvider = ({
@@ -647,16 +647,16 @@ const ModalProvider = ({
       for (const experimentId of props.experimentIds) {
         trieve
           .getTreatment({
-            experiment_id: experimentId,
-            user_id: fingerprint,
+              experiment_id: experimentId,
+              user_id: fingerprint,
           })
           .then((treatment) => {
-            if (treatment.treatment_name === "Don't show") {
-              setDisplay(false);
-            } else {
-              setDisplay(true);
-            }
-          });
+              if (treatment.treatment_name === "Don't show") {
+                setDisplay(false);
+              } else {
+                setDisplay(true);
+              }
+            });
       }
     }
   }, [props.experimentIds, fingerprint]);
