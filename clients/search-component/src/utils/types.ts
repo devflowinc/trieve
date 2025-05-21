@@ -5,6 +5,7 @@ import {
 } from "trieve-ts-sdk";
 
 export type Chunk = Omit<ChunkMetadata, "metadata"> & {
+  id: string;
   highlight?: string | undefined | null;
   highlightTitle?: string | undefined | null;
   highlightDescription?: string | undefined | null;

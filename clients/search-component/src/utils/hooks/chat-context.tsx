@@ -3,6 +3,7 @@ import React, { createContext, useContext, useRef, useState } from "react";
 import {
   defaultPriceToolCallOptions,
   defaultRelevanceToolCallOptions,
+  defaultSearchToolCallOptions,
   useModalState,
 } from "./modal-context";
 import { Chunk } from "../types";
@@ -14,6 +15,7 @@ import {
   ChunkMetadata,
   EventsForTopicResponse,
   RAGAnalyticsResponse,
+  SearchOverGroupsResults,
   ToolFunctionParameter,
 } from "trieve-ts-sdk";
 import { defaultHighlightOptions } from "../highlight";
@@ -258,6 +260,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
+    skipSearch: boolean,
     queryId: string | null,
   ) => {
     setIsLoading(true);
@@ -294,7 +297,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           json = null;
         }
 
-        if (json && props.analytics && !calledAnalytics) {
+        if (json && props.analytics && !calledAnalytics && !skipSearch) {
           calledAnalytics = true;
           const ecommerceChunks = (json as unknown as Chunk[]).filter(
             (chunk) =>
@@ -358,7 +361,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           {
             type: "system",
             text: outputBuffer,
-            additional: json ? json : null,
+            additional: json && !skipSearch ? json : null,
             queryId,
           },
         ]);
@@ -499,33 +502,90 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       imageUrl || curAudioBase64 ? 20000 : 10000,
     );
 
+    let skipSearch = false;
+
     setLoadingText("Thinking about filter criteria...");
     try {
       const priceFiltersPromise = retryOperation(async () => {
         if (props.type === "ecommerce" && !curGroup) {
+          return await trieveSDK.getToolCallFunctionParams(
+            {
+              user_message_text: questionProp || currentQuestion,
+              image_url: imageUrl ? imageUrl : null,
+              audio_input: curAudioBase64 ? curAudioBase64 : null,
+              tool_function: {
+                name: "get_price_filters",
+                description:
+                  props.priceToolCallOptions?.toolDescription ??
+                  defaultPriceToolCallOptions.toolDescription,
+                parameters: [
+                  {
+                    name: "min_price",
+                    parameter_type: "number",
+                    description: (props.priceToolCallOptions
+                      ?.minPriceDescription ??
+                      defaultPriceToolCallOptions.minPriceDescription) as string,
+                  },
+                  {
+                    name: "max_price",
+                    parameter_type: "number",
+                    description: (props.priceToolCallOptions
+                      ?.maxPriceDescription ??
+                      defaultPriceToolCallOptions.maxPriceDescription) as string,
+                  },
+                ],
+              },
+            },
+            chatMessageAbortController.current.signal,
+          );
+        } else {
+          return {
+            parameters: null,
+          };
+        }
+      });
+
+      const skipSearchPromise = retryOperation(async () => {
+        if (props.type === "ecommerce" && !curGroup && messages.length > 1) {
           return await trieveSDK.getToolCallFunctionParams({
-            user_message_text: questionProp || currentQuestion,
+            user_message_text: `Here's the previous message thread so far: ${messages.map(
+              (message) => {
+                if (
+                  message.type === "system" &&
+                  message.additional?.length &&
+                  props.type === "ecommerce"
+                ) {
+                  const chunks = message.additional
+                    .map((chunk) => {
+                      return JSON.stringify({
+                        title: chunk.metadata?.title || "",
+                        description: chunk.chunk_html || "",
+                        price: chunk.num_value
+                          ? `${props.defaultCurrency || ""} ${chunk.num_value}`
+                          : "",
+                        link: chunk.link || "",
+                      });
+                    })
+                    .join("\n\n");
+                  return `\n\n${chunks}${message.text}`;
+                } else {
+                  return `\n\n${message.text}`;
+                }
+              },
+            )} \n\n${props.searchToolCallOptions?.userMessageTextPrefix ?? defaultSearchToolCallOptions.userMessageTextPrefix}: ${questionProp || currentQuestion}.`,
             image_url: imageUrl ? imageUrl : null,
             audio_input: curAudioBase64 ? curAudioBase64 : null,
             tool_function: {
-              name: "get_price_filters",
+              name: "skip_search",
               description:
-                props.priceToolCallOptions?.toolDescription ??
-                defaultPriceToolCallOptions.toolDescription,
+                props.searchToolCallOptions?.toolDescription ??
+                (defaultSearchToolCallOptions.toolDescription as string),
               parameters: [
                 {
-                  name: "min_price",
-                  parameter_type: "number",
-                  description: (props.priceToolCallOptions
-                    ?.minPriceDescription ??
-                    defaultPriceToolCallOptions.minPriceDescription) as string,
-                },
-                {
-                  name: "max_price",
-                  parameter_type: "number",
-                  description: (props.priceToolCallOptions
-                    ?.maxPriceDescription ??
-                    defaultPriceToolCallOptions.maxPriceDescription) as string,
+                  name: "skip_search",
+                  parameter_type: "boolean",
+                  description:
+                    "Set to true if the query is asking about products which were shown to them previously in the message thread only incldue if they are referenced by name. Set to false if the query is asking about the general catalog products or for different/other products differing from the ones shown previously. Only set this to true if the query contains a title that was in the previous messages",
                 },
               ],
             },
@@ -586,10 +646,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      const [priceFiltersResp, tagFiltersResp] = await Promise.all([
-        priceFiltersPromise,
-        tagFiltersPromise,
-      ]);
+      const [priceFiltersResp, tagFiltersResp, skipSearchResp] =
+        await Promise.all([
+          priceFiltersPromise,
+          tagFiltersPromise,
+          skipSearchPromise,
+        ]);
 
       if (transcribedQuery && curAudioBase64) {
         questionProp = transcribedQuery;
@@ -613,6 +675,15 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             },
           ];
         });
+      }
+
+      if (skipSearchResp?.parameters) {
+        const needsSearchParam = (skipSearchResp.parameters as any)[
+          "skip_search"
+        ];
+        if (typeof needsSearchParam === "boolean" && needsSearchParam) {
+          skipSearch = true;
+        }
       }
 
       const match_any_tags = [];
@@ -716,7 +787,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }),
       };
 
-      const chunkIds = await retryOperation(async () => {
+      const chunks = await retryOperation(async () => {
         const fulltextSearchPromise = trieveSDK.searchInGroup(
           {
             query: questionProp || currentQuestion,
@@ -741,23 +812,23 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           fulltextSearchPromise,
           chunksInGroupPromise,
         ]);
-        const chunkIds = fulltextSearchResp.chunks.map(
-          (score_chunk) => score_chunk.chunk.id,
+        const chunks = fulltextSearchResp.chunks.map(
+          (score_chunk) => score_chunk.chunk,
         );
-        if (!chunkIds.length) {
-          chunkIds.push(...chunksInGroupResp.chunks.map((chunk) => chunk.id));
+        if (!chunks.length) {
+          chunks.push(...chunksInGroupResp.chunks);
         }
-        return chunkIds;
+        return chunks;
       });
       createMessageFilters = {
         must: [
           {
             field: "ids",
-            match_any: chunkIds,
+            match_any: chunks.map((c) => c.id),
           },
         ],
       };
-    } else {
+    } else if (!skipSearch) {
       try {
         setLoadingText("Searching for relevant products...");
         const searchOverGroupsResp = await retryOperation(async () => {
@@ -783,13 +854,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             "AbortError timeout on relevanceToolCall",
           );
         }, 5000);
-        const highlyRelevantGroupIds: string[] = [];
-        const mediumRelevantGroupIds: string[] = [];
-        const lowlyRelevantGroupIds: string[] = [];
+        const highlyRelevantResults: SearchOverGroupsResults[] = [];
+        const mediumRelevantResults: SearchOverGroupsResults[] = [];
+        const lowlyRelevantResults: SearchOverGroupsResults[] = [];
         const rankingPromises = searchOverGroupsResp.results.map(
-          async (group) => {
-            const firstChunk = group.chunks.length
-              ? (group.chunks[0].chunk as ChunkMetadata)
+          async (result) => {
+            const firstChunk = result.chunks.length
+              ? (result.chunks[0].chunk as ChunkMetadata)
               : null;
             const imageUrls = props.relevanceToolCallOptions?.includeImages
               ? (
@@ -867,46 +938,47 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               });
 
               if ((relevanceToolCallResp.parameters as any)["high"] == true) {
-                highlyRelevantGroupIds.push(group.group.id);
+                highlyRelevantResults.push(result);
               } else if (
                 (relevanceToolCallResp.parameters as any)["medium"] == true
               ) {
-                mediumRelevantGroupIds.push(group.group.id);
+                mediumRelevantResults.push(result);
               } else if (
                 (relevanceToolCallResp.parameters as any)["low"] == true
               ) {
-                lowlyRelevantGroupIds.push(group.group.id);
+                lowlyRelevantResults.push(result);
               }
             });
           },
         );
-        await Promise.all(rankingPromises);
+        try {
+          await Promise.all(rankingPromises);
+        } catch (e) {
+          console.error("error with relevance tool call promise.all", e);
+        }
         setLoadingText("Finished verifying relevance");
         clearTimeout(relevanceToolCallTimeout);
-        let groupIdsToUse = highlyRelevantGroupIds;
+        let resultsToUse = highlyRelevantResults;
 
-        if (highlyRelevantGroupIds.length > 1) {
-          groupIdsToUse = [...highlyRelevantGroupIds];
-        } else if (highlyRelevantGroupIds.length === 1) {
-          groupIdsToUse = [
-            ...highlyRelevantGroupIds,
-            ...mediumRelevantGroupIds,
-          ];
+        if (highlyRelevantResults.length > 1) {
+          resultsToUse = [...highlyRelevantResults];
+        } else if (highlyRelevantResults.length === 1) {
+          resultsToUse = [...highlyRelevantResults, ...mediumRelevantResults];
         } else if (
-          highlyRelevantGroupIds.length === 0 &&
-          mediumRelevantGroupIds.length > 0
+          highlyRelevantResults.length === 0 &&
+          mediumRelevantResults.length > 0
         ) {
-          groupIdsToUse = mediumRelevantGroupIds;
-        } else if (lowlyRelevantGroupIds.length > 0) {
-          groupIdsToUse = [...lowlyRelevantGroupIds];
+          resultsToUse = mediumRelevantResults;
+        } else if (lowlyRelevantResults.length > 0) {
+          resultsToUse = [...lowlyRelevantResults];
         }
 
-        const topGroupIds = groupIdsToUse.slice(0, 8);
+        const topResults = resultsToUse.slice(0, 8);
         createMessageFilters = {
           must: [
             {
               field: "group_ids",
-              match_any: topGroupIds,
+              match_any: topResults.map((result) => result.group.id),
             },
           ],
         };
@@ -947,6 +1019,20 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       try {
         if (createMessageFilters == null) {
           createMessageFilters = filters;
+        }
+
+        if (skipSearch) {
+          createMessageFilters = {
+            must: [
+              {
+                field: "ids",
+                match_any: messages
+                  .filter((msg) => msg.type == "system")
+                  .flatMap((msg) => msg.additional ?? [])
+                  .map((chunk) => chunk.id),
+              },
+            ],
+          };
         }
 
         const createMessageResp =
@@ -1029,7 +1115,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       ]);
     }
 
-    if (reader) handleReader(reader, queryId);
+    if (reader) handleReader(reader, skipSearch, queryId);
 
     if (imageUrl) {
       setImageUrl("");

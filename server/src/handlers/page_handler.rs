@@ -201,6 +201,16 @@ pub struct PriceToolCallOptions {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct SearchToolCallOptions {
+    pub tool_description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_prompt: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub no_search_rag_context: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct TagProp {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
@@ -266,6 +276,8 @@ pub struct PublicPageParameters {
     pub relevance_tool_call_options: Option<RelevanceToolCallOptions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub price_tool_call_options: Option<PriceToolCallOptions>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_tool_call_options: Option<SearchToolCallOptions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_queries: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
