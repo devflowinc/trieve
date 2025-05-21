@@ -1,25 +1,29 @@
 import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { Box } from "@shopify/polaris";
+import { Box, Tabs, LegacyCard, Card } from "@shopify/polaris";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { sdkFromKey, validateTrieveAuth } from "app/auth";
 import {
   DatasetSettings as DatasetSettings,
   ExtendedCrawlOptions,
-} from "app/components/DatasetSettings";
+} from "app/components/settings/DatasetSettings";
 import { useTrieve } from "app/context/trieveContext";
-import { AdminApiCaller } from "app/loaders";
 import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 import { sendChunks } from "app/processors/getProducts";
 import { shopDatasetQuery } from "app/queries/shopDataset";
 import { authenticate } from "app/shopify.server";
 import { type Dataset } from "trieve-ts-sdk";
-import { AppInstallData } from "./app.setup";
 import { ResetSettings } from "app/components/ResetSettings";
 import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
 import { JudgeMeSetup } from "app/components/judgeme/JudgeMeSetup";
 import { getAppMetafields, setAppMetafields } from "app/queries/metafield";
-
+import { useState, useCallback, ReactNode } from "react";
+import { LLMSettings } from "app/components/settings/LLMSettings";
+import {
+  PresetQuestion,
+  PresetQuestions,
+} from "app/components/settings/PresetQuestions";
+import { FilterSettings } from "app/components/settings/FilterSettings";
 
 export const loader = async ({
   request,
@@ -28,6 +32,7 @@ export const loader = async ({
   webPixelInstalled: boolean;
   devMode: boolean;
   pdpPrompt: string;
+  presetQuestions: PresetQuestion[];
 }> => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
@@ -40,12 +45,12 @@ export const loader = async ({
     {
       key: "dataset_id",
       value: key.currentDatasetId || "",
-      type:"single_line_text_field"
+      type: "single_line_text_field",
     },
     {
       key: "api_key",
       value: key.key,
-      type:"single_line_text_field"
+      type: "single_line_text_field",
     },
   ]).catch(console.error);
 
@@ -60,15 +65,21 @@ export const loader = async ({
 
   const webPixelInstalled = await isWebPixelInstalled(fetcher, key);
 
-  const devMode = await getAppMetafields<boolean>(fetcher, "dev_mode") || false;
-  const pdpPrompt = await getAppMetafields<string>(fetcher, "pdp_prompt") || "";
+  const devMode =
+    (await getAppMetafields<boolean>(fetcher, "dev_mode")) || false;
+  const pdpPrompt =
+    (await getAppMetafields<string>(fetcher, "pdp_prompt")) || "";
+  const presetQuestions =
+    (await getAppMetafields<PresetQuestion[]>(fetcher, "preset_questions")) ||
+    [];
   return {
     crawlSettings: crawlSettings?.crawlSettings,
     webPixelInstalled,
     devMode,
     pdpPrompt,
+    presetQuestions,
   };
-}
+};
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -109,12 +120,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       {
         key: "dataset_id",
         value: key.currentDatasetId || "",
-        type:"single_line_text_field"
+        type: "single_line_text_field",
       },
       {
         key: "api_key",
         value: key.key,
-        type:"single_line_text_field"
+        type: "single_line_text_field",
       },
     ]).catch(console.error);
 
@@ -141,6 +152,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   } else if (type === "revenue_tracking") {
     await createWebPixel(fetcher, key);
     return { success: true };
+  } else if (type === "preset-questions") {
+    const presetQuestions = formData.get("presetQuestions")?.toString() || "";
+    await setAppMetafields(fetcher, [
+      {
+        key: "preset_questions",
+        value: presetQuestions,
+        type: "json",
+      },
+    ]);
+    return { success: true };
   }
   return { success: false };
 };
@@ -148,23 +169,80 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Dataset() {
   const { trieve } = useTrieve();
   const { data: shopDataset } = useSuspenseQuery(shopDatasetQuery(trieve));
-  const { crawlSettings, webPixelInstalled, devMode, pdpPrompt } = useLoaderData<typeof loader>();
+  const {
+    crawlSettings,
+    webPixelInstalled,
+    devMode,
+    pdpPrompt,
+    presetQuestions,
+  } = useLoaderData<typeof loader>();
+  const [selectedTab, setSelectedTab] = useState(0);
+
+  const handleTabChange = useCallback(
+    (selectedTabIndex: number) => setSelectedTab(selectedTabIndex),
+    [],
+  );
+
+  const tabs = [
+    {
+      id: "preset-questions",
+      content: "Preset Questions",
+      accessibilityLabel: "Preset Questions",
+      panelID: "preset-questions-content",
+    },
+    {
+      id: "filter-settings",
+      content: "Filter Settings",
+      accessibilityLabel: "Filter Settings",
+      panelID: "filter-settings-content",
+    },
+    {
+      id: "llm-settings",
+      content: "LLM Settings",
+      accessibilityLabel: "LLM Settings",
+      panelID: "llm-settings-content",
+    },
+    {
+      id: "dataset-settings",
+      content: "Dataset Settings",
+      accessibilityLabel: "Dataset Settings",
+      panelID: "dataset-settings-content",
+    },
+  ];
+
+  const tabPanels: Record<string, ReactNode> = {
+    "dataset-settings": (
+      <>
+        <DatasetSettings
+          initalCrawlOptions={crawlSettings as ExtendedCrawlOptions}
+          shopifyDatasetSettings={{
+            devMode,
+            webPixelInstalled,
+          }}
+          shopDataset={shopDataset as Dataset}
+        />
+        <div className="h-4"></div>
+        <JudgeMeSetup />
+        <div className="h-4"></div>
+        <ResetSettings />
+      </>
+    ),
+    "llm-settings": (
+      <LLMSettings
+        shopDataset={shopDataset as Dataset}
+        existingPdpPrompt={pdpPrompt}
+      />
+    ),
+    "preset-questions": <PresetQuestions initialQuestions={presetQuestions} />,
+    "filter-settings": <FilterSettings />,
+  };
 
   return (
     <Box paddingBlockStart="400">
-      <DatasetSettings
-        initalCrawlOptions={crawlSettings as ExtendedCrawlOptions}
-        shopifyDatasetSettings={{
-          devMode,
-          webPixelInstalled,
-          pdpPrompt,
-        }}
-        shopDataset={shopDataset as Dataset}
-      />
-      <div className="h-4"></div>
-      <JudgeMeSetup />
-      <div className="h-4"></div>
-      <ResetSettings />
+      <Card>
+        <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
+        {tabPanels[tabs[selectedTab].id]}
+      </Card>
     </Box>
   );
 }

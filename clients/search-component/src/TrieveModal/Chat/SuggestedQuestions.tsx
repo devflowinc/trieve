@@ -1,7 +1,11 @@
 import React from "react";
 import { useSuggestedQuestions } from "../../utils/hooks/useSuggestedQuestions";
 import { useChatState } from "../../utils/hooks/chat-context";
-import { useModalState } from "../../utils/hooks/modal-context";
+import {
+  AiQuestion,
+  isAiQuestion,
+  useModalState,
+} from "../../utils/hooks/modal-context";
 import { cn } from "../../utils/styles";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { ArrowRotateRightIcon, SparklesIcon } from "../icons";
@@ -23,9 +27,14 @@ export const SuggestedQuestions = ({
     return null;
   }
 
-  const handleSuggestedQuestion = async (q: string) => {
-    setCurrentQuestion(q);
-    askQuestion(q);
+  const handleSuggestedQuestion = async (q: string | AiQuestion) => {
+    console.log("handleSuggestedQuestion", q);
+    setCurrentQuestion(isAiQuestion(q) ? q.questionText : q);
+    askQuestion(
+      isAiQuestion(q) ? q.questionText : q,
+      undefined,
+      isAiQuestion(q) ? (q.products?.map((p) => p.groupId) ?? []) : undefined,
+    );
 
     const requestId =
       messages[messages.length - 1]?.queryId ??
@@ -79,7 +88,7 @@ export const SuggestedQuestions = ({
               />
             </button>
           )}{" "}
-          {!suggestedQuestions.length && (
+          {!suggestedQuestions?.length && (
             <span className="suggested-question tv-text-nowrap empty-state-loading">
               Loading example questions...
             </span>
@@ -89,13 +98,13 @@ export const SuggestedQuestions = ({
               onClick={() => {
                 handleSuggestedQuestion(q);
               }}
-              key={q}
+              key={isAiQuestion(q) ? q.questionText : q}
               className={`suggested-question tv-flex tv-gap-1 tv-items-center${
                 isLoadingSuggestedQueries ? " loading" : ""
               }`}
             >
               <SparklesIcon fill="none" width={15} height={15} />
-              {q}
+              {isAiQuestion(q) ? q.questionText : q}
             </button>
           ))}
         </div>

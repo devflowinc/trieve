@@ -50,21 +50,17 @@ function App() {
     try {
       const result = await trieve.scroll({
         filters: {
-          "should": [
+          should: [
             {
-              "field": "tag_set",
-              "match_all": [
-                `${productId}-pdp-content`
-              ],
+              field: "tag_set",
+              match_all: [`${productId}-pdp-content`],
             },
             {
-              "tracking_ids": [
-                `${productId}-pdp-content`
-              ]
-            }
-          ]
+              tracking_ids: [`${productId}-pdp-content`],
+            },
+          ],
         },
-        page_size: 20
+        page_size: 20,
       });
       if (!result) {
         setExtraContent([]);
@@ -120,10 +116,7 @@ function App() {
     // Check if chunk.chunk_metadata is a list
     if (!Array.isArray(chunk.chunk_metadata)) {
       setExtraContent((prev) => {
-        return [
-          chunk.chunk_metadata,
-          ...prev,
-        ]
+        return [chunk.chunk_metadata, ...prev];
       });
       setShowSuccess(true);
     }
@@ -145,20 +138,19 @@ function App() {
     }
   }, [extraContent]);
 
-
   const upsertContent = (chunk: ChunkMetadata) => {
     setIndexBeingEdited(null);
     if (chunk.id != "") {
       trieve.updateChunk({
         chunk_id: chunk.id,
-        chunk_html: chunk.chunk_html
-      })
+        chunk_html: chunk.chunk_html,
+      });
     } else if (productId) {
       trieve.createChunk({
         chunk_html: chunk.chunk_html,
         tag_set: [`${productId}-pdp-content`],
         group_tracking_ids: [productId],
-      })
+      });
     }
   };
 
@@ -171,8 +163,7 @@ function App() {
           </Banner>
         )}
         <InlineStack inlineAlignment="space-between" blockAlignment="center">
-          <Box 
-            inlineSize="80%">
+          <Box inlineSize="80%">
             <Text>Product context for the AI</Text>
           </Box>
           <InlineStack
@@ -180,10 +171,7 @@ function App() {
             inlineAlignment="end"
             gap="base base"
           >
-            <Button
-              disabled={aiLoading}
-              onPress={generateAIDescription}
-            >
+            <Button disabled={aiLoading} onPress={generateAIDescription}>
               <InlineStack blockAlignment="center">
                 <Icon name="WandMinor" />
                 {aiLoading ? "Generating..." : "Generate AI Context"}
@@ -201,7 +189,7 @@ function App() {
                     created_at: "",
                     updated_at: "",
                     dataset_id: "",
-                    weight: 1 // Just to make the lsp stop
+                    weight: 1, // Just to make the lsp stop
                   },
                   ...prev,
                 ]);
@@ -218,7 +206,7 @@ function App() {
         </InlineStack>
         <Box>
           {content.map((chunk, index) => {
-            if (index != (currentPage - 1)) {
+            if (index != currentPage - 1) {
               return null;
             }
 
@@ -240,10 +228,13 @@ function App() {
                         value={chunk.chunk_html ?? ""}
                         onChange={(value) => {
                           // updateContent(index, value);
-                          setContent((prevContent) => prevContent.map((prevChunk) => prevChunk.id == chunk.id
-                            ? { ...prevChunk, chunk_html: value }
-                            : prevChunk
-                          ))
+                          setContent((prevContent) =>
+                            prevContent.map((prevChunk) =>
+                              prevChunk.id == chunk.id
+                                ? { ...prevChunk, chunk_html: value }
+                                : prevChunk,
+                            ),
+                          );
                         }}
                       />
                     ) : (
@@ -280,10 +271,13 @@ function App() {
                           <Button
                             onClick={() => {
                               trieve.deleteChunkById({
-                                chunkId: chunk.id
+                                chunkId: chunk.id,
                               });
-                              setContent((prevContent) => prevContent.filter((prevChunk) => prevChunk.id != chunk.id
-                              ))
+                              setContent((prevContent) =>
+                                prevContent.filter(
+                                  (prevChunk) => prevChunk.id != chunk.id,
+                                ),
+                              );
                               if (index === content.length - 1) {
                                 setCurrentPage((prev) => prev - 1);
                               }
@@ -317,7 +311,9 @@ function App() {
             blockAlignment="center"
             inlineAlignment="center"
           >
-            <Text>{currentPage} / {content.length}</Text>
+            <Text>
+              {currentPage} / {content.length}
+            </Text>
           </InlineStack>
           <Button
             onPress={() => setCurrentPage((prev) => prev + 1)}

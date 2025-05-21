@@ -76,7 +76,6 @@ export const defaultServerEnvsConfiguration: DatasetConfig = {
 export interface ShopifyDatasetSettings {
   webPixelInstalled: boolean;
   devMode: boolean;
-  pdpPrompt: string;  
 }
 
 export const DatasetSettings = ({
@@ -95,31 +94,25 @@ export const DatasetSettings = ({
   const [datasetSettings, setDatasetSettings] = useState<DatasetConfig>(
     shopDataset.server_configuration ?? ({} as DatasetConfig),
   );
-  const [pdpPrompt, setPdpPrompt] = useState(shopifyDatasetSettings.pdpPrompt ?? "");
 
   const adminApi = useClientAdminApi();
-
 
   const [devModeEnabled, setDevModeEnabled] = useState(
     shopifyDatasetSettings.devMode ?? false,
   );
 
-
-  const handleToggle = useCallback(
-    () =>{ 
-      setDevModeEnabled((enabled) => {
-        setAppMetafields(adminApi, [
-          {
-            key: "dev_mode",
-            value: (!enabled).toString(),
-            type: "boolean",
-          },
-        ]);
-        return !enabled
-      })
-    },
-    [devModeEnabled],
-  )
+  const handleToggle = useCallback(() => {
+    setDevModeEnabled((enabled) => {
+      setAppMetafields(adminApi, [
+        {
+          key: "dev_mode",
+          value: (!enabled).toString(),
+          type: "boolean",
+        },
+      ]);
+      return !enabled;
+    });
+  }, [devModeEnabled]);
 
   useEffect(() => {
     // Quickly set the nonnegotiable options for shopify to work
@@ -155,22 +148,6 @@ export const DatasetSettings = ({
     );
 
     shopify.toast.show("Started crawl!");
-  };
-
-  const onLLMSettingsSave = async () => {
-    submit(
-      {
-        dataset_settings: JSON.stringify(datasetSettings),
-        pdp_prompt: pdpPrompt,
-        dataset_id: shopDataset.id,
-        type: "dataset",
-      },
-      {
-        method: "POST",
-      },
-    );
-
-    shopify.toast.show("Saved LLM settings!");
   };
 
   const onRevenueTrackingSettingsSave = async () => {
@@ -263,97 +240,6 @@ export const DatasetSettings = ({
               </Text>
             </BlockStack>
           </FormLayout>
-        </BlockStack>
-      </Card>
-      <Card>
-        <BlockStack gap="200">
-          <Text variant="headingLg" as="h1">
-            LLM Settings
-          </Text>
-          <FormLayout>
-            <Select
-              label="LLM API Url"
-              helpText="The URL of the LLM API to use"
-              options={[
-                {
-                  label: "https://api.openai.com/v1",
-                  value: "https://api.openai.com/v1",
-                },
-                {
-                  label: "https://openrouter.ai/api/v1",
-                  value: "https://openrouter.ai/api/v1",
-                },
-              ]}
-              value={datasetSettings.LLM_BASE_URL ?? ""}
-              onChange={(e) =>
-                setDatasetSettings({
-                  ...datasetSettings,
-                  LLM_BASE_URL: e,
-                })
-              }
-            />
-            <TextField
-              label="LLM API Key"
-              helpText="The API key to use for the LLM API"
-              value={datasetSettings.LLM_API_KEY ?? ""}
-              onChange={(e) =>
-                setDatasetSettings({
-                  ...datasetSettings,
-                  LLM_API_KEY: e,
-                })
-              }
-              autoComplete="off"
-            />
-            <TextField
-              label="LLM Default Model"
-              helpText="Use this prompt to set the personality, tone, and goals of the model."
-              value={datasetSettings.LLM_DEFAULT_MODEL ?? ""}
-              onChange={(e) =>
-                setDatasetSettings({
-                  ...datasetSettings,
-                  LLM_DEFAULT_MODEL: e,
-                })
-              }
-              autoComplete="off"
-            />
-            <TextField
-              label="System Prompt"
-              helpText="The system prompt to guide the RAG model"
-              value={datasetSettings.SYSTEM_PROMPT ?? ""}
-              multiline={5}
-              onChange={(e) =>
-                setDatasetSettings({
-                  ...datasetSettings,
-                  SYSTEM_PROMPT: e,
-                })
-              }
-              autoComplete="off"
-            />
-            <TextField
-              label="PDP Prompt"
-              helpText="The system prompt to guide the RAG model for the PDP pages (Will override the system prompt for PDP pages)"
-              value={pdpPrompt}
-              multiline={5}
-              onChange={(e) => setPdpPrompt(e)}
-              autoComplete="off"
-            />
-            <TextField
-              label="Context Prompt"
-              helpText="Use this prompt to tell the model how strictly it needs to follow or how it should generally handle the context (your product descriptions, metadata, photos, etc.)."
-              value={datasetSettings.RAG_PROMPT ?? ""}
-              multiline={5}
-              onChange={(e) =>
-                setDatasetSettings({
-                  ...datasetSettings,
-                  RAG_PROMPT: e,
-                })
-              }
-              autoComplete="off"
-            />
-          </FormLayout>
-          <InlineStack align="end">
-            <Button onClick={onLLMSettingsSave}>Save</Button>
-          </InlineStack>
         </BlockStack>
       </Card>
       <Card>

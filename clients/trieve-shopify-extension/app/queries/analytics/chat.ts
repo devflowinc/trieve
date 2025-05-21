@@ -26,7 +26,7 @@ export const topicsUsageQuery = (
 ) => {
   return {
     queryKey: ["topicsUsage", filters, granularity],
-    queryFn: async () => {      
+    queryFn: async () => {
       const result = await trieve.getRagAnalytics({
         filter: filters,
         type: "topics_over_time",
@@ -37,8 +37,6 @@ export const topicsUsageQuery = (
     },
   } satisfies QueryOptions;
 };
-
-
 
 export const topicsCTRRateQuery = (
   trieve: TrieveSDK,

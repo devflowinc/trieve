@@ -1,9 +1,15 @@
-import { Box, Button, Card, FormLayout, Text, Banner, InlineStack, EmptyState } from "@shopify/polaris";
-import { LoaderFunctionArgs } from "@remix-run/node";
-import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
-import { authenticate } from "app/shopify.server";
+import * as React from "react";
+import {
+  Box,
+  Button,
+  Card,
+  FormLayout,
+  Text,
+  Banner,
+  InlineStack,
+  EmptyState,
+} from "@shopify/polaris";
 import { getAppMetafields, setAppMetafields } from "app/queries/metafield";
-import { useFetcher } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import { useClientAdminApi } from "app/loaders/clientLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,22 +38,31 @@ export interface FilterSidebarProps {
   sections: FilterSidebarSection[];
 }
 
-export default function Filters() {
+export function FilterSettings() {
   const adminApi = useClientAdminApi();
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const { data: filterSettings, isLoading, isError } = useQuery({
+  const {
+    data: filterSettings,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["filter_settings"],
     queryFn: async () => {
-      const filterSettings = await getAppMetafields<FilterSidebarProps>(adminApi, "trieve_filter_settings");
+      const filterSettings = await getAppMetafields<FilterSidebarProps>(
+        adminApi,
+        "trieve_filter_settings",
+      );
       return filterSettings || { sections: [] };
     },
   });
 
-  const [filterSections, setFilterSections] = useState<FilterSidebarSection[]>([]);
+  const [filterSections, setFilterSections] = useState<FilterSidebarSection[]>(
+    [],
+  );
 
   useEffect(() => {
     if (filterSettings) {
@@ -59,15 +74,14 @@ export default function Filters() {
     mutationFn: async (sections: FilterSidebarSection[]) => {
       const filterSidebarProps = {
         sections: sections,
-      }
-      return await setAppMetafields(
-        adminApi,
-        [{
+      };
+      return await setAppMetafields(adminApi, [
+        {
           key: "trieve_filter_settings",
           value: JSON.stringify(filterSidebarProps),
           type: "json",
-        }],
-      );
+        },
+      ]);
     },
     onMutate: () => {
       setIsSaving(true);
@@ -78,7 +92,7 @@ export default function Filters() {
       setIsSaving(false);
       setSaveSuccess(true);
       queryClient.invalidateQueries({ queryKey: ["filter_settings"] });
-      
+
       setTimeout(() => {
         setSaveSuccess(false);
       }, 3000);
@@ -86,25 +100,28 @@ export default function Filters() {
     onError: (error) => {
       setIsSaving(false);
       setSaveError(error.toString());
-    }
+    },
   });
 
   const handleSaveFilters = () => {
-    const sectionsWithKeys = filterSections.map(section => {
+    const sectionsWithKeys = filterSections.map((section) => {
       if (!section.key) {
         return {
           ...section,
-          key: section.title.toLowerCase().replace(/ /g, "-")
+          key: section.title.toLowerCase().replace(/ /g, "-"),
         };
       }
       return section;
     });
-    
+
     setFilterSections(sectionsWithKeys);
     saveFilterSettings.mutate(sectionsWithKeys);
   };
 
-  const handleSectionChange = (index: number, updatedSection: FilterSidebarSection) => {
+  const handleSectionChange = (
+    index: number,
+    updatedSection: FilterSidebarSection,
+  ) => {
     const updatedSections = [...filterSections];
     updatedSections[index] = updatedSection;
     setFilterSections(updatedSections);
@@ -126,7 +143,7 @@ export default function Filters() {
         selectionType: "single",
         filterType: "match_any",
         options: [],
-      }
+      },
     ]);
   };
 
@@ -135,7 +152,9 @@ export default function Filters() {
       <Box paddingBlockStart="400">
         <Card>
           <Box padding="400">
-            <Text variant="headingMd" as="h1">Loading filter settings...</Text>
+            <Text variant="headingMd" as="h1">
+              Loading filter settings...
+            </Text>
           </Box>
         </Card>
       </Box>
@@ -161,7 +180,7 @@ export default function Filters() {
           </Banner>
         </Box>
       )}
-      
+
       {saveError && (
         <Box paddingBlockEnd="400">
           <Banner tone="critical" onDismiss={() => setSaveError("")}>
@@ -176,9 +195,9 @@ export default function Filters() {
             <Text variant="headingLg" as="h1">
               Filter Configuration
             </Text>
-            <Button 
+            <Button
               variant="primary"
-              onClick={handleSaveFilters} 
+              onClick={handleSaveFilters}
               loading={isSaving}
             >
               Save Filters
@@ -193,7 +212,7 @@ export default function Filters() {
             <EmptyState
               heading="Configure your filters"
               action={{
-                content: 'Add Filter',
+                content: "Add Filter",
                 onAction: addNewSection,
               }}
               image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
@@ -204,18 +223,18 @@ export default function Filters() {
         ) : (
           <FormLayout>
             {filterSections.map((section, index) => (
-              <FilterBlock 
-                key={section.key || index} 
-                section={section} 
-                onChange={(updatedSection: FilterSidebarSection) => handleSectionChange(index, updatedSection)}
+              <FilterBlock
+                key={section.key || index}
+                section={section}
+                onChange={(updatedSection: FilterSidebarSection) =>
+                  handleSectionChange(index, updatedSection)
+                }
                 onDelete={() => handleSectionDelete(index)}
               />
             ))}
-            
+
             <Box paddingBlockStart="400">
-              <Button onClick={addNewSection}>
-                + Add Filter
-              </Button>
+              <Button onClick={addNewSection}>+ Add Filter</Button>
             </Box>
           </FormLayout>
         )}
