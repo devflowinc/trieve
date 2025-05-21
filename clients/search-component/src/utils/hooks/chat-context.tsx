@@ -3,6 +3,7 @@ import React, { createContext, useContext, useRef, useState } from "react";
 import {
   defaultPriceToolCallOptions,
   defaultRelevanceToolCallOptions,
+  defaultSearchToolCallOptions,
   useModalState,
 } from "./modal-context";
 import { Chunk } from "../types";
@@ -88,18 +89,18 @@ const ChatContext = createContext<{
   rateChatCompletion: (isPositive: boolean, queryId: string | null) => void;
   productsWithClicks: ChunkIdWithIndex[];
 }>({
-  askQuestion: async () => {},
+  askQuestion: async () => { },
   currentQuestion: "",
   isLoading: false,
   loadingText: "",
   messages: [],
-  setCurrentQuestion: () => {},
-  cancelGroupChat: () => {},
-  clearConversation: () => {},
-  chatWithGroup: () => {},
-  switchToChatAndAskQuestion: async () => {},
-  stopGeneratingMessage: () => {},
-  rateChatCompletion: () => {},
+  setCurrentQuestion: () => { },
+  cancelGroupChat: () => { },
+  clearConversation: () => { },
+  chatWithGroup: () => { },
+  switchToChatAndAskQuestion: async () => { },
+  stopGeneratingMessage: () => { },
+  rateChatCompletion: () => { },
   productsWithClicks: [],
 });
 
@@ -258,8 +259,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
+    shouldSearch: boolean,
     queryId: string | null,
   ) => {
+    console.log("streaming back")
     setIsLoading(true);
     setIsDoneReading(false);
     let done = false;
@@ -294,7 +297,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           json = null;
         }
 
-        if (json && props.analytics && !calledAnalytics) {
+        if (json && props.analytics && !calledAnalytics && shouldSearch) {
           calledAnalytics = true;
           const ecommerceChunks = (json as unknown as Chunk[]).filter(
             (chunk) =>
@@ -358,7 +361,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           {
             type: "system",
             text: outputBuffer,
-            additional: json ? json : null,
+            additional: (json && shouldSearch) ? json : null,
             queryId,
           },
         ]);
@@ -499,6 +502,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       imageUrl || curAudioBase64 ? 20000 : 10000,
     );
 
+    let shouldSearch = true;
+
     setLoadingText("Thinking about filter criteria...");
     try {
       const priceFiltersPromise = retryOperation(async () => {
@@ -529,6 +534,35 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 },
               ],
             },
+          },
+            chatMessageAbortController.current.signal,
+          );
+        } else {
+          return {
+            parameters: null,
+          };
+        }
+      });
+
+      const needsSearchPromise = retryOperation(async () => {
+        if (props.type === "ecommerce" && !curGroup) {
+          return await trieveSDK.getToolCallFunctionParams({
+            user_message_text: `${props.searchToolCallOptions?.searchPrompt ?? defaultSearchToolCallOptions.searchPrompt}. The users question is: "${questionProp || currentQuestion}". `,
+            image_url: imageUrl ? imageUrl : null,
+            audio_input: curAudioBase64 ? curAudioBase64 : null,
+            tool_function: {
+              name: "needs_search",
+              description:
+                props.searchToolCallOptions?.toolDescription ??
+                defaultSearchToolCallOptions.toolDescription as string,
+              parameters: [
+                {
+                  name: "needs_search",
+                  parameter_type: "boolean",
+                  description: "Is search needed?",
+                },
+              ],
+            },
           });
         } else {
           return {
@@ -548,13 +582,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               user_message_text:
                 questionProp || currentQuestion
                   ? `Get filters from the following messages: ${messages
-                      .slice(0, -1)
-                      .filter((message) => {
-                        return message.type == "user";
-                      })
-                      .map(
-                        (message) => `\n\n${message.text}`,
-                      )} \n\n ${questionProp || currentQuestion}`
+                    .slice(0, -1)
+                    .filter((message) => {
+                      return message.type == "user";
+                    })
+                    .map(
+                      (message) => `\n\n${message.text}`,
+                    )} \n\n ${questionProp || currentQuestion}`
                   : null,
               image_url: imageUrl ? imageUrl : null,
               audio_input: curAudioBase64 ? curAudioBase64 : null,
@@ -586,9 +620,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      const [priceFiltersResp, tagFiltersResp] = await Promise.all([
+      const [priceFiltersResp, tagFiltersResp, needsSearch] = await Promise.all([
         priceFiltersPromise,
         tagFiltersPromise,
+        needsSearchPromise
       ]);
 
       if (transcribedQuery && curAudioBase64) {
@@ -613,6 +648,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             },
           ];
         });
+      }
+
+      if (needsSearch?.parameters) {
+        const needsSearchParam = (needsSearch.parameters as any)["needs_search"];
+        if (typeof needsSearchParam === "boolean" && !needsSearchParam) {
+          shouldSearch = false;
+        }
       }
 
       const match_any_tags = [];
@@ -757,7 +799,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           },
         ],
       };
-    } else {
+    } else if (shouldSearch) {
       try {
         setLoadingText("Searching for relevant products...");
         const searchOverGroupsResp = await retryOperation(async () => {
@@ -793,13 +835,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               : null;
             const imageUrls = props.relevanceToolCallOptions?.includeImages
               ? (
-                  (firstChunk?.image_urls?.filter(
-                    (stringOrNull): stringOrNull is string =>
-                      Boolean(stringOrNull),
-                  ) ||
-                    []) ??
-                  []
-                ).splice(0, 1)
+                (firstChunk?.image_urls?.filter(
+                  (stringOrNull): stringOrNull is string =>
+                    Boolean(stringOrNull),
+                ) ||
+                  []) ??
+                []
+              ).splice(0, 1)
               : undefined;
             const jsonOfFirstChunk = {
               title: (firstChunk?.metadata as any)["title"],
@@ -983,6 +1025,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 highlight_results: true,
               },
               only_include_docs_used: false,
+              rag_context: shouldSearch ? undefined : props.searchToolCallOptions?.noSearchRagContext ?? defaultSearchToolCallOptions.noSearchRagContext,
             },
             chatMessageAbortController.current.signal,
             (headers: Record<string, string>) => {
@@ -1029,7 +1072,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       ]);
     }
 
-    if (reader) handleReader(reader, queryId);
+    if (reader) handleReader(reader, shouldSearch, queryId);
 
     if (imageUrl) {
       setImageUrl("");

@@ -92,10 +92,22 @@ export const defaultPriceToolCallOptions: PriceToolCallOptions = {
     "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
 };
 
+export const defaultSearchToolCallOptions: SearchToolCallOptions = {
+  toolDescription: "A tool to determine if a search is needed.",
+  searchPrompt: "Determine if a search is needed. If the user is asking a follow up question, search is not needed. If the user is asking for comparisons, search is not needed. If it is a single word or question about catalog, it is a search",
+  noSearchRagContext: "Answer the users question directly, be kind and helpful if they want support tell them to email the support team. If the user asks for a comparision of the results, generate a markdown table of results."
+};
+
 export interface PriceToolCallOptions {
   toolDescription: string;
   minPriceDescription?: string;
   maxPriceDescription?: string;
+}
+
+export interface SearchToolCallOptions {
+  toolDescription: string;
+  searchPrompt?: string;
+  noSearchRagContext?: string;
 }
 
 export interface FilterSidebarSection {
@@ -148,6 +160,7 @@ export type ModalProps = {
   tags?: TagProp[];
   relevanceToolCallOptions?: RelevanceToolCallOptions;
   priceToolCallOptions?: PriceToolCallOptions;
+  searchToolCallOptions?: SearchToolCallOptions;
   defaultSearchMode?: SearchModes;
   usePagefind?: boolean;
   type?: ModalTypes;
@@ -217,6 +230,7 @@ const defaultProps = {
   baseUrl: "https://api.trieve.ai",
   relevanceToolCallOptions: defaultRelevanceToolCallOptions,
   priceToolCallOptions: defaultPriceToolCallOptions,
+  searchToolCallOptions: defaultSearchToolCallOptions,
   defaultSearchMode: "search" as SearchModes,
   placeholder: "Search...",
   chatPlaceholder: "Ask Anything...",

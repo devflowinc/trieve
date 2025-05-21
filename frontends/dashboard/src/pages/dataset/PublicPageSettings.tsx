@@ -24,6 +24,7 @@ import {
   PublicPageTabMessage,
   RelevanceToolCallOptions,
   SearchOverGroupsResponseBody,
+  SearchToolCallOptions,
 } from "trieve-ts-sdk";
 import FilterSidebarBuilder from "../../components/FilterSidebarBuilder";
 import { DatasetContext } from "../../contexts/DatasetContext";
@@ -77,6 +78,12 @@ export const defaultPriceToolCallOptions: PriceToolCallOptions = {
     "Minimum price of the product. Only set this if a minimum price is mentioned in the query.",
   maxPriceDescription:
     "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
+};
+
+export const defaultSearchToolCallOptions: SearchToolCallOptions = {
+  toolDescription: "A tool to determine if a search is needed.",
+  searchPrompt: "Determine if a search is needed. If the user is asking a follow up question, search is not needed. If the user is asking for comparisons, search is not needed. If it is a single word or question about catalog, it is a search",
+  noSearchRagContext: "Answer the users question directly, be kind and helpful if they want support tell them to email the support team. If the user asks for a comparision of the results, generate a markdown table of results."
 };
 
 const searchTypeOptions = [
@@ -1624,6 +1631,106 @@ const PublicPageControls = () => {
                     setExtraParams(
                       "priceToolCallOptions",
                       "maxPriceDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="my-4">
+          <summary class="cursor-pointer text-sm font-medium">
+            Search Tool Options
+          </summary>
+          <div class="mt-4 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Search Tool Description
+                  </label>
+                  <Tooltip
+                    tooltipText="Description of the search tool provided to the model."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    extraParams.searchToolCallOptions?.toolDescription ||
+                    defaultPriceToolCallOptions.toolDescription
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "searchToolCallOptions",
+                      "toolDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Search Prompt
+                  </label>
+                  <Tooltip
+                    tooltipText="Prompt to the model to use the search tool."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    (extraParams.searchToolCallOptions?.searchPrompt ||
+                      defaultSearchToolCallOptions.searchPrompt) as string
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "searchToolCallOptions",
+                      "searchPrompt",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    No Search Rag Context
+                  </label>
+                  <Tooltip
+                    tooltipText="RAG context to pass to the model when the search tool is not used."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    (extraParams.searchToolCallOptions?.noSearchRagContext ||
+                      defaultSearchToolCallOptions.noSearchRagContext) as string
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "searchToolCallOptions",
+                      "noSearchRagContext",
                       e.currentTarget.value,
                     )
                   }
