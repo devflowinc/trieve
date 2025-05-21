@@ -1,4 +1,12 @@
-import { Button, Card, SkeletonBodyText, Text } from "@shopify/polaris";
+import {
+  BlockStack,
+  Box,
+  Button,
+  Card,
+  InlineStack,
+  SkeletonBodyText,
+  Text,
+} from "@shopify/polaris";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { type ApiType } from "app/api/root";
 import { hc } from "hono/client";
@@ -60,17 +68,35 @@ export const JudgeMeSetup = () => {
 
   return (
     <Card>
-      <Text variant="headingLg" as="h1">
-        Connect Judge.me
-      </Text>
-      <Text variant="bodyMd" as="p">
-        Connect your Judge.me reviews with your products in Trieve. Trieve will
-        use your reviews to inform its responses when answering customer
-        questions about products.
-      </Text>
-
-      <div className="h-3"></div>
-      <div className="flex items-center gap-4">{inner}</div>
+      <BlockStack>
+        <Box width="100%">
+          <BlockStack>
+            <Box width="100%">
+              <InlineStack
+                gap="1200"
+                align="space-between"
+                blockAlign="start"
+                wrap={false}
+              >
+                <label>
+                  <Text variant="headingMd" as="h6">
+                    Judge.me Product Reviews
+                  </Text>
+                </label>
+                <Box minWidth="fit-content">
+                  <InlineStack align="end">{inner}</InlineStack>
+                </Box>
+              </InlineStack>
+            </Box>
+            <BlockStack gap="400">
+              <Text variant="bodyMd" as="p" tone="subdued">
+                Connect your Judge.me account to sync product reviews with
+                Trieve.
+              </Text>
+            </BlockStack>
+          </BlockStack>
+        </Box>
+      </BlockStack>
     </Card>
   );
 };
