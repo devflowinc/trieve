@@ -138,10 +138,7 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
 
     setPresetQuestions(updatedQuestions);
     submitPresetQuestions(updatedQuestions);
-    setEditingQuestionId(null);
-    setIsAddingNewQuestion(false);
-    setEditFormData(defaultQuestionFormData);
-    setSearchedProducts([]);
+    shopify.toast.show("Preset question saved!");
   }, [
     editFormData,
     editingQuestionId,
@@ -208,6 +205,20 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
         const results = await trieve.trieve.searchOverGroups({
           query: searchTerm,
           search_type: "fulltext",
+          filters: {
+            must: [
+              {
+                field: "metadata.status",
+                match_all: ["ACTIVE"],
+              },
+              {
+                field: "metadata.variant_inventory",
+                range: {
+                  gt: 0,
+                },
+              },
+            ],
+          },
         });
 
         const apiResults: Product[] = results.results
@@ -277,7 +288,10 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
             }
             promptForAI={editFormData.promptForAI || ""}
             onPromptForAIChange={(value: string) =>
-              setEditFormData({ ...editFormData, promptForAI: value })
+              setEditFormData({
+                ...editFormData,
+                promptForAI: value.length > 0 ? value : undefined,
+              })
             }
             products={searchedProducts}
             selectedProducts={editFormData.products || []}
@@ -394,7 +408,10 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
               }
               promptForAI={editFormData.promptForAI || ""}
               onPromptForAIChange={(value: string) =>
-                setEditFormData({ ...editFormData, promptForAI: value })
+                setEditFormData({
+                  ...editFormData,
+                  promptForAI: value.length > 0 ? value : undefined,
+                })
               }
               products={searchedProducts}
               selectedProducts={editFormData.products || []}
