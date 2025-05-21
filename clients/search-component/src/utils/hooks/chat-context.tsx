@@ -72,6 +72,7 @@ const ChatContext = createContext<{
     question?: string,
     group?: ChunkGroup,
     groupIds?: string[],
+    systemPrompt?: string,
     displayUserMessage?: boolean,
   ) => Promise<void>;
   isLoading: boolean;
@@ -142,11 +143,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     defaultMatchAnyTags,
     defaultMatchAllTags,
     groupIds,
+    systemPrompt,
   }: {
     question: string;
     defaultMatchAnyTags?: string[];
     defaultMatchAllTags?: string[];
     groupIds?: string[];
+    systemPrompt?: string;
   }) => {
     if (!currentTopic) {
       called.current = true;
@@ -170,6 +173,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           groupIds,
           defaultMatchAnyTags,
           defaultMatchAllTags,
+          systemPrompt,
         });
       } catch (error) {
         console.error("Failed to create topic after multiple retries:", error);
@@ -376,6 +380,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     defaultMatchAnyTags,
     defaultMatchAllTags,
     groupIds,
+    systemPrompt,
   }: {
     id?: string;
     question?: string;
@@ -383,6 +388,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     defaultMatchAnyTags?: string[];
     defaultMatchAllTags?: string[];
     groupIds?: string[];
+    systemPrompt?: string;
   }) => {
     setIsLoading(true);
     let curAudioBase64 = audioBase64;
@@ -860,7 +866,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                     },
                     relevanceToolCallAbortController.current?.signal,
                   );
-
+                console.log("verifying relavance");
                 setLoadingText((prev) => {
                   const contentType =
                     props.type === "ecommerce" ? "product" : "section";
@@ -957,7 +963,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         if (createMessageFilters == null) {
           createMessageFilters = filters;
         }
-
+        const systemPromptToUse =
+          props.systemPrompt && props.systemPrompt !== ""
+            ? props.systemPrompt
+            : systemPrompt
+              ? systemPrompt
+              : undefined;
         const createMessageResp =
           await trieveSDK.createMessageReaderWithQueryId(
             {
@@ -970,10 +981,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               image_urls: imageUrl ? [imageUrl] : [],
               llm_options: {
                 completion_first: false,
-                system_prompt:
-                  props.systemPrompt && props.systemPrompt !== ""
-                    ? props.systemPrompt
-                    : undefined,
+                system_prompt: systemPromptToUse,
               },
               concat_user_messages_query: true,
               user_id: fingerprint,
@@ -1091,6 +1099,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     question?: string,
     group?: ChunkGroup,
     groupIds?: string[],
+    systemPrompt?: string,
     displayUserMessage?: boolean,
   ) => {
     const questionProp = question;
@@ -1179,12 +1188,14 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       await createTopic({
         question: questionProp || currentQuestion,
         groupIds,
+        systemPrompt,
       });
     } else {
       await createQuestion({
         question: questionProp || currentQuestion,
         group,
         groupIds,
+        systemPrompt,
       });
     }
   };

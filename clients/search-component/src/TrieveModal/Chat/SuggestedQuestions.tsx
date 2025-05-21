@@ -34,6 +34,7 @@ export const SuggestedQuestions = ({
       isAiQuestion(q) ? q.questionText : q,
       undefined,
       isAiQuestion(q) ? (q.products?.map((p) => p.groupId) ?? []) : undefined,
+      isAiQuestion(q) ? q.promptForAI : undefined,
     );
 
     const requestId =

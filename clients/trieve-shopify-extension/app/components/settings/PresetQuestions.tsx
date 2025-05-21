@@ -21,8 +21,8 @@ import { ChunkMetadata } from "trieve-ts-sdk";
 export interface PresetQuestion {
   id: string;
   questionText: string;
+  promptForAI?: string;
   products?: Product[];
-  productSearchTerm?: string;
 }
 
 export interface PresetQuestionsProps {
@@ -33,6 +33,7 @@ interface QuestionFormData {
   questionText: string;
   products?: Product[];
   productSearchTerm?: string;
+  promptForAI?: string;
 }
 
 export interface Product {
@@ -48,6 +49,7 @@ const defaultQuestionFormData: QuestionFormData = {
   questionText: "",
   products: [],
   productSearchTerm: "",
+  promptForAI: "",
 };
 
 export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
@@ -117,6 +119,7 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
               ...q,
               questionText: editFormData.questionText,
               products: editFormData.products,
+              promptForAI: editFormData.promptForAI,
               productSearchTerm: "",
             }
           : q,
@@ -126,7 +129,7 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
         id: String(Date.now()),
         questionText: editFormData.questionText,
         products: editFormData.products,
-        productSearchTerm: "",
+        promptForAI: editFormData.promptForAI,
       };
       updatedQuestions = [...presetQuestions, newQuestion];
     } else {
@@ -161,6 +164,7 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
       questionText: question.questionText,
       products: question.products || [],
       productSearchTerm: "",
+      promptForAI: question.promptForAI || "",
     });
     setSearchedProducts([]);
   }, []);
@@ -270,6 +274,10 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
             productSearchTerm={editFormData.productSearchTerm || ""}
             onProductSearchTermChange={(value: string) =>
               setEditFormData({ ...editFormData, productSearchTerm: value })
+            }
+            promptForAI={editFormData.promptForAI || ""}
+            onPromptForAIChange={(value: string) =>
+              setEditFormData({ ...editFormData, promptForAI: value })
             }
             products={searchedProducts}
             selectedProducts={editFormData.products || []}
@@ -383,6 +391,10 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
               productSearchTerm={editFormData.productSearchTerm || ""}
               onProductSearchTermChange={(value: string) =>
                 setEditFormData({ ...editFormData, productSearchTerm: value })
+              }
+              promptForAI={editFormData.promptForAI || ""}
+              onPromptForAIChange={(value: string) =>
+                setEditFormData({ ...editFormData, promptForAI: value })
               }
               products={searchedProducts}
               selectedProducts={editFormData.products || []}

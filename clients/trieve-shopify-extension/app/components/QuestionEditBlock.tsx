@@ -25,7 +25,8 @@ export interface QuestionEditBlockProps {
   onQuestionTextChange: (text: string) => void;
   productSearchTerm: string;
   onProductSearchTermChange: (term: string) => void;
-
+  promptForAI: string;
+  onPromptForAIChange: (prompt: string) => void;
   products: Product[]; // Live search results
   selectedProducts: Product[]; // Products currently selected for THIS question
   onSelectedProductsChange: (updatedSelectedProducts: Product[]) => void;
@@ -41,6 +42,8 @@ export function QuestionEditBlock({
   onQuestionTextChange,
   productSearchTerm,
   onProductSearchTermChange,
+  promptForAI,
+  onPromptForAIChange,
   products: searchedProducts,
   selectedProducts,
   onSelectedProductsChange,
@@ -52,7 +55,6 @@ export function QuestionEditBlock({
     useState<string[]>([]);
   const [isAddProductsSectionExpanded, setIsAddProductsSectionExpanded] =
     useState(selectedProducts.length == 0);
-
   useEffect(() => {
     const idsFromSelectedProductsInSearch = selectedProducts
       .filter((sp) => searchedProducts.some((p) => p.id === sp.id))
@@ -121,8 +123,15 @@ export function QuestionEditBlock({
           value={questionText}
           onChange={onQuestionTextChange}
           autoComplete="off"
-          multiline={2}
           placeholder="e.g., What materials is this product made of?"
+        />
+        <TextField
+          label="Prompt for AI"
+          value={promptForAI}
+          onChange={onPromptForAIChange}
+          autoComplete="off"
+          multiline={2}
+          placeholder="e.g., Use this copy to help generate a response to the preset question."
         />
 
         {/* Section for Displaying Currently Selected Products */}
