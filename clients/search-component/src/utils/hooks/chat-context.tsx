@@ -532,45 +532,51 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       console.log("REFERENCE IMAGE URLS", referenceImageUrls);
       if (useImage) {
         setLoadingText("Editing image...");
-        const editImageResponse = await trieveSDK.editImage({
-          input_images: [
-            {
-              image_src: {
-                url: imageUrl,
-              },
-              file_name: "input_image",
-            },
-            ...(referenceImageUrls?.map((url: string, index: number) => ({
-              image_src: {
-                url,
-              },
-              file_name: `reference_image_${index + 1}`,
-            })) || []),
-          ],
-          prompt:
-            "Using the input image as a base reference, apply the following edit and use the reference images if provided: " +
-            (questionProp || currentQuestion),
-          quality: "medium",
-          n: 1,
-        });
 
-        if (
-          editImageResponse.image_urls &&
-          editImageResponse.image_urls.length > 0
-        ) {
-          setMessages((m) => [
-            ...m.slice(0, -1),
-            {
-              type: "system",
-              text: "Here's your edited image and other suggestions!",
-              additional: referenceChunks,
-              queryId: null,
-              imageUrl: editImageResponse.image_urls[0],
-            },
-          ]);
-          setImageUrl("");
-          setIsLoading(false);
-          return true;
+        try {
+          const editImageResponse = await trieveSDK.editImage({
+            input_images: [
+              {
+                image_src: {
+                  url: imageUrl,
+                },
+                file_name: "input_image",
+              },
+              ...(referenceImageUrls?.map((url: string, index: number) => ({
+                image_src: {
+                  url,
+                },
+                file_name: `reference_image_${index + 1}`,
+              })) || []),
+            ],
+            prompt:
+              "Using the input image as a base reference, apply the following edit and use the reference images if provided: " +
+              (questionProp || currentQuestion),
+            quality: "medium",
+            n: 1,
+          });
+
+          if (
+            editImageResponse.image_urls &&
+            editImageResponse.image_urls.length > 0
+          ) {
+            setMessages((m) => [
+              ...m.slice(0, -1),
+              {
+                type: "system",
+                text: "Here's your edited image and other suggestions!",
+                additional: referenceChunks,
+                queryId: null,
+                imageUrl: editImageResponse.image_urls[0],
+              },
+            ]);
+            setImageUrl("");
+            setIsLoading(false);
+            return true;
+          }
+        } catch (e) {
+          console.error("error editing image", e);
+          return false;
         }
       }
 
@@ -628,7 +634,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                   name: "image",
                   parameter_type: "boolean",
                   description:
-                    "Whether to edit an image based on the user's query. If the user asks to edit, try-on, generate, or visualize based on an image, return true, otherwise return false.",
+                    "Whether to edit an image based on the user's query. If the user asks to edit, try-on, generate, show, or visualize based on an image, return true, otherwise return false. Furthermore if the user asks how does something look or to try something on, return true.",
                 },
               ],
             },
@@ -1041,8 +1047,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    if (await handleImageEdit()) {
-      return;
+    if (referenceImageUrls.length > 0) {
+      if (await handleImageEdit()) {
+        return;
+      }
     }
 
     setLoadingText("AI is generating a response...");
