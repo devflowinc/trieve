@@ -117,6 +117,7 @@ export interface SearchPageProps {
 
 export interface AiQuestion {
   questionText: string;
+  promptForAI?: string;
   products?: {
     id: string;
     groupId: string;
