@@ -130,6 +130,9 @@
       {% if params.defaultImageQuestion -%}
       defaultImageQuestion: {{ params.defaultImageQuestion }}
       {% endif -%}
+      {% if params.imageStarterText -%}
+      imageStarterText: "{{ params.imageStarterText }}",
+      {% endif -%}
     })
   });
 &lt;/script&gt;

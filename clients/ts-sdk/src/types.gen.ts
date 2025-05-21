@@ -3068,6 +3068,7 @@ export type PublicPageParameters = {
     headingPrefix?: (string) | null;
     heroPattern?: ((HeroPattern) | null);
     hideDrawnText?: (boolean) | null;
+    imageStarterText?: (string) | null;
     inline?: (boolean) | null;
     inlineHeader?: (string) | null;
     isTestMode?: (boolean) | null;

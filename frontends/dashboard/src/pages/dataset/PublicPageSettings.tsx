@@ -1334,6 +1334,23 @@ const PublicPageControls = () => {
                 class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
               />
             </div>
+            <div class="grow">
+              <div class="flex items-center gap-1">
+                <label class="block">Image Starter Text</label>
+                <Tooltip
+                  tooltipText="Large image dropzone in the search component. Does not show up if left empty."
+                  body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+                />
+              </div>
+              <input
+                placeholder="Feeling lost? Upload an image and let us help you find the right product."
+                value={extraParams.imageStarterText || ""}
+                onInput={(e) => {
+                  setExtraParams("imageStarterText", e.currentTarget.value);
+                }}
+                class="block w-full rounded border border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+              />
+            </div>
             <SearchOptions />
             <TagOptions />
             <div class="grow">
