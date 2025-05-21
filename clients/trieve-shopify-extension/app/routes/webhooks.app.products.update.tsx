@@ -3,7 +3,7 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { ProductWebhook, TrieveKey } from "app/types";
 import { sendChunksFromWebhook } from "app/processors/getProducts";
-import { ExtendedCrawlOptions } from "app/components/DatasetSettings";
+import { ExtendedCrawlOptions } from "app/components/settings/DatasetSettings";
 import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 
 export const action = async ({ request }: ActionFunctionArgs) => {

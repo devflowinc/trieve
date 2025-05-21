@@ -3,7 +3,7 @@ import { validateTrieveAuth } from "app/auth";
 import {
   defaultCrawlOptions,
   ExtendedCrawlOptions,
-} from "app/components/DatasetSettings";
+} from "app/components/settings/DatasetSettings";
 import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 import { sendChunks } from "app/processors/getProducts";
 import { authenticate } from "app/shopify.server";

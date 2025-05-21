@@ -1,5 +1,5 @@
 import { QueryOptions } from "@tanstack/react-query";
-import { defaultCrawlOptions } from "app/components/DatasetSettings";
+import { defaultCrawlOptions } from "app/components/settings/DatasetSettings";
 import { TrieveSDK } from "trieve-ts-sdk";
 
 export const scrapeOptionsQuery = (trieve: TrieveSDK) => {

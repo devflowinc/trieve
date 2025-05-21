@@ -22,12 +22,6 @@
   document.body.appendChild(root);
 
   const appMetafieldTrieve = {{ app.metafields.trieve | json }};
-  let defaultAiQuestions = {{ block.settings.default_ai_questions | json }};
-  if (defaultAiQuestions && typeof defaultAiQuestions === "string") {
-    defaultAiQuestions = defaultAiQuestions.split(",").map((question) => question.trim());
-  } else {
-    defaultAiQuestions = null;
-  }
   const currency = {{ shop.currency | json }};
   const currencySymbol = (currency) =>
     new Intl.NumberFormat("en-US", { style: 'currency', currency })
@@ -56,7 +50,7 @@
       apiKey: appMetafieldTrieve.api_key,
       datasetId: appMetafieldTrieve.dataset_id,
       zIndex: Number(getValue(appMetafieldTrieve.z_index, 2147483645)),
-      defaultAiQuestions,
+      defaultAiQuestions: appMetafieldTrieve.preset_questions,
       brandColor: getValue("{{ block.settings.brand_color }}", ""),
       brandLogoImgSrcUrl: getValue("{{ block.settings.brand_logo_img_src_url }}", undefined),
       chatPlaceholder: getValue("{{ block.settings.chat_placeholder }}", "Ask anything..."),
@@ -169,12 +163,6 @@
       "id": "show_sugestions_refresh",
       "label": "Show Refresh Suggested Queries Button",
       "default": true
-    },
-    {
-      "id": "default_ai_questions",
-      "type": "textarea",
-      "label": "Initial Questions (Separated by commas)",
-      "placeholder": "What is your flagship product?, Surprise me!, Best items for gifts?"
     },
     {
       "type": "checkbox",

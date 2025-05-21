@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { SuggestedQueriesResponse } from "trieve-ts-sdk";
 import { getSuggestedQuestions } from "../trieve";
-import { useModalState } from "./modal-context";
+import { ModalProps, useModalState } from "./modal-context";
 
 export const useSuggestedQuestions = () => {
   const { props, query, trieveSDK, currentGroup } = useModalState();
   const [isLoadingSuggestedQueries, setIsLoadingSuggestedQueries] =
     useState(false);
+
   const [suggestedQuestions, setSuggestedQuestions] = useState<
-    SuggestedQueriesResponse["queries"]
+    ModalProps["defaultAiQuestions"]
   >(props.defaultAiQuestions ?? []);
 
   const getQuestions = async () => {

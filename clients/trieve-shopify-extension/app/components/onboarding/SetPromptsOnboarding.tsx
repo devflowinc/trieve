@@ -12,7 +12,7 @@ import {
   OnboardingBody,
 } from "app/utils/onboarding";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { DatasetConfig } from "../DatasetSettings";
+import { DatasetConfig } from "../settings/DatasetSettings";
 import { withSuspense } from "app/utils/suspense";
 import { trackCustomerEvent } from "app/processors/shopifyTrackers";
 

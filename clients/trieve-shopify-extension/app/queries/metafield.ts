@@ -6,9 +6,25 @@ export const setAppMetafields = async (
   valuesToSet: {
     key: string;
     value: string;
-    type: 'boolean' | 'color' | 'date' | 'date_time' | 'dimension' | 'id' | 'json' | 
-         'link' | 'money' | 'multi_line_text_field' | 'number_decimal' | 'number_integer' | 
-         'rating' | 'rich_text_field' | 'single_line_text_field' | 'url' | 'volume' | 'weight';
+    type:
+      | "boolean"
+      | "color"
+      | "date"
+      | "date_time"
+      | "dimension"
+      | "id"
+      | "json"
+      | "link"
+      | "money"
+      | "multi_line_text_field"
+      | "number_decimal"
+      | "number_integer"
+      | "rating"
+      | "rich_text_field"
+      | "single_line_text_field"
+      | "url"
+      | "volume"
+      | "weight";
   }[],
 ) => {
   const response = await adminApi<AppInstallData>(`
@@ -60,7 +76,9 @@ export const setAppMetafields = async (
   }
 
   if ((response_create.data as any).metafieldsSet.userErrors.length > 0) {
-    throw new Error((response_create.data as any).metafieldsSet.userErrors[0].message);
+    throw new Error(
+      (response_create.data as any).metafieldsSet.userErrors[0].message,
+    );
   }
 };
 
@@ -77,7 +95,10 @@ export type Metafields = {
   };
 };
 
-export const getAppMetafields = async <T>(adminApi: AdminApiCaller, field: string): Promise<T | null> => {
+export const getAppMetafields = async <T>(
+  adminApi: AdminApiCaller,
+  field: string,
+): Promise<T | null> => {
   const response = await adminApi<Metafields>(`
     #graphql
     query {
@@ -99,9 +120,8 @@ export const getAppMetafields = async <T>(adminApi: AdminApiCaller, field: strin
   }
 
   const metafield = response.data.currentAppInstallation.metafields.nodes.find(
-    (metafield) => metafield.key === field
+    (metafield) => metafield.key === field,
   );
-
 
   if (!metafield) {
     return null;

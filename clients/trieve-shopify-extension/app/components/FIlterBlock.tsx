@@ -1,48 +1,69 @@
-import { Box, Button, Card, FormLayout, TextField, Select, InlineStack, Text, BlockStack } from "@shopify/polaris";
+import {
+  Box,
+  Button,
+  Card,
+  FormLayout,
+  TextField,
+  Select,
+  InlineStack,
+  Text,
+  BlockStack,
+} from "@shopify/polaris";
 import { useState } from "react";
-import { FilterSidebarSection, TagProp } from "app/routes/app._dashboard.filters";
+import { FilterSidebarSection, TagProp } from "./settings/FilterSettings";
 
-export function FilterBlock({ section, onChange, onDelete }: { 
-  section: FilterSidebarSection, 
-  onChange: (updatedSection: FilterSidebarSection) => void,
-  onDelete: () => void 
+export function FilterBlock({
+  section,
+  onChange,
+  onDelete,
+}: {
+  section: FilterSidebarSection;
+  onChange: (updatedSection: FilterSidebarSection) => void;
+  onDelete: () => void;
 }) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isAddingOption, setIsAddingOption] = useState(false);
   const [newOption, setNewOption] = useState<TagProp>({ tag: "", label: "" });
 
-  const handleSectionChange = (field: keyof FilterSidebarSection, value: any) => {
+  const handleSectionChange = (
+    field: keyof FilterSidebarSection,
+    value: any,
+  ) => {
     onChange({
       ...section,
-      [field]: value
+      [field]: value,
     });
   };
 
-  const handleOptionChange = (index: number, field: keyof TagProp, value: any) => {
+  const handleOptionChange = (
+    index: number,
+    field: keyof TagProp,
+    value: any,
+  ) => {
     const updatedOptions = [...section.options];
     updatedOptions[index] = {
       ...updatedOptions[index],
-      [field]: value
+      [field]: value,
     };
 
     // If we're updating a range property
     if (field === "range") {
       updatedOptions[index].range = {
         ...updatedOptions[index].range,
-        ...value
+        ...value,
       };
     }
 
     onChange({
       ...section,
-      options: updatedOptions
+      options: updatedOptions,
     });
   };
 
   const addOption = () => {
     onChange({
       ...section,
-      options: [...section.options, newOption]
+      options: [...section.options, newOption],
     });
     setNewOption({ tag: "", label: "" });
     setIsAddingOption(false);
@@ -53,20 +74,20 @@ export function FilterBlock({ section, onChange, onDelete }: {
     updatedOptions.splice(index, 1);
     onChange({
       ...section,
-      options: updatedOptions
+      options: updatedOptions,
     });
   };
 
   const selectionTypeOptions = [
-    { label: 'Single Select', value: 'single' },
-    { label: 'Multiple Select', value: 'multiple' },
-    { label: 'Range Slider', value: 'range' }
+    { label: "Single Select", value: "single" },
+    { label: "Multiple Select", value: "multiple" },
+    { label: "Range Slider", value: "range" },
   ];
 
   const filterTypeOptions = [
-    { label: 'Match Any', value: 'match_any' },
-    { label: 'Match All', value: 'match_all' },
-    { label: 'Range', value: 'range' }
+    { label: "Match Any", value: "match_any" },
+    { label: "Match All", value: "match_all" },
+    { label: "Range", value: "range" },
   ];
 
   return (
@@ -79,17 +100,13 @@ export function FilterBlock({ section, onChange, onDelete }: {
               {section.title || "New Filter"}
             </Text>
             <InlineStack gap="200">
-              <Button 
+              <Button
                 variant="monochromePlain"
                 onClick={() => setIsExpanded(!isExpanded)}
               >
                 {isExpanded ? "Collapse" : "Expand"}
               </Button>
-              <Button 
-                variant="primary"
-                tone="critical"
-                onClick={onDelete}
-              >
+              <Button variant="primary" tone="critical" onClick={onDelete}>
                 Delete
               </Button>
             </InlineStack>
@@ -109,7 +126,9 @@ export function FilterBlock({ section, onChange, onDelete }: {
                   <TextField
                     label="Filter Key"
                     value={section.filterKey}
-                    onChange={(value) => handleSectionChange("filterKey", value)}
+                    onChange={(value) =>
+                      handleSectionChange("filterKey", value)
+                    }
                     autoComplete="off"
                     helpText="Used for filtering in code"
                   />
@@ -122,14 +141,18 @@ export function FilterBlock({ section, onChange, onDelete }: {
                     label="Selection Type"
                     options={selectionTypeOptions}
                     value={section.selectionType}
-                    onChange={(value) => handleSectionChange("selectionType", value)}
+                    onChange={(value) =>
+                      handleSectionChange("selectionType", value)
+                    }
                     helpText="How users can select options"
                   />
                   <Select
                     label="Filter Type"
                     options={filterTypeOptions}
                     value={section.filterType}
-                    onChange={(value) => handleSectionChange("filterType", value)}
+                    onChange={(value) =>
+                      handleSectionChange("filterType", value)
+                    }
                     helpText="How selected options are combined"
                   />
                 </FormLayout.Group>
@@ -143,7 +166,9 @@ export function FilterBlock({ section, onChange, onDelete }: {
                 <Box paddingBlockStart="200">
                   {section.options.length === 0 ? (
                     <Box paddingBlock="400">
-                      <Text variant="bodyMd" as="p">No options added</Text>
+                      <Text variant="bodyMd" as="p">
+                        No options added
+                      </Text>
                     </Box>
                   ) : (
                     <BlockStack gap="300">
@@ -155,14 +180,18 @@ export function FilterBlock({ section, onChange, onDelete }: {
                                 <TextField
                                   label="Option Tag"
                                   value={option.tag}
-                                  onChange={(value) => handleOptionChange(index, "tag", value)}
+                                  onChange={(value) =>
+                                    handleOptionChange(index, "tag", value)
+                                  }
                                   autoComplete="off"
                                   helpText="Internal tag for this option"
                                 />
                                 <TextField
                                   label="Display Label"
                                   value={option.label}
-                                  onChange={(value) => handleOptionChange(index, "label", value)}
+                                  onChange={(value) =>
+                                    handleOptionChange(index, "label", value)
+                                  }
                                   autoComplete="off"
                                   helpText="Visible label to users"
                                 />
@@ -172,35 +201,48 @@ export function FilterBlock({ section, onChange, onDelete }: {
                                 <TextField
                                   label="Description"
                                   value={option.description}
-                                  onChange={(value) => handleOptionChange(index, "description", value)}
+                                  onChange={(value) =>
+                                    handleOptionChange(
+                                      index,
+                                      "description",
+                                      value,
+                                    )
+                                  }
                                   autoComplete="off"
                                   helpText="Description of this option. This will used to help the AI filter the options."
                                   multiline={2}
                                 />
                               </FormLayout.Group>
-                              
 
-                              {section.selectionType === 'range' && (
+                              {section.selectionType === "range" && (
                                 <FormLayout.Group condensed>
                                   <TextField
                                     label="Min Value"
                                     type="number"
                                     value={(option.range?.min || "").toString()}
-                                    onChange={(value) => handleOptionChange(index, "range", { min: Number(value) })}
+                                    onChange={(value) =>
+                                      handleOptionChange(index, "range", {
+                                        min: Number(value),
+                                      })
+                                    }
                                     autoComplete="off"
                                   />
                                   <TextField
                                     label="Max Value"
                                     type="number"
                                     value={(option.range?.max || "").toString()}
-                                    onChange={(value) => handleOptionChange(index, "range", { max: Number(value) })}
+                                    onChange={(value) =>
+                                      handleOptionChange(index, "range", {
+                                        max: Number(value),
+                                      })
+                                    }
                                     autoComplete="off"
                                   />
                                 </FormLayout.Group>
                               )}
 
                               <Box paddingBlockStart="200">
-                                <Button 
+                                <Button
                                   variant="primary"
                                   tone="critical"
                                   onClick={() => removeOption(index)}
@@ -226,14 +268,18 @@ export function FilterBlock({ section, onChange, onDelete }: {
                             <TextField
                               label="Option Tag"
                               value={newOption.tag}
-                              onChange={(value) => setNewOption({...newOption, tag: value})}
+                              onChange={(value) =>
+                                setNewOption({ ...newOption, tag: value })
+                              }
                               autoComplete="off"
                               helpText="Internal tag for this option"
                             />
                             <TextField
                               label="Display Label"
                               value={newOption.label}
-                              onChange={(value) => setNewOption({...newOption, label: value})}
+                              onChange={(value) =>
+                                setNewOption({ ...newOption, label: value })
+                              }
                               autoComplete="off"
                               helpText="Visible label to users"
                             />
@@ -243,33 +289,48 @@ export function FilterBlock({ section, onChange, onDelete }: {
                             <TextField
                               label="Description"
                               value={newOption.description}
-                              onChange={(value) => setNewOption({...newOption, description: value})}
+                              onChange={(value) =>
+                                setNewOption({
+                                  ...newOption,
+                                  description: value,
+                                })
+                              }
                               autoComplete="off"
                               helpText="Description of this option. This will used to help the AI filter the options."
                               multiline={2}
                             />
                           </FormLayout.Group>
 
-                          {section.selectionType === 'range' && (
+                          {section.selectionType === "range" && (
                             <FormLayout.Group condensed>
                               <TextField
                                 label="Min Value"
                                 type="number"
                                 value={(newOption.range?.min || "").toString()}
-                                onChange={(value) => setNewOption({
-                                  ...newOption, 
-                                  range: { ...newOption.range, min: Number(value) }
-                                })}
+                                onChange={(value) =>
+                                  setNewOption({
+                                    ...newOption,
+                                    range: {
+                                      ...newOption.range,
+                                      min: Number(value),
+                                    },
+                                  })
+                                }
                                 autoComplete="off"
                               />
                               <TextField
                                 label="Max Value"
                                 type="number"
                                 value={(newOption.range?.max || "").toString()}
-                                onChange={(value) => setNewOption({
-                                  ...newOption, 
-                                  range: { ...newOption.range, max: Number(value) }
-                                })}
+                                onChange={(value) =>
+                                  setNewOption({
+                                    ...newOption,
+                                    range: {
+                                      ...newOption.range,
+                                      max: Number(value),
+                                    },
+                                  })
+                                }
                                 autoComplete="off"
                               />
                             </FormLayout.Group>
@@ -277,7 +338,12 @@ export function FilterBlock({ section, onChange, onDelete }: {
 
                           <InlineStack gap="200">
                             <Button onClick={addOption}>Add Option</Button>
-                            <Button variant="monochromePlain" onClick={() => setIsAddingOption(false)}>Cancel</Button>
+                            <Button
+                              variant="monochromePlain"
+                              onClick={() => setIsAddingOption(false)}
+                            >
+                              Cancel
+                            </Button>
                           </InlineStack>
                         </FormLayout>
                       </Box>

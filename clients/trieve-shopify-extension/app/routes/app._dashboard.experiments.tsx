@@ -19,7 +19,12 @@ import {
   Select,
 } from "@shopify/polaris";
 import { useState, useCallback, useContext, useEffect } from "react";
-import { PlusIcon, DeleteIcon, EditIcon, ViewIcon } from "@shopify/polaris-icons";
+import {
+  PlusIcon,
+  DeleteIcon,
+  EditIcon,
+  ViewIcon,
+} from "@shopify/polaris-icons";
 import {
   type CreateExperimentReqBody,
   type Experiment,
@@ -27,7 +32,14 @@ import {
   type ExperimentConfig,
 } from "trieve-ts-sdk";
 import { TrieveContext, useTrieve } from "app/context/trieveContext";
-import { Link, useNavigate, Form, useFetcher, useLoaderData, json } from "@remix-run/react";
+import {
+  Link,
+  useNavigate,
+  Form,
+  useFetcher,
+  useLoaderData,
+  json,
+} from "@remix-run/react";
 import { ActionFunctionArgs, data } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { getAppMetafields, setAppMetafields } from "../queries/metafield";
@@ -46,13 +58,11 @@ async function updateShopAbTestMetafield(
   admin: any,
   experimentId: string,
   area: string,
-  operation: "add" | "remove"
+  operation: "add" | "remove",
 ) {
   // 1. Get current metafield using getAppMetafields
-  let abTestData: AbTestMetafieldValue | null = await getAppMetafields<AbTestMetafieldValue>(
-    admin,
-    METAFIELD_KEY_AB_TESTS
-  );
+  let abTestData: AbTestMetafieldValue | null =
+    await getAppMetafields<AbTestMetafieldValue>(admin, METAFIELD_KEY_AB_TESTS);
 
   if (!abTestData) {
     abTestData = { pdpExperimentIds: [], globalExperimentIds: [] };
@@ -61,8 +71,12 @@ async function updateShopAbTestMetafield(
   abTestData.pdpExperimentIds = abTestData.pdpExperimentIds || [];
   abTestData.globalExperimentIds = abTestData.globalExperimentIds || [];
 
-  abTestData.pdpExperimentIds = abTestData.pdpExperimentIds.filter(id => id !== experimentId);
-  abTestData.globalExperimentIds = abTestData.globalExperimentIds.filter(id => id !== experimentId);
+  abTestData.pdpExperimentIds = abTestData.pdpExperimentIds.filter(
+    (id) => id !== experimentId,
+  );
+  abTestData.globalExperimentIds = abTestData.globalExperimentIds.filter(
+    (id) => id !== experimentId,
+  );
 
   if (operation === "add") {
     if (area === "PDP") {
@@ -70,7 +84,9 @@ async function updateShopAbTestMetafield(
     } else if (area === "Global Search") {
       abTestData.globalExperimentIds.push(experimentId);
     } else {
-      console.warn(`Unknown experiment area: ${area} for experiment ${experimentId}. Not adding to metafield.`);
+      console.warn(
+        `Unknown experiment area: ${area} for experiment ${experimentId}. Not adding to metafield.`,
+      );
     }
   }
 
@@ -83,8 +99,13 @@ async function updateShopAbTestMetafield(
       },
     ]);
   } catch (error) {
-    console.error("Error setting A/B test metafield via setAppMetafields:", error);
-    throw new Error("Failed to update Shopify A/B test metafield using helper.");
+    console.error(
+      "Error setting A/B test metafield via setAppMetafields:",
+      error,
+    );
+    throw new Error(
+      "Failed to update Shopify A/B test metafield using helper.",
+    );
   }
 }
 
@@ -94,12 +115,12 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const trieve = sdkFromKey(key);
   const fetcher = buildAdminApiFetcherForServer(
     session.shop,
-    session.accessToken!
-  )
+    session.accessToken!,
+  );
 
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
-  
+
   try {
     if (intent === "createExperiment" || intent === "updateExperiment") {
       const name = formData.get("name") as string;
@@ -109,8 +130,18 @@ export async function action({ request, context }: ActionFunctionArgs) {
       const controlSplit = parseFloat(formData.get("control_split") as string);
       const t1Split = parseFloat(formData.get("t1_split") as string);
 
-      if (!name || !area || !controlName || !t1Name || isNaN(controlSplit) || isNaN(t1Split)) {
-        return data({ error: "Missing required experiment fields." }, { status: 400 });
+      if (
+        !name ||
+        !area ||
+        !controlName ||
+        !t1Name ||
+        isNaN(controlSplit) ||
+        isNaN(t1Split)
+      ) {
+        return data(
+          { error: "Missing required experiment fields." },
+          { status: 400 },
+        );
       }
 
       const experimentConfig: ExperimentConfig = {
@@ -124,26 +155,53 @@ export async function action({ request, context }: ActionFunctionArgs) {
       let savedExperiment: Experiment;
 
       if (intent === "createExperiment") {
-        const payload: CreateExperimentReqBody = { name, experiment_config: experimentConfig };
+        const payload: CreateExperimentReqBody = {
+          name,
+          experiment_config: experimentConfig,
+        };
         savedExperiment = await trieve.createExperiment(payload);
-        await updateShopAbTestMetafield(fetcher, String(savedExperiment.id), area, "add");
-        return data({ experiment: savedExperiment, intent: "createExperiment" });
+        await updateShopAbTestMetafield(
+          fetcher,
+          String(savedExperiment.id),
+          area,
+          "add",
+        );
+        return data({
+          experiment: savedExperiment,
+          intent: "createExperiment",
+        });
       } else {
         const experimentId = formData.get("experimentId") as string;
-        if (!experimentId) return data({ error: "Experiment ID is required for update."}, {status: 400});
-        
+        if (!experimentId)
+          return data(
+            { error: "Experiment ID is required for update." },
+            { status: 400 },
+          );
+
         const updatePayload: UpdateExperimentReqBody = { id: experimentId };
-        updatePayload.name = name; 
-        updatePayload.experiment_config = experimentConfig; 
+        updatePayload.name = name;
+        updatePayload.experiment_config = experimentConfig;
 
         savedExperiment = await trieve.updateExperiment(updatePayload);
-        await updateShopAbTestMetafield(fetcher, String(savedExperiment.id), area, "add");
-        return data({ experiment: savedExperiment, intent: "updateExperiment" });
+        await updateShopAbTestMetafield(
+          fetcher,
+          String(savedExperiment.id),
+          area,
+          "add",
+        );
+        return data({
+          experiment: savedExperiment,
+          intent: "updateExperiment",
+        });
       }
     } else if (intent === "deleteExperiment") {
       const experimentId = formData.get("experimentId") as string;
-      if (!experimentId) return json({ error: "Experiment ID is required for delete."}, {status: 400});
-      
+      if (!experimentId)
+        return json(
+          { error: "Experiment ID is required for delete." },
+          { status: 400 },
+        );
+
       await trieve.deleteExperiment(experimentId);
       await updateShopAbTestMetafield(fetcher, experimentId, "", "remove");
       return data({ deletedExperimentId: experimentId });
@@ -151,7 +209,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
     return data({ error: "Invalid intent" }, { status: 400 });
   } catch (error: any) {
     console.error(`Failed to ${intent}:`, error);
-    return json({ error: error.message || "Failed to process experiment action" }, { status: 500 });
+    return json(
+      { error: error.message || "Failed to process experiment action" },
+      { status: 500 },
+    );
   }
 }
 
@@ -165,7 +226,9 @@ export default function Experiments() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [currentExperiment, setCurrentExperiment] = useState<Experiment | null>(null);
+  const [currentExperiment, setCurrentExperiment] = useState<Experiment | null>(
+    null,
+  );
   const [experimentName, setExperimentName] = useState("");
   const [experimentArea, setExperimentArea] = useState("Global Search");
   const [controlName, setControlName] = useState("Don't show");
@@ -173,7 +236,9 @@ export default function Experiments() {
   const [treatmentSplit, setTreatmentSplit] = useState(50);
 
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
-  const [experimentToDeleteId, setExperimentToDeleteId] = useState<string | null>(null);
+  const [experimentToDeleteId, setExperimentToDeleteId] = useState<
+    string | null
+  >(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [toastActive, setToastActive] = useState(false);
@@ -188,26 +253,43 @@ export default function Experiments() {
       } else if (data.experiment) {
         const savedExp = data.experiment as Experiment;
         if (data.intent === "createExperiment") {
-          setExperiments((prev) => [...prev, { ...savedExp, id: String(savedExp.id), area: savedExp.area || "Global Search" }]);
+          setExperiments((prev) => [
+            ...prev,
+            {
+              ...savedExp,
+              id: String(savedExp.id),
+              area: savedExp.area || "Global Search",
+            },
+          ]);
           showToast("Experiment created successfully!");
         } else {
           setExperiments((prev) =>
-            prev.map((exp) => (exp.id === String(savedExp.id) ? { ...savedExp, id: String(savedExp.id), area: savedExp.area || "Global Search" } : exp))
+            prev.map((exp) =>
+              exp.id === String(savedExp.id)
+                ? {
+                    ...savedExp,
+                    id: String(savedExp.id),
+                    area: savedExp.area || "Global Search",
+                  }
+                : exp,
+            ),
           );
           showToast("Experiment updated successfully!");
         }
         handleModalClose();
       } else if (data.deletedExperimentId) {
-        setExperiments((prev) => prev.filter((exp) => exp.id !== data.deletedExperimentId));
+        setExperiments((prev) =>
+          prev.filter((exp) => exp.id !== data.deletedExperimentId),
+        );
         showToast("Experiment deleted successfully!");
         handleCloseDeleteConfirmModal();
       }
     }
     if (fetcher.state === "submitting" || fetcher.state === "loading") {
-        setIsSubmitting(true);
+      setIsSubmitting(true);
     } else {
-        setIsSubmitting(false);
-        setIsDeleting(false);
+      setIsSubmitting(false);
+      setIsDeleting(false);
     }
   }, [fetcher.state, fetcher.data]);
 
@@ -220,7 +302,11 @@ export default function Experiments() {
   const toggleToastActive = () => setToastActive((active) => !active);
 
   const toastMarkup = toastActive ? (
-    <Toast content={toastMessage} error={toastIsError} onDismiss={toggleToastActive} />
+    <Toast
+      content={toastMessage}
+      error={toastIsError}
+      onDismiss={toggleToastActive}
+    />
   ) : null;
 
   useEffect(() => {
@@ -228,15 +314,24 @@ export default function Experiments() {
       setIsLoading(true);
       try {
         if (!trieve) {
-            showToast("SDK not initialized.", true);
-            setIsLoading(false);
-            return;
+          showToast("SDK not initialized.", true);
+          setIsLoading(false);
+          return;
         }
         const apiExperiments: Experiment[] = await trieve.getExperiments();
-        setExperiments(apiExperiments.map(exp => ({...exp, id: String(exp.id), area: exp.area || "Global Search" }) ) );
+        setExperiments(
+          apiExperiments.map((exp) => ({
+            ...exp,
+            id: String(exp.id),
+            area: exp.area || "Global Search",
+          })),
+        );
       } catch (error) {
         console.error("Failed to fetch experiments:", error);
-        showToast(`Failed to fetch experiments: ${error instanceof Error ? error.message : String(error)}`, true);
+        showToast(
+          `Failed to fetch experiments: ${error instanceof Error ? error.message : String(error)}`,
+          true,
+        );
       } finally {
         setIsLoading(false);
       }
@@ -262,8 +357,17 @@ export default function Experiments() {
     setCurrentExperiment(experiment);
     setExperimentName(experiment.name);
     setExperimentArea(experiment.area || "Global Search");
-    setControlName(experiment.control_name === "Show" || experiment.control_name === "Don't show" ? experiment.control_name : "Don't show");
-    setTreatmentName(experiment.t1_name === "Show" || experiment.t1_name === "Don't show" ? experiment.t1_name : "Show");
+    setControlName(
+      experiment.control_name === "Show" ||
+        experiment.control_name === "Don't show"
+        ? experiment.control_name
+        : "Don't show",
+    );
+    setTreatmentName(
+      experiment.t1_name === "Show" || experiment.t1_name === "Don't show"
+        ? experiment.t1_name
+        : "Show",
+    );
     setTreatmentSplit(experiment.t1_split * 100);
     setIsModalOpen(true);
   };
@@ -285,8 +389,14 @@ export default function Experiments() {
     formData.append("area", experimentArea);
     formData.append("control_name", controlName);
     formData.append("t1_name", treatmentName);
-    formData.append("control_split", String(parseFloat(((100 - treatmentSplit) / 100).toFixed(4))));
-    formData.append("t1_split", String(parseFloat((treatmentSplit / 100).toFixed(4))));
+    formData.append(
+      "control_split",
+      String(parseFloat(((100 - treatmentSplit) / 100).toFixed(4))),
+    );
+    formData.append(
+      "t1_split",
+      String(parseFloat((treatmentSplit / 100).toFixed(4))),
+    );
 
     if (currentExperiment && currentExperiment.id) {
       formData.append("intent", "updateExperiment");
@@ -294,7 +404,7 @@ export default function Experiments() {
     } else {
       formData.append("intent", "createExperiment");
     }
-    
+
     fetcher.submit(formData, { method: "POST" });
     handleModalClose();
   }, [
@@ -376,19 +486,32 @@ export default function Experiments() {
                       Area: {exp.area || "N/A"} | ID: {exp.id}
                     </Text>
                     <Text as="p">
-                      {exp.control_name}: {(exp.control_split * 100).toFixed(0)}% vs.{" "}
-                      {exp.t1_name}: {(exp.t1_split * 100).toFixed(0)}%
+                      {exp.control_name}: {(exp.control_split * 100).toFixed(0)}
+                      % vs. {exp.t1_name}: {(exp.t1_split * 100).toFixed(0)}%
                     </Text>
                   </BlockStack>
                 </Box>
                 <ButtonGroup>
-                  <Button icon={EditIcon} onClick={() => handleOpenEditModal(exp)} disabled={isSubmitting || isDeleting}>
+                  <Button
+                    icon={EditIcon}
+                    onClick={() => handleOpenEditModal(exp)}
+                    disabled={isSubmitting || isDeleting}
+                  >
                     Edit
                   </Button>
-                  <Button icon={DeleteIcon} onClick={() => handleOpenDeleteConfirmModal(String(exp.id))} tone="critical" disabled={isSubmitting || isDeleting}>
+                  <Button
+                    icon={DeleteIcon}
+                    onClick={() => handleOpenDeleteConfirmModal(String(exp.id))}
+                    tone="critical"
+                    disabled={isSubmitting || isDeleting}
+                  >
                     Delete
                   </Button>
-                  <Button onClick={() => navigate(`/app/experimentview/${exp.id}`)}>View Report</Button>
+                  <Button
+                    onClick={() => navigate(`/app/experimentview/${exp.id}`)}
+                  >
+                    View Report
+                  </Button>
                 </ButtonGroup>
               </InlineStack>
             </Box>
@@ -405,15 +528,18 @@ export default function Experiments() {
           <Layout.Section>
             <Card>
               <Box padding="400">
-                <Spinner accessibilityLabel="Loading experiments" size="large" />
+                <Spinner
+                  accessibilityLabel="Loading experiments"
+                  size="large"
+                />
               </Box>
             </Card>
           </Layout.Section>
           <Layout.Section variant="oneThird">
             <Card>
-                <Box padding="400">
-                    <SkeletonBodyText lines={5}/>
-                </Box>
+              <Box padding="400">
+                <SkeletonBodyText lines={5} />
+              </Box>
             </Card>
           </Layout.Section>
         </Layout>
@@ -439,22 +565,27 @@ export default function Experiments() {
         <Modal
           open={isModalOpen}
           onClose={handleModalClose}
-          title={currentExperiment ? "Edit Experiment" : "Create New Experiment"}
+          title={
+            currentExperiment ? "Edit Experiment" : "Create New Experiment"
+          }
           primaryAction={{
             content: currentExperiment ? "Save Changes" : "Create Experiment",
             onAction: handleSubmitExperiment,
             disabled:
-              (fetcher.state === 'submitting' || fetcher.state === 'loading') ||
+              fetcher.state === "submitting" ||
+              fetcher.state === "loading" ||
               !experimentName ||
               !controlName ||
               !treatmentName,
-            loading: (fetcher.state === 'submitting' || fetcher.state === 'loading'),
+            loading:
+              fetcher.state === "submitting" || fetcher.state === "loading",
           }}
           secondaryActions={[
             {
               content: "Cancel",
               onAction: handleModalClose,
-              disabled: (fetcher.state === 'submitting' || fetcher.state === 'loading'),
+              disabled:
+                fetcher.state === "submitting" || fetcher.state === "loading",
             },
           ]}
         >
@@ -485,7 +616,7 @@ export default function Experiments() {
               </Text>
               <Select
                 label="Control Group Name"
-                options= {[
+                options={[
                   { label: "Show", value: "Show" },
                   { label: "Don't show", value: "Don't show" },
                 ]}
@@ -496,7 +627,7 @@ export default function Experiments() {
               />
               <Select
                 label="Treatment Group Name"
-                options= {[
+                options={[
                   { label: "Show", value: "Show" },
                   { label: "Don't show", value: "Don't show" },
                 ]}
@@ -510,7 +641,9 @@ export default function Experiments() {
                   label={`Treatment Group Traffic: ${treatmentSplit.toFixed(0)}%`}
                   value={treatmentSplit}
                   onChange={(value) =>
-                    setTreatmentSplit(typeof value === "number" ? value : value[0])
+                    setTreatmentSplit(
+                      typeof value === "number" ? value : value[0],
+                    )
                   }
                   min={0}
                   max={100}
@@ -534,20 +667,24 @@ export default function Experiments() {
             content: "Delete",
             onAction: handleConfirmDelete,
             destructive: true,
-            loading: (fetcher.state === 'submitting' || fetcher.state === 'loading'),
-            disabled: (fetcher.state === 'submitting' || fetcher.state === 'loading'),
+            loading:
+              fetcher.state === "submitting" || fetcher.state === "loading",
+            disabled:
+              fetcher.state === "submitting" || fetcher.state === "loading",
           }}
           secondaryActions={[
             {
               content: "Cancel",
               onAction: handleCloseDeleteConfirmModal,
-              disabled: (fetcher.state === 'submitting' || fetcher.state === 'loading'),
+              disabled:
+                fetcher.state === "submitting" || fetcher.state === "loading",
             },
           ]}
         >
           <Modal.Section>
             <Text as="p">
-              Are you sure you want to delete this experiment? This action cannot be undone.
+              Are you sure you want to delete this experiment? This action
+              cannot be undone.
             </Text>
           </Modal.Section>
         </Modal>

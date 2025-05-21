@@ -115,6 +115,20 @@ export interface SearchPageProps {
   display?: boolean;
 }
 
+export interface AiQuestion {
+  questionText: string;
+  products?: {
+    id: string;
+    groupId: string;
+  }[];
+}
+
+export function isAiQuestion(
+  question: string | AiQuestion,
+): question is AiQuestion {
+  return typeof question === "object" && "questionText" in question;
+}
+
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
@@ -138,7 +152,7 @@ export type ModalProps = {
   followupQuestions?: boolean;
   numberOfSuggestions?: number;
   defaultSearchQueries?: string[];
-  defaultAiQuestions?: string[];
+  defaultAiQuestions?: string[] | AiQuestion[];
   brandLogoImgSrcUrl?: string;
   brandName?: string;
   problemLink?: string;
@@ -433,7 +447,9 @@ const ModalProvider = ({
   const [minHeight, setMinHeight] = useState(0);
   const [chatHeight, setChatHeight] = useState(0);
   const [enabled, setEnabled] = useState(true);
-  const [display, setDisplay] = useState(!props.experimentIds || props.experimentIds.length === 0);
+  const [display, setDisplay] = useState(
+    !props.experimentIds || props.experimentIds.length === 0,
+  );
 
   const trieve = new TrieveSDK({
     baseUrl: props.baseUrl,
@@ -620,18 +636,24 @@ const ModalProvider = ({
   }, []);
 
   useEffect(() => {
-    if (props.experimentIds && props.experimentIds.length > 0 && fingerprint !== "") {
+    if (
+      props.experimentIds &&
+      props.experimentIds.length > 0 &&
+      fingerprint !== ""
+    ) {
       for (const experimentId of props.experimentIds) {
-        trieve.getTreatment({
-          experiment_id: experimentId,
-          user_id: fingerprint,
-        }).then((treatment) => {
-          if (treatment.treatment_name === "Don't show") {
-            setDisplay(false);
-          } else {
-            setDisplay(true);
-          }
-        });
+        trieve
+          .getTreatment({
+            experiment_id: experimentId,
+            user_id: fingerprint,
+          })
+          .then((treatment) => {
+            if (treatment.treatment_name === "Don't show") {
+              setDisplay(false);
+            } else {
+              setDisplay(true);
+            }
+          });
       }
     }
   }, [props.experimentIds, fingerprint]);
@@ -839,7 +861,7 @@ const ModalProvider = ({
         minHeight,
         resetHeight,
         addHeight,
-        display
+        display,
       }}
     >
       {children}
