@@ -560,6 +560,32 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
         });
 
+      const imageFiltersPromise = retryOperation(async () => {
+        if (imageUrl) {
+          return await trieveSDK.getToolCallFunctionParams({
+            user_message_text: questionProp || currentQuestion,
+            image_url: imageUrl ? imageUrl : null,
+            tool_function: {
+              name: "get_image_filters",
+              description:
+                "Decide whether to either edit an image based on the user's query. Always return false if the user's query does not require or request for an image to be edited.",
+              parameters: [
+                {
+                  name: "Image",
+                  parameter_type: "boolean",
+                  description:
+                    "Whether to edit an image based on the user's query. If the user asks to edit, try-on, generate, or visualize based on an image, return true, otherwise return false.",
+                },
+              ],
+            },
+          });
+        } else {
+          return {
+            parameters: null,
+          };
+        }
+      });
+
         const tagFiltersPromise = retryOperation(async () => {
           if (
             (!defaultMatchAnyTags || !defaultMatchAnyTags?.length) &&
@@ -609,10 +635,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
         });
 
-        const [priceFiltersResp, tagFiltersResp] = await Promise.all([
-          priceFiltersPromise,
-          tagFiltersPromise,
-        ]);
+        const [priceFiltersResp, tagFiltersResp, imageFiltersResp] =
+        await Promise.all([
+            priceFiltersPromise,
+            imageFiltersPromise,
+            tagFiltersPromise,
+          ]);
 
         if (transcribedQuery && curAudioBase64) {
           questionProp = transcribedQuery;
@@ -637,6 +665,49 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             ];
           });
         }
+
+      // Handle image editing if requested
+      if (
+        imageFiltersResp?.parameters &&
+        (imageFiltersResp.parameters as any)["Image"] === true
+      ) {
+        try {
+          const editImageResponse = await trieveSDK.editImage({
+            input_images: [
+              {
+                image_src: {
+                  url: imageUrl,
+                },
+                file_name: "input_image",
+              },
+            ],
+            prompt: questionProp || currentQuestion,
+            quality: "medium",
+            n: 1,
+          });
+
+          if (
+            editImageResponse.image_urls &&
+            editImageResponse.image_urls.length > 0
+          ) {
+            setMessages((m) => [
+              ...m.slice(0, -1),
+              {
+                type: "system",
+                text: "Here's the edited image based on your request:",
+                additional: null,
+                queryId: null,
+                imageUrl: editImageResponse.image_urls[0],
+              },
+            ]);
+            setIsLoading(false);
+            setLoadingText("");
+            return;
+          }
+        } catch (error) {
+          console.error("Error editing image:", error);
+        }
+      }
 
         const match_any_tags = [];
         if (tagFiltersResp?.parameters) {
