@@ -28,7 +28,6 @@ export const SuggestedQuestions = ({
   }
 
   const handleSuggestedQuestion = async (q: string | AiQuestion) => {
-    console.log("handleSuggestedQuestion", q);
     setCurrentQuestion(isAiQuestion(q) ? q.questionText : q);
     askQuestion(
       isAiQuestion(q) ? q.questionText : q,
