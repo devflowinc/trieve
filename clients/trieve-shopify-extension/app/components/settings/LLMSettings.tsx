@@ -12,7 +12,9 @@ import {
   Box,
   Divider,
   useBreakpoints,
+  Collapsible,
 } from "@shopify/polaris";
+import { CaretDownIcon, CaretUpIcon } from "@shopify/polaris-icons";
 import { useState } from "react";
 import { DatasetConfig, ShopifyDatasetSettings } from "./DatasetSettings";
 import { useSubmit } from "@remix-run/react";
@@ -68,6 +70,10 @@ export function LLMSettings({
   const [relevanceToolCallOptions, setRelevanceToolCallOptions] = useState(
     existingRelevanceToolCallOptions ?? defaultRelevanceToolCallOptions,
   );
+  const [
+    showAdvancedRelevanceDescriptions,
+    setShowAdvancedRelevanceDescriptions,
+  ] = useState(false);
 
   const [priceToolCallOptions, setPriceToolCallOptions] = useState(
     existingPriceToolCallOptions ?? defaultPriceToolCallOptions,
@@ -308,59 +314,92 @@ export function LLMSettings({
                         })
                       }
                     />
-                    <TextField
-                      label="Tool Description"
-                      helpText="The description of the tool"
-                      value={relevanceToolCallOptions.toolDescription ?? ""}
-                      onChange={(e) =>
-                        setRelevanceToolCallOptions({
-                          ...relevanceToolCallOptions,
-                          toolDescription: e,
-                        })
-                      }
-                      multiline={3}
-                      autoComplete="off"
-                    />
-                    <TextField
-                      label="High Relevance Description"
-                      helpText="The description of the tool for high relevance"
-                      value={relevanceToolCallOptions.highDescription ?? ""}
-                      onChange={(e) =>
-                        setRelevanceToolCallOptions({
-                          ...relevanceToolCallOptions,
-                          highDescription: e,
-                        })
-                      }
-                      multiline={3}
-                      autoComplete="off"
-                    />
-                    <TextField
-                      label="Medium Relevance Description"
-                      helpText="The description of the tool for medium relevance"
-                      value={relevanceToolCallOptions.mediumDescription ?? ""}
-                      onChange={(e) =>
-                        setRelevanceToolCallOptions({
-                          ...relevanceToolCallOptions,
-                          mediumDescription: e,
-                        })
-                      }
-                      multiline={3}
-                      autoComplete="off"
-                    />
-                    <TextField
-                      label="Low Relevance Description"
-                      helpText="The description of the tool for low relevance"
-                      value={relevanceToolCallOptions.lowDescription ?? ""}
-                      onChange={(e) =>
-                        setRelevanceToolCallOptions({
-                          ...relevanceToolCallOptions,
-                          lowDescription: e,
-                        })
-                      }
-                      autoComplete="off"
-                      multiline={3}
-                    />
                   </InlineGrid>
+                  <TextField
+                    label="Tool Description"
+                    helpText="The description of the tool"
+                    value={relevanceToolCallOptions.toolDescription ?? ""}
+                    onChange={(e) =>
+                      setRelevanceToolCallOptions({
+                        ...relevanceToolCallOptions,
+                        toolDescription: e,
+                      })
+                    }
+                    multiline={3}
+                    autoComplete="off"
+                  />
+                  <Button
+                    onClick={() =>
+                      setShowAdvancedRelevanceDescriptions(
+                        !showAdvancedRelevanceDescriptions,
+                      )
+                    }
+                    ariaExpanded={showAdvancedRelevanceDescriptions}
+                    ariaControls="advancedRelevanceDescriptionsCollapsible"
+                    variant="tertiary"
+                    icon={
+                      showAdvancedRelevanceDescriptions
+                        ? CaretUpIcon
+                        : CaretDownIcon
+                    }
+                  >
+                    {showAdvancedRelevanceDescriptions ? "Hide" : "Show"}{" "}
+                    Advanced Relevance Descriptions
+                  </Button>
+                  <Collapsible
+                    open={showAdvancedRelevanceDescriptions}
+                    id="advancedRelevanceDescriptionsCollapsible"
+                    transition={{
+                      duration: "300ms",
+                      timingFunction: "ease-in-out",
+                    }}
+                  >
+                    <Box paddingBlockStart="200" paddingInlineStart="400">
+                      <BlockStack gap="400">
+                        <TextField
+                          label="High Relevance Description"
+                          helpText="The description of the tool for high relevance"
+                          value={relevanceToolCallOptions.highDescription ?? ""}
+                          onChange={(e) =>
+                            setRelevanceToolCallOptions({
+                              ...relevanceToolCallOptions,
+                              highDescription: e,
+                            })
+                          }
+                          multiline={3}
+                          autoComplete="off"
+                        />
+                        <TextField
+                          label="Medium Relevance Description"
+                          helpText="The description of the tool for medium relevance"
+                          value={
+                            relevanceToolCallOptions.mediumDescription ?? ""
+                          }
+                          onChange={(e) =>
+                            setRelevanceToolCallOptions({
+                              ...relevanceToolCallOptions,
+                              mediumDescription: e,
+                            })
+                          }
+                          multiline={3}
+                          autoComplete="off"
+                        />
+                        <TextField
+                          label="Low Relevance Description"
+                          helpText="The description of the tool for low relevance"
+                          value={relevanceToolCallOptions.lowDescription ?? ""}
+                          onChange={(e) =>
+                            setRelevanceToolCallOptions({
+                              ...relevanceToolCallOptions,
+                              lowDescription: e,
+                            })
+                          }
+                          autoComplete="off"
+                          multiline={3}
+                        />
+                      </BlockStack>
+                    </Box>
+                  </Collapsible>
                 </FormLayout>
               </BlockStack>
               <InlineStack align="end" gap="200">
@@ -373,7 +412,7 @@ export function LLMSettings({
                   <Text as="h1" variant="headingMd">
                     Price Tool Configuration
                   </Text>
-                  <InlineGrid columns={{ xs: "1fr", md: "2fr 2fr" }} gap="400">
+                  <BlockStack gap="400">
                     <TextField
                       label="Tool Description"
                       helpText="The description of the tool"
@@ -387,33 +426,38 @@ export function LLMSettings({
                       multiline={3}
                       autoComplete="off"
                     />
-                    <TextField
-                      label="Min Price Description"
-                      helpText="The description of the tool for min price"
-                      value={priceToolCallOptions.minPriceDescription ?? ""}
-                      onChange={(e) =>
-                        setPriceToolCallOptions({
-                          ...priceToolCallOptions,
-                          minPriceDescription: e,
-                        })
-                      }
-                      multiline={3}
-                      autoComplete="off"
-                    />
-                    <TextField
-                      label="Max Price Description"
-                      helpText="The description of the tool for max price"
-                      value={priceToolCallOptions.maxPriceDescription ?? ""}
-                      onChange={(e) =>
-                        setPriceToolCallOptions({
-                          ...priceToolCallOptions,
-                          maxPriceDescription: e,
-                        })
-                      }
-                      multiline={3}
-                      autoComplete="off"
-                    />
-                  </InlineGrid>
+                    <InlineGrid
+                      columns={{ xs: "1fr", md: "2fr 2fr" }}
+                      gap="400"
+                    >
+                      <TextField
+                        label="Min Price Description"
+                        helpText="The description of the tool for min price"
+                        value={priceToolCallOptions.minPriceDescription ?? ""}
+                        onChange={(e) =>
+                          setPriceToolCallOptions({
+                            ...priceToolCallOptions,
+                            minPriceDescription: e,
+                          })
+                        }
+                        multiline={3}
+                        autoComplete="off"
+                      />
+                      <TextField
+                        label="Max Price Description"
+                        helpText="The description of the tool for max price"
+                        value={priceToolCallOptions.maxPriceDescription ?? ""}
+                        onChange={(e) =>
+                          setPriceToolCallOptions({
+                            ...priceToolCallOptions,
+                            maxPriceDescription: e,
+                          })
+                        }
+                        multiline={3}
+                        autoComplete="off"
+                      />
+                    </InlineGrid>
+                  </BlockStack>
                 </FormLayout>
               </BlockStack>
               <InlineStack align="end" gap="200">
