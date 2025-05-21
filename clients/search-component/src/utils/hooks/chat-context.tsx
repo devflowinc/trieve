@@ -509,6 +509,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
     let stoppedGeneratingMessage = false;
     let createMessageFilters: ChunkFilter | null = null;
+    let useImage = false;
+    let referenceImageUrls: string[] = [];
+    let referenceChunks: Chunk[] = [];
+
 
     if (!groupIds || groupIds.length === 0) {
       chatMessageAbortController.current = new AbortController();
@@ -523,65 +527,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       );
 
       setLoadingText("Thinking about filter criteria...");
-
-    let referenceImageUrls: string[] = [];
-    let referenceChunks: Chunk[] = [];
-    let useImage = false;
-
-    const handleImageEdit = async () => {
-      console.log("REFERENCE IMAGE URLS", referenceImageUrls);
-      if (useImage) {
-        setLoadingText("Editing image...");
-
-        try {
-          const editImageResponse = await trieveSDK.editImage({
-            input_images: [
-              {
-                image_src: {
-                  url: imageUrl,
-                },
-                file_name: "input_image",
-              },
-              ...(referenceImageUrls?.map((url: string, index: number) => ({
-                image_src: {
-                  url,
-                },
-                file_name: `reference_image_${index + 1}`,
-              })) || []),
-            ],
-            prompt:
-              "Using the input image as a base reference, apply the following edit and use the reference images if provided: " +
-              (questionProp || currentQuestion),
-            quality: "medium",
-            n: 1,
-          });
-
-          if (
-            editImageResponse.image_urls &&
-            editImageResponse.image_urls.length > 0
-          ) {
-            setMessages((m) => [
-              ...m.slice(0, -1),
-              {
-                type: "system",
-                text: "Here's your edited image and other suggestions!",
-                additional: referenceChunks,
-                queryId: null,
-                imageUrl: editImageResponse.image_urls[0],
-              },
-            ]);
-            setImageUrl("");
-            setIsLoading(false);
-            return true;
-          }
-        } catch (e) {
-          console.error("error editing image", e);
-          return false;
-        }
-      }
-
-      return false;
-    };
 
       try {
         const priceFiltersPromise = retryOperation(async () => {
@@ -726,9 +671,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           });
         }
 
-      useImage = (imageFiltersResp?.parameters &&
-        (imageFiltersResp.parameters as any)["image"] === true &&
-        imageUrl) as boolean;
+        useImage = (imageFiltersResp?.parameters &&
+        (imageFiltersResp.parameters as any)["image"] === true && imageUrl) as boolean;
 
         const match_any_tags = [];
         if (tagFiltersResp?.parameters) {
@@ -1047,6 +991,61 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    const handleImageEdit = async () => {
+      console.log("REFERENCE IMAGE URLS", referenceImageUrls);
+      if (useImage) {
+        setLoadingText("Editing image...");
+
+        try {
+          const editImageResponse = await trieveSDK.editImage({
+            input_images: [
+              {
+                image_src: {
+                  url: imageUrl,
+                },
+                file_name: "input_image",
+              },
+              ...(referenceImageUrls?.map((url: string, index: number) => ({
+                image_src: {
+                  url,
+                },
+                file_name: `reference_image_${index + 1}`,
+              })) || []),
+            ],
+            prompt:
+              "Using the input image as a base reference, apply the following edit and use the reference images if provided: " +
+              (questionProp || currentQuestion),
+            quality: "medium",
+            n: 1,
+          });
+
+          if (
+            editImageResponse.image_urls &&
+            editImageResponse.image_urls.length > 0
+          ) {
+            setMessages((m) => [
+              ...m.slice(0, -1),
+              {
+                type: "system",
+                text: "Here's your edited image and other suggestions!",
+                additional: referenceChunks,
+                queryId: null,
+                imageUrl: editImageResponse.image_urls[0],
+              },
+            ]);
+            setImageUrl("");
+            setIsLoading(false);
+            return true;
+          }
+        } catch (e) {
+          console.error("error editing image", e);
+          return false;
+        }
+      }
+
+      return false;
+    };
+    
     if (referenceImageUrls.length > 0) {
       if (await handleImageEdit()) {
         return;
