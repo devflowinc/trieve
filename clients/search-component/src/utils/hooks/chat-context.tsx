@@ -525,6 +525,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       setLoadingText("Thinking about filter criteria...");
 
     let referenceImageUrls: string[] = [];
+    let referenceChunks: Chunk[] = [];
     let useImage = false;
 
     const handleImageEdit = async () => {
@@ -561,8 +562,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             ...m.slice(0, -1),
             {
               type: "system",
-              text: "Here's your edited image:",
-              additional: null,
+              text: "Here's your edited image and other suggestions!",
+              additional: referenceChunks,
               queryId: null,
               imageUrl: editImageResponse.image_urls[0],
             },
@@ -1024,8 +1025,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             }),
           );
           const groupChunks = await Promise.all(getChunksPromises);
-          referenceImageUrls = groupChunks
-            .map((group) => group.chunks[0]?.image_urls?.[0] || []) as string[];
+          referenceImageUrls = groupChunks.map(
+            (group) => group.chunks[0]?.image_urls?.[0] || [],
+          ) as string[];
+          referenceChunks = groupChunks.map(
+            (group) => group.chunks[0] || [],
+          ) as Chunk[];
         } catch (e) {
           console.error("Error getting reference images:", e);
           referenceImageUrls = [];

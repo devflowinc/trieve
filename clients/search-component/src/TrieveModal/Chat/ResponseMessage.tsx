@@ -381,16 +381,20 @@ export const Message = ({
           className={`system${props.type === "ecommerce" ? " ecommerce" : ""}`}
         >
           {message.imageUrl && (
-            <div className="tv-mb-4">
-              <img
-                src={message.imageUrl}
-                alt="Response image"
-                className="tv-max-w-full tv-rounded-lg tv-shadow-md"
-                style={{ maxHeight: "300px", objectFit: "contain" }}
-              />
-            </div>
+            <>
+              <Carousel>{ecommerceItems}</Carousel>
+              <div className="tv-mb-4">
+                <img
+                  src={message.imageUrl}
+                  alt="Response image"
+                  className="tv-max-w-full tv-rounded-lg tv-shadow-md"
+                  style={{ maxHeight: "300px", objectFit: "contain" }}
+                />
+              </div>
+            </>
           )}
           {message.additional &&
+            !message.imageUrl &&
             props.type === "ecommerce" &&
             (!props.inline ||
               props.inlineCarousel ||
