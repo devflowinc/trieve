@@ -1335,6 +1335,12 @@ pub async fn edit_image(
     let llm_api_key = get_llm_api_key(&dataset_config);
     let base_url = dataset_config.LLM_BASE_URL.clone();
 
+    if !base_url.contains("openai.com") {
+        return Err(ServiceError::BadRequest(
+            "Only OpenAI is supported for image editing. Change the base URL to access image editing features.".to_string(),
+        ));
+    }
+
     let client = Client {
         headers: None,
         api_key: llm_api_key,
