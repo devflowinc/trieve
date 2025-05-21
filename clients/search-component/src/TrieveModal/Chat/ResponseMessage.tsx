@@ -100,8 +100,8 @@ export const Message = ({
   message,
   idx,
 }: {
-  idx: number;
   message: Message;
+  idx: number;
 }) => {
   const { rateChatCompletion, messages, productsWithClicks, loadingText } =
     useChatState();
@@ -380,6 +380,16 @@ export const Message = ({
         <div
           className={`system${props.type === "ecommerce" ? " ecommerce" : ""}`}
         >
+          {message.imageUrl && (
+            <div className="tv-mb-4">
+              <img
+                src={message.imageUrl}
+                alt="Response image"
+                className="tv-max-w-full tv-rounded-lg tv-shadow-md"
+                style={{ maxHeight: "300px", objectFit: "contain" }}
+              />
+            </div>
+          )}
           {message.additional &&
             props.type === "ecommerce" &&
             (!props.inline ||
