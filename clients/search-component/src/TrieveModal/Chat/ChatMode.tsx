@@ -124,7 +124,9 @@ export const ChatMode = () => {
         >
           {/* Only shows with zero messages */}
           <SuggestedQuestions onMessageSend={onMessageSend} />{" "}
-          {!imageUrl && !uploadingImage && <LargeImageUpload />}
+          {!imageUrl && !uploadingImage && messages.length === 0 && (
+            <LargeImageUpload />
+          )}
           {messages.map((message, i) => {
             if (message.type === "user") {
               return <UserMessage key={i} message={message} idx={i} />;
