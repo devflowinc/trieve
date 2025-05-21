@@ -12,10 +12,12 @@ import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
 import { sendChunks } from "app/processors/getProducts";
 import { shopDatasetQuery } from "app/queries/shopDataset";
 import { authenticate } from "app/shopify.server";
-import { type Dataset } from "trieve-ts-sdk";
-import { ResetSettings } from "app/components/ResetSettings";
+import {
+  RelevanceToolCallOptions,
+  PriceToolCallOptions,
+  type Dataset,
+} from "trieve-ts-sdk";
 import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
-import { JudgeMeSetup } from "app/components/judgeme/JudgeMeSetup";
 import { getAppMetafields, setAppMetafields } from "app/queries/metafield";
 import { useState, useCallback, ReactNode } from "react";
 import { LLMSettings } from "app/components/settings/LLMSettings";
@@ -24,6 +26,7 @@ import {
   PresetQuestions,
 } from "app/components/settings/PresetQuestions";
 import { FilterSettings } from "app/components/settings/FilterSettings";
+import { IntegrationsSettings } from "app/components/settings/Integrations";
 
 export const loader = async ({
   request,
@@ -33,6 +36,8 @@ export const loader = async ({
   devMode: boolean;
   pdpPrompt: string;
   presetQuestions: PresetQuestion[];
+  relevanceToolCallOptions: RelevanceToolCallOptions | null;
+  priceToolCallOptions: PriceToolCallOptions | null;
 }> => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
@@ -72,14 +77,34 @@ export const loader = async ({
   const presetQuestions =
     (await getAppMetafields<PresetQuestion[]>(fetcher, "preset_questions")) ||
     [];
+
+  const relevanceToolCallOptions =
+    await getAppMetafields<RelevanceToolCallOptions>(
+      fetcher,
+      "relevance_tool_call_options",
+    );
+  const priceToolCallOptions = await getAppMetafields<PriceToolCallOptions>(
+    fetcher,
+    "price_tool_call_options",
+  );
+
   return {
     crawlSettings: crawlSettings?.crawlSettings,
     webPixelInstalled,
     devMode,
     pdpPrompt,
     presetQuestions,
+    relevanceToolCallOptions,
+    priceToolCallOptions,
   };
 };
+
+type SettingsSaveType =
+  | "crawl"
+  | "dataset"
+  | "revenue_tracking"
+  | "preset-questions"
+  | "tool_call_options";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -90,80 +115,110 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     session.accessToken!,
   );
   const formData = await request.formData();
-  const type = formData.get("type");
-  if (type === "crawl") {
-    const crawlOptions = formData.get("crawl_options");
-    const datasetId = formData.get("dataset_id");
-    const crawlSettings = JSON.parse(crawlOptions as string);
-    await prisma.crawlSettings.upsert({
-      where: {
-        datasetId_shop: {
-          datasetId: datasetId as string,
-          shop: session.shop,
+  const type = formData.get("type") as SettingsSaveType;
+  switch (type) {
+    case "crawl": {
+      const crawlOptions = formData.get("crawl_options");
+      const datasetId = formData.get("dataset_id");
+      const crawlSettings = JSON.parse(crawlOptions as string);
+      await prisma.crawlSettings.upsert({
+        where: {
+          datasetId_shop: {
+            datasetId: datasetId as string,
+            shop: session.shop,
+          },
         },
-      },
-      update: {
+        update: {
+          crawlSettings,
+        },
+        create: { crawlSettings },
+      });
+
+      const fetcher = buildAdminApiFetcherForServer(
+        session.shop,
+        session.accessToken!,
+      );
+
+      sendChunks(
+        datasetId as string,
+        key,
+        fetcher,
+        session,
         crawlSettings,
-      },
-      create: { crawlSettings },
-    });
-
-    const fetcher = buildAdminApiFetcherForServer(
-      session.shop,
-      session.accessToken!,
-    );
-
-    sendChunks(datasetId as string, key, fetcher, session, crawlSettings).catch(
-      console.error,
-    );
-    setAppMetafields(fetcher, [
-      {
-        key: "dataset_id",
-        value: key.currentDatasetId || "",
-        type: "single_line_text_field",
-      },
-      {
-        key: "api_key",
-        value: key.key,
-        type: "single_line_text_field",
-      },
-    ]).catch(console.error);
-
-    return { success: true };
-  } else if (type === "dataset") {
-    const datasetSettingsString = formData.get("dataset_settings");
-    const datasetId = formData.get("dataset_id");
-    const datasetSettings = JSON.parse(datasetSettingsString as string);
-    await trieve.updateDataset({
-      dataset_id: datasetId as string,
-      server_configuration: datasetSettings,
-    });
-    const pdpPrompt = formData.get("pdp_prompt");
-    if (pdpPrompt) {
-      await setAppMetafields(fetcher, [
+      ).catch(console.error);
+      setAppMetafields(fetcher, [
         {
-          key: "pdp_prompt",
-          value: pdpPrompt as string,
+          key: "dataset_id",
+          value: key.currentDatasetId || "",
           type: "single_line_text_field",
         },
-      ]);
+        {
+          key: "api_key",
+          value: key.key,
+          type: "single_line_text_field",
+        },
+      ]).catch(console.error);
+
+      return { success: true };
     }
-    return { success: true };
-  } else if (type === "revenue_tracking") {
-    await createWebPixel(fetcher, key);
-    return { success: true };
-  } else if (type === "preset-questions") {
-    const presetQuestions = formData.get("presetQuestions")?.toString() || "";
-    await setAppMetafields(fetcher, [
-      {
-        key: "preset_questions",
-        value: presetQuestions,
-        type: "json",
-      },
-    ]);
-    return { success: true };
+    case "dataset": {
+      const datasetSettingsString = formData.get("dataset_settings");
+      const datasetId = formData.get("dataset_id");
+      const datasetSettings = JSON.parse(datasetSettingsString as string);
+      await trieve.updateDataset({
+        dataset_id: datasetId as string,
+        server_configuration: datasetSettings,
+      });
+      const pdpPrompt = formData.get("pdp_prompt");
+      if (pdpPrompt) {
+        await setAppMetafields(fetcher, [
+          {
+            key: "pdp_prompt",
+            value: pdpPrompt as string,
+            type: "multi_line_text_field",
+          },
+        ]);
+      }
+      return { success: true };
+    }
+    case "revenue_tracking": {
+      await createWebPixel(fetcher, key);
+      return { success: true };
+    }
+    case "preset-questions": {
+      const presetQuestions = formData.get("presetQuestions")?.toString() || "";
+      await setAppMetafields(fetcher, [
+        {
+          key: "preset_questions",
+          value: presetQuestions,
+          type: "json",
+        },
+      ]);
+      return { success: true };
+    }
+    case "tool_call_options": {
+      const relevanceToolCallOptions = formData.get(
+        "relevance_tool_call_options",
+      );
+      const priceToolCallOptions = formData.get("price_tool_call_options");
+      await setAppMetafields(fetcher, [
+        {
+          key: "relevance_tool_call_options",
+          value: relevanceToolCallOptions as string,
+          type: "json",
+        },
+        {
+          key: "price_tool_call_options",
+          value: priceToolCallOptions as string,
+          type: "json",
+        },
+      ]);
+      return { success: true };
+    }
+    default: {
+      return { success: false };
+    }
   }
-  return { success: false };
 };
 
 export default function Dataset() {
@@ -175,6 +230,8 @@ export default function Dataset() {
     devMode,
     pdpPrompt,
     presetQuestions,
+    relevanceToolCallOptions,
+    priceToolCallOptions,
   } = useLoaderData<typeof loader>();
   const [selectedTab, setSelectedTab] = useState(0);
 
@@ -203,6 +260,12 @@ export default function Dataset() {
       panelID: "llm-settings-content",
     },
     {
+      id: "integrations-settings",
+      content: "Integrations",
+      accessibilityLabel: "Integrations Settings",
+      panelID: "integrations-settings-content",
+    },
+    {
       id: "dataset-settings",
       content: "Dataset Settings",
       accessibilityLabel: "Dataset Settings",
@@ -212,35 +275,33 @@ export default function Dataset() {
 
   const tabPanels: Record<string, ReactNode> = {
     "dataset-settings": (
-      <>
-        <DatasetSettings
-          initalCrawlOptions={crawlSettings as ExtendedCrawlOptions}
-          shopifyDatasetSettings={{
-            devMode,
-            webPixelInstalled,
-          }}
-          shopDataset={shopDataset as Dataset}
-        />
-        <div className="h-4"></div>
-        <JudgeMeSetup />
-        <div className="h-4"></div>
-        <ResetSettings />
-      </>
+      <DatasetSettings
+        initalCrawlOptions={crawlSettings as ExtendedCrawlOptions}
+        shopifyDatasetSettings={{
+          devMode,
+          webPixelInstalled,
+        }}
+        shopDataset={shopDataset as Dataset}
+      />
     ),
     "llm-settings": (
       <LLMSettings
         shopDataset={shopDataset as Dataset}
         existingPdpPrompt={pdpPrompt}
+        existingRelevanceToolCallOptions={relevanceToolCallOptions}
+        existingPriceToolCallOptions={priceToolCallOptions}
       />
     ),
     "preset-questions": <PresetQuestions initialQuestions={presetQuestions} />,
     "filter-settings": <FilterSettings />,
+    "integrations-settings": <IntegrationsSettings />,
   };
 
   return (
     <Box paddingBlockStart="400">
       <Card>
         <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
+        <div className="h-4"></div>
         {tabPanels[tabs[selectedTab].id]}
       </Card>
     </Box>

@@ -6,9 +6,12 @@ import {
   Box,
   Button,
   Card,
+  Divider,
   FormLayout,
   Icon,
+  InlineGrid,
   InlineStack,
+  Page,
   Select,
   Text,
   TextField,
@@ -19,6 +22,9 @@ import { useClientAdminApi } from "app/loaders/clientLoader";
 import { setAppMetafields } from "app/queries/metafield";
 import { useCallback, useEffect, useState } from "react";
 import { CrawlOptions, Dataset, DatasetConfigurationDTO } from "trieve-ts-sdk";
+import { useMutation } from "@tanstack/react-query";
+import { ONBOARD_STEP_META_FIELD } from "app/queries/onboarding";
+import { onboardingSteps } from "app/utils/onboarding";
 
 export type ExtendedCrawlOptions = Omit<CrawlOptions, "webhook_metadata"> & {
   include_metafields?: string[];
@@ -96,10 +102,30 @@ export const DatasetSettings = ({
   );
 
   const adminApi = useClientAdminApi();
+  const { smUp } = useBreakpoints();
 
   const [devModeEnabled, setDevModeEnabled] = useState(
     shopifyDatasetSettings.devMode ?? false,
   );
+
+  const resetMetafieldsMutation = useMutation({
+    onError: (e) => {
+      console.error("Error clearing app metafields", e);
+      shopify.toast.show("Error clearing app metafields", {
+        isError: true,
+      });
+    },
+    mutationFn: async () => {
+      setAppMetafields(adminApi, [
+        {
+          key: ONBOARD_STEP_META_FIELD,
+          value: onboardingSteps[0].id,
+          type: "single_line_text_field",
+        },
+      ]);
+      shopify.toast.show("Onboarding reset!");
+    },
+  });
 
   const handleToggle = useCallback(() => {
     setDevModeEnabled((enabled) => {
@@ -165,153 +191,248 @@ export const DatasetSettings = ({
   };
 
   return (
-    <BlockStack gap="200">
-      <Card>
-        <BlockStack gap="200">
-          <Text variant="headingLg" as="h1">
-            Crawl Settings
-          </Text>
-
-          <FormLayout>
-            <TextField
-              autoComplete="off"
-              label="Important Product Tags (Comma Seperated)"
-              helpText="Regex pattern of tags to use from the Shopify API, e.g. 'Men' to include 'Men' if it exists in a product tag."
-              value={
-                unsavedCrawlOptions.scrape_options?.tag_regexes?.join(",") || ""
-              }
-              onChange={(e) => {
-                setUnsavedCrawlOptions({
-                  ...unsavedCrawlOptions,
-                  scrape_options: {
-                    ...unsavedCrawlOptions.scrape_options,
-                    tag_regexes: e.split(",").map((s) => s.trim()),
-                    type: "shopify",
-                  },
-                });
-              }}
-            />
-
-            <TextField
-              autoComplete="off"
-              label="Metadata fields to include (Comma Seperated)"
-              helpText="Metafields to include in the response, e.g. 'color' to include the color metafield."
-              value={unsavedCrawlOptions.include_metafields?.join(",") || ""}
-              onChange={(e) => {
-                setUnsavedCrawlOptions({
-                  ...unsavedCrawlOptions,
-                  include_metafields: e.split(",").map((s) => s.trim()),
-                });
-              }}
-            />
-          </FormLayout>
-
-          <InlineStack align="end">
-            <Button onClick={onCrawlSettingsSave}>Save</Button>
-          </InlineStack>
-        </BlockStack>
-      </Card>
-      <Card>
-        <BlockStack gap="200">
-          <Text variant="headingLg" as="h1">
-            Revenue Tracking Settings
-          </Text>
-
-          <FormLayout>
-            <BlockStack gap="200">
-              <div className="max-w-fit">
-                {shopifyDatasetSettings.webPixelInstalled ? (
-                  <Button
-                    disabled
-                    fullWidth={false}
-                    icon={CheckCircleIcon}
-                    size="slim"
-                  >
-                    Revenue Tracker Installed
-                  </Button>
-                ) : (
-                  <Button onClick={onRevenueTrackingSettingsSave}>
-                    Install Revenue Tracker
-                  </Button>
-                )}
-              </div>
-              <Text as="p" tone="subdued" variant="bodySm">
-                Install the revenue tracker to start tracking revenue.
+    <Box paddingInline="400">
+      <BlockStack gap={{ xs: "800", sm: "400" }}>
+        <InlineGrid columns={{ xs: "1fr", md: "2fr 5fr" }} gap="400">
+          <Box
+            as="section"
+            paddingInlineStart={{ xs: "400", sm: "0" }}
+            paddingInlineEnd={{ xs: "400", sm: "0" }}
+          >
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingMd">
+                Crawl Settings
+              </Text>
+              <Text as="p" variant="bodyMd">
+                Configure how Trieve crawls your Shopify store product data.
+                Specify important tags and metafields to include during
+                indexing.
               </Text>
             </BlockStack>
-          </FormLayout>
-        </BlockStack>
-      </Card>
-      <Card>
-        <BlockStack gap="200">
-          <Text variant="headingLg" as="h1">
-            Advanced Settings
-          </Text>
+          </Box>
+          <Card roundedAbove="sm">
+            <BlockStack gap="400">
+              <FormLayout>
+                <TextField
+                  autoComplete="off"
+                  label="Important Product Tags (Comma Seperated)"
+                  helpText="Regex pattern of tags to use from the Shopify API, e.g. 'Men' to include 'Men' if it exists in a product tag."
+                  value={
+                    unsavedCrawlOptions.scrape_options?.tag_regexes?.join(
+                      ",",
+                    ) || ""
+                  }
+                  onChange={(e) => {
+                    setUnsavedCrawlOptions({
+                      ...unsavedCrawlOptions,
+                      scrape_options: {
+                        ...unsavedCrawlOptions.scrape_options,
+                        tag_regexes: e.split(",").map((s) => s.trim()),
+                        type: "shopify",
+                      },
+                    });
+                  }}
+                />
 
-          <FormLayout>
-            <BlockStack>
-              <Box width="100%">
+                <TextField
+                  autoComplete="off"
+                  label="Metadata fields to include (Comma Seperated)"
+                  helpText="Metafields to include in the response, e.g. 'color' to include the color metafield."
+                  value={
+                    unsavedCrawlOptions.include_metafields?.join(",") || ""
+                  }
+                  onChange={(e) => {
+                    setUnsavedCrawlOptions({
+                      ...unsavedCrawlOptions,
+                      include_metafields: e.split(",").map((s) => s.trim()),
+                    });
+                  }}
+                />
+              </FormLayout>
+
+              <InlineStack align="end">
+                <Button onClick={onCrawlSettingsSave}>Save</Button>
+              </InlineStack>
+            </BlockStack>
+          </Card>
+        </InlineGrid>
+
+        {smUp ? <Divider /> : null}
+
+        <InlineGrid columns={{ xs: "1fr", md: "2fr 5fr" }} gap="400">
+          <Box
+            as="section"
+            paddingInlineStart={{ xs: "400", sm: "0" }}
+            paddingInlineEnd={{ xs: "400", sm: "0" }}
+          >
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingMd">
+                Revenue Tracking Settings
+              </Text>
+              <Text as="p" variant="bodyMd">
+                Install the Trieve revenue tracker to monitor the performance
+                and ROI of your search and recommendation features.
+              </Text>
+            </BlockStack>
+          </Box>
+          <Card roundedAbove="sm">
+            <BlockStack gap="400">
+              <FormLayout>
+                <BlockStack gap="200">
+                  <div className="max-w-fit">
+                    {shopifyDatasetSettings.webPixelInstalled ? (
+                      <Button
+                        disabled
+                        fullWidth={false}
+                        icon={CheckCircleIcon}
+                        size="slim"
+                      >
+                        Revenue Tracker Installed
+                      </Button>
+                    ) : (
+                      <Button onClick={onRevenueTrackingSettingsSave}>
+                        Install Revenue Tracker
+                      </Button>
+                    )}
+                  </div>
+                  <Text as="p" tone="subdued" variant="bodySm">
+                    Install the revenue tracker to start tracking revenue.
+                  </Text>
+                </BlockStack>
+              </FormLayout>
+            </BlockStack>
+          </Card>
+        </InlineGrid>
+
+        {smUp ? <Divider /> : null}
+
+        <InlineGrid columns={{ xs: "1fr", md: "2fr 5fr" }} gap="400">
+          <Box
+            as="section"
+            paddingInlineStart={{ xs: "400", sm: "0" }}
+            paddingInlineEnd={{ xs: "400", sm: "0" }}
+          >
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingMd">
+                Advanced Settings
+              </Text>
+              <Text as="p" variant="bodyMd">
+                Configure advanced settings for your Trieve integration.
+              </Text>
+            </BlockStack>
+          </Box>
+          <Card roundedAbove="sm">
+            <BlockStack gap="400">
+              <FormLayout>
                 <BlockStack>
                   <Box width="100%">
-                    <InlineStack
-                      gap="1200"
-                      align="space-between"
-                      blockAlign="start"
-                      wrap={false}
-                    >
-                      <InlineStack gap="200" wrap={false}>
+                    <BlockStack>
+                      <Box width="100%">
                         <InlineStack
-                          gap="200"
-                          align="start"
-                          blockAlign="baseline"
+                          gap="1200"
+                          align="space-between"
+                          blockAlign="start"
+                          wrap={false}
+                        >
+                          <InlineStack gap="200" wrap={false}>
+                            <InlineStack
+                              gap="200"
+                              align="start"
+                              blockAlign="baseline"
+                            >
+                              <label>
+                                <Text variant="headingMd" as="h6">
+                                  Dev Mode
+                                </Text>
+                              </label>
+                              <InlineStack
+                                gap="200"
+                                align="center"
+                                blockAlign="center"
+                              >
+                                <Badge
+                                  tone={devModeEnabled ? "success" : undefined}
+                                  toneAndProgressLabelOverride={`Setting is ${
+                                    devModeEnabled ? "success" : undefined
+                                  }`}
+                                >
+                                  {devModeEnabled ? "On" : "Off"}
+                                </Badge>
+                              </InlineStack>
+                            </InlineStack>
+                          </InlineStack>
+                          <Box minWidth="fit-content">
+                            <InlineStack align="end">
+                              <Button
+                                role="switch"
+                                ariaChecked={devModeEnabled ? "true" : "false"}
+                                onClick={handleToggle}
+                                size="slim"
+                              >
+                                {devModeEnabled ? "Turn off" : "Turn on"}
+                              </Button>
+                            </InlineStack>
+                          </Box>
+                        </InlineStack>
+                      </Box>
+                      <BlockStack gap="400">
+                        <Text variant="bodyMd" as="p" tone="subdued">
+                          Enables dev mode for the shop embeds. This points the
+                          extension at the local dev server instead of the
+                          production server. This is useful for testing and
+                          debugging.{" "}
+                        </Text>
+                      </BlockStack>
+                    </BlockStack>
+                  </Box>
+                </BlockStack>
+
+                <Divider />
+
+                <BlockStack>
+                  <Box width="100%">
+                    <BlockStack>
+                      <Box width="100%">
+                        <InlineStack
+                          gap="1200"
+                          align="space-between"
+                          blockAlign="start"
+                          wrap={false}
                         >
                           <label>
                             <Text variant="headingMd" as="h6">
-                              Dev Mode
+                              Reset Onboarding
                             </Text>
                           </label>
-                          <InlineStack
-                            gap="200"
-                            align="center"
-                            blockAlign="center"
-                          >
-                            <Badge
-                              tone={devModeEnabled ? "success" : undefined}
-                              toneAndProgressLabelOverride={`Setting is ${devModeEnabled ? "success" : undefined}`}
-                            >
-                              {devModeEnabled ? "On" : "Off"}
-                            </Badge>
-                          </InlineStack>
-                        </InlineStack>
-                      </InlineStack>
-                      <Box minWidth="fit-content">
-                        <InlineStack align="end">
-                          <Button
-                            role="switch"
-                            ariaChecked={devModeEnabled ? "true" : "false"}
-                            onClick={handleToggle}
-                            size="slim"
-                          >
-                            {devModeEnabled ? "Turn off" : "Turn on"}
-                          </Button>
+                          <Box minWidth="fit-content">
+                            <InlineStack align="end">
+                              <Button
+                                onClick={() => {
+                                  resetMetafieldsMutation.mutate();
+                                }}
+                                disabled={resetMetafieldsMutation.isPending}
+                                tone="critical"
+                              >
+                                Reset
+                              </Button>
+                            </InlineStack>
+                          </Box>
                         </InlineStack>
                       </Box>
-                    </InlineStack>
+                      <BlockStack gap="400">
+                        <Text variant="bodyMd" as="p" tone="subdued">
+                          This will reset your onboarding progress so you can
+                          view the steps again.
+                        </Text>
+                      </BlockStack>
+                    </BlockStack>
                   </Box>
-                  <BlockStack gap="400">
-                    <Text variant="bodyMd" as="p" tone="subdued">
-                      Enables dev mode for the shop embeds. This points the
-                      extension at the local dev server instead of the
-                      production server. This is useful for testing and
-                      debugging.{" "}
-                    </Text>
-                  </BlockStack>
                 </BlockStack>
-              </Box>
+              </FormLayout>
             </BlockStack>
-          </FormLayout>
-        </BlockStack>
-      </Card>
-    </BlockStack>
+          </Card>
+        </InlineGrid>
+      </BlockStack>
+    </Box>
   );
 };

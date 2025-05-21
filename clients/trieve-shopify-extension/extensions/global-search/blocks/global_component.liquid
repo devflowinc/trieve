@@ -61,6 +61,8 @@
       openLinksInNewTab: toBool(getValue("{{ block.settings.open_links_new_tab }}", true)),
       theme: getValue("{{ block.settings.theme }}", "light"),
       showTrieve: false,
+      relevanceToolCallOptions: appMetafieldTrieve.relevance_tool_call_options,
+      priceToolCallOptions: appMetafieldTrieve.price_tool_call_options,
       getCartQuantity: (trackingId) => {
         return checkCartQuantity(parseInt(trackingId));
       },

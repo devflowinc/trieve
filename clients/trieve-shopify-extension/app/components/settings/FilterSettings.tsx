@@ -172,7 +172,7 @@ export function FilterSettings() {
   }
 
   return (
-    <Box paddingBlockStart="400">
+    <Box>
       {saveSuccess && (
         <Box paddingBlockEnd="400">
           <Banner tone="success" onDismiss={() => setSaveSuccess(false)}>
