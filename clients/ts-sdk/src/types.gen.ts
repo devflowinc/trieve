@@ -3088,6 +3088,7 @@ export type PublicPageParameters = {
     searchBar?: (boolean) | null;
     searchOptions?: ((PublicPageSearchOptions) | null);
     searchPageProps?: ((SearchPageProps) | null);
+    searchToolCallOptions?: ((SearchToolCallOptions) | null);
     showFloatingButton?: (boolean) | null;
     showFloatingInput?: (boolean) | null;
     showFloatingSearchIcon?: (boolean) | null;
@@ -4031,6 +4032,12 @@ export type SearchRevenueResponse = {
 };
 
 export type SearchSortBy = 'created_at' | 'latency' | 'top_score';
+
+export type SearchToolCallOptions = {
+    noSearchRagContext?: (string) | null;
+    toolDescription?: (string) | null;
+    userMessageTextPrefix?: (string) | null;
+};
 
 export type SearchType = 'search' | 'autocomplete' | 'search_over_groups' | 'search_within_groups';
 

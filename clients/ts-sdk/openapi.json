@@ -16583,6 +16583,14 @@
             ],
             "nullable": true
           },
+          "searchToolCallOptions": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SearchToolCallOptions"
+              }
+            ],
+            "nullable": true
+          },
           "showFloatingButton": {
             "type": "boolean",
             "nullable": true
@@ -20557,6 +20565,23 @@
           "latency",
           "top_score"
         ]
+      },
+      "SearchToolCallOptions": {
+        "type": "object",
+        "properties": {
+          "noSearchRagContext": {
+            "type": "string",
+            "nullable": true
+          },
+          "toolDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "userMessageTextPrefix": {
+            "type": "string",
+            "nullable": true
+          }
+        }
       },
       "SearchType": {
         "type": "string",

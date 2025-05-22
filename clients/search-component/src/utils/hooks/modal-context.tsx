@@ -83,6 +83,17 @@ export interface RelevanceToolCallOptions {
   lowDescription?: string;
 }
 
+export interface SearchToolCallOptions {
+  userMessageTextPrefix?: string;
+  toolDescription: string;
+}
+
+export const defaultSearchToolCallOptions: SearchToolCallOptions = {
+  userMessageTextPrefix: "Here is the user query:",
+  toolDescription:
+    "Call this tool anytime it seems like we need to skip the search step. This tool tells our system that the user is asking about what they were previously shown.",
+};
+
 export const defaultPriceToolCallOptions: PriceToolCallOptions = {
   toolDescription:
     "Only call this function if the query includes details about a price. Decide on which price filters to apply to the available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
@@ -163,6 +174,7 @@ export type ModalProps = {
   tags?: TagProp[];
   relevanceToolCallOptions?: RelevanceToolCallOptions;
   priceToolCallOptions?: PriceToolCallOptions;
+  searchToolCallOptions?: SearchToolCallOptions;
   defaultSearchMode?: SearchModes;
   usePagefind?: boolean;
   type?: ModalTypes;
@@ -245,6 +257,7 @@ const defaultProps = {
     },
   } as searchOptions,
   chatFilters: undefined,
+  searchToolCallOptions: defaultSearchToolCallOptions,
   analytics: true,
   chat: true,
   suggestedQueries: true,

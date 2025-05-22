@@ -3475,6 +3475,9 @@ impl DatasetConfigurationDTO {
                     price_tool_call_options: page_parameters_self
                         .price_tool_call_options
                         .or(page_parameters_curr.price_tool_call_options),
+                    search_tool_call_options: page_parameters_self
+                        .search_tool_call_options
+                        .or(page_parameters_curr.search_tool_call_options),
                     suggested_queries: page_parameters_self
                         .suggested_queries
                         .or(page_parameters_curr.suggested_queries),
