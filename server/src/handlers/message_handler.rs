@@ -965,6 +965,8 @@ pub struct GetToolFunctionParamsReqPayload {
     pub tool_function: ToolFunction,
     /// Model name to use for the completion. If not specified, this defaults to the dataset's model.
     pub model: Option<String>,
+    /// Temperature to use for the completion. If not specified, this defaults to the dataset's temperature.
+    pub temperature: Option<f64>,
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
@@ -1085,7 +1087,11 @@ pub async fn get_tool_function_params(
         organization: None,
     };
 
-    let parameters = ChatCompletionParametersBuilder::default()
+    let temperature = data.temperature.or(dataset_config.TEMPERATURE);
+
+    let mut parameters_builder = ChatCompletionParametersBuilder::default();
+
+    parameters_builder
         .model(chosen_model)
         .messages(vec![ChatMessage::User {
             content: ChatMessageContent::ContentPart(message_content_parts),
@@ -1120,7 +1126,13 @@ pub async fn get_tool_function_params(
                         .collect::<Vec<String>>(),
                 }),
             },
-        }])
+        }]);
+
+    if let Some(temperature) = temperature {
+        parameters_builder.temperature(temperature as f32);
+    }
+
+    let parameters = parameters_builder
         .build()
         .map_err(|err| {
             ServiceError::BadRequest(format!(

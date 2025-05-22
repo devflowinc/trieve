@@ -2439,6 +2439,10 @@ export type GetToolFunctionParamsReqPayload = {
      * Model name to use for the completion. If not specified, this defaults to the dataset's model.
      */
     model?: (string) | null;
+    /**
+     * Temperature to use for the completion. If not specified, this defaults to the dataset's temperature.
+     */
+    temperature?: (number) | null;
     tool_function: ToolFunction;
     /**
      * Text of the user's message to the assistant which will be used to generate the parameters for the tool function.
@@ -4667,9 +4671,13 @@ export type TypoRange = {
 
 export type UpdateAllOrgDatasetConfigsReqPayload = {
     /**
+     * The configuration to provide a filter on what datasets to update.
+     */
+    match_configuration?: unknown;
+    /**
      * The new configuration for all datasets in the organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values.
      */
-    dataset_config: unknown;
+    to_configuration: unknown;
 };
 
 export type UpdateChunkByTrackingIdData = {
