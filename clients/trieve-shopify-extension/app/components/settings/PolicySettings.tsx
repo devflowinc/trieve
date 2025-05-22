@@ -192,10 +192,18 @@ export function PolicySettings({
           align="space-between"
           gap="200"
         >
-          <Box minWidth="0">
+          <Box minWidth="0" maxWidth="calc(100% - 100px)" width="100%">
             <BlockStack gap="100">
-              <Text variant="bodyMd" as="p" fontWeight="semibold" truncate>
-                {item.content}
+              <Text
+                variant="bodyMd"
+                as="p"
+                fontWeight="semibold"
+                truncate
+                breakWord
+              >
+                {item.content.length > 75
+                  ? `${item.content.substring(0, 75)}...`
+                  : item.content}
               </Text>
             </BlockStack>
           </Box>
