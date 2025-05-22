@@ -964,7 +964,64 @@ pub async fn cross_encoder(
 
     if results.len() <= 20 {
         let reranker_api_key = dataset_config.RERANKER_API_KEY.clone();
-        if server_origin != default_server_origin {
+        if server_origin == default_server_origin {
+            let mut results_clone = results.clone();
+            let result_reordered = web::block(move || {
+                let mut retries = 0;
+                let mut embedding_response: Result<Vec<ScoreChunkDTO>, ServiceError> = Err(
+                    ServiceError::InternalServerError("Failed making call to reranker".to_string()),
+                );
+                while retries < 3 {
+                    let embeddings_resp = ureq_agent
+                        .post(&embedding_server_call)
+                        .set("Content-Type", "application/json")
+                        .set(
+                            "Authorization",
+                            &format!("Bearer {}", reranker_api_key.clone()),
+                        )
+                        .send_json(CrossEncoderData {
+                            query: query.clone(),
+                            texts: common_request_docs.clone(),
+                            truncate: true,
+                        });
+                    match embeddings_resp {
+                        Ok(resp) => {
+                            match resp.into_json::<Vec<ScorePair>>() {
+                                Ok(resp) => {
+                                    resp.into_iter().for_each(|pair| {
+                                        results_clone.index_mut(pair.index).score =
+                                            pair.score as f64;
+                                    });
+                                    embedding_response = Ok(results_clone);
+                                    break;
+                                }
+                                Err(_) => {
+                                    embedding_response = Err(ServiceError::BadRequest(
+                                        "Failed parsing response from custom embedding server"
+                                            .to_string(),
+                                    ));
+                                }
+                            }
+                            break;
+                        }
+                        Err(_) => {
+                            embedding_response = Err(ServiceError::BadRequest(
+                                "Failed parsing response from custom embedding server".to_string(),
+                            ));
+                            retries += 1;
+                        }
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(200));
+                }
+                embedding_response
+            })
+            .await
+            .map_err(|err| {
+                log::error!("Thread error calling reranker: {:?}", err);
+                ServiceError::InternalServerError("Failed making call to reranker".to_string())
+            })??;
+            results = result_reordered;
+        } else {
             let reranker_model_name = dataset_config.RERANKER_MODEL_NAME.clone();
             if reranker_model_name == "aimon-rerank" {
                 let aimon_body = AIMonRequestBody {
@@ -1060,35 +1117,6 @@ pub async fn cross_encoder(
                     results.index_mut(pair.index).score = pair.score as f64;
                 });
             }
-        } else {
-            let resp = ureq_agent
-                .post(&embedding_server_call)
-                .set("Content-Type", "application/json")
-                .set(
-                    "Authorization",
-                    &format!("Bearer {}", reranker_api_key.clone()),
-                )
-                .send_json(CrossEncoderData {
-                    query: query.clone(),
-                    texts: common_request_docs.clone(),
-                    truncate: true,
-                })
-                .map_err(|err| {
-                    ServiceError::BadRequest(format!("Failed making call to server {:?}", err))
-                })?
-                .into_json::<Vec<ScorePair>>()
-                .map_err(|_e| {
-                    log::error!(
-                        "Failed parsing response from custom embedding server: {:?}",
-                        _e
-                    );
-                    ServiceError::BadRequest(
-                        "Failed parsing response from custom embedding server".to_string(),
-                    )
-                })?;
-            resp.into_iter().for_each(|pair| {
-                results.index_mut(pair.index).score = pair.score as f64;
-            });
         }
     } else {
         let vec_futures: Vec<_> = results
