@@ -229,8 +229,8 @@ export const AnalyticsChart = <T extends Record<string, any>>(
                 padding: 10,
                 ...(chartType === "bar" && {
                   autoSkip: false,
-                  maxRotation: 45,
-                  minRotation: 45,
+                  maxRotation: 0,
+                  minRotation: 0,
                 }),
               },
               offset: chartType === "bar" ? true : undefined,
