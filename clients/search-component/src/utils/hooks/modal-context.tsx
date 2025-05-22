@@ -662,6 +662,10 @@ const ModalProvider = ({
               setDisplay(true);
             }
             setAbTreatment(treatment.treatment_name);
+            window.localStorage.setItem(
+              `ab-treatment`,
+              treatment.treatment_name,
+            );
           });
       }
     }

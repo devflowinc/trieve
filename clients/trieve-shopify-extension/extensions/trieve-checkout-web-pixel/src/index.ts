@@ -44,6 +44,13 @@ register(async ({ analytics, browser, init, settings }) => {
         break;
       }
     }
+
+    const abTreatment = await browser.localStorage
+      .getItem("ab-treatment")
+      .catch((_) => {
+        return null;
+      });
+
     console.log("Sending checkout started event", {
       event_name: `site-checkout`,
       event_type: "purchase",
@@ -53,6 +60,9 @@ register(async ({ analytics, browser, init, settings }) => {
       request: {
         request_id: requestId,
         request_type: "rag",
+      },
+      metadata: {
+        ab_treatment: abTreatment,
       },
     });
 
@@ -65,6 +75,9 @@ register(async ({ analytics, browser, init, settings }) => {
       request: {
         request_id: requestId,
         request_type: "rag",
+      },
+      metadata: {
+        ab_treatment: abTreatment,
       },
     });
   });
@@ -95,12 +108,22 @@ register(async ({ analytics, browser, init, settings }) => {
         break;
       }
     }
+
+    const abTreatment = await browser.localStorage
+      .getItem("ab-treatment")
+      .catch((_) => {
+        return null;
+      });
+
     console.log("Sending checkout completed event", {
       event_name: `site-checkout_end`,
       event_type: "purchase",
       items,
       is_conversion: true,
       user_id: fingerprint,
+      metadata: {
+        ab_treatment: abTreatment,
+      },
     });
 
     trieveSDK.sendAnalyticsEvent({
@@ -112,6 +135,9 @@ register(async ({ analytics, browser, init, settings }) => {
       request: {
         request_id: requestId,
         request_type: "rag",
+      },
+      metadata: {
+        ab_treatment: abTreatment,
       },
     });
   });
@@ -134,6 +160,12 @@ register(async ({ analytics, browser, init, settings }) => {
         break;
       }
     }
+
+    const abTreatment = await browser.localStorage
+      .getItem("ab-treatment")
+      .catch((_) => {
+        return null;
+      });
     console.log("Sending product added to cart event", {
       event_name: `site-add_to_cart`,
       event_type: "add_to_cart",
@@ -142,6 +174,9 @@ register(async ({ analytics, browser, init, settings }) => {
       request: {
         request_id: requestId,
         request_type: "rag",
+      },
+      metadata: {
+        ab_treatment: abTreatment,
       },
     });
 
@@ -153,6 +188,9 @@ register(async ({ analytics, browser, init, settings }) => {
       request: {
         request_id: requestId,
         request_type: "rag",
+      },
+      metadata: {
+        ab_treatment: abTreatment,
       },
     });
   });
