@@ -92,22 +92,21 @@ export const defaultPriceToolCallOptions: PriceToolCallOptions = {
     "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
 };
 
-export const defaultSearchToolCallOptions: SearchToolCallOptions = {
-  toolDescription: "A tool to determine if a search is needed.",
-  searchPrompt: "Determine if a search is needed. If the user is asking a follow up question, search is not needed. If it is a single word or question about catalog, it is a search",
-  noSearchRagContext: "Answer the users question directly, be kind and helpful if they want support tell them to email the support team. If the user asks for a comparision of the results, generate a markdown table of results."
-};
-
 export interface PriceToolCallOptions {
   toolDescription: string;
   minPriceDescription?: string;
   maxPriceDescription?: string;
 }
 
+export const defaultSearchToolCallOptions: SearchToolCallOptions = {
+  userMessageTextPrefix: "Here is the user query:",
+  toolDescription:
+    "Call this tool anytime it seems like we need to skip the search step. This tool tells our system that the user is asking about what they were previously shown.",
+};
+
 export interface SearchToolCallOptions {
+  userMessageTextPrefix?: string;
   toolDescription: string;
-  searchPrompt?: string;
-  noSearchRagContext?: string;
 }
 
 export interface FilterSidebarSection {
@@ -447,7 +446,9 @@ const ModalProvider = ({
   const [minHeight, setMinHeight] = useState(0);
   const [chatHeight, setChatHeight] = useState(0);
   const [enabled, setEnabled] = useState(true);
-  const [display, setDisplay] = useState(!props.experimentIds || props.experimentIds.length === 0);
+  const [display, setDisplay] = useState(
+    !props.experimentIds || props.experimentIds.length === 0,
+  );
 
   const trieve = new TrieveSDK({
     baseUrl: props.baseUrl,
@@ -634,18 +635,24 @@ const ModalProvider = ({
   }, []);
 
   useEffect(() => {
-    if (props.experimentIds && props.experimentIds.length > 0 && fingerprint !== "") {
+    if (
+      props.experimentIds &&
+      props.experimentIds.length > 0 &&
+      fingerprint !== ""
+    ) {
       for (const experimentId of props.experimentIds) {
-        trieve.getTreatment({
-          experiment_id: experimentId,
-          user_id: fingerprint,
-        }).then((treatment) => {
-          if (treatment.treatment_name === "Don't show") {
-            setDisplay(false);
-          } else {
-            setDisplay(true);
-          }
-        });
+        trieve
+          .getTreatment({
+            experiment_id: experimentId,
+            user_id: fingerprint,
+          })
+          .then((treatment) => {
+            if (treatment.treatment_name === "Don't show") {
+              setDisplay(false);
+            } else {
+              setDisplay(true);
+            }
+          });
       }
     }
   }, [props.experimentIds, fingerprint]);
@@ -853,7 +860,7 @@ const ModalProvider = ({
         minHeight,
         resetHeight,
         addHeight,
-        display
+        display,
       }}
     >
       {children}

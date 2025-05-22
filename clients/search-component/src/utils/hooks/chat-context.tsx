@@ -21,38 +21,51 @@ import {
 } from "trieve-ts-sdk";
 import { defaultHighlightOptions } from "../highlight";
 
-const buildRagContext = ({ props, groupResults, messages, shouldSearch }: {
+const buildRagContext = ({
+  props,
+  groupResults,
+  messages,
+  skipSearch,
+}: {
   props: ModalProps;
   groupResults?: SearchOverGroupsResults[];
   messages: ComponentMessages;
-  shouldSearch: boolean;
+  skipSearch: boolean;
 }): string | undefined => {
-  if (!shouldSearch && messages.length > 0) {
-    const formattedChunks = messages.filter((msg) => msg.type == "system" && msg.additional?.length).map((message, idx) => {
-      console.log("message.additional", message.additional.length);
-      return message.additional?.forEach((chunk) => {
-        return JSON.stringify({
-          product: idx + 1,
-          description: chunk.chunk_html || "",
-          price: chunk.num_value ? `${props.defaultCurrency || ""} ${chunk.num_value}` : "",
-          link: chunk.link || ""
+  if (skipSearch && messages.length > 0) {
+    const formattedChunks = messages
+      .filter((msg) => msg.type == "system" && msg.additional?.length)
+      .map((message, idx) => {
+        return message.additional?.forEach((chunk) => {
+          return JSON.stringify({
+            product: idx + 1,
+            description: chunk.chunk_html || "",
+            price: chunk.num_value
+              ? `${props.defaultCurrency || ""} ${chunk.num_value}`
+              : "",
+            link: chunk.link || "",
+          });
         });
       })
-    }).join("\n\n");
+      .join("\n\n");
     console.log(formattedChunks);
     return formattedChunks;
   }
 
-  if (groupResults && props.type == 'ecommerce') {
-    const formattedChunks = groupResults.map((chunk, idx) => {
-      const firstChunk = chunk.chunks[0].chunk as ChunkMetadata;
-      return JSON.stringify({
-        product: idx + 1,
-        description: firstChunk.chunk_html || "",
-        price: firstChunk.num_value ? `${props.defaultCurrency || ""} ${firstChunk.num_value}` : "",
-        link: firstChunk.link || ""
-      });
-    }).join("\n\n");
+  if (groupResults && props.type == "ecommerce") {
+    const formattedChunks = groupResults
+      .map((chunk, idx) => {
+        const firstChunk = chunk.chunks[0].chunk as ChunkMetadata;
+        return JSON.stringify({
+          product: idx + 1,
+          description: firstChunk.chunk_html || "",
+          price: firstChunk.num_value
+            ? `${props.defaultCurrency || ""} ${firstChunk.num_value}`
+            : "",
+          link: firstChunk.link || "",
+        });
+      })
+      .join("\n\n");
     return formattedChunks;
   }
 
@@ -129,18 +142,18 @@ const ChatContext = createContext<{
   rateChatCompletion: (isPositive: boolean, queryId: string | null) => void;
   productsWithClicks: ChunkIdWithIndex[];
 }>({
-  askQuestion: async () => { },
+  askQuestion: async () => {},
   currentQuestion: "",
   isLoading: false,
   loadingText: "",
   messages: [],
-  setCurrentQuestion: () => { },
-  cancelGroupChat: () => { },
-  clearConversation: () => { },
-  chatWithGroup: () => { },
-  switchToChatAndAskQuestion: async () => { },
-  stopGeneratingMessage: () => { },
-  rateChatCompletion: () => { },
+  setCurrentQuestion: () => {},
+  cancelGroupChat: () => {},
+  clearConversation: () => {},
+  chatWithGroup: () => {},
+  switchToChatAndAskQuestion: async () => {},
+  stopGeneratingMessage: () => {},
+  rateChatCompletion: () => {},
   productsWithClicks: [],
 });
 
@@ -299,10 +312,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
-    shouldSearch: boolean,
+    skipSearch: boolean,
     queryId: string | null,
   ) => {
-    console.log("streaming back")
     setIsLoading(true);
     setIsDoneReading(false);
     let done = false;
@@ -337,7 +349,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           json = null;
         }
 
-        if (json && props.analytics && !calledAnalytics && shouldSearch) {
+        if (json && props.analytics && !calledAnalytics && !skipSearch) {
           calledAnalytics = true;
           const ecommerceChunks = (json as unknown as Chunk[]).filter(
             (chunk) =>
@@ -401,7 +413,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           {
             type: "system",
             text: outputBuffer,
-            additional: (json && shouldSearch) ? json : null,
+            additional: json && !skipSearch ? json : null,
             queryId,
           },
         ]);
@@ -542,39 +554,40 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       imageUrl || curAudioBase64 ? 20000 : 10000,
     );
 
-    let shouldSearch = true;
+    let skipSearch = false;
 
     setLoadingText("Thinking about filter criteria...");
     try {
       const priceFiltersPromise = retryOperation(async () => {
         if (props.type === "ecommerce" && !curGroup) {
-          return await trieveSDK.getToolCallFunctionParams({
-            user_message_text: questionProp || currentQuestion,
-            image_url: imageUrl ? imageUrl : null,
-            audio_input: curAudioBase64 ? curAudioBase64 : null,
-            tool_function: {
-              name: "get_price_filters",
-              description:
-                props.priceToolCallOptions?.toolDescription ??
-                defaultPriceToolCallOptions.toolDescription,
-              parameters: [
-                {
-                  name: "min_price",
-                  parameter_type: "number",
-                  description: (props.priceToolCallOptions
-                    ?.minPriceDescription ??
-                    defaultPriceToolCallOptions.minPriceDescription) as string,
-                },
-                {
-                  name: "max_price",
-                  parameter_type: "number",
-                  description: (props.priceToolCallOptions
-                    ?.maxPriceDescription ??
-                    defaultPriceToolCallOptions.maxPriceDescription) as string,
-                },
-              ],
+          return await trieveSDK.getToolCallFunctionParams(
+            {
+              user_message_text: questionProp || currentQuestion,
+              image_url: imageUrl ? imageUrl : null,
+              audio_input: curAudioBase64 ? curAudioBase64 : null,
+              tool_function: {
+                name: "get_price_filters",
+                description:
+                  props.priceToolCallOptions?.toolDescription ??
+                  defaultPriceToolCallOptions.toolDescription,
+                parameters: [
+                  {
+                    name: "min_price",
+                    parameter_type: "number",
+                    description: (props.priceToolCallOptions
+                      ?.minPriceDescription ??
+                      defaultPriceToolCallOptions.minPriceDescription) as string,
+                  },
+                  {
+                    name: "max_price",
+                    parameter_type: "number",
+                    description: (props.priceToolCallOptions
+                      ?.maxPriceDescription ??
+                      defaultPriceToolCallOptions.maxPriceDescription) as string,
+                  },
+                ],
+              },
             },
-          },
             chatMessageAbortController.current.signal,
           );
         } else {
@@ -584,28 +597,24 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      const needsSearchPromise = retryOperation(async () => {
+      const skipSearchPromise = retryOperation(async () => {
         if (props.type === "ecommerce" && !curGroup && messages.length > 1) {
           return await trieveSDK.getToolCallFunctionParams({
-            user_message_text: `${props.searchToolCallOptions?.searchPrompt ?? defaultSearchToolCallOptions.searchPrompt}. The messge thread is: "${questionProp || currentQuestion}". ${messages.slice(0, -1).map((message) => `\n\n${message.text}`)}`,
+            user_message_text: `Here's the previous message thread so far: ${messages.slice(0, -1).map((message) => `\n\n${message.text}`)} \n\n${props.searchToolCallOptions?.userMessageTextPrefix ?? defaultSearchToolCallOptions.userMessageTextPrefix}: ${questionProp || currentQuestion}.`,
             image_url: imageUrl ? imageUrl : null,
             audio_input: curAudioBase64 ? curAudioBase64 : null,
             tool_function: {
-              name: "needs_search",
+              name: "skip_search",
               description:
                 props.searchToolCallOptions?.toolDescription ??
-                defaultSearchToolCallOptions.toolDescription as string,
+                (defaultSearchToolCallOptions.toolDescription as string),
               parameters: [
                 {
-                  name: "search",
+                  name: "skip_search",
                   parameter_type: "boolean",
-                  description: "Should we search? If the user is asking for more products, search is needed.",
+                  description:
+                    "Set to true if the query is asking about products which were shown to them previously in the message thread. Set to false if the query is asking about the general catalog products or for different/other products differing from the ones shown previously.",
                 },
-                {
-                  "name": "followup_response",
-                  "parameter_type": "boolean",
-                  "description": "If the user is asking a follow up question, search is not needed. If the user is asking for comparisons, search is not needed.",
-                }
               ],
             },
           });
@@ -627,13 +636,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               user_message_text:
                 questionProp || currentQuestion
                   ? `Get filters from the following messages: ${messages
-                    .slice(0, -1)
-                    .filter((message) => {
-                      return message.type == "user";
-                    })
-                    .map(
-                      (message) => `\n\n${message.text}`,
-                    )} \n\n ${questionProp || currentQuestion}`
+                      .slice(0, -1)
+                      .filter((message) => {
+                        return message.type == "user";
+                      })
+                      .map(
+                        (message) => `\n\n${message.text}`,
+                      )} \n\n ${questionProp || currentQuestion}`
                   : null,
               image_url: imageUrl ? imageUrl : null,
               audio_input: curAudioBase64 ? curAudioBase64 : null,
@@ -665,11 +674,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      const [priceFiltersResp, tagFiltersResp, needsSearch] = await Promise.all([
-        priceFiltersPromise,
-        tagFiltersPromise,
-        needsSearchPromise
-      ]);
+      const [priceFiltersResp, tagFiltersResp, skipSearchResp] =
+        await Promise.all([
+          priceFiltersPromise,
+          tagFiltersPromise,
+          skipSearchPromise,
+        ]);
 
       if (transcribedQuery && curAudioBase64) {
         questionProp = transcribedQuery;
@@ -695,11 +705,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
-      if (needsSearch?.parameters) {
-        console.log("needsSearch.parameters", needsSearch.parameters);
-        const needsSearchParam = (needsSearch.parameters as any)["search"];
-        if (typeof needsSearchParam === "boolean" && !needsSearchParam) {
-          shouldSearch = false;
+      if (skipSearchResp?.parameters) {
+        const needsSearchParam = (skipSearchResp.parameters as any)[
+          "skip_search"
+        ];
+        if (typeof needsSearchParam === "boolean" && needsSearchParam) {
+          skipSearch = true;
         }
       }
 
@@ -846,7 +857,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           },
         ],
       };
-    } else if (shouldSearch) {
+    } else if (!skipSearch) {
       try {
         setLoadingText("Searching for relevant products...");
         const searchOverGroupsResp = await retryOperation(async () => {
@@ -882,13 +893,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               : null;
             const imageUrls = props.relevanceToolCallOptions?.includeImages
               ? (
-                (firstChunk?.image_urls?.filter(
-                  (stringOrNull): stringOrNull is string =>
-                    Boolean(stringOrNull),
-                ) ||
-                  []) ??
-                []
-              ).splice(0, 1)
+                  (firstChunk?.image_urls?.filter(
+                    (stringOrNull): stringOrNull is string =>
+                      Boolean(stringOrNull),
+                  ) ||
+                    []) ??
+                  []
+                ).splice(0, 1)
               : undefined;
             const jsonOfFirstChunk = {
               title: (firstChunk?.metadata as any)["title"],
@@ -981,10 +992,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         if (highlyRelevantResults.length > 1) {
           resultsToUse = [...highlyRelevantResults];
         } else if (highlyRelevantResults.length === 1) {
-          resultsToUse = [
-            ...highlyRelevantResults,
-            ...mediumRelevantResults,
-          ];
+          resultsToUse = [...highlyRelevantResults, ...mediumRelevantResults];
         } else if (
           highlyRelevantResults.length === 0 &&
           mediumRelevantResults.length > 0
@@ -999,7 +1007,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           must: [
             {
               field: "group_ids",
-              match_any: topResults.map((result) => result.group.id)
+              match_any: topResults.map((result) => result.group.id),
             },
           ],
         };
@@ -1007,19 +1015,18 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           props,
           groupResults: topResults,
           messages,
-          shouldSearch,
-        })
+          skipSearch,
+        });
       } catch (e) {
         console.error("error getting determine_relevance", e);
       }
-    } else if (!shouldSearch) {
-      console.log("building rag context without search");
+    } else if (skipSearch) {
       ragContext = buildRagContext({
         props,
         groupResults: undefined,
         messages,
-        shouldSearch,
-      })
+        skipSearch,
+      });
     }
 
     setLoadingText("AI is generating a response...");
@@ -1053,7 +1060,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       );
       try {
         if (createMessageFilters == null) {
-          console.log("createMessageFilters is null, setting to filters", filters, "pls");
           createMessageFilters = filters;
         }
 
@@ -1091,7 +1097,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 highlight_results: true,
               },
               only_include_docs_used: false,
-              rag_context: shouldSearch ? ragContext : `${ragContext ?? ""} ${props.searchToolCallOptions?.noSearchRagContext ?? defaultSearchToolCallOptions.noSearchRagContext}`,
+              rag_context: ragContext,
             },
             chatMessageAbortController.current.signal,
             (headers: Record<string, string>) => {
@@ -1138,7 +1144,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       ]);
     }
 
-    if (reader) handleReader(reader, shouldSearch, queryId);
+    if (reader) handleReader(reader, skipSearch, queryId);
 
     if (imageUrl) {
       setImageUrl("");
@@ -1228,7 +1234,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (!currentGroup && group) {
-      chatWithGroup(group); setCurrentGroup(group);
+      chatWithGroup(group);
+      setCurrentGroup(group);
     }
 
     if (!audioBase64) {
