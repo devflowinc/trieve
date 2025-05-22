@@ -80,6 +80,7 @@ export function PolicySettings({
         setIsAdding(false);
         shopify.toast.show("Policy added!");
       } else {
+        setEditingPolicyId(null);
         shopify.toast.show("Policy updated!");
       }
     } catch (error) {
@@ -90,6 +91,7 @@ export function PolicySettings({
   };
 
   const handleStartEditPolicy = (policy: Policy) => {
+    setIsAdding(false);
     setEditingPolicyId(policy.id);
     setNewPolicy(policy);
   };
@@ -102,16 +104,7 @@ export function PolicySettings({
     );
 
     setPolicies(updatedPolicies);
-
-    const policyToSubmit = {
-      ...newPolicy,
-      id: editingPolicyId,
-    };
-
-    setNewPolicy(policyToSubmit);
     handlePolicyChange();
-
-    setEditingPolicyId(null);
   };
 
   const handleDeletePolicyTrigger = (id: string) => {
@@ -146,6 +139,18 @@ export function PolicySettings({
     setShowDeleteConfirmModal(false);
   };
 
+  const handleStartAdding = () => {
+    setEditingPolicyId(null);
+    setIsAdding(true);
+    setNewPolicy({ id: "", content: "" });
+  };
+
+  const handleCancel = () => {
+    setIsAdding(false);
+    setEditingPolicyId(null);
+    setNewPolicy({ id: "", content: "" });
+  };
+
   const renderItem = (item: Policy) => {
     if (editingPolicyId === item.id) {
       return (
@@ -165,14 +170,7 @@ export function PolicySettings({
                 <Button variant="primary" onClick={handleSaveEdit}>
                   Save Changes
                 </Button>
-                <Button
-                  onClick={() => {
-                    setEditingPolicyId(null);
-                    setNewPolicy({ id: "", content: "" });
-                  }}
-                >
-                  Cancel
-                </Button>
+                <Button onClick={handleCancel}>Cancel</Button>
               </InlineStack>
             </BlockStack>
           </Card>
@@ -236,7 +234,7 @@ export function PolicySettings({
       action={{
         content: "Add Policy",
         icon: PlusIcon,
-        onAction: () => setIsAdding(true),
+        onAction: handleStartAdding,
       }}
       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
     >
@@ -286,25 +284,18 @@ export function PolicySettings({
                   <Button variant="primary" onClick={handlePolicyChange}>
                     Save Policy
                   </Button>
-                  <Button
-                    onClick={() => {
-                      setIsAdding(false);
-                      setNewPolicy({ id: "", content: "" });
-                    }}
-                  >
-                    Cancel
-                  </Button>
+                  <Button onClick={handleCancel}>Cancel</Button>
                 </InlineStack>
               </BlockStack>
             </Card>
           </Box>
         )}
 
-        {!isAdding && policies.length > 0 && (
+        {!isAdding && !editingPolicyId && policies.length > 0 && (
           <InlineStack align="end">
             <ButtonGroup>
               <Button
-                onClick={() => setIsAdding(true)}
+                onClick={handleStartAdding}
                 variant="primary"
                 icon={PlusIcon}
               >
