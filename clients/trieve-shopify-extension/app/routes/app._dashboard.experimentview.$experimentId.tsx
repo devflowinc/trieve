@@ -76,14 +76,14 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         },
       ],
     })
-    .where({
-      column: "events.created_at",
-      operator: ">",
-      value: new Date(experiment.created_at)
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " "),
-    })
+    // .where({
+    //   column: "events.created_at",
+    //   operator: ">",
+    //   value: new Date(experiment.created_at)
+    //     .toISOString()
+    //     .slice(0, 19)
+    //     .replace("T", " "),
+    // })
     .where({
       column: "experiment_user_assignments.experiment_id",
       operator: "=",
@@ -136,14 +136,14 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         },
       ],
     })
-    .where({
-      column: "events.created_at",
-      operator: ">",
-      value: new Date(experiment.created_at)
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " "),
-    })
+    // .where({
+    //   column: "events.created_at",
+    //   operator: ">",
+    //   value: new Date(experiment.created_at)
+    //     .toISOString()
+    //     .slice(0, 19)
+    //     .replace("T", " "),
+    // })
     .groupBy(["experiment_user_assignments.treatment_name"])
     .build();
 
@@ -187,14 +187,14 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         },
       ],
     })
-    .where({
-      column: "events.created_at",
-      operator: ">",
-      value: new Date(experiment.created_at)
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " "),
-    })
+    // .where({
+    //   column: "events.created_at",
+    //   operator: ">",
+    //   value: new Date(experiment.created_at)
+    //     .toISOString()
+    //     .slice(0, 19)
+    //     .replace("T", " "),
+    // })
     .groupBy(["experiment_user_assignments.treatment_name"])
     .build();
 
