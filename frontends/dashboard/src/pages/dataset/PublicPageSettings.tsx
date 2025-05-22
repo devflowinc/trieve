@@ -31,6 +31,7 @@ import {
   PublicPageTabMessage,
   RelevanceToolCallOptions,
   SearchOverGroupsResponseBody,
+  SearchToolCallOptions,
 } from "trieve-ts-sdk";
 import FilterSidebarBuilder from "../../components/FilterSidebarBuilder";
 import { DatasetContext } from "../../contexts/DatasetContext";
