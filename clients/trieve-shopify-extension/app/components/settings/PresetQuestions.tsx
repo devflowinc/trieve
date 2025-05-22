@@ -136,6 +136,10 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
       return;
     }
 
+    setEditFormData(defaultQuestionFormData);
+    setSearchedProducts([]);
+    setEditingQuestionId(null);
+    setIsAddingNewQuestion(false);
     setPresetQuestions(updatedQuestions);
     submitPresetQuestions(updatedQuestions);
     shopify.toast.show("Preset question saved!");
@@ -205,20 +209,6 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
         const results = await trieve.trieve.searchOverGroups({
           query: searchTerm,
           search_type: "fulltext",
-          filters: {
-            must: [
-              {
-                field: "metadata.status",
-                match_all: ["ACTIVE"],
-              },
-              {
-                field: "metadata.variant_inventory",
-                range: {
-                  gt: 0,
-                },
-              },
-            ],
-          },
         });
 
         const apiResults: Product[] = results.results
