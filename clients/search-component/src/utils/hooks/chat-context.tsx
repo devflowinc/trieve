@@ -3,6 +3,7 @@ import React, { createContext, useContext, useRef, useState } from "react";
 import {
   defaultPriceToolCallOptions,
   defaultRelevanceToolCallOptions,
+  defaultSearchToolCallOptions,
   useModalState,
 } from "./modal-context";
 import { Chunk } from "../types";
@@ -267,6 +268,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const handleReader = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
+    skipSearch: boolean,
     queryId: string | null,
   ) => {
     setIsLoading(true);
@@ -303,7 +305,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           json = null;
         }
 
-        if (json && props.analytics && !calledAnalytics) {
+        if (json && props.analytics && !calledAnalytics && !skipSearch) {
           calledAnalytics = true;
           const ecommerceChunks = (json as unknown as Chunk[]).filter(
             (chunk) =>
@@ -368,7 +370,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           {
             type: "system",
             text: outputBuffer,
-            additional: json ? json : null,
+            additional: json && !skipSearch ? json : null,
             queryId,
           },
         ]);
@@ -484,6 +486,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    let skipSearch = false;
+
     if (
       props.recommendOptions?.filter &&
       props.recommendOptions?.queriesToTriggerRecommendations.includes(
@@ -568,6 +572,53 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
         });
 
+     const skipSearchPromise = retryOperation(async () => {
+        if (props.type === "ecommerce" && !curGroup && messages.length > 1) {
+          return await trieveSDK.getToolCallFunctionParams({
+            user_message_text: `Here's the previous message thread so far: ${messages.map(
+              (message) => {
+                if (
+                  message.type === "system" &&
+                  message.additional?.length &&
+                  props.type === "ecommerce"
+                ) {
+                  const chunks = message.additional
+                    .map((chunk) => {
+                      return JSON.stringify({
+                        title: chunk.metadata?.title || "",
+                        description: chunk.chunk_html || "",
+                        price: chunk.num_value
+                          ? `${props.defaultCurrency || ""} ${chunk.num_value}`
+                          : "",
+                        link: chunk.link || "",
+                      });
+                    })
+                    .join("\n\n");
+                  return `\n\n${chunks}${message.text}`;
+                } else {
+                  return `\n\n${message.text}`;
+                }
+              },
+            )} \n\n${props.searchToolCallOptions?.userMessageTextPrefix ?? defaultSearchToolCallOptions.userMessageTextPrefix}: ${questionProp || currentQuestion}.`,
+            image_url: imageUrl ? imageUrl : null,
+            audio_input: curAudioBase64 ? curAudioBase64 : null,
+            tool_function: {
+              name: "skip_search",
+              description:
+                props.searchToolCallOptions?.toolDescription ??
+                (defaultSearchToolCallOptions.toolDescription as string),
+              parameters: [
+                {
+                  name: "skip_search",
+                  parameter_type: "boolean",
+                  description:
+                    "Set to true if the query is asking about products which were shown to them previously in the message thread only incldue if they are referenced by name. Set to false if the query is asking about the general catalog products or for different/other products differing from the ones shown previously. Only set this to true if the query contains a title that was in the previous messages",
+                },
+              ],
+            },
+          });
+          }})
+
       const imageFiltersPromise = retryOperation(async () => {
         if (imageUrl) {
           return await trieveSDK.getToolCallFunctionParams({
@@ -643,11 +694,12 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
         });
 
-        const [priceFiltersResp, imageFiltersResp, tagFiltersResp] =
+        const [priceFiltersResp, imageFiltersResp, tagFiltersResp, skipSearchResp] =
         await Promise.all([
             priceFiltersPromise,
             imageFiltersPromise,
             tagFiltersPromise,
+            skipSearchPromise,
           ]);
 
         if (transcribedQuery && curAudioBase64) {
@@ -724,6 +776,15 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               field: "num_value",
               range: range,
             });
+          }
+        }
+
+        if (skipSearchResp?.parameters) {
+          const needsSearchParam = (skipSearchResp.parameters as any)[
+            "skip_search"
+          ];
+          if (typeof needsSearchParam === "boolean" && needsSearchParam) {
+            skipSearch = true;
           }
         }
 
@@ -818,7 +879,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             },
           ],
         };
-      } else {
+      } else if (!skipSearch) {
         try {
           setLoadingText("Searching for relevant products...");
           const searchOverGroupsResp = await retryOperation(async () => {
@@ -1088,6 +1149,19 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         if (createMessageFilters == null) {
           createMessageFilters = filters;
         }
+        if (skipSearch) {
+          createMessageFilters = {
+            must: [
+              {
+                field: "ids",
+                match_any: messages
+                  .filter((msg) => msg.type == "system")
+                  .flatMap((msg) => msg.additional ?? [])
+                  .map((chunk) => chunk.id),
+              },
+            ],
+          };
+        }
         const systemPromptToUse =
           props.systemPrompt && props.systemPrompt !== ""
             ? props.systemPrompt
@@ -1172,7 +1246,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       ]);
     }
 
-    if (reader) handleReader(reader, queryId);
+    if (reader) handleReader(reader, skipSearch, queryId);
 
     if (imageUrl) {
       setImageUrl("");

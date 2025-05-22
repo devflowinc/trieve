@@ -77,6 +77,12 @@ export const defaultRelevanceToolCallOptions: RelevanceToolCallOptions = {
     "Not relevant and not a good fit for the given query taking all details of both the query and the product into account",
 };
 
+export const defaultSearchToolCallOptions: SearchToolCallOptions = {
+  userMessageTextPrefix: "Here is the user query:",
+  toolDescription:
+    "Call this tool anytime it seems like we need to skip the search step. This tool tells our system that the user is asking about what they were previously shown.",
+};
+
 export const defaultPriceToolCallOptions: PriceToolCallOptions = {
   toolDescription:
     "Only call this function if the query includes details about a price. Decide on which price filters to apply to the available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
@@ -649,9 +655,8 @@ const PublicPageControls = () => {
               />
             </div>
             <MultiStringInput
-              placeholder={`What is ${
-                extraParams["brandName"] || "Trieve"
-              }?...`}
+              placeholder={`What is ${extraParams["brandName"] || "Trieve"
+                }?...`}
               value={extraParams.defaultSearchQueries || []}
               onChange={(e) => {
                 setExtraParams("defaultSearchQueries", e);
@@ -672,9 +677,8 @@ const PublicPageControls = () => {
               />
             </div>
             <MultiStringInput
-              placeholder={`What is ${
-                extraParams["brandName"] || "Trieve"
-              }?...`}
+              placeholder={`What is ${extraParams["brandName"] || "Trieve"
+                }?...`}
               value={extraParams.defaultAiQuestions || []}
               onChange={(e) => {
                 setExtraParams("defaultAiQuestions", e);
@@ -1649,6 +1653,76 @@ const PublicPageControls = () => {
                     setExtraParams(
                       "priceToolCallOptions",
                       "maxPriceDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="my-4">
+          <summary class="cursor-pointer text-sm font-medium">
+            Search Tool Options
+          </summary>
+          <div class="mt-4 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Search Tool Description
+                  </label>
+                  <Tooltip
+                    tooltipText="Description of the search tool provided to the model."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    extraParams.searchToolCallOptions?.toolDescription ||
+                    defaultPriceToolCallOptions.toolDescription
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "searchToolCallOptions",
+                      "toolDescription",
+                      e.currentTarget.value,
+                    )
+                  }
+                  rows="4"
+                  name="messageToQueryPrompt"
+                  id="messageToQueryPrompt"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="grow">
+                <div class="flex items-center gap-1">
+                  <label class="block" for="">
+                    Search Prompt
+                  </label>
+                  <Tooltip
+                    tooltipText="Prompt to the model to use the search tool."
+                    body={
+                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
+                    }
+                  />
+                </div>
+                <textarea
+                  value={
+                    (extraParams.searchToolCallOptions?.userMessageTextPrefix ||
+                      defaultSearchToolCallOptions.userMessageTextPrefix) as string
+                  }
+                  onInput={(e) =>
+                    setExtraParams(
+                      "searchToolCallOptions",
+                      "userMessageTextPrefix",
                       e.currentTarget.value,
                     )
                   }

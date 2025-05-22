@@ -22,6 +22,7 @@ import {
   defaultOpenGraphMetadata,
   defaultPriceToolCallOptions,
   defaultRelevanceToolCallOptions,
+  defaultSearchToolCallOptions,
 } from "../pages/dataset/PublicPageSettings";
 
 export type DatasetWithPublicPage = Dataset & {
@@ -90,6 +91,12 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
       if (!extraParams.priceToolCallOptions) {
         setExtraParams("priceToolCallOptions", {
           ...defaultPriceToolCallOptions,
+        });
+      }
+
+      if (!extraParams.searchToolCallOptions) {
+        setExtraParams("searchToolCallOptions", {
+          ...defaultSearchToolCallOptions,
         });
       }
 
