@@ -107,7 +107,7 @@ export const Message = ({
     useChatState();
   const [positive, setPositive] = React.useState<boolean | null>(null);
   const [copied, setCopied] = React.useState<boolean>(false);
-  const { props, trieveSDK, fingerprint } = useModalState();
+  const { props, trieveSDK, fingerprint, abTreatment } = useModalState();
 
   useEffect(() => {
     if (props.analytics) {
@@ -130,6 +130,7 @@ export const Message = ({
             return chunk.tracking_id ?? "";
           }),
           fingerprint,
+          abTreatment,
         });
       }
     }
@@ -189,6 +190,7 @@ export const Message = ({
                 requestID: message.queryId,
                 chunkID: item.id,
                 fingerprint,
+                abTreatment,
               });
             }
           }}
@@ -285,6 +287,7 @@ export const Message = ({
               requestID: message.queryId,
               chunkID: item.id,
               fingerprint,
+              abTreatment,
             });
           }
         }}
@@ -351,6 +354,7 @@ export const Message = ({
               requestID: message.queryId,
               chunkID: item.id,
               fingerprint,
+              abTreatment,
             });
           }
         }}

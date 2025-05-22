@@ -363,6 +363,7 @@ const ModalContext = createContext<{
   resetHeight: () => void;
   addHeight: (height: number) => void;
   display: boolean;
+  abTreatment?: string;
 }>({
   props: defaultProps,
   trieveSDK: (() => {}) as unknown as TrieveSDK,
@@ -404,6 +405,7 @@ const ModalContext = createContext<{
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   addHeight: (height: number) => {},
   display: true,
+  abTreatment: undefined,
 });
 
 const ModalProvider = ({
@@ -453,6 +455,7 @@ const ModalProvider = ({
   const [display, setDisplay] = useState(
     !props.experimentIds || props.experimentIds.length === 0,
   );
+  const [abTreatment, setAbTreatment] = useState<string | undefined>(undefined);
 
   const trieve = new TrieveSDK({
     baseUrl: props.baseUrl,
@@ -538,6 +541,7 @@ const ModalProvider = ({
           abortController,
           filters,
           type: props.type,
+          abTreatment,
         });
         const groupMap = new Map<string, GroupChunk[]>();
         results.groups.forEach((group) => {
@@ -591,6 +595,7 @@ const ModalProvider = ({
           abortController,
           filters,
           type: props.type,
+          abTreatment,
         });
         if (results.transcribedQuery && audioBase64) {
           setQuery(results.transcribedQuery);
@@ -647,16 +652,17 @@ const ModalProvider = ({
       for (const experimentId of props.experimentIds) {
         trieve
           .getTreatment({
-              experiment_id: experimentId,
-              user_id: fingerprint,
+            experiment_id: experimentId,
+            user_id: fingerprint,
           })
           .then((treatment) => {
-              if (treatment.treatment_name === "Don't show") {
-                setDisplay(false);
-              } else {
-                setDisplay(true);
-              }
-            });
+            if (treatment.treatment_name === "Don't show") {
+              setDisplay(false);
+            } else {
+              setDisplay(true);
+            }
+            setAbTreatment(treatment.treatment_name);
+          });
       }
     }
   }, [props.experimentIds, fingerprint]);
@@ -686,6 +692,7 @@ const ModalProvider = ({
               location: window.location.href,
               metadata: {
                 component_props: props,
+                ab_treatment: abTreatment,
               },
             },
             abortController.signal,
@@ -716,6 +723,7 @@ const ModalProvider = ({
               location: window.location.href,
               metadata: {
                 component_props: props,
+                ab_treatment: abTreatment,
               },
             },
             abortController.signal,
@@ -865,6 +873,7 @@ const ModalProvider = ({
         resetHeight,
         addHeight,
         display,
+        abTreatment,
       }}
     >
       {children}

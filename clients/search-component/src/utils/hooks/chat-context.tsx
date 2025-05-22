@@ -119,6 +119,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     selectedTags,
     currentGroup,
     props,
+    abTreatment,
   } = useModalState();
   const [currentQuestion, setCurrentQuestion] = useState(query);
   const [currentTopic, setCurrentTopic] = useState("");
@@ -163,6 +164,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             owner_id: fingerprint,
             metadata: {
               component_props: props,
+              ab_treatment: abTreatment,
             },
           });
         });
@@ -322,6 +324,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 return chunk.tracking_id ?? "";
               }),
               fingerprint,
+              abTreatment,
             });
           }
         }
@@ -1113,6 +1116,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               filters: createMessageFilters,
               metadata: {
                 component_props: props,
+                ab_treatment: abTreatment,
               },
               currency: props.defaultCurrency,
               highlight_options: {
@@ -1337,6 +1341,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         query_id: queryId,
         metadata: {
           component_props: props,
+          ab_treatment: abTreatment,
         },
       });
     }
