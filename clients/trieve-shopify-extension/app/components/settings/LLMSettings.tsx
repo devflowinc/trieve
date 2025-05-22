@@ -16,13 +16,14 @@ import {
 } from "@shopify/polaris";
 import { CaretDownIcon, CaretUpIcon } from "@shopify/polaris-icons";
 import { useState } from "react";
-import { DatasetConfig, ShopifyDatasetSettings } from "./DatasetSettings";
+import { DatasetConfig } from "./DatasetSettings";
 import { useSubmit } from "@remix-run/react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import {
   Dataset,
   PriceToolCallOptions,
   RelevanceToolCallOptions,
+  SearchToolCallOptions,
 } from "trieve-ts-sdk";
 
 export const defaultRelevanceToolCallOptions: RelevanceToolCallOptions = {
@@ -47,11 +48,18 @@ export const defaultPriceToolCallOptions: PriceToolCallOptions = {
     "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
 };
 
+export const defaultSearchToolCallOptions: SearchToolCallOptions = {
+  userMessageTextPrefix: "Here is the user query:",
+  toolDescription:
+    "Call this tool anytime it seems like we need to skip the search step. This tool tells our system that the user is asking about what they were previously shown.",
+};
+
 interface LLMSettingsProps {
   shopDataset: Dataset;
   existingPdpPrompt: string;
   existingRelevanceToolCallOptions: RelevanceToolCallOptions | null;
   existingPriceToolCallOptions: PriceToolCallOptions | null;
+  existingSearchToolCallOptions: SearchToolCallOptions | null;
 }
 
 export function LLMSettings({
@@ -59,6 +67,7 @@ export function LLMSettings({
   existingPdpPrompt,
   existingRelevanceToolCallOptions,
   existingPriceToolCallOptions,
+  existingSearchToolCallOptions
 }: LLMSettingsProps) {
   const shopify = useAppBridge();
   const submit = useSubmit();
@@ -77,6 +86,10 @@ export function LLMSettings({
 
   const [priceToolCallOptions, setPriceToolCallOptions] = useState(
     existingPriceToolCallOptions ?? defaultPriceToolCallOptions,
+  );
+
+  const [searchToolCallOptions, setSearchToolCallOptions] = useState(
+    existingSearchToolCallOptions ?? defaultSearchToolCallOptions,
   );
 
   const onLLMSettingsSave = async () => {
@@ -100,6 +113,7 @@ export function LLMSettings({
       {
         relevance_tool_call_options: JSON.stringify(relevanceToolCallOptions),
         price_tool_call_options: JSON.stringify(priceToolCallOptions),
+        search_tool_call_options: JSON.stringify(searchToolCallOptions),
         dataset_id: shopDataset.id,
         type: "tool_call_options",
       },
@@ -457,6 +471,46 @@ export function LLMSettings({
                         autoComplete="off"
                       />
                     </InlineGrid>
+                  </BlockStack>
+                </FormLayout>
+              </BlockStack>
+              <InlineStack align="end" gap="200">
+                <Button onClick={saveToolCallOptions}>Save</Button>
+              </InlineStack>
+            </Card>
+            <Card roundedAbove="sm">
+              <BlockStack gap="400">
+                <FormLayout>
+                  <Text as="h1" variant="headingMd">
+                    Search Tool Configuration
+                  </Text>
+                  <BlockStack gap="400">
+                    <TextField
+                      label="Tool Description"
+                      helpText="The description of the tool"
+                      value={searchToolCallOptions.toolDescription ?? ""}
+                      onChange={(e) =>
+                        setSearchToolCallOptions({
+                          ...searchToolCallOptions,
+                          toolDescription: e,
+                        })
+                      }
+                      multiline={3}
+                      autoComplete="off"
+                    />
+                    <TextField
+                      label="User Message Text Prefix"
+                      helpText="The prefix to use before showing the the users message"
+                      value={searchToolCallOptions.userMessageTextPrefix ?? ""}
+                      onChange={(e) =>
+                        setSearchToolCallOptions({
+                          ...searchToolCallOptions,
+                          userMessageTextPrefix: e,
+                        })
+                      }
+                      multiline={3}
+                      autoComplete="off"
+                    />
                   </BlockStack>
                 </FormLayout>
               </BlockStack>

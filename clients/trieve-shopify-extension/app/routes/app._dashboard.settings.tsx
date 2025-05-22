@@ -16,6 +16,7 @@ import {
   RelevanceToolCallOptions,
   PriceToolCallOptions,
   type Dataset,
+  SearchToolCallOptions,
 } from "trieve-ts-sdk";
 import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
 import { getAppMetafields, setAppMetafields } from "app/queries/metafield";
@@ -38,6 +39,7 @@ export const loader = async ({
   pdpPrompt: string;
   presetQuestions: PresetQuestion[];
   relevanceToolCallOptions: RelevanceToolCallOptions | null;
+  searchToolCallOptions: SearchToolCallOptions | null;
   priceToolCallOptions: PriceToolCallOptions | null;
 }> => {
   const { session } = await authenticate.admin(request);
@@ -84,6 +86,11 @@ export const loader = async ({
       fetcher,
       "relevance_tool_call_options",
     );
+  const searchToolCallOptions =
+    await getAppMetafields<RelevanceToolCallOptions>(
+      fetcher,
+      "search_tool_call_options",
+    );
   const priceToolCallOptions = await getAppMetafields<PriceToolCallOptions>(
     fetcher,
     "price_tool_call_options",
@@ -96,6 +103,7 @@ export const loader = async ({
     pdpPrompt,
     presetQuestions,
     relevanceToolCallOptions,
+    searchToolCallOptions,
     priceToolCallOptions,
   };
 };
@@ -204,6 +212,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         "relevance_tool_call_options",
       );
       const priceToolCallOptions = formData.get("price_tool_call_options");
+      const searchToolCallOptions = formData.get("search_tool_call_options");
       await setAppMetafields(fetcher, [
         {
           key: "relevance_tool_call_options",
@@ -213,6 +222,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         {
           key: "price_tool_call_options",
           value: priceToolCallOptions as string,
+          type: "json",
+        },
+        {
+          key: "search_tool_call_options",
+          value: searchToolCallOptions as string,
           type: "json",
         },
       ]);
@@ -261,6 +275,7 @@ export default function Dataset() {
     pdpPrompt,
     presetQuestions,
     relevanceToolCallOptions,
+    searchToolCallOptions,
     priceToolCallOptions,
   } = useLoaderData<typeof loader>();
   const [selectedTab, setSelectedTab] = useState(0);
@@ -325,6 +340,7 @@ export default function Dataset() {
         shopDataset={shopDataset as Dataset}
         existingPdpPrompt={pdpPrompt}
         existingRelevanceToolCallOptions={relevanceToolCallOptions}
+        existingSearchToolCallOptions={searchToolCallOptions}
         existingPriceToolCallOptions={priceToolCallOptions}
       />
     ),
