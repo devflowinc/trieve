@@ -279,8 +279,8 @@ export default function Dataset() {
     },
     {
       id: "extra-information",
-      content: "Extra Information",
-      accessibilityLabel: "Extra Information",
+      content: "Policies",
+      accessibilityLabel: "Policies",
       panelID: "update-policies-settings-content",
     },
     {
