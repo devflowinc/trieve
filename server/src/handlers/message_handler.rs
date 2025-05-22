@@ -1132,13 +1132,11 @@ pub async fn get_tool_function_params(
         parameters_builder.temperature(temperature as f32);
     }
 
-    let parameters = parameters_builder
-        .build()
-        .map_err(|err| {
-            ServiceError::BadRequest(format!(
-                "Failed to build tool call parameters completion API call params because: {err}"
-            ))
-        })?;
+    let parameters = parameters_builder.build().map_err(|err| {
+        ServiceError::BadRequest(format!(
+            "Failed to build tool call parameters completion API call params because: {err}"
+        ))
+    })?;
 
     let result = client.chat().create(parameters).await.map_err(|err| {
         ServiceError::BadRequest(format!(
