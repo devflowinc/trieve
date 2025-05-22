@@ -87,7 +87,8 @@ export const AnalyticsChart = <T extends Record<string, any>>(
           plugins: {
             legend: {
               display: props.yAxes.length > 1,
-              position: "top",
+              position: "bottom",
+              align: "center",
             },
             tooltip: {
               backgroundColor: "rgba(0, 0, 0, 0.8)",
