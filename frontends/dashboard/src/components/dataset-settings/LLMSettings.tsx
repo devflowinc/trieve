@@ -1,6 +1,6 @@
 import { Tooltip } from "shared/ui";
 import { AiOutlineInfoCircle } from "solid-icons/ai";
-import { Accessor } from "solid-js";
+import { Accessor, createEffect, onCleanup } from "solid-js";
 import { DatasetConfig } from "./LegacySettingsWrapper";
 
 export const LLMSettings = (props: {
@@ -8,6 +8,20 @@ export const LLMSettings = (props: {
   setServerConfig: (config: (prev: DatasetConfig) => DatasetConfig) => void;
   saveConfig?: () => void;
 }) => {
+  createEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+        event.preventDefault();
+        props.saveConfig?.();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    onCleanup(() => {
+      window.removeEventListener("keydown", handleKeyDown);
+    });
+  });
+
   return (
     <form class="flex flex-col gap-3">
       {/* General LLM Settings */}

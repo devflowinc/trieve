@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { createEffect, createSignal, For, Show, useContext } from "solid-js";
+import {
+  createEffect,
+  createSignal,
+  For,
+  onCleanup,
+  Show,
+  useContext,
+} from "solid-js";
 import { CopyButton } from "../../components/CopyButton";
 import { FaRegularCircleQuestion } from "solid-icons/fa";
 import { JsonInput, MultiStringInput, Select, Tooltip } from "shared/ui";
@@ -251,9 +258,10 @@ const PublicPageControls = () => {
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
+
+    onCleanup(() => {
       window.removeEventListener("keydown", handleKeyDown);
-    };
+    });
   });
 
   createEffect(() => {
