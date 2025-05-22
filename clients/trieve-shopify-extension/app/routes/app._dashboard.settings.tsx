@@ -227,7 +227,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         group_tracking_id: "policy",
       });
 
-      const response = await trieve.createChunk({
+      await trieve.createChunk({
         chunk_html: policyContent as string,
         tracking_id: policyId as string,
         group_tracking_ids: ["policy"],
@@ -278,6 +278,12 @@ export default function Dataset() {
       panelID: "preset-questions-content",
     },
     {
+      id: "extra-information",
+      content: "Extra Information",
+      accessibilityLabel: "Extra Information",
+      panelID: "update-policies-settings-content",
+    },
+    {
       id: "filter-settings",
       content: "Filter Settings",
       accessibilityLabel: "Filter Settings",
@@ -300,12 +306,6 @@ export default function Dataset() {
       content: "Dataset Settings",
       accessibilityLabel: "Dataset Settings",
       panelID: "dataset-settings-content",
-    },
-    {
-      id: "extra-information",
-      content: "Extra Information",
-      accessibilityLabel: "Extra Information",
-      panelID: "update-policies-settings-content",
     },
   ];
 
