@@ -302,9 +302,9 @@ export default function Dataset() {
       panelID: "dataset-settings-content",
     },
     {
-      id: "policy-settings",
-      content: "Update Policies",
-      accessibilityLabel: "Update Policies",
+      id: "extra-information",
+      content: "Extra Information",
+      accessibilityLabel: "Extra Information",
       panelID: "update-policies-settings-content",
     },
   ];
@@ -331,7 +331,7 @@ export default function Dataset() {
     "preset-questions": <PresetQuestions initialQuestions={presetQuestions} />,
     "filter-settings": <FilterSettings />,
     "integrations-settings": <IntegrationsSettings />,
-    "policy-settings": <PolicySettings shopDataset={shopDataset as Dataset} />,
+    "extra-information": <PolicySettings shopDataset={shopDataset as Dataset} />,
   };
 
   return (

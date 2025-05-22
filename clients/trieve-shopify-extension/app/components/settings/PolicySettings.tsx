@@ -11,6 +11,7 @@ import {
   ResourceItem,
   ButtonGroup,
   Modal,
+  InlineGrid,
 } from "@shopify/polaris";
 import { useState, useCallback } from "react";
 import { Dataset } from "trieve-ts-sdk";
@@ -246,64 +247,75 @@ export function PolicySettings({
   );
 
   return (
-    <Card>
-      <BlockStack gap="400">
-        <BlockStack gap="200">
-          <Text variant="headingMd" as="h1">
-            Store Policies
-          </Text>
-          <Text variant="bodyMd" as="p">
-            Add policies to answer specific questions regarding your store.
-          </Text>
-        </BlockStack>
-
-        {policies.length > 0 ? (
-          <ResourceList
-            resourceName={{ singular: "policy", plural: "policies" }}
-            items={policies}
-            renderItem={renderItem}
-          />
-        ) : (
-          !isAdding && emptyStateMarkup
-        )}
-
-        {isAdding && (
-          <Box paddingBlockStart="400" paddingBlockEnd="400">
-            <Card>
-              <BlockStack gap="400">
-                <TextField
-                  label="Policy Content"
-                  value={newPolicy.content}
-                  onChange={(value) =>
-                    setNewPolicy((prev) => ({ ...prev, content: value }))
-                  }
-                  multiline={4}
-                  autoComplete="off"
-                />
-                <InlineStack gap="400">
-                  <Button variant="primary" onClick={handlePolicyChange}>
-                    Save Policy
-                  </Button>
-                  <Button onClick={handleCancel}>Cancel</Button>
-                </InlineStack>
-              </BlockStack>
-            </Card>
+    <Box paddingInline="400">
+      <BlockStack gap={{ xs: "800", sm: "400" }}>
+        <InlineGrid columns={{ xs: "1fr", md: "2fr 5fr" }} gap="400">
+          <Box
+            as="section"
+            paddingInlineStart={{ xs: "400", sm: "0" }}
+            paddingInlineEnd={{ xs: "400", sm: "0" }}
+          >
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingMd">
+                Store Policies
+              </Text>
+              <Text as="p" variant="bodyMd">
+                Add extra information to help tailor chat responses to your store's
+                specific polices.
+              </Text>
+            </BlockStack>
           </Box>
-        )}
+          <Card>
+            <BlockStack gap="400">
+              {policies.length > 0 ? (
+                <ResourceList
+                  resourceName={{ singular: "policy", plural: "policies" }}
+                  items={policies}
+                  renderItem={renderItem}
+                />
+              ) : (
+                !isAdding && emptyStateMarkup
+              )}
 
-        {!isAdding && !editingPolicyId && policies.length > 0 && (
-          <InlineStack align="end">
-            <ButtonGroup>
-              <Button
-                onClick={handleStartAdding}
-                variant="primary"
-                icon={PlusIcon}
-              >
-                Add Policy
-              </Button>
-            </ButtonGroup>
-          </InlineStack>
-        )}
+              {isAdding && (
+                <Box paddingBlockStart="400" paddingBlockEnd="400">
+                  <Card>
+                    <BlockStack gap="400">
+                      <TextField
+                        label="Policy Content"
+                        value={newPolicy.content}
+                        onChange={(value) =>
+                          setNewPolicy((prev) => ({ ...prev, content: value }))
+                        }
+                        multiline={4}
+                        autoComplete="off"
+                      />
+                      <InlineStack gap="400">
+                        <Button variant="primary" onClick={handlePolicyChange}>
+                          Save Policy
+                        </Button>
+                        <Button onClick={handleCancel}>Cancel</Button>
+                      </InlineStack>
+                    </BlockStack>
+                  </Card>
+                </Box>
+              )}
+              {!isAdding && !editingPolicyId && policies.length > 0 && (
+                <InlineStack align="end">
+                  <ButtonGroup>
+                    <Button
+                      onClick={handleStartAdding}
+                      variant="primary"
+                      icon={PlusIcon}
+                    >
+                      Add Policy
+                    </Button>
+                  </ButtonGroup>
+                </InlineStack>
+              )}
+            </BlockStack>
+          </Card>
+        </InlineGrid>
       </BlockStack>
 
       <Modal
@@ -328,6 +340,6 @@ export function PolicySettings({
           </BlockStack>
         </Modal.Section>
       </Modal>
-    </Card>
+    </Box>
   );
 }
