@@ -25,8 +25,7 @@ export const TopicsUsage = ({
       granularity={granularity}
       dateRange={filters.date_range}
       xAxis={"time_stamp"}
-      yAxis={"point"}
-      label="Chat Sessions Created"
+      yAxes={[{ key: "point", label: "Chat Sessions Created" }]}
       tooltipContent="The total number of chat sessions that were created by users."
     />
   );

@@ -33,6 +33,7 @@ export const FollowupQueries = () => {
         component_props: props,
         ab_treatment: abTreatment,
       },
+      is_conversion: false,
       request: {
         request_id: requestId,
         request_type: "rag",

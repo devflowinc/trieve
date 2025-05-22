@@ -463,7 +463,6 @@ export async function getAllAnalyticsEvents(
   );
 }
 
-
 /**
  * Function that allows you to run a custom clickhouse query
  * 
@@ -480,12 +479,12 @@ export async function getAllAnalyticsEvents(
 });
  * ```
  */
-export async function getAnalytics(
+export async function getAnalytics<T>(
   /** @hidden */
   this: TrieveSDK,
   data: AnalyticsQuery,
   signal?: AbortSignal,
-) {
+): Promise<T> {
   return this.trieve.fetch(
     "/api/analytics",
     "post",
@@ -494,6 +493,5 @@ export async function getAnalytics(
       datasetId: this.datasetId || "",
     },
     signal,
-  );
+  ) as Promise<T>;
 }
- 

@@ -17,8 +17,7 @@ interface GraphComponentProps<T extends Record<string, any>> {
   loading: boolean;
   granularity: Granularity;
   xAxis: keyof T;
-  yAxis: keyof T;
-  label: string;
+  yAxes: { key: keyof T; label: string; color?: string }[];
   dateRange: ComponentAnalyticsFilter["date_range"];
   tooltipContent: string;
   dataType?: "number" | "percentage" | "currency" | "time";
@@ -30,8 +29,7 @@ export const GraphComponent = <T extends Record<string, any>>({
   loading,
   granularity,
   xAxis,
-  yAxis,
-  label,
+  yAxes,
   dateRange,
   tooltipContent,
   dataType = "number",
@@ -42,7 +40,7 @@ export const GraphComponent = <T extends Record<string, any>>({
         <div className="max-w-fit">
           <Tooltip content={tooltipContent} hasUnderline>
             <Text as="span" variant="bodyLg" fontWeight="bold">
-              {label}
+              {yAxes.map((yAxis) => yAxis.label).join(", ")}
             </Text>
           </Tooltip>
         </div>
@@ -75,9 +73,8 @@ export const GraphComponent = <T extends Record<string, any>>({
             dataType={dataType}
             data={graphData}
             xAxis={xAxis}
-            yAxis={yAxis}
+            yAxes={yAxes}
             granularity={granularity}
-            label={label}
             dateRange={dateRange}
           />
         )}

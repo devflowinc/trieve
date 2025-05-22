@@ -26,8 +26,7 @@ export const ChatAverageRating = ({
       dateRange={filters.date_range}
       dataType="percentage"
       xAxis={"time_stamp"}
-      yAxis={"point"}
-      label="Average Chat Rating"
+      yAxes={[{ key: "point", label: "Average Chat Rating" }]}
       tooltipContent="The average rating that users give to the chat."
     />
   );

@@ -28,8 +28,12 @@ export const ChatRevenue = ({
       dateRange={filters.date_range}
       dataType="currency"
       xAxis={"time_stamp"}
-      yAxis={"point"}
-      label={direct ? "Direct Chat Revenue" : "Indirect Chat Revenue"}
+      yAxes={[
+        {
+          key: "point",
+          label: direct ? "Direct Chat Revenue" : "Indirect Chat Revenue",
+        },
+      ]}
       tooltipContent={
         direct
           ? "Sales revenue generated when customers click a Trieve-recommended product and complete the purchase of that recommended item."

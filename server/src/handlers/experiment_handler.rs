@@ -6,8 +6,8 @@ use crate::{
     data::models::{DatasetAndOrgWithSubAndPlan, Experiment},
     errors::ServiceError,
     operators::experiment_operator::{
-        ab_test_query, create_experiment_query, delete_experiment_query, get_experiments_query,
-        update_experiment_query,
+        ab_test_query, create_experiment_query, delete_experiment_query,
+        get_experiment_by_id_query, get_experiments_query, update_experiment_query,
     },
 };
 
@@ -107,6 +107,41 @@ pub async fn get_experiments(
     let experiments =
         get_experiments_query(dataset_org_plan_sub.dataset.id, clickhouse_client.get_ref()).await?;
     Ok(HttpResponse::Ok().json(experiments))
+}
+
+/// Get Experiment by ID
+///
+/// Get an experiment by ID. Auth'ed user must be an owner of the organization to get an experiment.
+#[utoipa::path(
+    get,
+    path = "/experiment/{experiment_id}",
+    context_path = "/api",
+    tag = "Experiment",
+    responses(
+        (status = 200, description = "Experiment retrieved successfully", body = Experiment),
+        (status = 400, description = "Service error relating to getting the experiment", body = ErrorResponseBody),
+    ),
+    params(
+        ("experiment_id" = uuid::Uuid, Path, description = "The experiment id to use for the request"),
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id to use for the request"),
+    ),
+    security(
+        ("ApiKey" = ["owner"]),
+    )
+)]
+pub async fn get_experiment(
+    data: web::Path<uuid::Uuid>,
+    _user: AdminOnly,
+    clickhouse_client: web::Data<clickhouse::Client>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    let experiment = get_experiment_by_id_query(
+        data.into_inner(),
+        dataset_org_plan_sub.dataset.id,
+        clickhouse_client.get_ref(),
+    )
+    .await?;
+    Ok(HttpResponse::Ok().json(experiment))
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

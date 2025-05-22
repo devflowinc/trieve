@@ -291,6 +291,7 @@ impl Modify for SecurityAddon {
         handlers::experiment_handler::update_experiment,
         handlers::experiment_handler::delete_experiment,
         handlers::experiment_handler::ab_test,
+        handlers::experiment_handler::get_experiment,
     ),
     components(
         schemas(
@@ -1570,6 +1571,7 @@ pub fn main() -> std::io::Result<()> {
                                 )
                                 .service(
                                     web::resource("/{experiment_id}")
+                                        .route(web::get().to(handlers::experiment_handler::get_experiment))
                                         .route(web::delete().to(handlers::experiment_handler::delete_experiment))
                                 )
                         )

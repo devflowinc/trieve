@@ -1,6 +1,11 @@
 import "chartjs-adapter-date-fns";
 import { useEffect, useRef } from "react";
-import { Chart } from "chart.js";
+import {
+  Chart,
+  TooltipItem,
+  CartesianScaleOptions,
+  TimeScaleOptions,
+} from "chart.js";
 import { enUS } from "date-fns/locale";
 import { fillDate, formatTimeValueForChart } from "app/utils/formatting";
 import { Granularity, SearchAnalyticsFilter } from "trieve-ts-sdk";
@@ -12,11 +17,13 @@ interface AnalyticsChartProps<T extends Record<string, any>> {
   data: T[] | null | undefined;
   granularity: Granularity;
   dateRange?: SearchAnalyticsFilter["date_range"];
-  yAxis: keyof T;
+  yAxes: { key: keyof T; label: string; color?: string }[];
   xAxis: keyof T;
-  label: string;
   wholeUnits?: boolean;
   dataType?: "number" | "percentage" | "currency" | "time";
+  chartType?: "bar" | "line";
+  yAxisLabel?: string;
+  yAxisSuggestedMax?: number;
 }
 
 export const AnalyticsChart = <T extends Record<string, any>>(
@@ -28,29 +35,46 @@ export const AnalyticsChart = <T extends Record<string, any>>(
   useEffect(() => {
     const canvas = canvasRef.current;
     const data = props.data;
+    const chartType = props.chartType || "line";
 
     if (!canvas || !data) return;
+
+    if (!Array.isArray(props.yAxes) || props.yAxes.length === 0) return;
+
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy();
+      chartInstanceRef.current = null;
+    }
+
+    const datasets = props.yAxes.map((yAxis) => ({
+      label: yAxis.label,
+      data: [],
+      backgroundColor: yAxis.color || "rgba(128, 0, 128, 0.06)",
+      borderColor: yAxis.color || "rgba(128, 0, 128, 0.5)",
+      borderWidth: chartType === "bar" ? 1 : 2,
+      tension: chartType === "line" ? 0.3 : undefined,
+      fill: chartType === "line",
+      pointBackgroundColor:
+        chartType === "line"
+          ? yAxis.color || "rgba(128, 0, 128, 0.06)"
+          : undefined,
+      pointRadius: chartType === "line" ? 0 : undefined,
+      pointHoverRadius: chartType === "line" ? 5 : undefined,
+      barThickness:
+        chartType === "bar" && data.length === 1 && props.yAxes.length === 1
+          ? 20
+          : undefined,
+      barPercentage: chartType === "bar" ? 0.8 : undefined,
+      categoryPercentage: chartType === "bar" ? 0.3 : undefined,
+    }));
 
     if (!chartInstanceRef.current) {
       const isMonthView = props.granularity === "month";
       chartInstanceRef.current = new Chart(canvas, {
-        type: "line",
+        type: chartType,
         data: {
           labels: [],
-          datasets: [
-            {
-              label: props.label,
-              data: [],
-              backgroundColor: "rgba(128, 0, 128, 0.06)",
-              borderColor: "rgba(128, 0, 128, 0.5)",
-              borderWidth: 2,
-              tension: 0.3,
-              fill: true,
-              pointBackgroundColor: "rgba(128, 0, 128, 0.9)",
-              pointRadius: 0,
-              pointHoverRadius: 5,
-            },
-          ],
+          datasets: datasets,
         },
         options: {
           responsive: true,
@@ -61,18 +85,21 @@ export const AnalyticsChart = <T extends Record<string, any>>(
             intersect: false,
           },
           plugins: {
-            legend: { display: false },
+            legend: {
+              display: props.yAxes.length > 1,
+              position: "top",
+            },
             tooltip: {
-              backgroundColor: "rgba(128, 0, 128, 0.9)",
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
               titleColor: "white",
               bodyColor: "white",
-              padding: 4,
-              displayColors: false,
+              padding: 10,
+              displayColors: true,
               position: "nearest",
-              titleFont: { size: 11 },
-              bodyFont: { size: 11 },
+              titleFont: { size: 12 },
+              bodyFont: { size: 12 },
               callbacks: {
-                title: (context) => {
+                title: (context: TooltipItem<any>[]) => {
                   const date = new Date(context[0].parsed.x);
                   if (isMonthView) {
                     return date.toLocaleString("en-US", {
@@ -81,6 +108,7 @@ export const AnalyticsChart = <T extends Record<string, any>>(
                     });
                   }
                   if (
+                    chartType !== "bar" &&
                     date.getHours() === 0 &&
                     date.getMinutes() === 0 &&
                     date.getSeconds() === 0
@@ -91,6 +119,9 @@ export const AnalyticsChart = <T extends Record<string, any>>(
                       year: "numeric",
                     });
                   }
+                  if (chartType === "bar") {
+                    return String(context[0].label);
+                  }
                   return date.toLocaleString("en-US", {
                     month: "short",
                     day: "numeric",
@@ -99,40 +130,54 @@ export const AnalyticsChart = <T extends Record<string, any>>(
                     minute: "numeric",
                   });
                 },
-                label: (context) => {
+                label: (context: TooltipItem<any>) => {
+                  const yAxisConfig = props.yAxes[context.datasetIndex];
                   const value = context.parsed.y;
+                  let formattedValue = "";
                   if (props.dataType === "percentage") {
-                    return `${props.label}: ${value}%`;
+                    formattedValue = `${value}%`;
                   } else if (props.dataType === "time") {
-                    return `${props.label}: ${formatTimeValueForChart(value)}`;
+                    formattedValue = formatTimeValueForChart(value);
                   } else if (props.dataType === "currency") {
-                    return `${props.label}: $${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    formattedValue = `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                  } else {
+                    formattedValue = value.toLocaleString("en-US", {
+                      maximumFractionDigits: 2,
+                    });
                   }
-                  return `${props.label}: ${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+                  return `${yAxisConfig.label}: ${formattedValue}`;
                 },
               },
             },
-            // @ts-expect-error library types not updated
-            crosshair: {
-              line: {
-                color: "rgba(128, 0, 128, 0.3)",
-                width: 1,
-                dashPattern: [6, 6],
-              },
-              sync: {
-                enabled: true,
-                group: 1,
-              },
-              snap: {
-                enabled: true,
-              },
-              zoom: {
-                enabled: false,
-              },
-            },
+            // @ts-expect-error crosshair is a plugin and its options might not be in the base ChartOptions type
+            crosshair:
+              chartType === "line"
+                ? {
+                    line: {
+                      color: "rgba(128, 0, 128, 0.3)",
+                      width: 1,
+                      dashPattern: [6, 6],
+                    },
+                    sync: {
+                      enabled: true,
+                      group: 1,
+                    },
+                    snap: {
+                      enabled: true,
+                    },
+                    zoom: {
+                      enabled: false,
+                    },
+                  }
+                : false,
           },
           scales: {
             y: {
+              title: {
+                display: !!props.yAxisLabel,
+                text: props.yAxisLabel || "",
+              },
+              suggestedMax: props.yAxisSuggestedMax,
               grid: {
                 display: true,
                 color: "rgba(128, 0, 128, 0.2)",
@@ -163,23 +208,32 @@ export const AnalyticsChart = <T extends Record<string, any>>(
                   locale: enUS,
                 },
               },
-              type: "time",
-              time: {
-                unit: isMonthView ? "month" : "day",
-                ...(isMonthView && {
-                  displayFormats: {
-                    month: "MMM yyyy",
-                  },
-                  round: "month",
-                  tooltipFormat: "MMM yyyy",
-                }),
-              },
+              type: chartType === "bar" ? "category" : "time",
+              time:
+                chartType === "line"
+                  ? {
+                      unit: isMonthView ? "month" : "day",
+                      ...(isMonthView && {
+                        displayFormats: {
+                          month: "MMM yyyy",
+                        },
+                        round: "month",
+                        tooltipFormat: "MMM yyyy",
+                      }),
+                    }
+                  : undefined,
               grid: {
                 display: false,
               },
               ticks: {
                 padding: 10,
+                ...(chartType === "bar" && {
+                  autoSkip: false,
+                  maxRotation: 45,
+                  minRotation: 45,
+                }),
               },
+              offset: chartType === "bar" ? true : undefined,
             },
           },
           animation: {
@@ -190,45 +244,72 @@ export const AnalyticsChart = <T extends Record<string, any>>(
     }
 
     const chartInstance = chartInstanceRef.current;
+    if (!chartInstance) return;
 
-    if (props.granularity === "month") {
-      // @ts-expect-error library types not updated
-      chartInstance.options.scales["x"].time.unit = "month";
-    } else if (props.granularity === "day") {
-      // @ts-expect-error library types not updated
-      chartInstance.options.scales["x"].time.unit = "day";
-      // @ts-expect-error library types not updated
-      chartInstance.options.scales["x"].time.round = "day";
-    } else if (props.granularity === "minute") {
-      // @ts-expect-error library types not updated
-      chartInstance.options.scales["x"].time.unit = "minute";
-    } else {
-      // @ts-expect-error library types not updated
-      chartInstance.options.scales["x"].time.unit = undefined;
-      // @ts-expect-error library types not updated
-      chartInstance.options.scales["x"].time.round = undefined;
+    if (chartType === "line") {
+      const xScaleOptions = chartInstance.options.scales
+        ?.x as CartesianScaleOptions & { time?: TimeScaleOptions };
+      if (xScaleOptions && xScaleOptions.time) {
+        const timeOptions = xScaleOptions.time as any;
+        if (props.granularity === "month") {
+          timeOptions.unit = "month";
+        } else if (props.granularity === "day") {
+          timeOptions.unit = "day";
+          timeOptions.round = "day";
+        } else if (props.granularity === "minute") {
+          timeOptions.unit = "minute";
+        } else {
+          timeOptions.unit = undefined;
+          timeOptions.round = undefined;
+        }
+      }
     }
 
-    const info = fillDate<T>({
-      data,
-      dateRange: props.dateRange,
-      granularity: props.granularity,
-      dataKey: props.yAxis,
-      timestampKey: props.xAxis,
-    });
+    if (chartType === "line") {
+      const info = fillDate<T>({
+        data,
+        dateRange: props.dateRange,
+        granularity: props.granularity,
+        dataKey: props.yAxes[0].key,
+        timestampKey: props.xAxis,
+      });
+      chartInstance.data.labels = info.map((point) => point.time);
+      props.yAxes.forEach((yAxisConf, index) => {
+        const filledData = fillDate<T>({
+          data,
+          dateRange: props.dateRange,
+          granularity: props.granularity,
+          dataKey: yAxisConf.key,
+          timestampKey: props.xAxis,
+        });
+        if (chartInstance.data.datasets[index]) {
+          chartInstance.data.datasets[index].data = filledData.map((point) => {
+            if (props.dataType === "percentage") {
+              return parseFloat(((point.value ?? 0) * 100).toFixed(2));
+            }
+            return point.value;
+          });
+        }
+      });
+    } else if (chartType === "bar") {
+      chartInstance.data.labels = data.map((point) =>
+        String(point[props.xAxis]),
+      );
+      props.yAxes.forEach((yAxisConf, index) => {
+        if (chartInstance.data.datasets[index]) {
+          chartInstance.data.datasets[index].data = data.map((point) => {
+            const val = point[yAxisConf.key];
+            if (props.dataType === "percentage") {
+              return parseFloat(((Number(val) ?? 0) * 100).toFixed(2));
+            }
+            return Number(val);
+          });
+        }
+      });
+    }
 
-    // Update the chart data
-    chartInstance.data.labels = info.map((point) => point.time);
-    chartInstance.data.datasets[0].data = info.map((point) => {
-      if (props.dataType === "percentage") {
-        return parseFloat(((point.value ?? 0) * 100).toFixed(2));
-      }
-      // For time data, we use seconds directly for the chart
-      return point.value;
-    });
     chartInstance.update();
 
-    // Cleanup function
     return () => {
       if (chartInstanceRef.current) {
         chartInstanceRef.current.destroy();
@@ -239,11 +320,13 @@ export const AnalyticsChart = <T extends Record<string, any>>(
     props.data,
     props.granularity,
     props.dateRange,
-    props.yAxis,
+    props.yAxes,
     props.xAxis,
-    props.label,
     props.wholeUnits,
     props.dataType,
+    props.chartType,
+    props.yAxisLabel,
+    props.yAxisSuggestedMax,
   ]);
 
   return <canvas ref={canvasRef} className="max-h-[300px] w-full" />;

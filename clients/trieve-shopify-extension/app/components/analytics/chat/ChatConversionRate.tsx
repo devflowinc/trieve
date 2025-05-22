@@ -26,8 +26,7 @@ export const ChatConversionRate = ({
       dateRange={filters.date_range}
       dataType="percentage"
       xAxis={"time_stamp"}
-      yAxis={"point"}
-      label="Chat Conversion Rate"
+      yAxes={[{ key: "point", label: "Chat Conversion Rate" }]}
       tooltipContent="The percentage of chat sessions that led to cart additions or purchases."
     />
   );

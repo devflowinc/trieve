@@ -25,8 +25,7 @@ export const SearchAverageRating = ({
       granularity={granularity}
       dateRange={filters.date_range}
       xAxis={"time_stamp"}
-      yAxis={"point"}
-      label="Average Search Rating"
+      yAxes={[{ key: "point", label: "Average Search Rating" }]}
       tooltipContent="The average rating that users give to the search."
     />
   );

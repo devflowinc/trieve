@@ -26,8 +26,7 @@ export const RecommendationConversionRate = ({
       dateRange={filters.date_range}
       dataType="percentage"
       xAxis={"time_stamp"}
-      yAxis={"point"}
-      label="Recommendation Conversion Rate"
+      yAxes={[{ key: "point", label: "Recommendation Conversion Rate" }]}
       tooltipContent="The percentage of recommendations that led to cart additions or purchases."
     />
   );

@@ -646,22 +646,22 @@ impl AnalyticsQuery {
             let mut col_str = SqlQuery::new();
 
             if let Some(agg) = &column.aggregation {
-                col_str.add_identifier_argument(agg.to_string());
+                col_str.push_str(agg.to_string().as_str());
                 col_str.push_str("(");
                 if let Some(distinct) = column.distinct {
                     if distinct {
                         col_str.push_str("DISTINCT ");
                     }
                 }
-                col_str.add_identifier_argument(column.name.clone());
+                col_str.push_str(column.name.as_str());
                 col_str.push_str(")");
             } else {
-                col_str.add_identifier_argument(column.name.clone());
+                col_str.push_str(column.name.as_str());
             }
 
             if let Some(alias) = &column.alias {
                 col_str.push_str(" AS ");
-                col_str.add_identifier_argument(alias.clone());
+                col_str.push_str(alias.as_str());
             }
 
             all_columns.push(col_str);
@@ -777,37 +777,8 @@ impl AnalyticsQuery {
         query
     }
 
-    /// Recursively builds parameterized filter conditions
-    fn build_parameterized_filter_conditions(conditions: &[FilterCondition]) -> SqlQuery {
-        if conditions.is_empty() {
-            return SqlQuery::new();
-        }
-
-        // If there's just one condition, no need for parentheses
-        if conditions.len() == 1 {
-            return Self::build_parameterized_single_filter_condition(&conditions[0]);
-        }
-
-        // Multiple conditions joined with AND
-        let mut result = SqlQuery::new();
-        result.push_str("(");
-
-        for condition in conditions {
-            let condition_str = Self::build_parameterized_single_filter_condition(condition);
-            result.concat_query(&condition_str);
-            result.push_str(" AND ");
-        }
-        result.remove_suffix(" AND ");
-        result.push_str(")");
-
-        result
-    }
-
-    /// Builds a parameterized single filter condition, including nested AND/OR conditions
-    fn build_parameterized_single_filter_condition(condition: &FilterCondition) -> SqlQuery {
+    fn build_simple_condition_part(condition: &FilterCondition) -> SqlQuery {
         let mut query = SqlQuery::new();
-
-        // Add the base condition
         match condition.operator {
             FilterOperator::IsNull => {
                 query.push_str(&condition.column);
@@ -835,7 +806,6 @@ impl AnalyticsQuery {
                     query.push_str(" )");
                 }
             }
-            // For other operators (=, <>, >, <, >=, <=, LIKE, NOT LIKE)
             _ => {
                 query.push_str(&condition.column);
                 query.push_str(" ");
@@ -844,35 +814,71 @@ impl AnalyticsQuery {
                 query.push_str(&condition.value.to_string());
             }
         };
+        query
+    }
 
-        // Add AND conditions if present
-        if let Some(and_conditions) = &condition.and_filter {
-            if !and_conditions.is_empty() {
-                let and_cond = Self::build_parameterized_filter_conditions(and_conditions);
-                query.push_str(" AND ");
-                query.concat_query(&and_cond);
-            }
+    fn build_parameterized_filter_conditions(conditions: &[FilterCondition]) -> SqlQuery {
+        if conditions.is_empty() {
+            return SqlQuery::new();
         }
 
-        // Add OR conditions if present
+        if conditions.len() == 1 {
+            return Self::build_parameterized_single_filter_condition(&conditions[0]);
+        }
+
+        let mut result = SqlQuery::new();
+        result.push_str("(");
+
+        for condition in conditions {
+            let condition_str = Self::build_parameterized_single_filter_condition(condition);
+            result.concat_query(&condition_str);
+            result.push_str(" AND ");
+        }
+        result.remove_suffix(" AND ");
+        result.push_str(")");
+
+        result
+    }
+
+    fn build_parameterized_single_filter_condition(condition: &FilterCondition) -> SqlQuery {
+        let mut final_query = SqlQuery::new();
+
+        let base_part_query = Self::build_simple_condition_part(condition);
+        let mut or_group_query = SqlQuery::new();
+
         if let Some(or_conditions) = &condition.or_filter {
             if !or_conditions.is_empty() {
-                let or_cond = Self::build_parameterized_filter_conditions(or_conditions);
-                query.push_str(" OR ");
-                query.concat_query(&or_cond);
+                or_group_query.push_str("(");
+                or_group_query.concat_query(&base_part_query);
+
+                for or_sub_condition in or_conditions {
+                    or_group_query.push_str(" OR ");
+                    let sub_cond_query =
+                        Self::build_parameterized_single_filter_condition(or_sub_condition);
+                    or_group_query.concat_query(&sub_cond_query);
+                }
+                or_group_query.push_str(")");
+            } else {
+                or_group_query.concat_query(&base_part_query);
+            }
+        } else {
+            or_group_query.concat_query(&base_part_query);
+        }
+
+        final_query.concat_query(&or_group_query);
+
+        if let Some(and_conditions) = &condition.and_filter {
+            if !and_conditions.is_empty() {
+                let and_block_query = Self::build_parameterized_filter_conditions(and_conditions);
+
+                if !final_query.sql_part.is_empty() && !and_block_query.sql_part.is_empty() {
+                    final_query.push_str(" AND ");
+                }
+                final_query.concat_query(&and_block_query);
             }
         }
 
-        if query.identifier_args.len() > 1
-            && !(query.sql_part.starts_with('(') && query.sql_part.ends_with(')'))
-        {
-            let mut temp_sql = String::from("(");
-            temp_sql.push_str(&query.sql_part);
-            temp_sql.push(')');
-            query.sql_part = temp_sql;
-        }
-
-        query
+        final_query
     }
 
     pub async fn execute(
@@ -897,9 +903,6 @@ impl AnalyticsQuery {
             });
 
         let query = self.to_parameterized_sql();
-        log::info!("Query: {}", query.sql_part);
-        log::info!("Params: {:?}", query.identifier_args);
-
         let params = query
             .identifier_args
             .iter()

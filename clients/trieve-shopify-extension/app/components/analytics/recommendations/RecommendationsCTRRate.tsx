@@ -26,8 +26,7 @@ export const RecommendationsCTRRate = ({
       dateRange={filters.date_range}
       dataType="percentage"
       xAxis={"time_stamp"}
-      yAxis={"point"}
-      label="CTR Rate"
+      yAxes={[{ key: "point", label: "CTR Rate" }]}
       tooltipContent="The rate at which users click on products after being recommended."
     />
   );

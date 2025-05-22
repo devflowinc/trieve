@@ -6128,6 +6128,19 @@ export type AbTestData = {
 
 export type AbTestResponse = (UserTreatmentResponse);
 
+export type GetExperimentData = {
+    /**
+     * The experiment id to use for the request
+     */
+    experimentId: string;
+    /**
+     * The dataset id to use for the request
+     */
+    trDataset: string;
+};
+
+export type GetExperimentResponse = (Experiment);
+
 export type DeleteExperimentData = {
     experimentId: string;
     /**
@@ -7921,6 +7934,19 @@ export type $OpenApiTs = {
         };
     };
     '/api/experiment/{experiment_id}': {
+        get: {
+            req: GetExperimentData;
+            res: {
+                /**
+                 * Experiment retrieved successfully
+                 */
+                200: Experiment;
+                /**
+                 * Service error relating to getting the experiment
+                 */
+                400: ErrorResponseBody;
+            };
+        };
         delete: {
             req: DeleteExperimentData;
             res: {
