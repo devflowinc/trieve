@@ -133,6 +133,7 @@ describe("Message Tests", async () => {
           },
         ],
       },
+      temperature: 0.7,
     });
 
     expect(data.parameters).toEqual({

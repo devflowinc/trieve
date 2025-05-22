@@ -14681,6 +14681,12 @@
             "description": "Model name to use for the completion. If not specified, this defaults to the dataset's model.",
             "nullable": true
           },
+          "temperature": {
+            "type": "number",
+            "format": "double",
+            "description": "Temperature to use for the completion. If not specified, this defaults to the dataset's temperature.",
+            "nullable": true
+          },
           "tool_function": {
             "$ref": "#/components/schemas/ToolFunction"
           },
@@ -22658,10 +22664,14 @@
       "UpdateAllOrgDatasetConfigsReqPayload": {
         "type": "object",
         "required": [
-          "dataset_config"
+          "to_configuration"
         ],
         "properties": {
-          "dataset_config": {
+          "match_configuration": {
+            "description": "The configuration to provide a filter on what datasets to update.",
+            "nullable": true
+          },
+          "to_configuration": {
             "description": "The new configuration for all datasets in the organization. Only the specified keys in the configuration object will be changed per dataset such that you can preserve dataset unique values."
           }
         },
