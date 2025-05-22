@@ -4,6 +4,7 @@ import {
   defaultPriceToolCallOptions,
   defaultRelevanceToolCallOptions,
   defaultSearchToolCallOptions,
+  ModalProps,
   useModalState,
 } from "./modal-context";
 import { Chunk } from "../types";
@@ -15,9 +16,48 @@ import {
   ChunkMetadata,
   EventsForTopicResponse,
   RAGAnalyticsResponse,
+  SearchOverGroupsResults,
   ToolFunctionParameter,
 } from "trieve-ts-sdk";
 import { defaultHighlightOptions } from "../highlight";
+
+const buildRagContext = ({ props, groupResults, messages, shouldSearch }: {
+  props: ModalProps;
+  groupResults?: SearchOverGroupsResults[];
+  messages: ComponentMessages;
+  shouldSearch: boolean;
+}): string | undefined => {
+  if (!shouldSearch && messages.length > 0) {
+    const formattedChunks = messages.filter((msg) => msg.type == "system" && msg.additional?.length).map((message, idx) => {
+      console.log("message.additional", message.additional.length);
+      return message.additional?.forEach((chunk) => {
+        return JSON.stringify({
+          product: idx + 1,
+          description: chunk.chunk_html || "",
+          price: chunk.num_value ? `${props.defaultCurrency || ""} ${chunk.num_value}` : "",
+          link: chunk.link || ""
+        });
+      })
+    }).join("\n\n");
+    console.log(formattedChunks);
+    return formattedChunks;
+  }
+
+  if (groupResults && props.type == 'ecommerce') {
+    const formattedChunks = groupResults.map((chunk, idx) => {
+      const firstChunk = chunk.chunks[0].chunk as ChunkMetadata;
+      return JSON.stringify({
+        product: idx + 1,
+        description: firstChunk.chunk_html || "",
+        price: firstChunk.num_value ? `${props.defaultCurrency || ""} ${firstChunk.num_value}` : "",
+        link: firstChunk.link || ""
+      });
+    }).join("\n\n");
+    return formattedChunks;
+  }
+
+  return undefined;
+};
 
 export const retryOperation = async <T,>(
   operation: () => Promise<T>,
@@ -545,9 +585,9 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       });
 
       const needsSearchPromise = retryOperation(async () => {
-        if (props.type === "ecommerce" && !curGroup) {
+        if (props.type === "ecommerce" && !curGroup && messages.length > 1) {
           return await trieveSDK.getToolCallFunctionParams({
-            user_message_text: `${props.searchToolCallOptions?.searchPrompt ?? defaultSearchToolCallOptions.searchPrompt}. The users question is: "${questionProp || currentQuestion}". `,
+            user_message_text: `${props.searchToolCallOptions?.searchPrompt ?? defaultSearchToolCallOptions.searchPrompt}. The messge thread is: "${questionProp || currentQuestion}". ${messages.slice(0, -1).map((message) => `\n\n${message.text}`)}`,
             image_url: imageUrl ? imageUrl : null,
             audio_input: curAudioBase64 ? curAudioBase64 : null,
             tool_function: {
@@ -557,10 +597,15 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 defaultSearchToolCallOptions.toolDescription as string,
               parameters: [
                 {
-                  name: "needs_search",
+                  name: "search",
                   parameter_type: "boolean",
-                  description: "Is search needed?",
+                  description: "Should we search? If the user is asking for more products, search is needed.",
                 },
+                {
+                  "name": "followup_response",
+                  "parameter_type": "boolean",
+                  "description": "If the user is asking a follow up question, search is not needed. If the user is asking for comparisons, search is not needed.",
+                }
               ],
             },
           });
@@ -651,7 +696,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (needsSearch?.parameters) {
-        const needsSearchParam = (needsSearch.parameters as any)["needs_search"];
+        console.log("needsSearch.parameters", needsSearch.parameters);
+        const needsSearchParam = (needsSearch.parameters as any)["search"];
         if (typeof needsSearchParam === "boolean" && !needsSearchParam) {
           shouldSearch = false;
         }
@@ -744,6 +790,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
     let createMessageFilters: ChunkFilter | null = null;
     searchAbortController.current = new AbortController();
+    let ragContext = undefined;
     if (curGroup) {
       setLoadingText("Reading the product's information...");
       const filtersWithoutGroupIds = {
@@ -758,7 +805,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }),
       };
 
-      const chunkIds = await retryOperation(async () => {
+      const chunks = await retryOperation(async () => {
         const fulltextSearchPromise = trieveSDK.searchInGroup(
           {
             query: questionProp || currentQuestion,
@@ -783,19 +830,19 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           fulltextSearchPromise,
           chunksInGroupPromise,
         ]);
-        const chunkIds = fulltextSearchResp.chunks.map(
-          (score_chunk) => score_chunk.chunk.id,
+        const chunks = fulltextSearchResp.chunks.map(
+          (score_chunk) => score_chunk.chunk,
         );
-        if (!chunkIds.length) {
-          chunkIds.push(...chunksInGroupResp.chunks.map((chunk) => chunk.id));
+        if (!chunks.length) {
+          chunks.push(...chunksInGroupResp.chunks);
         }
-        return chunkIds;
+        return chunks;
       });
       createMessageFilters = {
         must: [
           {
             field: "ids",
-            match_any: chunkIds,
+            match_any: chunks.map((c) => c.id),
           },
         ],
       };
@@ -825,13 +872,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             "AbortError timeout on relevanceToolCall",
           );
         }, 5000);
-        const highlyRelevantGroupIds: string[] = [];
-        const mediumRelevantGroupIds: string[] = [];
-        const lowlyRelevantGroupIds: string[] = [];
+        const highlyRelevantResults: SearchOverGroupsResults[] = [];
+        const mediumRelevantResults: SearchOverGroupsResults[] = [];
+        const lowlyRelevantResults: SearchOverGroupsResults[] = [];
         const rankingPromises = searchOverGroupsResp.results.map(
-          async (group) => {
-            const firstChunk = group.chunks.length
-              ? (group.chunks[0].chunk as ChunkMetadata)
+          async (result) => {
+            const firstChunk = result.chunks.length
+              ? (result.chunks[0].chunk as ChunkMetadata)
               : null;
             const imageUrls = props.relevanceToolCallOptions?.includeImages
               ? (
@@ -909,52 +956,70 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               });
 
               if ((relevanceToolCallResp.parameters as any)["high"] == true) {
-                highlyRelevantGroupIds.push(group.group.id);
+                highlyRelevantResults.push(result);
               } else if (
                 (relevanceToolCallResp.parameters as any)["medium"] == true
               ) {
-                mediumRelevantGroupIds.push(group.group.id);
+                mediumRelevantResults.push(result);
               } else if (
                 (relevanceToolCallResp.parameters as any)["low"] == true
               ) {
-                lowlyRelevantGroupIds.push(group.group.id);
+                lowlyRelevantResults.push(result);
               }
             });
           },
         );
-        await Promise.all(rankingPromises);
+        try {
+          await Promise.all(rankingPromises);
+        } catch (e) {
+          console.error("error with relevance tool call promise.all", e);
+        }
         setLoadingText("Finished verifying relevance");
         clearTimeout(relevanceToolCallTimeout);
-        let groupIdsToUse = highlyRelevantGroupIds;
+        let resultsToUse = highlyRelevantResults;
 
-        if (highlyRelevantGroupIds.length > 1) {
-          groupIdsToUse = [...highlyRelevantGroupIds];
-        } else if (highlyRelevantGroupIds.length === 1) {
-          groupIdsToUse = [
-            ...highlyRelevantGroupIds,
-            ...mediumRelevantGroupIds,
+        if (highlyRelevantResults.length > 1) {
+          resultsToUse = [...highlyRelevantResults];
+        } else if (highlyRelevantResults.length === 1) {
+          resultsToUse = [
+            ...highlyRelevantResults,
+            ...mediumRelevantResults,
           ];
         } else if (
-          highlyRelevantGroupIds.length === 0 &&
-          mediumRelevantGroupIds.length > 0
+          highlyRelevantResults.length === 0 &&
+          mediumRelevantResults.length > 0
         ) {
-          groupIdsToUse = mediumRelevantGroupIds;
-        } else if (lowlyRelevantGroupIds.length > 0) {
-          groupIdsToUse = [...lowlyRelevantGroupIds];
+          resultsToUse = mediumRelevantResults;
+        } else if (lowlyRelevantResults.length > 0) {
+          resultsToUse = [...lowlyRelevantResults];
         }
 
-        const topGroupIds = groupIdsToUse.slice(0, 8);
+        const topResults = resultsToUse.slice(0, 8);
         createMessageFilters = {
           must: [
             {
               field: "group_ids",
-              match_any: topGroupIds,
+              match_any: topResults.map((result) => result.group.id)
             },
           ],
         };
+        ragContext = buildRagContext({
+          props,
+          groupResults: topResults,
+          messages,
+          shouldSearch,
+        })
       } catch (e) {
         console.error("error getting determine_relevance", e);
       }
+    } else if (!shouldSearch) {
+      console.log("building rag context without search");
+      ragContext = buildRagContext({
+        props,
+        groupResults: undefined,
+        messages,
+        shouldSearch,
+      })
     }
 
     setLoadingText("AI is generating a response...");
@@ -988,6 +1053,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       );
       try {
         if (createMessageFilters == null) {
+          console.log("createMessageFilters is null, setting to filters", filters, "pls");
           createMessageFilters = filters;
         }
 
@@ -1025,7 +1091,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 highlight_results: true,
               },
               only_include_docs_used: false,
-              rag_context: shouldSearch ? undefined : props.searchToolCallOptions?.noSearchRagContext ?? defaultSearchToolCallOptions.noSearchRagContext,
+              rag_context: shouldSearch ? ragContext : `${ragContext ?? ""} ${props.searchToolCallOptions?.noSearchRagContext ?? defaultSearchToolCallOptions.noSearchRagContext}`,
             },
             chatMessageAbortController.current.signal,
             (headers: Record<string, string>) => {
@@ -1162,8 +1228,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (!currentGroup && group) {
-      chatWithGroup(group);
-      setCurrentGroup(group);
+      chatWithGroup(group); setCurrentGroup(group);
     }
 
     if (!audioBase64) {

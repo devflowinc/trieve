@@ -94,7 +94,7 @@ export const defaultPriceToolCallOptions: PriceToolCallOptions = {
 
 export const defaultSearchToolCallOptions: SearchToolCallOptions = {
   toolDescription: "A tool to determine if a search is needed.",
-  searchPrompt: "Determine if a search is needed. If the user is asking a follow up question, search is not needed. If the user is asking for comparisons, search is not needed. If it is a single word or question about catalog, it is a search",
+  searchPrompt: "Determine if a search is needed. If the user is asking a follow up question, search is not needed. If it is a single word or question about catalog, it is a search",
   noSearchRagContext: "Answer the users question directly, be kind and helpful if they want support tell them to email the support team. If the user asks for a comparision of the results, generate a markdown table of results."
 };
 
