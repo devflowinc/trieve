@@ -3,7 +3,7 @@ import { useModalState } from "./modal-context";
 
 const popupClass = cva(
   [
-    "tv-max-h-[calc(100vh-48px)]",
+    "tv-max-h-[calc(100dvh-48px)]",
     "tv-overflow-x-auto",
     "mobile-only:tv-min-w-[calc(100vw-32px)]", // mobile
     "mobile-only:tv-max-w-[calc(100vw-32px)]", // mobile
@@ -16,7 +16,7 @@ const popupClass = cva(
     "md:tv-w-[90vw]",
     "md:!tv-min-w-auto",
     "md:!tv-max-w-[1440px]",
-    "md:!tv-max-h-[calc(100vh-64px)]",
+    "md:!tv-max-h-[calc(100dvh-64px)]",
   ],
   {
     variants: {
@@ -27,7 +27,7 @@ const popupClass = cva(
       },
       mode: {
         search: [],
-        chat: ["md:!tv-max-h-[60vh]"],
+        chat: ["md:!tv-max-h-[60dvh]"],
       },
     },
   },
