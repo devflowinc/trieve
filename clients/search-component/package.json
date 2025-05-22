@@ -87,7 +87,7 @@
     "react-two-thumb-input-range": "^1.0.7",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.0.2",
-    "trieve-ts-sdk": "^0.0.108"
+    "trieve-ts-sdk": "^0.0.110"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.0.0-rc",
