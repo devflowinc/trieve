@@ -40,6 +40,7 @@ export const searchWithTrieve = async ({
   filters,
   type,
   fingerprint,
+  abTreatment,
 }: {
   trieve: TrieveSDK;
   props: ModalProps;
@@ -51,6 +52,7 @@ export const searchWithTrieve = async ({
   filters?: ChunkFilter;
   type?: ModalTypes;
   fingerprint?: string;
+  abTreatment?: string;
 }) => {
   const scoreThreshold =
     searchOptions.score_threshold ??
@@ -90,6 +92,7 @@ export const searchWithTrieve = async ({
         filters,
         metadata: {
           component_props: props,
+          ab_treatment: abTreatment,
         },
         user_id: fingerprint,
         typo_options: {
@@ -119,6 +122,7 @@ export const searchWithTrieve = async ({
         filters,
         metadata: {
           component_props: props,
+          ab_treatment: abTreatment,
         },
         user_id: fingerprint,
         typo_options: {
@@ -167,6 +171,7 @@ export const groupSearchWithTrieve = async ({
   filters,
   type,
   fingerprint,
+  abTreatment,
 }: {
   props: ModalProps;
   trieve: TrieveSDK;
@@ -178,6 +183,7 @@ export const groupSearchWithTrieve = async ({
   filters?: ChunkFilter;
   type?: ModalTypes;
   fingerprint?: string;
+  abTreatment?: string;
 }) => {
   const scoreThreshold =
     searchOptions.score_threshold ??
@@ -213,6 +219,7 @@ export const groupSearchWithTrieve = async ({
       group_size: 1,
       metadata: {
         component_props: props,
+        ab_treatment: abTreatment,
       },
       user_id: fingerprint,
       search_type: searchOptions.search_type ?? "fulltext",
@@ -296,6 +303,7 @@ export const sendCtrData = async ({
   index,
   props,
   fingerprint,
+  abTreatment,
 }: {
   trieve: TrieveSDK;
   chunkID: string;
@@ -304,6 +312,7 @@ export const sendCtrData = async ({
   index: number;
   props: ModalProps;
   fingerprint: string;
+  abTreatment?: string;
 }) => {
   if (props.previewTopicId === undefined) {
     await trieve.sendAnalyticsEvent({
@@ -321,6 +330,7 @@ export const sendCtrData = async ({
       user_id: fingerprint,
       metadata: {
         component_props: props,
+        ab_treatment: abTreatment,
       },
     });
   }
@@ -335,6 +345,7 @@ export const trackViews = async ({
   items,
   props,
   fingerprint,
+  abTreatment,
 }: {
   trieve: TrieveSDK;
   requestID: string;
@@ -342,6 +353,7 @@ export const trackViews = async ({
   items: string[];
   props: ModalProps;
   fingerprint: string;
+  abTreatment?: string;
 }) => {
   if (props.previewTopicId === undefined) {
     let lastMessageString = "{}";
@@ -370,6 +382,7 @@ export const trackViews = async ({
       user_id: fingerprint,
       metadata: {
         component_props: props,
+        ab_treatment: abTreatment,
       },
     });
   }

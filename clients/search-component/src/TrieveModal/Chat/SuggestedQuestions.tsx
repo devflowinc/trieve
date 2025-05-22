@@ -20,7 +20,7 @@ export const SuggestedQuestions = ({
   const { suggestedQuestions, isLoadingSuggestedQueries, getQuestions } =
     useSuggestedQuestions();
 
-  const { props, trieveSDK, fingerprint } = useModalState();
+  const { props, trieveSDK, fingerprint, abTreatment } = useModalState();
   const [parent] = useAutoAnimate({ duration: 100 });
 
   if (messages.length) {
@@ -48,6 +48,7 @@ export const SuggestedQuestions = ({
       metadata: {
         followup_query: q,
         component_props: props,
+        ab_treatment: abTreatment,
       },
       request: {
         request_id: requestId,

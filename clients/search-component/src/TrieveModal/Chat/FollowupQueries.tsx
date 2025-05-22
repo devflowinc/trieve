@@ -6,7 +6,7 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useModalState } from "../../utils/hooks/modal-context";
 
 export const FollowupQueries = () => {
-  const { props, trieveSDK, fingerprint } = useModalState();
+  const { props, trieveSDK, fingerprint, abTreatment } = useModalState();
   const { isDoneReading, askQuestion, messages } = useChatState();
   const { suggestedQuestions, isLoadingSuggestedQueries } =
     useFollowupQuestions();
@@ -31,6 +31,7 @@ export const FollowupQueries = () => {
       metadata: {
         followup_query: q,
         component_props: props,
+        ab_treatment: abTreatment,
       },
       request: {
         request_id: requestId,
