@@ -27,6 +27,7 @@ import {
 } from "app/components/settings/PresetQuestions";
 import { FilterSettings } from "app/components/settings/FilterSettings";
 import { IntegrationsSettings } from "app/components/settings/Integrations";
+import { PolicySettings } from "app/components/settings/PolicySettings";
 
 export const loader = async ({
   request,
@@ -104,7 +105,9 @@ type SettingsSaveType =
   | "dataset"
   | "revenue_tracking"
   | "preset-questions"
-  | "tool_call_options";
+  | "tool_call_options"
+  | "policy"
+  | "delete_policy";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -215,6 +218,33 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       ]);
       return { success: true };
     }
+    case "policy": {
+      const policyContent = formData.get("policy");
+      const policyId = formData.get("policy_id");
+
+      await trieve.createChunkGroup({
+        dataset_id: trieve.datasetId,
+        group_tracking_id: "policy",
+      });
+
+      const response = await trieve.createChunk({
+        chunk_html: policyContent as string,
+        tracking_id: policyId as string,
+        group_tracking_ids: ["policy"],
+        upsert_by_tracking_id: true,
+      });
+
+      return { success: true };
+    }
+    case "delete_policy": {
+      const policyId = formData.get("policy_id");
+
+      await trieve.deleteChunkByTrackingId({
+        trackingId: policyId as string,
+      });
+
+      return { success: true };
+    }
     default: {
       return { success: false };
     }
@@ -271,6 +301,12 @@ export default function Dataset() {
       accessibilityLabel: "Dataset Settings",
       panelID: "dataset-settings-content",
     },
+    {
+      id: "policy-settings",
+      content: "Update Policies",
+      accessibilityLabel: "Update Policies",
+      panelID: "update-policies-settings-content",
+    },
   ];
 
   const tabPanels: Record<string, ReactNode> = {
@@ -295,6 +331,7 @@ export default function Dataset() {
     "preset-questions": <PresetQuestions initialQuestions={presetQuestions} />,
     "filter-settings": <FilterSettings />,
     "integrations-settings": <IntegrationsSettings />,
+    "policy-settings": <PolicySettings shopDataset={shopDataset as Dataset} />,
   };
 
   return (
