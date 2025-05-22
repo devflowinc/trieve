@@ -1,4 +1,11 @@
-import { AggregationType, AnalyticsQuery, Column, Direction, FilterCondition, JoinType, TableName } from "../../types.gen";
+import {
+  AggregationType,
+  AnalyticsQuery,
+  Direction,
+  FilterCondition,
+  JoinType,
+  TableName,
+} from "../../types.gen";
 
 export class AnalyticsQueryBuilder {
   private query: AnalyticsQuery;
@@ -6,28 +13,27 @@ export class AnalyticsQueryBuilder {
   constructor() {
     this.query = {
       columns: [],
-      table: 'events'
+      table: "events",
     };
   }
 
   /**
    * Add a column to select
    */
-  select(name: string, options: { alias?: string; aggregation?: AggregationType; distinct?: boolean } = {}): AnalyticsQueryBuilder {
+  select(
+    name: string,
+    options: {
+      alias?: string;
+      aggregation?: AggregationType;
+      distinct?: boolean;
+    } = {},
+  ): AnalyticsQueryBuilder {
     this.query.columns.push({
       name,
       alias: options.alias,
       aggregation: options.aggregation,
-      distinct: options.distinct
+      distinct: options.distinct,
     });
-    return this;
-  }
-
-  /**
-   * Add multiple columns to select
-   */
-  selectMultiple(columns: Column[]): AnalyticsQueryBuilder {
-    this.query.columns.push(...columns);
     return this;
   }
 
@@ -38,7 +44,11 @@ export class AnalyticsQueryBuilder {
     if (!this.query.expressions) {
       this.query.expressions = [];
     }
-    this.query.expressions.push({ expression, alias });
+
+    this.query.expressions.push({
+      expression,
+      alias,
+    });
     return this;
   }
 
@@ -53,18 +63,25 @@ export class AnalyticsQueryBuilder {
   /**
    * Add a join clause
    */
-  join(table: TableName, onClause: string, joinType: JoinType = 'inner'): AnalyticsQueryBuilder {
+  join(
+    table: TableName,
+    on: string,
+    options: {
+      type: JoinType;
+    } = {
+      type: "inner",
+    },
+  ): AnalyticsQueryBuilder {
     if (!this.query.joins) {
       this.query.joins = [];
     }
     this.query.joins.push({
       table,
-      join_type: joinType,
-      on_clause: onClause
+      join_type: options.type,
+      on_clause: on,
     });
     return this;
   }
-
 
   /**
    * Add a complex filter condition
@@ -85,7 +102,7 @@ export class AnalyticsQueryBuilder {
       column: conditions[0].column,
       operator: conditions[0].operator,
       value: conditions[0].value,
-      and_filter: conditions.slice(1)
+      and_filter: conditions.slice(1),
     };
   }
 
@@ -97,7 +114,7 @@ export class AnalyticsQueryBuilder {
       column: conditions[0].column,
       operator: conditions[0].operator,
       value: conditions[0].value,
-      or_filter: conditions.slice(1)
+      or_filter: conditions.slice(1),
     };
   }
 
@@ -112,7 +129,10 @@ export class AnalyticsQueryBuilder {
   /**
    * Add an ORDER BY clause
    */
-  orderBy(columns: string[], direction: Direction = 'desc'): AnalyticsQueryBuilder {
+  orderBy(
+    columns: string[],
+    direction: Direction = "desc",
+  ): AnalyticsQueryBuilder {
     this.query.order_by = { columns, direction };
     return this;
   }

@@ -54,6 +54,7 @@ export const SuggestedQuestions = ({
         request_id: requestId,
         request_type: "rag",
       },
+      is_conversion: false,
     });
     if (onMessageSend) {
       onMessageSend();

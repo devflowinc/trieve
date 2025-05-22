@@ -24,10 +24,9 @@ export const AverageInteractionTime = ({
       graphData={data?.points}
       granularity={granularity}
       xAxis={"time_stamp"}
-      yAxis={"point"}
+      yAxes={[{ key: "point", label: "Average Interaction Time" }]}
       dataType="time"
       dateRange={filters.date_range}
-      label="Average Interaction Time"
       tooltipContent="The average time a user spends interacting with the Trieve component."
     />
   );

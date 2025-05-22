@@ -29,8 +29,7 @@ export const SearchesPerUser = ({
       granularity={granularity}
       dateRange={filters.date_range}
       xAxis={"time_stamp"}
-      yAxis={"point"}
-      label="Searches Per User"
+      yAxes={[{ key: "point", label: "Searches Per User" }]}
       tooltipContent="The average number of searches a user performs in one session."
     />
   );

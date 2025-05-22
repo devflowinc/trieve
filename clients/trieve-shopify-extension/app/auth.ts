@@ -281,3 +281,8 @@ export const sdkFromKey = (key: TrieveKey): TrieveSDK => {
 
   return trieve;
 };
+
+export const useTrieveServer = async (request: Request) => {
+  const key = await validateTrieveAuth(request);
+  return { key, trieve: sdkFromKey(key) };
+};

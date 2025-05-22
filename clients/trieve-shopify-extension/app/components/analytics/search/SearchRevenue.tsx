@@ -26,8 +26,7 @@ export const SearchRevenue = ({
       dateRange={filters.date_range}
       dataType="currency"
       xAxis={"time_stamp"}
-      yAxis={"point"}
-      label="Average Search Revenue"
+      yAxes={[{ key: "point", label: "Average Search Revenue" }]}
       tooltipContent="The average revenue generated from user search requests."
     />
   );

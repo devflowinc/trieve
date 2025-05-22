@@ -1,9 +1,13 @@
 import { TrieveSDK } from "../../sdk";
-import { AbTestReqBody, CreateExperimentReqBody, UpdateExperimentReqBody } from "../../types.gen";
+import {
+  AbTestReqBody,
+  CreateExperimentReqBody,
+  UpdateExperimentReqBody,
+} from "../../types.gen";
 
 /**
  * Function that allows you to view the experiments for a dataset.
- * 
+ *
  * Example:
  * ```js
  * const experiments = await trieve.getExperiments();
@@ -30,7 +34,7 @@ export async function getExperiments(
 
 /**
  * Function that allows you to create an experiment for a dataset.
- * 
+ *
  * Example:
  * ```js
  * const experiment = await trieve.createExperiment({
@@ -65,7 +69,7 @@ export async function createExperiment(
 
 /**
  * Function that allows you to update an experiment for a dataset.
- * 
+ *
  * Example:
  * ```js
  * const experiment = await trieve.updateExperiment({
@@ -99,10 +103,9 @@ export async function updateExperiment(
   );
 }
 
-
 /**
  * Function that allows you to delete an experiment for a dataset.
- * 
+ *
  * Example:
  * ```js
  * const experiment = await trieve.deleteExperiment("123");
@@ -129,10 +132,9 @@ export async function deleteExperiment(
   );
 }
 
-
 /**
  * Function that allows you to get the treatment for a user for an experiment.
- * 
+ *
  * Example:
  * ```js
  * const treatment = await trieve.getTreatment({
@@ -157,6 +159,35 @@ export async function getTreatment(
     {
       datasetId: this.datasetId,
       data,
+    },
+    signal,
+  );
+}
+
+/**
+ * Function that allows you to get an experiment by ID.
+ *
+ * Example:
+ * ```js
+ * const experiment = await trieve.getExperiment("123");
+ * ```
+ */
+export async function getExperiment(
+  /** @hidden */
+  this: TrieveSDK,
+  experimentId: string,
+  signal?: AbortSignal,
+) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
+  return await this.trieve.fetch(
+    `/api/experiment/{experiment_id}`,
+    "get",
+    {
+      datasetId: this.datasetId,
+      experimentId,
     },
     signal,
   );

@@ -698,6 +698,7 @@ const ModalProvider = ({
                 component_props: props,
                 ab_treatment: abTreatment,
               },
+              is_conversion: false,
             },
             abortController.signal,
           );
@@ -729,6 +730,7 @@ const ModalProvider = ({
                 component_props: props,
                 ab_treatment: abTreatment,
               },
+              is_conversion: false,
             },
             abortController.signal,
           );

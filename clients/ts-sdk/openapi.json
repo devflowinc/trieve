@@ -5222,6 +5222,65 @@
       }
     },
     "/api/experiment/{experiment_id}": {
+      "get": {
+        "tags": [
+          "Experiment"
+        ],
+        "summary": "Get Experiment by ID",
+        "description": "Get an experiment by ID. Auth'ed user must be an owner of the organization to get an experiment.",
+        "operationId": "get_experiment",
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "description": "The experiment id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id to use for the request",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Experiment retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Experiment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting the experiment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "owner"
+            ]
+          }
+        ]
+      },
       "delete": {
         "tags": [
           "Experiment"

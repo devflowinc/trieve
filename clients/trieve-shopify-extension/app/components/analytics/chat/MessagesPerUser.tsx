@@ -25,8 +25,7 @@ export const MessagesPerUser = ({
       granularity={granularity}
       dateRange={filters.date_range}
       xAxis={"time_stamp"}
-      yAxis={"point"}
-      label="Messages Per User"
+      yAxes={[{ key: "point", label: "Messages Per User" }]}
       tooltipContent="The average number of messages a user sends in one session."
     />
   );
