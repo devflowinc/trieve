@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getSuggestedQuestions } from "../trieve";
-import { useModalState } from "./modal-context";
+import { isDefaultSearchQuery, useModalState } from "./modal-context";
 import { useChatState } from "./chat-context";
 
 export const useFollowupQuestions = () => {
@@ -48,7 +48,7 @@ export const useFollowupQuestions = () => {
     setSuggestedQuestions((prev) => ({
       ...prev,
       [prevMessage.text]: queries.queries.map((q) => {
-        return q.replace(/^[\d.-]+\s*/, "").trim();
+        return isDefaultSearchQuery(q) ? q.query?.replace(/^[\d.-]+\s*/, "").trim() ?? "" : q;
       }),
     }));
     setIsLoadingSuggestedQueries(false);

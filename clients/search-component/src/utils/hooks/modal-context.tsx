@@ -163,8 +163,8 @@ export type ModalProps = {
   allowRefreshSuggestedQueries?: boolean;
   followupQuestions?: boolean;
   numberOfSuggestions?: number;
-  defaultSearchQueries?: string[];
-  defaultAiQuestions?: string[] | AiQuestion[];
+  defaultSearchQueries?: DefaultSearchQuery[] | string[];
+  defaultAiQuestions?: AiQuestion[] | DefaultSearchQuery[] | string[];
   brandLogoImgSrcUrl?: string;
   brandName?: string;
   problemLink?: string;
