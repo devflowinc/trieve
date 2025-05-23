@@ -6,7 +6,7 @@ import {
   FilterSidebarSection,
   useModalState,
 } from "../utils/hooks/modal-context";
-import { TwoThumbInputRange } from "react-two-thumb-input-range";
+import ReactSlider from "react-slider";
 import { GetToolFunctionParamsReqPayload } from "trieve-ts-sdk";
 
 function getCssVar(varName: string) {
@@ -397,9 +397,8 @@ export const FilterButton = ({
   }, [activeRangeFilters, sectionKey]);
 
   const handleChange = (values: [number, number]) => {
-    if (values[0] > values[1]) {
-      return;
-    }
+    const min = Math.min(values[0], values[1]);
+    const max = Math.max(values[0], values[1]);
     setSelectedSidebarFilters((prev) => {
       const existingRangeFilter = prev.find(
         ({ section }) =>
@@ -408,14 +407,14 @@ export const FilterButton = ({
       if (existingRangeFilter) {
         return prev.map((filter) =>
           filter.section.key === sectionKey
-            ? { ...filter, range: { min: values[0], max: values[1] } }
+            ? { ...filter, range: { min, max } }
             : filter,
         );
       } else {
         return prev.concat([
           {
             section: section,
-            range: { min: values[0], max: values[1] },
+            range: { min, max },
           },
         ]);
       }
@@ -481,7 +480,7 @@ export const FilterButton = ({
               </div>
             </div>
             <div className="tv-mt-1 tv-w-[100%] !tv-shadow-none">
-              <TwoThumbInputRange
+              <ReactSlider
                 onChange={handleChange}
                 values={[min, max]}
                 min={range?.min ?? 0}

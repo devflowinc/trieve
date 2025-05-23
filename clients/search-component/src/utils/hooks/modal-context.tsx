@@ -541,89 +541,82 @@ const ModalProvider = ({
           }
         : undefined;
 
-    try {
-      setLoadingResults(true);
-      if (props.useGroupSearch && !props.usePagefind) {
-        const results = await groupSearchWithTrieve({
-          props,
-          query_string: query,
-          image_url: imageUrl,
-          audioBase64: audioBase64,
-          searchOptions: props.searchOptions,
-          trieve: trieve,
-          abortController,
-          filters,
-          type: props.type,
-          abTreatment,
-        });
-        const groupMap = new Map<string, GroupChunk[]>();
-        results.groups.forEach((group) => {
-          const title = group.chunks[0].chunk.metadata?.title;
-          if (groupMap.has(title)) {
-            groupMap.get(title)?.push(group);
-          } else {
-            groupMap.set(title, [group]);
-          }
-        });
+    setLoadingResults(true);
+    if (props.useGroupSearch && !props.usePagefind) {
+      const results = await groupSearchWithTrieve({
+        props,
+        query_string: query,
+        image_url: imageUrl,
+        audioBase64: audioBase64,
+        searchOptions: props.searchOptions,
+        trieve: trieve,
+        abortController,
+        filters,
+        type: props.type,
+        abTreatment,
+      });
+      const groupMap = new Map<string, GroupChunk[]>();
+      results.groups.forEach((group) => {
+        const title = group.chunks[0].chunk.metadata?.title;
+        if (groupMap.has(title)) {
+          groupMap.get(title)?.push(group);
+        } else {
+          groupMap.set(title, [group]);
+        }
+      });
 
-        if (results.transcribedQuery && audioBase64) {
-          setQuery(results.transcribedQuery);
-          setAudioBase64(undefined);
-        }
-        setResults(Array.from(groupMap.values()));
-        setRequestID(results.requestID);
-      } else if (props.useGroupSearch && props.usePagefind) {
-        const results = await groupSearchWithPagefind(
-          pagefind,
-          query,
-          props.datasetId,
-          filters,
-        );
-        const groupMap = new Map<string, GroupChunk[]>();
-        results.groups.forEach((group) => {
-          const title = group.chunks[0].chunk.metadata?.title;
-          if (groupMap.has(title)) {
-            groupMap.get(title)?.push(group);
-          } else {
-            groupMap.set(title, [group]);
-          }
-        });
-        setResults(Array.from(groupMap.values()));
-      } else if (!props.useGroupSearch && props.usePagefind) {
-        const results = await searchWithPagefind(
-          pagefind,
-          query,
-          props.datasetId,
-          filters,
-        );
-        setResults(results);
-      } else {
-        const results = await searchWithTrieve({
-          props,
-          query_string: query,
-          image_url: imageUrl,
-          audioBase64: audioBase64,
-          searchOptions: props.searchOptions,
-          trieve: trieve,
-          abortController,
-          filters,
-          type: props.type,
-          abTreatment,
-        });
-        if (results.transcribedQuery && audioBase64) {
-          setQuery(results.transcribedQuery);
-          setAudioBase64(undefined);
-        }
-        setResults(results.chunks);
-        setRequestID(results.requestID);
+      if (results.transcribedQuery && audioBase64) {
+        setQuery(results.transcribedQuery);
+        setAudioBase64(undefined);
       }
-    } catch (e) {
-      if ((e as DOMException)?.name != "AbortError") {
-        console.error(e);
+      setResults(Array.from(groupMap.values()));
+      setRequestID(results.requestID);
+    } else if (props.useGroupSearch && props.usePagefind) {
+      const results = await groupSearchWithPagefind(
+        pagefind,
+        query,
+        props.datasetId,
+        filters,
+      );
+      const groupMap = new Map<string, GroupChunk[]>();
+      results.groups.forEach((group) => {
+        const title = group.chunks[0].chunk.metadata?.title;
+        if (groupMap.has(title)) {
+          groupMap.get(title)?.push(group);
+        } else {
+          groupMap.set(title, [group]);
+        }
+      });
+      setResults(Array.from(groupMap.values()));
+    } else if (!props.useGroupSearch && props.usePagefind) {
+      const results = await searchWithPagefind(
+        pagefind,
+        query,
+        props.datasetId,
+        filters,
+      );
+      setResults(results);
+    } else {
+      const results = await searchWithTrieve({
+        props,
+        query_string: query,
+        image_url: imageUrl,
+        audioBase64: audioBase64,
+        searchOptions: props.searchOptions,
+        trieve: trieve,
+        abortController,
+        filters,
+        type: props.type,
+        abTreatment,
+      });
+      if (results.transcribedQuery && audioBase64) {
+        setQuery(results.transcribedQuery);
+        setAudioBase64(undefined);
       }
-    } finally {
-      setLoadingResults(false);
+      setResults(results.chunks);
+      setRequestID(results.requestID);
     }
+    setLoadingResults(false);
   };
 
   useEffect(() => {

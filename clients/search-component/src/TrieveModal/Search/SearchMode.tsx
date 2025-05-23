@@ -115,7 +115,6 @@ export const SearchMode = () => {
   }, [results]);
 
   const hasQuery = imageUrl || query || audioBase64;
-  const hasActiveFilters = selectedSidebarFilters.length > 0;
 
   return (
     <>
@@ -131,7 +130,9 @@ export const SearchMode = () => {
       <SearchInput />
 
       {/* Filter Pills Bar */}
-      {hasActiveFilters && <ActiveFilterPills />}
+      {props.type === "ecommerce" &&
+        props.inline &&
+        props.defaultSearchMode === "search" && <ActiveFilterPills />}
 
       <div className="tv-flex tv-flex-grow tv-overflow-y-auto">
         <SearchPage />

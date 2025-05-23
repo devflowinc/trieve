@@ -207,6 +207,7 @@ export const groupSearchWithTrieve = async ({
   let transcribedQuery: string | null = null;
   const results = await trieve.searchOverGroups(
     {
+      ...omit(searchOptions, ["use_autocomplete"]),
       query,
       highlight_options: {
         ...defaultHighlightOptions,
@@ -223,7 +224,6 @@ export const groupSearchWithTrieve = async ({
       },
       user_id: fingerprint,
       search_type: searchOptions.search_type ?? "fulltext",
-      ...omit(searchOptions, ["use_autocomplete"]),
     },
     abortController?.signal,
     (headers: Record<string, string>) => {

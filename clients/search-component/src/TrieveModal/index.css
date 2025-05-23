@@ -1433,7 +1433,7 @@ body {
     }
 
     .trieve-filter-sidebar-section {
-      @apply tv-flex tv-flex-col tv-min-w-fit tv-w-fit tv-min-h-full;
+      @apply tv-flex tv-flex-col tv-min-h-full;
     }
 
     .trieve-filter-sidebar-options {
