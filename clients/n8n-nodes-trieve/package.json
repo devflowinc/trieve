@@ -42,7 +42,6 @@
     ]
   },
   "dependencies": {
-    "trieve-ts-sdk": "0.0.104"
   },
   "devDependencies": {
     "@typescript-eslint/parser": "~8.32.0",
