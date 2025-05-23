@@ -5,128 +5,11 @@ import {
 	INodeProperties,
 	INodeType,
 	INodeTypeDescription,
+	IRequestOptions,
 	NodeConnectionType,
 } from 'n8n-workflow';
 
-import {
-	ChunkFilter,
-	SearchMethod,
-	ToolFunctionParameter,
-	TrieveSDK
-} from "trieve-ts-sdk";
-
-const operations: INodeProperties[] = [
-	{
-		displayName: 'Operation',
-		name: 'operation',
-		type: 'options',
-		options: [
-			{
-				name: 'Create Chunk',
-				value: 'create_chunk',
-				description: 'Create a chunk',
-				action: 'Create a chunk',
-			},
-			{
-				name: 'Search Chunks',
-				value: 'search_chunks',
-				action: 'Search chunks',
-			},
-			{
-				name: 'Tool Call',
-				value: 'tool_call',
-				action: 'Tool call',
-			}
-		],
-		default: 'create_chunk',
-		noDataExpression: true,
-	},
-]
-
-const resources: INodeProperties[] = [
-	{
-		displayName: 'Resource',
-		name: 'resource',
-		type: 'options',
-		noDataExpression: true,
-		default: 'chunk',
-		displayOptions: {
-			show: {
-				operation: [
-					'create_chunk',
-					'tool_call',
-				],
-			},
-		},
-		options: [
-			{
-				name: 'Chunk',
-				value: 'chunk',
-			},
-			{
-				name: 'Tool Call',
-				value: 'tool_call',
-			}
-		],
-	},
-	{
-		displayName: 'Query',
-		name: 'query',
-		type: 'collection',
-		default: {
-			query: '',
-			search_type: 'fulltext'
-		},
-		options: [
-			{
-				displayName: 'Query',
-				name: 'query',
-				type: 'string',
-				default: '',
-			},
-			{
-				displayName: 'Search Type',
-				name: 'search_type',
-				type: 'options',
-				default: 'fulltext',
-				options: [
-					{
-						name: 'Fulltext',
-						value: 'fulltext',
-					},
-					{
-						name: 'Hybrid',
-						value: 'hybrid',
-					},
-					{
-						name: 'Semantic',
-						value: 'semantic',
-					}
-				]
-			},
-		],
-		displayOptions: {
-			show: {
-				operation: [
-					'search_chunks',
-				],
-			},
-		},
-		noDataExpression: false,
-	},
-	{
-		displayName: 'Filter',
-		name: 'filter',
-		type: 'json',
-		default: '{}',
-		displayOptions: {
-			show: {
-				operation: [
-					'search_chunks',
-				],
-			},
-		}
-	},
+const createChunkProperties: INodeProperties[] = [
 	{
 		displayName: 'Chunk',
 		name: 'chunk',
@@ -186,6 +69,9 @@ const resources: INodeProperties[] = [
 			},
 		],
 	},
+]
+
+const toolCallProperties: INodeProperties[] = [
 	{
 		displayName: 'Function Input',
 		name: 'function_input',
@@ -205,11 +91,23 @@ const resources: INodeProperties[] = [
 		type: 'collection',
 		noDataExpression: false,
 		default: {
-			function_description: '',
-			function_name: '',
+			function_description: 'A function to determine if the input is important',
+			function_name: 'is_important',
+			parameters: `
+[
+	{
+		"name": "is_important",
+		"parameter_type": "boolean",
+		"description": "Is this input important?"
+	}
+]`,
+
 		},
 		displayOptions: {
 			show: {
+				resource: [
+					'tool_call',
+				],
 				operation: [
 					'tool_call',
 				],
@@ -220,13 +118,13 @@ const resources: INodeProperties[] = [
 				displayName: 'Function Description',
 				name: 'description',
 				type: 'string',
-				default: '',
+				default: 'A function to determine if the input is important',
 			},
 			{
 				displayName: 'Function Name',
 				name: 'name',
 				type: 'string',
-				default: '',
+				default: 'is_important',
 			},
 			{
 				displayName: 'Parameters',
@@ -242,7 +140,114 @@ const resources: INodeProperties[] = [
 ]`,
 			},
 		],
-	}
+	},
+]
+
+const searchProperties: INodeProperties[] = [
+	{
+		displayName: 'Query',
+		name: 'query',
+		type: 'collection',
+		default: {
+			query: '',
+			search_type: 'fulltext'
+		},
+		options: [
+			{
+				displayName: 'Query',
+				name: 'query',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Search Type',
+				name: 'search_type',
+				type: 'options',
+				default: 'fulltext',
+				options: [
+					{
+						name: 'Fulltext',
+						value: 'fulltext',
+					},
+					{
+						name: 'Hybrid',
+						value: 'hybrid',
+					},
+					{
+						name: 'Semantic',
+						value: 'semantic',
+					}
+				]
+			},
+		],
+		displayOptions: {
+			show: {
+				operation: [
+					'search_chunks',
+				],
+			},
+		},
+		noDataExpression: false,
+	},
+	{
+		displayName: 'Filter',
+		name: 'filter',
+		type: 'json',
+		default: '{}',
+		displayOptions: {
+			show: {
+				operation: [
+					'search_chunks',
+				],
+			},
+		}
+	},
+]
+
+const baseProperties: INodeProperties[] = [
+	{
+		displayName: 'Resource',
+		name: 'resource',
+		type: 'options',
+		default: 'chunk',
+		options: [
+			{
+				name: 'Chunk',
+				value: 'chunk',
+			},
+			{
+				name: 'Tool Call',
+				value: 'tool_call',
+			}
+		],
+		noDataExpression: true,
+	},
+	{
+		displayName: 'Operation',
+		name: 'operation',
+		type: 'options',
+		options: [
+			{
+				name: 'Create Chunk',
+				value: 'create_chunk',
+				description: 'Create a chunk',
+				action: 'Create chunk',
+			},
+			{
+				name: 'Search',
+				value: 'search_chunks',
+				description: 'Search your chunks',
+				action: 'Search chunks',
+			},
+			{
+				name: 'Tool Call',
+				value: 'tool_call',
+				action: 'Tool call',
+			}
+		],
+		default: 'create_chunk',
+		noDataExpression: true,
+	},
 ]
 
 export class Trieve implements INodeType {
@@ -250,16 +255,19 @@ export class Trieve implements INodeType {
 		// Basic node details will go here
 		properties: [
 			// Resources and operations will go here
-			...operations,
-			...resources,
+			...baseProperties,
+			...createChunkProperties,
+			...searchProperties,
+			...toolCallProperties
 		],
 		displayName: 'Trieve',
 		name: 'trieve',
-		icon: 'file:left-right-black-arrow.svg',
+		// icon: 'file:shoes-1.svg',
+		icon: 'file:TrieveLogo.svg',
 		group: ['transform'],
 		version: 1,
-		subtitle: '={{ $parameter["operation"] + ": " + $parameter["resource"] }}',
-		description: 'Consume Trieve API',
+		subtitle: '={{ $parameter["operation"] }}',
+		description: 'Consume The Trieve API',
 		defaults: {
 			name: 'Trieve',
 		},
@@ -277,12 +285,6 @@ export class Trieve implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 
-		const credentials = await this.getCredentials('trieveApi');
-		const trieve = new TrieveSDK({
-			apiKey: credentials.apiKey as string,
-			datasetId: credentials.datasetId as string
-		});
-
 		const returnData: any[] = [];
 
 		const operation = this.getNodeParameter('operation', 0) as string;
@@ -291,6 +293,7 @@ export class Trieve implements INodeType {
 		// value the parameter "myString" resolves to.
 		// (This could be a different value for each item in case it contains an expression)
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+			console.log("hi");
 			if (operation === 'create_chunk') {
 				const chunk = this.getNodeParameter('chunk', itemIndex) as IDataObject;
 				const data: IDataObject = {
@@ -300,7 +303,14 @@ export class Trieve implements INodeType {
 				const group_tracking_id = data.group_tracking_id as string;
 				const metadata = data.metadata as object;
 				let tracking_id = data.tracking_id as string | undefined;
-				let time_stamp = data.time_stamp as string;
+				const time_stamp_string = data.time_stamp as string | null;
+
+				let time_stamp: string | undefined;
+				if (time_stamp_string == "" || time_stamp_string == null) {
+					time_stamp = undefined;
+				} else {
+					time_stamp = new Date(time_stamp_string).toISOString();
+				}
 
 				const tag_set_input = data.tag_set as string | undefined;
 				let tag_set: string[] | undefined;
@@ -315,45 +325,74 @@ export class Trieve implements INodeType {
 					tracking_id = undefined;
 				}
 
-				const response = await trieve.createChunk({
-					chunk_html: chunk_html,
-					tracking_id: tracking_id,
-					tag_set: tag_set ?? undefined,
-					upsert_by_tracking_id: true,
-					group_tracking_ids: group_tracking_id ? [group_tracking_id] : undefined,
-					metadata: metadata,
-					time_stamp: time_stamp,
-				});
+				const options: IRequestOptions = {
+					headers: {
+						'Accept': 'application/json',
+					},
+					method: 'POST',
+					body: {
+						chunk_html: chunk_html,
+						tracking_id: tracking_id,
+						tag_set: tag_set ?? undefined,
+						upsert_by_tracking_id: true,
+						group_tracking_ids: group_tracking_id ? [group_tracking_id] : undefined,
+						metadata: metadata,
+						time_stamp: time_stamp,
+					},
+					uri: `https://api.trieve.ai/api/chunk`,
+					json: true,
+				};
+
+				const response = await this.helpers.requestWithAuthentication.call(this, 'trieveApi', options)
 
 				returnData.push(response.chunk_metadata as any);
 			} else if (operation === 'search_chunks') {
+				console.log("search_chunks");
 				const query = this.getNodeParameter('query', itemIndex) as IDataObject;
 				const filterSerialized = this.getNodeParameter('filter', itemIndex) as IDataObject;
-				let filters: ChunkFilter = JSON.parse(filterSerialized as unknown as string);
+				let filters = JSON.parse(filterSerialized as unknown as string);
 
-				const search_type = query.search_type as SearchMethod ?? "fulltext";
+				const search_type = query.search_type ?? "fulltext";
 
-				const response = await trieve.search({
-					query: query.query as string,
-					search_type: search_type,
-					filters: filters
-				})
+				const options: IRequestOptions = {
+					headers: {
+						'Accept': 'application/json',
+					},
+					method: 'POST',
+					body: {
+						query: query.query as string,
+						search_type: search_type,
+						filters: filters
+					},
+					uri: `https://api.trieve.ai/api/chunk/search`,
+					json: true,
+				};
 
-				returnData.push(response as any);
+				const response = await this.helpers.requestWithAuthentication.call(this, 'trieveApi', options)
+
+				returnData.push(response.chunks as any);
 			} else if (operation === 'tool_call') {
 
 				const toolFunction = this.getNodeParameter('tool_function', itemIndex) as IDataObject;
 				const functionInput = this.getNodeParameter('function_input', itemIndex) as string;
 
-				console.log(toolFunction);
-				const response = await trieve.getToolCallFunctionParams({
-					user_message_text: functionInput,
-					tool_function: {
-						name: toolFunction.name as string,
-						description: toolFunction.description as string,
-						parameters: JSON.parse(toolFunction.parameters) as ToolFunctionParameter[]
-					}
-				});
+				const options: IRequestOptions = {
+					headers: {
+						'Accept': 'application/json',
+					},
+					method: 'POST',
+					body: {
+						user_message_text: functionInput,
+						tool_function: {
+							name: toolFunction.name as string,
+							description: toolFunction.description as string,
+							parameters: JSON.parse(toolFunction.parameters as unknown as string)
+						}
+					},
+					uri: "https://api.trieve.ai/api/message/get_tool_function_params",
+					json: true,
+				}
+				const response = await this.helpers.requestWithAuthentication.call(this, 'trieveApi', options)
 
 				returnData.push(response as any);
 

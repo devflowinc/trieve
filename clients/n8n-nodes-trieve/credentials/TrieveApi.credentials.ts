@@ -31,7 +31,8 @@ export class TrieveApi implements ICredentialType {
 			headers: {
 				Authorization: '=Bearer {{$credentials.apiKey}}',
 				'Content-Type': 'application/json',
-				"TR-Dataset": "{{ $credentials.datasetId }}",
+				'TR-Dataset': "={{ $credentials.datasetId }}",
+				'X-API-Version': 'v2'
 			},
 		},
 	};
@@ -39,11 +40,11 @@ export class TrieveApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL: 'https://api.trieve.ai',
-			url: '/api/dataset/{{ $credentials.datasetId }}',
+			url: '=/api/dataset/{{ $credentials.datasetId }}',
 			headers: {
 				Authorization: '=Bearer {{$credentials.apiKey}}',
 				'Content-Type': 'application/json',
-				"TR-Dataset": "{{ $credentials.datasetId }}",
+				'TR-Dataset': "={{ $credentials.datasetId }}",
 			}
 		},
 	};
