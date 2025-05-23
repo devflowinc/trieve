@@ -185,7 +185,14 @@ const Modal = () => {
         setMode("chat");
         cancelGroupChat();
         setOpen(true);
-        askQuestion(customEvent.detail.text, undefined, undefined, "", true, customEvent.detail.imageUrl);
+        askQuestion(
+          customEvent.detail.text,
+          undefined,
+          undefined,
+          "",
+          true,
+          customEvent.detail.imageUrl,
+        );
       } else {
         setOpen(true);
         setMode("search");

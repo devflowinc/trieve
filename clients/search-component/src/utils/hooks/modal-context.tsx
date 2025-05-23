@@ -147,7 +147,6 @@ export function isDefaultSearchQuery(
   return typeof question === "object" && "query" in question;
 }
 
-
 export type ModalProps = {
   datasetId: string;
   apiKey: string;

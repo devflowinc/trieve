@@ -22,8 +22,7 @@ export const SuggestedQuestions = ({
   const { suggestedQuestions, isLoadingSuggestedQueries, getQuestions } =
     useSuggestedQuestions();
 
-  const { props, trieveSDK, fingerprint, abTreatment } =
-    useModalState();
+  const { props, trieveSDK, fingerprint, abTreatment } = useModalState();
   const [parent] = useAutoAnimate({ duration: 100 });
   const [selectedQuestion, setSelectedQuestion] = useState<
     AiQuestion | DefaultSearchQuery | null
@@ -43,7 +42,9 @@ export const SuggestedQuestions = ({
           ? selectedQuestion.promptForAI
           : undefined,
         undefined,
-        isDefaultSearchQuery(selectedQuestion) ? selectedQuestion.imageUrl ?? undefined : "",
+        isDefaultSearchQuery(selectedQuestion)
+          ? (selectedQuestion.imageUrl ?? undefined)
+          : "",
       );
     }
   }, [selectedQuestion]);
@@ -58,7 +59,7 @@ export const SuggestedQuestions = ({
     console.log("q", q);
     setCurrentQuestion(isAiQuestion(q) ? q.questionText : (q.query ?? ""));
     setSelectedQuestion(q);
-    
+
     const requestId =
       messages[messages.length - 1]?.queryId ??
       "00000000-0000-0000-0000-000000000000";

@@ -91,18 +91,18 @@ const ChatContext = createContext<{
   rateChatCompletion: (isPositive: boolean, queryId: string | null) => void;
   productsWithClicks: ChunkIdWithIndex[];
 }>({
-  askQuestion: async () => { },
+  askQuestion: async () => {},
   currentQuestion: "",
   isLoading: false,
   loadingText: "",
   messages: [],
-  setCurrentQuestion: () => { },
-  cancelGroupChat: () => { },
-  clearConversation: () => { },
-  chatWithGroup: () => { },
-  switchToChatAndAskQuestion: async () => { },
-  stopGeneratingMessage: () => { },
-  rateChatCompletion: () => { },
+  setCurrentQuestion: () => {},
+  cancelGroupChat: () => {},
+  clearConversation: () => {},
+  chatWithGroup: () => {},
+  switchToChatAndAskQuestion: async () => {},
+  stopGeneratingMessage: () => {},
+  rateChatCompletion: () => {},
   productsWithClicks: [],
 });
 
@@ -141,7 +141,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     ChunkIdWithIndex[]
   >([]);
   let localImageUrl = imageUrl;
-
 
   const [groupIdsInChat, setGroupIdsInChat] = useState<string[]>([]);
 
@@ -622,7 +621,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               },
             });
           }
-        })
+        });
 
         const imageFiltersPromise = retryOperation(async () => {
           if (localImageUrl) {
@@ -661,13 +660,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 user_message_text:
                   questionProp || currentQuestion
                     ? `Get filters from the following messages: ${messages
-                      .slice(0, -1)
-                      .filter((message) => {
-                        return message.type == "user";
-                      })
-                      .map(
-                        (message) => `\n\n${message.text}`,
-                      )} \n\n ${questionProp || currentQuestion}`
+                        .slice(0, -1)
+                        .filter((message) => {
+                          return message.type == "user";
+                        })
+                        .map(
+                          (message) => `\n\n${message.text}`,
+                        )} \n\n ${questionProp || currentQuestion}`
                     : null,
                 image_url: localImageUrl ? localImageUrl : null,
                 audio_input: curAudioBase64 ? curAudioBase64 : null,
@@ -699,13 +698,17 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
         });
 
-        const [priceFiltersResp, imageFiltersResp, tagFiltersResp, skipSearchResp] =
-          await Promise.all([
-            priceFiltersPromise,
-            imageFiltersPromise,
-            tagFiltersPromise,
-            skipSearchPromise,
-          ]);
+        const [
+          priceFiltersResp,
+          imageFiltersResp,
+          tagFiltersResp,
+          skipSearchResp,
+        ] = await Promise.all([
+          priceFiltersPromise,
+          imageFiltersPromise,
+          tagFiltersPromise,
+          skipSearchPromise,
+        ]);
 
         if (transcribedQuery && curAudioBase64) {
           questionProp = transcribedQuery;
@@ -732,7 +735,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }
 
         useImage = (imageFiltersResp?.parameters &&
-          (imageFiltersResp.parameters as any)["image"] === true && localImageUrl) as boolean;
+          (imageFiltersResp.parameters as any)["image"] === true &&
+          localImageUrl) as boolean;
 
         const match_any_tags = [];
         if (tagFiltersResp?.parameters) {
@@ -920,13 +924,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 : null;
               const imageUrls = props.relevanceToolCallOptions?.includeImages
                 ? (
-                  (firstChunk?.image_urls?.filter(
-                    (stringOrNull): stringOrNull is string =>
-                      Boolean(stringOrNull),
-                  ) ||
-                    []) ??
-                  []
-                ).splice(0, 1)
+                    (firstChunk?.image_urls?.filter(
+                      (stringOrNull): stringOrNull is string =>
+                        Boolean(stringOrNull),
+                    ) ||
+                      []) ??
+                    []
+                  ).splice(0, 1)
                 : undefined;
               const jsonOfFirstChunk = {
                 title: (firstChunk?.metadata as any)?.title ?? "",
@@ -1156,21 +1160,25 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           createMessageFilters = filters;
         }
         if (skipSearch) {
-          createMessageFilters = props.useGroupSearch ? ({
-            must: [
-              {
-                field: "group_ids",
-                match_any: groupIdsInChat,
-              },
-            ],
-          }) : {
-            must: [
-              {
-                field: "ids",
-                match_any: messages.flatMap((m) => m.additional?.map((c) => c.id) || []),
-              },
-            ],
-          };
+          createMessageFilters = props.useGroupSearch
+            ? {
+                must: [
+                  {
+                    field: "group_ids",
+                    match_any: groupIdsInChat,
+                  },
+                ],
+              }
+            : {
+                must: [
+                  {
+                    field: "ids",
+                    match_any: messages
+                      .flatMap((m) => m.additional ?? [])
+                      .map((chunk) => chunk.id),
+                  },
+                ],
+              };
         }
         const systemPromptToUse =
           props.systemPrompt && props.systemPrompt !== ""
