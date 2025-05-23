@@ -182,10 +182,11 @@ const Modal = () => {
       if (props.inline) return;
 
       if (defaultMode === "chat") {
+        setOpen(true);
         setMode("chat");
         cancelGroupChat();
-        setOpen(true);
-        askQuestion(customEvent.detail.text, undefined, undefined, "", true, customEvent.detail.imageUrl);
+        setImageUrl(customEvent.detail.imageUrl ?? "");
+        askQuestion(customEvent.detail.text);
       } else {
         setOpen(true);
         setMode("search");
