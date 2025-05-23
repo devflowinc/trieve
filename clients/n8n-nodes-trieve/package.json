@@ -8,12 +8,12 @@
   "license": "MIT",
   "homepage": "",
   "author": {
-    "name": "trieve",
+    "name": "cdxker",
     "email": "humans@trieve.ai"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/devflowinc/trieve"
+    "url": "https://github.com/devflowinc/trieve/clients/n8n-nodes-trieve"
   },
   "engines": {
     "node": ">=20.15"
@@ -24,8 +24,7 @@
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
-    "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "npm build && npm lint -c .eslintrc.prepublish.js nodes credentials package.json"
+    "lintfix": "eslint nodes credentials package.json --fix"
   },
   "files": [
     "dist"

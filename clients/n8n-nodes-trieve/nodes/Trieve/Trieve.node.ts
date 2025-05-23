@@ -7,6 +7,7 @@ import {
 	INodeTypeDescription,
 	IRequestOptions,
 	NodeConnectionType,
+	NodeOperationError,
 } from 'n8n-workflow';
 
 interface Chunk {
@@ -25,12 +26,11 @@ const createChunkProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				resource: [
-					'chunk',
-				],
-				operation: [
-					'create_chunk',
-				],
+				resource: ['chunk'],
+				operation: ['create_chunk'],
+			},
+			hide: {
+				resource: ['tool_call'],
 			},
 		},
 	},
@@ -42,26 +42,25 @@ const createChunkProperties: INodeProperties[] = [
 		default: {},
 		displayOptions: {
 			show: {
-				resource: [
-					'chunk',
-				],
-				operation: [
-					'create_chunk',
-				],
+				resource: ['chunk'],
+				operation: ['create_chunk'],
+			},
+			hide: {
+				resource: ['tool_call'],
 			},
 		},
 		options: [
 			{
-				displayName: 'Tracking ID',
-				name: 'tracking_id',
-				type: 'string',
-				default: '',
-			},
-			{
 				displayName: 'Tag Set',
 				name: 'tag_set',
 				type: 'string',
-				requiresDataPath: 'multiple',
+				default: '',
+				description: 'Comma-separated list of tags (e.g., "important,project-x,documentation")',
+			},
+			{
+				displayName: 'Tracking ID',
+				name: 'tracking_id',
+				type: 'string',
 				default: '',
 			},
 			{
@@ -88,9 +87,11 @@ const toolCallProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				operation: [
-					'tool_call',
-				],
+				resource: ['tool_call'],
+				operation: ['get_tool_params'],
+			},
+			hide: {
+				resource: ['chunk'],
 			},
 		},
 	},
@@ -101,12 +102,11 @@ const toolCallProperties: INodeProperties[] = [
 		default: 'A function to determine if the input is important',
 		displayOptions: {
 			show: {
-				resource: [
-					'tool_call',
-				],
-				operation: [
-					'tool_call',
-				],
+				resource: ['tool_call'],
+				operation: ['get_tool_params'],
+			},
+			hide: {
+				resource: ['chunk'],
 			},
 		},
 	},
@@ -117,37 +117,76 @@ const toolCallProperties: INodeProperties[] = [
 		default: 'is_important',
 		displayOptions: {
 			show: {
-				resource: [
-					'tool_call',
-				],
-				operation: [
-					'tool_call',
-				],
+				resource: ['tool_call'],
+				operation: ['get_tool_params'],
+			},
+			hide: {
+				resource: ['chunk'],
 			},
 		},
 	},
 	{
 		displayName: 'Parameters',
 		name: 'parameters',
-		type: 'json',
-		default: `
-[
-	{
-		"name": "is_important",
-		"parameter_type": "boolean",
-		"description": "Is this input important?"
-	}
-]`,
+		type: 'fixedCollection',
+		typeOptions: {
+			multipleValues: true,
+			minValue: 1,
+			minRequiredFields: 1
+		},
+		default: {},
+		required: true,
 		displayOptions: {
 			show: {
-				resource: [
-					'tool_call',
-				],
-				operation: [
-					'tool_call',
-				],
+				resource: ['tool_call'],
+				operation: ['get_tool_params'],
+			},
+			hide: {
+				resource: ['chunk'],
 			},
 		},
+		options: [
+			{
+				displayName: 'Parameter',
+				name: 'parameter',
+				values: [
+					{
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+						default: '',
+						description: 'The name of the parameter',
+						required: true,
+					},
+					{
+						displayName: 'Parameter Type',
+						name: 'parameter_type',
+						type: 'options',
+						options: [
+							{
+								name: 'Boolean',
+								value: 'boolean',
+							},
+							{
+								name: 'Number',
+								value: 'number',
+							},
+						],
+						default: 'boolean',
+						description: 'The type of the parameter',
+						required: true,
+					},
+					{
+						displayName: 'Description',
+						name: 'description',
+						type: 'string',
+						default: '',
+						description: 'Description of what this parameter does',
+						required: true,
+					},
+				],
+			},
+		],
 	},
 ]
 
@@ -159,9 +198,11 @@ const searchProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				operation: [
-					'search_chunks',
-				],
+				resource: ['chunk'],
+				operation: ['search_chunks'],
+			},
+			hide: {
+				resource: ['tool_call'],
 			},
 		},
 	},
@@ -186,9 +227,27 @@ const searchProperties: INodeProperties[] = [
 		],
 		displayOptions: {
 			show: {
-				operation: [
-					'search_chunks',
-				],
+				resource: ['chunk'],
+				operation: ['search_chunks'],
+			},
+			hide: {
+				resource: ['tool_call'],
+			},
+		},
+	},
+	{
+		displayName: 'Page Size',
+		name: 'page_size',
+		type: 'number',
+		default: 10,
+		description: 'Number of results to return per page',
+		displayOptions: {
+			show: {
+				resource: ['chunk'],
+				operation: ['search_chunks'],
+			},
+			hide: {
+				resource: ['tool_call'],
 			},
 		},
 	},
@@ -199,9 +258,11 @@ const searchProperties: INodeProperties[] = [
 		default: '{}',
 		displayOptions: {
 			show: {
-				operation: [
-					'search_chunks',
-				],
+				resource: ['chunk'],
+				operation: ['search_chunks'],
+			},
+			hide: {
+				resource: ['tool_call'],
 			},
 		}
 	},
@@ -241,6 +302,11 @@ const baseProperties: INodeProperties[] = [
 							'chunk',
 						],
 					},
+					hide: {
+						resource: [
+							'tool_call'
+						]
+					}
 				},
 			},
 			{
@@ -254,11 +320,16 @@ const baseProperties: INodeProperties[] = [
 							'chunk',
 						],
 					},
+					hide: {
+						resource: [
+							'tool_call'
+						]
+					}
 				},
 			},
 			{
 				name: 'Get Tool Call Function Parameters',
-				value: 'tool_call',
+				value: 'get_tool_params',
 				action: 'Tool call',
 				displayOptions: {
 					show: {
@@ -266,6 +337,11 @@ const baseProperties: INodeProperties[] = [
 							'tool_call',
 						],
 					},
+					hide: {
+						resource: [
+							'chunk'
+						]
+					}
 				},
 			}
 		],
@@ -313,17 +389,42 @@ export class Trieve implements INodeType {
 
 		const operation = this.getNodeParameter('operation', 0) as string;
 
+		if (operation === 'get_tool_params') {
+			const parameters = this.getNodeParameter('parameters.parameter', 0) as IDataObject[];
+			if (!parameters || parameters.length === 0) {
+				throw new NodeOperationError(this.getNode(), 'At least one parameter is required for tool call operation');
+			}
+			const functionName = this.getNodeParameter('function_name', 0) as string;
+			if (functionName.includes(' ')) {
+				throw new NodeOperationError(this.getNode(), 'Function name cannot contain spaces');
+			}
+		}
+
+		if (operation === 'create_chunk') {
+			const chunk_html = this.getNodeParameter('chunk_html', 0) as string;
+			if (!chunk_html) {
+				throw new NodeOperationError(this.getNode(), 'Chunk HTML is required for create chunk operation');
+			}
+		}
+
+		if (operation === 'search_chunks') {
+			const query = this.getNodeParameter('query', 0) as string;
+			if (!query) {
+				throw new NodeOperationError(this.getNode(), 'Query is required for search operation');
+			}
+		}
+
 		// Iterates over all input items and add the key "myString" with the
 		// value the parameter "myString" resolves to.
 		// (This could be a different value for each item in case it contains an expression)
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-			console.log("hi");
 			if (operation === 'create_chunk') {
 				const chunk_html = this.getNodeParameter('chunk_html', itemIndex) as string;
 				const additionalFields = this.getNodeParameter('additionalFields', itemIndex) as IDataObject;
 				const metadata = additionalFields.metadata as string | undefined;
 				let tracking_id = additionalFields.tracking_id as string | undefined;
 				const time_stamp_string = additionalFields.time_stamp as string | null;
+				const tag_set_string = additionalFields.tag_set as string | undefined;
 
 				let time_stamp: string | undefined;
 				if (time_stamp_string == "" || time_stamp_string == null) {
@@ -332,13 +433,9 @@ export class Trieve implements INodeType {
 					time_stamp = new Date(time_stamp_string).toISOString();
 				}
 
-				const tag_set_input = additionalFields.tag_set as string | undefined;
 				let tag_set: string[] | undefined;
-
-				if (tag_set_input == "" || tag_set_input == undefined) {
-					tag_set = undefined;
-				} else {
-					tag_set = tag_set_input.split(",");
+				if (tag_set_string) {
+					tag_set = tag_set_string.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
 				}
 
 				if (tracking_id == "" ) {
@@ -360,7 +457,7 @@ export class Trieve implements INodeType {
 					body: {
 						chunk_html: chunk_html,
 						tracking_id: tracking_id,
-						tag_set: tag_set ?? undefined,
+						tag_set: tag_set,
 						upsert_by_tracking_id: true,
 						metadata: parsedMetadata,
 						time_stamp: time_stamp,
@@ -386,6 +483,7 @@ export class Trieve implements INodeType {
 				const query = this.getNodeParameter('query', itemIndex) as string;
 				const search_type = this.getNodeParameter('search_type', itemIndex) as string;
 				const filterSerialized = this.getNodeParameter('filter', itemIndex) as IDataObject;
+				const page_size = this.getNodeParameter('page_size', itemIndex) as number;
 				let filters = JSON.parse(filterSerialized as unknown as string);
 
 				const options: IRequestOptions = {
@@ -396,7 +494,8 @@ export class Trieve implements INodeType {
 					body: {
 						query: query,
 						search_type: search_type,
-						filters: filters
+						filters: filters,
+						page_size: page_size
 					},
 					uri: `https://api.trieve.ai/api/chunk/search`,
 					json: true,
@@ -404,25 +503,34 @@ export class Trieve implements INodeType {
 
 				const response = await this.helpers.requestWithAuthentication.call(this, 'trieveApi', options)
 
-				// Extract only editable fields from each chunk while maintaining the structure
-				const processedChunks = response.chunks.map((item: any) => ({
-					chunk: {
+				// Process each chunk into a separate item
+				for (const item of response.chunks) {
+					const chunk = {
 						chunk_html: item.chunk.chunk_html,
 						metadata: item.chunk.metadata,
 						tag_set: item.chunk.tag_set,
 						time_stamp: item.chunk.time_stamp,
 						tracking_id: item.chunk.tracking_id,
-					} as Chunk,
-					score: item.score,
-					highlights: item.highlights,
-				}));
+					} as Chunk;
 
-				returnData.push(processedChunks as any);
-			} else if (operation === 'tool_call') {
+					returnData.push({
+						json: {
+							chunk,
+							score: item.score,
+							highlights: item.highlights,
+						}
+					});
+				}
+			} else if (operation === 'get_tool_params') {
 				const functionInput = this.getNodeParameter('function_input', itemIndex) as string;
 				const functionName = this.getNodeParameter('function_name', itemIndex) as string;
 				const functionDescription = this.getNodeParameter('function_description', itemIndex) as string;
-				const parameters = this.getNodeParameter('parameters', itemIndex) as string;
+				const parameters = this.getNodeParameter('parameters.parameter', itemIndex) as IDataObject[];
+				const parameterArray = parameters.map(param => ({
+					name: param.name,
+					parameter_type: param.parameter_type,
+					description: param.description
+				}));
 
 				const options: IRequestOptions = {
 					headers: {
@@ -434,7 +542,7 @@ export class Trieve implements INodeType {
 						tool_function: {
 							name: functionName,
 							description: functionDescription,
-							parameters: JSON.parse(parameters)
+							parameters: parameterArray
 						}
 					},
 					uri: "https://api.trieve.ai/api/message/get_tool_function_params",
