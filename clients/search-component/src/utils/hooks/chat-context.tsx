@@ -1114,7 +1114,25 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
       return false;
     };
 
-    if (referenceImageUrls.length > 0) {
+    if (referenceImageUrls.length > 0 || curGroup) {
+      if (referenceImageUrls.length == 0 && curGroup) {
+          const chunksInGroupPromise = await trieveSDK.getChunksInGroup(
+            {
+              groupId: curGroup.id,
+              page: 1,
+            },
+            searchAbortController.current.signal,
+          );
+
+          if (chunksInGroupPromise.chunks[0].image_urls) {
+            chunksInGroupPromise.chunks[0].image_urls.forEach((url) => {
+              referenceImageUrls.push(url ?? "");
+            });
+          }
+
+          referenceImageUrls.slice(0, 5);
+      }
+
       if (await handleImageEdit()) {
         return;
       }
