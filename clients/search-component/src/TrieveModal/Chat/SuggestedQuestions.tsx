@@ -22,7 +22,7 @@ export const SuggestedQuestions = ({
   const { suggestedQuestions, isLoadingSuggestedQueries, getQuestions } =
     useSuggestedQuestions();
 
-  const { props, trieveSDK, fingerprint, abTreatment, imageUrl, setImageUrl } =
+  const { props, trieveSDK, fingerprint, abTreatment } =
     useModalState();
   const [parent] = useAutoAnimate({ duration: 100 });
   const [selectedQuestion, setSelectedQuestion] = useState<
@@ -30,7 +30,7 @@ export const SuggestedQuestions = ({
   >(null);
 
   useEffect(() => {
-    if (selectedQuestion && imageUrl) {
+    if (selectedQuestion) {
       askQuestion(
         isAiQuestion(selectedQuestion)
           ? selectedQuestion.questionText
@@ -42,9 +42,11 @@ export const SuggestedQuestions = ({
         isAiQuestion(selectedQuestion) && selectedQuestion.promptForAI !== ""
           ? selectedQuestion.promptForAI
           : undefined,
+        undefined,
+        isDefaultSearchQuery(selectedQuestion) ? selectedQuestion.imageUrl ?? undefined : "",
       );
     }
-  }, [imageUrl, selectedQuestion]);
+  }, [selectedQuestion]);
 
   if (messages.length) {
     return null;
@@ -55,12 +57,8 @@ export const SuggestedQuestions = ({
   ) => {
     console.log("q", q);
     setCurrentQuestion(isAiQuestion(q) ? q.questionText : (q.query ?? ""));
-
-    if (isDefaultSearchQuery(q) && q.imageUrl) {
-      setSelectedQuestion(q);
-      setImageUrl(q.imageUrl);
-    }
-
+    setSelectedQuestion(q);
+    
     const requestId =
       messages[messages.length - 1]?.queryId ??
       "00000000-0000-0000-0000-000000000000";
@@ -83,7 +81,6 @@ export const SuggestedQuestions = ({
     });
     if (onMessageSend) {
       onMessageSend();
-      setImageUrl("");
     }
   };
 
