@@ -55,7 +55,6 @@ export const SuggestedQuestions = ({
   const handleSuggestedQuestion = async (
     q: AiQuestion | DefaultSearchQuery,
   ) => {
-    console.log("q", q);
     setCurrentQuestion(isAiQuestion(q) ? q.questionText : (q.query ?? ""));
     setSelectedQuestion(q);
     

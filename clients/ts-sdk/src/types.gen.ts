@@ -4209,7 +4209,7 @@ export type SingleProductOptions = {
     productDescriptionHtml?: (string) | null;
     productName?: (string) | null;
     productPrimaryImageUrl?: (string) | null;
-    productQuestions?: Array<(string)> | null;
+    productQuestions?: ((DefaultSearchQuery) | null);
     productTrackingId?: (string) | null;
     recSearchQuery?: (string) | null;
 };

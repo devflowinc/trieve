@@ -21073,10 +21073,11 @@
             "nullable": true
           },
           "productQuestions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DefaultSearchQuery"
+              }
+            ],
             "nullable": true
           },
           "productTrackingId": {
