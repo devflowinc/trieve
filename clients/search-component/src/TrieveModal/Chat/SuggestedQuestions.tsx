@@ -1,5 +1,4 @@
 import React from "react";
-import React from "react";
 import { useSuggestedQuestions } from "../../utils/hooks/useSuggestedQuestions";
 import { useChatState } from "../../utils/hooks/chat-context";
 import {
@@ -34,7 +33,6 @@ export const SuggestedQuestions = ({
   const handleSuggestedQuestion = async (
     q: AiQuestion | DefaultSearchQuery | string,
   ) => {
-    console.log("q", q);
     setCurrentQuestion(isAiQuestion(q) ? q.questionText : isDefaultSearchQuery(q) ? q.query ?? "" : q);
 
     if (!isDefaultSearchQuery(q)) {

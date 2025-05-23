@@ -75,6 +75,7 @@ const ChatContext = createContext<{
     groupIds?: string[],
     systemPrompt?: string,
     displayUserMessage?: boolean,
+    imageUrl?: string,
   ) => Promise<void>;
   isLoading: boolean;
   loadingText: string;
@@ -140,6 +141,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     ChunkIdWithIndex[]
   >([]);
   const [groupIdsInChat, setGroupIdsInChat] = useState<string[]>([]);
+  let localImageUrl = imageUrl;
 
   const createTopic = async ({
     question,
@@ -521,7 +523,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     let referenceImageUrls: string[] = [];
     let referenceChunks: Chunk[] = [];
 
-
     if (!groupIds || groupIds.length === 0) {
       chatMessageAbortController.current = new AbortController();
       const toolCallTimeout = setTimeout(
@@ -541,7 +542,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           if (props.type === "ecommerce" && !curGroup) {
             return await trieveSDK.getToolCallFunctionParams({
               user_message_text: questionProp || currentQuestion,
-              image_url: imageUrl ? imageUrl : null,
+              image_url: localImageUrl ? localImageUrl : null,
               audio_input: curAudioBase64 ? curAudioBase64 : null,
               tool_function: {
                 name: "get_price_filters",
@@ -601,7 +602,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                   }
                 },
               )} \n\n${props.searchToolCallOptions?.userMessageTextPrefix ?? defaultSearchToolCallOptions.userMessageTextPrefix}: ${questionProp || currentQuestion}.`,
-              image_url: imageUrl ? imageUrl : null,
+              image_url: localImageUrl ? localImageUrl : null,
               audio_input: curAudioBase64 ? curAudioBase64 : null,
               tool_function: {
                 name: "skip_search",
@@ -622,10 +623,10 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         })
 
         const imageFiltersPromise = retryOperation(async () => {
-          if (imageUrl) {
+          if (localImageUrl) {
             return await trieveSDK.getToolCallFunctionParams({
               user_message_text: questionProp || currentQuestion,
-              image_url: imageUrl ? imageUrl : null,
+              image_url: localImageUrl ? localImageUrl : null,
               tool_function: {
                 name: "get_image_filters",
                 description:
@@ -666,7 +667,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                         (message) => `\n\n${message.text}`,
                       )} \n\n ${questionProp || currentQuestion}`
                     : null,
-                image_url: imageUrl ? imageUrl : null,
+                image_url: localImageUrl ? localImageUrl : null,
                 audio_input: curAudioBase64 ? curAudioBase64 : null,
                 tool_function: {
                   name: "get_filters",
@@ -716,7 +717,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 text: transcribedQuery ?? "",
                 additional: null,
                 queryId: null,
-                imageUrl: imageUrl ? imageUrl : null,
+                imageUrl: localImageUrl ? localImageUrl : null,
               },
               {
                 type: "system",
@@ -729,7 +730,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         }
 
         useImage = (imageFiltersResp?.parameters &&
-          (imageFiltersResp.parameters as any)["image"] === true && imageUrl) as boolean;
+          (imageFiltersResp.parameters as any)["image"] === true && localImageUrl) as boolean;
 
         const match_any_tags = [];
         if (tagFiltersResp?.parameters) {
@@ -1060,7 +1061,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
 
     const handleImageEdit = async () => {
-      console.log("REFERENCE IMAGE URLS", referenceImageUrls);
       if (useImage) {
         setLoadingText("Editing image...");
 
@@ -1069,7 +1069,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             input_images: [
               {
                 image_src: {
-                  url: imageUrl,
+                  url: localImageUrl,
                 },
                 file_name: "input_image",
               },
@@ -1313,7 +1313,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     groupIds?: string[],
     systemPrompt?: string,
     displayUserMessage?: boolean,
+    imageUrl?: string,
   ) => {
+    if (imageUrl) {
+      localImageUrl = imageUrl;
+      setImageUrl(imageUrl);
+    }
+
     const questionProp = question;
     setIsDoneReading(false);
     setCurrentQuestion("");
@@ -1367,7 +1373,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             (displayUserMessage ?? true) ? questionProp || currentQuestion : "",
           additional: null,
           queryId: null,
-          imageUrl: imageUrl ? imageUrl : null,
+          imageUrl: localImageUrl ? localImageUrl : null,
         },
         {
           type: "system",
@@ -1384,7 +1390,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           text: "Loading...",
           additional: null,
           queryId: null,
-          imageUrl: imageUrl ? imageUrl : null,
+          imageUrl: localImageUrl ? localImageUrl : null,
         },
         {
           type: "system",
@@ -1410,6 +1416,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         systemPrompt,
       });
     }
+    setImageUrl("");
   };
 
   const switchToChatAndAskQuestion = async (query: string) => {
