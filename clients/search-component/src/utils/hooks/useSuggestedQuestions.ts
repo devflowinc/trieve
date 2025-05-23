@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getSuggestedQuestions } from "../trieve";
 import { ModalProps, useModalState } from "./modal-context";
+import { DefaultSearchQuery } from "trieve-ts-sdk";
 
 export const useSuggestedQuestions = () => {
   const { props, query, trieveSDK, currentGroup } = useModalState();
@@ -8,7 +9,7 @@ export const useSuggestedQuestions = () => {
     useState(false);
 
   const [suggestedQuestions, setSuggestedQuestions] = useState<
-    ModalProps["defaultAiQuestions"]
+    ModalProps["defaultAiQuestions"] | DefaultSearchQuery[]
   >(props.defaultAiQuestions ?? []);
 
   const getQuestions = async () => {
@@ -22,11 +23,7 @@ export const useSuggestedQuestions = () => {
       query,
       props,
     });
-    setSuggestedQuestions(
-      queries.queries.map((q) => {
-        return q.replace(/^[\d.-]+\s*/, "").trim();
-      }),
-    );
+    setSuggestedQuestions(queries.queries);
     setIsLoadingSuggestedQueries(false);
   };
 
@@ -50,11 +47,7 @@ export const useSuggestedQuestions = () => {
           : currentGroup?.tracking_id,
         props,
       });
-      setSuggestedQuestions(
-        queries.queries.map((q) => {
-          return q.replace(/^[\d.-]+\s*/, "").trim();
-        }),
-      );
+      setSuggestedQuestions(queries.queries);
       setIsLoadingSuggestedQueries(false);
     });
 

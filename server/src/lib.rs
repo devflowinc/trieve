@@ -477,6 +477,7 @@ impl Modify for SecurityAddon {
             handlers::page_handler::PublicPageTabMessage,
             handlers::page_handler::SearchPageProps,
             handlers::page_handler::FilterSidebarSection,
+            handlers::page_handler::DefaultSearchQuery,
             handlers::page_handler::TagProp,
             handlers::page_handler::RangeSliderConfig,
             handlers::page_handler::SidebarFilters,

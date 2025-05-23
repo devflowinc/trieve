@@ -12,6 +12,7 @@ import {
   ChunkGroup,
   SearchChunksReqPayload,
   TrieveSDK,
+  DefaultSearchQuery,
 } from "trieve-ts-sdk";
 import {
   groupSearchWithPagefind,
@@ -125,7 +126,6 @@ export interface SearchPageProps {
   filterSidebarProps?: FilterSidebarProps;
   display?: boolean;
 }
-
 export interface AiQuestion {
   questionText: string;
   promptForAI?: string;
@@ -136,10 +136,17 @@ export interface AiQuestion {
 }
 
 export function isAiQuestion(
-  question: string | AiQuestion,
+  question: string | AiQuestion | DefaultSearchQuery,
 ): question is AiQuestion {
   return typeof question === "object" && "questionText" in question;
 }
+
+export function isDefaultSearchQuery(
+  question: string | AiQuestion | DefaultSearchQuery,
+): question is DefaultSearchQuery {
+  return typeof question === "object" && "query" in question;
+}
+
 
 export type ModalProps = {
   datasetId: string;

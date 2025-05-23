@@ -5,7 +5,8 @@ import { DefaultSearchQuery } from "trieve-ts-sdk";
 import { getSuggestedQueries } from "../../utils/trieve";
 
 export const SuggestedQueries = () => {
-  const { props, query, setQuery, imageUrl, trieveSDK } = useModalState();
+  const { props, query, setQuery, imageUrl, setImageUrl, trieveSDK } =
+    useModalState();
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQueries, setSuggestedQueries] = useState<
     (DefaultSearchQuery | string)[]
@@ -78,15 +79,15 @@ export const SuggestedQueries = () => {
         <div className="suggested-query loading">Loading...</div>
       ) : (
         suggestedQueries.map((q) => {
-          let query = isDefaultSearchQuery(q)  ? q.query?.replace(/^-|\*$/g, "") : q;
+          let query = isDefaultSearchQuery(q)  ? q.query?.replace(/^-|\*$/g, "") : q.replace(/^-|\*$/g, "");
           query = query?.trim();
           return (
             <button
-              onClick={() => setQuery(q)}
-              key={q}
+              onClick={() => handleSendSuggestedQuery(q)}
+              key={query}
               className={`suggested-query${isLoading ? " loading" : ""}`}
             >
-              {q}
+              {query}
             </button>
           );
         })
