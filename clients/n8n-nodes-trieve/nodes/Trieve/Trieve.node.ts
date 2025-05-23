@@ -9,15 +9,20 @@ import {
 	NodeConnectionType,
 } from 'n8n-workflow';
 
+interface Chunk {
+	chunk_html: string;
+	tracking_id: string;
+	tag_set: string[];
+	time_stamp: string;
+	metadata: object;
+}
+
 const createChunkProperties: INodeProperties[] = [
 	{
-		displayName: 'Chunk',
-		name: 'chunk',
-		type: 'collection',
-		default: {
-			chunk_html: '',
-			tracking_id: '',
-		},
+		displayName: 'Chunk Html',
+		name: 'chunk_html',
+		type: 'string',
+		default: '',
 		displayOptions: {
 			show: {
 				resource: [
@@ -28,24 +33,28 @@ const createChunkProperties: INodeProperties[] = [
 				],
 			},
 		},
-		noDataExpression: false,
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: [
+					'chunk',
+				],
+				operation: [
+					'create_chunk',
+				],
+			},
+		},
 		options: [
 			{
-				displayName: 'Chunk Html',
-				name: 'chunk_html',
+				displayName: 'Tracking ID',
+				name: 'tracking_id',
 				type: 'string',
-				default: '',
-			},
-			{
-				displayName: 'Group Tracking ID',
-				name: 'group_tracking_id',
-				type: 'string',
-				default: '',
-			},
-			{
-				displayName: 'Metadata',
-				name: 'metadata',
-				type: 'json',
 				default: '',
 			},
 			{
@@ -62,10 +71,10 @@ const createChunkProperties: INodeProperties[] = [
 				default: '',
 			},
 			{
-				displayName: 'Tracking ID',
-				name: 'tracking_id',
-				type: 'string',
-				default: '',
+				displayName: 'Metadata',
+				name: 'metadata',
+				type: 'json',
+				default: '{}',
 			},
 		],
 	},
@@ -86,23 +95,10 @@ const toolCallProperties: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Tool Call Parameters',
-		name: 'tool_function',
-		type: 'collection',
-		noDataExpression: false,
-		default: {
-			function_description: 'A function to determine if the input is important',
-			function_name: 'is_important',
-			parameters: `
-[
-	{
-		"name": "is_important",
-		"parameter_type": "boolean",
-		"description": "Is this input important?"
-	}
-]`,
-
-		},
+		displayName: 'Function Description',
+		name: 'function_description',
+		type: 'string',
+		default: 'A function to determine if the input is important',
 		displayOptions: {
 			show: {
 				resource: [
@@ -113,33 +109,45 @@ const toolCallProperties: INodeProperties[] = [
 				],
 			},
 		},
-		options: [
-			{
-				displayName: 'Function Description',
-				name: 'description',
-				type: 'string',
-				default: 'A function to determine if the input is important',
+	},
+	{
+		displayName: 'Function Name',
+		name: 'function_name',
+		type: 'string',
+		default: 'is_important',
+		displayOptions: {
+			show: {
+				resource: [
+					'tool_call',
+				],
+				operation: [
+					'tool_call',
+				],
 			},
-			{
-				displayName: 'Function Name',
-				name: 'name',
-				type: 'string',
-				default: 'is_important',
-			},
-			{
-				displayName: 'Parameters',
-				name: 'parameters',
-				type: 'json',
-				default: `
+		},
+	},
+	{
+		displayName: 'Parameters',
+		name: 'parameters',
+		type: 'json',
+		default: `
 [
 	{
-		"name": "",
+		"name": "is_important",
 		"parameter_type": "boolean",
-		"description": ""
+		"description": "Is this input important?"
 	}
 ]`,
+		displayOptions: {
+			show: {
+				resource: [
+					'tool_call',
+				],
+				operation: [
+					'tool_call',
+				],
 			},
-		],
+		},
 	},
 ]
 
@@ -147,38 +155,34 @@ const searchProperties: INodeProperties[] = [
 	{
 		displayName: 'Query',
 		name: 'query',
-		type: 'collection',
-		default: {
-			query: '',
-			search_type: 'fulltext'
+		type: 'string',
+		default: '',
+		displayOptions: {
+			show: {
+				operation: [
+					'search_chunks',
+				],
+			},
 		},
+	},
+	{
+		displayName: 'Search Type',
+		name: 'search_type',
+		type: 'options',
+		default: 'fulltext',
 		options: [
 			{
-				displayName: 'Query',
-				name: 'query',
-				type: 'string',
-				default: '',
+				name: 'Fulltext',
+				value: 'fulltext',
 			},
 			{
-				displayName: 'Search Type',
-				name: 'search_type',
-				type: 'options',
-				default: 'fulltext',
-				options: [
-					{
-						name: 'Fulltext',
-						value: 'fulltext',
-					},
-					{
-						name: 'Hybrid',
-						value: 'hybrid',
-					},
-					{
-						name: 'Semantic',
-						value: 'semantic',
-					}
-				]
+				name: 'Hybrid',
+				value: 'hybrid',
 			},
+			{
+				name: 'Semantic',
+				value: 'semantic',
+			}
 		],
 		displayOptions: {
 			show: {
@@ -187,7 +191,6 @@ const searchProperties: INodeProperties[] = [
 				],
 			},
 		},
-		noDataExpression: false,
 	},
 	{
 		displayName: 'Filter',
@@ -232,17 +235,38 @@ const baseProperties: INodeProperties[] = [
 				value: 'create_chunk',
 				description: 'Create a chunk',
 				action: 'Create chunk',
+				displayOptions: {
+					show: {
+						resource: [
+							'chunk',
+						],
+					},
+				},
 			},
 			{
 				name: 'Search',
 				value: 'search_chunks',
 				description: 'Search your chunks',
 				action: 'Search chunks',
+				displayOptions: {
+					show: {
+						resource: [
+							'chunk',
+						],
+					},
+				},
 			},
 			{
-				name: 'Tool Call',
+				name: 'Get Tool Call Function Parameters',
 				value: 'tool_call',
 				action: 'Tool call',
+				displayOptions: {
+					show: {
+						resource: [
+							'tool_call',
+						],
+					},
+				},
 			}
 		],
 		default: 'create_chunk',
@@ -266,7 +290,7 @@ export class Trieve implements INodeType {
 		icon: 'file:TrieveLogo.svg',
 		group: ['transform'],
 		version: 1,
-		subtitle: '={{ $parameter["operation"] }}',
+		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Consume The Trieve API',
 		defaults: {
 			name: 'Trieve',
@@ -295,15 +319,11 @@ export class Trieve implements INodeType {
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			console.log("hi");
 			if (operation === 'create_chunk') {
-				const chunk = this.getNodeParameter('chunk', itemIndex) as IDataObject;
-				const data: IDataObject = {
-				};
-				Object.assign(data, chunk);
-				const chunk_html = data.chunk_html as string;
-				const group_tracking_id = data.group_tracking_id as string;
-				const metadata = data.metadata as object;
-				let tracking_id = data.tracking_id as string | undefined;
-				const time_stamp_string = data.time_stamp as string | null;
+				const chunk_html = this.getNodeParameter('chunk_html', itemIndex) as string;
+				const additionalFields = this.getNodeParameter('additionalFields', itemIndex) as IDataObject;
+				const metadata = additionalFields.metadata as string | undefined;
+				let tracking_id = additionalFields.tracking_id as string | undefined;
+				const time_stamp_string = additionalFields.time_stamp as string | null;
 
 				let time_stamp: string | undefined;
 				if (time_stamp_string == "" || time_stamp_string == null) {
@@ -312,7 +332,7 @@ export class Trieve implements INodeType {
 					time_stamp = new Date(time_stamp_string).toISOString();
 				}
 
-				const tag_set_input = data.tag_set as string | undefined;
+				const tag_set_input = additionalFields.tag_set as string | undefined;
 				let tag_set: string[] | undefined;
 
 				if (tag_set_input == "" || tag_set_input == undefined) {
@@ -321,8 +341,15 @@ export class Trieve implements INodeType {
 					tag_set = tag_set_input.split(",");
 				}
 
-				if (tracking_id == "" || group_tracking_id == "") {
+				if (tracking_id == "" ) {
 					tracking_id = undefined;
+				}
+
+				let parsedMetadata: object | undefined;
+				if (metadata === '' || metadata === undefined) {
+					parsedMetadata = undefined;
+				} else {
+					parsedMetadata = JSON.parse(metadata);
 				}
 
 				const options: IRequestOptions = {
@@ -335,8 +362,7 @@ export class Trieve implements INodeType {
 						tracking_id: tracking_id,
 						tag_set: tag_set ?? undefined,
 						upsert_by_tracking_id: true,
-						group_tracking_ids: group_tracking_id ? [group_tracking_id] : undefined,
-						metadata: metadata,
+						metadata: parsedMetadata,
 						time_stamp: time_stamp,
 					},
 					uri: `https://api.trieve.ai/api/chunk`,
@@ -345,14 +371,22 @@ export class Trieve implements INodeType {
 
 				const response = await this.helpers.requestWithAuthentication.call(this, 'trieveApi', options)
 
-				returnData.push(response.chunk_metadata as any);
+				// Extract only the editable fields from chunk_metadata
+				const editableFields: Chunk = {
+					chunk_html: response.chunk_metadata.chunk_html,
+					metadata: response.chunk_metadata.metadata,
+					tag_set: response.chunk_metadata.tag_set,
+					time_stamp: response.chunk_metadata.time_stamp,
+					tracking_id: response.chunk_metadata.tracking_id,
+				};
+
+				returnData.push(editableFields as any);
 			} else if (operation === 'search_chunks') {
 				console.log("search_chunks");
-				const query = this.getNodeParameter('query', itemIndex) as IDataObject;
+				const query = this.getNodeParameter('query', itemIndex) as string;
+				const search_type = this.getNodeParameter('search_type', itemIndex) as string;
 				const filterSerialized = this.getNodeParameter('filter', itemIndex) as IDataObject;
 				let filters = JSON.parse(filterSerialized as unknown as string);
-
-				const search_type = query.search_type ?? "fulltext";
 
 				const options: IRequestOptions = {
 					headers: {
@@ -360,7 +394,7 @@ export class Trieve implements INodeType {
 					},
 					method: 'POST',
 					body: {
-						query: query.query as string,
+						query: query,
 						search_type: search_type,
 						filters: filters
 					},
@@ -370,11 +404,25 @@ export class Trieve implements INodeType {
 
 				const response = await this.helpers.requestWithAuthentication.call(this, 'trieveApi', options)
 
-				returnData.push(response.chunks as any);
-			} else if (operation === 'tool_call') {
+				// Extract only editable fields from each chunk while maintaining the structure
+				const processedChunks = response.chunks.map((item: any) => ({
+					chunk: {
+						chunk_html: item.chunk.chunk_html,
+						metadata: item.chunk.metadata,
+						tag_set: item.chunk.tag_set,
+						time_stamp: item.chunk.time_stamp,
+						tracking_id: item.chunk.tracking_id,
+					} as Chunk,
+					score: item.score,
+					highlights: item.highlights,
+				}));
 
-				const toolFunction = this.getNodeParameter('tool_function', itemIndex) as IDataObject;
+				returnData.push(processedChunks as any);
+			} else if (operation === 'tool_call') {
 				const functionInput = this.getNodeParameter('function_input', itemIndex) as string;
+				const functionName = this.getNodeParameter('function_name', itemIndex) as string;
+				const functionDescription = this.getNodeParameter('function_description', itemIndex) as string;
+				const parameters = this.getNodeParameter('parameters', itemIndex) as string;
 
 				const options: IRequestOptions = {
 					headers: {
@@ -384,9 +432,9 @@ export class Trieve implements INodeType {
 					body: {
 						user_message_text: functionInput,
 						tool_function: {
-							name: toolFunction.name as string,
-							description: toolFunction.description as string,
-							parameters: JSON.parse(toolFunction.parameters as unknown as string)
+							name: functionName,
+							description: functionDescription,
+							parameters: JSON.parse(parameters)
 						}
 					},
 					uri: "https://api.trieve.ai/api/message/get_tool_function_params",
@@ -395,7 +443,6 @@ export class Trieve implements INodeType {
 				const response = await this.helpers.requestWithAuthentication.call(this, 'trieveApi', options)
 
 				returnData.push(response as any);
-
 			}
 		}
 		return [this.helpers.returnJsonArray(returnData)];
