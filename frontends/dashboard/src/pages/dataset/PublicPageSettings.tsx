@@ -656,28 +656,11 @@ const PublicPageControls = () => {
               />
             </div>
             <MultiStringInput
-              placeholder={`What is ${
-                extraParams["brandName"] || "Trieve"
-              }?...`}
-              value={
-                extraParams.defaultSearchQueries?.map((q) =>
-                  q.query ? q.query + "," + (q.imageUrl ?? "") : q.query ?? "",
-                ) || []
-              }
+              placeholder={`What is ${extraParams["brandName"] || "Trieve"
+                }?...`}
+              value={extraParams.defaultSearchQueries || []}
               onChange={(e) => {
-                setExtraParams(
-                  "defaultSearchQueries",
-                  e.map((q) =>
-                    q.includes(",")
-                      ? URL.canParse(q.split(",")[1])
-                        ? {
-                            query: q.split(",")[0],
-                            imageUrl: q.split(",")[1],
-                          }
-                        : { query: q }
-                      : { query: q },
-                  ),
-                );
+                setExtraParams("defaultSearchQueries", e);
               }}
               addLabel="Add Example Search"
               addClass="text-sm"
@@ -695,23 +678,11 @@ const PublicPageControls = () => {
               />
             </div>
             <MultiStringInput
-              placeholder={`What is ${
-                extraParams["brandName"] || "Trieve"
-              }?...`}
-              value={
-                extraParams.defaultAiQuestions?.map((q) =>
-                  q.query ? q.query + "," + (q.imageUrl ?? "") : q.query ?? "",
-                ) || []
-              }
+              placeholder={`What is ${extraParams["brandName"] || "Trieve"
+                }?...`}
+              value={extraParams.defaultAiQuestions || []}
               onChange={(e) => {
-                setExtraParams(
-                  "defaultAiQuestions",
-                  e.map((q) =>
-                    q.includes(",")
-                      ? { query: q.split(",")[0], imageUrl: q.split(",")[1] }
-                      : { query: q },
-                  ),
-                );
+                setExtraParams("defaultAiQuestions", e);
               }}
               addLabel="Add Example Question"
               addClass="text-sm"

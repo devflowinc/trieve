@@ -12311,19 +12311,6 @@
           "lte": "2021-01-01 00:00:00.000"
         }
       },
-      "DefaultSearchQuery": {
-        "type": "object",
-        "properties": {
-          "imageUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "query": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
       "DeleteTopicData": {
         "type": "object",
         "required": [
@@ -16448,7 +16435,7 @@
           "defaultAiQuestions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DefaultSearchQuery"
+              "type": "string"
             },
             "nullable": true
           },
@@ -16467,7 +16454,7 @@
           "defaultSearchQueries": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DefaultSearchQuery"
+              "type": "string"
             },
             "nullable": true
           },
@@ -22031,7 +22018,7 @@
           "queries": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DefaultSearchQuery"
+              "type": "string"
             }
           }
         }

@@ -1,7 +1,6 @@
 use super::{
     auth_handler::{AdminOnly, LoggedUser},
     chunk_handler::ChunkFilter,
-    page_handler::DefaultSearchQuery,
 };
 use crate::{
     data::models::{
@@ -834,7 +833,7 @@ pub struct SuggestedQueriesReqPayload {
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct SuggestedQueriesResponse {
-    pub queries: Vec<DefaultSearchQuery>,
+    pub queries: Vec<String>,
 }
 
 /// Generate suggested queries
@@ -875,15 +874,7 @@ pub async fn get_suggested_queries(
         suggested_new_queries(data.into_inner(), dataset_org_plan_sub, pool, redis_pool).await?
     };
 
-    Ok(HttpResponse::Ok().json(SuggestedQueriesResponse {
-        queries: queries
-            .into_iter()
-            .map(|q| DefaultSearchQuery {
-                query: Some(q),
-                image_url: None,
-            })
-            .collect(),
-    }))
+    Ok(HttpResponse::Ok().json(SuggestedQueriesResponse { queries }))
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
