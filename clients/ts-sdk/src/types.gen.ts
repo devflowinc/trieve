@@ -1491,11 +1491,6 @@ export type DateRange = {
     lte?: (string) | null;
 };
 
-export type DefaultSearchQuery = {
-    imageUrl?: (string) | null;
-    query?: (string) | null;
-};
-
 export type DeleteTopicData = {
     /**
      * The id of the topic to target.
@@ -3063,11 +3058,11 @@ export type PublicPageParameters = {
     currencyPosition?: (string) | null;
     datasetId?: (string) | null;
     debounceMs?: (number) | null;
-    defaultAiQuestions?: Array<DefaultSearchQuery> | null;
+    defaultAiQuestions?: Array<(string)> | null;
     defaultCurrency?: (string) | null;
     defaultImageQuestion?: (string) | null;
     defaultSearchMode?: (string) | null;
-    defaultSearchQueries?: Array<DefaultSearchQuery> | null;
+    defaultSearchQueries?: Array<(string)> | null;
     defaultSearchQuery?: (string) | null;
     floatingButtonPosition?: (string) | null;
     floatingButtonVersion?: (string) | null;
@@ -4455,7 +4450,7 @@ export type SuggestedQueriesReqPayload = {
 };
 
 export type SuggestedQueriesResponse = {
-    queries: Array<DefaultSearchQuery>;
+    queries: Array<(string)>;
 };
 
 export type TableName = 'search_queries' | 'rag_queries' | 'recommendations' | 'events' | 'cluster_topics' | 'search_cluster_memberships' | 'topics' | 'experiments' | 'experiment_user_assignments' | {

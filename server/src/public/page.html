@@ -519,13 +519,11 @@
             button.textContent.trim() === "Ask something else"
               ? null
               : button.textContent.trim();
-          const imageUrl = button.getAttribute('data-image-url');
 
           window.dispatchEvent(
             new CustomEvent("trieve-open-with-text", {
               detail: {
                 text,
-                imageUrl,
               },
             })
           );
@@ -568,9 +566,8 @@
             {% for question in params.defaultAiQuestions %}
             <button
               class="bg-brand-color text-white px-4 py-2 rounded-full text-sm sm:text-base"
-              data-image-url="{{ question.imageUrl }}"
             >
-              {{ question.query }}
+              {{ question }}
             </button>
             {% endfor %}
           </div>
@@ -578,8 +575,8 @@
         </div>
         {% if params.searchPageProps and params.searchPageProps.display %}
         <div id="inline-serp-root"></div>
-        {% endif %} {% if params.videoLink and params.videoPosition == "static"
-        %}
+        {% endif %}
+        {% if params.videoLink and params.videoPosition == "static" %}
         <div
           class="mx-auto py-4 px-8 sm:px-12 lg:max-w-7xl lg:px-20 w-full blurb-html"
         >
@@ -598,12 +595,12 @@
             ></iframe>
           </div>
         </div>
-        {% endif %} {% if params.singleProductOptions and
-        params.singleProductOptions.productName and
-        params.singleProductOptions.enabled %} {% include "product.html" %} {%
-        endif %} {% if tabs and tabs|length > 0 %} {% include "tabs.html" %} {%
-        endif %} {% if params.videoLink and params.videoPosition == "floating"
-        %}
+        {% endif %} 
+        {% if params.singleProductOptions and
+        params.singleProductOptions.productName and params.singleProductOptions.enabled %} {% include "product.html" %}
+        {% endif %} {% if tabs and tabs|length > 0 %} {% include "tabs.html" %}
+        {% endif %} {% if params.videoLink and params.videoPosition ==
+        "floating" %}
         <div class="video-wrapper">
           <iframe
             src="{{params.videoLink}}"

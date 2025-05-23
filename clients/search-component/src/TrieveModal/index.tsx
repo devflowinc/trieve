@@ -21,16 +21,8 @@ import { createPortal } from "react-dom";
 
 const Modal = () => {
   useKeyboardNavigation();
-  const {
-    open,
-    setOpen,
-    setMode,
-    setImageUrl,
-    setQuery,
-    props,
-    display,
-    abTreatment,
-  } = useModalState();
+  const { open, setOpen, setMode, setQuery, props, display, abTreatment } =
+    useModalState();
   const { askQuestion, chatWithGroup, cancelGroupChat, clearConversation } =
     useChatState();
 
@@ -175,7 +167,6 @@ const Modal = () => {
     try {
       const customEvent = e as CustomEvent<{
         text: string;
-        imageUrl?: string;
       }>;
 
       const defaultMode = props.defaultSearchMode || "search";
@@ -185,12 +176,11 @@ const Modal = () => {
         setOpen(true);
         setMode("chat");
         cancelGroupChat();
-        setImageUrl(customEvent.detail.imageUrl ?? "");
+
         askQuestion(customEvent.detail.text);
       } else {
         setOpen(true);
         setMode("search");
-        setImageUrl(customEvent.detail.imageUrl ?? "");
         setQuery(customEvent.detail.text);
       }
     } catch (e) {

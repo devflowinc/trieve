@@ -1,15 +1,14 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { cn } from "../../utils/styles";
 import { useModalState } from "../../utils/hooks/modal-context";
-import { DefaultSearchQuery } from "trieve-ts-sdk";
+import { SuggestedQueriesResponse } from "trieve-ts-sdk";
 import { getSuggestedQueries } from "../../utils/trieve";
 
 export const SuggestedQueries = () => {
-  const { props, query, setQuery, imageUrl, setImageUrl, trieveSDK } =
-    useModalState();
+  const { props, query, setQuery, imageUrl, trieveSDK } = useModalState();
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQueries, setSuggestedQueries] = useState<
-    DefaultSearchQuery[]
+    SuggestedQueriesResponse["queries"]
   >([]);
 
   const getQueries = useCallback(
@@ -28,17 +27,12 @@ export const SuggestedQueries = () => {
     [query],
   );
 
-  const handleSendSuggestedQuery = (q: DefaultSearchQuery) => {
-    setQuery(q.query ?? "");
-
-    if (q.imageUrl) {
-      setImageUrl(q.imageUrl);
-    }
-  };
-
   useEffect(() => {
-    if (props.defaultSearchQueries?.length) {
-      setSuggestedQueries(props.defaultSearchQueries);
+    const defaultQueries =
+      props.defaultSearchQueries?.filter((q) => q !== "") ?? [];
+
+    if (defaultQueries.length) {
+      setSuggestedQueries(defaultQueries);
       return;
     }
 
@@ -70,15 +64,15 @@ export const SuggestedQueries = () => {
         <div className="suggested-query loading">Loading...</div>
       ) : (
         suggestedQueries.map((q) => {
-          let query = q.query?.replace(/^-|\*$/g, "") ?? "";
-          query = query.trim();
+          q = q.replace(/^-|\*$/g, "");
+          q = q.trim();
           return (
             <button
-              onClick={() => handleSendSuggestedQuery(q)}
-              key={query}
+              onClick={() => setQuery(q)}
+              key={q}
               className={`suggested-query${isLoading ? " loading" : ""}`}
             >
-              {query}
+              {q}
             </button>
           );
         })
