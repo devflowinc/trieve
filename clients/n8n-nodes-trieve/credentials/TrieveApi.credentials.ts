@@ -8,7 +8,7 @@ import {
 export class TrieveApi implements ICredentialType {
 	name = 'trieveApi';
 	displayName = 'Trieve API';
-	documentationUrl = 'https://docs.trieve.ai';
+	documentationUrl = 'https://github.com/devflowinc/trieve/blob/main/clients/n8n-nodes-trieve/README.md';
 	properties: INodeProperties[] = [
 		{
 			displayName: 'API Key',
