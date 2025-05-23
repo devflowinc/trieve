@@ -7047,10 +7047,6 @@ postcss@^8.3.11, postcss@^8.4.32, postcss@^8.4.43, postcss@^8.4.45, postcss@^8.4
   version "8.5.3"
   resolved "https://registry.npmjs.org/postcss/-/postcss-8.5.3.tgz"
   integrity sha512-dle9A3yYxlBSrt8Fu+IpjGT8SY8hN0mlaA6GY8t0P5PjIOZemULz/E2Bnm/2dcUOena75OTNkHI76uZBNUUq3A==
-  dependencies:
-    nanoid "^3.3.8"
-    picocolors "^1.1.1"
-    source-map-js "^1.2.1"
 
 preact@^10.25.1:
   version "10.26.6"
@@ -8263,11 +8259,6 @@ tr46@~0.0.3:
   version "0.0.3"
   resolved "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
-
-trieve-ts-sdk@^0.0.110:
-  version "0.0.110"
-  resolved "https://registry.yarnpkg.com/trieve-ts-sdk/-/trieve-ts-sdk-0.0.110.tgz#f30b60ef0f61b03a2ed1d9639fdebc7b05bfb31d"
-  integrity sha512-RM14M2FeALzGkIlcz4zp1TxtZqDPDxm5gf2P+61e+C057Th1fDv8+FTptXH3pnzddGnPqq5akkNtyU9WzYo6CQ==
 
 trieve-ts-sdk@^0.0.92:
   version "0.0.92"

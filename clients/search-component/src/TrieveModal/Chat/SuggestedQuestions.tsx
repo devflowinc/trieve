@@ -1,15 +1,17 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useSuggestedQuestions } from "../../utils/hooks/useSuggestedQuestions";
 import { useChatState } from "../../utils/hooks/chat-context";
 import {
   AiQuestion,
   isAiQuestion,
+  isDefaultSearchQuery,
   useModalState,
 } from "../../utils/hooks/modal-context";
 import { cn } from "../../utils/styles";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { ArrowRotateRightIcon, SparklesIcon } from "../icons";
 import { AIInitialMessage } from "./AIInitalMessage";
+import { DefaultSearchQuery } from "trieve-ts-sdk";
 
 export const SuggestedQuestions = ({
   onMessageSend,
@@ -20,21 +22,44 @@ export const SuggestedQuestions = ({
   const { suggestedQuestions, isLoadingSuggestedQueries, getQuestions } =
     useSuggestedQuestions();
 
-  const { props, trieveSDK, fingerprint, abTreatment } = useModalState();
+  const { props, trieveSDK, fingerprint, abTreatment, imageUrl, setImageUrl } =
+    useModalState();
   const [parent] = useAutoAnimate({ duration: 100 });
+  const [selectedQuestion, setSelectedQuestion] = useState<
+    AiQuestion | DefaultSearchQuery | null
+  >(null);
+
+  useEffect(() => {
+    if (selectedQuestion && imageUrl) {
+      askQuestion(
+        isAiQuestion(selectedQuestion)
+          ? selectedQuestion.questionText
+          : (selectedQuestion.query as string),
+        undefined,
+        isAiQuestion(selectedQuestion)
+          ? (selectedQuestion.products?.map((p) => p.groupId) ?? [])
+          : undefined,
+        isAiQuestion(selectedQuestion) && selectedQuestion.promptForAI !== ""
+          ? selectedQuestion.promptForAI
+          : undefined,
+      );
+    }
+  }, [imageUrl, selectedQuestion]);
 
   if (messages.length) {
     return null;
   }
 
-  const handleSuggestedQuestion = async (q: string | AiQuestion) => {
-    setCurrentQuestion(isAiQuestion(q) ? q.questionText : q);
-    askQuestion(
-      isAiQuestion(q) ? q.questionText : q,
-      undefined,
-      isAiQuestion(q) ? (q.products?.map((p) => p.groupId) ?? []) : undefined,
-      isAiQuestion(q) && q.promptForAI !== "" ? q.promptForAI : undefined,
-    );
+  const handleSuggestedQuestion = async (
+    q: AiQuestion | DefaultSearchQuery,
+  ) => {
+    console.log("q", q);
+    setCurrentQuestion(isAiQuestion(q) ? q.questionText : (q.query ?? ""));
+
+    if (isDefaultSearchQuery(q) && q.imageUrl) {
+      setSelectedQuestion(q);
+      setImageUrl(q.imageUrl);
+    }
 
     const requestId =
       messages[messages.length - 1]?.queryId ??
@@ -46,7 +71,7 @@ export const SuggestedQuestions = ({
       user_id: fingerprint,
       location: window.location.href,
       metadata: {
-        followup_query: q,
+        followup_query: isAiQuestion(q) ? q.questionText : q.query,
         component_props: props,
         ab_treatment: abTreatment,
       },
@@ -58,6 +83,7 @@ export const SuggestedQuestions = ({
     });
     if (onMessageSend) {
       onMessageSend();
+      setImageUrl("");
     }
   };
 
@@ -100,13 +126,13 @@ export const SuggestedQuestions = ({
               onClick={() => {
                 handleSuggestedQuestion(q);
               }}
-              key={isAiQuestion(q) ? q.questionText : q}
+              key={isAiQuestion(q) ? q.questionText : q.query}
               className={`suggested-question tv-flex tv-gap-1 tv-items-center${
                 isLoadingSuggestedQueries ? " loading" : ""
               }`}
             >
               <SparklesIcon fill="none" width={15} height={15} />
-              {isAiQuestion(q) ? q.questionText : q}
+              {isAiQuestion(q) ? q.questionText : q.query}
             </button>
           ))}
         </div>
