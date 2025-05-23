@@ -143,6 +143,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
   let localImageUrl = imageUrl;
 
 
+  const [groupIdsInChat, setGroupIdsInChat] = useState<string[]>([]);
+
   const createTopic = async ({
     question,
     defaultMatchAnyTags,
@@ -575,7 +577,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         });
 
         const skipSearchPromise = retryOperation(async () => {
-          if (props.type === "ecommerce" && !curGroup && messages.length > 1) {
+          if (!curGroup && messages.length > 1) {
             return await trieveSDK.getToolCallFunctionParams({
               user_message_text: `Here's the previous message thread so far: ${messages.map(
                 (message) => {
@@ -1033,6 +1035,8 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             ],
           };
 
+          setGroupIdsInChat((prev) => [...prev, ...topGroupIds]);
+
           try {
             const topImageGroupIds = topGroupIds.slice(0, 3);
             const getChunksPromises = topImageGroupIds.map((groupId) =>
@@ -1152,14 +1156,18 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           createMessageFilters = filters;
         }
         if (skipSearch) {
-          createMessageFilters = {
+          createMessageFilters = props.useGroupSearch ? ({
+            must: [
+              {
+                field: "group_ids",
+                match_any: groupIdsInChat,
+              },
+            ],
+          }) : {
             must: [
               {
                 field: "ids",
-                match_any: messages
-                  .filter((msg) => msg.type == "system")
-                  .flatMap((msg) => msg.additional ?? [])
-                  .map((chunk) => chunk.id),
+                match_any: messages.flatMap((m) => m.additional?.map((c) => c.id) || []),
               },
             ],
           };
