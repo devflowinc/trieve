@@ -48,7 +48,7 @@ export const useFollowupQuestions = () => {
     setSuggestedQuestions((prev) => ({
       ...prev,
       [prevMessage.text]: queries.queries.map((q) => {
-        return q.replace(/^[\d.-]+\s*/, "").trim();
+        return q.query?.replace(/^[\d.-]+\s*/, "").trim() ?? "";
       }),
     }));
     setIsLoadingSuggestedQueries(false);

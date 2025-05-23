@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { cn } from "../../utils/styles";
 import { useModalState } from "../../utils/hooks/modal-context";
-import { SuggestedQueriesResponse } from "trieve-ts-sdk";
+import { DefaultSearchQuery } from "trieve-ts-sdk";
 import { getSuggestedQueries } from "../../utils/trieve";
 
 export const SuggestedQueries = () => {
-  const { props, query, setQuery, imageUrl, trieveSDK } = useModalState();
+  const { props, query, setQuery, imageUrl, setImageUrl, trieveSDK } =
+    useModalState();
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQueries, setSuggestedQueries] = useState<
-    SuggestedQueriesResponse["queries"]
+    DefaultSearchQuery[]
   >([]);
 
   const getQueries = useCallback(
@@ -27,12 +28,17 @@ export const SuggestedQueries = () => {
     [query],
   );
 
-  useEffect(() => {
-    const defaultQueries =
-      props.defaultSearchQueries?.filter((q) => q !== "") ?? [];
+  const handleSendSuggestedQuery = (q: DefaultSearchQuery) => {
+    setQuery(q.query ?? "");
 
-    if (defaultQueries.length) {
-      setSuggestedQueries(defaultQueries);
+    if (q.imageUrl) {
+      setImageUrl(q.imageUrl);
+    }
+  };
+
+  useEffect(() => {
+    if (props.defaultSearchQueries?.length) {
+      setSuggestedQueries(props.defaultSearchQueries);
       return;
     }
 
@@ -64,15 +70,15 @@ export const SuggestedQueries = () => {
         <div className="suggested-query loading">Loading...</div>
       ) : (
         suggestedQueries.map((q) => {
-          q = q.replace(/^-|\*$/g, "");
-          q = q.trim();
+          let query = q.query?.replace(/^-|\*$/g, "") ?? "";
+          query = query.trim();
           return (
             <button
-              onClick={() => setQuery(q)}
-              key={q}
+              onClick={() => handleSendSuggestedQuery(q)}
+              key={query}
               className={`suggested-query${isLoading ? " loading" : ""}`}
             >
-              {q}
+              {query}
             </button>
           );
         })
