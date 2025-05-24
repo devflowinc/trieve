@@ -8,7 +8,6 @@ import { SuggestedQueries } from "./SuggestedQueries";
 export const SearchInput = () => {
   const {
     props,
-    results,
     query,
     setQuery,
     setLoadingResults,
@@ -77,7 +76,7 @@ export const SearchInput = () => {
       </div>
       <ImagePreview isUploading={uploadingImage} imageUrl={imageUrl} active />
       {props.suggestedQueries &&
-        (!query || (query && !results.length)) &&
+        !query &&
         selectedSidebarFilters.length === 0 && <SuggestedQueries />}
     </div>
   );
