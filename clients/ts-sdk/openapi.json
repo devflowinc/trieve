@@ -21075,7 +21075,7 @@
           "productQuestions": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/DefaultSearchQuery"
             },
             "nullable": true
           },
