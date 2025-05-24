@@ -1,0 +1,80 @@
+name: Shopify
+icon: /src/assets/images/integrations/shopify/icon.png
+hero:
+  title: |
+    The *AI Platform* for Shopify Stores
+  description: >-
+    Install the only end-to-end platform for AI chat, search, recommendations
+    for discovery that delights and converts.
+  image: /src/assets/images/comparisons/shopify/hero/image.svg
+  overrideActions:
+    - label: Install on Shopify
+      href: https://apps.shopify.com/trieve
+      newTab: true
+      variant: primary
+    - label: Book Demo
+      href: https://cal.com/team/trieve/trieve-demo
+      newTab: true
+      variant: secondary
+killerFeatures:
+  features:
+    - title: AI chat that drives the checkout
+      description: >-
+        Trieve drops a brand‑native chat agent onto every product page, guiding
+        shoppers with natural‑language answers that keep them moving toward “Add
+        to cart.” Stores turn product questions into instant revenue instead of
+        support tickets
+      image: /src/assets/images/home/shopify/killerFeatures/features/0/image.png
+    - title: Customize every prompt to selll
+      description: >-
+        Broad, misspelled, or half‑typed searches still surface the right SKUs.
+        The plugin blends semantic understanding with typo tolerance, so
+        discovery never stalls—even for hurried thumb‑typers on mobile. 
+      image: /src/assets/images/home/shopify/killerFeatures/features/1/image.png
+    - title: Two‑minute install, always on‑brand
+      description: >-
+        One click in the Shopify App Store syncs your entire product catalog and
+        inherits your theme’s styling. No manual setup, no code debt—just flip
+        it on and start watching conversion metrics climb. 
+      image: /src/assets/images/home/shopify/killerFeatures/features/2/image.png
+secondFeatures:
+  title: |
+    *CRO*-First *AI* for Stores Who *Sell More*
+  features:
+    - title: Two-Minute Install
+      description: >-
+        Flip the switch in Shopify and launch AI chat and search without writing
+        a line of code.
+    - title: Catalog-Aware Chat
+      description: >-
+        The bot syncs products, variants, and pricing every 15 minutes, so
+        answers always reflect live inventory
+    - title: Typo-Proof Search
+      description: >-
+        Semantic and fuzzy matching rescue misspelled or half‑typed queries,
+        keeping shoppers on the path to purchase
+    - title: Real‑Time Recommendations
+      description: >-
+        Each reply suggests perfectly paired add‑ons, quietly lifting average
+        order value with zero extra work
+    - title: Theme‑Friendly Styling
+      description: >-
+        The widget inherits your fonts and colors out of the box, so it feels
+        native on day one
+    - title: Unified Revenue Analytics
+      description: >-
+        Track chats, searches, and the exact dollars they drive from a single
+        Trieve dashboard
+    - title: Intent & Sentiment Detection
+      description: >-
+        Trieve reads each shopper’s mood and purchase intent in real time, then
+        tailors answers and offers to nudge them straight to checkout
+    - title: Enterprise‑Ready Compliance
+      description: >-
+        SOC 2 Type II and HIPAA controls are baked in, clearing security reviews
+        for even the strictest merchants
+callToAction:
+  title: |
+    Join *1000+ leading* Shopify stores\
+    across the world using Trieve
+  overrideActions: []

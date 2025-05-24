@@ -1,0 +1,52 @@
+name: Trieve API
+category: Development
+hero:
+  title: One API, Every AI Experience
+  description: >-
+    All of the functionality within Trieve is also exposed via API. LLM
+    completions, tool calls, image generation, search, memory, and more all
+    behind one well-designed REST surface.
+  image: /src/assets/images/products/trieve-api/hero/image.png
+  overrideActions:
+    - label: Start with Documentation
+      href: https://docs.trieve.ai/api-reference
+      newTab: true
+      variant: primary
+    - label: Book Demo
+      href: https://cal.com/team/trieve/trieve-demo
+      newTab: false
+      variant: secondary
+killerFeatures:
+  - title: Hybrid Retrieval Engine
+    description: >-
+      Combine BM25/SPLADE sparse search with dense-vector embeddings and BGE
+      cross-encoder re-ranking in a single call to deliver superior relevance
+      without extra infrastructure.
+    image: >-
+      /src/assets/images/products/killerFeatures/trieve-api/killerFeatures/0/image.png
+  - title: Managed RAG & Chat Endpoints
+    description: >-
+      Drop a single endpoint into your stack and stream on‑brand answers in
+      under 300 ms—context windows, token streaming, and memory handled for you.
+    image: >-
+      /src/assets/images/products/killerFeatures/trieve-api/killerFeatures/1/image.png
+  - title: Flexible ETL & Tuning Pipeline
+    description: >-
+      Upload PDFs, HTML, JSONL, raw strings, or use our native crawler. Trieve
+      splits, embeds, weights, and indexes with tools like filters, tag boosts,
+      and weight multipliers to let you tune relevance on the fly. No re‑index
+      required!
+    image: >-
+      /src/assets/images/products/killerFeatures/trieve-api/killerFeatures/2/image.png
+  - title: Enterprise Performance & Control
+    description: >-
+      Deploy Trieve's fully-managed solution or integrate our open-core vector
+      inference service into your VPC for sub-25ms latency. SOC 2 Type II and
+      HIPAA compliant out of the box to accelerate enterprise deals.
+    image: >-
+      /src/assets/images/products/killerFeatures/trieve-api/killerFeatures/3/image.png
+metadata:
+  seoTitle: Trieve for Developers | AI-Powered Developer Tools
+  seoDescription: >-
+    A 72-endpoint end-to-end platform for AI chat, search, recommendations for
+    discovery that delights and converts.

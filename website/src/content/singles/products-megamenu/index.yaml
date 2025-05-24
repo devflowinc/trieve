@@ -1,0 +1,42 @@
+cardStyle:
+  backgroundColor: bg-primary-100
+  padding: p-4
+  borderRadius: rounded-lg
+  textColor: text-black
+  hoverEffect: hover:bg-primary-300
+highlightCardStyle:
+  backgroundColor: bg-primary-600
+  padding: p-4
+  borderRadius: rounded-lg
+  textColor: text-white
+  hoverEffect: hover:bg-primary-500
+productCards:
+  - productSlug: ecommerce
+    icon: /src/assets/images/products-megamenu/icons/productCards/0/icon.png
+    title: Ecommerce
+    description: AI-native discovery for winning brands
+  - productSlug: sitesearch
+    icon: /src/assets/images/products-megamenu/icons/productCards/1/icon.png
+    title: Sitesearch
+    description: Modern AI and search experiences for websites
+  - productSlug: trieve-api
+    icon: /src/assets/images/products-megamenu/icons/productCards/2/icon.png
+    title: Developer API
+    description: For performance-critical and complex applications
+features:
+  - title: Need help choosing?
+    description: Email us or book a call to find the right solution!
+links:
+  - label: Documentation
+    url: https://docs.trieve.ai
+  - label: API Reference
+    url: https://api.trieve.ai
+  - label: Pricing
+    url: /pricing
+highlight:
+  title: See Trieve in Action!
+  description: Discover how Trieve products can transform your business
+  icon: /src/assets/images/products-megamenu/highlight/highlight/icon.jpg
+  callToAction:
+    label: Demo
+    url: https://cal.com/team/trieve/trieve-demo

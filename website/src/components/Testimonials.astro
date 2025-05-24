@@ -1,0 +1,289 @@
+---
+import { getCollection } from "astro:content";
+import KeystaticImage from "./KeystaticImage.astro";
+import { Icon } from "astro-icon/components";
+
+const allTestimonials = await getCollection("testimonials");
+const allTestimonialsSorted = allTestimonials.sort((a, b) => {
+  return (a.data.order ?? 0) - (b.data.order ?? 0);
+});
+---
+
+<div
+  class="group relative w-full overflow-hidden flex flex-col justify-between items-center bg-primary-900 text-white gap-4 md:gap-8 py-8 md:pt-16 pb-4"
+>
+  <div
+    class="carousel-track flex flex-row flex-nowrap transition-transform ease-in-out"
+  >
+    {
+      allTestimonialsSorted.map(
+        ({ data: { image, quote, author, relatedPost } }) => (
+          <div class="slide min-w-full flex-auto">
+            <div class="container h-full flex flex-col md:flex-row justify-start items-center gap-4 md:gap-16">
+              <img
+                src={image.src}
+                alt={author}
+                class="w-full h-auto max-w-1/3 md:max-w-1/5 object-contain text-white"
+              />
+
+              <div class="flex flex-col gap-4">
+                <p class="text-2xl md:text-3xl md:leading-relaxed tracking-tighter max-w-[40ch]">
+                  “{quote}”
+                </p>
+                <p class="text-lg md:text-2xl font-title font-thin italic uppercase">
+                  {author}
+                </p>
+                {/* read the case study if relatedPost is defined, flex with openExternal icon to the link */}
+                {relatedPost && (
+                  <a
+                    href={`/blog/${relatedPost}`}
+                    class="flex items-center gap-2"
+                  >
+                    <span class="text-lg md:text-2xl font-title font-thin italic uppercase">
+                      Read the case study
+                    </span>
+                    <Icon
+                      name="tabler:external-link"
+                      class="w-4 h-4 md:w-6 md:h-6 text-white"
+                      aria-hidden="true"
+                    />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      )
+    }
+  </div>
+
+  <div class="flex flex-row items-center justify-center gap-3 mt-4 md:mt-6">
+    {/* New Previous Button Location */}
+    <button
+      type="button"
+      aria-label="Previous testimonial"
+      class="carousel-prev-btn js-carousel-arrow p-1 text-white bg-black/20 hover:bg-black/40 rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
+    >
+      <Icon name="tabler:chevron-left" class="w-5 h-5" />
+    </button>
+
+    {/* Dot Indicators */}
+    <div class="flex flex-row gap-2">
+      {
+        allTestimonialsSorted.map((_, t) => (
+          <button
+            type="button"
+            class="slide-selector group"
+            class:list={[{ active: t === 0 }]}
+            aria-label={`Testimonial ${t + 1}`}
+          >
+            <div class="border rounded-full w-5 h-2 group-hover:bg-primary-100/30 group-[&.active]:bg-primary-100" />
+          </button>
+        ))
+      }
+    </div>
+
+    {/* New Next Button Location */}
+    <button
+      type="button"
+      aria-label="Next testimonial"
+      class="carousel-next-btn js-carousel-arrow p-1 text-white bg-black/20 hover:bg-black/40 rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
+    >
+      <Icon name="tabler:chevron-right" class="w-5 h-5" />
+    </button>
+  </div>
+</div>
+
+<script>
+  const track = document.querySelector<HTMLDivElement>(".carousel-track")!;
+  // Ensure slides are correctly identified if they are direct children of the track
+  const slides = Array.from(track.children).filter((child) =>
+    child.classList.contains("slide")
+  );
+  const numSlides = slides.length;
+  const slideSelectors =
+    document.querySelectorAll<HTMLButtonElement>(".slide-selector");
+
+  const carouselContainer = document.querySelector<HTMLDivElement>(
+    ".group.relative.w-full"
+  );
+  const prevButton =
+    document.querySelector<HTMLButtonElement>(".carousel-prev-btn");
+  const nextButton =
+    document.querySelector<HTMLButtonElement>(".carousel-next-btn");
+
+  let currentSlideIndex = 0;
+  const intervalDuration = 5000; // 5 seconds
+  let autoSlideIntervalId: any; // To store the interval ID
+
+  let arrowHideTimeoutId: any;
+  const ARROW_HIDE_DELAY = 2000; // 2 seconds
+
+  // Touch swipe variables
+  let touchStartX = 0;
+  let touchEndX = 0;
+  const swipeThreshold = 50; // Minimum pixels to be considered a swipe
+
+  function setActiveSlide(index: number) {
+    if (numSlides === 0) return;
+    // Ensure index loops correctly in both directions
+    currentSlideIndex = (index + numSlides) % numSlides;
+    track.style.transform = `translateX(calc(-${currentSlideIndex} * 100%))`;
+
+    slideSelectors.forEach((s, i) => {
+      s.classList.toggle("active", i === currentSlideIndex);
+    });
+  }
+
+  function nextSlide() {
+    setActiveSlide(currentSlideIndex + 1);
+  }
+
+  function prevSlide() {
+    setActiveSlide(currentSlideIndex - 1);
+  }
+
+  function startAutoSlide() {
+    // Clear any existing interval before starting a new one
+    if (autoSlideIntervalId !== undefined) {
+      clearInterval(autoSlideIntervalId);
+    }
+    if (numSlides > 1) {
+      // Only start auto-slide if there's more than one slide
+      autoSlideIntervalId = setInterval(nextSlide, intervalDuration);
+    }
+  }
+
+  // --- Arrow Button Visibility & Click Logic ---
+  function showArrows() {
+    clearTimeout(arrowHideTimeoutId);
+    prevButton?.classList.remove("js-force-hidden");
+    nextButton?.classList.remove("js-force-hidden");
+  }
+
+  function hideArrowsAfterDelay() {
+    clearTimeout(arrowHideTimeoutId);
+    arrowHideTimeoutId = setTimeout(() => {
+      prevButton?.classList.add("js-force-hidden");
+      nextButton?.classList.add("js-force-hidden");
+    }, ARROW_HIDE_DELAY);
+  }
+
+  if (carouselContainer) {
+    carouselContainer.addEventListener("mouseenter", showArrows);
+    carouselContainer.addEventListener("mouseleave", hideArrowsAfterDelay);
+  }
+
+  prevButton?.addEventListener("click", () => {
+    prevSlide();
+    startAutoSlide();
+    showArrows();
+    hideArrowsAfterDelay();
+  });
+
+  nextButton?.addEventListener("click", () => {
+    nextSlide();
+    startAutoSlide();
+    showArrows();
+    hideArrowsAfterDelay();
+  });
+
+  slideSelectors?.forEach((selector, index) =>
+    selector.addEventListener("click", () => {
+      setActiveSlide(index);
+      startAutoSlide();
+      showArrows(); // Also show arrows when interacting with dots
+      hideArrowsAfterDelay();
+    })
+  );
+
+  // --- Touch event handlers ---
+  track.addEventListener(
+    "touchstart",
+    (event) => {
+      touchStartX = event.changedTouches[0].screenX;
+      showArrows(); // Show arrows on touch interaction
+    },
+    { passive: true }
+  );
+
+  track.addEventListener(
+    "touchmove",
+    (event) => {
+      // This event is not strictly needed for this basic swipe implementation
+    },
+    { passive: true }
+  );
+
+  track.addEventListener("touchend", (event) => {
+    touchEndX = event.changedTouches[0].screenX;
+    handleSwipe();
+    startAutoSlide();
+    hideArrowsAfterDelay(); // Start timer to hide arrows after swipe
+  });
+
+  function handleSwipe() {
+    const deltaX = touchEndX - touchStartX;
+    if (Math.abs(deltaX) > swipeThreshold) {
+      // Check if swipe distance is significant
+      if (deltaX < 0) {
+        // Swiped left (next slide)
+        nextSlide();
+      } else {
+        // Swiped right (previous slide)
+        prevSlide();
+      }
+    }
+  }
+
+  // Initialize the carousel
+  if (numSlides > 0) {
+    setActiveSlide(0);
+    startAutoSlide();
+    // Initially hide arrows after a delay if mouse isn't over container
+    if (carouselContainer && !carouselContainer.matches(":hover")) {
+      hideArrowsAfterDelay();
+    }
+  }
+
+  // --- Trackpad Wheel Swipe Logic ---
+  let lastWheelActionTime = 0;
+  const wheelActionDebounce = 200; // ms
+
+  if (carouselContainer) {
+    carouselContainer.addEventListener(
+      "wheel",
+      (event) => {
+        const currentTime = Date.now();
+        if (currentTime - lastWheelActionTime < wheelActionDebounce) {
+          event.preventDefault();
+          return;
+        }
+
+        const { deltaX, deltaY } = event;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+          event.preventDefault();
+
+          if (deltaX > 0) {
+            nextSlide();
+          } else {
+            prevSlide();
+          }
+          startAutoSlide();
+          showArrows();
+          hideArrowsAfterDelay();
+          lastWheelActionTime = currentTime;
+        }
+      },
+      { passive: false }
+    );
+  }
+</script>
+
+<style>
+  .js-force-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+</style>

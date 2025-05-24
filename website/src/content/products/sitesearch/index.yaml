@@ -1,0 +1,50 @@
+name: Sitesearch
+category: Search
+hero:
+  title: Today's Visitors *Expect* *AI*
+  description: >-
+    Your visitors are already asking AI for answers—make sure it’s yours. Serve
+    instant, on-brand answers with Trieve for websites.
+  image: /src/assets/images/products/sitesearch/hero/image.png
+  overrideActions:
+    - label: Start with Docs
+      href: https://docs.trieve.ai/site-search/content-sites
+      newTab: true
+      variant: primary
+    - label: Book Demo
+      href: cahttps://cal.com/team/trieve/trieve-demo
+      newTab: false
+      variant: secondary
+killerFeatures:
+  - title: Search Built for Decreasing Attention Spans
+    description: >-
+      76% of users abandon sites when they can't quickly find what they need.
+      Our AI search engine understands intent and context to deliver spot-on
+      results instantly—even without perfect keywords.
+    image: >-
+      /src/assets/images/products/killerFeatures/sitesearch/killerFeatures/0/image.png
+  - title: Easy Integration & Maintenance
+    description: >-
+      Add powerful search and AI chat to your website with minimal code. Trieve
+      works instantly with any stack, no custom backend or complex setup needed.
+    image: >-
+      /src/assets/images/products/killerFeatures/sitesearch/killerFeatures/1/image.png
+  - title: Customizable UI
+    description: >-
+      Customize your search and chat experience to match your brand, keeping
+      users engaged longer with personalized interactions.
+    image: >-
+      /src/assets/images/products/killerFeatures/sitesearch/killerFeatures/2/image.png
+  - title: Analytics Dashboard
+    description: >-
+      Our analytics reveal search patterns, highlight content gaps, and pinpoint
+      where visitors get stuck, helping you optimize your site with real
+      behavior insights to reduce bounces before they happen.
+    image: >-
+      /src/assets/images/products/killerFeatures/sitesearch/killerFeatures/3/image.png
+metadata:
+  seoTitle: Trieve for Site Search | AI-Powered Website Search Solution
+  seoDescription: >-
+    Add AI-powered search and chat to your website in minutes. Trieve’s drop-in
+    SiteSearch helps keep visitors engaged with fast, relevant, on-brand
+    answers—before they bounce to Google or ChatGPT.

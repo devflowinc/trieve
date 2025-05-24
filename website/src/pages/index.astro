@@ -1,0 +1,191 @@
+---
+import CallToAction from "@components/CallToAction.astro";
+import KeystaticImage from "@components/KeystaticImage.astro";
+import Tagline from "@components/Tagline.astro";
+import Testimonials from "@components/Testimonials.astro";
+import TrustedBrands from "@components/TrustedBrands.astro";
+import Layout from "@layouts/Layout.astro";
+import AnimatedBackground from "@layouts/shared/AnimatedBackground.astro";
+import { keystatic } from "@lib/keystatic/client";
+import { marked } from "marked";
+import invariant from "tiny-invariant";
+
+const i18n = await keystatic.singletons.homepage.read({
+  resolveLinkedFiles: true,
+});
+invariant(i18n, "No homepage content found");
+---
+
+<Layout title={i18n.metadata.title} description={i18n.metadata.description}>
+  <section
+    class="min-h-[80vh] container text-center flex flex-col items-center gap-8 pt-8"
+  >
+    {
+      i18n.hero.tagline ? (
+        <Tagline href={i18n.hero.taglineURL} target="_blank">
+          {i18n.hero.tagline}
+        </Tagline>
+      ) : null
+    }
+    <h1
+      class="text-balance text-6xl md:text-7xl lg:text-8xl font-medium -mt-4 md:mt-0"
+      set:html={marked.parseInline(i18n.hero.title)}
+    />
+    <p class="text-xl md:text-2xl max-w-[40ch]">
+      {i18n.hero.leadText}
+    </p>
+    <CallToAction actions={i18n.hero.overrideActions} />
+    <div class="w-full md:w-4xl">
+      <div
+        class="relative w-full aspect-[1.500013392976723] rounded-2xl overflow-hidden"
+      >
+        <img
+          src={i18n.hero.externalImageUrl ?? ""}
+          alt="Hero product sample view"
+          class="rounded-2xl w-full h-full object-cover absolute inset-0"
+          loading="eager"
+        />
+      </div>
+    </div>
+    <TrustedBrands />
+  </section>
+
+  <section
+    class="container flex flex-col gap-8 items-center text-center md:text-left"
+  >
+    <h2
+      class="md:text-5xl"
+      set:html={marked.parseInline(i18n.killerFeatures.title)}
+    />
+    <ul
+      class="mb-4 hidden md:flex flex-row gap-4 px-8 py-4 w-auto bg-white text-black rounded-xl sticky top-4"
+    >
+      {
+        i18n.killerFeatures.features.map(({ title }, idx) => (
+          <li class="group rounded-xl [&.active]:bg-primary-900 [&.active]:text-white hover:bg-primary-900">
+            <a
+              href={`#kf-${idx}`}
+              class="inline-block px-4 py-2 text-center hover:text-white hover:no-underline"
+            >
+              {title}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="flex flex-col gap-8 md:gap-16">
+      {
+        i18n.killerFeatures.features.map(
+          ({ title, description, image }, idx) => (
+            <>
+              <div id={`kf-${idx}`} class="relative -top-16" />
+              <div class="flex flex-col md:flex-row gap-4 md:gap-20 max-w-6xl mx-auto">
+                <div
+                  class="flex-2/5 text-center md:text-left"
+                  class:list={[{ "md:order-2": idx % 2 }]}
+                >
+                  <h3 class="md:mt-4 mb-2">{title}</h3>
+                  <p class="text-xl tracking-tighter">{description}</p>
+                </div>
+                <KeystaticImage
+                  src={
+                    image && (typeof image !== "string" || image !== "")
+                      ? image
+                      : undefined
+                  }
+                  class="flex-3/5 rounded-xl aspect-[3/2] max-w-full md:max-w-3/5 mx-auto"
+                />
+              </div>
+            </>
+          )
+        )
+      }
+    </div>
+  </section>
+
+  <section class="container flex flex-col items-center gap-16 my-24">
+    <h2
+      class="md:text-5xl text-center"
+      set:html={marked.parseInline(i18n.secondFeatures.title)}
+    />
+
+    <div class="flex flex-col gap-16">
+      {
+        i18n.secondFeatures.features.map(({ title, description, image }) => {
+          return (
+            <div class="flex flex-col md:flex-row gap-4 md:gap-20 mx-auto">
+              <div class="flex-1/2 text-center md:text-left">
+                <h3 class="md:mt-4 mb-2">{title}</h3>
+                <p class="text-xl tracking-tighter">{description}</p>
+              </div>
+              <KeystaticImage
+                class="flex-1/2 rounded-xl aspect-[3/2] max-w-full md:max-w-3/5 mx-auto"
+                src={
+                  image && (typeof image !== "string" || image !== "")
+                    ? image
+                    : undefined
+                }
+              />
+            </div>
+          );
+        })
+      }
+    </div>
+  </section>
+
+  <section>
+    <Testimonials />
+  </section>
+
+  <section
+    class="container flex flex-col items-center text-center rounded-xl md:px-8 my-12"
+  >
+    <h2
+      class="text-balance text-5xl md:text-7xl font-medium"
+      set:html={marked.parseInline(i18n.callToAction.title)}
+    />
+  </section>
+  <div
+    id="main-cta"
+    class="sticky top-96 flex items-center justify-center -mt-16 md:mb-48 overflow-hidden transition-[bottom] -bottom-28 delay-100 ease-in mx-4 md:mx-auto"
+    class:list={[{ "bottom-8": false }]}
+  >
+    <CallToAction
+      withBackground
+      withBorder
+      actions={i18n.callToAction.overrideActions}
+    />
+  </div>
+  <AnimatedBackground />
+</Layout>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    /** Killer features scroll spy */
+    const sections = document.querySelectorAll<HTMLDivElement>("[id^=kf]");
+    const navLinks =
+      document.querySelectorAll<HTMLAnchorElement>('a[href^="#kf"]');
+
+    window.addEventListener("scroll", () => {
+      let current: string | null = "";
+      sections.forEach((section) => {
+        const sectionTop = section.offsetTop;
+        if (scrollY >= sectionTop - 60) {
+          current = section.getAttribute("id");
+        }
+      });
+
+      if (!current) {
+        current = sections[0].id;
+      }
+
+      navLinks.forEach((link) => {
+        link.parentElement?.classList.remove("active");
+        if (link.getAttribute("href") === `#${current}`) {
+          link.parentElement?.classList.add("active");
+        }
+      });
+    });
+  });
+</script>

@@ -1,0 +1,49 @@
+---
+import { Image } from "astro:assets";
+import { getCollection } from "astro:content";
+
+interface Props {
+  post: Awaited<ReturnType<typeof getCollection<"blogPosts">>>[number];
+}
+
+const categories = await getCollection("blogCategories");
+
+const { post } = Astro.props;
+---
+
+<div>
+  <a class="flex flex-col gap-2" href=`/blog/${post.id}`>
+    <Image
+      src={post.data.coverImage}
+      alt="Cover image"
+      class="rounded-xl border border-primary-700 aspect-[16/9] object-cover"
+    />
+    <p class="text-3xl font-title tracking-tighter font-light">
+      {post.data.title}
+    </p>
+    <p>
+      {
+        post.data.lastUpdatedAt
+          ? `${post.data.lastUpdatedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+          : post.data.createdAt
+            ? `${post.data.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+            : null
+      }
+      {post.data.author ? `· ${post.data.author}` : null}
+    </p>
+    <p class="text-lg">{post.data.summary}</p>
+  </a>
+
+  <div class="mt-4 flex flex-row gap-2">
+    {
+      post.data.categories.map((postCategory) => (
+        <a
+          href={`/blog/${postCategory}`}
+          class="bg-primary-300 text-primary-700 px-4 py-2 text-sm rounded"
+        >
+          {categories.find((c) => c.id === postCategory)?.data.name}
+        </a>
+      ))
+    }
+  </div>
+</div>

@@ -1,0 +1,57 @@
+cardStyle:
+  backgroundColor: bg-primary-100
+  padding: p-4
+  borderRadius: rounded-lg
+  textColor: text-black
+  hoverEffect: hover:bg-primary-300
+highlightCardStyle:
+  backgroundColor: bg-primary-600
+  padding: p-4
+  borderRadius: rounded-lg
+  textColor: text-white
+  hoverEffect: hover:bg-primary-500
+resourceCards:
+  - url: /about-trieve
+    icon: /src/assets/images/resources-megamenu/icons/resourceCards/0/icon.png
+    title: About Trieve
+    description: Learn about our mission, team, and story
+    openInNewTab: false
+  - url: /blog
+    icon: /src/assets/images/resources-megamenu/icons/resourceCards/1/icon.png
+    title: Blog
+    description: We write articles real humans enjoy reading!
+    openInNewTab: false
+  - url: https://docs.trieve.ai
+    icon: /src/assets/images/resources-megamenu/icons/resourceCards/2/icon.png
+    title: Developer Documentation
+    description: Comprehensive guides and references for developers.
+    openInNewTab: true
+  - url: https://docs.trieve.ai/api-reference
+    icon: /src/assets/images/resources-megamenu/icons/resourceCards/3/icon.png
+    title: API Reference
+    description: Detailed API documentation for integrating with Trieve.
+    openInNewTab: true
+links:
+  - label: About Trieve
+    url: /about-trieve
+    openInNewTab: false
+  - label: Blog
+    url: /blog
+    openInNewTab: false
+  - label: Developer Documentation
+    url: https://docs.trieve.ai
+    openInNewTab: true
+  - label: API Reference
+    url: https://docs.trieve.ai/api-reference
+    openInNewTab: true
+features:
+  - title: Have questions or ideas?
+    description: Join our Discord community or email our team for personalized assistance.
+highlight:
+  title: Latest from our Blog
+  description: >-
+    We take pride in writing interesting articles that actual humans will enjoy
+    reading. Take a look!
+  callToAction:
+    label: Read More
+    url: /blog

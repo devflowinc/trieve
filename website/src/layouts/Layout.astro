@@ -1,0 +1,161 @@
+---
+import "@/styles/global.css";
+import TrieveLogo from "@assets/global/trieve-logo.png";
+import Header from "@components/Header.astro";
+import LayoutFooter from "./shared/LayoutFooter.astro";
+import { getImage } from "astro:assets";
+
+const currentUrl = Astro.url.href;
+
+interface Props {
+  title?: string;
+  description?: string;
+  hideMovingBackground?: boolean;
+  ogTitle?: string;
+  ogSiteName?: string;
+  ogUrl?: string;
+  ogDescription?: string;
+  ogType?: string;
+  ogImage?: string;
+  articlePublishedTime?: string;
+  articleModifiedTime?: string;
+  articleExpirationTime?: string;
+  articleAuthors?: string[];
+  articleSection?: string;
+  articleTags?: string[];
+}
+
+const {
+  title = "Trieve",
+  description = "Trieve is an AI search engine that makes it easy to build Conversational AI that Converts. Instantly add AI search, chat, and recommendations with our widget, or build custom experiences with our API.",
+  ogTitle = "Trieve",
+  ogSiteName = "Trieve AI",
+  ogUrl = currentUrl,
+  ogDescription = "Trieve is an AI search engine that makes it easy to build Conversational AI that Converts. Instantly add AI search, chat, and recommendations with our widget, or build custom experiences with our API.",
+  ogType = "website",
+  ogImage = "https://cdn.trieve.ai/trieve-og.png",
+  articlePublishedTime,
+  articleModifiedTime,
+  articleExpirationTime,
+  articleAuthors = [],
+  articleSection,
+  articleTags = [],
+} = Astro.props;
+
+const icon = await getImage({ src: TrieveLogo, format: "avif", width: 128 });
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#3d1943" />
+    <meta property="og:title" content={ogTitle} />
+    <meta property="og:site_name" content={ogSiteName} />
+    <meta property="og:url" content={ogUrl} />
+    <meta property="og:description" content={ogDescription} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:image" content={ogImage} />
+    {
+      articleTags.length > 0 && (
+        <meta property="og:article:tag" content={articleTags.join(",")} />
+      )
+    }
+    {
+      articlePublishedTime && (
+        <meta
+          property="article:published_time"
+          content={articlePublishedTime}
+        />
+      )
+    }
+    {
+      articleModifiedTime && (
+        <meta property="article:modified_time" content={articleModifiedTime} />
+      )
+    }
+    {
+      articleExpirationTime && (
+        <meta
+          property="article:expiration_time"
+          content={articleExpirationTime}
+        />
+      )
+    }
+    {
+      articleAuthors.length > 0 && (
+        <meta property="article:author" content={articleAuthors.join(",")} />
+      )
+    }
+    {
+      articleSection && (
+        <meta property="article:section" content={articleSection} />
+      )
+    }
+    {
+      articleTags.length > 0 && (
+        <meta property="article:tag" content={articleTags.join(",")} />
+      )
+    }
+    <script
+      is:inline
+      defer
+      data-domain="trieve.ai"
+      src="https://plausible.trieve.ai/js/script.js"></script>
+    <title>{title}</title>
+    <link rel="icon" href={icon.src} />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={`${title} RSS Feed`}
+      href={new URL("rss.xml", Astro.site)}
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="https://cdn.trieve.ai/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="https://cdn.trieve.ai/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="https://cdn.trieve.ai/favicon-16x16.png"
+    />
+    {description && <meta name="description" content={description} />}
+  </head>
+  <body class="flex flex-col max-w-[100vw] overflow-x-hidden">
+    <Header />
+    <main class="flex flex-col gap-8 sm:gap-16 z-10">
+      <slot />
+    </main>
+    <LayoutFooter />
+  </body>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const mainCTA = document.querySelector("#main-cta");
+      const secondaryCTAs = document.querySelectorAll(
+        ".cta:not(#main-cta .cta)"
+      );
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            mainCTA?.classList.remove("bottom-4");
+          } else {
+            mainCTA?.classList.add("bottom-4");
+          }
+        });
+      });
+
+      secondaryCTAs.forEach((s) => observer.observe(s));
+    });
+  </script>
+</html>

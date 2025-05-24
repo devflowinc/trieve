@@ -1,0 +1,87 @@
+---
+import CheckWhite from "@assets/check-white.svg";
+import ChevronDown from "@assets/chevron-down.svg";
+import Dash from "@assets/dash.svg";
+interface Props {
+  competitor: string;
+  sections: Array<{
+    title: string;
+    items: Array<{ text: string; trieve: boolean; other: boolean }>;
+  }>;
+}
+
+const { competitor, sections } = Astro.props;
+---
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>(
+    ".accordion button.peer",
+  );
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const isExpanded = button.getAttribute("aria-expanded") === "true";
+      button.setAttribute("aria-expanded", String(!isExpanded));
+    });
+  });
+</script>
+
+<div class="accordion flex flex-col gap-4 max-w-[90ch] md:mx-auto -mx-2">
+  {
+    sections.map(({ title, items }, index) => {
+      const id = `${index}_${title.replaceAll(/\W/g, "-")}`;
+      return (
+        <div {id} class="rounded-2xl overflow-hidden">
+          <button
+            type="button"
+            class="peer w-full px-4 md:px-8 py-6 bg-primary-300 text-left font-medium cursor-pointer flex flex-row justify-between items-center"
+            aria-expanded={index === 0 ? "true" : "false"}
+            aria-controls={id}
+          >
+            {title}
+            <ChevronDown
+              class="peer-[[aria-expanded=false]]:-rotate-90 transition-[rotate] duration-300"
+              size="16"
+              role="presentation"
+            />
+          </button>
+          <div
+            class:list={[
+              "peer-[[aria-expanded=false]]:max-h-0 max-h-[1000px] transition-[max-height]",
+              "grid grid-cols-[3fr_1fr_1fr] md:grid-cols-[3fr_1fr_1fr]",
+              "bg-primary-300",
+              "*:px-2 *:py-4 md:*:px-8 md:*:py-6",
+              "*:nth-[6n+4]:bg-primary-100 *:nth-[6n+5]:bg-primary-100 *:nth-[6n+6]:bg-primary-100", // striped rows
+              "*:nth-[-n+3]:font-medium", // Header
+              "*:nth-[3n+1]:px-3 *:nth-[3n+1]:md:px-8", // Text columns
+              "*:nth-[3n+2]:text-center *:nth-[3n+3]:text-center", // Trieve and Other columns
+              "*:nth-[3n+2]:!bg-primary-700 *:nth-[3n+2]:text-white *:nth-[2]:rounded-t-2xl", // Trieve column
+            ]}
+          >
+            <div />
+            <div>Trieve</div>
+            <div>{competitor}</div>
+            {items.map(({ text, trieve, other }) => (
+              <>
+                <div>{text}</div>
+                <div class="flex items-center">
+                  {trieve ? (
+                    <CheckWhite class="mx-auto h-6 w-6 md:h-7 md:w-7" />
+                  ) : (
+                    <Dash class="mx-auto text-white h-3 w-3 md:h-4 md:w-4" />
+                  )}
+                </div>
+                <div class="flex items-center">
+                  {other ? (
+                    <CheckWhite class="mx-auto text-primary-700 h-6 w-6 md:h-7 md:w-7" />
+                  ) : (
+                    <Dash class="mx-auto text-primary-700 h-3 w-3 md:h-4 md:w-4" />
+                  )}
+                </div>
+              </>
+            ))}
+          </div>
+        </div>
+      );
+    })
+  }
+</div>

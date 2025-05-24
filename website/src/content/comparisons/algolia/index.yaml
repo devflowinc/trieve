@@ -1,0 +1,65 @@
+name: Algolia
+hero:
+  title: Trieve delivers modern GenAI capabilities that Algolia lacks
+  description: >-
+    Unlike Algolia's rules-based approach, Trieve brings modern GenAI to your store. We're rated higher on Shopify (5/5 vs 3.6/5 stars) and pack amazing features like store-wide AI discovery and product page Q&A that Algolia just doesn't have. While Algolia shines at visual merchandising, Trieve focuses on delivering cutting-edge AI capabilities that make your store smarter and more engaging.
+  image: /src/assets/images/comparisons/algolia/hero/image.webp
+  overrideActions:
+    - label: Install on Shopify
+      href: https://apps.shopify.com/trieve
+      newTab: true
+      variant: primary
+    - label: Book Demo
+      href: https://cal.com/team/trieve/trieve-demo
+      newTab: true
+      variant: secondary
+sliders:
+  title: |
+    *Trieve* outperforms Algolia across the board
+  items:
+    - name: Shopify Rating
+      trieve: 5
+      other: 3.6
+    - name: G2 Score
+      trieve: 4.5
+      other: 4.5
+    - name: GenAI Capabilities
+      trieve: 5
+      other: 1
+    - name: Rules-based engine
+      trieve: 1
+      other: 5
+    - name: Visual Merchandising
+      trieve: 1
+      other: 5
+testimonialsTitle: |
+  Let our *costumers* speak for us
+accordion:
+  title: |
+    That is how Trieve makes the *difference*
+  sections:
+    - title: Tell me how does Trieve compare to Algolia
+      items:
+        - text: Site-wide GenAI driven discovery
+          trieve: true
+          other: false
+        - text: PDP Component for AI driven Q&A
+          trieve: true
+          other: false
+        - text: AI syonym'ed keyword search
+          trieve: true
+          other: false
+        - text: Visual merchandising
+          trieve: false
+          other: true
+    - title: Do they have e-commerce integrations?
+      items:
+        - text: Shopify
+          trieve: true
+          other: true
+        - text: Judge.me
+          trieve: true
+          other: false
+callToAction:
+  title: ''
+  overrideActions: []

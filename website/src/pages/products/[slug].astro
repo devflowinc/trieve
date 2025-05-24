@@ -1,0 +1,156 @@
+---
+import CallToAction from "@components/CallToAction.astro";
+import KeystaticImage from "@components/KeystaticImage.astro";
+import TrustedBrands from "@components/TrustedBrands.astro";
+import Testimonials from "@components/Testimonials.astro";
+import Layout from "@layouts/Layout.astro";
+import { getCollection } from "astro:content";
+import AnimatedBackground from "@layouts/shared/AnimatedBackground.astro";
+import { marked } from "marked";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("products");
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+
+const i18n = entry.data;
+---
+
+<Layout
+  title={i18n.metadata.seoTitle}
+  description={i18n.metadata.seoDescription}
+>
+  <!-- Hero Section (Centered) -->
+  <section class="py-12 md:py-16 text-center">
+    <div class="container flex flex-col items-center gap-6 md:gap-8">
+      <h1
+        class="text-balance text-6xl md:text-7xl lg:text-8xl font-medium -mt-4 md:mt-0"
+        set:html={marked.parseInline(i18n.hero?.title || i18n.name || "")}
+      />
+      <p class="text-xl md:text-2xl max-w-[40ch]">{i18n.hero.description}</p>
+      <CallToAction actions={i18n.hero.overrideActions} />
+      <div class="max-w-3xl w-full">
+        <KeystaticImage
+          src={i18n.hero.image}
+          alt=""
+          class="rounded-xl"
+          widths={[320, 480, 540, 640]}
+          loading="eager"
+        />
+      </div>
+    </div>
+  </section>
+
+  {
+    i18n.killerFeatures.length > 0 && (
+      <section class="container flex flex-col gap-8 items-center text-center md:text-left">
+        <h2 class="md:text-5xl">Killer Features</h2>
+        <ul class="mb-4 hidden md:flex flex-row gap-4 px-8 py-4 w-auto bg-white text-black rounded-xl sticky top-4">
+          {i18n.killerFeatures.map(({ title }, idx) => (
+            <li class="group rounded-xl [&.active]:bg-primary-900 [&.active]:text-white hover:bg-primary-900">
+              <a
+                href={`#kf-${idx}`}
+                class="inline-block px-4 py-2 text-center hover:text-white hover:no-underline"
+              >
+                {title}
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <div class="flex flex-col gap-8 md:gap-16">
+          {i18n.killerFeatures.map((feature, idx) => (
+            <>
+              <div id={`kf-${idx}`} class="relative -top-16" />
+              <div class="flex flex-col items-center text-center max-w-4xl mx-auto">
+                <h3 class="text-2xl md:text-3xl font-bold mb-6">
+                  {feature.title}
+                </h3>
+                <p class="text-lg md:text-xl mb-8 max-w-3xl">
+                  {feature.description}
+                </p>
+                <div class="w-[100px] h-[100px] mx-auto">
+                  <KeystaticImage
+                    src={feature.image || undefined}
+                    class="rounded-lg object-cover w-full h-full"
+                    widths={[100, 200, 300]}
+                    sizes="100px"
+                  />
+                </div>
+              </div>
+            </>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Testimonials Section -->
+  <section>
+    <Testimonials />
+  </section>
+
+  <!-- Trusted Brands Section -->
+  <section class="my-8 md:my-16">
+    <TrustedBrands />
+  </section>
+
+  <!-- Call to Action Section -->
+  <section
+    class="container flex flex-col items-center text-center rounded-xl md:px-8 my-12"
+  >
+    <h2 class="text-balance text-5xl md:text-7xl font-medium mb-4">
+      Ready to get started?
+    </h2>
+    <p class="text-xl md:text-2xl max-w-3xl my-4">
+      Join thousands of businesses that trust Trieve for their AI-powered
+      solutions.
+    </p>
+  </section>
+  <div
+    id="main-cta"
+    class="sticky top-96 flex items-center justify-center -mt-16 md:mb-48 overflow-hidden transition-[bottom] -bottom-28 delay-100 ease-in mx-4 md:mx-auto"
+    class:list={[{ "bottom-8": false }]}
+  >
+    <CallToAction
+      withBackground
+      withBorder
+      actions={i18n.hero.overrideActions}
+    />
+  </div>
+  <AnimatedBackground />
+</Layout>
+
+<script is:inline>
+  document.addEventListener("DOMContentLoaded", () => {
+    /** Killer features scroll spy */
+    const sections = document.querySelectorAll("[id^=kf]");
+    const navLinks = document.querySelectorAll('a[href^="#kf"]');
+
+    window.addEventListener("scroll", () => {
+      let current = "";
+      sections.forEach((section) => {
+        const sectionTop = section.offsetTop;
+        if (scrollY >= sectionTop - 60) {
+          current = section.getAttribute("id");
+        }
+      });
+
+      if (!current) {
+        current = sections[0].id;
+      }
+
+      navLinks.forEach((link) => {
+        link.parentElement?.classList.remove("active");
+        if (link.getAttribute("href") === `#${current}`) {
+          link.parentElement?.classList.add("active");
+        }
+      });
+    });
+  });
+</script>

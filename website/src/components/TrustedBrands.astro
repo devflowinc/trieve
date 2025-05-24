@@ -1,0 +1,52 @@
+---
+import { keystatic } from "@lib/keystatic/client";
+import clsx from "clsx";
+import invariant from "tiny-invariant";
+import KeystaticImage from "./KeystaticImage.astro";
+
+interface Props {
+  withoutTitle?: boolean;
+  inverted?: boolean;
+  class?: string;
+}
+
+const {
+  withoutTitle = false,
+  inverted = false,
+  class: classList = "",
+} = Astro.props;
+
+const i18n = await keystatic.singletons.trustedBrands.read({
+  resolveLinkedFiles: true,
+});
+invariant(i18n, "No trustedBrands content found");
+---
+
+<div class={clsx("text-center flex flex-col gap-8 my-16", classList)}>
+  {
+    !withoutTitle && (
+      <p class="container text-primary-600 md:text-primary-500 text-xl xl:text-2xl">
+        {i18n.title}
+      </p>
+    )
+  }
+  <div
+    class="flex select-none gap-8 lg:gap-12 w-screen overflow-hidden items-center"
+  >
+    {
+      Array.from({ length: 2 }).map(() => (
+        <div class="h-12 lg:h-14 xl:h-16 flex shrink-0 gap-8 lg:gap-16 animate-scroll items-center">
+          {i18n.brands.map(({ name, image }) => (
+            <KeystaticImage
+              class="h-full w-auto"
+              src={image || undefined}
+              alt={name}
+              widths={[200, 250, 300, 350]}
+              sizes="25vw"
+            />
+          ))}
+        </div>
+      ))
+    }
+  </div>
+</div>

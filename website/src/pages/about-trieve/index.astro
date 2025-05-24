@@ -1,0 +1,143 @@
+---
+import CallToAction from "@components/CallToAction.astro";
+import KeystaticImage from "@components/KeystaticImage.astro";
+import TrustedBrands from "@components/TrustedBrands.astro";
+import Layout from "@layouts/Layout.astro";
+import AnimatedBackground from "@layouts/shared/AnimatedBackground.astro";
+import { keystatic } from "@lib/keystatic/client";
+import { marked } from "marked";
+import invariant from "tiny-invariant";
+
+const i18n = await keystatic.singletons.aboutTrieve.read({
+  resolveLinkedFiles: true,
+});
+invariant(i18n, "No 'About Trieve' content found");
+---
+
+<Layout title="About Trieve">
+  <section class="py-8 md:py-12 text-center flex flex-col gap-8 md:gap-12">
+    <h1
+      class="container md:!max-w-[24ch] tracking-tight"
+      set:html={marked.parseInline(i18n.title)}
+    />
+    {
+      i18n.heroImage &&
+        (typeof i18n.heroImage !== "string" || i18n.heroImage !== "") && (
+          <div class="container flex justify-center">
+            <KeystaticImage
+              src={i18n.heroImage}
+              alt=""
+              class="rounded-xl aspect-[14/9] w-full max-w-4xl"
+              widths={[400, 800, 1200]}
+              sizes="(min-width: 1200px) 1200px, 100vw"
+            />
+          </div>
+        )
+    }
+    <div
+      class="container md:!max-w-[70ch] flex flex-col items-center gap-4 md:gap-6"
+    >
+      <h1 class="text-center mb-2">{i18n.mission.title}</h1>
+      <p class="text-center whitespace-pre-line">
+        {i18n.mission.content}
+      </p>
+      <h3 class="text-center mb-2">{i18n.mission.tagline}</h3>
+    </div>
+  </section>
+
+  {
+    i18n.values.title && (
+      <section class="bg-primary-900 text-white">
+        <div class="container flex flex-col items-center text-center gap-6 md:gap-8 py-12 md:py-16">
+          <h2>{i18n.values.title}</h2>
+          <div class="w-full flex flex-col md:flex-row md:justify-between gap-10">
+            {i18n.values.items.map(({ name, description, image }) => (
+              <div class="w-full flex flex-col gap-2 md:gap-3 items-center">
+                <KeystaticImage
+                  src={
+                    image && (typeof image !== "string" || image !== "")
+                      ? image
+                      : undefined
+                  }
+                  class="h-28 w-auto"
+                />
+                <div>
+                  <p class="!text-3xl font-title">{name}</p>
+                  <p class="text-justify !text-lg">{description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <section
+    class="container md:!max-w-[60ch] mx-auto flex flex-col gap-3 text-center py-6 md:py-12"
+  >
+    <h2>{i18n.ourStory.title}</h2>
+    <p class="whitespace-pre-line text-justify">{i18n.ourStory.content}</p>
+  </section>
+
+  <section class="container flex flex-col items-center gap-6 text-center">
+    <h2>{i18n.team.title}</h2>
+
+    <div class="w-full grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-12">
+      {
+        i18n.team.members.map(({ name, image, position }) => (
+          <div class="flex flex-col gap-2 items-center">
+            <KeystaticImage
+              src={
+                image && (typeof image !== "string" || image !== "")
+                  ? image
+                  : undefined
+              }
+              class="aspect-[3/4] w-full bg-primary-100 rounded-xl"
+              widths={[256, 544, 816]}
+              sizes="(min-width: 1420px) 272px, (min-width: 780px) calc(22.74vw - 46px), calc(50vw - 48px)"
+            />
+            <div>
+              <p class="text-2xl font-semibold">{name}</p>
+              <p>{position}</p>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="my-6 md:my-12">
+    <TrustedBrands />
+  </section>
+
+  <section
+    class="container flex flex-col items-center text-center rounded-xl md:px-8 my-12"
+  >
+    <h2 class="text-balance text-5xl md:text-7xl font-medium mb-4">
+      {i18n.callToAction.title}
+    </h2>
+  </section>
+  <div
+    id="main-cta"
+    class="sticky top-96 flex items-center justify-center -mt-16 md:mb-48 overflow-hidden transition-[bottom] -bottom-28 delay-100 ease-in mx-4 md:mx-auto"
+    class:list={[{ "bottom-8": false }]}
+  >
+    <CallToAction
+      withBackground
+      withBorder
+      actions={i18n.callToAction.overrideActions}
+    />
+  </div>
+  <AnimatedBackground />
+</Layout>
+
+<style type="postcss">
+  @reference "../../styles/global.css";
+  h2 {
+    @apply text-5xl;
+  }
+  p {
+    @apply text-xl leading-normal;
+  }
+</style>

@@ -1,0 +1,51 @@
+name: Upload Site to Bunny
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "website/src/**"
+      - "website/public/**"
+      - ".github/workflows/push-website.yml"
+
+jobs:
+  build_push_website:
+    name: Push Website
+    runs-on: blacksmith-16vcpu-ubuntu-2404
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: cd website && npm ci
+
+      - name: Build
+        run: cd website &&  npm run build
+
+      - name: Upload Dir to Bunny
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+          STORAGE_ZONE: trieve-site
+          UPLOAD_PATH: website/dist
+        run: "bash website/upload-to-bunny.sh"
+
+      - name: Purge Cache
+        env:
+          BUNNY_NET_API_KEY: ${{ secrets.BUNNY_NET_API_KEY }}
+          ZONE_ID: ${{ secrets.ZONE_ID }}
+        run: |
+          curl --request POST \
+           --url https://api.bunny.net/pullzone/${ZONE_ID}/purgeCache \
+           --header "AccessKey: ${BUNNY_NET_API_KEY}" \
+           --header 'content-type: application/json'

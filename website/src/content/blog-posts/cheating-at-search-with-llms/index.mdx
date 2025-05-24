@@ -1,0 +1,51 @@
+---
+title: Cheating at Search with LLMs
+summary: >-
+  Learn how we use massively parallel LLM inference to cheat at search. Don't leave results to chance.
+author: Nicholas Khami
+createdAt: 2025-05-21T12:55:00.000Z
+lastUpdatedAt: 2025-05-21T12:55:00.000Z
+isDraft: false
+categories:
+  - explainers
+coverImage: /src/assets/images/blog-posts/cheating-at-search-with-llms/coverImage.png
+---
+## **Introduction**
+
+We've started doing this search technique that we've been calling "cheating at Search with LLMs" and I thought it'd be cool to talk about it. If you just want to see it live, go to [demos.trieve.ai/demos/lifestraw](https://demos.trieve.ai/demos/lifestraw), open devtools, navigate to the network tab, and click through the "group\_oriented\_search" request and subsequent tool calls.
+
+<VimeoEmbed src="https://player.vimeo.com/video/1086333069?h=a79cc8567c&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" title="Build a Hotel Voice Assistant Using Trieve and Vapi" />
+
+## **The Problem: Search Can't Understand Intents Like Comparisons**
+
+For our Gen AI sales associate Shopify app, we wanted to make it possible to do cool things like generate a comparison table for any two products. Take this example from the brand LifeWater, which sells filterable straws. If a customer asks to "compare the Sip against the Life Straw" (two different products in their portfolio), we need to quickly look inside their catalog to determine which two products to fetch.
+
+The challenge? No traditional keyword, semantic, or hybrid search would ever be intelligent enough without an LLM to understand the exact two products being discussed.
+
+## **Our Solution: Let the LLM Do the Hard Work**
+
+So we cheat. Here's how it works:
+
+1. First, we do a standard search with the user's query and get the top 20 results. Each group represents a product, and each chunk within that group is a variant of that product (like different colors or pack sizes).
+2. Then we use a tool called "determine relevance" that asks the LLM to rank each product as high, medium, or low relevance to the query. We pass each product's JSON, HTML, description text, and title to the LLM.
+3. The LLM examines each product and makes the call. For example, it might mark the Life Straw Sip Cotton Candy variant as "high" relevance, and the regular Life Straw as "high" relevance, while everything else gets "medium" or "low."
+4. We then use these relevance rankings to display only the most relevant products to the user.
+
+## **Making It Fast**
+
+Despite making 20+ LLM calls in the background, the experience feels instantaneous to the user thanks to semantic caching on all the tool calls. If I run the same comparison again, it's blazing fast.
+
+## **Going Even Further**
+
+We extend this approach to other aspects of search:
+
+* **Price Filters**: We have a tool call that extracts min and max price parameters
+* **Category Determination**: For stores with predefined categories, we use LLMs to determine the right category
+* **Format Selection**: We use tool calls to decide whether to generate text or images
+* **Context Retention**: If a user follows up with "tell me more about the Life Straw's filtration," we don't need to search again - we just use the same products from before
+
+## **Why This Matters**
+
+It literally feels like cheating, which is incredible. In the early days, we spent a ton of time building super high-relevance search pipelines. But with modern LLMs, that's unnecessary. You can just fetch 20 things, give the LLM the query and each fetched item, and ask it which ones are relevant.
+
+Absolute madness. Intelligence as a commodity.

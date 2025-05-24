@@ -1,0 +1,79 @@
+metadata:
+  title: Trieve
+  description: >-
+    Trieve is the end-to-end AI platform for chat, search, recommendations and
+    generative AI powering discovery experiences that delight users and drive
+    conversions.
+hero:
+  tagline: GenAI for your Shopify store
+  taglineURL: https://apps.shopify.com/trieve
+  title: |
+    Conversational AI that *Converts*
+  leadText: >-
+    Instantly add AI search, chat, and recommendations with our widget, or build
+    custom experiences with our API.
+  externalImageUrl: https://trieve.b-cdn.net/laptop-hero-gif-final-final-last.gif
+  overrideActions:
+    - label: Start Free
+      href: https://dashboard.trieve.ai
+      newTab: true
+      variant: primary
+    - label: Request a Demo
+      href: https://cal.com/team/trieve/trieve-demo
+      newTab: true
+      variant: secondary
+killerFeatures:
+  title: |
+    The Everything Platform for AI
+  features:
+    - title: Conversational AI
+      description: >-
+        Code? Camping gear? Deliver AI-powered answers that delight your users
+        and drive conversions.
+      image: /src/assets/images/home/killerFeatures/features/0/image.png
+    - title: State-of-the-Art Search
+      description: >-
+        Boost satisfaction and sales with discovery that continuously optimizes
+        and understands intent to always deliver the right results front and
+        center.
+      image: /src/assets/images/home/killerFeatures/features/1/image.png
+    - title: Dynamic Recommendations
+      description: >-
+        Guide users to what they need next-seamlessly-with an AI personalization
+        engine that understands your business.
+      image: /src/assets/images/home/killerFeatures/features/2/image.png
+    - title: Comprehensive Analytics
+      description: >-
+        Insightful analytics for even the most demanding of product, marketing,
+        and sales teams.
+      image: /src/assets/images/home/killerFeatures/features/3/image.png
+    - title: Athletic API
+      description: >-
+        A robust 72-endpoint API productionizing the latest in AI so teams can
+        focus on shipping tomorrow’s breakthroughs-today.
+      image: /src/assets/images/home/killerFeatures/features/4/image.png
+secondFeatures:
+  title: |
+    Trieve Coordinates so You Can Scale
+  features:
+    - title: No-Code Dashboard
+      description: >-
+        Great discovery is a team effort. Tune ranking, relevance, voice, and
+        more to resolve tickets in seconds through our enterprise-grade no-code
+        dashboard.
+      image: /src/assets/images/home/secondFeatures/features/0/image.png
+    - title: Use the Best Model for the Job
+      description: >-
+        Built-in support for open-source embeddings and secure LLMs, plus BYO
+        model support with your keys.
+      image: /src/assets/images/home/secondFeatures/features/1/image.png
+    - title: Self-Hostable
+      description: >-
+        Sensitive data? Need maximum performance? Host Trieve yourself with
+        terraform templates and no external dependencies.
+      image: /src/assets/images/home/secondFeatures/features/2/image.png
+callToAction:
+  title: |
+    Find out why valuable\
+    brands *choose* Trieve
+  overrideActions: []

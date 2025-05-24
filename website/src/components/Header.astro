@@ -1,0 +1,758 @@
+---
+import ChevronDown from "@assets/chevron-down.svg";
+import TrieveLogo from "@assets/global/trieve-logo.png";
+import Hamburger from "@assets/hamburger.svg";
+import { keystatic } from "@lib/keystatic/client";
+import { getCollection } from "astro:content";
+import KeystaticImage from "./KeystaticImage.astro";
+import { Icon } from "astro-icon/components";
+
+const integrations = await getCollection("integrations");
+const products = await keystatic.collections.products.all();
+const resources = await keystatic.collections.resources.all();
+
+const integrationsMegamenu =
+  await keystatic.singletons.integrationsMegamenu.read();
+const productsMegamenu = await keystatic.singletons.productsMegamenu.read();
+const resourcesMegamenu = await keystatic.singletons.resourcesMegamenu.read();
+
+const blog = await keystatic.singletons.blog.read({
+  resolveLinkedFiles: true,
+});
+
+const lastFeaturedPost = await getCollection("blogPosts").then((posts) =>
+  posts
+    .filter(
+      ({ id, data: { isDraft } }) =>
+        !isDraft &&
+        blog?.featuredPosts.posts.includes(id) &&
+        Astro.url.pathname.replace(/\/$/, "") !== `/blog/${id}`
+    )
+    .toSorted(
+      (a, b) =>
+        (b.data.createdAt?.getTime() ?? 0) - (a.data.createdAt?.getTime() ?? 0)
+    )
+    .at(0)
+);
+
+// Helper function to get product by slug
+const getProductBySlug = (slug: string) => {
+  return products.find((product) => product.slug === slug);
+};
+
+// Helper function to get integration by slug
+const getIntegrationBySlug = (slug: string) => {
+  return integrations.find((integration) => integration.id === slug);
+};
+---
+
+<header class="w-full pt-4 pb-8 text-white relative">
+  <nav
+    class="max-w-[calc(100%-2rem)] 2xl:max-w-[88rem] mx-auto md:relative bg-primary-900 rounded-t-lg flex justify-between items-center p-4 md:py-4"
+    class:list={[{ "rounded-b-lg": !lastFeaturedPost }]}
+  >
+    <a href="/" class="text-xl font-semibold no-underline">
+      <KeystaticImage
+        src={TrieveLogo}
+        class="h-9 md:h-16 w-auto relative -mt-3 -mb-2 mr-1 inline"
+        widths={[48, 84]}
+        sizes="(min-width: 780px) 84px, 48px"
+        loading="eager"
+      />
+      Trieve
+    </a>
+
+    <div class="hidden md:flex flex-row md:gap-4 lg:gap-12">
+      <span class="group">
+        <span
+          class="cursor-pointer flex items-center gap-1 [perspective:800px] group-hover:underline"
+        >
+          Products
+          <ChevronDown
+            class="w-4 h-4 opacity-0 rotate-x-180 transition-all duration-200 group-hover:opacity-100 group-hover:rotate-x-0 [transform-style:preserve-3d] origin-center"
+            role="presentation"
+          />
+        </span>
+        <div
+          class:list={[
+            "absolute hidden",
+            "w-full pt-8 left-0 text-primary-900 rounded-b-xl z-50 shadow overflow-hidden",
+            "group-hover:block",
+          ]}
+        >
+          <div class="grid grid-cols-12 gap-4 pt-6 px-2 pb-4 bg-primary-100">
+            <div class="col-span-12">
+              <div class="grid grid-cols-4 gap-1">
+                {
+                  /* Render product cards from the productsMegamenu configuration */
+                }
+                {
+                  productsMegamenu?.productCards?.map((card) => {
+                    const product = getProductBySlug(card.productSlug);
+                    if (!product) return null;
+
+                    return (
+                      <a
+                        href={`/products/${product.slug}`}
+                        class={`${productsMegamenu?.cardStyle?.backgroundColor || "bg-primary-100"} ${productsMegamenu?.cardStyle?.padding || "p-3"} ${productsMegamenu?.cardStyle?.borderRadius || "rounded-lg"} ${productsMegamenu?.cardStyle?.hoverEffect || "hover:bg-primary-300"} transition-colors`}
+                      >
+                        <div class="flex items-start gap-3">
+                          {card.icon ? (
+                            <KeystaticImage
+                              src={card.icon || undefined}
+                              class="h-12 w-12 object-contain rounded-md flex-shrink-0"
+                              alt={card.title || product.entry.name}
+                              widths={[48]}
+                              sizes="48px"
+                            />
+                          ) : (
+                            <div class="bg-primary-300 w-12 h-12 rounded-md flex-shrink-0" />
+                          )}
+                          <div>
+                            <p
+                              class={`font-medium text-lg ${productsMegamenu?.cardStyle?.textColor || "text-primary-900"}`}
+                            >
+                              {card.title || product.entry.name}
+                            </p>
+                            <p
+                              class={`text-sm ${productsMegamenu?.cardStyle?.textColor === "text-white" ? "text-white/90" : "text-gray-700"}`}
+                            >
+                              {card.description}
+                            </p>
+                          </div>
+                        </div>
+                      </a>
+                    );
+                  })
+                }
+
+                {/* Render the highlight section as a regular-sized card */}
+                <a
+                  href={productsMegamenu?.highlight.callToAction.url}
+                  class={`${productsMegamenu?.highlightCardStyle?.backgroundColor || "bg-primary-600"} ${productsMegamenu?.highlightCardStyle?.padding || "p-3"} ${productsMegamenu?.highlightCardStyle?.borderRadius || "rounded-lg"} ${productsMegamenu?.highlightCardStyle?.textColor || "text-white"} ${productsMegamenu?.highlightCardStyle?.hoverEffect || "hover:bg-primary-500"} transition-colors`}
+                >
+                  <div class="flex items-start gap-3">
+                    {
+                      productsMegamenu?.highlight.icon ? (
+                        <KeystaticImage
+                          src={productsMegamenu?.highlight.icon || undefined}
+                          class="h-12 w-12 object-contain rounded-md flex-shrink-0"
+                          alt={productsMegamenu?.highlight.title}
+                          widths={[48]}
+                          sizes="48px"
+                        />
+                      ) : (
+                        <div class="bg-primary-300 w-12 h-12 rounded-md flex-shrink-0" />
+                      )
+                    }
+                    <div>
+                      <p class="font-medium text-lg">
+                        {productsMegamenu?.highlight.title}
+                      </p>
+                      <p
+                        class={`text-sm ${productsMegamenu?.highlightCardStyle?.textColor === "text-white" ? "text-white/90" : "text-gray-700"}`}
+                      >
+                        {productsMegamenu?.highlight.description}
+                      </p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </span>
+
+      <span class="group">
+        <span
+          class="cursor-pointer flex items-center gap-1 [perspective:800px] group-hover:underline"
+        >
+          Integrations
+          <ChevronDown
+            class="w-4 h-4 opacity-0 rotate-x-180 transition-all duration-200 group-hover:opacity-100 group-hover:rotate-x-0 [transform-style:preserve-3d] origin-center"
+            role="presentation"
+          />
+        </span>
+        <div
+          class:list={[
+            "absolute hidden",
+            "w-full pt-8 left-0 text-primary-900 rounded-b-xl z-50 shadow",
+            "group-hover:block",
+          ]}
+        >
+          <div class="grid grid-cols-12 gap-4 pt-6 px-2 pb-4 bg-primary-100">
+            <div class="col-span-12">
+              <div class="grid grid-cols-4 gap-1">
+                {
+                  /* Render integration cards from the integrationsMegamenu configuration */
+                }
+                {
+                  integrationsMegamenu?.integrationCards?.map((card) => {
+                    const integration = getIntegrationBySlug(
+                      card.integrationSlug
+                    );
+                    if (!integration) return null;
+
+                    return (
+                      <a
+                        href={`/integrations/${integration.id}`}
+                        class={`${integrationsMegamenu?.cardStyle?.backgroundColor || "bg-primary-100"} ${integrationsMegamenu?.cardStyle?.padding || "p-3"} ${integrationsMegamenu?.cardStyle?.borderRadius || "rounded-lg"} ${integrationsMegamenu?.cardStyle?.hoverEffect || "hover:bg-primary-300"} transition-colors`}
+                      >
+                        <div class="flex items-start gap-3">
+                          {card.icon ? (
+                            <KeystaticImage
+                              src={card.icon || undefined}
+                              class="h-12 w-12 object-contain rounded-md flex-shrink-0"
+                              alt={card.title || integration.data.name}
+                              widths={[48]}
+                              sizes="48px"
+                            />
+                          ) : integration.data.icon ? (
+                            <KeystaticImage
+                              src={integration.data.icon || undefined}
+                              class="h-12 w-12 object-contain rounded-md flex-shrink-0"
+                              alt={card.title || integration.data.name}
+                              widths={[48]}
+                              sizes="48px"
+                            />
+                          ) : (
+                            <div class="bg-primary-300 w-12 h-12 rounded-md flex-shrink-0" />
+                          )}
+                          <div>
+                            <p
+                              class={`font-medium text-lg ${integrationsMegamenu?.cardStyle?.textColor || "text-primary-900"}`}
+                            >
+                              {card.title || integration.data.name}
+                            </p>
+                            <p
+                              class={`text-sm ${integrationsMegamenu?.cardStyle?.textColor === "text-white" ? "text-white/90" : "text-gray-700"}`}
+                            >
+                              {card.description}
+                            </p>
+                          </div>
+                        </div>
+                      </a>
+                    );
+                  })
+                }
+
+                {/* Render the highlight section as a regular-sized card */}
+                <a
+                  href={integrationsMegamenu?.highlight.callToAction.url}
+                  class={`${integrationsMegamenu?.highlightCardStyle?.backgroundColor || "bg-primary-600"} ${integrationsMegamenu?.highlightCardStyle?.padding || "p-3"} ${integrationsMegamenu?.highlightCardStyle?.borderRadius || "rounded-lg"} ${integrationsMegamenu?.highlightCardStyle?.textColor || "text-white"} ${integrationsMegamenu?.highlightCardStyle?.hoverEffect || "hover:bg-primary-500"} transition-colors`}
+                >
+                  <div class="flex items-start gap-3">
+                    {
+                      integrationsMegamenu?.highlight.icon ? (
+                        <KeystaticImage
+                          src={
+                            integrationsMegamenu?.highlight.icon || undefined
+                          }
+                          class="h-12 w-12 object-contain rounded-md flex-shrink-0"
+                          alt={integrationsMegamenu?.highlight.title}
+                          widths={[48]}
+                          sizes="48px"
+                        />
+                      ) : (
+                        <div class="bg-primary-300 w-12 h-12 rounded-md flex-shrink-0" />
+                      )
+                    }
+                    <div>
+                      <p class="font-medium text-lg">
+                        {integrationsMegamenu?.highlight.title}
+                      </p>
+                      <p
+                        class={`text-sm ${integrationsMegamenu?.highlightCardStyle?.textColor === "text-white" ? "text-white/90" : "text-gray-700"}`}
+                      >
+                        {integrationsMegamenu?.highlight.description}
+                      </p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </span>
+      <span class="group">
+        <a
+          class="cursor-pointer flex items-center gap-1 [perspective:800px] group-hover:underline"
+          href="/pricing"
+          >Pricing
+          <ChevronDown
+            class="w-4 h-4 opacity-0 rotate-x-180 transition-all duration-200 origin-center"
+            role="presentation"
+          />
+        </a>
+      </span>
+      <span class="group">
+        <span
+          class="cursor-pointer flex items-center gap-1 [perspective:800px] group-hover:underline"
+        >
+          Resources
+          <ChevronDown
+            class="w-4 h-4 opacity-0 rotate-x-180 transition-all duration-200 group-hover:opacity-100 group-hover:rotate-x-0 [transform-style:preserve-3d] origin-center"
+            role="presentation"
+          />
+        </span>
+        <div
+          class:list={[
+            "absolute hidden",
+            "w-full pt-8 left-0 text-primary-900 rounded-b-xl z-50 shadow",
+            "group-hover:block",
+          ]}
+        >
+          <div class="grid grid-cols-12 gap-4 pt-6 px-2 pb-4 bg-primary-100">
+            <div class="col-span-12">
+              <div class="grid grid-cols-4 gap-1">
+                {
+                  /* Render resource cards from the resourcesMegamenu configuration */
+                }
+                {
+                  resourcesMegamenu?.resourceCards?.map((card) => {
+                    // Determine the URL to use
+                    let resourceUrl = card.url; // Use direct URL if provided
+                    let resourceTitle = card.title; // Use provided title
+                    let resourceDescription = card.description;
+
+                    // If a resource is selected, get its details
+                    if (card.resourceSlug) {
+                      const resource = resources.find(
+                        (r) => r.slug === card.resourceSlug
+                      );
+                      if (resource) {
+                        resourceUrl = resourceUrl || resource.entry.url; // Use resource URL if no direct URL
+                        resourceTitle = resourceTitle || resource.entry.title; // Use resource title if no title provided
+                        resourceDescription =
+                          card.description || resource.entry.description;
+                      }
+                    }
+
+                    // Skip if no URL is available
+                    if (!resourceUrl) return null;
+
+                    return (
+                      <a
+                        href={resourceUrl}
+                        target={card.openInNewTab ? "_blank" : "_self"}
+                        class={`${resourcesMegamenu?.cardStyle?.backgroundColor || "bg-primary-100"} ${resourcesMegamenu?.cardStyle?.padding || "p-3"} ${resourcesMegamenu?.cardStyle?.borderRadius || "rounded-lg"} ${resourcesMegamenu?.cardStyle?.hoverEffect || "hover:bg-primary-300"} transition-colors`}
+                      >
+                        <div class="flex items-start gap-3">
+                          {card.icon ? (
+                            <KeystaticImage
+                              src={card.icon || undefined}
+                              class="h-12 w-12 object-contain rounded-md flex-shrink-0"
+                              alt={resourceTitle}
+                              widths={[48]}
+                              sizes="48px"
+                            />
+                          ) : (
+                            <div class="bg-primary-300 w-12 h-12 rounded-md flex-shrink-0" />
+                          )}
+                          <div>
+                            <p
+                              class={`font-medium text-lg ${resourcesMegamenu?.cardStyle?.textColor || "text-primary-900"}`}
+                            >
+                              {resourceTitle}
+                            </p>
+                            <p
+                              class={`text-sm ${resourcesMegamenu?.cardStyle?.textColor === "text-white" ? "text-white/90" : "text-gray-700"}`}
+                            >
+                              {resourceDescription}
+                            </p>
+                          </div>
+                        </div>
+                      </a>
+                    );
+                  })
+                }
+
+                {
+                  /* We're not rendering the highlight section for the resources megamenu */
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </span>
+    </div>
+
+    <div class="hidden md:flex flex-row md:gap-4 lg:gap-8 items-center">
+      <a href="https://dashboard.trieve.ai">Login</a>
+      <a href="https://cal.com/team/trieve/trieve-demo" class="button">
+        Request demo
+      </a>
+    </div>
+
+    <div class="flex flex-row gap-4 md:hidden">
+      <a href="#" class="button"> Request demo </a>
+      <button
+        type="button"
+        id="mobile-menu-trigger"
+        aria-controls="mobile-menu"
+        aria-expanded={false}
+        aria-label="Main menu"
+      >
+        <Hamburger
+          fill="white"
+          width="16"
+          height="16"
+          aria-labelledby="mobile-menu-trigger"
+        />
+      </button>
+    </div>
+  </nav>
+  <!-- add a banner -->
+  {
+    lastFeaturedPost && (
+      <div class="max-w-[calc(100%-2rem)] 2xl:max-w-[88rem] mx-auto">
+        <a
+          href={`/blog/${lastFeaturedPost.id}`}
+          class="flex items-center gap-8 xl:justify-center md:justify-between bg-primary-500 text-white font-medium rounded-b-lg p-4 text-center group hover:no-underline text-sm md:text-base"
+        >
+          <span class="text-left">{lastFeaturedPost.data.summary}</span>
+          <span class="group-hover:underline flex gap-1 items-center text-left min-w-32 md:min-w-36">
+            See what's new{" "}
+            <Icon name="bi:arrow-up-right" class="h-3 w-3 font-bold" />
+          </span>
+        </a>
+      </div>
+    )
+  }
+
+  <!-- Mobile menu -->
+  <div
+    id="mobile-menu"
+    style="display: none;"
+    class:list={[
+      "md:hidden",
+      "z-50 absolute w-full left-0 right-0 max-w-[calc(100%-2rem)] mx-auto",
+      "bg-primary-300 text-primary-900 rounded-b-lg",
+      "text-lg max-h-[80vh] overflow-y-auto", // Set a max height and enable scrolling for long menus
+    ]}
+  >
+    <div class="flex flex-col gap-6 p-4">
+      <!-- Products Section -->
+      <div class="overflow-hidden">
+        <h3 class="font-semibold text-xl mb-4 pb-2 border-b border-primary-900">
+          Products
+        </h3>
+        <div class="flex flex-col gap-4">
+          {/* Render product cards from the productsMegamenu configuration */}
+          {
+            productsMegamenu?.productCards?.map((card) => {
+              const product = getProductBySlug(card.productSlug);
+              if (!product) return null;
+
+              return (
+                <a
+                  href={`/products/${product.slug}`}
+                  class={`flex flex-col gap-2 ${productsMegamenu?.cardStyle?.backgroundColor || "bg-primary-100"} px-4 py-3 ${productsMegamenu?.cardStyle?.borderRadius || "rounded-lg"} ${productsMegamenu?.cardStyle?.hoverEffect || "hover:bg-primary-300"} transition-colors`}
+                >
+                  <div class="flex items-center gap-2">
+                    {card.icon ? (
+                      <KeystaticImage
+                        src={card.icon || undefined}
+                        class="h-6 w-6 object-contain rounded-md flex-shrink-0"
+                        alt={card.title || product.entry.name}
+                        widths={[32]}
+                        sizes="32px"
+                      />
+                    ) : (
+                      <div class="bg-primary-300 w-6 h-6 rounded-md flex-shrink-0" />
+                    )}
+                    <p
+                      class={`font-medium ${productsMegamenu?.cardStyle?.textColor || "text-primary-900"}`}
+                    >
+                      {card.title || product.entry.name}
+                    </p>
+                  </div>
+                  <p
+                    class={`text-sm ${productsMegamenu?.cardStyle?.textColor === "text-white" ? "text-white/90" : "text-gray-700"}`}
+                  >
+                    {card.description}
+                  </p>
+                </a>
+              );
+            })
+          }
+
+          <a
+            href={productsMegamenu?.highlight.callToAction.url}
+            class={`flex flex-col gap-2 ${productsMegamenu?.highlightCardStyle?.backgroundColor || "bg-primary-600"} px-4 py-3 ${productsMegamenu?.highlightCardStyle?.borderRadius || "rounded-lg"} ${productsMegamenu?.highlightCardStyle?.textColor || "text-white"} ${productsMegamenu?.highlightCardStyle?.hoverEffect || "hover:bg-primary-500"} transition-colors`}
+          >
+            <div class="flex items-center gap-2">
+              {
+                productsMegamenu?.highlight.icon ? (
+                  <KeystaticImage
+                    src={productsMegamenu?.highlight.icon || undefined}
+                    class="h-6 w-6 object-contain rounded-md flex-shrink-0"
+                    alt={productsMegamenu?.highlight.title}
+                    widths={[32]}
+                    sizes="32px"
+                  />
+                ) : (
+                  <div class="bg-primary-300 w-6 h-6 rounded-md flex-shrink-0" />
+                )
+              }
+              <div>
+                <p class="font-medium">{productsMegamenu?.highlight.title}</p>
+                <p class="text-sm">{productsMegamenu?.highlight.description}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Integrations Section -->
+      <div class="overflow-hidden">
+        <h3 class="font-semibold text-xl mb-4 pb-2 border-b border-primary-900">
+          Integrations
+        </h3>
+        <div class="flex flex-col gap-4">
+          {
+            /* Render integration cards from the integrationsMegamenu configuration */
+          }
+          {
+            integrationsMegamenu?.integrationCards?.map((card) => {
+              const integration = getIntegrationBySlug(card.integrationSlug);
+              if (!integration) return null;
+
+              return (
+                <a
+                  href={`/integrations/${integration.id}`}
+                  class={`flex flex-col gap-2 ${integrationsMegamenu?.cardStyle?.backgroundColor || "bg-primary-100"} px-4 py-3 ${integrationsMegamenu?.cardStyle?.borderRadius || "rounded-lg"} ${integrationsMegamenu?.cardStyle?.hoverEffect || "hover:bg-primary-300"} transition-colors`}
+                >
+                  <div class="flex items-center gap-2">
+                    {card.icon ? (
+                      <KeystaticImage
+                        src={card.icon || undefined}
+                        class="h-6 w-6 object-contain rounded-md flex-shrink-0"
+                        alt={card.title || integration.data.name}
+                        widths={[32]}
+                        sizes="32px"
+                      />
+                    ) : integration.data.icon ? (
+                      <KeystaticImage
+                        src={integration.data.icon || undefined}
+                        class="h-6 w-6 object-contain rounded-md flex-shrink-0"
+                        alt={card.title || integration.data.name}
+                        widths={[32]}
+                        sizes="32px"
+                      />
+                    ) : (
+                      <div class="bg-primary-300 w-6 h-6 rounded-md flex-shrink-0" />
+                    )}
+                    <p
+                      class={`font-medium ${integrationsMegamenu?.cardStyle?.textColor || "text-primary-900"}`}
+                    >
+                      {card.title || integration.data.name}
+                    </p>
+                  </div>
+                  <p
+                    class={`text-sm ${integrationsMegamenu?.cardStyle?.textColor === "text-white" ? "text-white/90" : "text-gray-700"}`}
+                  >
+                    {card.description}
+                  </p>
+                </a>
+              );
+            })
+          }
+
+          <a
+            href={integrationsMegamenu?.highlight.callToAction.url}
+            class={`flex flex-col gap-2 ${integrationsMegamenu?.highlightCardStyle?.backgroundColor || "bg-primary-600"} px-4 py-3 ${integrationsMegamenu?.highlightCardStyle?.borderRadius || "rounded-lg"} ${integrationsMegamenu?.highlightCardStyle?.textColor || "text-white"} ${integrationsMegamenu?.highlightCardStyle?.hoverEffect || "hover:bg-primary-500"} transition-colors`}
+          >
+            <div class="flex items-center gap-2">
+              {
+                integrationsMegamenu?.highlight.icon ? (
+                  <KeystaticImage
+                    src={integrationsMegamenu?.highlight.icon || undefined}
+                    class="h-6 w-6 object-contain rounded-md flex-shrink-0"
+                    alt={integrationsMegamenu?.highlight.title}
+                    widths={[32]}
+                    sizes="32px"
+                  />
+                ) : (
+                  <div class="bg-primary-300 w-6 h-6 rounded-md flex-shrink-0" />
+                )
+              }
+              <div>
+                <p class="font-medium">
+                  {integrationsMegamenu?.highlight.title}
+                </p>
+                <p class="text-sm">
+                  {integrationsMegamenu?.highlight.description}
+                </p>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Pricing Section -->
+      <div class="overflow-hidden">
+        <h3 class="font-semibold text-xl mb-4 pb-2 border-b border-primary-900">
+          Pricing
+        </h3>
+        <div class="flex flex-col gap-4">
+          <a
+            href="/pricing"
+            class="flex flex-col gap-2 bg-primary-100 px-4 py-3 rounded-lg hover:bg-primary-300 transition-colors"
+          >
+            <div class="flex items-center gap-2">
+              <p class="font-medium text-primary-900">View Pricing Plans</p>
+            </div>
+            <p class="text-sm text-gray-700">
+              Explore our flexible pricing options for businesses of all sizes
+            </p>
+          </a>
+        </div>
+      </div>
+
+      <!-- Resources Section -->
+      <div class="overflow-hidden">
+        <h3 class="font-semibold text-xl mb-4 pb-2 border-b border-primary-900">
+          Resources
+        </h3>
+        <div class="flex flex-col gap-4">
+          {/* Render resource cards from the resourcesMegamenu configuration */}
+          {
+            resourcesMegamenu?.resourceCards?.map((card) => {
+              // Determine the URL to use
+              let resourceUrl = card.url; // Use direct URL if provided
+              let resourceTitle = card.title; // Use provided title
+              let resourceDescription = card.description;
+
+              // If a resource is selected, get its details
+              if (card.resourceSlug) {
+                const resource = resources.find(
+                  (r) => r.slug === card.resourceSlug
+                );
+                if (resource) {
+                  resourceUrl = resourceUrl || resource.entry.url; // Use resource URL if no direct URL
+                  resourceTitle = resourceTitle || resource.entry.title; // Use resource title if no title provided
+                  resourceDescription =
+                    card.description || resource.entry.description;
+                }
+              }
+
+              // Skip if no URL is available
+              if (!resourceUrl) return null;
+
+              return (
+                <a
+                  href={resourceUrl}
+                  class={`flex flex-col gap-2 ${resourcesMegamenu?.cardStyle?.backgroundColor || "bg-primary-100"} px-4 py-3 ${resourcesMegamenu?.cardStyle?.borderRadius || "rounded-lg"} ${resourcesMegamenu?.cardStyle?.hoverEffect || "hover:bg-primary-300"} transition-colors`}
+                >
+                  <div class="flex items-center gap-2">
+                    {card.icon ? (
+                      <KeystaticImage
+                        src={card.icon || undefined}
+                        class="h-6 w-6 object-contain rounded-md flex-shrink-0"
+                        alt={resourceTitle}
+                        widths={[32]}
+                        sizes="32px"
+                      />
+                    ) : (
+                      <div class="bg-primary-300 w-6 h-6 rounded-md flex-shrink-0" />
+                    )}
+                    <p
+                      class={`font-medium ${resourcesMegamenu?.cardStyle?.textColor || "text-primary-900"}`}
+                    >
+                      {resourceTitle}
+                    </p>
+                  </div>
+                  <p
+                    class={`text-sm ${resourcesMegamenu?.cardStyle?.textColor === "text-white" ? "text-white/90" : "text-gray-700"}`}
+                  >
+                    {resourceDescription}
+                  </p>
+                </a>
+              );
+            })
+          }
+        </div>
+      </div>
+
+      <!-- Login and Demo Buttons -->
+      <div class="overflow-hidden pt-2 mt-2 border-t border-primary-900">
+        <div class="flex flex-col gap-4">
+          <a
+            href="https://dashboard.trieve.ai"
+            class="w-full text-center py-3 px-4 bg-primary-100 rounded-lg hover:bg-primary-300 transition-colors"
+          >
+            Login
+          </a>
+          <a
+            href="https://cal.com/team/trieve/trieve-demo"
+            class="w-full text-center py-3 px-4 bg-primary-700 text-white rounded-lg hover:bg-primary-900 transition-colors"
+          >
+            Request Demo
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script is:inline>
+  // Use is:inline to ensure the script runs immediately without being processed by Astro
+  document.addEventListener("DOMContentLoaded", () => {
+    const mobileMenuTrigger = document.getElementById("mobile-menu-trigger");
+    const mobileMenu = document.getElementById("mobile-menu");
+
+    if (mobileMenuTrigger && mobileMenu) {
+      mobileMenuTrigger.addEventListener("click", (event) => {
+        // Prevent default behavior
+        event.preventDefault();
+
+        // Directly toggle the display style instead of using classes
+        const isVisible = mobileMenu.style.display !== "none";
+        mobileMenu.style.display = isVisible ? "none" : "block";
+
+        // Update aria-expanded attribute for accessibility
+        const expanded =
+          mobileMenuTrigger.getAttribute("aria-expanded") === "true";
+        mobileMenuTrigger.setAttribute("aria-expanded", (!expanded).toString());
+      });
+    } else {
+      console.error("Mobile menu elements not found:", {
+        mobileMenuTrigger: !!mobileMenuTrigger,
+        mobileMenu: !!mobileMenu,
+      });
+    }
+  });
+
+  // Add a fallback in case DOMContentLoaded already fired
+  if (
+    document.readyState === "complete" ||
+    document.readyState === "interactive"
+  ) {
+    const mobileMenuTrigger = document.getElementById("mobile-menu-trigger");
+    const mobileMenu = document.getElementById("mobile-menu");
+
+    if (mobileMenuTrigger && mobileMenu) {
+      if (!mobileMenuTrigger.hasAttribute("data-event-attached")) {
+        mobileMenuTrigger.setAttribute("data-event-attached", "true");
+
+        mobileMenuTrigger.addEventListener("click", (event) => {
+          // Prevent default behavior
+          event.preventDefault();
+
+          // Directly toggle the display style instead of using classes
+          const isVisible = mobileMenu.style.display !== "none";
+          mobileMenu.style.display = isVisible ? "none" : "block";
+
+          // Update aria-expanded attribute for accessibility
+          const expanded =
+            mobileMenuTrigger.getAttribute("aria-expanded") === "true";
+          mobileMenuTrigger.setAttribute(
+            "aria-expanded",
+            (!expanded).toString()
+          );
+        });
+      }
+    }
+  }
+</script>

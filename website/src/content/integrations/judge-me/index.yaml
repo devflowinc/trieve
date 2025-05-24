@@ -1,0 +1,80 @@
+name: Judge.Me
+icon: /src/assets/images/integrations/judge-me/icon.png
+hero:
+  title: |
+    Put *Judge.Me* Reviews to Work
+  description: >-
+    Integrate Judge.Me reviews with Trieve to infuse your AI responses with
+    authentic social proof, allowing customers to ask questions and get answers
+    informed by real customer experiences.
+  image: /src/assets/images/comparisons/judge-me/hero/image.png
+  overrideActions:
+    - label: Install on Shopify
+      href: https://apps.shopify.com/trieve
+      newTab: true
+      variant: primary
+    - label: Book Demo
+      href: https://cal.com/team/trieve/trieve-demo
+      newTab: false
+      variant: secondary
+killerFeatures:
+  features:
+    - title: Reviews as AI Context
+      description: >-
+        Pull your hard-earned Judge.Me reviews into Trieve as available context
+        for AI retrieval to answer questions about products based on customer
+        reviews. It's like Amazon Rufus for your Shopify store.
+      image: /src/assets/images/home/judge-me/killerFeatures/features/0/image.png
+    - title: Authentic Social Proof
+      description: >-
+        Leverage the social proof you've worked hard to collect by incorporating
+        genuine customer experiences and feedback into AI-powered customer
+        interactions.
+      image: /src/assets/images/home/judge-me/killerFeatures/features/1/image.png
+    - title: Seamless Integration
+      description: >-
+        Connect your Judge.Me reviews to Trieve with just a few clicks. No
+        coding required - just authenticate and start enhancing your AI
+        responses immediately.
+      image: /src/assets/images/home/judge-me/killerFeatures/features/2/image.png
+secondFeatures:
+  title: |
+    *Powerful* Features for *Judge.Me* Integration
+  features:
+    - title: AI-Powered Product Recommendations
+      description: >-
+        Provide personalized product recommendations based on what real
+        customers loved about similar products in their reviews.
+    - title: Review-Informed Answers
+      description: >-
+        Answer customer questions with insights drawn directly from relevant
+        customer reviews, increasing trust and conversion rates.
+    - title: Multi-language Support
+      description: >-
+        Process reviews in multiple languages, expanding your ability to
+        leverage global customer feedback in AI interactions.
+    - title: Contextual Understanding
+      description: >-
+        Trieve understands the context of reviews, allowing it to pull relevant
+        information when customers ask specific questions about products.
+    - title: Feature Highlights
+      description: >-
+        When customers ask about specific features, Trieve can highlight
+        relevant feedback from other customers who mentioned those features.
+    - title: Social Proof Amplification
+      description: >-
+        Amplify the impact of your positive reviews by making them accessible
+        through AI interactions across your customer journey.
+    - title: Sentiment-Aware Responses
+      description: >-
+        Trieve understands the sentiment behind reviews, ensuring AI responses
+        appropriately reflect customer experiences.
+    - title: Review Summarization
+      description: >-
+        Generate concise summaries of customer sentiment on specific aspects of
+        products when customers ask broad questions.
+callToAction:
+  title: |
+    Infuse your AI with authentic *social proof*\
+    from your *Judge.Me* reviews
+  overrideActions: []

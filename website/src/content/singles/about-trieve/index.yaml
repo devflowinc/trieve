@@ -1,0 +1,64 @@
+title: |
+  The *Trieve* Mission
+heroImage: /src/assets/images/about-trieve/heroImage.jpeg
+mission:
+  title: Discovery is Human.
+  tagline: >-
+    We envision a world where discovery connects individuals and drives
+    innovation.
+  content: >-
+    Trieve (as in reTrieve) empowers companies build AI-powered discovery
+    experiences that produces winning outcomes.
+
+
+    Search has always been second best to a great salesperson or product
+    specialist. Now, with AI, every site can have one—smart, fast, and always
+    on.
+values:
+  items: []
+ourStory:
+  title: Our Story
+  content: >-
+    Trieve was founded at the FUTO campus in Austin, TX in 2023. FUTO generously
+    provided both open source grant funding—allowing us to quit our jobs—and
+    office space to hack at with no limits. With discovery as our mission, our
+    first development was a litigation discovery tool for managing large
+    e-discovery document dumps. In fact, some of our original Big Law clients
+    remain with us to this day.
+
+
+    We soon identified broader problem with modern AI retrieval and applied to Y
+    Combinator to pivot toward providing a developer platform. Pete Koomen
+    believed in our vision and invited us to join the program. We shifted our
+    focus to building the best discovery API possible. In September 2024, we
+    raised $3.5M to improve search capabilities across the internet. Today, we
+    serve over 5,000 accounts, including fast-growing startups, unicorns, and
+    publicly traded companies like Mintlify, Vapi, Guardant, Flaviar, and more.
+
+
+    While our approach is AI-native, we are fundamentally a team of humans. We
+    remain committed to transparency and building high-quality, long-term
+    relationships with both our customers and end-users.
+team:
+  title: Meet the team
+  members:
+    - name: Nicholas Khami
+      position: CEO & Co-Founder
+      image: /src/assets/images/about-trieve/team/team/members/0/image.jpg
+    - name: Federico Chavez
+      position: COO
+      image: /src/assets/images/about-trieve/team/team/members/1/image.jpg
+    - name: Denzell Ford
+      position: CTO & Co-Founder
+      image: /src/assets/images/about-trieve/team/team/members/2/image.jpg
+    - name: Dens Sumesh
+      position: Founding Engineer
+      image: /src/assets/images/about-trieve/team/team/members/3/image.jpg
+callToAction:
+  title: |
+    We're hiring!
+  overrideActions:
+    - label: Join the team
+      href: https://www.ycombinator.com/companies/trieve/jobs
+      newTab: true
+      variant: primary

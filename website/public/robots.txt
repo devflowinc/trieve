@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://trieve.ai/sitemap-index.xml

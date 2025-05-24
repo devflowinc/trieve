@@ -1,0 +1,133 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-title: "Inter Variable", sans-serif;
+  --font-sans: "Maven Pro Variable", sans-serif;
+
+  --color-white: #fff;
+  --color-black: #000;
+  --color-red-500: oklch(0.637 0.237 25.331);
+  --color-gray-600: oklch(0.446 0.03 256.802);
+  --color-gray-700: oklch(0.373 0.034 259.733);
+  --color-gray-800: oklch(0.278 0.033 256.848);
+
+  --color-primary-100: #fcf1fe;
+  --color-primary-200: #f7eaf9;
+  --color-primary-300: #e9d7ea;
+  --color-primary-400: #c18ec8;
+  --color-primary-500: #8e0da2;
+  --color-primary-600: #820c95;
+  --color-primary-700: #6f0b7f;
+  --color-primary-900: #3d1943;
+
+  ----default-transition-timing-function: var(--ease-in-out);
+  ---default-transition-duration: 400ms;
+}
+
+@layer base {
+  html {
+    @apply scroll-smooth w-screen bg-primary-100;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-title tracking-tighter font-medium;
+    font-optical-sizing: auto;
+
+    em,
+    i {
+      @apply text-primary-500;
+    }
+
+    footer & {
+      @apply font-sans;
+    }
+  }
+
+  h1 {
+    @apply text-5xl md:text-6xl font-semibold;
+  }
+  h2 {
+    @apply text-4xl;
+  }
+  h3 {
+    @apply text-3xl;
+  }
+
+  p {
+    @apply leading-tight;
+  }
+
+  a {
+    @apply cursor-pointer hover:underline;
+
+    &.no-underline {
+      @apply hover:no-underline;
+    }
+
+    &.button {
+      @apply bg-white text-black px-3 py-2 md:px-6 md:py-4 rounded-lg hover:no-underline hover:bg-primary-400;
+      &.primary {
+        @apply bg-primary-900 text-white hover:bg-primary-700;
+      }
+    }
+  }
+
+  button {
+    @apply cursor-pointer;
+  }
+}
+
+@layer utilities {
+  .container {
+    @apply max-w-[80rem] mx-auto;
+    @media (width <= 84rem) {
+      max-width: calc(100vw - 4rem);
+    }
+  }
+}
+
+@theme {
+  --animate-scroll: scroll 40s linear infinite;
+  @keyframes scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100%);
+    }
+  }
+}
+
+@import "@fontsource-variable/maven-pro";
+/* inter-latin-wght-normal */
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url(@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2)
+    format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+/* inter-latin-wght-italic */
+@font-face {
+  font-family: "Inter Variable";
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url(@fontsource-variable/inter/files/inter-latin-opsz-italic.woff2)
+    format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}

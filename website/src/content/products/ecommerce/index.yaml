@@ -1,0 +1,50 @@
+name: Ecommerce
+category: Ecommerce
+hero:
+  title: Win  9 % *More Sales* with AI Chat
+  description: >-
+    Retailers using AI Chat on Black Friday saw 31% more conversations and 9%
+    higher conversions
+  image: /src/assets/images/products/ecommerce/hero/image.webp
+  overrideActions:
+    - label: Install on Shopify
+      href: https://apps.shopify.com/trieve
+      newTab: true
+      variant: primary
+    - label: Book Demo
+      href: https://cal.com/team/trieve/trieve-demo
+      newTab: false
+      variant: secondary
+killerFeatures:
+  - title: AI Search
+    description: >-
+      Our AI-powered search engine understands intent, not just keywords,
+      delivering relevant results for even complex queries
+    image: >-
+      /src/assets/images/products/killerFeatures/ecommerce/killerFeatures/0/image.png
+  - title: Personalized Recommendations
+    description: >-
+      Increase AOV with smart product recommendations based on customer behavior
+      that act like a personal shopping assistant
+    image: >-
+      /src/assets/images/products/killerFeatures/ecommerce/killerFeatures/1/image.png
+  - title: Conversational Shopping
+    description: >-
+      Always be converting with an AI specialist that combines the personal
+      touch of in-store service with the intelligence of GPT to recommend
+      perfect products 24/7
+    image: >-
+      /src/assets/images/products/killerFeatures/ecommerce/killerFeatures/2/image.png
+  - title: Lightning Fast Responses
+    description: >-
+      Intelligent AI chat responds instantly 24/7, answering customer questions
+      in the moment and capturing impulse purchases before shoppers leave for
+      competitors
+    image: >-
+      /src/assets/images/products/killerFeatures/ecommerce/killerFeatures/3/image.png
+metadata:
+  seoTitle: Trieve for E-commerce | AI-Powered Online Store Solutions
+  seoDescription: >-
+    Enhance your online store with intelligent search, personalized
+    recommendations, and AI-powered customer support to boost conversions and
+    customer satisfaction.

@@ -1,0 +1,22 @@
+---
+import { clsx } from "clsx";
+interface Props {
+  class?: string;
+  href?: string | null;
+  target?: string;
+}
+const { class: classList, href, target } = Astro.props;
+
+const Element = href ? "a" : "span";
+---
+
+<Element
+  {href}
+  {target}
+  class={clsx(
+    "border border-primary-900 text-primary-900 text-sm rounded-full bg-transparent px-8 py-2",
+    classList,
+  )}
+>
+  <slot />
+</Element>

@@ -1,0 +1,61 @@
+---
+import type { ImageMetadata, ImageOutputFormat } from "astro";
+import { Image } from "astro:assets";
+import { clsx } from "clsx";
+
+type Props = {
+  src: string | ImageMetadata | undefined | null;
+  alt?: string;
+  class?: string;
+  widths?: number[];
+  sizes?: string;
+  format?: ImageOutputFormat;
+  loading?: "lazy" | "eager";
+};
+const {
+  src: rawSrc = "",
+  alt = "",
+  widths,
+  sizes,
+  format: rawFormat = "avif",
+  loading = "lazy",
+  ...rest
+} = Astro.props;
+
+const images = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/assets/**/*.{jpeg,jpg,png,gif,svg,webp}"
+);
+
+const src =
+  typeof rawSrc === "string"
+    ? (rawSrc && images[rawSrc]?.()) || undefined
+    : rawSrc;
+if (!src) {
+  console.warn(
+    `KeystaticImage: Unable to find image "${rawSrc}". Make sure the path is correct.`
+  );
+}
+
+const isSVG =
+  typeof rawSrc === "string"
+    ? rawSrc.endsWith(".svg")
+    : rawSrc?.format === "svg";
+
+const format = isSVG ? "svg" : rawFormat;
+---
+
+{
+  src ? (
+    <Image
+      {src}
+      {alt}
+      widths={widths?.flatMap((w) => [w, w * 2, w * 3]).toSorted()}
+      {sizes}
+      {...rest}
+      {format}
+      {loading}
+    />
+  ) : (
+    <div class={clsx("bg-primary-300", rest["class"])} />
+  )
+}

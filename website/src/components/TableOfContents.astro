@@ -1,0 +1,48 @@
+---
+import type { MarkdownHeading } from "astro";
+
+interface Props {
+  heading: TOC[number];
+}
+
+type TOC = Array<MarkdownHeading & { subheadings: TOC }>;
+
+export function buildTOC(headings: MarkdownHeading[]): TOC {
+  const toc: TOC = [];
+  const parentHeadings = new Map();
+
+  if (!headings) return toc;
+
+  headings.forEach((h) => {
+    const heading = { ...h, subheadings: [] };
+    parentHeadings.set(heading.depth, heading);
+    // Change 2 to 1 if your markdown includes your <h1>
+    if (heading.depth === 2) {
+      toc.push(heading);
+    } else {
+      parentHeadings.get(heading.depth - 1)?.subheadings.push(heading);
+    }
+  });
+  return toc;
+}
+
+const { heading } = Astro.props;
+---
+
+<li class="mt-1.5">
+  <a
+    href={"#" + heading.slug}
+    class="active:text-primary-500 [&.active]:text-primary-500"
+  >
+    {heading.text}
+  </a>
+  {
+    heading.subheadings.length > 0 && (
+      <ol class="list-decimal list-inside ml-4">
+        {heading.subheadings.map((subheading) => (
+          <Astro.self heading={subheading} />
+        ))}
+      </ol>
+    )
+  }
+</li>

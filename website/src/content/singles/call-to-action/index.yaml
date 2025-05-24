@@ -1,0 +1,9 @@
+actions:
+  - label: Start Free
+    href: /
+    newTab: false
+    variant: secondary
+  - label: Request a Demo
+    href: /request-demo
+    newTab: false
+    variant: primary

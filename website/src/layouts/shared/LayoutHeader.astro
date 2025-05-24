@@ -1,0 +1,134 @@
+---
+import { Image } from "astro:assets";
+import TrieveLogo from "@assets/global/trieve-logo.png";
+
+interface NavLink {
+  label: string;
+  href: string;
+  target?: string;
+  rel?: string;
+}
+
+const navLinks: NavLink[] = [
+  { label: "E-commerce", href: "/e-commerce" },
+  { label: "Blog", href: "/blog" },
+  {
+    label: "Developers",
+    href: "https://docs.trieve.ai/",
+    target: "_blank",
+    rel: "noopener noreferrer",
+  },
+  { label: "Pricing", href: "/pricing" },
+];
+---
+
+<header class="container mx-auto border-b border-stone-500/10 relative">
+  <div class="flex flex-row flex-wrap items-center py-2 lg:py-4">
+    <!-- Logo -->
+    <a href="/" class="flex flex-row gap-2 items-center">
+      <Image
+        src={TrieveLogo}
+        alt="Trieve"
+        class="h-10 w-10 relative -top-1 -mb-1"
+      />
+      <span class="text-3xl font-title font-semibold text-amber-950">
+        Trieve
+      </span>
+    </a>
+
+    <!-- Mobile menu button -->
+    <button class="lg:hidden absolute group right-4 top-4" data-nav-menu-toggle>
+      <!-- Hamburger icon -->
+      <svg
+        class="h-6 w-6 block group-[.active]:hidden"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+      <!-- Cross icon (shown when parent has active class) -->
+      <svg
+        class="h-6 w-6 hidden group-[.active]:block"
+        viewBox="
+        0
+        0
+        24
+        24"
+        fill="none"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+
+    <!-- Menu container -->
+    <div
+      class="hidden mx-10 lg:mx-8 flex-col lg:flex lg:flex-row grow w-full lg:w-auto"
+      data-nav-menu
+    >
+      <nav class="flex flex-col lg:flex-row">
+        {
+          navLinks.map((link) => (
+            <a
+              href={link.href}
+              target={link.target}
+              rel={link.rel}
+              class="p-1 px-3 rounded-2xl hover:bg-amber-200/25"
+            >
+              {link.label}
+            </a>
+          ))
+        }
+      </nav>
+      <div class="ml-auto flex flex-col lg:flex-row gap-2 mt-4 lg:mt-0">
+        <a
+          href="https://cal.com/team/trieve/trieve-demo"
+          class="p-1 px-3 rounded-2xl border border-primary-500 text-primary-500 bg-white hover:bg-primary-700 hover:text-white"
+          target="_blank"
+        >
+          Book a demo
+        </a>
+        <a
+          href="https://dashboard.trieve.ai/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="p-1 px-3 rounded-2xl bg-primary-700 hover:bg-primary-900 text-white"
+        >
+          Log in
+        </a>
+        <a
+          href="https://dashboard.trieve.ai/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="p-1 px-3 rounded-2xl bg-primary-700 hover:bg-primary-900 text-white"
+        >
+          Sign up →
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+  const initMenu = () => {
+    const mobileMenuToggle = document.querySelector("[data-nav-menu-toggle]");
+    const mobileMenu = document.querySelector("[data-nav-menu]");
+
+    mobileMenuToggle?.addEventListener("click", () => {
+      mobileMenu?.classList.toggle("hidden");
+      mobileMenu?.classList.toggle("order-last");
+      mobileMenuToggle?.classList.toggle("active");
+    });
+  };
+
+  initMenu();
+</script>

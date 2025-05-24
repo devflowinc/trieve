@@ -1,0 +1,71 @@
+---
+import BlogPostCard from "@components/BlogPostCard.astro";
+import Layout from "@layouts/Layout.astro";
+import { keystatic } from "@lib/keystatic/client";
+import { getCollection } from "astro:content";
+import { marked } from "marked";
+import invariant from "tiny-invariant";
+
+const i18n = await keystatic.singletons.blog.read({
+  resolveLinkedFiles: true,
+});
+invariant(i18n, "No Blog content found");
+
+const allPosts = await getCollection("blogPosts").then((posts) =>
+  posts
+    .filter((e) => !e.data.isDraft)
+    .toSorted(
+      (a, b) =>
+        (b.data.createdAt?.getTime() ?? 0) - (a.data.createdAt?.getTime() ?? 0)
+    )
+);
+
+const { featuredPosts, posts } = allPosts.slice(1).reduce(
+  (acc, el) => {
+    if (i18n.featuredPosts.posts.some((fp) => fp === el.id)) {
+      acc.featuredPosts.push(el);
+    } else {
+      acc.posts.push(el);
+    }
+
+    return acc;
+  },
+  { featuredPosts: [], posts: [] } as Record<string, typeof allPosts>
+);
+---
+
+<Layout title="Blog | Trieve">
+  <section
+    class="container mx-auto flex flex-col md:flex-row gap-16 md:gap-8 lg:gap-16 mt-8 md:mt-8 md:justify-between"
+  >
+    <div class="md:flex-1/2 flex justify-start items-center">
+      <h1
+        set:html={marked(i18n.title)}
+        class="text-6xl md:text-5xl lg:text-7xl"
+      />
+    </div>
+
+    <div class="md:flex-1/3 lg:flex-1/2">
+      <p class="text-lg mb-1">
+        {i18n.latestPublication || "Latest publication"}
+      </p>
+
+      <BlogPostCard post={allPosts[0]} />
+    </div>
+  </section>
+
+  <section class="container mx-auto flex flex-col gap-4">
+    <h2 class="text-5xl" set:html={marked(i18n.featuredPosts.title)} />
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+      {featuredPosts.map((post) => <BlogPostCard {post} />)}
+    </div>
+  </section>
+
+  <section class="container mx-auto flex flex-col gap-4">
+    <h2 class="text-5xl" set:html={marked(i18n.furtherReadingsTitle)} />
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+      {posts.map((post) => <BlogPostCard {post} />)}
+    </div>
+  </section>
+</Layout>

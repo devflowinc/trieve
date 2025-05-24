@@ -1,0 +1,212 @@
+---
+import HipaaImage from "@assets/global/hipaa.avif";
+import Soc2Image from "@assets/global/soc2.avif";
+import KeystaticImage from "@components/KeystaticImage.astro";
+import { Icon } from "astro-icon/components";
+
+interface FooterLink {
+  label: string;
+  href: string;
+  target?: string;
+}
+
+const supportLinks: FooterLink[] = [
+  { label: "+1628-222-490", href: "tel:+1628-222-4090" },
+  { label: "humans@trieve.ai", href: "mailto:humans@trieve.ai" },
+  {
+    label: "Slack",
+    href: "https://join.slack.com/t/trievecommunityslack/shared_invite/zt-2v7zyxytf-zWLVgqI8avB5x5Br7INQgw",
+    target: "_blank",
+  },
+  {
+    label: "Matrix",
+    href: "https://matrix.to/#/#trieve-general:trieve.ai",
+    target: "_blank",
+  },
+  { label: "Discord", href: "https://discord.gg/E9sPRZqpDT", target: "_blank" },
+];
+
+const companyLinks: FooterLink[] = [
+  { label: "About Trieve", href: "/about-trieve" },
+  { label: "Dashboard", href: "https://dashboard.trieve.ai", target: "_blank" },
+  { label: "Privacy Policy", href: "/legal/privacy-policy" },
+  { label: "Terms of Service", href: "/legal/terms-and-conditions" },
+  {
+    label: "Trust Center",
+    href: "https://trust.oneleet.com/trieve",
+    target: "_blank",
+  },
+  {
+    label: "GitHub",
+    href: "https://github.com/devflowinc/trieve",
+    target: "_blank",
+  },
+];
+
+const productLinks: FooterLink[] = [
+  { label: "Pricing", href: "/pricing" },
+  {
+    label: "Developer Documentation",
+    href: "https://docs.trieve.ai",
+    target: "_blank",
+  },
+  {
+    label: "Typescript SDK",
+    href: "https://ts-sdk.trieve.ai/",
+    target: "_blank",
+  },
+  {
+    label: "Status Page",
+    href: "https://status.trieve.ai/",
+    target: "_blank",
+  },
+];
+
+const comparisonLinks: FooterLink[] = [
+  { label: "vs Algolia", href: "/compare/algolia" },
+];
+
+const socialLinks = [
+  {
+    icon: "bi:slack",
+    href: "https://join.slack.com/t/trievecommunityslack/shared_invite/zt-2v7zyxytf-zWLVgqI8avB5x5Br7INQgw",
+  },
+  { icon: "bi:twitter-x", href: "https://x.com/trieveai" },
+  { icon: "bi:github", href: "https://github.com/devflowinc/trieve" },
+  {
+    icon: "simple-icons:matrix",
+    href: "https://matrix.to/#/#trieve-general:trieve.ai",
+  },
+  { icon: "bi:discord", href: "https://discord.gg/E9sPRZqpDT" },
+  { icon: "bi:rss", href: "/rss.xml" },
+];
+---
+
+<footer
+  class="border-t bg-primary-900 text-white pt-16 pb-4 relative z-10 mt-16"
+>
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 gap-16 md:grid-cols-2 lg:grid-cols-5">
+      <!-- Compliance Section -->
+      <div class="flex flex-col gap-4">
+        <h2 class="text-lg font-semibold">Trieve</h2>
+
+        <div class="flex gap-4 mt-4">
+          <div class="flex flex-col items-center text-center">
+            <KeystaticImage
+              src={Soc2Image}
+              alt="SOC2 Type 2 Compliant"
+              class="h-16 w-16"
+            />
+            <span class="mt-2 text-xs block">SOC2 Type 2<br />Compliant</span>
+          </div>
+          <div class="flex flex-col items-center text-center">
+            <KeystaticImage
+              src={HipaaImage}
+              alt="HIPAA Compliant"
+              class="h-16 w-16"
+            />
+            <span class="mt-2 text-xs block">HIPAA<br />Compliant</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Sections -->
+      <div class="text-sm">
+        <h3 class="mb-4 font-semibold">Support</h3>
+        <ul class="space-y-2">
+          {
+            supportLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  target={link.target}
+                  class="hover:underline"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="text-sm">
+        <h3 class="mb-4 font-semibold">Company</h3>
+        <ul class="space-y-2">
+          {
+            companyLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  target={link.target}
+                  class="hover:underline"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="text-sm">
+        <h3 class="mb-4 font-semibold">Product</h3>
+        <ul class="space-y-2">
+          {
+            productLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  target={link.target}
+                  class="hover:underline"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="text-sm">
+        <h3 class="mb-4 font-semibold">Comparisons</h3>
+        <ul class="space-y-2">
+          {
+            comparisonLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  target={link.target}
+                  class="hover:underline"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+
+    <!-- Social Links -->
+    <div class="mt-8 flex justify-end gap-4">
+      {
+        socialLinks.map(({ icon, href }) => (
+          <a
+            href={href}
+            class=" hover:"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="sr-only">{icon}</span>
+            <Icon name={icon} class="h-6 w-6" />
+          </a>
+        ))
+      }
+    </div>
+  </div>
+  <p class="text-xs text-center mt-16">
+    &copy; {new Date().getFullYear()} Trieve.ai. All rights reserved.
+  </p>
+</footer>

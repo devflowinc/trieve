@@ -1,0 +1,57 @@
+---
+title: "The Future of Work: Commanding Your Massively Parallel Army of LLMs"
+summary: >-
+  Imagine directing 200 LLMs to simultaneously tackle a single task. This is the
+  future.
+author: Nick Khami
+createdAt: 2025-05-22T17:25:00.000Z
+lastUpdatedAt: 2025-05-22T17:25:00.000Z
+isDraft: true
+categories:
+  - explainers
+coverImage: >-
+  /src/assets/images/blog-posts/massively-parallel-llm-function-calling-is-underrated/coverImage.webp
+ogSection: Technology
+---
+
+import ParallelClothesLabeling from "@components/ParallelClothesLabeling";
+
+# Massively parallel LLM inference is underrated
+
+I think the future of work looks like StarCraft or Age of Empires. You have massive throughput, say 10,000 requests (agents) and 100k tokens per second, and you're directing that compute to solve. You're the commander, the AI agents are your units.
+
+But here's the key: you don't spread that capacity across 200 different tasks. You assign multiple agents to single problems. Each LLM has some probability of finding a solution, but AI is creative. You don't just want enough compute to get one correct solution per problem, you want enough to get multiple, then mix and match them into one extremely high quality solve. Think of it like [monte carlo sampling](https://en.wikipedia.org/wiki/Monte_Carlo_method).
+
+## Data labeling as a concrete example
+
+Let's start with something concrete. We built a demo app that categorizes images of clothing using parallel LLM calls. As a search company, this lets us structure arbitrary datasets to make search work consistently across different sources.
+
+But here's what's actually cool: you could photograph all your belongings and have AI instantly sort which items are worth more than $50. Try doing that with humans—you'd need dozens of people working in parallel to finish in reasonable time.
+
+Google spent years tricking [hundreds of millions of people into labeling data](https://prosopo.io/blog/why-am-i-clicking-traffic-lights/#contribution-to-ai-training) through CAPTCHAs. Now you can accomplish similar tasks for a few thousand dollars in a few hours.
+
+<ParallelClothesLabeling />
+
+## Moving from spectator to commander
+
+We should be using parallel compute for everything AI does. We should be supervisors, not spectators.
+
+Right now, as a software engineer, I open my IDE, prompt an agent to edit code, then watch it work. Strong WALL-E fitless human vibes; disengaged, passive.&#x20;
+
+![fitless-human](https://cdn.trieve.ai/blog/massively-parallel-llm-function-calling-is-underrated/fitless-human-walle.jpeg)
+
+I don't want this. I want to be in flow state, hyper-engaged. I want to feel like [Ender commanding an entire fleet](https://youtu.be/Ht12otHMX_Q?si=M0FI0pHFxaPI1lLt&t=280).
+
+![](/src/assets/images/blog-posts/massively-parallel-llm-function-calling-is-underrated/image.png)
+
+It should be trivial to provision multiple LLMs with high variance to tackle tasks in parallel. If AI can generate product photos, I want to pick 3 styles and deploy 6 agents—2 per style—generating image sets simultaneously. While they work, I need the ability to zoom into any process and intervene if something's going wrong.
+
+This is similar to a strategy some employ on Fiverr when they [hire multiple freelancers for the same project](https://www.reddit.com/r/Fiverr/comments/1du7597/discussion_is_it_wrong_to_hire_two_people_on/) and select the best output.
+
+## New tools are needed
+
+You can sort of replicate this with [git worktrees](https://sufiyanyasa.com/blog/how-to-use-git-worktree/) for programming, but it's clunky. We need new software designed for managing parallelized general intelligence.
+
+What we have now feels like a [horseless carriage](https://koomen.dev/essays/horseless-carriages/), we're mimicking old patterns instead of embracing new possibilities. The future UX for AI isn't watching a single agent work. It's commanding hundreds simultaneously.
+
+Maybe these tools will be vertical-specific. Maybe they'll be general-purpose. Either way, I'm excited to see what comes next.

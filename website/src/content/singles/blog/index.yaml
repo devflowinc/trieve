@@ -1,0 +1,13 @@
+title: |
+  Welcome to the Trieve *Blog*
+latestPublication: Latest publication
+featuredPosts:
+  title: |
+    *Featured* posts
+  posts:
+    - ai-sales-agent-on-shopify-flaviar
+    - cheating-at-search-with-llms
+    - build-hotel-voice-assistant-with-trieve-and-vapi
+    - accurate-hallucination-detection-with-ner
+furtherReadingsTitle: |
+  Further *readings*

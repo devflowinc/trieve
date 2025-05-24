@@ -1,0 +1,50 @@
+---
+import { keystatic } from "@lib/keystatic/client";
+import invariant from "tiny-invariant";
+
+interface Props {
+  actions?: NonNullable<typeof defaultActions>["actions"];
+  withBackground?: boolean;
+  withBorder?: boolean;
+}
+const defaultActions = await keystatic.singletons.callToAction.read({
+  resolveLinkedFiles: true,
+});
+invariant(defaultActions, "No homepage content found");
+
+const actions = Astro.props.actions?.length
+  ? Astro.props.actions
+  : defaultActions["actions"];
+
+const { withBackground = false, withBorder = false } = Astro.props;
+---
+
+<div
+  class="cta"
+  class:list={[
+    { "p-2 bg-primary-900/40 backdrop-blur-sm rounded-2xl": withBorder },
+  ]}
+>
+  <div
+    class="flex flex-row gap-2 md:gap-4 rounded-xl"
+    class:list={[
+      {
+        "bg-primary-500": withBackground,
+        "p-2 md:p-4": withBackground,
+      },
+    ]}
+  >
+    {
+      actions.map(({ href, variant, newTab, label }) => (
+        <a
+          {href}
+          class="button text-center"
+          class:list={[variant]}
+          target={newTab ? "_blank" : undefined}
+        >
+          {label}
+        </a>
+      ))
+    }
+  </div>
+</div>

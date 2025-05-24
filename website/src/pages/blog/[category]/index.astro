@@ -1,0 +1,30 @@
+---
+import BlogPostCard from "@components/BlogPostCard.astro";
+import Layout from "@layouts/Layout.astro";
+import { getCollection } from "astro:content";
+
+export async function getStaticPaths() {
+  const categories = await getCollection("blogCategories");
+  const posts = await getCollection("blogPosts");
+
+  return categories.map(({ id, data: category }) => ({
+    params: { category: id },
+    props: {
+      category,
+      entries: posts.filter((p) => p.data.categories.includes(id)),
+    },
+  }));
+}
+
+const { entries, category } = Astro.props;
+---
+
+<Layout title=`${category.name} | Blog | Trieve`>
+  <section class="container flex flex-col gap-4 my-4 md:mt-8 md:mb-16">
+    <h1 class="">Blog</h1>
+    <h2>Category: {category.name}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+      {entries.map(async (e) => <BlogPostCard post={e} />)}
+    </div>
+  </section>
+</Layout>

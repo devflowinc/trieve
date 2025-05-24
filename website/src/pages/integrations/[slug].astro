@@ -1,0 +1,163 @@
+---
+import CheckCircle from "@assets/check-circle.svg";
+import CallToAction from "@components/CallToAction.astro";
+import KeystaticImage from "@components/KeystaticImage.astro";
+import TrustedBrands from "@components/TrustedBrands.astro";
+import Layout from "@layouts/Layout.astro";
+import AnimatedBackground from "@layouts/shared/AnimatedBackground.astro";
+import { getCollection } from "astro:content";
+import { marked } from "marked";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("integrations");
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+
+const i18n = entry.data;
+---
+
+<Layout title={`${i18n.name} | Trieve`}>
+  <section
+    class="container mx-auto flex flex-col md:flex-row gap-4 md:gap-8 my-20"
+  >
+    <div
+      class="flex flex-col items-center md:items-start gap-4 md:flex-1/2 md:max-w-1/2 md:pt-8"
+    >
+      <h1 set:html={marked.parseInline(i18n.hero.title || "")} />
+      <p>{i18n.hero.description}</p>
+      {
+        i18n.hero?.image && (
+          <KeystaticImage
+            class="md:hidden rounded-xl"
+            src={i18n.hero.image || undefined}
+            alt=""
+            widths={[320, 480, 540, 640]}
+            sizes="calc(100vw - 4rem)"
+            loading="eager"
+          />
+        )
+      }
+      <CallToAction actions={i18n.hero.overrideActions} />
+    </div>
+
+    <div class="hidden md:block flex-1/2 max-w-1/2 self-center lg:p-8">
+      {
+        i18n.hero?.image && (
+          <KeystaticImage
+            src={i18n.hero.image || undefined}
+            alt=""
+            class="rounded-xl"
+            widths={[320, 480, 540, 640]}
+            sizes="calc(50vw - 2rem)"
+            loading="eager"
+          />
+        )
+      }
+      {
+        i18n.hero?.youtubeUrl && (
+          <div class="w-[calc(50vw - 2rem)]">
+            <iframe
+              class="rounded-xl aspect-video"
+              src={i18n.hero.youtubeUrl}
+              title="YouTube video player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              loading="lazy"
+              width="100%"
+            />
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <section class="bg-primary-300 w-screen">
+    <TrustedBrands class="!my-8" withoutTitle inverted />
+  </section>
+
+  <section
+    class="container flex flex-col gap-8 items-center text-center md:text-left pb-24"
+  >
+    <div class="flex flex-col gap-8 md:gap-16">
+      {
+        i18n.killerFeatures.features.map(
+          ({ title, description, image }, idx) => (
+            <>
+              <div class="relative -top-16" />
+              <div class="flex flex-col md:flex-row gap-4 md:gap-16">
+                <div
+                  class="flex-5/12"
+                  class:list={[{ "md:order-2": (idx % 2) - 1 }]}
+                >
+                  <h3 class="md:mt-4 mb-2">{title}</h3>
+                  <p class="text-xl tracking-tighter whitespace-pre-line">
+                    {description}
+                  </p>
+                </div>
+                <KeystaticImage
+                  src={image}
+                  class="flex-7/12 rounded-xl md:max-w-7/12"
+                  widths={[356, 709, 960]}
+                  sizes="(min-width: 1280px) 709px, (min-width: 780px) calc(58.33vw - 2.33rem), calc(100vw - 4rem)"
+                />
+              </div>
+            </>
+          )
+        )
+      }
+    </div>
+  </section>
+
+  <section class="bg-primary-300 py-24">
+    <div class="container flex flex-col gap-24">
+      <h2
+        class="text-center text-5xl leading-tight"
+        set:html={marked.parseInline(i18n.secondFeatures.title)}
+      />
+
+      <div class="grid md:grid-cols-2 gap-x-24 gap-12">
+        {
+          i18n.secondFeatures.features.map((f) => (
+            <div>
+              <h3 class="italic font-normal text-2xl">
+                <CheckCircle class="text-primary-700 inline h-8 w-8 -mt-1 mr-2 md:mr-4" />
+                {f.title}
+              </h3>
+              <p class="pl-8 ml-3 md:ml-5 text-lg leading-snug">
+                {f.description}
+              </p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section
+    class="container flex flex-col items-center text-center rounded-xl md:px-8 my-12"
+  >
+    <h2
+      class="text-balance text-5xl md:text-7xl font-medium"
+      set:html={marked.parse(
+        i18n.callToAction?.title || "Discover why you should\n\n*choose* Trieve"
+      )}
+    />
+  </section>
+  <div
+    id="main-cta"
+    class="sticky top-96 flex items-center justify-center -mt-16 md:mb-48 overflow-hidden transition-[bottom] -bottom-28 delay-100 ease-in mx-4 md:mx-auto"
+    class:list={[{ "bottom-8": false }]}
+  >
+    <CallToAction
+      withBackground
+      withBorder
+      actions={i18n.hero.overrideActions}
+    />
+  </div>
+  <AnimatedBackground />
+</Layout>

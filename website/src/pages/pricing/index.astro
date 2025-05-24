@@ -1,0 +1,32 @@
+---
+import CallToAction from "@components/CallToAction.astro";
+import PricingCalculator from "@components/PricingCalculator";
+import Layout from "@layouts/Layout.astro";
+---
+
+<Layout title="Pricing | Trieve" hideMovingBackground>
+  <section class="container py-3 md:py-6">
+    <h1 class="text-6xl md:text-7xl mt-6 md:max-w-[18ch] mb-8">
+      <em>Usage-based</em> pricing
+    </h1>
+    <CallToAction
+      actions={[
+        {
+          label: "For Ecommerce",
+          href: "https://apps.shopify.com/trieve",
+          newTab: true,
+          variant: "primary",
+        },
+        {
+          label: "Book Demo",
+          href: "https://cal.com/team/trieve/trieve-demo",
+          newTab: false,
+          variant: "secondary",
+        },
+      ]}
+    />
+  </section>
+  <section class="container">
+    <PricingCalculator client:only="react" />
+  </section>
+</Layout>

@@ -1,0 +1,40 @@
+cardStyle:
+  backgroundColor: bg-primary-100
+  padding: p-4
+  borderRadius: rounded-lg
+  textColor: text-black
+  hoverEffect: hover:bg-primary-300
+highlightCardStyle:
+  backgroundColor: bg-primary-600
+  padding: p-4
+  borderRadius: rounded-lg
+  textColor: text-white
+  hoverEffect: hover:bg-primary-500
+integrationCards:
+  - integrationSlug: shopify
+    icon: /src/assets/images/integrations-megamenu/icons/integrationCards/0/icon.png
+    title: Shopify
+    description: Install state-of-the-art AI in two minutes
+  - integrationSlug: judge-me
+    icon: /src/assets/images/integrations-megamenu/icons/integrationCards/1/icon.png
+    title: Judge.Me
+    description: Amazon Rufus for your store injecting social proof into AI responses
+  - integrationSlug: vapi
+    icon: /src/assets/images/integrations-megamenu/icons/integrationCards/2/icon.png
+    title: Vapi
+    description: The performance enterprise KB solution for voice agents
+features: []
+links:
+  - label: Trieve for Ecommerce
+    url: '#'
+  - label: Trieve API
+    url: '#'
+  - label: Trieve Sitesearch
+    url: '#'
+highlight:
+  title: See Trieve in Action!
+  description: Discover how Trieve products can transform your business
+  icon: /src/assets/images/products-megamenu/highlight/highlight/icon.jpg
+  callToAction:
+    label: Demo
+    url: https://cal.com/team/trieve/trieve-demo

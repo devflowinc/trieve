@@ -1,0 +1,63 @@
+name: Vapi
+icon: /src/assets/images/integrations/vapi/icon.png
+hero:
+  title: |
+    The Enterprise KB Solution for Voice AI
+  description: >-
+    Your voice agents are only as fast as your slowest link—use Trieve to win
+    with both speed and recall
+  overrideActions:
+    - label: Get Started
+      href: https://dashboard.trieve.ai
+      newTab: true
+      variant: primary
+    - label: View Documentation
+      href: https://docs.vapi.ai/knowledge-base/integrating-with-trieve
+      newTab: true
+      variant: secondary
+  youtubeUrl: https://www.youtube.com/embed/KZkYPSJPPk8?si=nXO1eYCC_rnJdq_8
+killerFeatures:
+  features:
+    - title: Website Crawling
+      description: >-
+        Leverage our lean, mean, and powerful crawler to quickly and easily
+        build a KB from any website, YouTube channel, or Shopify store
+      image: /src/assets/images/home/vapi/killerFeatures/features/0/image.png
+    - title: Low Latency
+      description: >-
+        Trieve KB adds a  maximum of 200ms of latency—significantly faster than
+        the 1+ seconds overloading a system prompt or using only an LLM brings
+      image: /src/assets/images/home/vapi/killerFeatures/features/1/image.png
+    - title: Highly Configurable
+      description: >-
+        Built-in search and chat playgrounds to configure chunking options,
+        retrieval models, score thresholds, and more
+      image: /src/assets/images/home/vapi/killerFeatures/features/2/image.png
+secondFeatures:
+  title: |
+    Why Vapi + Trieve?
+  features:
+    - title: Easy Integration
+      description: Get started quickly with Vapi's simple SDK and Trieve's flexible API.
+    - title: Enterprise-Ready
+      description: >-
+        Built for scale with enterprise-grade security and reliability. SOCII
+        and HIPAA certified. 
+    - title: Customizable Experience
+      description: Tailor the voice interface and AI responses to match your brand.
+    - title: Quality Support
+      description: >-
+        We take customer success seriously and pride ourselves on being a
+        partner and more than just a vendor.
+callToAction:
+  title: |
+    Ready to get serious about your voice AI?
+  overrideActions:
+    - label: Start Building
+      href: https://dashboard.trieve.ai
+      newTab: true
+      variant: primary
+    - label: Contact Sales
+      href: https://cal.com/team/trieve/trieve-demo
+      newTab: true
+      variant: secondary

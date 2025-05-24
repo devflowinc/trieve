@@ -1,0 +1,114 @@
+---
+import CallToAction from "@components/CallToAction.astro";
+import TableOfContents, { buildTOC } from "@components/TableOfContents.astro";
+import Layout from "@layouts/Layout.astro";
+import { getCollection, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("legal");
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+
+const { Content, headings } = await render(entry);
+
+const i18n = entry.data;
+---
+
+<Layout title=`${i18n.title}  | Legal | Trieve` description={i18n.description}>
+  <section class="container flex flex-col gap-4 md:gap-12 my-4 md:my-16">
+    <h1 class="text-center text-4xl md:text-5xl">{i18n.title}</h1>
+  </section>
+  <section class="container flex flex-col gap-8 md:gap-16 md:flex-row">
+    <nav class="md:flex-1/4 md:max-w-1/4 toc">
+      <ol
+        class="md:sticky md:top-16 list-decimal list-inside md:**:[&.active]:font-semibold"
+      >
+        {buildTOC(headings).map((h) => <TableOfContents heading={h} />)}
+      </ol>
+    </nav>
+    <div class="md:flex-3/4 md:max-w-3/4">
+      <div class="content [&_a]:break-all">
+        <Content />
+      </div>
+      <div class="inline-block">
+        <CallToAction withBackground />
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const headings = document.querySelectorAll<HTMLDivElement>("article [id]");
+    const navLinks = document.querySelectorAll<HTMLAnchorElement>("nav.toc a");
+
+    window.addEventListener("scroll", () => {
+      let current: string | null = "";
+      headings.forEach((section) => {
+        const sectionTop = section.offsetTop;
+        if (scrollY >= sectionTop - 16) {
+          current = section.getAttribute("id");
+        }
+      });
+
+      if (!current) {
+        current = headings[0].id;
+      }
+
+      navLinks.forEach((link) => {
+        link.classList.remove("active");
+        if (link.getAttribute("href") === `#${current}`) {
+          link.classList.add("active");
+        }
+      });
+    });
+  });
+</script>
+
+<style lang="postcss" >
+.content {
+
+  h2 {
+    &:not(:first-child) {
+      margin: 2rem 0 1rem;
+    }
+  }
+
+  h3 {
+    font-style: italic;
+    font-weight: 300;
+    &:not(:first-child) {
+      margin: 1rem 0 0;
+    }
+  }
+
+  ol {
+    @apply list-inside list-decimal;
+    padding-left: 1.2rem;
+  }
+  ul {
+    @apply list-inside list-disc;
+    padding-left: 1.2rem;
+  }
+
+  p {
+    &:not(h2 + &, h3 + &) {
+      margin-top: 1rem;
+    }
+  }
+
+  a {
+    text-decoration: underline;
+    font-weight: 500;
+    color: var(--color-blue-700);
+    &:visited {
+      color: var(--color-primary-700);
+    }
+  }
+}
+</style>
