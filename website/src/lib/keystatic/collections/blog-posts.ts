@@ -84,7 +84,7 @@ export const blogPosts = collection({
             title: fields.text({ label: "Video Title" }),
           },
         }),
-        ParallelClothesLabeling: block({
+        ParallelClothesLabelingAstro: block({
           label: "Parallel Clothes Labeling",
           schema: {
             "client:load": fields.empty(),

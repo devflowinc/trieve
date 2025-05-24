@@ -8,8 +8,8 @@ import VimeoEmbed from "@components/VimeoEmbed.astro";
 import Warning from "@components/Warning.astro";
 import Layout from "@layouts/Layout.astro";
 import Info from "@components/Info.astro";
-import ParallelClothesLabeling from "@components/ParallelClothesLabeling.tsx";
 import { getCollection, render } from "astro:content";
+import ParallelClothesLabelingAstro from "@components/ParallelClothesLabelingAstro.astro";
 
 export async function getStaticPaths() {
   const entries = await getCollection("blogPosts");
@@ -110,7 +110,7 @@ const ogImage = new URL(i18n.coverImage.src, site).href;
             Warning,
             VimeoEmbed,
             Info,
-            ParallelClothesLabeling,
+            ParallelClothesLabelingAstro,
           }}
         />
       </article>
