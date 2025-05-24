@@ -103,7 +103,27 @@
             match_all: [
               "ACTIVE"
             ]
-          }
+          },
+        ],
+        should: [
+          {
+            field: "tag_set",
+            match_any: [
+              "policy"
+            ]
+          },
+          {
+            field: "metadata.variant_inventory",
+            range: {
+              gt: 0
+            }
+          },
+          {
+            field: "metadata.status",
+            match_all: [
+              "ACTIVE"
+            ]
+          },
         ]
       },
       defaultCurrency: currencySymbol(currency),
