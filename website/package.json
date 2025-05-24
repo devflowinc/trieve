@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev --host --port 4329",
+    "dev": "astro dev --host --port 4330",
     "check": "astro check",
     "build": "SKIP_KEYSTATIC=true astro build",
     "preview": "SKIP_KEYSTATIC=true astro preview",
