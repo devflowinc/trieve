@@ -1116,7 +1116,18 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
     if (referenceImageUrls.length > 0 || curGroup) {
       if (referenceImageUrls.length == 0 && curGroup) {
-          const chunksInGroupPromise = await trieveSDK.getChunksInGroup(
+          const fulltextSearchPromise = trieveSDK.searchInGroup(
+            {
+              query: questionProp || currentQuestion,
+              search_type: "fulltext",
+              page_size: 10,
+              group_id: curGroup.id,
+              user_id: fingerprint,
+            },
+            searchAbortController.current.signal,
+          );
+
+          const chunksInGroupPromise = trieveSDK.getChunksInGroup(
             {
               groupId: curGroup.id,
               page: 1,
@@ -1124,13 +1135,28 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
             searchAbortController.current.signal,
           );
 
-          if (chunksInGroupPromise.chunks[0].image_urls) {
-            chunksInGroupPromise.chunks[0].image_urls.forEach((url) => {
-              referenceImageUrls.push(url ?? "");
+          const [fulltextSearchResp, chunksInGroupResp] = await Promise.all([
+            fulltextSearchPromise,
+            chunksInGroupPromise,
+          ]);
+
+          const chunkIds = fulltextSearchResp.chunks.map(
+            (score_chunk) => score_chunk.chunk.id,
+          );
+          
+          chunksInGroupResp.chunks.filter((chunk) => chunkIds.includes(chunk.id));
+
+          const topChunk = chunksInGroupResp.chunks[0];
+          
+          if (topChunk) {
+            topChunk.image_urls?.forEach((url) => {
+              if (url) {
+                referenceImageUrls.push(url);
+              }
             });
           }
 
-          referenceImageUrls.slice(0, 5);
+          referenceImageUrls.slice(0, 3);
       }
 
       if (await handleImageEdit()) {

@@ -1,4 +1,4 @@
-import { createEffect, For, Show } from "solid-js";
+import { For, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 import { cn } from "../utils";
 import { FiPlus, FiX } from "solid-icons/fi";
@@ -29,14 +29,29 @@ export const MultiStringInput = (props: MultiStringInputProps) => {
     })),
   );
 
-  createEffect(() => {
+  const updateValue = (id: string, value: string) => {
+    setProxyStore((v) => v.id == id, "value", value);
     props.onChange(
       proxyStore.map((item) => item.value).filter((i) => i !== ""),
     );
-  });
+  };
 
-  const updateValue = (id: string, value: string) => {
-    setProxyStore((v) => v.id == id, "value", value);
+  const removeValue = (id: string) => {
+    if (proxyStore.length === 1) {
+      updateValue(id, "");
+    } else {
+      setProxyStore((v) => v.filter((item) => item.id != id));
+      props.onChange(
+        proxyStore.map((item) => item.value).filter((i) => i !== ""),
+      );
+    }
+  };
+
+  const addValue = () => {
+    setProxyStore((v) => [
+      ...v,
+      { value: "", id: Math.random().toString(36).slice(2) },
+    ]);
   };
 
   return (
@@ -60,13 +75,7 @@ export const MultiStringInput = (props: MultiStringInputProps) => {
               type="button"
               disabled={props.disabled}
               class="text-neutral-400 hover:text-neutral-500 dark:text-neutral-300 dark:hover:text-neutral-400"
-              onClick={() => {
-                if (proxyStore.length === 1) {
-                  updateValue(entry.id, "");
-                } else {
-                  setProxyStore((v) => v.filter((item) => item.id != entry.id));
-                }
-              }}
+              onClick={() => removeValue(entry.id)}
             >
               <FiX />
             </button>
@@ -77,12 +86,7 @@ export const MultiStringInput = (props: MultiStringInputProps) => {
         type="button"
         disabled={props.disabled}
         class={cn("flex gap-2 items-center justify-center", props.addClass)}
-        onClick={() => {
-          setProxyStore((v) => [
-            ...v,
-            { value: "", id: Math.random().toString(36).slice(2) },
-          ]);
-        }}
+        onClick={addValue}
       >
         <Show when={props.addLabel}>{props.addLabel}</Show>
         <FiPlus />
