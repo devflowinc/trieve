@@ -37,8 +37,8 @@ jobs:
         env:
           BUNNY_API_KEY: ${{ secrets.BUNNY_SITE_API_KEY }}
           STORAGE_ZONE: trieve-site
-          UPLOAD_PATH: website/dist
-        run: "bash website/upload-to-bunny.sh"
+          UPLOAD_PATH: dist
+        run: "cd website && bash upload-to-bunny.sh"
 
       - name: Purge Cache
         env:
