@@ -156,7 +156,7 @@ pub struct SingleProductOptions {
     product_description_html: Option<String>,
     product_primary_image_url: Option<String>,
     rec_search_query: Option<String>,
-    product_questions: Option<Vec<String>>,
+    product_questions: Option<Vec<DefaultSearchQuery>>,
     pdp_prompt: Option<String>,
 }
 

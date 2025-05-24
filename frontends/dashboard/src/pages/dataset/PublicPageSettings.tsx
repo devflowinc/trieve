@@ -1945,10 +1945,19 @@ export const SingleProductOptions = () => {
             </div>
             <MultiStringInput
               placeholder="What does it do?..."
-              value={extraParams.singleProductOptions?.productQuestions || []}
+              value={
+                extraParams.singleProductOptions?.productQuestions?.map((q) =>
+                  q.query ? q.query + "," + (q.imageUrl ?? "") : q.query ?? "",
+                ) || []
+              }
               onChange={(e) => {
                 setExtraParams("singleProductOptions", {
-                  productQuestions: e,
+                  ...extraParams.singleProductOptions,
+                  productQuestions: e.map((q) =>
+                    q.includes(",")
+                      ? { query: q.split(",")[0], imageUrl: q.split(",")[1] }
+                      : { query: q },
+                  ),
                 });
               }}
               addLabel="Add Product Question"
