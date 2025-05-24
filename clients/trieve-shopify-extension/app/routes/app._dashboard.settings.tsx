@@ -242,8 +242,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
 
       await trieve.createChunk({
+        // Add this just to rubber stamp
+        metadata: {
+          status: "ACTIVE",
+          variant_inventory: 20,
+        },
         chunk_html: policyContent as string,
         tracking_id: policyId as string,
+        tag_set: ["policy"],
         group_tracking_ids: ["policy"],
         upsert_by_tracking_id: true,
       });

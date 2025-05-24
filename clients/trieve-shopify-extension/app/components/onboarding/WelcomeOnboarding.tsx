@@ -31,7 +31,7 @@ export const WelcomeOnboarding: OnboardingBody = ({
     if (!productVariantsCount || !usage?.chunk_count) {
       return;
     }
-    if (usage?.chunk_count >= productVariantsCount) {
+    if (usage?.chunk_count >= productVariantsCount * 0.1) {
       setCompleted(true);
       setRefetch(false);
       if (trieve.organizationId && trieve.trieve.apiKey != null) {

@@ -8,16 +8,13 @@ import {
   Card,
   Divider,
   FormLayout,
-  Icon,
   InlineGrid,
   InlineStack,
-  Page,
-  Select,
   Text,
   TextField,
   useBreakpoints,
 } from "@shopify/polaris";
-import { CheckCircleIcon, InfoIcon } from "@shopify/polaris-icons";
+import { CheckCircleIcon } from "@shopify/polaris-icons";
 import { useClientAdminApi } from "app/loaders/clientLoader";
 import { setAppMetafields } from "app/queries/metafield";
 import { useCallback, useEffect, useState } from "react";
@@ -97,9 +94,6 @@ export const DatasetSettings = ({
     useState(initalCrawlOptions);
   const shopify = useAppBridge();
   const submit = useSubmit();
-  const [datasetSettings, setDatasetSettings] = useState<DatasetConfig>(
-    shopDataset.server_configuration ?? ({} as DatasetConfig),
-  );
 
   const adminApi = useClientAdminApi();
   const { smUp } = useBreakpoints();

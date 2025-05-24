@@ -13,10 +13,11 @@ import {
   Modal,
   InlineGrid,
 } from "@shopify/polaris";
-import { useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Dataset } from "trieve-ts-sdk";
 import { useSubmit } from "@remix-run/react";
 import { PlusIcon, DeleteIcon, EditIcon } from "@shopify/polaris-icons";
+import { useTrieve } from "app/context/trieveContext";
 
 interface Policy {
   id: string;
@@ -41,6 +42,7 @@ export function PolicySettings({
   });
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [policyIdToDelete, setPolicyIdToDelete] = useState<string | null>(null);
+  const trieve = useTrieve();
 
   const submit = useSubmit();
 
@@ -63,7 +65,7 @@ export function PolicySettings({
         };
       }
 
-      await submit(
+      submit(
         {
           policy: policyToAdd.content,
           policy_id: policyToAdd.id,
@@ -90,6 +92,19 @@ export function PolicySettings({
       });
     }
   };
+
+  useEffect(() => {
+    trieve.trieve.getChunksGroupByTrackingId({
+      groupTrackingId: "policy",
+      page: 1
+    }).then((res) => {
+      const initialPolicies: Policy[] = res.chunks.filter((chunk) => chunk.chunk_html && chunk.tracking_id).map((chunk) => ({
+        id: chunk.tracking_id ?? "",
+        content: chunk.chunk_html || ""
+      }))
+      setPolicies(initialPolicies);
+    });
+  }, []);
 
   const handleStartEditPolicy = (policy: Policy) => {
     setIsAdding(false);
