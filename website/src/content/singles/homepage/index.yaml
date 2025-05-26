@@ -56,22 +56,16 @@ secondFeatures:
   title: |
     Trieve Coordinates so You Can Scale
   features:
-    - title: No-Code Dashboard
-      description: >-
-        Great discovery is a team effort. Tune ranking, relevance, voice, and
-        more to resolve tickets in seconds through our enterprise-grade no-code
-        dashboard.
-      image: /src/assets/images/home/secondFeatures/features/0/image.png
     - title: Use the Best Model for the Job
       description: >-
         Built-in support for open-source embeddings and secure LLMs, plus BYO
         model support with your keys.
-      image: /src/assets/images/home/secondFeatures/features/1/image.png
+      image: /src/assets/images/home/secondFeatures/features/0/image.png
     - title: Self-Hostable
       description: >-
         Sensitive data? Need maximum performance? Host Trieve yourself with
         terraform templates and no external dependencies.
-      image: /src/assets/images/home/secondFeatures/features/2/image.png
+      image: /src/assets/images/home/secondFeatures/features/1/image.png
 callToAction:
   title: |
     Find out why valuable\
