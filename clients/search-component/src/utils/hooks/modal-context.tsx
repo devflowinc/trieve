@@ -89,6 +89,17 @@ export interface SearchToolCallOptions {
   toolDescription: string;
 }
 
+export interface NotFilterToolCallOptions {
+  userMessageTextPrefix?: string;
+  toolDescription: string;
+}
+
+export const defaultNotFilterToolCallOptions: NotFilterToolCallOptions = {
+  userMessageTextPrefix: "Here is the user query:",
+  toolDescription:
+    "Set to true if the query is not interested in the products they were shown previously or would like to see something different. Ensure that this is only set to true when the user wants to see something different from the previously returned results or is not interested in those previously returned results.",
+};
+
 export const defaultSearchToolCallOptions: SearchToolCallOptions = {
   userMessageTextPrefix: "Here is the user query:",
   toolDescription:
@@ -147,7 +158,6 @@ export function isDefaultSearchQuery(
   return typeof question === "object" && "query" in question;
 }
 
-
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
@@ -182,6 +192,7 @@ export type ModalProps = {
   relevanceToolCallOptions?: RelevanceToolCallOptions;
   priceToolCallOptions?: PriceToolCallOptions;
   searchToolCallOptions?: SearchToolCallOptions;
+  notFilterToolCallOptions?: NotFilterToolCallOptions;
   defaultSearchMode?: SearchModes;
   usePagefind?: boolean;
   type?: ModalTypes;
