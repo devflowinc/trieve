@@ -80,7 +80,7 @@ invariant(i18n, "No homepage content found");
           ({ title, description, image }, idx) => (
             <>
               <div id={`kf-${idx}`} class="relative -top-16" />
-              <div class="flex flex-col md:flex-row gap-4 md:gap-20 max-w-6xl mx-auto">
+              <div class="flex flex-col md:flex-row gap-4 md:gap-20 max-w-6xl mx-auto md:items-center">
                 <div
                   class="flex-2/5 text-center md:text-left"
                   class:list={[{ "md:order-2": idx % 2 }]}
@@ -114,7 +114,7 @@ invariant(i18n, "No homepage content found");
       {
         i18n.secondFeatures.features.map(({ title, description, image }) => {
           return (
-            <div class="flex flex-col md:flex-row gap-4 md:gap-20 mx-auto">
+            <div class="flex flex-col md:flex-row gap-4 md:gap-20 mx-auto md:items-center">
               <div class="flex-1/2 text-center md:text-left">
                 <h3 class="md:mt-4 mb-2">{title}</h3>
                 <p class="text-xl tracking-tighter">{description}</p>
