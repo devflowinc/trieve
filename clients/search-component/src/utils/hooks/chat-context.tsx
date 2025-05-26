@@ -889,18 +889,18 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         filters.should == null
       ) {
         filters = null;
+      }
 
-        if (notFilter) {
-          if (filters == null) {
-            filters = { must_not: [] };
-          }
+      if (notFilter) {
+        if (filters == null || (filters as ChunkFilter).must_not == null) {
+          filters = { must_not: [] };
+        }
 
-          if (filters?.must_not) {
-            filters.must_not.push({
-              field: "group_ids",
-              match_any: groupIdsInChat,
-            });
-          }
+        if (filters?.must_not) {
+          filters.must_not.push({
+            field: "group_ids",
+            match_any: groupIdsInChat,
+          });
         }
       }
 
