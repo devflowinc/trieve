@@ -2886,6 +2886,11 @@ export type MultiQuery = {
 
 export type NewChunkMetadataTypes = SlimChunkMetadataWithArrayTagSet | ChunkMetadata | ContentChunkMetadata;
 
+export type NotFilterToolCallOptions = {
+    toolDescription?: (string) | null;
+    userMessageTextPrefix?: (string) | null;
+};
+
 /**
  * Controls the Optical Character Recognition (OCR) strategy.
  * - `All`: Processes all pages with OCR. (Latency penalty: ~0.5 seconds per page)
@@ -3082,6 +3087,7 @@ export type PublicPageParameters = {
     inlineHeader?: (string) | null;
     isTestMode?: (boolean) | null;
     navLogoImgSrcUrl?: (string) | null;
+    notFilterToolCallOptions?: ((NotFilterToolCallOptions) | null);
     numberOfSuggestions?: (number) | null;
     openGraphMetadata?: ((OpenGraphMetadata) | null);
     openLinksInNewTab?: (boolean) | null;

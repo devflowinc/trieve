@@ -40,6 +40,9 @@
       {% if params.relevanceToolCallOptions -%}
       relevanceToolCallOptions: {{ params.relevanceToolCallOptions | tojson }},
       {% endif -%}
+      {% if params.notFilterToolCallOptions -%}
+      notFilterToolCallOptions: {{ params.notFilterToolCallOptions | tojson }},
+      {% endif -%}
       {% if params.responsive -%}
       responsive: {{ params.responsive }},
       {% endif -%}
