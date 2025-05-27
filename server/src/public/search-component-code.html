@@ -1,140 +1,143 @@
 <pre class="-my-4"> 
-<code class="language-javascript">
-&lt;link
-  rel="stylesheet"
-  href="https://search-component.trieve.ai/dist/index.css"
-/&gt;
-
-&lt;script type="module"&gt;
-  import {renderToDiv} from 'https://search-component.trieve.ai/dist/vanilla/index.js';
-  window.addEventListener('load', () => {
-    const root = document.createElement('div');
-    root.classList.add('trigger');
-    document.body.appendChild(root);
-
-    renderToDiv(root, {
-      {% if params.apiKey -%}
-      apiKey: "{{ params.apiKey }}",
-      {% endif -%}
-      {% if params.datasetId -%}
-      datasetId: "{{ params.datasetId }}",
-      {% endif -%}
-      {% if params.baseUrl -%}
-      baseUrl: "{{ params.baseUrl }}",
-      {% endif -%}
-      {% if params.type -%}
-      type: "{{ params.type }}",
-      {% endif -%}
-      {% if params.suggestedQueries -%}
-      suggestedQueries: {{ params.suggestedQueries }},
-      {% endif -%}
-      {% if params.followupQuestions -%}
-      followupQuestions: {{ params.followupQuestions }},
-      {% endif -%}
-      {% if params.analytics -%}
-      analytics: {{ params.analytics }},
-      {% endif -%}
-      {% if params.tags -%}
-      tags: {{ params.tags | tojson }},
-      {% endif -%}
-      {% if params.relevanceToolCallOptions -%}
-      relevanceToolCallOptions: {{ params.relevanceToolCallOptions | tojson }},
-      {% endif -%}
-      {% if params.responsive -%}
-      responsive: {{ params.responsive }},
-      {% endif -%}
-      {% if params.chat -%}
-      chat: "{{ params.chat}}",
-      {% endif -%}
-      {% if params.theme -%}
-      theme: "{{ params.theme }}",
-      {% endif -%}
-      {% if params.search_options -%}
-      search_options: {{ params.searchOptions }},
-      {% endif -%}
-      {% if params.brandLogoImgSrcUrl -%}
-      brandLogoImgSrcUrl: "{{ params.brandLogoImgSrcUrl }}",
-      {% endif -%}
-      {% if params.brandName -%}
-      brandName: "{{ params.brandName }}",
-      {% endif -%}
-      {% if params.problemLink -%}
-      problemLink: "{{ params.problemLink }}",
-      {% endif -%}
-      {% if params.brandColor -%}
-      brandColor: "{{ params.brandColor }}",
-      {% endif -%}
-      {% if params.brandFontFamily -%}
-      brandFontFamily: "{{ params.brandFontFamily }}",
-      {% endif -%}
-      {% if params.placeholder -%}
-      placeholder: "{{ params.placeholder }}",
-      {% endif -%}
-      {% if params.defaultSearchQueries -%}
-      defaultSearchQueries: {{ params.defaultSearchQueries }},
-      {% endif -%}
-      {% if params.defaultAiQuestions -%}
-      defaultAiQuestions: {{ params.defaultAiQuestions }},
-      {% endif -%}
-      {% if params.defaultSearchMode -%}
-      defaultSearchMode: "{{ params.defaultSearchMode }}",
-      {% endif -%}
-      {% if params.useGroupSearch -%}
-      useGroupSearch: {{ params.useGroupSearch }},
-      {% endif -%}
-      {% if params.allowSwitchingModes -%}
-      allowSwitchingModes: {{ params.allowSwitchingModes }},
-      {% endif -%}
-      {% if params.defaultCurrency -%}
-      defaultCurrency: "{{ params.defaultCurrency }}",
-      {% endif -%}
-      {% if params.currencyPosition -%}
-      currencyPosition: "{{ params.currencyPosition }}",
-      {% endif -%}
-      {% if params.showFloatingButton -%}
-      showFloatingButton: "{{ params.showFloatingButton }}",
-      {% endif -%}
-      {% if params.floatingButtonPosition -%}
-      floatingButtonPosition: "{{ params.floatingButtonPosition }}",
-      {% endif -%}
-      {% if params.floatingButtonVersion -%}
-      floatingButtonVersion: "{{ params.floatingButtonVersion }}",
-      {% endif -%}
-      {% if params.showFloatingInput -%}
-      showFloatingInput: "{{ params.showFloatingInput }}",
-      {% endif -%}
-      {% if params.showFloatingSearchIcon -%}
-      showFloatingSearchIcon: "{{ params.showFloatingSearchIcon }}",
-      {% endif -%}
-      {% if params.floatingSearchIconPosition -%}
-      floatingSearchIconPosition: "{{ params.floatingSearchIconPosition }}",
-      {% endif -%}
-      {% if params.buttonTriggers -%}
-      buttonTriggers: {{ params.buttonTriggers }},
-      {% endif -%}
-      {% if params.zIndex -%}
-      zIndex: {{ params.zIndex }},
-      {% endif -%}
-      {% if params.debounceMs -%}
-      debounceMs: {{ params.debounceMs }},
-      {% endif -%}
-      {% if params.numberOfSuggestions -%}
-      numberOfSuggestions: {{ params.numberOfSuggestions }}
-      {% endif -%}
-      {% if params.inlineHeader -%}
-      inlineHeader: {{ params.inlineHeader }}
-      {% endif -%}
-      {% if params.showResultHighlights -%}
-      showResultHighlights: {{ params.showResultHighlights }}
-      {% endif -%}
-      {% if params.defaultImageQuestion -%}
-      defaultImageQuestion: {{ params.defaultImageQuestion }}
-      {% endif -%}
-      {% if params.imageStarterText -%}
-      imageStarterText: "{{ params.imageStarterText }}",
-      {% endif -%}
-    })
-  });
-&lt;/script&gt;
-</code>
-</pre>
+  <code class="language-javascript">
+  &lt;link
+    rel="stylesheet"
+    href="https://search-component.trieve.ai/dist/index.css"
+  /&gt;
+  
+  &lt;script type="module"&gt;
+    import {renderToDiv} from 'https://search-component.trieve.ai/dist/vanilla/index.js';
+    window.addEventListener('load', () => {
+      const root = document.createElement('div');
+      root.classList.add('trigger');
+      document.body.appendChild(root);
+  
+      renderToDiv(root, {
+        {% if params.apiKey -%}
+        apiKey: "{{ params.apiKey }}",
+        {% endif -%}
+        {% if params.datasetId -%}
+        datasetId: "{{ params.datasetId }}",
+        {% endif -%}
+        {% if params.baseUrl -%}
+        baseUrl: "{{ params.baseUrl }}",
+        {% endif -%}
+        {% if params.type -%}
+        type: "{{ params.type }}",
+        {% endif -%}
+        {% if params.suggestedQueries -%}
+        suggestedQueries: {{ params.suggestedQueries }},
+        {% endif -%}
+        {% if params.followupQuestions -%}
+        followupQuestions: {{ params.followupQuestions }},
+        {% endif -%}
+        {% if params.analytics -%}
+        analytics: {{ params.analytics }},
+        {% endif -%}
+        {% if params.tags -%}
+        tags: {{ params.tags | tojson }},
+        {% endif -%}
+        {% if params.relevanceToolCallOptions -%}
+        relevanceToolCallOptions: {{ params.relevanceToolCallOptions | tojson }},
+        {% endif -%}
+        {% if params.notFilterToolCallOptions -%}
+        notFilterToolCallOptions: {{ params.notFilterToolCallOptions | tojson }},
+        {% endif -%}
+        {% if params.responsive -%}
+        responsive: {{ params.responsive }},
+        {% endif -%}
+        {% if params.chat -%}
+        chat: "{{ params.chat}}",
+        {% endif -%}
+        {% if params.theme -%}
+        theme: "{{ params.theme }}",
+        {% endif -%}
+        {% if params.search_options -%}
+        search_options: {{ params.searchOptions }},
+        {% endif -%}
+        {% if params.brandLogoImgSrcUrl -%}
+        brandLogoImgSrcUrl: "{{ params.brandLogoImgSrcUrl }}",
+        {% endif -%}
+        {% if params.brandName -%}
+        brandName: "{{ params.brandName }}",
+        {% endif -%}
+        {% if params.problemLink -%}
+        problemLink: "{{ params.problemLink }}",
+        {% endif -%}
+        {% if params.brandColor -%}
+        brandColor: "{{ params.brandColor }}",
+        {% endif -%}
+        {% if params.brandFontFamily -%}
+        brandFontFamily: "{{ params.brandFontFamily }}",
+        {% endif -%}
+        {% if params.placeholder -%}
+        placeholder: "{{ params.placeholder }}",
+        {% endif -%}
+        {% if params.defaultSearchQueries -%}
+        defaultSearchQueries: {{ params.defaultSearchQueries }},
+        {% endif -%}
+        {% if params.defaultAiQuestions -%}
+        defaultAiQuestions: {{ params.defaultAiQuestions }},
+        {% endif -%}
+        {% if params.defaultSearchMode -%}
+        defaultSearchMode: "{{ params.defaultSearchMode }}",
+        {% endif -%}
+        {% if params.useGroupSearch -%}
+        useGroupSearch: {{ params.useGroupSearch }},
+        {% endif -%}
+        {% if params.allowSwitchingModes -%}
+        allowSwitchingModes: {{ params.allowSwitchingModes }},
+        {% endif -%}
+        {% if params.defaultCurrency -%}
+        defaultCurrency: "{{ params.defaultCurrency }}",
+        {% endif -%}
+        {% if params.currencyPosition -%}
+        currencyPosition: "{{ params.currencyPosition }}",
+        {% endif -%}
+        {% if params.showFloatingButton -%}
+        showFloatingButton: "{{ params.showFloatingButton }}",
+        {% endif -%}
+        {% if params.floatingButtonPosition -%}
+        floatingButtonPosition: "{{ params.floatingButtonPosition }}",
+        {% endif -%}
+        {% if params.floatingButtonVersion -%}
+        floatingButtonVersion: "{{ params.floatingButtonVersion }}",
+        {% endif -%}
+        {% if params.showFloatingInput -%}
+        showFloatingInput: "{{ params.showFloatingInput }}",
+        {% endif -%}
+        {% if params.showFloatingSearchIcon -%}
+        showFloatingSearchIcon: "{{ params.showFloatingSearchIcon }}",
+        {% endif -%}
+        {% if params.floatingSearchIconPosition -%}
+        floatingSearchIconPosition: "{{ params.floatingSearchIconPosition }}",
+        {% endif -%}
+        {% if params.buttonTriggers -%}
+        buttonTriggers: {{ params.buttonTriggers }},
+        {% endif -%}
+        {% if params.zIndex -%}
+        zIndex: {{ params.zIndex }},
+        {% endif -%}
+        {% if params.debounceMs -%}
+        debounceMs: {{ params.debounceMs }},
+        {% endif -%}
+        {% if params.numberOfSuggestions -%}
+        numberOfSuggestions: {{ params.numberOfSuggestions }}
+        {% endif -%}
+        {% if params.inlineHeader -%}
+        inlineHeader: {{ params.inlineHeader }}
+        {% endif -%}
+        {% if params.showResultHighlights -%}
+        showResultHighlights: {{ params.showResultHighlights }}
+        {% endif -%}
+        {% if params.defaultImageQuestion -%}
+        defaultImageQuestion: {{ params.defaultImageQuestion }}
+        {% endif -%}
+        {% if params.imageStarterText -%}
+        imageStarterText: "{{ params.imageStarterText }}",
+        {% endif -%}
+      })
+    });
+  &lt;/script&gt;
+  </code>
+  </pre>

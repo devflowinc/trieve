@@ -3478,6 +3478,9 @@ impl DatasetConfigurationDTO {
                     search_tool_call_options: page_parameters_self
                         .search_tool_call_options
                         .or(page_parameters_curr.search_tool_call_options),
+                    not_filter_tool_call_options: page_parameters_self
+                        .not_filter_tool_call_options
+                        .or(page_parameters_curr.not_filter_tool_call_options),
                     suggested_queries: page_parameters_self
                         .suggested_queries
                         .or(page_parameters_curr.suggested_queries),

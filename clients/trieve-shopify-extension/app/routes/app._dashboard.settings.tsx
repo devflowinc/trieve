@@ -1,384 +1,582 @@
-import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
-import { Box, Tabs, LegacyCard, Card } from "@shopify/polaris";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { sdkFromKey, validateTrieveAuth } from "app/auth";
 import {
-  DatasetSettings as DatasetSettings,
-  ExtendedCrawlOptions,
-} from "app/components/settings/DatasetSettings";
-import { useTrieve } from "app/context/trieveContext";
-import { buildAdminApiFetcherForServer } from "app/loaders/serverLoader";
-import { sendChunks } from "app/processors/getProducts";
-import { shopDatasetQuery } from "app/queries/shopDataset";
-import { authenticate } from "app/shopify.server";
+  Card,
+  BlockStack,
+  FormLayout,
+  Select,
+  TextField,
+  InlineStack,
+  Button,
+  Text,
+  Page,
+  InlineGrid,
+  Box,
+  Divider,
+  useBreakpoints,
+  Collapsible,
+} from "@shopify/polaris";
+import { CaretDownIcon, CaretUpIcon } from "@shopify/polaris-icons";
+import { useState } from "react";
+import { DatasetConfig } from "./DatasetSettings";
+import { useSubmit } from "@remix-run/react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import {
-  RelevanceToolCallOptions,
+  Dataset,
   PriceToolCallOptions,
-  type Dataset,
+  RelevanceToolCallOptions,
   SearchToolCallOptions,
+  NotFilterToolCallOptions,
 } from "trieve-ts-sdk";
-import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
-import { getAppMetafields, setAppMetafields } from "app/queries/metafield";
-import { useState, useCallback, ReactNode, useEffect } from "react";
-import { LLMSettings } from "app/components/settings/LLMSettings";
-import {
-  PresetQuestion,
-  PresetQuestions,
-} from "app/components/settings/PresetQuestions";
-import { FilterSettings } from "app/components/settings/FilterSettings";
-import { IntegrationsSettings } from "app/components/settings/Integrations";
-import { PolicySettings } from "app/components/settings/PolicySettings";
 
-export const loader = async ({
-  request,
-}: LoaderFunctionArgs): Promise<{
-  crawlSettings: ExtendedCrawlOptions | undefined;
-  webPixelInstalled: boolean;
-  devMode: boolean;
-  pdpPrompt: string;
-  presetQuestions: PresetQuestion[];
-  relevanceToolCallOptions: RelevanceToolCallOptions | null;
-  searchToolCallOptions: SearchToolCallOptions | null;
-  priceToolCallOptions: PriceToolCallOptions | null;
-}> => {
-  const { session } = await authenticate.admin(request);
-  const key = await validateTrieveAuth(request);
-  const trieve = sdkFromKey(key);
-  const fetcher = buildAdminApiFetcherForServer(
-    session.shop,
-    session.accessToken!,
+export const defaultRelevanceToolCallOptions: RelevanceToolCallOptions = {
+  userMessageTextPrefix:
+    "Be extra picky and detailed. Thoroughly examine all details of the query and product.",
+  includeImages: false,
+  toolDescription: "Mark the relevance of product based on the user's query.",
+  highDescription:
+    "Highly relevant and very good fit for the given query taking all details of both the query and the product into account",
+  mediumDescription:
+    "Somewhat relevant and a decent or okay fit for the given query taking all details of both the query and the product into account",
+  lowDescription:
+    "Not relevant and not a good fit for the given query taking all details of both the query and the product into account",
+};
+
+export const defaultPriceToolCallOptions: PriceToolCallOptions = {
+  toolDescription:
+    "Only call this function if the query includes details about a price. Decide on which price filters to apply to the available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
+  minPriceDescription:
+    "Minimum price of the product. Only set this if a minimum price is mentioned in the query.",
+  maxPriceDescription:
+    "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
+};
+
+export const defaultSearchToolCallOptions: SearchToolCallOptions = {
+  userMessageTextPrefix: "Here is the user query:",
+  toolDescription:
+    "Call this tool anytime it seems like we need to skip the search step. This tool tells our system that the user is asking about what they were previously shown.",
+};
+
+export const defaultNotFilterToolCallOptions: NotFilterToolCallOptions = {
+  userMessageTextPrefix: "Here is the user query:",
+  toolDescription:
+    "Set to true if the query is not interested in the products they were shown previously or would like to see something different. Ensure that this is only set to true when the user wants to see something different from the previously returned results or is not interested in those previously returned results.",
+};
+
+interface LLMSettingsProps {
+  shopDataset: Dataset;
+  existingPdpPrompt: string;
+  existingRelevanceToolCallOptions: RelevanceToolCallOptions | null;
+  existingPriceToolCallOptions: PriceToolCallOptions | null;
+  existingSearchToolCallOptions: SearchToolCallOptions | null;
+  existingNotFilterToolCallOptions: NotFilterToolCallOptions | null;
+}
+
+export function LLMSettings({
+  shopDataset,
+  existingPdpPrompt,
+  existingRelevanceToolCallOptions,
+  existingPriceToolCallOptions,
+  existingSearchToolCallOptions,
+  existingNotFilterToolCallOptions,
+}: LLMSettingsProps) {
+  const shopify = useAppBridge();
+  const submit = useSubmit();
+  const { smUp } = useBreakpoints();
+  const [datasetSettings, setDatasetSettings] = useState<DatasetConfig>(
+    shopDataset.server_configuration ?? ({} as DatasetConfig),
   );
-  setAppMetafields(fetcher, [
-    {
-      key: "dataset_id",
-      value: key.currentDatasetId || "",
-      type: "single_line_text_field",
-    },
-    {
-      key: "api_key",
-      value: key.key,
-      type: "single_line_text_field",
-    },
-  ]).catch(console.error);
+  const [pdpPrompt, setPdpPrompt] = useState(existingPdpPrompt ?? "");
+  const [relevanceToolCallOptions, setRelevanceToolCallOptions] = useState(
+    existingRelevanceToolCallOptions ?? defaultRelevanceToolCallOptions,
+  );
+  const [
+    showAdvancedRelevanceDescriptions,
+    setShowAdvancedRelevanceDescriptions,
+  ] = useState(false);
 
-  const crawlSettings: {
-    crawlSettings: ExtendedCrawlOptions | undefined;
-  } = (await prisma.crawlSettings.findFirst({
-    where: {
-      datasetId: trieve.datasetId,
-      shop: session.shop,
-    },
-  })) as any;
-
-  const webPixelInstalled = await isWebPixelInstalled(fetcher, key);
-
-  const devMode =
-    (await getAppMetafields<boolean>(fetcher, "dev_mode")) || false;
-  const pdpPrompt =
-    (await getAppMetafields<string>(fetcher, "pdp_prompt")) || "";
-  const presetQuestions =
-    (await getAppMetafields<PresetQuestion[]>(fetcher, "preset_questions")) ||
-    [];
-
-  const relevanceToolCallOptions =
-    await getAppMetafields<RelevanceToolCallOptions>(
-      fetcher,
-      "relevance_tool_call_options",
-    );
-  const searchToolCallOptions =
-    await getAppMetafields<RelevanceToolCallOptions>(
-      fetcher,
-      "search_tool_call_options",
-    );
-  const priceToolCallOptions = await getAppMetafields<PriceToolCallOptions>(
-    fetcher,
-    "price_tool_call_options",
+  const [priceToolCallOptions, setPriceToolCallOptions] = useState(
+    existingPriceToolCallOptions ?? defaultPriceToolCallOptions,
   );
 
-  return {
-    crawlSettings: crawlSettings?.crawlSettings,
-    webPixelInstalled,
-    devMode,
-    pdpPrompt,
-    presetQuestions,
-    relevanceToolCallOptions,
-    searchToolCallOptions,
-    priceToolCallOptions,
+  const [searchToolCallOptions, setSearchToolCallOptions] = useState(
+    existingSearchToolCallOptions ?? defaultSearchToolCallOptions,
+  );
+
+  const [notFilterToolCallOptions, setNotFilterToolCallOptions] = useState(
+    existingNotFilterToolCallOptions ?? defaultNotFilterToolCallOptions,
+  );
+
+  const onLLMSettingsSave = async () => {
+    submit(
+      {
+        dataset_settings: JSON.stringify(datasetSettings),
+        pdp_prompt: pdpPrompt,
+        dataset_id: shopDataset.id,
+        type: "dataset",
+      },
+      {
+        method: "POST",
+      },
+    );
+
+    shopify.toast.show("Saved LLM settings!");
   };
-};
 
-type SettingsSaveType =
-  | "crawl"
-  | "dataset"
-  | "revenue_tracking"
-  | "preset-questions"
-  | "tool_call_options"
-  | "policy"
-  | "delete_policy";
-
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const key = await validateTrieveAuth(request);
-  const trieve = sdkFromKey(key);
-  const fetcher = buildAdminApiFetcherForServer(
-    session.shop,
-    session.accessToken!,
-  );
-  const formData = await request.formData();
-  const type = formData.get("type") as SettingsSaveType;
-  switch (type) {
-    case "crawl": {
-      const crawlOptions = formData.get("crawl_options");
-      const datasetId = formData.get("dataset_id");
-      const crawlSettings = JSON.parse(crawlOptions as string);
-      await prisma.crawlSettings.upsert({
-        where: {
-          datasetId_shop: {
-            datasetId: datasetId as string,
-            shop: session.shop,
-          },
-        },
-        update: {
-          crawlSettings,
-        },
-        create: { crawlSettings },
-      });
-
-      const fetcher = buildAdminApiFetcherForServer(
-        session.shop,
-        session.accessToken!,
-      );
-
-      sendChunks(
-        datasetId as string,
-        key,
-        fetcher,
-        session,
-        crawlSettings,
-      ).catch(console.error);
-      setAppMetafields(fetcher, [
-        {
-          key: "dataset_id",
-          value: key.currentDatasetId || "",
-          type: "single_line_text_field",
-        },
-        {
-          key: "api_key",
-          value: key.key,
-          type: "single_line_text_field",
-        },
-      ]).catch(console.error);
-
-      return { success: true };
-    }
-    case "dataset": {
-      const datasetSettingsString = formData.get("dataset_settings");
-      const datasetId = formData.get("dataset_id");
-      const datasetSettings = JSON.parse(datasetSettingsString as string);
-      await trieve.updateDataset({
-        dataset_id: datasetId as string,
-        server_configuration: datasetSettings,
-      });
-      const pdpPrompt = formData.get("pdp_prompt");
-      if (pdpPrompt) {
-        await setAppMetafields(fetcher, [
-          {
-            key: "pdp_prompt",
-            value: pdpPrompt as string,
-            type: "multi_line_text_field",
-          },
-        ]);
-      }
-      return { success: true };
-    }
-    case "revenue_tracking": {
-      await createWebPixel(fetcher, key);
-      return { success: true };
-    }
-    case "preset-questions": {
-      const presetQuestions = formData.get("presetQuestions")?.toString() || "";
-      await setAppMetafields(fetcher, [
-        {
-          key: "preset_questions",
-          value: presetQuestions,
-          type: "json",
-        },
-      ]);
-      return { success: true };
-    }
-    case "tool_call_options": {
-      const relevanceToolCallOptions = formData.get(
-        "relevance_tool_call_options",
-      );
-      const priceToolCallOptions = formData.get("price_tool_call_options");
-      const searchToolCallOptions = formData.get("search_tool_call_options");
-      await setAppMetafields(fetcher, [
-        {
-          key: "relevance_tool_call_options",
-          value: relevanceToolCallOptions as string,
-          type: "json",
-        },
-        {
-          key: "price_tool_call_options",
-          value: priceToolCallOptions as string,
-          type: "json",
-        },
-        {
-          key: "search_tool_call_options",
-          value: searchToolCallOptions as string,
-          type: "json",
-        },
-      ]);
-      return { success: true };
-    }
-    case "policy": {
-      const policyContent = formData.get("policy");
-      const policyId = formData.get("policy_id");
-
-      await trieve.createChunkGroup({
-        dataset_id: trieve.datasetId,
-        group_tracking_id: "policy",
-      });
-
-      await trieve.createChunk({
-        // Add this just to rubber stamp
-        metadata: {
-          status: "ACTIVE",
-          variant_inventory: 20,
-        },
-        chunk_html: policyContent as string,
-        tracking_id: policyId as string,
-        tag_set: ["policy"],
-        group_tracking_ids: ["policy"],
-        upsert_by_tracking_id: true,
-      });
-
-      return { success: true };
-    }
-    case "delete_policy": {
-      const policyId = formData.get("policy_id");
-
-      await trieve.deleteChunkByTrackingId({
-        trackingId: policyId as string,
-      });
-
-      return { success: true };
-    }
-    default: {
-      return { success: false };
-    }
-  }
-};
-
-export default function Dataset() {
-  const { trieve } = useTrieve();
-  const { data: shopDataset } = useSuspenseQuery(shopDatasetQuery(trieve));
-  const {
-    crawlSettings,
-    webPixelInstalled,
-    devMode,
-    pdpPrompt,
-    presetQuestions,
-    relevanceToolCallOptions,
-    searchToolCallOptions,
-    priceToolCallOptions,
-  } = useLoaderData<typeof loader>();
-  const [selectedTab, setSelectedTab] = useState(0);
-
-  const handleTabChange = useCallback((selectedTabIndex: number) => {
-    const params = new URLSearchParams(window.location.search);
-    params.set("tab", tabs[selectedTabIndex].id);
-    window.history.pushState(
-      {},
-      "",
-      `${window.location.pathname}?${params.toString()}`,
+  const saveToolCallOptions = async () => {
+    submit(
+      {
+        relevance_tool_call_options: JSON.stringify(relevanceToolCallOptions),
+        price_tool_call_options: JSON.stringify(priceToolCallOptions),
+        search_tool_call_options: JSON.stringify(searchToolCallOptions),
+        not_filter_tool_call_options: JSON.stringify(notFilterToolCallOptions),
+        dataset_id: shopDataset.id,
+        type: "tool_call_options",
+      },
+      {
+        method: "POST",
+      },
     );
-    setSelectedTab(selectedTabIndex);
-  }, []);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
-    if (tab) {
-      setSelectedTab(tabs.findIndex((t) => t.id === tab));
-    }
-  }, []);
-
-  const tabs = [
-    {
-      id: "preset-questions",
-      content: "Preset Questions",
-      accessibilityLabel: "Preset Questions",
-      panelID: "preset-questions-content",
-    },
-    {
-      id: "extra-information",
-      content: "Policies",
-      accessibilityLabel: "Policies",
-      panelID: "update-policies-settings-content",
-    },
-    {
-      id: "filter-settings",
-      content: "Filter Settings",
-      accessibilityLabel: "Filter Settings",
-      panelID: "filter-settings-content",
-    },
-    {
-      id: "llm-settings",
-      content: "LLM Settings",
-      accessibilityLabel: "LLM Settings",
-      panelID: "llm-settings-content",
-    },
-    {
-      id: "integrations-settings",
-      content: "Integrations",
-      accessibilityLabel: "Integrations Settings",
-      panelID: "integrations-settings-content",
-    },
-    {
-      id: "dataset-settings",
-      content: "Dataset Settings",
-      accessibilityLabel: "Dataset Settings",
-      panelID: "dataset-settings-content",
-    },
-  ];
-
-  const tabPanels: Record<string, ReactNode> = {
-    "dataset-settings": (
-      <DatasetSettings
-        initalCrawlOptions={crawlSettings as ExtendedCrawlOptions}
-        shopifyDatasetSettings={{
-          devMode,
-          webPixelInstalled,
-        }}
-        shopDataset={shopDataset as Dataset}
-      />
-    ),
-    "llm-settings": (
-      <LLMSettings
-        shopDataset={shopDataset as Dataset}
-        existingPdpPrompt={pdpPrompt}
-        existingRelevanceToolCallOptions={relevanceToolCallOptions}
-        existingSearchToolCallOptions={searchToolCallOptions}
-        existingPriceToolCallOptions={priceToolCallOptions}
-      />
-    ),
-    "preset-questions": <PresetQuestions initialQuestions={presetQuestions} />,
-    "filter-settings": <FilterSettings />,
-    "integrations-settings": <IntegrationsSettings />,
-    "extra-information": (
-      <PolicySettings shopDataset={shopDataset as Dataset} />
-    ),
+    shopify.toast.show("Saved tool call options!");
   };
 
   return (
-    <Box paddingBlockStart="400">
-      <Card>
-        <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
-        <div className="h-4"></div>
-        {tabPanels[tabs[selectedTab].id]}
-      </Card>
+    <Box paddingInline="400">
+      <BlockStack gap={{ xs: "800", sm: "400" }}>
+        {/* API Configuration Section */}
+        <InlineGrid columns={{ xs: "1fr", md: "2fr 5fr" }} gap="400">
+          <Box
+            as="section"
+            paddingInlineStart={{ xs: "400", sm: "0" }}
+            paddingInlineEnd={{ xs: "400", sm: "0" }}
+          >
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingMd">
+                Model Configuration
+              </Text>
+              <Text as="p" variant="bodyMd">
+                Configure the model, API key, and LLM endpoint to use for the
+                dataset.
+              </Text>
+            </BlockStack>
+          </Box>
+          <Card roundedAbove="sm">
+            <BlockStack gap="400">
+              <FormLayout>
+                <TextField
+                  label="LLM Default Model"
+                  helpText="Use this prompt to set the personality, tone, and goals of the model."
+                  value={datasetSettings.LLM_DEFAULT_MODEL ?? ""}
+                  onChange={(e) =>
+                    setDatasetSettings({
+                      ...datasetSettings,
+                      LLM_DEFAULT_MODEL: e,
+                    })
+                  }
+                  autoComplete="off"
+                />
+                <Select
+                  label="LLM API Url"
+                  helpText="The URL of the LLM API to use"
+                  options={[
+                    {
+                      label: "https://api.openai.com/v1",
+                      value: "https://api.openai.com/v1",
+                    },
+                    {
+                      label: "https://openrouter.ai/api/v1",
+                      value: "https://openrouter.ai/api/v1",
+                    },
+                  ]}
+                  value={datasetSettings.LLM_BASE_URL ?? ""}
+                  onChange={(e) =>
+                    setDatasetSettings({
+                      ...datasetSettings,
+                      LLM_BASE_URL: e,
+                    })
+                  }
+                />
+                <TextField
+                  label="LLM API Key"
+                  helpText="The API key to use for the LLM API"
+                  value={datasetSettings.LLM_API_KEY ?? ""}
+                  onChange={(e) =>
+                    setDatasetSettings({
+                      ...datasetSettings,
+                      LLM_API_KEY: e,
+                    })
+                  }
+                  autoComplete="off"
+                />
+              </FormLayout>
+            </BlockStack>
+            <InlineStack align="end" gap="200">
+              <Button onClick={onLLMSettingsSave}>Save</Button>
+            </InlineStack>
+          </Card>
+        </InlineGrid>
+
+        {smUp ? <Divider /> : null}
+
+        {/* Context & Prompting Section */}
+        <InlineGrid columns={{ xs: "1fr", md: "2fr 5fr" }} gap="400">
+          <Box
+            as="section"
+            paddingInlineStart={{ xs: "400", sm: "0" }}
+            paddingInlineEnd={{ xs: "400", sm: "0" }}
+          >
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingMd">
+                Context & Prompting
+              </Text>
+              <Text as="p" variant="bodyMd">
+                Customize prompts for specific contexts, like Product Detail
+                Pages (PDP), and general context handling.
+              </Text>
+            </BlockStack>
+          </Box>
+          <Card roundedAbove="sm">
+            <BlockStack gap="400">
+              <FormLayout>
+                <TextField
+                  label="System Prompt"
+                  helpText="The system prompt to guide the RAG model"
+                  value={datasetSettings.SYSTEM_PROMPT ?? ""}
+                  multiline={5}
+                  onChange={(e) =>
+                    setDatasetSettings({
+                      ...datasetSettings,
+                      SYSTEM_PROMPT: e,
+                    })
+                  }
+                  autoComplete="off"
+                  maxHeight="200px"
+                />
+                <TextField
+                  label="PDP Prompt"
+                  helpText="The system prompt to guide the RAG model for the PDP pages (Will override the system prompt for PDP pages)"
+                  value={pdpPrompt}
+                  multiline={5}
+                  onChange={(e) => setPdpPrompt(e)}
+                  autoComplete="off"
+                  maxHeight="200px"
+                />
+                <TextField
+                  label="Context Prompt"
+                  helpText="Use this prompt to tell the model how strictly it needs to follow or how it should generally handle the context (your product descriptions, metadata, photos, etc.)."
+                  value={datasetSettings.RAG_PROMPT ?? ""}
+                  multiline={5}
+                  onChange={(e) =>
+                    setDatasetSettings({
+                      ...datasetSettings,
+                      RAG_PROMPT: e,
+                    })
+                  }
+                  autoComplete="off"
+                  maxHeight="200px"
+                />
+              </FormLayout>
+            </BlockStack>
+            <InlineStack align="end" gap="200">
+              <Button onClick={onLLMSettingsSave}>Save</Button>
+            </InlineStack>
+          </Card>
+        </InlineGrid>
+
+        {smUp ? <Divider /> : null}
+
+        {/* Tool Configuration Section */}
+        <InlineGrid columns={{ xs: "1fr", md: "2fr 5fr" }} gap="400">
+          <Box
+            as="section"
+            paddingInlineStart={{ xs: "400", sm: "0" }}
+            paddingInlineEnd={{ xs: "400", sm: "0" }}
+          >
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingMd">
+                Tool Configuration
+              </Text>
+              <Text as="p" variant="bodyMd">
+                Configure the tools that the model can use to answer questions.
+              </Text>
+            </BlockStack>
+          </Box>
+          <BlockStack gap="400">
+            <Card roundedAbove="sm">
+              <BlockStack gap="400">
+                <FormLayout>
+                  <Text as="h1" variant="headingMd">
+                    Relevance Tool Configuration
+                  </Text>
+                  <InlineGrid columns={{ xs: "1fr", md: "2fr 2fr" }} gap="400">
+                    <TextField
+                      label="User Message Text Prefix"
+                      helpText="The prefix to use for the user message text"
+                      value={
+                        relevanceToolCallOptions.userMessageTextPrefix ?? ""
+                      }
+                      onChange={(e) =>
+                        setRelevanceToolCallOptions({
+                          ...relevanceToolCallOptions,
+                          userMessageTextPrefix: e,
+                        })
+                      }
+                      multiline={3}
+                      autoComplete="off"
+                    />
+                    <Select
+                      label="Include Images"
+                      helpText="Whether to include images in the tool call"
+                      options={[
+                        { label: "Yes", value: "true" },
+                        { label: "No", value: "false" },
+                      ]}
+                      value={
+                        relevanceToolCallOptions.includeImages
+                          ? "true"
+                          : "false"
+                      }
+                      onChange={(e) =>
+                        setRelevanceToolCallOptions({
+                          ...relevanceToolCallOptions,
+                          includeImages: e === "true",
+                        })
+                      }
+                    />
+                  </InlineGrid>
+                  <TextField
+                    label="Tool Description"
+                    helpText="The description of the tool"
+                    value={relevanceToolCallOptions.toolDescription ?? ""}
+                    onChange={(e) =>
+                      setRelevanceToolCallOptions({
+                        ...relevanceToolCallOptions,
+                        toolDescription: e,
+                      })
+                    }
+                    multiline={3}
+                    autoComplete="off"
+                  />
+                  <Button
+                    onClick={() =>
+                      setShowAdvancedRelevanceDescriptions(
+                        !showAdvancedRelevanceDescriptions,
+                      )
+                    }
+                    ariaExpanded={showAdvancedRelevanceDescriptions}
+                    ariaControls="advancedRelevanceDescriptionsCollapsible"
+                    variant="tertiary"
+                    icon={
+                      showAdvancedRelevanceDescriptions
+                        ? CaretUpIcon
+                        : CaretDownIcon
+                    }
+                  >
+                    {showAdvancedRelevanceDescriptions ? "Hide" : "Show"}{" "}
+                    Advanced Relevance Descriptions
+                  </Button>
+                  <Collapsible
+                    open={showAdvancedRelevanceDescriptions}
+                    id="advancedRelevanceDescriptionsCollapsible"
+                    transition={{
+                      duration: "300ms",
+                      timingFunction: "ease-in-out",
+                    }}
+                  >
+                    <Box paddingBlockStart="200" paddingInlineStart="400">
+                      <BlockStack gap="400">
+                        <TextField
+                          label="High Relevance Description"
+                          helpText="The description of the tool for high relevance"
+                          value={relevanceToolCallOptions.highDescription ?? ""}
+                          onChange={(e) =>
+                            setRelevanceToolCallOptions({
+                              ...relevanceToolCallOptions,
+                              highDescription: e,
+                            })
+                          }
+                          multiline={3}
+                          autoComplete="off"
+                        />
+                        <TextField
+                          label="Medium Relevance Description"
+                          helpText="The description of the tool for medium relevance"
+                          value={
+                            relevanceToolCallOptions.mediumDescription ?? ""
+                          }
+                          onChange={(e) =>
+                            setRelevanceToolCallOptions({
+                              ...relevanceToolCallOptions,
+                              mediumDescription: e,
+                            })
+                          }
+                          multiline={3}
+                          autoComplete="off"
+                        />
+                        <TextField
+                          label="Low Relevance Description"
+                          helpText="The description of the tool for low relevance"
+                          value={relevanceToolCallOptions.lowDescription ?? ""}
+                          onChange={(e) =>
+                            setRelevanceToolCallOptions({
+                              ...relevanceToolCallOptions,
+                              lowDescription: e,
+                            })
+                          }
+                          autoComplete="off"
+                          multiline={3}
+                        />
+                      </BlockStack>
+                    </Box>
+                  </Collapsible>
+                </FormLayout>
+              </BlockStack>
+              <InlineStack align="end" gap="200">
+                <Button onClick={saveToolCallOptions}>Save</Button>
+              </InlineStack>
+            </Card>
+            <Card roundedAbove="sm">
+              <BlockStack gap="400">
+                <FormLayout>
+                  <Text as="h1" variant="headingMd">
+                    Price Tool Configuration
+                  </Text>
+                  <BlockStack gap="400">
+                    <TextField
+                      label="Tool Description"
+                      helpText="The description of the tool"
+                      value={priceToolCallOptions.toolDescription ?? ""}
+                      onChange={(e) =>
+                        setPriceToolCallOptions({
+                          ...priceToolCallOptions,
+                          toolDescription: e,
+                        })
+                      }
+                      multiline={3}
+                      autoComplete="off"
+                    />
+                    <InlineGrid
+                      columns={{ xs: "1fr", md: "2fr 2fr" }}
+                      gap="400"
+                    >
+                      <TextField
+                        label="Min Price Description"
+                        helpText="The description of the tool for min price"
+                        value={priceToolCallOptions.minPriceDescription ?? ""}
+                        onChange={(e) =>
+                          setPriceToolCallOptions({
+                            ...priceToolCallOptions,
+                            minPriceDescription: e,
+                          })
+                        }
+                        multiline={3}
+                        autoComplete="off"
+                      />
+                      <TextField
+                        label="Max Price Description"
+                        helpText="The description of the tool for max price"
+                        value={priceToolCallOptions.maxPriceDescription ?? ""}
+                        onChange={(e) =>
+                          setPriceToolCallOptions({
+                            ...priceToolCallOptions,
+                            maxPriceDescription: e,
+                          })
+                        }
+                        multiline={3}
+                        autoComplete="off"
+                      />
+                    </InlineGrid>
+                  </BlockStack>
+                </FormLayout>
+              </BlockStack>
+              <InlineStack align="end" gap="200">
+                <Button onClick={saveToolCallOptions}>Save</Button>
+              </InlineStack>
+            </Card>
+            <Card roundedAbove="sm">
+              <BlockStack gap="400">
+                <FormLayout>
+                  <Text as="h1" variant="headingMd">
+                    Search Tool Configuration
+                  </Text>
+                  <BlockStack gap="400">
+                    <TextField
+                      label="Tool Description"
+                      helpText="The description of the tool"
+                      value={searchToolCallOptions.toolDescription ?? ""}
+                      onChange={(e) =>
+                        setSearchToolCallOptions({
+                          ...searchToolCallOptions,
+                          toolDescription: e,
+                        })
+                      }
+                      multiline={3}
+                      autoComplete="off"
+                    />
+                    <TextField
+                      label="User Message Text Prefix"
+                      helpText="The prefix to use before showing the the users message"
+                      value={searchToolCallOptions.userMessageTextPrefix ?? ""}
+                      onChange={(e) =>
+                        setSearchToolCallOptions({
+                          ...searchToolCallOptions,
+                          userMessageTextPrefix: e,
+                        })
+                      }
+                      multiline={3}
+                      autoComplete="off"
+                    />
+                  </BlockStack>
+                </FormLayout>
+              </BlockStack>
+              <InlineStack align="end" gap="200">
+                <Button onClick={saveToolCallOptions}>Save</Button>
+              </InlineStack>
+            </Card>
+            <Card roundedAbove="sm">
+              <BlockStack gap="400">
+                <FormLayout>
+                  <Text as="h1" variant="headingMd">
+                    Not Filter Tool Configuration
+                  </Text>
+                  <BlockStack gap="400">
+                    <TextField
+                      label="Tool Description"
+                      helpText="The description of the tool"
+                      value={notFilterToolCallOptions.toolDescription ?? ""}
+                      onChange={(e) =>
+                        setNotFilterToolCallOptions({
+                          ...notFilterToolCallOptions,
+                          toolDescription: e,
+                        })
+                      }
+                      multiline={3}
+                      autoComplete="off"
+                    />
+                    <TextField
+                      label="User Message Text Prefix"
+                      helpText="The prefix to use before showing the the users message"
+                      value={
+                        notFilterToolCallOptions.userMessageTextPrefix ?? ""
+                      }
+                      onChange={(e) =>
+                        setNotFilterToolCallOptions({
+                          ...notFilterToolCallOptions,
+                          userMessageTextPrefix: e,
+                        })
+                      }
+                      multiline={3}
+                      autoComplete="off"
+                    />
+                  </BlockStack>
+                </FormLayout>
+              </BlockStack>
+              <InlineStack align="end" gap="200">
+                <Button onClick={saveToolCallOptions}>Save</Button>
+              </InlineStack>
+            </Card>
+          </BlockStack>
+        </InlineGrid>
+      </BlockStack>
     </Box>
   );
 }

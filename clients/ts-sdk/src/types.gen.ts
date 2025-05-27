@@ -2886,6 +2886,11 @@ export type MultiQuery = {
 
 export type NewChunkMetadataTypes = SlimChunkMetadataWithArrayTagSet | ChunkMetadata | ContentChunkMetadata;
 
+export type NotFilterToolCallOptions = {
+    toolDescription?: (string) | null;
+    userMessageTextPrefix?: (string) | null;
+};
+
 /**
  * Controls the Optical Character Recognition (OCR) strategy.
  * - `All`: Processes all pages with OCR. (Latency penalty: ~0.5 seconds per page)
@@ -3082,6 +3087,7 @@ export type PublicPageParameters = {
     inlineHeader?: (string) | null;
     isTestMode?: (boolean) | null;
     navLogoImgSrcUrl?: (string) | null;
+    notFilterToolCallOptions?: ((NotFilterToolCallOptions) | null);
     numberOfSuggestions?: (number) | null;
     openGraphMetadata?: ((OpenGraphMetadata) | null);
     openLinksInNewTab?: (boolean) | null;
@@ -4631,13 +4637,6 @@ export type TopicsOverTimeResponse = {
 export type TotalUniqueUsersResponse = {
     points: Array<IntegerTimePoint>;
     total_unique_users: number;
-};
-
-export type TranscribeAudioReqPayload = {
-    /**
-     * The base64 encoded audio input of the user's input message.
-     */
-    base64_audio: string;
 };
 
 export type TrievePlan = (StripePlan & {
@@ -6361,19 +6360,6 @@ export type GetToolFunctionParamsData = {
 };
 
 export type GetToolFunctionParamsResponse = (GetToolFunctionParamsRespBody);
-
-export type TranscribeAudioData = {
-    /**
-     * JSON request payload to transcribe an audio file
-     */
-    requestBody: TranscribeAudioReqPayload;
-    /**
-     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
-     */
-    trDataset: string;
-};
-
-export type TranscribeAudioResponse = (string);
 
 export type GetMessageByIdData = {
     /**
@@ -8208,21 +8194,6 @@ export type $OpenApiTs = {
                 200: GetToolFunctionParamsRespBody;
                 /**
                  * Service error relating to to updating chunk, likely due to conflicting tracking_id
-                 */
-                400: ErrorResponseBody;
-            };
-        };
-    };
-    '/api/message/transcribe_audio': {
-        post: {
-            req: TranscribeAudioData;
-            res: {
-                /**
-                 * The transcribed text
-                 */
-                200: string;
-                /**
-                 * Service error relating to transcribing the audio
                  */
                 400: ErrorResponseBody;
             };

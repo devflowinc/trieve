@@ -6250,77 +6250,6 @@
         ]
       }
     },
-    "/api/message/transcribe_audio": {
-      "post": {
-        "tags": [
-          "Message"
-        ],
-        "summary": "Transcribe Audio",
-        "description": "Uses `whisper-1` to transcribe an audio file passed in as a base64 encoded string.",
-        "operationId": "transcribe_audio",
-        "parameters": [
-          {
-            "name": "TR-Dataset",
-            "in": "header",
-            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "JSON request payload to transcribe an audio file",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TranscribeAudioReqPayload"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The transcribed text",
-            "headers": {
-              "TR-QueryID": {
-                "schema": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "description": "Query ID that is used for tracking analytics"
-              }
-            },
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Service error relating to transcribing the audio",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKey": [
-              "admin"
-            ]
-          }
-        ]
-      }
-    },
     "/api/message/{message_id}": {
       "get": {
         "tags": [
@@ -15981,6 +15910,19 @@
           }
         ]
       },
+      "NotFilterToolCallOptions": {
+        "type": "object",
+        "properties": {
+          "toolDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "userMessageTextPrefix": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "OcrStrategy": {
         "type": "string",
         "description": "Controls the Optical Character Recognition (OCR) strategy.\n- `All`: Processes all pages with OCR. (Latency penalty: ~0.5 seconds per page)\n- `Auto`: Selectively applies OCR only to pages with missing or low-quality text. When text layer is present the bounding boxes from the text layer are used.",
@@ -16600,6 +16542,14 @@
           },
           "navLogoImgSrcUrl": {
             "type": "string",
+            "nullable": true
+          },
+          "notFilterToolCallOptions": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/NotFilterToolCallOptions"
+              }
+            ],
             "nullable": true
           },
           "numberOfSuggestions": {
@@ -22666,18 +22616,6 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
-          }
-        }
-      },
-      "TranscribeAudioReqPayload": {
-        "type": "object",
-        "required": [
-          "base64_audio"
-        ],
-        "properties": {
-          "base64_audio": {
-            "type": "string",
-            "description": "The base64 encoded audio input of the user's input message."
           }
         }
       },

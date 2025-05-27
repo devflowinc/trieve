@@ -185,7 +185,6 @@ impl Modify for SecurityAddon {
         handlers::message_handler::get_suggested_queries,
         handlers::message_handler::get_tool_function_params,
         handlers::message_handler::edit_image,
-        handlers::message_handler::transcribe_audio,
         handlers::chunk_handler::create_chunk,
         handlers::chunk_handler::update_chunk,
         handlers::chunk_handler::delete_chunk,
@@ -320,7 +319,6 @@ impl Modify for SecurityAddon {
             handlers::message_handler::ImageUpload,
             handlers::message_handler::ImageEditResponse,
             handlers::message_handler::ImageResponseData,
-            handlers::message_handler::TranscribeAudioReqPayload,
             handlers::chunk_handler::FullTextBoost,
             handlers::chunk_handler::ChunkReqPayload,
             handlers::chunk_handler::CreateChunkReqPayloadEnum,
@@ -474,6 +472,7 @@ impl Modify for SecurityAddon {
             handlers::page_handler::RelevanceToolCallOptions,
             handlers::page_handler::PriceToolCallOptions,
             handlers::page_handler::SearchToolCallOptions,
+            handlers::page_handler::NotFilterToolCallOptions,
             handlers::page_handler::PublicPageTheme,
             handlers::page_handler::PublicPageParameters,
             handlers::page_handler::PublicPageTabMessage,
@@ -1172,10 +1171,6 @@ pub fn main() -> std::io::Result<()> {
                         .service(
                             web::resource("/message/edit_image")
                                 .route(web::post().to(handlers::message_handler::edit_image))
-                        )
-                        .service(
-                            web::resource("/message/transcribe_audio")
-                                .route(web::post().to(handlers::message_handler::transcribe_audio))
                         )
                         .service(
                             web::resource("/message/{message_id}")

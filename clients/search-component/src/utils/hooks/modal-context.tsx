@@ -89,6 +89,17 @@ export interface SearchToolCallOptions {
   toolDescription: string;
 }
 
+export interface NotFilterToolCallOptions {
+  userMessageTextPrefix?: string;
+  toolDescription: string;
+}
+
+export const defaultNotFilterToolCallOptions: NotFilterToolCallOptions = {
+  userMessageTextPrefix: "Here is the user query:",
+  toolDescription:
+    "Set to true if the query is not interested in the products they were shown previously or would like to see something different. Ensure that this is only set to true when the user wants to see something different from the previously returned results or is not interested in those previously returned results.",
+};
+
 export const defaultSearchToolCallOptions: SearchToolCallOptions = {
   userMessageTextPrefix: "Here is the user query:",
   toolDescription:
@@ -147,7 +158,6 @@ export function isDefaultSearchQuery(
   return typeof question === "object" && "query" in question;
 }
 
-
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
@@ -182,6 +192,7 @@ export type ModalProps = {
   relevanceToolCallOptions?: RelevanceToolCallOptions;
   priceToolCallOptions?: PriceToolCallOptions;
   searchToolCallOptions?: SearchToolCallOptions;
+  notFilterToolCallOptions?: NotFilterToolCallOptions;
   defaultSearchMode?: SearchModes;
   usePagefind?: boolean;
   type?: ModalTypes;
@@ -265,6 +276,7 @@ const defaultProps = {
   } as searchOptions,
   chatFilters: undefined,
   searchToolCallOptions: defaultSearchToolCallOptions,
+  notFilterToolCallOptions: defaultNotFilterToolCallOptions,
   analytics: true,
   chat: true,
   suggestedQueries: true,
@@ -384,8 +396,6 @@ const ModalContext = createContext<{
   addHeight: (height: number) => void;
   display: boolean;
   abTreatment?: string;
-  transcribedQuery: string;
-  setTranscribedQuery: React.Dispatch<React.SetStateAction<string>>;
 }>({
   props: defaultProps,
   trieveSDK: (() => {}) as unknown as TrieveSDK,
@@ -428,8 +438,6 @@ const ModalContext = createContext<{
   addHeight: (height: number) => {},
   display: true,
   abTreatment: undefined,
-  transcribedQuery: "",
-  setTranscribedQuery: () => {},
 });
 
 const ModalProvider = ({
@@ -480,7 +488,6 @@ const ModalProvider = ({
     !props.experimentIds || props.experimentIds.length === 0,
   );
   const [abTreatment, setAbTreatment] = useState<string | undefined>(undefined);
-  const [transcribedQuery, setTranscribedQuery] = useState<string>("");
 
   const trieve = new TrieveSDK({
     baseUrl: props.baseUrl,
@@ -560,6 +567,7 @@ const ModalProvider = ({
           props,
           query_string: query,
           image_url: imageUrl,
+          audioBase64: audioBase64,
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
@@ -577,10 +585,10 @@ const ModalProvider = ({
           }
         });
 
-        if (audioBase64) {
+        if (results.transcribedQuery && audioBase64) {
+          setQuery(results.transcribedQuery);
           setAudioBase64(undefined);
         }
-
         setResults(Array.from(groupMap.values()));
         setRequestID(results.requestID);
       } else if (props.useGroupSearch && props.usePagefind) {
@@ -613,6 +621,7 @@ const ModalProvider = ({
           props,
           query_string: query,
           image_url: imageUrl,
+          audioBase64: audioBase64,
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
@@ -620,7 +629,8 @@ const ModalProvider = ({
           type: props.type,
           abTreatment,
         });
-        if (audioBase64) {
+        if (results.transcribedQuery && audioBase64) {
+          setQuery(results.transcribedQuery);
           setAudioBase64(undefined);
         }
         setResults(results.chunks);
@@ -902,8 +912,6 @@ const ModalProvider = ({
         addHeight,
         display,
         abTreatment,
-        transcribedQuery,
-        setTranscribedQuery,
       }}
     >
       {children}
