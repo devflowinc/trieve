@@ -17,7 +17,6 @@ import {
   PriceToolCallOptions,
   type Dataset,
   SearchToolCallOptions,
-  NotFilterToolCallOptions,
 } from "trieve-ts-sdk";
 import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
 import { getAppMetafields, setAppMetafields } from "app/queries/metafield";
@@ -42,7 +41,6 @@ export const loader = async ({
   relevanceToolCallOptions: RelevanceToolCallOptions | null;
   searchToolCallOptions: SearchToolCallOptions | null;
   priceToolCallOptions: PriceToolCallOptions | null;
-  notFilterToolCallOptions: NotFilterToolCallOptions | null;
 }> => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
@@ -97,11 +95,6 @@ export const loader = async ({
     fetcher,
     "price_tool_call_options",
   );
-  const notFilterToolCallOptions =
-    await getAppMetafields<NotFilterToolCallOptions>(
-      fetcher,
-      "not_filter_tool_call_options",
-    );
 
   return {
     crawlSettings: crawlSettings?.crawlSettings,
@@ -112,7 +105,6 @@ export const loader = async ({
     relevanceToolCallOptions,
     searchToolCallOptions,
     priceToolCallOptions,
-    notFilterToolCallOptions,
   };
 };
 
@@ -221,9 +213,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       );
       const priceToolCallOptions = formData.get("price_tool_call_options");
       const searchToolCallOptions = formData.get("search_tool_call_options");
-      const notFilterToolCallOptions = formData.get(
-        "not_filter_tool_call_options",
-      );
       await setAppMetafields(fetcher, [
         {
           key: "relevance_tool_call_options",
@@ -238,11 +227,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         {
           key: "search_tool_call_options",
           value: searchToolCallOptions as string,
-          type: "json",
-        },
-        {
-          key: "not_filter_tool_call_options",
-          value: notFilterToolCallOptions as string,
           type: "json",
         },
       ]);
@@ -299,7 +283,6 @@ export default function Dataset() {
     relevanceToolCallOptions,
     searchToolCallOptions,
     priceToolCallOptions,
-    notFilterToolCallOptions,
   } = useLoaderData<typeof loader>();
   const [selectedTab, setSelectedTab] = useState(0);
 
@@ -365,7 +348,6 @@ export default function Dataset() {
         existingRelevanceToolCallOptions={relevanceToolCallOptions}
         existingSearchToolCallOptions={searchToolCallOptions}
         existingPriceToolCallOptions={priceToolCallOptions}
-        existingNotFilterToolCallOptions={notFilterToolCallOptions}
       />
     ),
     "preset-questions": <PresetQuestions initialQuestions={presetQuestions} />,
