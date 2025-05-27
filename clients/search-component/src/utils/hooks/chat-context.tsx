@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useRef, useState } from "react";
 import {
   defaultPriceToolCallOptions,
-  defaultNotFilterToolCallOptions,
   defaultRelevanceToolCallOptions,
   defaultSearchToolCallOptions,
   useModalState,
@@ -491,7 +490,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
     }
 
     let skipSearch = false;
-    let notFilter = false;
 
     if (
       props.recommendOptions?.filter &&
@@ -622,55 +620,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
               },
             });
           }
-        });
-
-        const notFilterPromise = retryOperation(async () => {
-          if (!curGroup && messages.length > 1) {
-            return await trieveSDK.getToolCallFunctionParams({
-              user_message_text: `Here's the previous message thread so far: ${messages.map(
-                (message) => {
-                  if (
-                    message.type === "system" &&
-                    message.additional?.length &&
-                    props.type === "ecommerce"
-                  ) {
-                    const chunks = message.additional
-                      .map((chunk) => {
-                        return JSON.stringify({
-                          title: chunk.metadata?.title || "",
-                          description: chunk.chunk_html || "",
-                          price: chunk.num_value
-                            ? `${props.defaultCurrency || ""} ${chunk.num_value}`
-                            : "",
-                          link: chunk.link || "",
-                        });
-                      })
-                      .join("\n\n");
-                    return `\n\n${chunks}${message.text}`;
-                  } else {
-                    return `\n\n${message.text}`;
-                  }
-                },
-              )} \n\n${props.notFilterToolCallOptions?.userMessageTextPrefix ?? defaultNotFilterToolCallOptions.userMessageTextPrefix}: ${questionProp || currentQuestion}.`,
-              image_url: localImageUrl ? localImageUrl : null,
-              audio_input: curAudioBase64 ? curAudioBase64 : null,
-              tool_function: {
-                name: "not_filter",
-                description:
-                  props.notFilterToolCallOptions?.toolDescription ??
-                  defaultNotFilterToolCallOptions.toolDescription,
-                parameters: [
-                  {
-                    name: "not_filter",
-                    parameter_type: "boolean",
-                    description:
-                      "Whether or not the user is interested in the products previously shown to them. Set this to true if the user is not interested in the products they were shown or want something different.",
-                  },
-                ],
-              },
-            });
-          }
-        });
+        })
 
         const imageFiltersPromise = retryOperation(async () => {
           if (localImageUrl) {
@@ -709,13 +659,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 user_message_text:
                   questionProp || currentQuestion
                     ? `Get filters from the following messages: ${messages
-                        .slice(0, -1)
-                        .filter((message) => {
-                          return message.type == "user";
-                        })
-                        .map(
-                          (message) => `\n\n${message.text}`,
-                        )} \n\n ${questionProp || currentQuestion}`
+                      .slice(0, -1)
+                      .filter((message) => {
+                        return message.type == "user";
+                      })
+                      .map(
+                        (message) => `\n\n${message.text}`,
+                      )} \n\n ${questionProp || currentQuestion}`
                     : null,
                 image_url: localImageUrl ? localImageUrl : null,
                 audio_input: curAudioBase64 ? curAudioBase64 : null,
@@ -747,19 +697,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
         });
 
-        const [
-          priceFiltersResp,
-          imageFiltersResp,
-          tagFiltersResp,
-          skipSearchResp,
-          notFilterResp,
-        ] = await Promise.all([
-          priceFiltersPromise,
-          imageFiltersPromise,
-          tagFiltersPromise,
-          skipSearchPromise,
-          notFilterPromise,
-        ]);
+        const [priceFiltersResp, imageFiltersResp, tagFiltersResp, skipSearchResp] =
+          await Promise.all([
+            priceFiltersPromise,
+            imageFiltersPromise,
+            tagFiltersPromise,
+            skipSearchPromise,
+          ]);
 
         if (transcribedQuery && curAudioBase64) {
           questionProp = transcribedQuery;
@@ -847,15 +791,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        if (notFilterResp?.parameters) {
-          const notFilterParam = (notFilterResp.parameters as any)[
-            "not_filter"
-          ];
-          if (typeof notFilterParam === "boolean" && notFilterParam) {
-            notFilter = true;
-          }
-        }
-
         clearTimeout(toolCallTimeout);
       } catch (e) {
         console.error("error getting getToolCallFunctionParams", e);
@@ -889,19 +824,6 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         filters.should == null
       ) {
         filters = null;
-
-        if (notFilter) {
-          if (filters == null) {
-            filters = { must_not: [] };
-          }
-
-          if (filters?.must_not) {
-            filters.must_not.push({
-              field: "group_ids",
-              match_any: groupIdsInChat,
-            });
-          }
-        }
       }
 
       searchAbortController.current = new AbortController();
@@ -996,13 +918,13 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
                 : null;
               const imageUrls = props.relevanceToolCallOptions?.includeImages
                 ? (
-                    (firstChunk?.image_urls?.filter(
-                      (stringOrNull): stringOrNull is string =>
-                        Boolean(stringOrNull),
-                    ) ||
-                      []) ??
-                    []
-                  ).splice(0, 1)
+                  (firstChunk?.image_urls?.filter(
+                    (stringOrNull): stringOrNull is string =>
+                      Boolean(stringOrNull),
+                  ) ||
+                    []) ??
+                  []
+                ).splice(0, 1)
                 : undefined;
               const jsonOfFirstChunk = {
                 title: (firstChunk?.metadata as any)?.title ?? "",
@@ -1194,47 +1116,47 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
 
     if (referenceImageUrls.length > 0 || curGroup) {
       if (referenceImageUrls.length == 0 && curGroup) {
-        const fulltextSearchPromise = trieveSDK.searchInGroup(
-          {
-            query: questionProp || currentQuestion,
-            search_type: "fulltext",
-            page_size: 10,
-            group_id: curGroup.id,
-            user_id: fingerprint,
-          },
-          searchAbortController.current.signal,
-        );
+          const fulltextSearchPromise = trieveSDK.searchInGroup(
+            {
+              query: questionProp || currentQuestion,
+              search_type: "fulltext",
+              page_size: 10,
+              group_id: curGroup.id,
+              user_id: fingerprint,
+            },
+            searchAbortController.current.signal,
+          );
 
-        const chunksInGroupPromise = trieveSDK.getChunksInGroup(
-          {
-            groupId: curGroup.id,
-            page: 1,
-          },
-          searchAbortController.current.signal,
-        );
+          const chunksInGroupPromise = trieveSDK.getChunksInGroup(
+            {
+              groupId: curGroup.id,
+              page: 1,
+            },
+            searchAbortController.current.signal,
+          );
 
-        const [fulltextSearchResp, chunksInGroupResp] = await Promise.all([
-          fulltextSearchPromise,
-          chunksInGroupPromise,
-        ]);
+          const [fulltextSearchResp, chunksInGroupResp] = await Promise.all([
+            fulltextSearchPromise,
+            chunksInGroupPromise,
+          ]);
 
-        const chunkIds = fulltextSearchResp.chunks.map(
-          (score_chunk) => score_chunk.chunk.id,
-        );
+          const chunkIds = fulltextSearchResp.chunks.map(
+            (score_chunk) => score_chunk.chunk.id,
+          );
+          
+          chunksInGroupResp.chunks.filter((chunk) => chunkIds.includes(chunk.id));
 
-        chunksInGroupResp.chunks.filter((chunk) => chunkIds.includes(chunk.id));
+          const topChunk = chunksInGroupResp.chunks[0];
+          
+          if (topChunk) {
+            topChunk.image_urls?.forEach((url) => {
+              if (url) {
+                referenceImageUrls.push(url);
+              }
+            });
+          }
 
-        const topChunk = chunksInGroupResp.chunks[0];
-
-        if (topChunk) {
-          topChunk.image_urls?.forEach((url) => {
-            if (url) {
-              referenceImageUrls.push(url);
-            }
-          });
-        }
-
-        referenceImageUrls.slice(0, 3);
+          referenceImageUrls.slice(0, 3);
       }
 
       if (await handleImageEdit()) {
@@ -1278,23 +1200,23 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
         if (skipSearch) {
           createMessageFilters = props.useGroupSearch
             ? {
-                must: [
-                  {
-                    field: "group_ids",
-                    match_any: groupIdsInChat,
-                  },
-                ],
-              }
+              must: [
+                {
+                  field: "group_ids",
+                  match_any: groupIdsInChat,
+                },
+              ],
+            }
             : {
-                must: [
-                  {
-                    field: "ids",
-                    match_any: messages
-                      .flatMap((m) => m.additional ?? [])
-                      .map((chunk) => chunk.id),
-                  },
-                ],
-              };
+              must: [
+                {
+                  field: "ids",
+                  match_any: messages
+                    .flatMap((m) => m.additional ?? [])
+                    .map((chunk) => chunk.id),
+                },
+              ],
+            };
         }
         const systemPromptToUse =
           props.systemPrompt && props.systemPrompt !== ""
