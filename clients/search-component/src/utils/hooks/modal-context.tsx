@@ -95,9 +95,15 @@ export const defaultSearchToolCallOptions: SearchToolCallOptions = {
     "Call this tool anytime it seems like we need to skip the search step. This tool tells our system that the user is asking about what they were previously shown.",
 };
 
+export const defaultNotFilterToolCallOptions: NotFilterToolCallOptions = {
+  userMessageTextPrefix: "Here is the user query:",
+  toolDescription:
+    "Set to true if the query is not interested in the products they were shown previously or would like to see something different. Ensure that this is only set to true when the user wants to see something different from the previously returned results or is not interested in those previously returned results.",
+};
+
 export const defaultPriceToolCallOptions: PriceToolCallOptions = {
   toolDescription:
-    "Only call this function if the query includes details about a price. Decide on which price filters to apply to the available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false).",
+    "Only call this function if the query includes details about a price. Decide on which price filters to apply to the available catalog being used within the knowledge base to respond. If the question is slightly like a product name, respond with no filters (all false). If they don't specify a price number, then respond with no filters (all false).",
   minPriceDescription:
     "Minimum price of the product. Only set this if a minimum price is mentioned in the query.",
   maxPriceDescription:
@@ -108,6 +114,11 @@ export interface PriceToolCallOptions {
   toolDescription: string;
   minPriceDescription?: string;
   maxPriceDescription?: string;
+}
+
+export interface NotFilterToolCallOptions {
+  userMessageTextPrefix?: string;
+  toolDescription: string;
 }
 
 export interface FilterSidebarSection {
@@ -147,7 +158,6 @@ export function isDefaultSearchQuery(
   return typeof question === "object" && "query" in question;
 }
 
-
 export type ModalProps = {
   datasetId: string;
   apiKey: string;
@@ -182,6 +192,7 @@ export type ModalProps = {
   relevanceToolCallOptions?: RelevanceToolCallOptions;
   priceToolCallOptions?: PriceToolCallOptions;
   searchToolCallOptions?: SearchToolCallOptions;
+  notFilterToolCallOptions?: NotFilterToolCallOptions;
   defaultSearchMode?: SearchModes;
   usePagefind?: boolean;
   type?: ModalTypes;
@@ -252,6 +263,7 @@ const defaultProps = {
   baseUrl: "https://api.trieve.ai",
   relevanceToolCallOptions: defaultRelevanceToolCallOptions,
   priceToolCallOptions: defaultPriceToolCallOptions,
+  notFilterToolCallOptions: defaultNotFilterToolCallOptions,
   defaultSearchMode: "search" as SearchModes,
   placeholder: "Search...",
   chatPlaceholder: "Ask Anything...",
