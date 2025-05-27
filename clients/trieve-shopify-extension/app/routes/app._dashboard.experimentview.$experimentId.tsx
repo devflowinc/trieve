@@ -55,9 +55,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       alias: "event_count",
     })
     .from("events")
-    .join(
+    .joinOn(
       "experiment_user_assignments",
-      "experiment_user_assignments.user_id = events.user_id",
+      "experiment_user_assignments.user_id",
+      "events.user_id",
     )
     .where({
       column: "events.event_name",
@@ -105,9 +106,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       distinct: true,
     })
     .from("events")
-    .join(
+    .joinOn(
       "experiment_user_assignments",
-      "experiment_user_assignments.user_id = events.user_id",
+      "experiment_user_assignments.user_id",
+      "events.user_id",
     )
     .where({
       column: "experiment_user_assignments.experiment_id",
@@ -156,9 +158,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       alias: "total_conversion_event_count",
     })
     .from("events")
-    .join(
+    .joinOn(
       "experiment_user_assignments",
-      "experiment_user_assignments.user_id = events.user_id",
+      "experiment_user_assignments.user_id",
+      "events.user_id",
     )
     .where({
       column: "experiment_user_assignments.experiment_id",
