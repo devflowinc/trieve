@@ -566,12 +566,20 @@
             class="example-questions flex justify-center flex-wrap gap-1 mt-2 mx-auto px-4 sm:px-6 lg:max-w-7xl lg:px-8 w-full"
           >
             {% for question in params.defaultAiQuestions %}
+              {% if question.query %}
+                <button
+                  class="bg-brand-color text-white px-4 py-2 rounded-full text-sm sm:text-base"
+                  data-image-url="{{ question.imageUrl }}"
+                >
+                  {{ question.query }}
+                </button>
+              {% else %}
             <button
               class="bg-brand-color text-white px-4 py-2 rounded-full text-sm sm:text-base"
-              data-image-url="{{ question.imageUrl }}"
             >
-              {{ question.query }}
+              {{ question }}
             </button>
+              {% endif %}
             {% endfor %}
           </div>
           {% endif %}
