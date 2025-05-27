@@ -1,22 +1,10 @@
 import React, { useState, useCallback, useEffect } from "react";
-import {
-  Card,
-  Button,
-  Modal,
-  ResourceList,
-  ResourceItem,
-  Text,
-  BlockStack,
-  InlineStack,
-  ButtonGroup,
-  EmptyState,
-  Box,
-} from "@shopify/polaris";
-import { PlusIcon, DeleteIcon, EditIcon } from "@shopify/polaris-icons";
+import { Text, BlockStack } from "@shopify/polaris";
 import { useSubmit } from "@remix-run/react";
 import { QuestionEditBlock } from "../QuestionEditBlock";
 import { useTrieve } from "app/context/trieveContext";
 import { ChunkMetadata } from "trieve-ts-sdk";
+import { BuilderView, EditFormProps } from "../BuilderView";
 
 export interface PresetQuestion {
   id: string;
@@ -29,13 +17,6 @@ export interface PresetQuestionsProps {
   initialQuestions: PresetQuestion[];
 }
 
-interface QuestionFormData {
-  questionText: string;
-  products?: Product[];
-  productSearchTerm?: string;
-  promptForAI?: string;
-}
-
 export interface Product {
   id: string;
   image: string;
@@ -45,13 +26,6 @@ export interface Product {
   groupId: string;
 }
 
-const defaultQuestionFormData: QuestionFormData = {
-  questionText: "",
-  products: [],
-  productSearchTerm: "",
-  promptForAI: "",
-};
-
 export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
   const submit = useSubmit();
   const trieve = useTrieve();
@@ -59,41 +33,8 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
   const [presetQuestions, setPresetQuestions] = useState<PresetQuestion[]>(
     initialQuestions || [],
   );
-
-  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(
-    null,
-  );
-  const [isAddingNewQuestion, setIsAddingNewQuestion] = useState(false);
-  const [editFormData, setEditFormData] = useState<QuestionFormData>(
-    defaultQuestionFormData,
-  );
-
-  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
-  const [questionIdToDelete, setQuestionIdToDelete] = useState<string | null>(
-    null,
-  );
   const [searchedProducts, setSearchedProducts] = useState<Product[]>([]);
-
-  const handleQuestionSelectedProductsChange = useCallback(
-    (updatedSelectedProducts: Product[]) => {
-      setEditFormData((prev) => ({
-        ...prev,
-        products: updatedSelectedProducts,
-      }));
-    },
-    [],
-  );
-
-  const handleRemoveSelectedProduct = useCallback(
-    (productIdToRemove: string) => {
-      setEditFormData((prev) => ({
-        ...prev,
-        products:
-          prev.products?.filter((p) => p.id !== productIdToRemove) || [],
-      }));
-    },
-    [],
-  );
+  const [currentSearchTerm, setCurrentSearchTerm] = useState<string>("");
 
   const submitPresetQuestions = useCallback(
     (questions: PresetQuestion[]) => {
@@ -110,94 +51,14 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
     [submit],
   );
 
-  const handleSaveQuestion = useCallback(() => {
-    let updatedQuestions;
-    if (editingQuestionId) {
-      updatedQuestions = presetQuestions.map((q) =>
-        q.id === editingQuestionId
-          ? {
-              ...q,
-              questionText: editFormData.questionText,
-              products: editFormData.products,
-              promptForAI: editFormData.promptForAI,
-              productSearchTerm: "",
-            }
-          : q,
-      );
-    } else if (isAddingNewQuestion) {
-      const newQuestion: PresetQuestion = {
-        id: String(Date.now()),
-        questionText: editFormData.questionText,
-        products: editFormData.products,
-        promptForAI: editFormData.promptForAI,
-      };
-      updatedQuestions = [...presetQuestions, newQuestion];
-    } else {
-      return;
-    }
-
-    setEditFormData(defaultQuestionFormData);
-    setSearchedProducts([]);
-    setEditingQuestionId(null);
-    setIsAddingNewQuestion(false);
+  const handleQuestionsChange = (updatedQuestions: PresetQuestion[]) => {
     setPresetQuestions(updatedQuestions);
     submitPresetQuestions(updatedQuestions);
+  };
+
+  const handleSaveSuccess = (question: PresetQuestion, isNew: boolean) => {
     shopify.toast.show("Preset question saved!");
-  }, [
-    editFormData,
-    editingQuestionId,
-    isAddingNewQuestion,
-    presetQuestions,
-    submitPresetQuestions,
-  ]);
-
-  const handleStartAddNewQuestion = useCallback(() => {
-    setEditingQuestionId(null);
-    setEditFormData(defaultQuestionFormData);
-    setIsAddingNewQuestion(true);
-    setSearchedProducts([]);
-  }, []);
-
-  const handleStartEditQuestion = useCallback((question: PresetQuestion) => {
-    setIsAddingNewQuestion(false);
-    setEditingQuestionId(question.id);
-    setEditFormData({
-      questionText: question.questionText,
-      products: question.products || [],
-      productSearchTerm: "",
-      promptForAI: question.promptForAI || "",
-    });
-    setSearchedProducts([]);
-  }, []);
-
-  const handleCancelEdit = useCallback(() => {
-    setEditingQuestionId(null);
-    setIsAddingNewQuestion(false);
-    setEditFormData(defaultQuestionFormData);
-    setSearchedProducts([]);
-  }, []);
-
-  const handleDeleteQuestionTrigger = useCallback((idToDelete: string) => {
-    setQuestionIdToDelete(idToDelete);
-    setShowDeleteConfirmModal(true);
-  }, []);
-
-  const confirmDeleteQuestion = useCallback(() => {
-    if (questionIdToDelete) {
-      const newPresetQuestions = presetQuestions.filter(
-        (question) => question.id !== questionIdToDelete,
-      );
-      setPresetQuestions(newPresetQuestions);
-      submitPresetQuestions(newPresetQuestions);
-    }
-    setQuestionIdToDelete(null);
-    setShowDeleteConfirmModal(false);
-  }, [questionIdToDelete, presetQuestions, submitPresetQuestions]);
-
-  const cancelDeleteQuestion = useCallback(() => {
-    setQuestionIdToDelete(null);
-    setShowDeleteConfirmModal(false);
-  }, []);
+  };
 
   useEffect(() => {
     const getProducts = async (searchTerm: string) => {
@@ -231,226 +92,117 @@ export function PresetQuestions({ initialQuestions }: PresetQuestionsProps) {
       }
     };
 
-    if (!isAddingNewQuestion && !editingQuestionId) {
-      setSearchedProducts([]); // Clear products if not in edit/add mode
-      return;
-    }
-
-    if (
-      !editFormData.productSearchTerm ||
-      editFormData.productSearchTerm.trim().length === 0
-    ) {
+    if (!currentSearchTerm || currentSearchTerm.trim().length === 0) {
       setSearchedProducts([]);
       return;
     }
 
     const handler = setTimeout(() => {
-      if (editFormData.productSearchTerm) {
-        getProducts(editFormData.productSearchTerm);
+      if (currentSearchTerm) {
+        getProducts(currentSearchTerm);
       }
     }, 100);
 
     return () => {
       clearTimeout(handler);
     };
-  }, [
-    editFormData.productSearchTerm,
-    trieve.trieve,
-    isAddingNewQuestion,
-    editingQuestionId,
-  ]);
+  }, [currentSearchTerm, trieve.trieve]);
 
-  const renderItem = (item: PresetQuestion) => {
-    const { id, questionText, products: itemProducts } = item;
+  const renderQuestionContent = (question: PresetQuestion) => (
+    <BlockStack gap="100">
+      <Text variant="bodyMd" as="p" fontWeight="semibold" truncate>
+        {question.questionText}
+      </Text>
+      <Text variant="bodySm" as="p" tone="subdued">
+        Targets {question.products?.length ?? 0} product(s)
+      </Text>
+    </BlockStack>
+  );
 
-    if (editingQuestionId === id) {
-      return (
-        <Box paddingBlockEnd="400">
-          <QuestionEditBlock
-            title="Edit Preset Question"
-            questionText={editFormData.questionText}
-            onQuestionTextChange={(value: string) =>
-              setEditFormData({ ...editFormData, questionText: value })
-            }
-            productSearchTerm={editFormData.productSearchTerm || ""}
-            onProductSearchTermChange={(value: string) =>
-              setEditFormData({ ...editFormData, productSearchTerm: value })
-            }
-            promptForAI={editFormData.promptForAI || ""}
-            onPromptForAIChange={(value: string) =>
-              setEditFormData({
-                ...editFormData,
-                promptForAI: value.length > 0 ? value : undefined,
-              })
-            }
-            products={searchedProducts}
-            selectedProducts={editFormData.products || []}
-            onSelectedProductsChange={handleQuestionSelectedProductsChange}
-            onRemoveSelectedProduct={handleRemoveSelectedProduct}
-            onSave={handleSaveQuestion}
-            onCancel={handleCancelEdit}
-          />
-        </Box>
-      );
-    }
+  const renderQuestionEditForm = ({
+    item,
+    onChange,
+    onSave,
+    onCancel,
+    isNew,
+  }: EditFormProps<PresetQuestion>) => {
+    const handleQuestionSelectedProductsChange = (
+      updatedSelectedProducts: Product[],
+    ) => {
+      onChange({ ...item, products: updatedSelectedProducts });
+    };
+
+    const handleRemoveSelectedProduct = (productIdToRemove: string) => {
+      onChange({
+        ...item,
+        products:
+          item.products?.filter((p) => p.id !== productIdToRemove) || [],
+      });
+    };
 
     return (
-      <ResourceItem
-        id={id}
-        accessibilityLabel={`View details for ${questionText}`}
-        onClick={() => {
-          handleStartEditQuestion(item);
+      <QuestionEditBlock
+        title={isNew ? "Add New Preset Question" : "Edit Preset Question"}
+        questionText={item.questionText}
+        onQuestionTextChange={(value: string) =>
+          onChange({ ...item, questionText: value })
+        }
+        productSearchTerm={currentSearchTerm}
+        onProductSearchTermChange={setCurrentSearchTerm}
+        promptForAI={item.promptForAI || ""}
+        onPromptForAIChange={(value: string) =>
+          onChange({
+            ...item,
+            promptForAI: value.length > 0 ? value : undefined,
+          })
+        }
+        products={searchedProducts}
+        selectedProducts={item.products || []}
+        onSelectedProductsChange={handleQuestionSelectedProductsChange}
+        onRemoveSelectedProduct={handleRemoveSelectedProduct}
+        onSave={onSave}
+        onCancel={() => {
+          setCurrentSearchTerm("");
+          setSearchedProducts([]);
+          onCancel();
         }}
-      >
-        <InlineStack
-          wrap={false}
-          blockAlign="center"
-          align="space-between"
-          gap="200"
-        >
-          <Box minWidth="0">
-            <BlockStack gap="100">
-              <Text variant="bodyMd" as="p" fontWeight="semibold" truncate>
-                {questionText}
-              </Text>
-              <Text variant="bodySm" as="p" tone="subdued">
-                Targets {itemProducts?.length ?? 0} product(s)
-              </Text>
-            </BlockStack>
-          </Box>
-          <ButtonGroup>
-            <Button
-              icon={EditIcon}
-              accessibilityLabel={`Edit question: ${questionText}`}
-              onClick={() => {
-                handleStartEditQuestion(item);
-              }}
-              variant="tertiary"
-            />
-            <Button
-              icon={DeleteIcon}
-              accessibilityLabel={`Delete question: ${questionText}`}
-              onPointerDown={(e: React.PointerEvent) => {
-                e.stopPropagation();
-                handleDeleteQuestionTrigger(id);
-              }}
-              variant="tertiary"
-              tone="critical"
-            />
-          </ButtonGroup>
-        </InlineStack>
-      </ResourceItem>
+      />
     );
   };
 
-  const emptyStateMarkup = (
-    <EmptyState
-      heading="Define suggested questions for your customers"
-      action={{
-        content: "Add Suggested Question",
-        icon: PlusIcon,
-        onAction: handleStartAddNewQuestion,
-      }}
-      image="https://cdn.shopify.com/s/files/1/0262/4074/files/empty-state.svg"
-    >
-      <BlockStack gap="200">
-        <Text as="p">
-          Create preset questions to guide users and help them quickly find
-          information about specific products.
-        </Text>
-      </BlockStack>
-    </EmptyState>
-  );
+  const validateQuestion = (question: PresetQuestion) => {
+    if (!question.questionText.trim()) {
+      shopify.toast.show("Question text cannot be empty", { isError: true });
+      return false;
+    }
+    return true;
+  };
 
   return (
-    <Card>
-      <BlockStack gap="400">
-        <BlockStack gap="200">
-          <Text variant="headingMd" as="h1">
-            Global Preset Questions
-          </Text>
-          <Text variant="bodyMd" as="p">
-            These questions will be displayed in the global chat UI as preset
-            questions.
-          </Text>
-        </BlockStack>
-
-        {presetQuestions.length > 0 ? (
-          <ResourceList
-            resourceName={{ singular: "question", plural: "questions" }}
-            items={presetQuestions}
-            renderItem={renderItem}
-          />
-        ) : (
-          !isAddingNewQuestion && emptyStateMarkup
-        )}
-        {isAddingNewQuestion && (
-          <Box paddingBlockStart="400" paddingBlockEnd="400">
-            <QuestionEditBlock
-              title="Add New Preset Question"
-              questionText={editFormData.questionText}
-              onQuestionTextChange={(value: string) =>
-                setEditFormData({ ...editFormData, questionText: value })
-              }
-              productSearchTerm={editFormData.productSearchTerm || ""}
-              onProductSearchTermChange={(value: string) =>
-                setEditFormData({ ...editFormData, productSearchTerm: value })
-              }
-              promptForAI={editFormData.promptForAI || ""}
-              onPromptForAIChange={(value: string) =>
-                setEditFormData({
-                  ...editFormData,
-                  promptForAI: value.length > 0 ? value : undefined,
-                })
-              }
-              products={searchedProducts}
-              selectedProducts={editFormData.products || []}
-              onSelectedProductsChange={handleQuestionSelectedProductsChange}
-              onRemoveSelectedProduct={handleRemoveSelectedProduct}
-              onSave={handleSaveQuestion}
-              onCancel={handleCancelEdit}
-            />
-          </Box>
-        )}
-        {!isAddingNewQuestion && presetQuestions.length > 0 && (
-          <InlineStack align="end">
-            <ButtonGroup>
-              <Button
-                onClick={handleStartAddNewQuestion}
-                variant="primary"
-                icon={PlusIcon}
-              >
-                Add Suggested Question
-              </Button>
-            </ButtonGroup>
-          </InlineStack>
-        )}
-      </BlockStack>
-
-      <Modal
-        open={showDeleteConfirmModal}
-        onClose={cancelDeleteQuestion}
-        title="Confirm Deletion"
-        primaryAction={{
-          content: "Delete",
-          onAction: confirmDeleteQuestion,
-          destructive: true,
-        }}
-        secondaryActions={[
-          {
-            content: "Cancel",
-            onAction: cancelDeleteQuestion,
-          },
-        ]}
-      >
-        <Modal.Section>
-          <BlockStack>
-            <Text as="p">
-              Are you sure you want to delete this preset question?
-            </Text>
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
-    </Card>
+    <BuilderView
+      items={presetQuestions}
+      onItemsChange={handleQuestionsChange}
+      renderItemContent={renderQuestionContent}
+      renderEditForm={renderQuestionEditForm}
+      labels={{
+        singular: "question",
+        plural: "questions",
+        addButton: "Add Suggested Question",
+        editTitle: "Edit Preset Question",
+        addTitle: "Add New Preset Question",
+        emptyStateHeading: "Define suggested questions for your customers",
+        emptyStateDescription:
+          "Create preset questions to guide users and help them quickly find information about specific products.",
+        deleteConfirmMessage:
+          "Are you sure you want to delete this preset question?",
+      }}
+      validateItem={validateQuestion}
+      onSaveSuccess={handleSaveSuccess}
+      header={{
+        title: "Global Preset Questions",
+        subtitle:
+          "These questions will be displayed in the global chat UI as preset questions.",
+      }}
+    />
   );
 }

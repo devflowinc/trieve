@@ -20,7 +20,7 @@ import {
 } from "trieve-ts-sdk";
 import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
 import { getAppMetafields, setAppMetafields } from "app/queries/metafield";
-import { useState, useCallback, ReactNode } from "react";
+import { useState, useCallback, ReactNode, useEffect } from "react";
 import { LLMSettings } from "app/components/settings/LLMSettings";
 import {
   PresetQuestion,
@@ -286,10 +286,24 @@ export default function Dataset() {
   } = useLoaderData<typeof loader>();
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const handleTabChange = useCallback(
-    (selectedTabIndex: number) => setSelectedTab(selectedTabIndex),
-    [],
-  );
+  const handleTabChange = useCallback((selectedTabIndex: number) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", tabs[selectedTabIndex].id);
+    window.history.pushState(
+      {},
+      "",
+      `${window.location.pathname}?${params.toString()}`,
+    );
+    setSelectedTab(selectedTabIndex);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab) {
+      setSelectedTab(tabs.findIndex((t) => t.id === tab));
+    }
+  }, []);
 
   const tabs = [
     {
@@ -353,7 +367,9 @@ export default function Dataset() {
     "preset-questions": <PresetQuestions initialQuestions={presetQuestions} />,
     "filter-settings": <FilterSettings />,
     "integrations-settings": <IntegrationsSettings />,
-    "extra-information": <PolicySettings shopDataset={shopDataset as Dataset} />,
+    "extra-information": (
+      <PolicySettings shopDataset={shopDataset as Dataset} />
+    ),
   };
 
   return (

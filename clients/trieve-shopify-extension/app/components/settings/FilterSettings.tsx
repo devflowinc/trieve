@@ -1,19 +1,11 @@
 import * as React from "react";
-import {
-  Box,
-  Button,
-  Card,
-  FormLayout,
-  Text,
-  Banner,
-  InlineStack,
-  EmptyState,
-} from "@shopify/polaris";
+import { Box, Card, Text, Banner, BlockStack } from "@shopify/polaris";
 import { getAppMetafields, setAppMetafields } from "app/queries/metafield";
 import { useState, useEffect } from "react";
 import { useClientAdminApi } from "app/loaders/clientLoader";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FilterBlock } from "app/components/FIlterBlock";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BuilderView, EditFormProps } from "../BuilderView";
+import { FilterBlock } from "../FIlterBlock";
 
 export interface TagProp {
   tag: string;
@@ -26,7 +18,7 @@ export interface TagProp {
 }
 
 export interface FilterSidebarSection {
-  key: string;
+  id: string;
   filterKey: string;
   title: string;
   selectionType: "single" | "multiple" | "range";
@@ -41,9 +33,6 @@ export interface FilterSidebarProps {
 export function FilterSettings() {
   const adminApi = useClientAdminApi();
   const queryClient = useQueryClient();
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
-  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const {
     data: filterSettings,
@@ -66,86 +55,62 @@ export function FilterSettings() {
 
   useEffect(() => {
     if (filterSettings) {
-      setFilterSections(filterSettings.sections || []);
+      // Add id field to sections for BuilderView compatibility
+      const sectionsWithId = (filterSettings.sections || []).map((section) => ({
+        ...section,
+        id: section.id || String(Date.now() + Math.random()),
+      }));
+      setFilterSections(sectionsWithId);
     }
   }, [filterSettings]);
 
-  const saveFilterSettings = useMutation({
-    mutationFn: async (sections: FilterSidebarSection[]) => {
+  const handleSectionsChange = (updatedSections: FilterSidebarSection[]) => {
+    setFilterSections(updatedSections);
+    saveAllFilters(updatedSections);
+  };
+
+  const saveAllFilters = async (sections: FilterSidebarSection[]) => {
+    try {
+      // Remove id field before saving
+      const sectionsWithoutId = sections.map(({ ...section }) => ({
+        ...section,
+        id: section.id || section.title.toLowerCase().replace(/ /g, "-"),
+      }));
       const filterSidebarProps = {
-        sections: sections,
+        sections: sectionsWithoutId,
       };
-      return await setAppMetafields(adminApi, [
+      await setAppMetafields(adminApi, [
         {
           key: "trieve_filter_settings",
           value: JSON.stringify(filterSidebarProps),
           type: "json",
         },
       ]);
-    },
-    onMutate: () => {
-      setIsSaving(true);
-      setSaveError("");
-      setSaveSuccess(false);
-    },
-    onSuccess: () => {
-      setIsSaving(false);
-      setSaveSuccess(true);
       queryClient.invalidateQueries({ queryKey: ["filter_settings"] });
-
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 3000);
-    },
-    onError: (error) => {
-      setIsSaving(false);
-      setSaveError(error.toString());
-    },
-  });
-
-  const handleSaveFilters = () => {
-    const sectionsWithKeys = filterSections.map((section) => {
-      if (!section.key) {
-        return {
-          ...section,
-          key: section.title.toLowerCase().replace(/ /g, "-"),
-        };
-      }
-      return section;
-    });
-
-    setFilterSections(sectionsWithKeys);
-    saveFilterSettings.mutate(sectionsWithKeys);
+    } catch (error) {
+      console.error("Failed to save filters:", error);
+      shopify.toast.show("Failed to save filters", { isError: true });
+    }
   };
 
-  const handleSectionChange = (
-    index: number,
-    updatedSection: FilterSidebarSection,
-  ) => {
-    const updatedSections = [...filterSections];
-    updatedSections[index] = updatedSection;
-    setFilterSections(updatedSections);
+  const handleSaveSuccess = (section: FilterSidebarSection, isNew: boolean) => {
+    shopify.toast.show(isNew ? "Filter added!" : "Filter updated!");
   };
 
-  const handleSectionDelete = (index: number) => {
-    const updatedSections = [...filterSections];
-    updatedSections.splice(index, 1);
-    setFilterSections(updatedSections);
-  };
+  const renderFilterContent = (section: FilterSidebarSection) => (
+    <BlockStack gap="100">
+      <Text variant="bodyMd" as="p" fontWeight="semibold">
+        {section.title || "New Filter"}
+      </Text>
+      <Text variant="bodySm" as="p" tone="subdued">
+        {section.filterKey || "No key set"} • {section.options.length} option(s)
+      </Text>
+    </BlockStack>
+  );
 
-  const addNewSection = () => {
-    setFilterSections([
-      ...filterSections,
-      {
-        key: "",
-        filterKey: "",
-        title: "New Filter",
-        selectionType: "single",
-        filterType: "match_any",
-        options: [],
-      },
-    ]);
-  };
+  const renderFilterEditForm = (props: EditFormProps<FilterSidebarSection>) => (
+    <FilterBlock {...props} />
+  );
 
   if (isLoading) {
     return (
@@ -172,73 +137,28 @@ export function FilterSettings() {
   }
 
   return (
-    <Box>
-      {saveSuccess && (
-        <Box paddingBlockEnd="400">
-          <Banner tone="success" onDismiss={() => setSaveSuccess(false)}>
-            Filter settings saved successfully.
-          </Banner>
-        </Box>
-      )}
-
-      {saveError && (
-        <Box paddingBlockEnd="400">
-          <Banner tone="critical" onDismiss={() => setSaveError("")}>
-            Error saving filter settings: {saveError}
-          </Banner>
-        </Box>
-      )}
-
-      <Card>
-        <Box padding="400">
-          <InlineStack align="space-between">
-            <Text variant="headingLg" as="h1">
-              Filter Configuration
-            </Text>
-            <Button
-              variant="primary"
-              onClick={handleSaveFilters}
-              loading={isSaving}
-            >
-              Save Filters
-            </Button>
-          </InlineStack>
-        </Box>
-      </Card>
-
-      <Box paddingBlockStart="400">
-        {filterSections.length === 0 ? (
-          <Card>
-            <EmptyState
-              heading="Configure your filters"
-              action={{
-                content: "Add Filter",
-                onAction: addNewSection,
-              }}
-              image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-            >
-              <p>Add and configure filters for your products or collections.</p>
-            </EmptyState>
-          </Card>
-        ) : (
-          <FormLayout>
-            {filterSections.map((section, index) => (
-              <FilterBlock
-                key={section.key || index}
-                section={section}
-                onChange={(updatedSection: FilterSidebarSection) =>
-                  handleSectionChange(index, updatedSection)
-                }
-                onDelete={() => handleSectionDelete(index)}
-              />
-            ))}
-
-            <Box paddingBlockStart="400">
-              <Button onClick={addNewSection}>+ Add Filter</Button>
-            </Box>
-          </FormLayout>
-        )}
-      </Box>
-    </Box>
+    <BuilderView
+      items={filterSections}
+      onItemsChange={handleSectionsChange}
+      renderItemContent={renderFilterContent}
+      renderEditForm={renderFilterEditForm}
+      labels={{
+        singular: "filter",
+        plural: "filters",
+        addButton: "Add Filter",
+        editTitle: "Edit Filter",
+        addTitle: "Add New Filter",
+        emptyStateHeading: "Configure your filters",
+        emptyStateDescription:
+          "Add and configure filters for your products or collections.",
+        deleteConfirmMessage: "Are you sure you want to delete this filter?",
+      }}
+      header={{
+        title: "Filter Configuration",
+        subtitle:
+          "Configure filters to help customers narrow down product search results.",
+      }}
+      onSaveSuccess={handleSaveSuccess}
+    />
   );
 }
