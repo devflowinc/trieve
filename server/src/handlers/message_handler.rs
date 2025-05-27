@@ -35,7 +35,9 @@ use openai_dive::v1::{
         },
         image::{EditImageParametersBuilder, ImageData, ImageQuality, ImageSize},
         shared::{FileUpload, FileUploadBytes},
+        audio::{AudioOutputFormat, AudioTranscriptionParametersBuilder},
     },
+    models::WhisperModel,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -1411,4 +1413,91 @@ pub async fn edit_image(
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(HttpResponse::Ok().json(ImageEditResponse { image_urls }))
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TranscribeAudioReqPayload {
+    /// The base64 encoded audio input of the user's input message.
+    pub audio_base64: String,
+}
+
+/// Transcribe Audio
+///
+/// Uses `whisper-1` to transcribe an audio file passed in as a base64 encoded string.
+#[utoipa::path(
+    post,
+    path = "/message/transcribe_audio",
+    context_path = "/api",
+    tag = "Message",
+    request_body(content = TranscribeAudioReqPayload, description = "JSON request payload to transcribe an audio file", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The transcribed text", body = String,
+            headers(
+                ("TR-QueryID" = uuid::Uuid, description = "Query ID that is used for tracking analytics")
+            )
+        ),
+        (status = 400, description = "Service error relating to transcribing the audio", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn transcribe_audio(
+    data: web::Json<TranscribeAudioReqPayload>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _required_user: AdminOnly,
+) -> Result<HttpResponse, ServiceError> {
+    let audio_bytes = base64::decode(data.audio_base64.clone()).map_err(|err| {
+        log::error!("Failed to decode base64 audio: {:?}", err);
+        ServiceError::BadRequest(format!("Error decoding audio base64: {:?}", err))
+    })?;
+
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.clone().server_configuration);
+
+    let llm_api_key = get_llm_api_key(&dataset_config);
+    let mut base_url = dataset_config.LLM_BASE_URL.clone();
+
+    if !base_url.contains("openai.com") {
+        base_url = "https://api.openai.com/v1".to_string();
+    }
+
+    let client = Client {
+        headers: None,
+        api_key: llm_api_key,
+        project: None,
+        http_client: reqwest::Client::new(),
+        base_url,
+        organization: None,
+    };
+
+    let file_upload = FileUpload::Bytes(FileUploadBytes {
+        filename: "audio.mp3".to_string(),
+        bytes: audio_bytes.into(),
+    });
+
+    let parameters = AudioTranscriptionParametersBuilder::default()
+        .file(file_upload)
+        .model(WhisperModel::Whisper1.to_string())
+        .response_format(AudioOutputFormat::Text)
+        .language("en".to_string())
+        .build()
+        .map_err(|err| {
+            log::error!("Failed to build transcription parameters: {:?}", err);
+            ServiceError::InternalServerError(format!("Failed to build transcription parameters: {:?}", err))
+        })?;
+    
+    let transcribed_text = client
+        .audio()
+        .create_transcription(parameters)
+        .await
+        .map_err(|err| {
+            log::error!("Failed to transcribe audio: {:?}", err);
+            ServiceError::InternalServerError(format!("Failed to transcribe audio: {:?}", err))
+        })?;
+    
+    Ok(HttpResponse::Ok().json(transcribed_text.replace("\n", "")))
 }

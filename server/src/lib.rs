@@ -1172,6 +1172,10 @@ pub fn main() -> std::io::Result<()> {
                                 .route(web::post().to(handlers::message_handler::edit_image))
                         )
                         .service(
+                            web::resource("/message/transcribe_audio")
+                                .route(web::post().to(handlers::message_handler::transcribe_audio))
+                        )
+                        .service(
                             web::resource("/message/{message_id}")
                                 .route(web::get().to(handlers::message_handler::get_message_by_id))
                         )
