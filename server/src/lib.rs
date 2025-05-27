@@ -474,6 +474,7 @@ impl Modify for SecurityAddon {
             handlers::page_handler::RelevanceToolCallOptions,
             handlers::page_handler::PriceToolCallOptions,
             handlers::page_handler::SearchToolCallOptions,
+            handlers::page_handler::NotFilterToolCallOptions,
             handlers::page_handler::PublicPageTheme,
             handlers::page_handler::PublicPageParameters,
             handlers::page_handler::PublicPageTabMessage,
