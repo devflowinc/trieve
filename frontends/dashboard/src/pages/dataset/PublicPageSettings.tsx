@@ -27,7 +27,6 @@ import {
   $OpenApiTs,
   ChunkMetadata,
   CrawlRequest,
-  NotFilterToolCallOptions,
   PriceToolCallOptions,
   PublicPageTabMessage,
   RelevanceToolCallOptions,
@@ -92,12 +91,6 @@ export const defaultPriceToolCallOptions: PriceToolCallOptions = {
     "Minimum price of the product. Only set this if a minimum price is mentioned in the query.",
   maxPriceDescription:
     "Maximum price of the product. Only set this if a maximum price is mentioned in the query.",
-};
-
-export const defaultNotFilterToolCallOptions: NotFilterToolCallOptions = {
-  userMessageTextPrefix: "Here is the user query:",
-  toolDescription:
-    "Set to true if the query is not interested in the products they were shown previously or would like to see something different. Ensure that this is only set to true when the user wants to see something different from the previously returned results or is not interested in those previously returned results.",
 };
 
 const searchTypeOptions = [
@@ -1759,77 +1752,6 @@ const PublicPageControls = () => {
                   onInput={(e) =>
                     setExtraParams(
                       "searchToolCallOptions",
-                      "userMessageTextPrefix",
-                      e.currentTarget.value,
-                    )
-                  }
-                  rows="4"
-                  name="messageToQueryPrompt"
-                  id="messageToQueryPrompt"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
-          </div>
-        </details>
-
-        <details class="my-4">
-          <summary class="cursor-pointer text-sm font-medium">
-            Not Filter Tool Options
-          </summary>
-          <div class="mt-4 space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div class="grow">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Not Filter Tool Description
-                  </label>
-                  <Tooltip
-                    tooltipText="Description of the not filter tool provided to the model."
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <textarea
-                  value={
-                    (extraParams.notFilterToolCallOptions?.toolDescription ||
-                      defaultNotFilterToolCallOptions.toolDescription) as string
-                  }
-                  onInput={(e) =>
-                    setExtraParams(
-                      "notFilterToolCallOptions",
-                      "toolDescription",
-                      e.currentTarget.value,
-                    )
-                  }
-                  rows="4"
-                  name="messageToQueryPrompt"
-                  id="messageToQueryPrompt"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                />
-              </div>
-              <div class="grow">
-                <div class="flex items-center gap-1">
-                  <label class="block" for="">
-                    Not Filter Prompt
-                  </label>
-                  <Tooltip
-                    tooltipText="Prompt to the model to use the search tool."
-                    body={
-                      <FaRegularCircleQuestion class="h-3 w-3 text-black" />
-                    }
-                  />
-                </div>
-                <textarea
-                  value={
-                    (extraParams.notFilterToolCallOptions
-                      ?.userMessageTextPrefix ||
-                      defaultNotFilterToolCallOptions.userMessageTextPrefix) as string
-                  }
-                  onInput={(e) =>
-                    setExtraParams(
-                      "notFilterToolCallOptions",
                       "userMessageTextPrefix",
                       e.currentTarget.value,
                     )
