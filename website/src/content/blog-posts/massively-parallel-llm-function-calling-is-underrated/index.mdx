@@ -1,52 +1,61 @@
 ---
-title: "The Future of Work: Commanding Your Massively Parallel Army of LLMs"
+title: "The Future of Work: Commanding Armies of Parallel LLMs"
 summary: >-
-  Imagine directing 200 LLMs to simultaneously tackle a single task. This is the
-  future.
-author: Nick Khami
+  Directing 200 LLMs to simultaneously tackle a single task is the future of work.
 createdAt: 2025-05-22T17:25:00.000Z
 lastUpdatedAt: 2025-05-22T17:25:00.000Z
-isDraft: true
-categories:
-  - explainers
+isDraft: false
+categories: []
 coverImage: >-
   /src/assets/images/blog-posts/massively-parallel-llm-function-calling-is-underrated/coverImage.webp
 ogSection: Technology
 ---
 
-import ParallelClothesLabeling from "../../../components/ParallelClothesLabeling";
+import ParallelClothesLabeling from "@components/ParallelClothesLabeling";
 
-## Massively parallel LLM inference is underrated
+# Massive parallel LLM inference is _underrated_.
 
-I think the future of work looks like StarCraft or Age of Empires. You have massive throughput, say 10,000 requests (agents) and 100k tokens per second, and you're directing that compute to solve. You're the commander, the AI agents are your units.
+If you use AI today, you're likely:
 
-But here's the key: you don't spread that capacity across 200 different tasks. You assign multiple agents to single problems. Each LLM has some probability of finding a solution, but AI is creative. You don't just want enough compute to get one correct solution per problem, you want enough to get multiple, then mix and match them into one extremely high quality solve. Think of it like [monte carlo sampling](https://en.wikipedia.org/wiki/Monte_Carlo_method).
+1. Asking ChatGPT or Claude to do something for you
+2. Navigating away to thumb on another task for _just long enough_
+3. Navigating back to judge its output to then either:  
+   a. Accepting it, implementing the solution, and moving on  
+   b. Rejecting it and trying to reason with the AI again, and again, and again...
 
-## Data labeling as a concrete example
+This is a waste of time! [The future of work looks like StarCraft or Age of Empires](https://x.com/willdepue/status/1923413964240666876).
 
-Let's start with something concrete. We built a demo app that categorizes images of clothing using parallel LLM calls. As a search company, this lets us structure arbitrary datasets to make search work consistently across different sources.
+Imagine you have an allocation of 10,000 requests—rather than a single prompt—at 100,000 tokens per second. (For context, the average GPT interaction uses 50-150 tokens per turn.) You're directing this computational firepower to solve problems and create solutions, acting as the commander with agentic systems as your units. If the point of battle is to win, you need asymmetric advantages. But this isn't just about sheer firepower or brute force—though that's part of it. The real power lies in your ability to direct and manage these forces strategically to maximize their effectiveness.
 
-But here's what's actually cool: you could photograph all your belongings and have AI instantly sort which items are worth more than $50. Try doing that with humans—you'd need dozens of people working in parallel to finish in reasonable time.
+Like any real working environment, you don't spread capacity evenly across 200 different tasks. You provision agents to match the problem's nature. Some tasks stand alone, while others form clusters—interconnected webs where complexity and complication (two distinct beasts) hide cloaked in an ether of ethers.
 
-Google spent years tricking [hundreds of millions of people into labeling data](https://prosopo.io/blog/why-am-i-clicking-traffic-lights/#contribution-to-ai-training) through CAPTCHAs. Now you can accomplish similar tasks for a few thousand dollars in a few hours.
+Yes, each LLM has **some** [**probability**](https://trieve.b-cdn.net/nassim.jpeg) of finding a solution. But you don't just want one correct solution per problem. You want enough to get multiple, then mix and match them into one extremely high quality solve. Think of it like [Monte Carlo sampling](https://en.wikipedia.org/wiki/Monte_Carlo_method), you're hedging against randomness as you explore the solution space.
+
+## Data labeling is a fantastic base case example
+
+As a familiar and persistent example, we built a demo app that categorizes images of clothing using parallel LLM calls. As a search company, being able to structure arbitrary datasets across different sources greatly improves our ability to index and manipulate information into awesome AI experiences for our customers' customers.
+
+But here's what's actually cool: you could photograph all your belongings and have AI instantly sort which items are worth more than $50. With humans, you need dozens of people working in parallel to finish in reasonable time.
+
+Google spent years tricking [hundreds of millions of people into labeling data](https://prosopo.io/blog/why-am-i-clicking-traffic-lights/#contribution-to-ai-training) through CAPTCHAs. Now you can leverage the years of human effort that went into this and accomplish similar tasks for **much less** in a few hours. As you might also assume, this will get faster and cheaper as LLMs improve.
 
 <ParallelClothesLabeling client:load />
 
-## Moving from spectator to commander
+## Parallel compute should be all of the time
 
-We should be using parallel compute for everything AI does. We should be supervisors, not spectators.
+We should be using parallel compute for everything AI. We should be supervisors, not spectators.
 
 Right now, as a software engineer, I open my IDE, prompt an agent to edit code, then watch it work. Strong WALL-E fitless human vibes; disengaged, passive.&#x20;
 
-![fitless-human](https://cdn.trieve.ai/blog/massively-parallel-llm-function-calling-is-underrated/fitless-human-walle.jpeg)
+![](https://trieve.b-cdn.net/walle-fitless.jpg)
 
-I don't want this. I want to be in flow state, hyper-engaged. I want to feel like [Ender commanding an entire fleet](https://youtu.be/Ht12otHMX_Q?si=M0FI0pHFxaPI1lLt&t=280).
+I don't want this. I want to be in flow state, hyper-engaged and _forward-leaning_. I want to feel and produce like [Ender commanding an entire fleet](https://youtu.be/Ht12otHMX_Q?si=M0FI0pHFxaPI1lLt&t=280).
 
-![ender-fleet-pilot](https://cdn.trieve.ai/blog/massively-parallel-llm-function-calling-is-underrated/image.png)
+![](/src/assets/images/blog-posts/massively-parallel-llm-function-calling-is-underrated/image.png)
 
-It should be trivial to provision multiple LLMs with high variance to tackle tasks in parallel. If AI can generate product photos, I want to pick 3 styles and deploy 6 agents—2 per style—generating image sets simultaneously. While they work, I need the ability to zoom into any process and intervene if something's going wrong.
+It should be trivial to provision multiple LLMs with high variance to tackle tasks in parallel. If AI can generate product photos, I want to pick 3 styles and deploy 6 agents, 2 per style-generating image sets—simultaneously. If something's going wrong, I can zoom in and intervene while they work. The feedback I give one agent can be immediately applied to the others, allowing them to adjust their outputs in real-time.
 
-This is similar to a strategy some employ on Fiverr when they [hire multiple freelancers for the same project](https://www.reddit.com/r/Fiverr/comments/1du7597/discussion_is_it_wrong_to_hire_two_people_on/) and select the best output.
+This is similar to a strategy some employ on Fiverr when they [hire multiple freelancers for the same project](https://www.reddit.com/r/Fiverr/comments/1du7597/discussion_is_it_wrong_to_hire_two_people_on/) to judge the quality of their work and pick the best candidate.
 
 ## New tools are needed
 
@@ -54,4 +63,4 @@ You can sort of replicate this with [git worktrees](https://sufiyanyasa.com/blog
 
 What we have now feels like a [horseless carriage](https://koomen.dev/essays/horseless-carriages/), we're mimicking old patterns instead of embracing new possibilities. The future UX for AI isn't watching a single agent work. It's commanding hundreds simultaneously.
 
-Maybe these tools will be vertical-specific. Maybe they'll be general-purpose. Either way, I'm excited to see what comes next.
+Maybe these tools will be vertical-specific. Maybe they'll be general-purpose. Either way, I'm excited to see what we build and get it in your hands.
