@@ -5,8 +5,16 @@ import { StopSquareIcon, MicIcon } from "../icons";
 import { motion } from "motion/react";
 
 export const UploadAudio = () => {
-  const { props, mode, setAudioBase64, isRecording, setIsRecording } =
-    useModalState();
+  const {
+    props,
+    mode,
+    setAudioBase64,
+    isRecording,
+    setIsRecording,
+    trieveSDK,
+    setTranscribedQuery,
+    setQuery,
+  } = useModalState();
 
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
     null,
@@ -31,15 +39,25 @@ export const UploadAudio = () => {
 
       recorder.onstop = () => {
         stream.getTracks().forEach((track) => track.stop());
-        setAudioBase64("");
         const audioBlob = new Blob(audioChunks, {
           type: isFirefox ? "audio/webm" : "audio/mp4",
         });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
-        reader.onloadend = () => {
+        reader.onloadend = async () => {
           let base64data = reader.result as string;
           base64data = base64data?.split(",")[1];
+
+          const transcribedAudio = await trieveSDK.transcribeAudio(
+            {
+              base64_audio: base64data,
+            },
+            new AbortController().signal,
+          );
+
+          setTranscribedQuery(transcribedAudio);
+
+          setQuery(transcribedAudio);
           setAudioBase64(base64data);
         };
       };

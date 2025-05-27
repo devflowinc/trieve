@@ -27,7 +27,9 @@ use base64::Engine;
 use hallucination_detection::HallucinationDetector;
 use openai_dive::v1::{
     api::Client,
+    models::WhisperModel,
     resources::{
+        audio::{AudioOutputFormat, AudioTranscriptionParametersBuilder},
         chat::{
             ChatCompletionFunction, ChatCompletionParametersBuilder, ChatCompletionTool,
             ChatCompletionToolType, ChatMessage, ChatMessageContent, ChatMessageContentPart,
@@ -35,9 +37,7 @@ use openai_dive::v1::{
         },
         image::{EditImageParametersBuilder, ImageData, ImageQuality, ImageSize},
         shared::{FileUpload, FileUploadBytes},
-        audio::{AudioOutputFormat, AudioTranscriptionParametersBuilder},
     },
-    models::WhisperModel,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -1418,7 +1418,7 @@ pub async fn edit_image(
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TranscribeAudioReqPayload {
     /// The base64 encoded audio input of the user's input message.
-    pub audio_base64: String,
+    pub base64_audio: String,
 }
 
 /// Transcribe Audio
@@ -1450,7 +1450,7 @@ pub async fn transcribe_audio(
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
     _required_user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
-    let audio_bytes = base64::decode(data.audio_base64.clone()).map_err(|err| {
+    let audio_bytes = base64::decode(data.base64_audio.clone()).map_err(|err| {
         log::error!("Failed to decode base64 audio: {:?}", err);
         ServiceError::BadRequest(format!("Error decoding audio base64: {:?}", err))
     })?;
@@ -1487,9 +1487,12 @@ pub async fn transcribe_audio(
         .build()
         .map_err(|err| {
             log::error!("Failed to build transcription parameters: {:?}", err);
-            ServiceError::InternalServerError(format!("Failed to build transcription parameters: {:?}", err))
+            ServiceError::InternalServerError(format!(
+                "Failed to build transcription parameters: {:?}",
+                err
+            ))
         })?;
-    
+
     let transcribed_text = client
         .audio()
         .create_transcription(parameters)
@@ -1498,6 +1501,6 @@ pub async fn transcribe_audio(
             log::error!("Failed to transcribe audio: {:?}", err);
             ServiceError::InternalServerError(format!("Failed to transcribe audio: {:?}", err))
         })?;
-    
+
     Ok(HttpResponse::Ok().json(transcribed_text.replace("\n", "")))
 }

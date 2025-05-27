@@ -384,6 +384,8 @@ const ModalContext = createContext<{
   addHeight: (height: number) => void;
   display: boolean;
   abTreatment?: string;
+  transcribedQuery: string;
+  setTranscribedQuery: React.Dispatch<React.SetStateAction<string>>;
 }>({
   props: defaultProps,
   trieveSDK: (() => {}) as unknown as TrieveSDK,
@@ -426,6 +428,8 @@ const ModalContext = createContext<{
   addHeight: (height: number) => {},
   display: true,
   abTreatment: undefined,
+  transcribedQuery: "",
+  setTranscribedQuery: () => {},
 });
 
 const ModalProvider = ({
@@ -476,6 +480,7 @@ const ModalProvider = ({
     !props.experimentIds || props.experimentIds.length === 0,
   );
   const [abTreatment, setAbTreatment] = useState<string | undefined>(undefined);
+  const [transcribedQuery, setTranscribedQuery] = useState<string>("");
 
   const trieve = new TrieveSDK({
     baseUrl: props.baseUrl,
@@ -555,7 +560,6 @@ const ModalProvider = ({
           props,
           query_string: query,
           image_url: imageUrl,
-          audioBase64: audioBase64,
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
@@ -573,10 +577,10 @@ const ModalProvider = ({
           }
         });
 
-        if (results.transcribedQuery && audioBase64) {
-          setQuery(results.transcribedQuery);
+        if (audioBase64) {
           setAudioBase64(undefined);
         }
+
         setResults(Array.from(groupMap.values()));
         setRequestID(results.requestID);
       } else if (props.useGroupSearch && props.usePagefind) {
@@ -609,7 +613,6 @@ const ModalProvider = ({
           props,
           query_string: query,
           image_url: imageUrl,
-          audioBase64: audioBase64,
           searchOptions: props.searchOptions,
           trieve: trieve,
           abortController,
@@ -617,8 +620,7 @@ const ModalProvider = ({
           type: props.type,
           abTreatment,
         });
-        if (results.transcribedQuery && audioBase64) {
-          setQuery(results.transcribedQuery);
+        if (audioBase64) {
           setAudioBase64(undefined);
         }
         setResults(results.chunks);
@@ -900,6 +902,8 @@ const ModalProvider = ({
         addHeight,
         display,
         abTreatment,
+        transcribedQuery,
+        setTranscribedQuery,
       }}
     >
       {children}

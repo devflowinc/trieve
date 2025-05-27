@@ -11,6 +11,7 @@ import {
   GetMessageByIdData,
   GetToolFunctionParamsReqPayload,
   RegenerateMessageReqPayload,
+  TranscribeAudioReqPayload,
 } from "../../fetch-client";
 import { TrieveSDK } from "../../sdk";
 
@@ -508,5 +509,25 @@ export async function editImage(
       datasetId: this.datasetId,
     },
     signal
+  );
+}
+
+export async function transcribeAudio(
+  this: TrieveSDK,
+  data: TranscribeAudioReqPayload,
+  signal?: AbortSignal,
+) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
+  return await this.trieve.fetch(
+    "/api/message/transcribe_audio",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    },
+    signal,
   );
 }

@@ -12,7 +12,7 @@ export const UserMessage = ({
   message: Message;
   idx: number;
 }) => {
-  const { props } = useModalState();
+  const { props, transcribedQuery } = useModalState();
 
   return (
     <motion.div
@@ -31,15 +31,18 @@ export const UserMessage = ({
             {message.imageUrl && (
               <ImagePreview isUploading={false} imageUrl={message.imageUrl} />
             )}
-            {message.text === "Loading..." ? (
+            {message.text === "Loading..." && !transcribedQuery ? (
               <span className={`user-text ${props.type}`}>
                 <LoadingIcon className="loading" />
               </span>
             ) : null}
-            {message.text != "" &&
-            message.text != "Loading..." &&
-            message.text != props.defaultImageQuestion ? (
-              <span className={`user-text ${props.type}`}> {message.text}</span>
+            {(message.text !== "" &&
+              message.text !== "Loading..." &&
+              message.text !== props.defaultImageQuestion) ||
+            transcribedQuery ? (
+              <span className={`user-text ${props.type}`}>
+                {transcribedQuery || message.text}
+              </span>
             ) : null}
           </div>
         </div>
