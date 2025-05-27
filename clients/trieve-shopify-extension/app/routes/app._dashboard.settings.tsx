@@ -17,10 +17,11 @@ import {
   PriceToolCallOptions,
   type Dataset,
   SearchToolCallOptions,
+  NotFilterToolCallOptions,
 } from "trieve-ts-sdk";
 import { createWebPixel, isWebPixelInstalled } from "app/queries/webPixel";
 import { getAppMetafields, setAppMetafields } from "app/queries/metafield";
-import { useState, useCallback, ReactNode, useEffect } from "react";
+import { useState, useCallback, ReactNode } from "react";
 import { LLMSettings } from "app/components/settings/LLMSettings";
 import {
   PresetQuestion,
@@ -41,6 +42,7 @@ export const loader = async ({
   relevanceToolCallOptions: RelevanceToolCallOptions | null;
   searchToolCallOptions: SearchToolCallOptions | null;
   priceToolCallOptions: PriceToolCallOptions | null;
+  notFilterToolCallOptions: NotFilterToolCallOptions | null;
 }> => {
   const { session } = await authenticate.admin(request);
   const key = await validateTrieveAuth(request);
@@ -95,6 +97,11 @@ export const loader = async ({
     fetcher,
     "price_tool_call_options",
   );
+  const notFilterToolCallOptions =
+    await getAppMetafields<NotFilterToolCallOptions>(
+      fetcher,
+      "not_filter_tool_call_options",
+    );
 
   return {
     crawlSettings: crawlSettings?.crawlSettings,
@@ -105,6 +112,7 @@ export const loader = async ({
     relevanceToolCallOptions,
     searchToolCallOptions,
     priceToolCallOptions,
+    notFilterToolCallOptions,
   };
 };
 
@@ -213,6 +221,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       );
       const priceToolCallOptions = formData.get("price_tool_call_options");
       const searchToolCallOptions = formData.get("search_tool_call_options");
+      const notFilterToolCallOptions = formData.get(
+        "not_filter_tool_call_options",
+      );
       await setAppMetafields(fetcher, [
         {
           key: "relevance_tool_call_options",
@@ -227,6 +238,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         {
           key: "search_tool_call_options",
           value: searchToolCallOptions as string,
+          type: "json",
+        },
+        {
+          key: "not_filter_tool_call_options",
+          value: notFilterToolCallOptions as string,
           type: "json",
         },
       ]);
@@ -283,27 +299,14 @@ export default function Dataset() {
     relevanceToolCallOptions,
     searchToolCallOptions,
     priceToolCallOptions,
+    notFilterToolCallOptions,
   } = useLoaderData<typeof loader>();
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const handleTabChange = useCallback((selectedTabIndex: number) => {
-    const params = new URLSearchParams(window.location.search);
-    params.set("tab", tabs[selectedTabIndex].id);
-    window.history.pushState(
-      {},
-      "",
-      `${window.location.pathname}?${params.toString()}`,
-    );
-    setSelectedTab(selectedTabIndex);
-  }, []);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
-    if (tab) {
-      setSelectedTab(tabs.findIndex((t) => t.id === tab));
-    }
-  }, []);
+  const handleTabChange = useCallback(
+    (selectedTabIndex: number) => setSelectedTab(selectedTabIndex),
+    [],
+  );
 
   const tabs = [
     {
@@ -362,14 +365,13 @@ export default function Dataset() {
         existingRelevanceToolCallOptions={relevanceToolCallOptions}
         existingSearchToolCallOptions={searchToolCallOptions}
         existingPriceToolCallOptions={priceToolCallOptions}
+        existingNotFilterToolCallOptions={notFilterToolCallOptions}
       />
     ),
     "preset-questions": <PresetQuestions initialQuestions={presetQuestions} />,
     "filter-settings": <FilterSettings />,
     "integrations-settings": <IntegrationsSettings />,
-    "extra-information": (
-      <PolicySettings shopDataset={shopDataset as Dataset} />
-    ),
+    "extra-information": <PolicySettings shopDataset={shopDataset as Dataset} />,
   };
 
   return (
