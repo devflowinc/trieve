@@ -276,7 +276,6 @@ const defaultProps = {
   } as searchOptions,
   chatFilters: undefined,
   searchToolCallOptions: defaultSearchToolCallOptions,
-  notFilterToolCallOptions: defaultNotFilterToolCallOptions,
   analytics: true,
   chat: true,
   suggestedQueries: true,

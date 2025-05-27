@@ -19,7 +19,6 @@ import { ApiRoutes } from "../components/Routes";
 import { HeroPatterns } from "../pages/dataset/HeroPatterns";
 import { createInitializedContext } from "../utils/initialize";
 import {
-  defaultNotFilterToolCallOptions,
   defaultOpenGraphMetadata,
   defaultPriceToolCallOptions,
   defaultRelevanceToolCallOptions,
@@ -98,12 +97,6 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
       if (!extraParams.searchToolCallOptions) {
         setExtraParams("searchToolCallOptions", {
           ...defaultSearchToolCallOptions,
-        });
-      }
-
-      if (!extraParams.notFilterToolCallOptions) {
-        setExtraParams("notFilterToolCallOptions", {
-          ...defaultNotFilterToolCallOptions,
         });
       }
 
