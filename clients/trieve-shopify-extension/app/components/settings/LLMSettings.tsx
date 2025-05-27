@@ -24,7 +24,6 @@ import {
   PriceToolCallOptions,
   RelevanceToolCallOptions,
   SearchToolCallOptions,
-  NotFilterToolCallOptions,
 } from "trieve-ts-sdk";
 
 export const defaultRelevanceToolCallOptions: RelevanceToolCallOptions = {
@@ -55,19 +54,12 @@ export const defaultSearchToolCallOptions: SearchToolCallOptions = {
     "Call this tool anytime it seems like we need to skip the search step. This tool tells our system that the user is asking about what they were previously shown.",
 };
 
-export const defaultNotFilterToolCallOptions: NotFilterToolCallOptions = {
-  userMessageTextPrefix: "Here is the user query:",
-  toolDescription:
-    "Set to true if the query is not interested in the products they were shown previously or would like to see something different. Ensure that this is only set to true when the user wants to see something different from the previously returned results or is not interested in those previously returned results.",
-};
-
 interface LLMSettingsProps {
   shopDataset: Dataset;
   existingPdpPrompt: string;
   existingRelevanceToolCallOptions: RelevanceToolCallOptions | null;
   existingPriceToolCallOptions: PriceToolCallOptions | null;
   existingSearchToolCallOptions: SearchToolCallOptions | null;
-  existingNotFilterToolCallOptions: NotFilterToolCallOptions | null;
 }
 
 export function LLMSettings({
@@ -75,8 +67,7 @@ export function LLMSettings({
   existingPdpPrompt,
   existingRelevanceToolCallOptions,
   existingPriceToolCallOptions,
-  existingSearchToolCallOptions,
-  existingNotFilterToolCallOptions,
+  existingSearchToolCallOptions
 }: LLMSettingsProps) {
   const shopify = useAppBridge();
   const submit = useSubmit();
@@ -101,10 +92,6 @@ export function LLMSettings({
     existingSearchToolCallOptions ?? defaultSearchToolCallOptions,
   );
 
-  const [notFilterToolCallOptions, setNotFilterToolCallOptions] = useState(
-    existingNotFilterToolCallOptions ?? defaultNotFilterToolCallOptions,
-  );
-
   const onLLMSettingsSave = async () => {
     submit(
       {
@@ -127,7 +114,6 @@ export function LLMSettings({
         relevance_tool_call_options: JSON.stringify(relevanceToolCallOptions),
         price_tool_call_options: JSON.stringify(priceToolCallOptions),
         search_tool_call_options: JSON.stringify(searchToolCallOptions),
-        not_filter_tool_call_options: JSON.stringify(notFilterToolCallOptions),
         dataset_id: shopDataset.id,
         type: "tool_call_options",
       },
@@ -519,48 +505,6 @@ export function LLMSettings({
                       onChange={(e) =>
                         setSearchToolCallOptions({
                           ...searchToolCallOptions,
-                          userMessageTextPrefix: e,
-                        })
-                      }
-                      multiline={3}
-                      autoComplete="off"
-                    />
-                  </BlockStack>
-                </FormLayout>
-              </BlockStack>
-              <InlineStack align="end" gap="200">
-                <Button onClick={saveToolCallOptions}>Save</Button>
-              </InlineStack>
-            </Card>
-            <Card roundedAbove="sm">
-              <BlockStack gap="400">
-                <FormLayout>
-                  <Text as="h1" variant="headingMd">
-                    Not Filter Tool Configuration
-                  </Text>
-                  <BlockStack gap="400">
-                    <TextField
-                      label="Tool Description"
-                      helpText="The description of the tool"
-                      value={notFilterToolCallOptions.toolDescription ?? ""}
-                      onChange={(e) =>
-                        setNotFilterToolCallOptions({
-                          ...notFilterToolCallOptions,
-                          toolDescription: e,
-                        })
-                      }
-                      multiline={3}
-                      autoComplete="off"
-                    />
-                    <TextField
-                      label="User Message Text Prefix"
-                      helpText="The prefix to use before showing the the users message"
-                      value={
-                        notFilterToolCallOptions.userMessageTextPrefix ?? ""
-                      }
-                      onChange={(e) =>
-                        setNotFilterToolCallOptions({
-                          ...notFilterToolCallOptions,
                           userMessageTextPrefix: e,
                         })
                       }
