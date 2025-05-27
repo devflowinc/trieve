@@ -13582,7 +13582,7 @@
       },
       "Expression": {
         "type": "object",
-        "description": "Represents a SQL function or expression",
+        "description": "Represents a SQL expression with optional alias",
         "required": [
           "expression"
         ],
@@ -13592,8 +13592,95 @@
             "nullable": true
           },
           "expression": {
-            "type": "string"
+            "$ref": "#/components/schemas/ExpressionType"
           }
+        }
+      },
+      "ExpressionType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "name",
+              "type"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "column"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "literal"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/FilterValue"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "name",
+              "args",
+              "type"
+            ],
+            "properties": {
+              "args": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ExpressionType"
+                }
+              },
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "function"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "sql",
+              "type"
+            ],
+            "properties": {
+              "sql": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "raw"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Structured expression type",
+        "discriminator": {
+          "propertyName": "type"
         }
       },
       "ExtendedOrganizationUsageCount": {
@@ -14933,7 +15020,11 @@
             }
           },
           "having": {
-            "type": "string",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HavingCondition"
+              }
+            ],
             "nullable": true
           }
         }
@@ -15094,6 +15185,86 @@
             "description": "Tracking ids of the chunks to apply a match_any condition with. Only chunks with one of these tracking ids will be returned.",
             "nullable": true
           }
+        }
+      },
+      "HavingCondition": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "function",
+              "column",
+              "operator",
+              "value",
+              "type"
+            ],
+            "properties": {
+              "column": {
+                "type": "string"
+              },
+              "function": {
+                "$ref": "#/components/schemas/AggregationType"
+              },
+              "operator": {
+                "$ref": "#/components/schemas/FilterOperator"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "aggregate"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/FilterValue"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "conditions",
+              "type"
+            ],
+            "properties": {
+              "conditions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HavingCondition"
+                }
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "and"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "conditions",
+              "type"
+            ],
+            "properties": {
+              "conditions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HavingCondition"
+                }
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "or"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Structured HAVING condition",
+        "discriminator": {
+          "propertyName": "type"
         }
       },
       "HeadQueries": {
@@ -15445,12 +15616,15 @@
       },
       "JoinClause": {
         "type": "object",
-        "description": "Represents a join condition between tables",
+        "description": "Represents a join between tables",
         "required": [
           "table",
-          "on_clause"
+          "condition"
         ],
         "properties": {
+          "condition": {
+            "$ref": "#/components/schemas/JoinCondition"
+          },
           "join_type": {
             "allOf": [
               {
@@ -15459,12 +15633,60 @@
             ],
             "nullable": true
           },
-          "on_clause": {
-            "type": "string"
-          },
           "table": {
             "$ref": "#/components/schemas/TableName"
           }
+        }
+      },
+      "JoinCondition": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "left_column",
+              "right_column",
+              "type"
+            ],
+            "properties": {
+              "left_column": {
+                "type": "string"
+              },
+              "right_column": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "column_equals"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "columns",
+              "type"
+            ],
+            "properties": {
+              "columns": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "using"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Structured join condition instead of raw SQL",
+        "discriminator": {
+          "propertyName": "type"
         }
       },
       "JoinType": {

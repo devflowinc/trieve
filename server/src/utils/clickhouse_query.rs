@@ -35,51 +35,38 @@ pub enum ValidationError {
 
     #[display(fmt = "Invalid value: {_0}")]
     InvalidValue(String),
+
+    #[display(fmt = "Invalid identifier: {_0}")]
+    InvalidIdentifier(String),
 }
 
-fn check_for_injection(query: &str) -> Result<(), ValidationError> {
-    let query = query.to_lowercase();
-    let dangerous_keywords = [
-        "insert",
-        "update",
-        "delete",
-        "drop",
-        "alter",
-        "truncate",
-        "create",
-        "execute",
-        "exec",
-        "union",
-        "into",
-        "outfile",
-        "load_file",
-    ];
+fn validate_identifier(name: &str) -> Result<(), ValidationError> {
+    // Only allow alphanumeric, underscore, and dot for qualified names
+    if !name
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '_' || c == '.' || c == '*')
+    {
+        return Err(ValidationError::InvalidIdentifier(name.to_string()));
+    }
 
-    for keyword in dangerous_keywords {
-        if query.contains(&format!(" {} ", keyword))
-            || query.starts_with(&format!("{} ", keyword))
-            || query.ends_with(&format!(" {}", keyword))
-            || query == keyword
-        {
-            return Err(ValidationError::InvalidValue(format!(
-                "Query contains dangerous keyword: {}",
-                keyword
+    // Additional checks for dots
+    if name.starts_with('.') || name.ends_with('.') || name.contains("..") {
+        return Err(ValidationError::InvalidIdentifier(format!(
+            "Invalid identifier format: {}",
+            name
+        )));
+    }
+
+    // Check for SQL injection attempts in identifiers
+    let name = name.to_lowercase();
+    let dangerous_patterns = ["--", "/*", "*/", ";", "'", "\"", "\\"];
+    for pattern in dangerous_patterns {
+        if name.contains(pattern) {
+            return Err(ValidationError::InvalidIdentifier(format!(
+                "Identifier contains dangerous pattern: {}",
+                pattern
             )));
         }
-    }
-
-    // Check for multiple statements
-    if query.contains(';') {
-        return Err(ValidationError::InvalidValue(
-            "Query contains multiple statements".to_string(),
-        ));
-    }
-
-    // Check for comment markers which could be used to bypass validation
-    if query.contains("--") || query.contains("/*") || query.contains("*/") {
-        return Err(ValidationError::InvalidValue(
-            "Query contains comment markers".to_string(),
-        ));
     }
 
     Ok(())
@@ -204,6 +191,15 @@ pub enum TableName {
     Custom(String),
 }
 
+impl TableName {
+    fn validate(&self) -> Result<(), ValidationError> {
+        if let TableName::Custom(name) = self {
+            validate_identifier(name)?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Display)]
 pub enum Direction {
     #[serde(rename = "asc")]
@@ -214,40 +210,121 @@ pub enum Direction {
     Desc,
 }
 
-/// Represents a join condition between tables
+/// Structured join condition instead of raw SQL
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
-pub struct JoinClause {
-    pub table: TableName,
-    pub join_type: Option<JoinType>,
-    pub on_clause: String, // Ideally, this would be more structured to allow for better parameterization
+#[serde(tag = "type")]
+pub enum JoinCondition {
+    #[serde(rename = "column_equals")]
+    ColumnEquals {
+        left_column: String,
+        right_column: String,
+    },
+    #[serde(rename = "using")]
+    Using { columns: Vec<String> },
 }
 
-impl JoinClause {
+impl JoinCondition {
     pub fn validate(&self) -> Result<(), ValidationError> {
-        check_for_injection(&self.on_clause)?;
+        match self {
+            JoinCondition::ColumnEquals {
+                left_column,
+                right_column,
+            } => {
+                validate_identifier(left_column)?;
+                validate_identifier(right_column)?;
+            }
+            JoinCondition::Using { columns } => {
+                for column in columns {
+                    validate_identifier(column)?;
+                }
+            }
+        }
         Ok(())
     }
 }
 
-/// Represents a SQL function or expression
+/// Represents a join between tables
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+pub struct JoinClause {
+    pub table: TableName,
+    pub join_type: Option<JoinType>,
+    pub condition: JoinCondition,
+}
+
+impl JoinClause {
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        self.table.validate()?;
+        self.condition.validate()?;
+        Ok(())
+    }
+}
+
+/// Structured expression type
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[serde(tag = "type")]
+pub enum ExpressionType {
+    #[serde(rename = "column")]
+    Column { name: String },
+    #[serde(rename = "literal")]
+    Literal { value: FilterValue },
+    #[serde(rename = "function")]
+    Function {
+        name: String,
+        args: Vec<ExpressionType>,
+    },
+    #[serde(rename = "raw")]
+    Raw {
+        // For backward compatibility - validated
+        sql: String,
+    },
+}
+
+/// Represents a SQL expression with optional alias
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct Expression {
-    pub expression: String,
+    pub expression: ExpressionType,
     pub alias: Option<String>,
 }
 
 impl Expression {
     pub fn validate(&self) -> Result<(), ValidationError> {
-        check_for_injection(&self.expression)?;
-        if let Some(alias) = &self.alias {
-            if !alias.chars().all(|c| c.is_alphanumeric() || c == '_') {
-                return Err(ValidationError::InvalidExpression(format!(
-                    "Invalid alias: {}",
-                    alias
-                )));
+        match &self.expression {
+            ExpressionType::Column { name } => validate_identifier(name)?,
+            ExpressionType::Function { name, args } => {
+                // Whitelist of allowed functions
+                let allowed_functions = [
+                    "COUNT", "SUM", "AVG", "MIN", "MAX", "COALESCE", "CAST", "DATE", "toDate",
+                ];
+                if !allowed_functions.contains(&name.to_uppercase().as_str()) {
+                    return Err(ValidationError::InvalidExpression(format!(
+                        "Function '{}' is not allowed",
+                        name
+                    )));
+                }
+                for arg in args {
+                    // Recursive validation
+                    Expression {
+                        expression: arg.clone(),
+                        alias: None,
+                    }
+                    .validate()?;
+                }
             }
+            ExpressionType::Raw { sql } => {
+                // Basic validation for raw SQL
+                let lower = sql.to_lowercase();
+                if lower.contains("drop") || lower.contains("delete") || lower.contains("insert") {
+                    return Err(ValidationError::InvalidExpression(
+                        "Expression contains dangerous keywords".to_string(),
+                    ));
+                }
+            }
+            ExpressionType::Literal { .. } => {} // Literals are safe
         }
 
+        if let Some(alias) = &self.alias {
+            validate_identifier(alias)?;
+        }
         Ok(())
     }
 }
@@ -257,32 +334,16 @@ impl Expression {
 pub struct Column {
     pub name: String,
     pub alias: Option<String>,
-    pub aggregation: Option<AggregationType>, // e.g., "SUM", "COUNT", "AVG", etc.
+    pub aggregation: Option<AggregationType>,
     pub distinct: Option<bool>,
 }
 
 impl Column {
     pub fn validate(&self) -> Result<(), ValidationError> {
-        check_for_injection(&self.name)?;
+        validate_identifier(&self.name)?;
 
-        if !self
-            .name
-            .chars()
-            .all(|c| c.is_alphanumeric() || c == '_' || c == '.' || c == '*')
-        {
-            return Err(ValidationError::InvalidColumnName(self.name.clone()));
-        }
-
-        // Validate alias if present
         if let Some(alias) = &self.alias {
-            check_for_injection(alias)?;
-
-            if !alias.chars().all(|c| c.is_alphanumeric() || c == '_') {
-                return Err(ValidationError::InvalidColumnName(format!(
-                    "Invalid alias: {}",
-                    alias
-                )));
-            }
+            validate_identifier(alias)?;
         }
         Ok(())
     }
@@ -300,7 +361,7 @@ pub enum FilterValue {
 impl fmt::Display for FilterValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FilterValue::String(s) => write!(f, "'{}'", s),
+            FilterValue::String(s) => write!(f, "'{}'", s.replace('\'', "''")),
             FilterValue::Number(n) => write!(f, "{}", n),
             FilterValue::Boolean(b) => write!(f, "{}", b),
             FilterValue::Array(arr) => {
@@ -321,7 +382,7 @@ impl fmt::Display for FilterValue {
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct FilterCondition {
     pub column: String,
-    pub operator: FilterOperator, // "=", ">", "<", "LIKE", "IN", etc.
+    pub operator: FilterOperator,
     pub value: FilterValue,
     pub and_filter: Option<Vec<FilterCondition>>,
     pub or_filter: Option<Vec<FilterCondition>>,
@@ -329,16 +390,7 @@ pub struct FilterCondition {
 
 impl FilterCondition {
     pub fn validate(&self) -> Result<(), ValidationError> {
-        check_for_injection(&self.column)?;
-        if !self
-            .column
-            .chars()
-            .all(|c| c.is_alphanumeric() || c == '_' || c == '.')
-        {
-            return Err(ValidationError::InvalidColumnName(self.column.clone()));
-        }
-
-        check_for_injection(&self.value.to_string())?;
+        validate_identifier(&self.column)?;
 
         if let Some(and_conditions) = &self.and_filter {
             for condition in and_conditions {
@@ -356,27 +408,54 @@ impl FilterCondition {
     }
 }
 
+/// Structured HAVING condition
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[serde(tag = "type")]
+pub enum HavingCondition {
+    #[serde(rename = "aggregate")]
+    Aggregate {
+        function: AggregationType,
+        column: String,
+        operator: FilterOperator,
+        value: FilterValue,
+    },
+    #[serde(rename = "and")]
+    And { conditions: Vec<HavingCondition> },
+    #[serde(rename = "or")]
+    Or { conditions: Vec<HavingCondition> },
+}
+
+impl HavingCondition {
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        match self {
+            HavingCondition::Aggregate { column, .. } => {
+                validate_identifier(column)?;
+            }
+            HavingCondition::And { conditions } | HavingCondition::Or { conditions } => {
+                for condition in conditions {
+                    condition.validate()?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Represents a GROUP BY clause
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct GroupBy {
     pub columns: Vec<String>,
-    pub having: Option<String>,
+    pub having: Option<HavingCondition>,
 }
 
 impl GroupBy {
     pub fn validate(&self) -> Result<(), ValidationError> {
         for column in &self.columns {
-            check_for_injection(column)?;
-            if !column
-                .chars()
-                .all(|c| c.is_alphanumeric() || c == '_' || c == '.')
-            {
-                return Err(ValidationError::InvalidColumnName(column.clone()));
-            }
+            validate_identifier(column)?;
         }
 
         if let Some(having) = &self.having {
-            check_for_injection(having)?;
+            having.validate()?;
         }
 
         Ok(())
@@ -392,13 +471,7 @@ pub struct OrderBy {
 impl OrderBy {
     pub fn validate(&self) -> Result<(), ValidationError> {
         for column in &self.columns {
-            check_for_injection(column)?;
-            if !column
-                .chars()
-                .all(|c| c.is_alphanumeric() || c == '_' || c == '.')
-            {
-                return Err(ValidationError::InvalidColumnName(column.clone()));
-            }
+            validate_identifier(column)?;
         }
 
         Ok(())
@@ -452,6 +525,7 @@ impl From<&SubQuery> for AnalyticsQuery {
         }
     }
 }
+
 impl SubQuery {
     pub fn validate(&self) -> Result<(), ValidationError> {
         let clickhouse_query = AnalyticsQuery::from(self);
@@ -463,6 +537,7 @@ impl SubQuery {
         clickhouse_query.to_parameterized_sql()
     }
 }
+
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 pub struct CommonTableExpression {
     pub alias: String,
@@ -471,7 +546,7 @@ pub struct CommonTableExpression {
 
 impl CommonTableExpression {
     pub fn validate(&self) -> Result<(), ValidationError> {
-        check_for_injection(&self.alias)?;
+        validate_identifier(&self.alias)?;
         self.query.validate()?;
         Ok(())
     }
@@ -511,10 +586,19 @@ pub struct AnalyticsQuery {
     pub cte_query: Option<CommonTableExpression>,
 }
 
-// No lifetime 'a needed, it will own its strings for identifiers.
+/// Represents a parameter that will be bound to the query
+#[derive(Debug, Clone)]
+pub enum QueryParameter {
+    /// Regular value parameter (properly escaped by driver)
+    Value(FilterValue),
+    /// Identifier parameter (for table/column names)
+    Identifier(String),
+}
+
+// Enhanced SqlQuery struct with proper parameterization
 pub struct SqlQuery {
     sql_part: String,
-    identifier_args: Vec<String>, // Stores owned strings that will become Identifier arguments
+    parameters: Vec<QueryParameter>,
 }
 
 impl Default for SqlQuery {
@@ -527,17 +611,25 @@ impl SqlQuery {
     pub fn new() -> Self {
         Self {
             sql_part: String::new(),
-            identifier_args: Vec::new(),
+            parameters: Vec::new(),
         }
     }
 
-    // Add an argument that will be bound as an Identifier
-    pub fn add_identifier_argument(&mut self, arg: String) -> &mut Self {
-        self.sql_part.push_str(" ? "); // Placeholder for the identifier in SQL string
-        self.identifier_args.push(arg); // Store the owned string
+    // Add an identifier (table/column name)
+    pub fn add_identifier(&mut self, identifier: String) -> &mut Self {
+        self.sql_part.push_str(" ? ");
+        self.parameters.push(QueryParameter::Identifier(identifier));
         self
     }
 
+    // Add a value parameter
+    pub fn add_value(&mut self, value: FilterValue) -> &mut Self {
+        self.sql_part.push_str(" ? ");
+        self.parameters.push(QueryParameter::Value(value));
+        self
+    }
+
+    // Add raw SQL (only for keywords, operators, etc.)
     pub fn push_str(&mut self, s: &str) -> &mut Self {
         self.sql_part.push_str(s);
         self
@@ -545,8 +637,7 @@ impl SqlQuery {
 
     pub fn concat_query(&mut self, other: &SqlQuery) -> &mut Self {
         self.sql_part.push_str(&other.sql_part);
-        self.identifier_args
-            .extend(other.identifier_args.iter().cloned()); // Clone to take ownership
+        self.parameters.extend(other.parameters.iter().cloned());
         self
     }
 
@@ -558,14 +649,17 @@ impl SqlQuery {
         self
     }
 
-    // Renamed to avoid confusion with previous (String, Vec<Value>) tuple return
-    pub fn into_parts(self) -> (String, Vec<String>) {
-        (self.sql_part, self.identifier_args)
+    // Get SQL and parameters separately
+    pub fn into_parts(self) -> (String, Vec<QueryParameter>) {
+        (self.sql_part, self.parameters)
     }
 }
 
 impl AnalyticsQuery {
     pub fn validate(&self) -> Result<(), ValidationError> {
+        // Validate table
+        self.table.validate()?;
+
         // Validate columns
         for column in &self.columns {
             column.validate()?;
@@ -609,9 +703,9 @@ impl AnalyticsQuery {
                 ));
             }
 
-            if *limit > 500 {
+            if *limit > 10000 {
                 return Err(ValidationError::InvalidLimit(
-                    "Limit cannot be greater than 500".to_string(),
+                    "Limit cannot be greater than 10000".to_string(),
                 ));
             }
         }
@@ -623,13 +717,13 @@ impl AnalyticsQuery {
         Ok(())
     }
 
-    /// Builds a parameterized SQL query string from the structure and returns the parameters
+    /// Builds a parameterized SQL query string from the structure
     pub fn to_parameterized_sql(&self) -> SqlQuery {
         let mut query = SqlQuery::new();
 
         if let Some(cte_query) = &self.cte_query {
             query.push_str("WITH ");
-            query.add_identifier_argument(cte_query.alias.clone());
+            query.add_identifier(cte_query.alias.clone());
             query.push_str(" AS ( ");
             let cte_query = cte_query.query.to_parameterized_sql();
             query.concat_query(&cte_query);
@@ -653,15 +747,15 @@ impl AnalyticsQuery {
                         col_str.push_str("DISTINCT ");
                     }
                 }
-                col_str.push_str(column.name.as_str());
+                col_str.push_str(&column.name);
                 col_str.push_str(")");
             } else {
-                col_str.push_str(column.name.as_str());
+                col_str.push_str(&column.name);
             }
 
             if let Some(alias) = &column.alias {
                 col_str.push_str(" AS ");
-                col_str.push_str(alias.as_str());
+                col_str.push_str(alias);
             }
 
             all_columns.push(col_str);
@@ -671,11 +765,11 @@ impl AnalyticsQuery {
         if let Some(expressions) = &self.expressions {
             for expr in expressions {
                 let mut expr_str = SqlQuery::new();
-                expr_str.push_str(&expr.expression);
+                self.build_expression(&expr.expression, &mut expr_str);
 
                 if let Some(alias) = &expr.alias {
                     expr_str.push_str(" AS ");
-                    expr_str.add_identifier_argument(alias.clone());
+                    expr_str.push_str(alias);
                 }
 
                 all_columns.push(expr_str);
@@ -686,17 +780,17 @@ impl AnalyticsQuery {
         if all_columns.is_empty() {
             query.push_str("*");
         } else {
-            for column in all_columns {
-                query.concat_query(&column);
-                query.push_str(", ");
+            for (i, column) in all_columns.iter().enumerate() {
+                if i > 0 {
+                    query.push_str(", ");
+                }
+                query.concat_query(column);
             }
-            query.remove_suffix(", ");
         }
 
-        let table_name = &self.table.to_string();
-        // FROM clause - table name is an enum, so no need for parameterization
+        // FROM clause
         query.push_str(" FROM ");
-        query.add_identifier_argument(table_name.clone());
+        query.add_identifier(self.table.to_string());
 
         // JOIN clauses
         if let Some(joins) = &self.joins {
@@ -708,11 +802,29 @@ impl AnalyticsQuery {
                     query.push_str("INNER JOIN");
                 }
                 query.push_str(" ");
-                query.add_identifier_argument(join.table.to_string());
+                query.add_identifier(join.table.to_string());
 
-                // Get parameterized on clause
-                query.push_str(" ON ");
-                query.push_str(&join.on_clause);
+                match &join.condition {
+                    JoinCondition::ColumnEquals {
+                        left_column,
+                        right_column,
+                    } => {
+                        query.push_str(" ON ");
+                        query.push_str(left_column);
+                        query.push_str(" = ");
+                        query.push_str(right_column);
+                    }
+                    JoinCondition::Using { columns } => {
+                        query.push_str(" USING (");
+                        for (i, column) in columns.iter().enumerate() {
+                            if i > 0 {
+                                query.push_str(", ");
+                            }
+                            query.push_str(column);
+                        }
+                        query.push_str(")");
+                    }
+                }
             }
         }
 
@@ -725,33 +837,35 @@ impl AnalyticsQuery {
             }
         }
 
-        // GROUP BY clause - column names are identifiers, not values
+        // GROUP BY clause
         if let Some(group_by) = &self.group_by {
             if !group_by.columns.is_empty() {
                 query.push_str(" GROUP BY ");
-                for column in &group_by.columns {
-                    query.add_identifier_argument(column.clone());
-                    query.push_str(", ");
+                for (i, column) in group_by.columns.iter().enumerate() {
+                    if i > 0 {
+                        query.push_str(", ");
+                    }
+                    query.push_str(column);
                 }
-                query.remove_suffix(", ");
 
-                // HAVING clause with parameterization
-                if let Some(having_clause) = &group_by.having {
+                // HAVING clause
+                if let Some(having) = &group_by.having {
                     query.push_str(" HAVING ");
-                    query.add_identifier_argument(having_clause.clone());
+                    self.build_having_condition(having, &mut query);
                 }
             }
         }
 
-        // ORDER BY clause - column names are identifiers
+        // ORDER BY clause
         if let Some(order_by) = &self.order_by {
             if !order_by.columns.is_empty() {
                 query.push_str(" ORDER BY ");
-                for column in &order_by.columns {
-                    query.add_identifier_argument(column.clone());
-                    query.push_str(", ");
+                for (i, column) in order_by.columns.iter().enumerate() {
+                    if i > 0 {
+                        query.push_str(", ");
+                    }
+                    query.push_str(column);
                 }
-                query.remove_suffix(", ");
                 if let Some(direction) = &order_by.direction {
                     query.push_str(format!(" {}", direction).as_str());
                 } else {
@@ -760,21 +874,90 @@ impl AnalyticsQuery {
             }
         }
 
-        // LIMIT clause
+        // LIMIT clause - use value parameter
         if let Some(limit) = self.limit {
             query.push_str(" LIMIT ");
-            query.add_identifier_argument(limit.to_string());
+            query.add_value(FilterValue::Number(limit as f64));
         } else {
             query.push_str(" LIMIT 20");
         }
 
-        // OFFSET clause
+        // OFFSET clause - use value parameter
         if let Some(offset) = self.offset {
             query.push_str(" OFFSET ");
-            query.add_identifier_argument(offset.to_string());
+            query.add_value(FilterValue::Number(offset as f64));
         }
 
         query
+    }
+
+    #[allow(clippy::only_used_in_recursion)]
+    fn build_expression(&self, expr: &ExpressionType, query: &mut SqlQuery) {
+        match expr {
+            ExpressionType::Column { name } => {
+                query.push_str(name);
+            }
+            ExpressionType::Literal { value } => {
+                query.parameters.push(QueryParameter::Value(value.clone()));
+                query.push_str("?");
+            }
+            ExpressionType::Function { name, args } => {
+                query.push_str(name);
+                query.push_str("(");
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        query.push_str(", ");
+                    }
+                    self.build_expression(arg, query);
+                }
+                query.push_str(")");
+            }
+            ExpressionType::Raw { sql } => {
+                // For backward compatibility
+                query.push_str(sql);
+            }
+        }
+    }
+
+    #[allow(clippy::only_used_in_recursion)]
+    fn build_having_condition(&self, condition: &HavingCondition, query: &mut SqlQuery) {
+        match condition {
+            HavingCondition::Aggregate {
+                function,
+                column,
+                operator,
+                value,
+            } => {
+                query.push_str(&function.to_string());
+                query.push_str("(");
+                query.push_str(column);
+                query.push_str(") ");
+                query.push_str(&operator.to_string());
+                query.push_str(" ");
+                query.parameters.push(QueryParameter::Value(value.clone()));
+                query.push_str("?");
+            }
+            HavingCondition::And { conditions } => {
+                query.push_str("(");
+                for (i, cond) in conditions.iter().enumerate() {
+                    if i > 0 {
+                        query.push_str(" AND ");
+                    }
+                    self.build_having_condition(cond, query);
+                }
+                query.push_str(")");
+            }
+            HavingCondition::Or { conditions } => {
+                query.push_str("(");
+                for (i, cond) in conditions.iter().enumerate() {
+                    if i > 0 {
+                        query.push_str(" OR ");
+                    }
+                    self.build_having_condition(cond, query);
+                }
+                query.push_str(")");
+            }
+        }
     }
 
     fn build_simple_condition_part(condition: &FilterCondition) -> SqlQuery {
@@ -792,26 +975,24 @@ impl AnalyticsQuery {
                 query.push_str(&condition.column);
                 query.push_str(" ");
                 query.push_str(&condition.operator.to_string());
+                query.push_str(" (");
                 if let FilterValue::Array(arr) = &condition.value {
-                    query.push_str(" ( ");
-                    for value in arr {
-                        query.push_str(&value.to_string());
-                        query.push_str(", ");
+                    for (i, value) in arr.iter().enumerate() {
+                        if i > 0 {
+                            query.push_str(", ");
+                        }
+                        query.add_value(value.clone());
                     }
-                    query.remove_suffix(", ");
-                    query.push_str(")");
                 } else {
-                    query.push_str(" ( ");
-                    query.push_str(&condition.value.to_string());
-                    query.push_str(" )");
+                    query.add_value(condition.value.clone());
                 }
+                query.push_str(")");
             }
             _ => {
                 query.push_str(&condition.column);
                 query.push_str(" ");
                 query.push_str(&condition.operator.to_string());
-                query.push_str(" ");
-                query.push_str(&condition.value.to_string());
+                query.add_value(condition.value.clone());
             }
         };
         query
@@ -829,12 +1010,13 @@ impl AnalyticsQuery {
         let mut result = SqlQuery::new();
         result.push_str("(");
 
-        for condition in conditions {
+        for (i, condition) in conditions.iter().enumerate() {
+            if i > 0 {
+                result.push_str(" AND ");
+            }
             let condition_str = Self::build_parameterized_single_filter_condition(condition);
             result.concat_query(&condition_str);
-            result.push_str(" AND ");
         }
-        result.remove_suffix(" AND ");
         result.push_str(")");
 
         result
@@ -902,20 +1084,31 @@ impl AnalyticsQuery {
                 or_filter: None,
             });
 
-        let query = self.to_parameterized_sql();
-        let params = query
-            .identifier_args
-            .iter()
-            .map(|s| Identifier(s))
-            .collect::<Vec<_>>();
+        let query = tenant_query.to_parameterized_sql();
+        let (sql, params) = query.into_parts();
 
-        let mut query = clickhouse_client.query(query.sql_part.as_str());
+        let mut ch_query = clickhouse_client.query(&sql);
+
+        // Set query execution limits
+        ch_query = ch_query.with_option("max_execution_time", "30".to_string());
+        ch_query = ch_query.with_option("readonly", "2");
+        ch_query = ch_query.with_option("allow_ddl", "0");
 
         for param in params {
-            query = query.bind(param);
+            match param {
+                QueryParameter::Value(value) => match value {
+                    FilterValue::String(s) => ch_query = ch_query.bind(s),
+                    FilterValue::Number(n) => ch_query = ch_query.bind(n),
+                    FilterValue::Boolean(b) => ch_query = ch_query.bind(b),
+                    FilterValue::Array(_) => {}
+                },
+                QueryParameter::Identifier(id) => {
+                    ch_query = ch_query.bind(Identifier(&id));
+                }
+            }
         }
 
-        let mut response_lines = query
+        let mut response_lines = ch_query
             .fetch_bytes("JSONEachRow")
             .map_err(|e| ServiceError::InternalServerError(e.to_string()))?
             .lines();

@@ -2006,12 +2006,32 @@ export type ExperimentConfig = {
 };
 
 /**
- * Represents a SQL function or expression
+ * Represents a SQL expression with optional alias
  */
 export type Expression = {
     alias?: (string) | null;
-    expression: string;
+    expression: ExpressionType;
 };
+
+/**
+ * Structured expression type
+ */
+export type ExpressionType = {
+    name: string;
+    type: 'column';
+} | {
+    type: 'literal';
+    value: FilterValue;
+} | {
+    args: Array<ExpressionType>;
+    name: string;
+    type: 'function';
+} | {
+    sql: string;
+    type: 'raw';
+};
+
+export type type4 = 'column';
 
 export type ExtendedOrganizationUsageCount = {
     bytes_ingested: number;
@@ -2481,7 +2501,7 @@ export type Granularity = 'minute' | 'second' | 'hour' | 'day' | 'month';
  */
 export type GroupBy = {
     columns: Array<(string)>;
-    having?: (string) | null;
+    having?: ((HavingCondition) | null);
 };
 
 export type GroupData = {
@@ -2537,6 +2557,25 @@ export type HasChunkIDCondition = {
      */
     tracking_ids?: Array<(string)> | null;
 };
+
+/**
+ * Structured HAVING condition
+ */
+export type HavingCondition = {
+    column: string;
+    function: AggregationType;
+    operator: FilterOperator;
+    type: 'aggregate';
+    value: FilterValue;
+} | {
+    conditions: Array<HavingCondition>;
+    type: 'and';
+} | {
+    conditions: Array<HavingCondition>;
+    type: 'or';
+};
+
+export type type5 = 'aggregate';
 
 export type HeadQueries = {
     count: number;
@@ -2688,13 +2727,27 @@ export type InvitationData = {
 };
 
 /**
- * Represents a join condition between tables
+ * Represents a join between tables
  */
 export type JoinClause = {
+    condition: JoinCondition;
     join_type?: ((JoinType) | null);
-    on_clause: string;
     table: TableName;
 };
+
+/**
+ * Structured join condition instead of raw SQL
+ */
+export type JoinCondition = {
+    left_column: string;
+    right_column: string;
+    type: 'column_equals';
+} | {
+    columns: Array<(string)>;
+    type: 'using';
+};
+
+export type type6 = 'column_equals';
 
 /**
  * Represents the type of join between tables
@@ -3289,7 +3342,7 @@ export type RAGAnalytics = {
     type: 'popular_chats';
 };
 
-export type type4 = 'rag_queries';
+export type type7 = 'rag_queries';
 
 export type RAGAnalyticsFilter = {
     component_name?: (string) | null;
@@ -3504,7 +3557,7 @@ export type RecommendationAnalytics = {
     type: 'event_funnel';
 };
 
-export type type5 = 'low_confidence_recommendations';
+export type type8 = 'low_confidence_recommendations';
 
 export type RecommendationAnalyticsFilter = {
     component_name?: (string) | null;
@@ -3713,7 +3766,7 @@ export type ScrapeOptions = (CrawlOpenAPIOptions & {
     type: 'youtube';
 });
 
-export type type6 = 'openapi';
+export type type9 = 'openapi';
 
 export type ScrollChunksReqPayload = {
     filters?: ((ChunkFilter) | null);
@@ -3799,7 +3852,7 @@ export type SearchAnalytics = {
     type: 'search_revenue';
 };
 
-export type type7 = 'latency_graph';
+export type type10 = 'latency_graph';
 
 export type SearchAnalyticsFilter = {
     component_name?: (string) | null;
@@ -4646,7 +4699,7 @@ export type TrievePlan = (StripePlan & {
     type: 'usage_based';
 });
 
-export type type8 = 'flat';
+export type type11 = 'flat';
 
 export type TrieveSubscription = (StripeSubscription & {
     type: 'flat';
