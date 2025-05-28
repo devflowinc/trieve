@@ -6188,6 +6188,77 @@
         ]
       }
     },
+    "/api/message/generate_message_completions": {
+      "post": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Generate Message Completions",
+        "description": "Uses `openai` to generate a message completion for a given prompt.",
+        "operationId": "generate_message_completions",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "JSON request payload to generate a message completion",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateMessageCompletionsReqPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The generated message completion",
+            "headers": {
+              "TR-QueryID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "description": "Query ID that is used for tracking analytics"
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to generating a message completion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/api/message/get_tool_function_params": {
       "post": {
         "tags": [
@@ -12395,6 +12466,16 @@
           }
         }
       },
+      "DefaultSearchQueryType": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "$ref": "#/components/schemas/DefaultSearchQuery"
+          }
+        ]
+      },
       "DeleteTopicData": {
         "type": "object",
         "required": [
@@ -14342,6 +14423,23 @@
           "phrase": {
             "type": "string",
             "description": "The phrase to boost in the fulltext document frequency index"
+          }
+        }
+      },
+      "GenerateMessageCompletionsReqPayload": {
+        "type": "object",
+        "required": [
+          "system_message",
+          "user_message"
+        ],
+        "properties": {
+          "system_message": {
+            "type": "string",
+            "description": "The system message to use for the message completion."
+          },
+          "user_message": {
+            "type": "string",
+            "description": "The user message to use for the message completion."
           }
         }
       },
@@ -16754,7 +16852,7 @@
           "defaultAiQuestions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DefaultSearchQuery"
+              "$ref": "#/components/schemas/DefaultSearchQueryType"
             },
             "nullable": true
           },
@@ -16773,7 +16871,7 @@
           "defaultSearchQueries": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DefaultSearchQuery"
+              "$ref": "#/components/schemas/DefaultSearchQueryType"
             },
             "nullable": true
           },

@@ -272,7 +272,6 @@ pub enum DefaultSearchQueryType {
     Image(DefaultSearchQuery),
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DefaultSearchQuery {

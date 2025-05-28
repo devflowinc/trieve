@@ -1504,3 +1504,115 @@ pub async fn transcribe_audio(
 
     Ok(HttpResponse::Ok().json(transcribed_text.replace("\n", "")))
 }
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct GenerateMessageCompletionsReqPayload {
+    /// The system message to use for the message completion.
+    pub system_message: String,
+    /// The user message to use for the message completion.
+    pub user_message: String,
+}
+
+/// Generate Message Completions
+///
+/// Uses `openai` to generate a message completion for a given prompt.
+#[utoipa::path(
+    post,
+    path = "/message/generate_message_completions",
+    context_path = "/api",
+    tag = "Message",
+    request_body(content = GenerateMessageCompletionsReqPayload, description = "JSON request payload to generate a message completion", content_type = "application/json"),
+    responses(
+        (status = 200, description = "The generated message completion", body = String,
+            headers(
+                ("TR-QueryID" = uuid::Uuid, description = "Query ID that is used for tracking analytics")
+            )
+        ),
+        (status = 400, description = "Service error relating to generating a message completion", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["admin"]),
+    )
+)]
+pub async fn generate_message_completions(
+    data: web::Json<GenerateMessageCompletionsReqPayload>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+    _required_user: AdminOnly,
+) -> Result<HttpResponse, ServiceError> {
+    let dataset_config =
+        DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.clone().server_configuration);
+
+    let llm_api_key = get_llm_api_key(&dataset_config);
+    let mut base_url = dataset_config.LLM_BASE_URL.clone();
+
+    if !base_url.contains("openai.com") {
+        base_url = "https://api.openai.com/v1".to_string();
+    }
+
+    let client = Client {
+        headers: None,
+        api_key: llm_api_key,
+        project: None,
+        http_client: reqwest::Client::new(),
+        base_url,
+        organization: None,
+    };
+
+    let system_message = ChatMessage::System {
+        content: ChatMessageContent::Text(data.system_message.clone()),
+        name: None,
+    };
+
+    let user_message = ChatMessage::User {
+        content: ChatMessageContent::Text(data.user_message.clone()),
+        name: None,
+    };
+
+    let parameters = ChatCompletionParametersBuilder::default()
+        .model("gpt-4o-mini".to_string())
+        .messages(vec![system_message, user_message])
+        .build()
+        .map_err(|err| {
+            log::error!("Failed to build message completion parameters: {:?}", err);
+            ServiceError::InternalServerError(format!(
+                "Failed to build message completion parameters: {:?}",
+                err
+            ))
+        })?;
+
+    let message_completion = client.chat().create(parameters).await.map_err(|err| {
+        log::error!("Failed to generate message completion: {:?}", err);
+        ServiceError::InternalServerError(format!(
+            "Failed to generate message completion: {:?}",
+            err
+        ))
+    })?;
+
+    let first_message = match message_completion.choices.first() {
+        Some(first_message) => first_message.message.clone(),
+        None => {
+            return Err(ServiceError::BadRequest(
+                "No first message in choices on call to LLM".to_string(),
+            ));
+        }
+    };
+
+    let response_content = match first_message {
+        ChatMessage::Assistant {
+            content: Some(ChatMessageContent::Text(content)),
+            ..
+        } => content,
+        _ => {
+            log::error!(
+                "ChatMessage of first choice did not have text or was either Tool or Function {:?}",
+                first_message
+            );
+            "ChatMessage of first did not have text or was either Tool or Function".to_string()
+        }
+    };
+
+    Ok(HttpResponse::Ok().json(response_content))
+}
