@@ -1228,7 +1228,7 @@ function ChatProvider({ children }: { children: React.ReactNode }) {
           });
         }
 
-        referenceImageUrls.slice(0, 3);
+        referenceImageUrls = referenceImageUrls.slice(0, 3);
       }
 
       if (await handleImageEdit()) {
