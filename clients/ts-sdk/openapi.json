@@ -12466,16 +12466,6 @@
           }
         }
       },
-      "DefaultSearchQueryType": {
-        "oneOf": [
-          {
-            "type": "string"
-          },
-          {
-            "$ref": "#/components/schemas/DefaultSearchQuery"
-          }
-        ]
-      },
       "DeleteTopicData": {
         "type": "object",
         "required": [
