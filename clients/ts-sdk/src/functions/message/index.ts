@@ -7,6 +7,7 @@ import {
   CreateMessageReqPayload,
   EditImageReqPayload,
   EditMessageReqPayload,
+  GenerateMessageCompletionsReqPayload,
   GetAllTopicMessagesData,
   GetMessageByIdData,
   GetToolFunctionParamsReqPayload,
@@ -529,5 +530,23 @@ export async function transcribeAudio(
       datasetId: this.datasetId,
     },
     signal,
+  );
+}
+
+export async function generateMessageCompletions(
+  this: TrieveSDK,
+  data: GenerateMessageCompletionsReqPayload,
+) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
+  return await this.trieve.fetch(
+    "/api/message/generate_message_completions",
+    "post",
+    {
+      data,
+      datasetId: this.datasetId,
+    }
   );
 }

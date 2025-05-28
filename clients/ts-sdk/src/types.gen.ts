@@ -1496,6 +1496,8 @@ export type DefaultSearchQuery = {
     query?: (string) | null;
 };
 
+export type DefaultSearchQueryType = string | DefaultSearchQuery;
+
 export type DeleteTopicData = {
     /**
      * The id of the topic to target.
@@ -2199,6 +2201,17 @@ export type FullTextBoost = {
      * The phrase to boost in the fulltext document frequency index
      */
     phrase: string;
+};
+
+export type GenerateMessageCompletionsReqPayload = {
+    /**
+     * The system message to use for the message completion.
+     */
+    system_message: string;
+    /**
+     * The user message to use for the message completion.
+     */
+    user_message: string;
 };
 
 export type GenerateOffChunksReqPayload = {
@@ -3121,11 +3134,11 @@ export type PublicPageParameters = {
     currencyPosition?: (string) | null;
     datasetId?: (string) | null;
     debounceMs?: (number) | null;
-    defaultAiQuestions?: Array<DefaultSearchQuery> | null;
+    defaultAiQuestions?: Array<DefaultSearchQueryType> | null;
     defaultCurrency?: (string) | null;
     defaultImageQuestion?: (string) | null;
     defaultSearchMode?: (string) | null;
-    defaultSearchQueries?: Array<DefaultSearchQuery> | null;
+    defaultSearchQueries?: Array<DefaultSearchQueryType> | null;
     defaultSearchQuery?: (string) | null;
     floatingButtonPosition?: (string) | null;
     floatingButtonVersion?: (string) | null;
@@ -6408,6 +6421,19 @@ export type EditImageData = {
 
 export type EditImageResponse = (ImageEditResponse);
 
+export type GenerateMessageCompletionsData = {
+    /**
+     * JSON request payload to generate a message completion
+     */
+    requestBody: GenerateMessageCompletionsReqPayload;
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GenerateMessageCompletionsResponse = (string);
+
 export type GetToolFunctionParamsData = {
     /**
      * JSON request payload to get the parameters for a tool function
@@ -8252,6 +8278,21 @@ export type $OpenApiTs = {
                 200: ImageEditResponse;
                 /**
                  * Service error relating to editing the image
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/message/generate_message_completions': {
+        post: {
+            req: GenerateMessageCompletionsData;
+            res: {
+                /**
+                 * The generated message completion
+                 */
+                200: string;
+                /**
+                 * Service error relating to generating a message completion
                  */
                 400: ErrorResponseBody;
             };

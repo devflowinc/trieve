@@ -186,6 +186,7 @@ impl Modify for SecurityAddon {
         handlers::message_handler::get_tool_function_params,
         handlers::message_handler::edit_image,
         handlers::message_handler::transcribe_audio,
+        handlers::message_handler::generate_message_completions,
         handlers::chunk_handler::create_chunk,
         handlers::chunk_handler::update_chunk,
         handlers::chunk_handler::delete_chunk,
@@ -321,6 +322,7 @@ impl Modify for SecurityAddon {
             handlers::message_handler::ImageEditResponse,
             handlers::message_handler::ImageResponseData,
             handlers::message_handler::TranscribeAudioReqPayload,
+            handlers::message_handler::GenerateMessageCompletionsReqPayload,
             handlers::chunk_handler::FullTextBoost,
             handlers::chunk_handler::ChunkReqPayload,
             handlers::chunk_handler::CreateChunkReqPayloadEnum,
@@ -485,6 +487,7 @@ impl Modify for SecurityAddon {
             handlers::page_handler::RangeSliderConfig,
             handlers::page_handler::SidebarFilters,
             handlers::page_handler::HeroPattern,
+            handlers::page_handler::DefaultSearchQueryType,
             handlers::etl_handler::CreateSchemaReqPayload,
             handlers::shopify_handler::ShopifyCustomerEvent,
             handlers::payment_handler::ShopifyPlanChangePayload,
@@ -1182,6 +1185,10 @@ pub fn main() -> std::io::Result<()> {
                                 .route(web::post().to(handlers::message_handler::transcribe_audio))
                         )
                         .service(
+                            web::resource("/message/generate_message_completions")
+                                .route(web::post().to(handlers::message_handler::generate_message_completions))
+                        )
+                        .service(
                             web::resource("/message/{message_id}")
                                 .route(web::get().to(handlers::message_handler::get_message_by_id))
                         )
@@ -1441,8 +1448,7 @@ pub fn main() -> std::io::Result<()> {
                                         .route(web::delete().to(
                                             handlers::organization_handler::delete_organization,
                                         )),
-                                )
-                                .service(
+                                ).service(
                                     web::resource("")
                                         .route(
                                             web::post().to(
@@ -1454,7 +1460,7 @@ pub fn main() -> std::io::Result<()> {
                                                 handlers::organization_handler::update_organization,
                                             ),
                                         ),
-                                ),
+                                    ),
                         )
                         .service(
                             web::scope("/invitation")
