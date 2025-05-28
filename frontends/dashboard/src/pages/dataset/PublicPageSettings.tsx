@@ -668,7 +668,11 @@ const PublicPageControls = () => {
               }?...`}
               value={
                 extraParams.defaultSearchQueries?.map((q) =>
-                  q.query ? q.query + "," + (q.imageUrl ?? "") : q.query ?? "",
+                  typeof q === "string"
+                    ? q
+                    : q.query
+                      ? q.query + "," + (q.imageUrl ?? "")
+                      : q.query ?? "",
                 ) || []
               }
               onChange={(e) => {
@@ -707,7 +711,11 @@ const PublicPageControls = () => {
               }?...`}
               value={
                 extraParams.defaultAiQuestions?.map((q) =>
-                  q.query ? q.query + "," + (q.imageUrl ?? "") : q.query ?? "",
+                  typeof q === "string"
+                    ? q
+                    : q.query
+                    ? q.query + "," + (q.imageUrl ?? "")
+                    : q.query ?? "",
                 ) || []
               }
               onChange={(e) => {
