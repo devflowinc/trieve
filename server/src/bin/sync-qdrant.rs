@@ -85,6 +85,7 @@ async fn main() -> Result<(), ServiceError> {
 
             offset = new_offset;
         }
+        log::info!("finished collection: {}", collection);
     }
 
     Ok(())
