@@ -487,7 +487,6 @@ impl Modify for SecurityAddon {
             handlers::page_handler::RangeSliderConfig,
             handlers::page_handler::SidebarFilters,
             handlers::page_handler::HeroPattern,
-            handlers::page_handler::DefaultSearchQueryType,
             handlers::etl_handler::CreateSchemaReqPayload,
             handlers::shopify_handler::ShopifyCustomerEvent,
             handlers::payment_handler::ShopifyPlanChangePayload,
