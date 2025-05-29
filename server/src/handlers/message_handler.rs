@@ -829,8 +829,10 @@ pub struct SuggestedQueriesReqPayload {
     pub context: Option<String>,
     /// Filters is a JSON object which can be used to filter chunks. This is useful for when you want to filter chunks by arbitrary metadata. Unlike with tag filtering, there is a performance hit for filtering on metadata.
     pub filters: Option<ChunkFilter>,
-
+    /// Whether or not the suggested queries are being generated for a followup question. If true, the suggested queries will be generated for a followup question. If false, the suggested queries will be generated for a new question.
     pub is_followup: Option<bool>,
+    /// Whether of not the suggested queries are being generated for ecommerce.
+    pub is_ecommerce: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]

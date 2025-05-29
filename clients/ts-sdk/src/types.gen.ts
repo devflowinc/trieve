@@ -4524,6 +4524,13 @@ export type SuggestedQueriesReqPayload = {
      */
     context?: (string) | null;
     filters?: ((ChunkFilter) | null);
+    /**
+     * Whether of not the suggested queries are being generated for ecomm. If true, the suggested queries will be generated for ecomm. If false, the suggested queries will be generated for non-ecomm.
+     */
+    is_ecommerce?: (boolean) | null;
+    /**
+     * Whether or not the suggested queries are being generated for a followup question. If true, the suggested queries will be generated for a followup question. If false, the suggested queries will be generated for a new question.
+     */
     is_followup?: (boolean) | null;
     /**
      * The query to base the generated suggested queries off of using RAG. A hybrid search for 10 chunks from your dataset using this query will be performed and the context of the chunks will be used to generate the suggested queries.

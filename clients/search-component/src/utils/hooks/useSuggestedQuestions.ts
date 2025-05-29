@@ -22,6 +22,7 @@ export const useSuggestedQuestions = () => {
         : currentGroup?.tracking_id,
       query,
       props,
+      isEcommerce: props.type === "ecommerce",
     });
     setSuggestedQuestions(queries.queries);
     setIsLoadingSuggestedQueries(false);
