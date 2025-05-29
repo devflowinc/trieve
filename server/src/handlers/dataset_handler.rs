@@ -8,6 +8,7 @@ use crate::{
     get_env,
     middleware::auth_middleware::{verify_admin, verify_owner},
     operators::{
+        chunk_operator::get_chunk_queue_length,
         dataset_operator::{
             clear_dataset_by_dataset_id_query, create_dataset_query, create_datasets_query,
             get_dataset_by_id_query, get_dataset_by_tracking_id_query, get_dataset_usage_query,
@@ -17,7 +18,6 @@ use crate::{
         dittofeed_operator::{
             send_ditto_event, DittoDatasetCreated, DittoTrackProperties, DittoTrackRequest,
         },
-        chunk_operator::get_chunk_queue_length,
         file_operator::get_file_queue_length,
         organization_operator::{get_org_dataset_count, get_org_from_id_query},
     },
@@ -1028,12 +1028,13 @@ pub async fn get_dataset_queue_lengths(
     broccoli_queue: web::Data<BroccoliQueue>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
-    log::info!("Getting file queue length for dataset: {}", dataset_org_plan_sub.dataset.id);
-    let file_queue_length = get_file_queue_length(dataset_org_plan_sub.dataset.id, &broccoli_queue).await
+    let file_queue_length = get_file_queue_length(dataset_org_plan_sub.dataset.id, &broccoli_queue)
+        .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
-    let chunk_queue_length = get_chunk_queue_length(dataset_org_plan_sub.dataset.id, &broccoli_queue).await
-        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
-    log::info!("file_queue_length: {}", file_queue_length);
+    let chunk_queue_length =
+        get_chunk_queue_length(dataset_org_plan_sub.dataset.id, &broccoli_queue)
+            .await
+            .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
     Ok(HttpResponse::Ok().json(DatasetQueueLengthsResponse {
         file_queue_length,
         chunk_queue_length,
