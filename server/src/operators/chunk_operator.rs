@@ -621,7 +621,6 @@ pub async fn bulk_delete_chunks_query(
 
 /// Only inserts, does not try to upsert data
 #[allow(clippy::type_complexity)]
-
 pub async fn bulk_insert_chunk_metadata_query(
     mut insertion_data: Vec<ChunkData>,
     dataset_uuid: uuid::Uuid,
@@ -778,7 +777,7 @@ pub async fn bulk_insert_chunk_metadata_query(
             if chunk_data.fulltext_boost.is_none() && chunk_data.semantic_boost.is_none() {
                 return None;
             }
-            return Some(ChunkBoost {
+            Some(ChunkBoost {
                 chunk_id: chunk_data.chunk_metadata.id,
                 fulltext_boost_phrase: chunk_data
                     .fulltext_boost
@@ -796,7 +795,7 @@ pub async fn bulk_insert_chunk_metadata_query(
                     .semantic_boost
                     .as_ref()
                     .map(|boost| boost.distance_factor as f64),
-            });
+            })
         })
         .unique_by(|boost| boost.chunk_id)
         .collect::<Vec<ChunkBoost>>();
@@ -1185,7 +1184,6 @@ pub async fn get_dataset_tags_id_from_names(
 }
 
 /// Bulk revert, assumes upsert chunk_ids were not upserted, only enterted
-
 pub async fn bulk_revert_insert_chunk_metadata_query(
     chunk_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -2209,7 +2207,6 @@ pub fn get_highlights_with_exact_match(
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub fn get_highlights(
     chunk_html: Option<String>,
     query: String,

@@ -2406,7 +2406,6 @@ pub async fn search_chunks_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub async fn search_hybrid_chunks(
     mut data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
@@ -2591,7 +2590,6 @@ pub async fn search_hybrid_chunks(
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub async fn search_groups_query(
     mut data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQueryTypes,
@@ -2731,7 +2729,6 @@ pub async fn search_groups_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub async fn search_hybrid_groups(
     mut data: SearchWithinGroupReqPayload,
     parsed_query: ParsedQuery,

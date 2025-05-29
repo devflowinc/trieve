@@ -7,7 +7,6 @@ use diesel_async::RunQueryDsl;
 use minijinja::context;
 
 /// Diesel query
-
 pub async fn create_invitation_query(
     email: String,
     organization_id: uuid::Uuid,

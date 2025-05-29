@@ -1087,10 +1087,6 @@ export type CreateMessageReqPayload = {
      */
     no_result_message?: (string) | null;
     /**
-     * Only include docs used in the completion. If not specified, this defaults to false.
-     */
-    only_include_docs_used?: (boolean) | null;
-    /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
     page_size?: (number) | null;
@@ -1117,6 +1113,10 @@ export type CreateMessageReqPayload = {
      */
     topic_id: string;
     typo_options?: ((TypoOptions) | null);
+    /**
+     * If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.
+     */
+    use_agentic_search?: (boolean) | null;
     /**
      * If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
      */
@@ -1595,10 +1595,6 @@ export type EditMessageReqPayload = {
      */
     no_result_message?: (string) | null;
     /**
-     * Only include docs used in the completion. If not specified, this defaults to false.
-     */
-    only_include_docs_used?: (boolean) | null;
-    /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
     page_size?: (number) | null;
@@ -1625,6 +1621,10 @@ export type EditMessageReqPayload = {
      */
     topic_id: string;
     typo_options?: ((TypoOptions) | null);
+    /**
+     * If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.
+     */
+    use_agentic_search?: (boolean) | null;
     use_group_search?: (boolean) | null;
     /**
      * If true, quoted and - prefixed words will be parsed from the queries and used as required and negated words respectively. Default is false.
@@ -3696,10 +3696,6 @@ export type RegenerateMessageReqPayload = {
      */
     no_result_message?: (string) | null;
     /**
-     * Only include docs used in the completion. If not specified, this defaults to false.
-     */
-    only_include_docs_used?: (boolean) | null;
-    /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
     page_size?: (number) | null;
@@ -3726,6 +3722,10 @@ export type RegenerateMessageReqPayload = {
      */
     topic_id: string;
     typo_options?: ((TypoOptions) | null);
+    /**
+     * If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.
+     */
+    use_agentic_search?: (boolean) | null;
     /**
      * If use_group_search is set to true, the search will be conducted using the `search_over_groups` api. If not specified, this defaults to false.
      */

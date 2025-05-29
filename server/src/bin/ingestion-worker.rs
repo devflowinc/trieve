@@ -648,9 +648,7 @@ pub async fn bulk_upload_chunks(
     } else {
         let content_size = fulltext_content_and_boosts.len();
 
-        Ok(std::iter::repeat(vec![(0, 0.0)])
-            .take(content_size)
-            .collect())
+        Ok(std::iter::repeat_n(vec![(0, 0.0)], content_size).collect())
     }?;
 
     let bm25_vectors = if dataset_config.BM25_ENABLED

@@ -11670,11 +11670,6 @@
             "description": "No result message for when there are no chunks found above the score threshold.",
             "nullable": true
           },
-          "only_include_docs_used": {
-            "type": "boolean",
-            "description": "Only include docs used in the completion. If not specified, this defaults to false.",
-            "nullable": true
-          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -11730,6 +11725,11 @@
                 "$ref": "#/components/schemas/TypoOptions"
               }
             ],
+            "nullable": true
+          },
+          "use_agentic_search": {
+            "type": "boolean",
+            "description": "If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.",
             "nullable": true
           },
           "use_group_search": {
@@ -12766,11 +12766,6 @@
             "description": "No result message for when there are no chunks found above the score threshold.",
             "nullable": true
           },
-          "only_include_docs_used": {
-            "type": "boolean",
-            "description": "Only include docs used in the completion. If not specified, this defaults to false.",
-            "nullable": true
-          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -12826,6 +12821,11 @@
                 "$ref": "#/components/schemas/TypoOptions"
               }
             ],
+            "nullable": true
+          },
+          "use_agentic_search": {
+            "type": "boolean",
+            "description": "If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.",
             "nullable": true
           },
           "use_group_search": {
@@ -19323,11 +19323,6 @@
             "description": "No result message for when there are no chunks found above the score threshold.",
             "nullable": true
           },
-          "only_include_docs_used": {
-            "type": "boolean",
-            "description": "Only include docs used in the completion. If not specified, this defaults to false.",
-            "nullable": true
-          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -19383,6 +19378,11 @@
                 "$ref": "#/components/schemas/TypoOptions"
               }
             ],
+            "nullable": true
+          },
+          "use_agentic_search": {
+            "type": "boolean",
+            "description": "If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.",
             "nullable": true
           },
           "use_group_search": {

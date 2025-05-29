@@ -283,7 +283,7 @@ pub async fn get_search_analytics(
             )
             .await?;
 
-            SearchAnalyticsResponse::QueryDetails(query)
+            SearchAnalyticsResponse::QueryDetails(Box::new(query))
         }
         SearchAnalytics::CountQueries {
             filter,
@@ -745,7 +745,7 @@ pub async fn get_recommendation_analytics(
                 clickhouse_client.get_ref(),
             )
             .await?;
-            RecommendationAnalyticsResponse::QueryDetails(recommendation_query)
+            RecommendationAnalyticsResponse::QueryDetails(Box::new(recommendation_query))
         }
         RecommendationAnalytics::RecommendationUsageGraph {
             filter,

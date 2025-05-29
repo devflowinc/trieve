@@ -31,7 +31,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 pub fn validate_file_name(s: String) -> Result<String, actix_web::Error> {
-    let split_s = s.split('/').last();
+    let split_s = s.split('/').next_back();
 
     if let Some(name) = split_s {
         if name.contains("..") {

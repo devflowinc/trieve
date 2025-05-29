@@ -228,7 +228,7 @@ async fn file_worker(
             Err(err) => {
                 log::error!(
                     "File {} has not yet been uploaded to the signed put url: {:?}",
-                    csv_jsonl_worker_message.file_id.to_string(),
+                    csv_jsonl_worker_message.file_id,
                     err.to_string(),
                 );
 
@@ -619,10 +619,7 @@ fn convert_value_to_chunkreqpayload(
         }
         _ => value.clone(),
     };
-    let chunk_html = match serde_json::to_string(&cleaned_value) {
-        Ok(chunk_html) => Some(chunk_html),
-        Err(_) => None,
-    };
+    let chunk_html = serde_json::to_string(&cleaned_value).ok();
     let mut chunk_req_payload = ChunkReqPayload {
         chunk_html,
         semantic_content: None,
