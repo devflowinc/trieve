@@ -1922,7 +1922,7 @@ pub async fn suggested_new_queries(
     let context_sentence = match payload.context.clone() {
         Some(context) => {
             format!(
-                "\n\nSuggest varied {query_style} queries with the following context in mind: {}.\n\n",
+                "Suggest varied {query_style} queries with the following context in mind: {}. Generate one question that requests for a comparison of two products, explicitly including these questions in the query through phrases such as 'compare, versus, different, etc...'. Another question should contain one product title, explicitly include the name of the product in the query and ask questions related to this product within the provided context. For another question, generate a question that usses the format of find me and then a broader category name that makes sense within the provided context. Ensure all queries are short and to the point.",
                 context
             )
         }
