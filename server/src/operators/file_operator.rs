@@ -672,3 +672,15 @@ pub async fn put_file_in_s3_get_signed_url(
 
     Ok(signed_url)
 }
+
+pub async fn get_file_queue_length(
+    dataset_id: uuid::Uuid,
+    broccoli_queue: &BroccoliQueue,
+) -> Result<i64, ServiceError> {
+    let file_queue_status = broccoli_queue
+        .queue_status("file_ingestion".to_string(), Some(dataset_id.to_string()))
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    Ok(file_queue_status.size as i64)
+}
