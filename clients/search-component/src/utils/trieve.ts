@@ -431,6 +431,7 @@ export const getSuggestedQuestions = async ({
   prevUserMessages,
   is_followup,
   chunks,
+  isEcommerce,
 }: {
   trieve: TrieveSDK;
   abortController?: AbortController;
@@ -441,6 +442,7 @@ export const getSuggestedQuestions = async ({
   prevUserMessages?: string[];
   props?: ModalProps;
   chunks?: Chunk[] | null;
+  isEcommerce?: boolean;
 }) => {
   let context: string;
   if (groupTrackingId && modalProps?.cleanGroupName) {
@@ -485,6 +487,7 @@ export const getSuggestedQuestions = async ({
                 ],
               },
             }),
+          is_ecommerce: isEcommerce ?? false,
         },
         abortController?.signal,
       ),

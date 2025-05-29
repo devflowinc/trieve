@@ -22401,8 +22401,14 @@
             ],
             "nullable": true
           },
+          "is_ecommerce": {
+            "type": "boolean",
+            "description": "Whether of not the suggested queries are being generated for ecomm. If true, the suggested queries will be generated for ecomm. If false, the suggested queries will be generated for non-ecomm.",
+            "nullable": true
+          },
           "is_followup": {
             "type": "boolean",
+            "description": "Whether or not the suggested queries are being generated for a followup question. If true, the suggested queries will be generated for a followup question. If false, the suggested queries will be generated for a new question.",
             "nullable": true
           },
           "query": {
