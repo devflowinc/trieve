@@ -14,8 +14,8 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
-      - run: rustup update 1.81
-      - run: rustup default 1.81
+      - run: rustup update 1.87
+      - run: rustup default 1.87
       - run: rustup component add rustfmt
       - name: Cargo fmt
         run: cargo fmt --manifest-path=./server/Cargo.toml -- --check
@@ -32,8 +32,8 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: rustup update 1.81
-      - run: rustup default 1.81
+      - run: rustup update 1.87
+      - run: rustup default 1.87
       - run: rustup component add clippy
       - uses: clechasseur/rs-clippy-check@v3
         with:
@@ -65,8 +65,8 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: rustup update 1.81
-      - run: rustup default 1.81
+      - run: rustup update 1.87
+      - run: rustup default 1.87
       - name: Installing Vaccum
         run: npm install -g @quobix/vacuum
       - name: Generating OpenAPI spec
