@@ -11670,6 +11670,11 @@
             "description": "No result message for when there are no chunks found above the score threshold.",
             "nullable": true
           },
+          "only_include_docs_used": {
+            "type": "boolean",
+            "description": "Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.",
+            "nullable": true
+          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -12764,6 +12769,11 @@
           "no_result_message": {
             "type": "string",
             "description": "No result message for when there are no chunks found above the score threshold.",
+            "nullable": true
+          },
+          "only_include_docs_used": {
+            "type": "boolean",
+            "description": "Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.",
             "nullable": true
           },
           "page_size": {
@@ -19323,6 +19333,11 @@
             "description": "No result message for when there are no chunks found above the score threshold.",
             "nullable": true
           },
+          "only_include_docs_used": {
+            "type": "boolean",
+            "description": "Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.",
+            "nullable": true
+          },
           "page_size": {
             "type": "integer",
             "format": "int64",
@@ -22473,7 +22488,7 @@
           },
           "is_ecommerce": {
             "type": "boolean",
-            "description": "Whether of not the suggested queries are being generated for ecomm. If true, the suggested queries will be generated for ecomm. If false, the suggested queries will be generated for non-ecomm.",
+            "description": "Whether of not the suggested queries are being generated for ecommerce.",
             "nullable": true
           },
           "is_followup": {

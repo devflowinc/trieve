@@ -4,12 +4,17 @@ use itertools::Itertools;
 use openai_dive::v1::models::WhisperModel;
 use simple_server_timing_header::Timer;
 use simsearch::SimSearch;
+use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
 use std::sync::{Arc, Mutex};
 
 #[cfg(not(feature = "hallucination-detection"))]
 use crate::data::models::DummyHallucinationScore;
 use crate::data::models::{
-    self, escape_quotes, ChunkMetadata, ChunkMetadataStringTagSet, ChunkMetadataStringTagSetWithHighlightsScore, ChunkMetadataTypes, ConditionType, Dataset, DatasetConfiguration, FieldCondition, LLMOptions, MultiQuery, QdrantChunkMetadata, QueryTypes, RagQueryEventClickhouse, Range, RangeCondition, RedisPool, ScoreChunk, SearchMethod, SearchModalities, SuggestType
+    self, escape_quotes, ChunkMetadata, ChunkMetadataStringTagSet,
+    ChunkMetadataStringTagSetWithHighlightsScore, ChunkMetadataTypes, ConditionType, Dataset,
+    DatasetConfiguration, FieldCondition, LLMOptions, MultiQuery, QdrantChunkMetadata, QueryTypes,
+    RagQueryEventClickhouse, Range, RangeCondition, RedisPool, ScoreChunk, SearchMethod,
+    SearchModalities, SuggestType,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
@@ -17,7 +22,7 @@ use crate::handlers::chunk_handler::SearchChunksReqPayload;
 use crate::handlers::group_handler::SearchOverGroupsReqPayload;
 use crate::handlers::message_handler::{CreateMessageReqPayload, SuggestedQueriesReqPayload};
 use crate::operators::clickhouse_operator::ClickHouseEvent;
-use crate::operators::parse_operator::convert_html_to_text;
+use crate::operators::parse_operator::{convert_html_to_text, parse_streaming_completetion};
 use crate::operators::qdrant_operator::scroll_dataset_points;
 use crate::{
     data::models::{Message, Pool, SearchQueryEventClickhouse},
@@ -58,6 +63,42 @@ use super::search_operator::{
     assemble_qdrant_filter, hybrid_search_over_groups, search_chunks_query, search_hybrid_chunks,
     search_over_groups_query, ParsedQuery, ParsedQueryTypes,
 };
+
+pub fn parse_text_into_docs_message(
+    text: &str,
+    score_chunks: Vec<ScoreChunk>,
+) -> Result<(String, Vec<ScoreChunk>), ServiceError> {
+    let parsed: serde_json::Value = serde_json::from_str(text).map_err(|_| {
+        log::error!("Invalid JSON response when trying to fetch used documents array");
+        ServiceError::BadRequest(
+            "Invalid JSON response when trying to fetch used documents array".to_string(),
+        )
+    })?;
+
+    let used_docs = parsed["documents"].as_array().ok_or_else(|| {
+        log::error!("Missing documents array");
+        ServiceError::BadRequest("Missing documents array".to_string())
+    })?;
+
+    let rag_message = parsed["message"].as_str().ok_or_else(|| {
+        log::error!("Missing message");
+        ServiceError::BadRequest("Missing message".to_string())
+    })?;
+
+    // Filter chunk_metadatas to only include used documents
+    let filtered_chunks: Vec<_> = used_docs
+        .iter()
+        .filter_map(|doc_idx| {
+            doc_idx
+                .as_u64()
+                .and_then(|idx| score_chunks.get(idx as usize - 1))
+                .cloned()
+        })
+        .collect();
+
+    Ok((rag_message.to_string(), filtered_chunks))
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChatCompletionDTO {
     pub completion_message: Message,
@@ -151,9 +192,25 @@ If you use the search tool, you MUST use the chunks_used tool to respond with th
 respond with the chunks you MUST include in your response to the user's question.
 "#;
 
+const STRUCTURE_SYSTEM_PROMPT: &str = r#"
+Before you start generating respond with the documents that you plan to use to generate your response, YOU MUST INCLUDE AT LEAST 1.
+YOU MUST DO THIS BEFORE YOU CONTINUE TO GENERATE A RESPONSE.
+After responding with the documents, YOU MUST RESPOND TO THE USERS PROMPT.
+```
+Example:
+User: 
+Here's my prompt: what about for spreadsheets \n\n Use the following retrieved documents to respond briefly and accurately: {"doc": 1, "text": "chunk text..", "link": "chunk link.." }\n\n{"doc": 2, "text": "chunk text..", "link": "chunk link.." }... etc
+Assistant:
+documents: [1,2]
+...continue with model response
+```
+After you have done these things now follow:
+"#;
+
 pub async fn create_generic_system_message(
     system_prompt: String,
     use_agentic_search: bool,
+    only_include_docs_used: bool,
     messages_topic_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
@@ -162,11 +219,15 @@ pub async fn create_generic_system_message(
         crate::operators::topic_operator::get_topic_query(messages_topic_id, dataset_id, pool)
             .await?;
 
-    let system_prompt = if use_agentic_search {
+    let mut system_prompt = if use_agentic_search {
         format!("{}\n\n{}", AGENTIC_SEARCH_SYSTEM_PROMPT, system_prompt)
     } else {
         system_prompt
     };
+
+    if only_include_docs_used {
+        system_prompt = format!("{}\n\n{}", STRUCTURE_SYSTEM_PROMPT, system_prompt);
+    }
 
     let system_message = Message::from_details(
         system_prompt,
@@ -186,6 +247,7 @@ pub async fn create_topic_message_query(
     config: &DatasetConfiguration,
     previous_messages: Vec<Message>,
     use_agentic_search: bool,
+    only_include_docs_used: bool,
     new_message: Message,
     dataset_id: uuid::Uuid,
     pool: &web::Data<Pool>,
@@ -198,6 +260,7 @@ pub async fn create_topic_message_query(
         let system_message = create_generic_system_message(
             config.SYSTEM_PROMPT.clone(),
             use_agentic_search,
+            only_include_docs_used,
             new_message.topic_id,
             dataset_id,
             pool,
@@ -1005,7 +1068,17 @@ pub async fn stream_response(
                 content: Some(ChatMessageContent::Text(text)),
                 ..
             }) => {
-                (text.clone(), score_chunks.clone())
+                if create_message_req_payload
+                    .only_include_docs_used
+                    .unwrap_or(false)
+                {
+                    match parse_text_into_docs_message(text, score_chunks.clone()) {
+                        Ok((response_text, filtered_chunks)) => (response_text, filtered_chunks),
+                        Err(_) => (text.clone(), vec![]),
+                    }
+                } else {
+                    (text.clone(), score_chunks.clone())
+                }
             }
             _ => {
                 return Err(ServiceError::BadRequest("Invalid response format, did not receive text on the assistant message from the LLM provider".to_string()).into())
@@ -1254,9 +1327,17 @@ pub async fn stream_response(
         .parse::<u64>()
         .unwrap_or(60);
 
-    let documents = Arc::new(Mutex::new(
-        (0..score_chunks.len() as u32).collect::<Vec<u32>>(),
-    ));
+    let state = Arc::new(AtomicU16::new(0));
+    let documents = if create_message_req_payload
+        .only_include_docs_used
+        .unwrap_or(false)
+    {
+        Arc::new(Mutex::new(vec![]))
+    } else {
+        Arc::new(Mutex::new((0..score_chunks.len() as u32).collect()))
+    };
+    let started_parsing_completion = AtomicBool::new(false);
+    let mut bail_on_parsing = AtomicBool::new(false);
 
     let completion_stream = stream
         .take_until(tokio::time::sleep(std::time::Duration::from_secs(chat_completion_timeout)))
@@ -1292,11 +1373,45 @@ pub async fn stream_response(
                                 content: Some(ChatMessageContent::Text(text)),
                                 ..
                             } => {
-                               if !completion_first {
+                                if create_message_req_payload
+                                    .only_include_docs_used
+                                    .unwrap_or(false) {
+                                        let bailed_on_iter = bail_on_parsing.get_mut();
+                                        let (text, docs) = if !*bailed_on_iter {
+                                            let (parsed_text, docs, bail) = parse_streaming_completetion(text, state.clone(), documents.clone());
+                                            if bail {
+                                                *bailed_on_iter = true;
+                                                documents.lock().unwrap().extend(0..score_chunks.len() as u32);
+                                                (Some(text.clone()), Some((0..score_chunks.len() as u32).collect()))
+                                            } else {
+                                                (parsed_text, docs)
+                                            }
+                                        } else {
+                                            (Some(text.clone()), None)
+                                        };
+
+                                        if let Some(docs) = docs {
+                                            if !completion_first {
+                                                let filtered_chunks = score_chunks.iter().enumerate().filter_map(|(idx, score_chunk)| {
+                                                    if docs.contains(&(idx as u32)) {
+                                                        Some(ChunkMetadataStringTagSetWithHighlightsScore::from(score_chunk.clone()))
+                                                    } else {
+                                                        None
+                                                    }
+                                                }).collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
+                                                if *bailed_on_iter {
+                                                    return Some(format!("{}||{}", serde_json::to_string(&filtered_chunks).unwrap_or_default().replace("||", ""), text.unwrap_or("".to_string())));
+                                                } else {
+                                                    return Some(format!("{}||", serde_json::to_string(&filtered_chunks).unwrap_or_default().replace("||", "")));
+                                                }
+                                            }
+                                        }
+                                        text.clone()
+                                    } else if !completion_first && !started_parsing_completion.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |_| Some(true)).unwrap_or(true) {
                                         let returned_chunks = score_chunks.iter().map(|score_chunk| {
                                             ChunkMetadataStringTagSetWithHighlightsScore::from(score_chunk.clone())
                                         }).collect::<Vec<ChunkMetadataStringTagSetWithHighlightsScore>>();
-                                        Some(format!("{}||", serde_json::to_string(&returned_chunks).unwrap_or_default().replace("||", "")))
+                                        return Some(format!("{}||", serde_json::to_string(&returned_chunks).unwrap_or_default().replace("||", "")));
                                     } else {
                                         Some(text.clone())
                                     }
@@ -1339,7 +1454,6 @@ pub async fn stream_response(
     }
 }
 
-
 #[derive(Deserialize, Debug)]
 struct PriceFilter {
     min: Option<f32>,
@@ -1367,15 +1481,16 @@ async fn search_chunks(
         filters.map(|filter| {
             filter.must.map(|mut must| {
                 must.push(ConditionType::Field(FieldCondition {
-                field: "num_value".to_string(),
-                range: Some(Range {
-                    gte: price_filter.min.map(|x| RangeCondition::Float(x as f64)),
-                    lte: price_filter.max.map(|x| RangeCondition::Float(x as f64)),
+                    field: "num_value".to_string(),
+                    range: Some(Range {
+                        gte: price_filter.min.map(|x| RangeCondition::Float(x as f64)),
+                        lte: price_filter.max.map(|x| RangeCondition::Float(x as f64)),
+                        ..Default::default()
+                    }),
                     ..Default::default()
-                }),
-                ..Default::default()
-            }))
-        })});
+                }))
+            })
+        });
     }
 
     let search_type = create_message_req_payload
