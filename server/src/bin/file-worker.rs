@@ -11,7 +11,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc},
 };
 use trieve_server::{
-    data::models::{self, ChunkGroup, FileWorkerMessage},
+    data::models::{self, ChunkGroup, FileWorkerMessage, Pool},
     establish_connection, get_env,
     handlers::chunk_handler::ChunkReqPayload,
     operators::{

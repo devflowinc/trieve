@@ -364,6 +364,7 @@ impl Modify for SecurityAddon {
             handlers::dataset_handler::GetAllTagsResponse,
             handlers::dataset_handler::Datasets,
             handlers::dataset_handler::GetPagefindIndexResponse,
+            handlers::dataset_handler::DatasetQueueLengthsResponse,
             handlers::crawl_handler::GetCrawlRequestsReqPayload,
             handlers::crawl_handler::CreateCrawlReqPayload,
             handlers::crawl_handler::UpdateCrawlReqPayload,
@@ -1070,6 +1071,10 @@ pub fn main() -> std::io::Result<()> {
                                 .service(
                                     web::resource("/get_all_tags")
                                         .route(web::post().to(handlers::dataset_handler::get_all_tags)),
+                                )
+                                .service(
+                                    web::resource("/get_dataset_queue_lengths")
+                                        .route(web::get().to(handlers::dataset_handler::get_dataset_queue_lengths)),
                                 )
                                 .service(
                                     web::resource("/events")

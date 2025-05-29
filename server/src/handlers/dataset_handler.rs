@@ -17,6 +17,8 @@ use crate::{
         dittofeed_operator::{
             send_ditto_event, DittoDatasetCreated, DittoTrackProperties, DittoTrackRequest,
         },
+        chunk_operator::get_chunk_queue_length,
+        file_operator::get_file_queue_length,
         organization_operator::{get_org_dataset_count, get_org_from_id_query},
     },
 };
@@ -992,4 +994,48 @@ pub async fn batch_create_datasets(
         create_datasets_query(datasets, data.upsert, pool.clone()).await?;
 
     Ok(HttpResponse::Ok().json(created_or_upserted_datasets))
+}
+
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct DatasetQueueLengthsResponse {
+    /// Number of files in the queue for the dataset
+    pub file_queue_length: i64,
+    /// Number of chunks in the queue for the dataset
+    pub chunk_queue_length: i64,
+}
+
+/// Get file and chunk creation queue lengths
+///
+/// Get the queue lengths for file and chunk creation.
+#[utoipa::path(
+    get,
+    path = "/dataset/get_dataset_queue_lengths",
+    context_path = "/api",
+    tag = "Dataset",
+    responses(
+        (status = 200, description = "Queue lengths for file and chunk creation", body = DatasetQueueLengthsResponse),
+        (status = 400, description = "Service error relating to getting the queue lengths", body = ErrorResponseBody),
+    ),
+    params(
+        ("TR-Dataset" = uuid::Uuid, Header, description = "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid."),
+    ),
+    security(
+        ("ApiKey" = ["readonly"]),
+    )
+)]
+pub async fn get_dataset_queue_lengths(
+    _user: LoggedUser,
+    broccoli_queue: web::Data<BroccoliQueue>,
+    dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
+) -> Result<HttpResponse, ServiceError> {
+    log::info!("Getting file queue length for dataset: {}", dataset_org_plan_sub.dataset.id);
+    let file_queue_length = get_file_queue_length(dataset_org_plan_sub.dataset.id, &broccoli_queue).await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    let chunk_queue_length = get_chunk_queue_length(dataset_org_plan_sub.dataset.id, &broccoli_queue).await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+    log::info!("file_queue_length: {}", file_queue_length);
+    Ok(HttpResponse::Ok().json(DatasetQueueLengthsResponse {
+        file_queue_length,
+        chunk_queue_length,
+    }))
 }

@@ -10,6 +10,7 @@ use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
     delete_points_from_qdrant, get_qdrant_collection_from_dataset_config, scroll_dataset_points,
 };
+use broccoli_queue::queue::BroccoliQueue;
 use crate::{
     data::models::{ChunkMetadata, Pool},
     errors::ServiceError,
@@ -2954,4 +2955,26 @@ pub async fn get_last_processed_from_clickhouse(
 pub fn get_storage_mb_from_chunk_count(chunk_count: i32) -> i64 {
     // dense        sparse    payload
     (((1536 * 4) + (256 * 4) + 4096) * (chunk_count as i64)) / (1_000_000)
+}
+
+pub async fn get_chunk_queue_length(
+    dataset_id: uuid::Uuid,
+    broccoli_queue: &BroccoliQueue,
+) -> Result<i64, ServiceError> {
+    let openai_ingestion_queue_status = broccoli_queue
+        .queue_status("openai_ingestion".to_string(), Some(dataset_id.to_string()))
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    let regular_ingestion_queue_status = broccoli_queue
+        .queue_status("ingestion".to_string(), Some(dataset_id.to_string()))
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    let premium_ingestion_queue_status = broccoli_queue
+        .queue_status("premium_ingestion".to_string(), Some(dataset_id.to_string()))
+        .await
+        .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
+
+    Ok(openai_ingestion_queue_status.size as i64 + regular_ingestion_queue_status.size as i64 + premium_ingestion_queue_status.size as i64)
 }
