@@ -875,7 +875,7 @@ pub fn main() -> std::io::Result<()> {
 
 
         let metrics = Metrics::new().map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create metrics {:?}", e))
+            std::io::Error::other(format!("Failed to create metrics {:?}", e))
         })?;
 
         #[cfg(feature = "hallucination-detection")]
@@ -891,7 +891,7 @@ pub fn main() -> std::io::Result<()> {
 
 
         let broccoli_queue = BroccoliQueue::builder(redis_url).pool_connections(redis_connections.try_into().unwrap()).build().await.map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create broccoli queue {:?}", e))
+            std::io::Error::other(format!("Failed to create broccoli queue {:?}", e))
         })?;
 
         let num_workers: usize = match std::env::var("NUM_WORKERS") {
@@ -1177,7 +1177,7 @@ pub fn main() -> std::io::Result<()> {
                                         .cache_prefix("function_params:")
                                         .ttl(60 * 60 * 24)
                                         .cache_if(|ctx| {
-                                            return ctx.body.get("audio_input").is_none() || ctx.body.get("audio_input").unwrap().is_null();
+                                            ctx.body.get("audio_input").is_none() || ctx.body.get("audio_input").unwrap().is_null()
                                         })
                                         .build()
                                 )

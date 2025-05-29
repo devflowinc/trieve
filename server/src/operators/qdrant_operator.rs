@@ -484,7 +484,6 @@ pub async fn create_new_qdrant_point_query(
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub async fn update_qdrant_point_query(
     metadata: ChunkMetadata,
     updated_vector: Option<Vec<f32>>,
@@ -1206,7 +1205,6 @@ pub struct QdrantRecommendResult {
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub async fn recommend_qdrant_query(
     positive_ids: Vec<uuid::Uuid>,
     negative_ids: Vec<uuid::Uuid>,

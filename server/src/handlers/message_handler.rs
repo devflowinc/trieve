@@ -16,7 +16,8 @@ use crate::{
             create_topic_message_query, delete_message_query, get_llm_api_key,
             get_message_by_id_query, get_message_by_sort_for_topic_query,
             get_messages_for_topic_query, get_text_from_audio, get_topic_messages_query,
-            stream_response, suggested_followp_questions, suggested_new_queries,
+            stream_response, stream_response_with_agentic_search, suggested_followp_questions,
+            suggested_new_queries,
         },
         organization_operator::get_message_org_count,
     },
@@ -105,8 +106,6 @@ pub struct CreateMessageReqPayload {
     pub context_options: Option<ContextOptions>,
     /// No result message for when there are no chunks found above the score threshold.
     pub no_result_message: Option<String>,
-    /// Only include docs used in the completion. If not specified, this defaults to false.
-    pub only_include_docs_used: Option<bool>,
     /// The currency to use for the completion. If not specified, this defaults to "USD".
     pub currency: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
@@ -133,6 +132,8 @@ pub struct CreateMessageReqPayload {
     pub metadata: Option<serde_json::Value>,
     /// Overrides what the way chunks are placed into the context window
     pub rag_context: Option<String>,
+    /// If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.
+    pub use_agentic_search: Option<bool>,
 }
 
 /// Create message
@@ -269,26 +270,39 @@ pub async fn create_message(
     let previous_messages = create_topic_message_query(
         &dataset_config,
         previous_messages,
+        create_message_data.use_agentic_search.unwrap_or(false),
         new_message,
-        create_message_data.only_include_docs_used,
         dataset_org_plan_sub.dataset.id,
         &create_message_pool,
     )
     .await?;
 
-    stream_response(
-        previous_messages,
-        topic_id,
-        dataset_org_plan_sub.dataset,
-        stream_response_pool,
-        event_queue,
-        redis_pool,
-        dataset_config,
-        create_message_data,
-        #[cfg(feature = "hallucination-detection")]
-        hallucination_detector,
-    )
-    .await
+    if create_message_data.use_agentic_search.unwrap_or(false) {
+        stream_response_with_agentic_search(
+            previous_messages,
+            topic_id,
+            dataset_org_plan_sub.dataset,
+            pool,
+            redis_pool,
+            dataset_config,
+            create_message_data,
+        )
+        .await
+    } else {
+        stream_response(
+            previous_messages,
+            topic_id,
+            dataset_org_plan_sub.dataset,
+            stream_response_pool,
+            event_queue,
+            redis_pool,
+            dataset_config,
+            create_message_data,
+            #[cfg(feature = "hallucination-detection")]
+            hallucination_detector,
+        )
+        .await
+    }
 }
 
 /// Get all messages for a given topic
@@ -392,8 +406,6 @@ pub struct RegenerateMessageReqPayload {
     pub context_options: Option<ContextOptions>,
     /// No result message for when there are no chunks found above the score threshold.
     pub no_result_message: Option<String>,
-    /// Only include docs used in the completion. If not specified, this defaults to false.
-    pub only_include_docs_used: Option<bool>,
     /// The currency symbol to use for the completion. If not specified, this defaults to "$".
     pub currency: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
@@ -420,6 +432,8 @@ pub struct RegenerateMessageReqPayload {
     pub metadata: Option<serde_json::Value>,
     /// Overrides what the way chunks are placed into the context window
     pub rag_context: Option<String>,
+    /// If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.
+    pub use_agentic_search: Option<bool>,
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -446,8 +460,6 @@ pub struct EditMessageReqPayload {
     pub context_options: Option<ContextOptions>,
     /// No result message for when there are no chunks found above the score threshold.
     pub no_result_message: Option<String>,
-    /// Only include docs used in the completion. If not specified, this defaults to false.
-    pub only_include_docs_used: Option<bool>,
     /// The currency symbol to use for the completion. If not specified, this defaults to "$".
     pub currency: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
@@ -474,6 +486,8 @@ pub struct EditMessageReqPayload {
     pub metadata: Option<serde_json::Value>,
     /// Overrides what the way chunks are placed into the context window
     pub rag_context: Option<String>,
+    /// If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.
+    pub use_agentic_search: Option<bool>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -497,12 +511,12 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             user_id: data.user_id,
             context_options: data.context_options,
             no_result_message: data.no_result_message,
-            only_include_docs_used: data.only_include_docs_used,
             use_quote_negated_terms: data.use_quote_negated_terms,
             remove_stop_words: data.remove_stop_words,
             typo_options: data.typo_options,
             metadata: data.metadata,
             rag_context: data.rag_context,
+            use_agentic_search: data.use_agentic_search,
         }
     }
 }
@@ -528,12 +542,12 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             user_id: data.user_id,
             context_options: data.context_options,
             no_result_message: data.no_result_message,
-            only_include_docs_used: data.only_include_docs_used,
             use_quote_negated_terms: data.use_quote_negated_terms,
             remove_stop_words: data.remove_stop_words,
             typo_options: data.typo_options,
             metadata: data.metadata,
             rag_context: data.rag_context,
+            use_agentic_search: data.use_agentic_search,
         }
     }
 }
@@ -658,7 +672,6 @@ pub async fn regenerate_message_patch(
     check_completion_param_validity(data.llm_options.clone())?;
 
     let get_messages_pool = pool.clone();
-    let create_message_pool = pool.clone();
     let dataset_id = dataset_org_plan_sub.dataset.id;
 
     let mut previous_messages =
@@ -670,20 +683,35 @@ pub async fn regenerate_message_patch(
         );
     }
 
+    let create_message_data: CreateMessageReqPayload = data.into_inner().into();
+
     if previous_messages.len() == 2 {
-        return stream_response(
-            previous_messages,
-            topic_id,
-            dataset_org_plan_sub.dataset,
-            create_message_pool,
-            event_queue,
-            redis_pool.clone(),
-            dataset_config,
-            data.into_inner().into(),
-            #[cfg(feature = "hallucination-detection")]
-            hallucination_detector,
-        )
-        .await;
+        if create_message_data.use_agentic_search.unwrap_or(false) {
+            return stream_response_with_agentic_search(
+                previous_messages,
+                topic_id,
+                dataset_org_plan_sub.dataset,
+                pool,
+                redis_pool,
+                dataset_config,
+                create_message_data,
+            )
+            .await;
+        } else {
+            return stream_response(
+                previous_messages,
+                topic_id,
+                dataset_org_plan_sub.dataset,
+                pool,
+                event_queue,
+                redis_pool,
+                dataset_config,
+                create_message_data,
+                #[cfg(feature = "hallucination-detection")]
+                hallucination_detector,
+            )
+            .await;
+        }
     }
 
     // remove citations from the previous messages
@@ -746,19 +774,32 @@ pub async fn regenerate_message_patch(
 
     delete_message_query(message_id, topic_id, dataset_id, &pool).await?;
 
-    stream_response(
-        previous_messages_to_regenerate,
-        topic_id,
-        dataset_org_plan_sub.dataset,
-        create_message_pool,
-        event_queue,
-        redis_pool.clone(),
-        dataset_config,
-        data.into_inner().into(),
-        #[cfg(feature = "hallucination-detection")]
-        hallucination_detector,
-    )
-    .await
+    if create_message_data.use_agentic_search.unwrap_or(false) {
+        stream_response_with_agentic_search(
+            previous_messages,
+            topic_id,
+            dataset_org_plan_sub.dataset,
+            pool,
+            redis_pool,
+            dataset_config,
+            create_message_data,
+        )
+        .await
+    } else {
+        stream_response(
+            previous_messages,
+            topic_id,
+            dataset_org_plan_sub.dataset,
+            pool,
+            event_queue,
+            redis_pool,
+            dataset_config,
+            create_message_data,
+            #[cfg(feature = "hallucination-detection")]
+            hallucination_detector,
+        )
+        .await
+    }
 }
 
 /// Regenerate message
@@ -1166,12 +1207,8 @@ pub async fn get_tool_function_params(
     };
 
     let resp_body = GetToolFunctionParamsRespBody {
-        parameters: tool_call.and_then(|tool_call| {
-            match serde_json::from_str(&tool_call.function.arguments) {
-                Ok(parameters) => Some(parameters),
-                Err(_) => None,
-            }
-        }),
+        parameters: tool_call
+            .and_then(|tool_call| serde_json::from_str(&tool_call.function.arguments).ok()),
     };
 
     if data.audio_input.is_some() {

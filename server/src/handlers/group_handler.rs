@@ -405,7 +405,6 @@ pub struct GetGroupByTrackingIDData {
     )
 )]
 /// get_group_by_tracking_id
-
 pub async fn get_group_by_tracking_id(
     data: web::Path<GetGroupByTrackingIDData>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
@@ -579,7 +578,6 @@ pub struct UpdateGroupByTrackingIDReqPayload {
     )
 )]
 #[deprecated]
-
 pub async fn update_group_by_tracking_id(
     data: web::Json<UpdateGroupByTrackingIDReqPayload>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,

@@ -3667,7 +3667,6 @@ impl DatasetConfigurationDTO {
     "DOCUMENT_UPLOAD_FEATURE": true,
     "FILE_NAME_KEY": "file_name_key",
 }))]
-
 pub struct DatasetAndOrgWithSubAndPlan {
     pub dataset: Dataset,
     pub organization: OrganizationWithSubAndPlan,
@@ -4541,13 +4540,13 @@ impl ApiKeyRequestParams {
             currency: payload.currency,
             context_options: payload.context_options,
             no_result_message: self.no_result_message.or(payload.no_result_message),
-            only_include_docs_used: payload.only_include_docs_used,
             use_quote_negated_terms: self
                 .use_quote_negated_terms
                 .or(payload.use_quote_negated_terms),
             remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
             typo_options: self.typo_options.or(payload.typo_options),
             metadata: payload.metadata,
+            use_agentic_search: payload.use_agentic_search,
         }
     }
 
@@ -5149,7 +5148,7 @@ pub enum RangeCondition {
     Int(i64),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[schema(example = json!({
     "gte": 0.0,
     "lte": 1.0,
@@ -5259,7 +5258,7 @@ pub struct HasChunkIDCondition {
     pub tracking_ids: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, Default)]
 #[schema(example = json!({
     "field": "metadata.key1",
     "match": ["value1", "value2"],
@@ -8263,7 +8262,7 @@ pub enum SearchAnalyticsResponse {
     #[schema(title = "CountQueries")]
     CountQueries(QueryCountResponse),
     #[schema(title = "QueryDetails")]
-    QueryDetails(SearchQueryEvent),
+    QueryDetails(Box<SearchQueryEvent>),
     #[schema(title = "PopularFilters")]
     PopularFilters(PopularFiltersResponse),
     #[schema(title = "CTRMetricsOverTime")]
@@ -8297,7 +8296,7 @@ pub enum RecommendationAnalyticsResponse {
     #[schema(title = "RecommendationQueries")]
     RecommendationQueries(RecommendationsEventResponse),
     #[schema(title = "QueryDetails")]
-    QueryDetails(RecommendationEvent),
+    QueryDetails(Box<RecommendationEvent>),
     #[schema(title = "RecommendationUsageGraph")]
     RecommendationUsageGraph(RecommendationUsageGraphResponse),
     #[schema(title = "RecommendationsPerUser")]
@@ -9424,10 +9423,10 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             pub use_group_search: Option<bool>,
             pub context_options: Option<ContextOptions>,
             pub no_result_message: Option<String>,
-            pub only_include_docs_used: Option<bool>,
             pub currency: Option<String>,
             metadata: Option<serde_json::Value>,
             pub rag_context: Option<String>,
+            pub use_agentic_search: Option<bool>,
             #[serde(flatten)]
             other: std::collections::HashMap<String, serde_json::Value>,
             use_quote_negated_terms: Option<bool>,
@@ -9469,10 +9468,10 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             no_result_message: helper.no_result_message,
             metadata: helper.metadata,
             rag_context: helper.rag_context,
-            only_include_docs_used: helper.only_include_docs_used,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
             typo_options: helper.typo_options,
+            use_agentic_search: helper.use_agentic_search,
         })
     }
 }
@@ -9498,7 +9497,6 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub use_group_search: Option<bool>,
             pub context_options: Option<ContextOptions>,
             pub no_result_message: Option<String>,
-            pub only_include_docs_used: Option<bool>,
             pub currency: Option<String>,
             metadata: Option<serde_json::Value>,
             #[serde(flatten)]
@@ -9507,6 +9505,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub remove_stop_words: Option<bool>,
             pub typo_options: Option<TypoOptions>,
             pub rag_context: Option<String>,
+            pub use_agentic_search: Option<bool>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -9539,11 +9538,11 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             context_options,
             metadata: helper.metadata,
             no_result_message: helper.no_result_message,
-            only_include_docs_used: helper.only_include_docs_used,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
             typo_options: helper.typo_options,
             rag_context: helper.rag_context,
+            use_agentic_search: helper.use_agentic_search,
         })
     }
 }
@@ -9573,7 +9572,6 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub user_id: Option<String>,
             pub context_options: Option<ContextOptions>,
             pub no_result_message: Option<String>,
-            pub only_include_docs_used: Option<bool>,
             pub currency: Option<String>,
             metadata: Option<serde_json::Value>,
             #[serde(flatten)]
@@ -9582,6 +9580,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub remove_stop_words: Option<bool>,
             pub typo_options: Option<TypoOptions>,
             pub rag_context: Option<String>,
+            pub use_agentic_search: Option<bool>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -9618,11 +9617,11 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             context_options,
             metadata: helper.metadata,
             no_result_message: helper.no_result_message,
-            only_include_docs_used: helper.only_include_docs_used,
             use_quote_negated_terms: helper.use_quote_negated_terms,
             remove_stop_words: helper.remove_stop_words,
             typo_options: helper.typo_options,
             rag_context: helper.rag_context,
+            use_agentic_search: helper.use_agentic_search,
         })
     }
 }

@@ -126,6 +126,12 @@ impl From<DBError> for ServiceError {
     }
 }
 
+impl From<actix_web::Error> for ServiceError {
+    fn from(error: actix_web::Error) -> Self {
+        ServiceError::InternalServerError(error.to_string())
+    }
+}
+
 pub fn custom_json_error_handler(
     err: JsonPayloadError,
     _req: &actix_web::HttpRequest,
