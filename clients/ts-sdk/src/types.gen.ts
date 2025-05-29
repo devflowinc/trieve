@@ -1087,6 +1087,10 @@ export type CreateMessageReqPayload = {
      */
     no_result_message?: (string) | null;
     /**
+     * Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.
+     */
+    only_include_docs_used?: (boolean) | null;
+    /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
     page_size?: (number) | null;
@@ -1594,6 +1598,10 @@ export type EditMessageReqPayload = {
      * No result message for when there are no chunks found above the score threshold.
      */
     no_result_message?: (string) | null;
+    /**
+     * Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.
+     */
+    only_include_docs_used?: (boolean) | null;
     /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
@@ -3696,6 +3704,10 @@ export type RegenerateMessageReqPayload = {
      */
     no_result_message?: (string) | null;
     /**
+     * Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.
+     */
+    only_include_docs_used?: (boolean) | null;
+    /**
      * Page size is the number of chunks to fetch during RAG. If 0, then no search will be performed. If specified, this will override the N retrievals to include in the dataset configuration. Default is None.
      */
     page_size?: (number) | null;
@@ -4525,7 +4537,7 @@ export type SuggestedQueriesReqPayload = {
     context?: (string) | null;
     filters?: ((ChunkFilter) | null);
     /**
-     * Whether of not the suggested queries are being generated for ecomm. If true, the suggested queries will be generated for ecomm. If false, the suggested queries will be generated for non-ecomm.
+     * Whether of not the suggested queries are being generated for ecommerce.
      */
     is_ecommerce?: (boolean) | null;
     /**

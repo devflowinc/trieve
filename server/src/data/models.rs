@@ -4547,6 +4547,7 @@ impl ApiKeyRequestParams {
             typo_options: self.typo_options.or(payload.typo_options),
             metadata: payload.metadata,
             use_agentic_search: payload.use_agentic_search,
+            only_include_docs_used: payload.only_include_docs_used,
         }
     }
 
@@ -9432,6 +9433,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             use_quote_negated_terms: Option<bool>,
             remove_stop_words: Option<bool>,
             typo_options: Option<TypoOptions>,
+            pub only_include_docs_used: Option<bool>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -9472,6 +9474,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             remove_stop_words: helper.remove_stop_words,
             typo_options: helper.typo_options,
             use_agentic_search: helper.use_agentic_search,
+            only_include_docs_used: helper.only_include_docs_used,
         })
     }
 }
@@ -9506,6 +9509,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub typo_options: Option<TypoOptions>,
             pub rag_context: Option<String>,
             pub use_agentic_search: Option<bool>,
+            pub only_include_docs_used: Option<bool>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -9543,6 +9547,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             typo_options: helper.typo_options,
             rag_context: helper.rag_context,
             use_agentic_search: helper.use_agentic_search,
+            only_include_docs_used: helper.only_include_docs_used,
         })
     }
 }
@@ -9581,6 +9586,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub typo_options: Option<TypoOptions>,
             pub rag_context: Option<String>,
             pub use_agentic_search: Option<bool>,
+            pub only_include_docs_used: Option<bool>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -9622,6 +9628,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             typo_options: helper.typo_options,
             rag_context: helper.rag_context,
             use_agentic_search: helper.use_agentic_search,
+            only_include_docs_used: helper.only_include_docs_used,
         })
     }
 }

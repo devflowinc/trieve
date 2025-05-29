@@ -106,6 +106,8 @@ pub struct CreateMessageReqPayload {
     pub context_options: Option<ContextOptions>,
     /// No result message for when there are no chunks found above the score threshold.
     pub no_result_message: Option<String>,
+    /// Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.
+    pub only_include_docs_used: Option<bool>,
     /// The currency to use for the completion. If not specified, this defaults to "USD".
     pub currency: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
@@ -271,6 +273,7 @@ pub async fn create_message(
         &dataset_config,
         previous_messages,
         create_message_data.use_agentic_search.unwrap_or(false),
+        create_message_data.only_include_docs_used.unwrap_or(false),
         new_message,
         dataset_org_plan_sub.dataset.id,
         &create_message_pool,
@@ -406,6 +409,8 @@ pub struct RegenerateMessageReqPayload {
     pub context_options: Option<ContextOptions>,
     /// No result message for when there are no chunks found above the score threshold.
     pub no_result_message: Option<String>,
+    /// Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.
+    pub only_include_docs_used: Option<bool>,
     /// The currency symbol to use for the completion. If not specified, this defaults to "$".
     pub currency: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
@@ -460,6 +465,8 @@ pub struct EditMessageReqPayload {
     pub context_options: Option<ContextOptions>,
     /// No result message for when there are no chunks found above the score threshold.
     pub no_result_message: Option<String>,
+    /// Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.
+    pub only_include_docs_used: Option<bool>,
     /// The currency symbol to use for the completion. If not specified, this defaults to "$".
     pub currency: Option<String>,
     /// Search_type can be either "semantic", "fulltext", or "hybrid". "hybrid" will pull in one page (10 chunks) of both semantic and full-text results then re-rank them using scores from a cross encoder model. "semantic" will pull in one page (10 chunks) of the nearest cosine distant vectors. "fulltext" will pull in one page (10 chunks) of full-text results based on SPLADE. Default is "hybrid".
@@ -517,6 +524,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             metadata: data.metadata,
             rag_context: data.rag_context,
             use_agentic_search: data.use_agentic_search,
+            only_include_docs_used: data.only_include_docs_used,
         }
     }
 }
@@ -548,6 +556,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             metadata: data.metadata,
             rag_context: data.rag_context,
             use_agentic_search: data.use_agentic_search,
+            only_include_docs_used: data.only_include_docs_used,
         }
     }
 }
