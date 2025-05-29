@@ -10,6 +10,7 @@ import {
   CreateDatasetReqPayload,
   Dataset,
   DatasetAndUsage,
+  DatasetQueueLengthsResponse,
   DatasetUsageCount,
   EventReturn,
   FileData,
@@ -299,4 +300,20 @@ export async function getPagefindUrl(
     },
     signal
   ) as Promise<GetPagefindIndexResponse>;
+}
+
+export async function getDatasetQueueLengths(
+  /** @hidden */
+  this: TrieveSDK,
+  datasetId: string,
+  signal?: AbortSignal
+): Promise<DatasetQueueLengthsResponse> {
+  return this.trieve.fetch(
+    "/api/dataset/get_dataset_queue_lengths",
+    "get",
+    {
+      datasetId,
+    },
+    signal
+  ) as Promise<DatasetQueueLengthsResponse>;
 }

@@ -10,12 +10,12 @@ use crate::operators::parse_operator::convert_html_to_text;
 use crate::operators::qdrant_operator::{
     delete_points_from_qdrant, get_qdrant_collection_from_dataset_config, scroll_dataset_points,
 };
-use broccoli_queue::queue::BroccoliQueue;
 use crate::{
     data::models::{ChunkMetadata, Pool},
     errors::ServiceError,
 };
 use actix_web::web;
+use broccoli_queue::queue::BroccoliQueue;
 use chrono::NaiveDateTime;
 use clickhouse::Row;
 use dateparser::DateTimeUtc;
@@ -2972,9 +2972,14 @@ pub async fn get_chunk_queue_length(
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
     let premium_ingestion_queue_status = broccoli_queue
-        .queue_status("premium_ingestion".to_string(), Some(dataset_id.to_string()))
+        .queue_status(
+            "premium_ingestion".to_string(),
+            Some(dataset_id.to_string()),
+        )
         .await
         .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
 
-    Ok(openai_ingestion_queue_status.size as i64 + regular_ingestion_queue_status.size as i64 + premium_ingestion_queue_status.size as i64)
+    Ok(openai_ingestion_queue_status.size as i64
+        + regular_ingestion_queue_status.size as i64
+        + premium_ingestion_queue_status.size as i64)
 }

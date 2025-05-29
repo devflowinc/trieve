@@ -11,6 +11,7 @@ import {
   AiOutlineLeft,
   AiOutlineMessage,
   AiOutlineSearch,
+  AiOutlineReload,
 } from "solid-icons/ai";
 import { Spacer } from "./Spacer";
 import { Portal } from "solid-js/web";
@@ -24,14 +25,19 @@ import { TbSparkles, TbTimelineEventText, TbTransform } from "solid-icons/tb";
 import { createSignal } from "solid-js";
 import NewDatasetModal from "../components/NewDatasetModal";
 import { ImNewspaper } from "solid-icons/im";
+import { useTrieve } from "../hooks/useTrieve";
+import { createQuery } from "@tanstack/solid-query";
 
-const searchUiURL = import.meta.env.VITE_SEARCH_UI_URL as string;
-const chatUiURL = import.meta.env.VITE_CHAT_UI_URL as string;
+const searchUiURL =
+  (import.meta.env.VITE_SEARCH_UI_URL as string | undefined) ?? "";
+const chatUiURL =
+  (import.meta.env.VITE_CHAT_UI_URL as string | undefined) ?? "";
 
 export const DashboardSidebar = () => {
   const { datasetId } = useContext(DatasetContext);
   const userContext = useContext(UserContext);
   const pathname = useLocation();
+  const trieve = useTrieve();
 
   const [newDatasetModalOpen, setNewDatasetModalOpen] =
     createSignal<boolean>(false);
@@ -62,6 +68,91 @@ export const DashboardSidebar = () => {
       })?.role ?? 0
     );
   });
+
+  const uploadStatusQuery = createQuery(() => ({
+    queryKey: ["upload-status", datasetId()],
+    queryFn: async () => {
+      return await trieve.fetch(
+        "/api/dataset/get_dataset_queue_lengths",
+        "get",
+        {
+          datasetId: datasetId(),
+        },
+      );
+    },
+    refetchInterval: 5000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    enabled: !!datasetId(),
+  }));
+
+  const UploadStatusBar = () => {
+    return (
+      <div class="space-y-2 p-2">
+        <div class="flex flex-col justify-between">
+          <div class="text-sm font-medium text-neutral-700">
+            Processing Queue
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-neutral-500">Updates every 5 seconds</span>
+            <button
+              onClick={() => {
+                void uploadStatusQuery.refetch();
+              }}
+              class="flex items-center gap-1 text-neutral-500 hover:text-fuchsia-500"
+              title="Reload status"
+            >
+              <AiOutlineReload
+                size={14}
+                classList={{
+                  "animate-spin": uploadStatusQuery.isFetching,
+                }}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between text-xs text-neutral-600">
+            <span>Files</span>
+            <span>{uploadStatusQuery.data?.file_queue_length ?? 0} files</span>
+          </div>
+          <div class="h-2 w-full rounded-full bg-neutral-200">
+            <div
+              class="h-2 rounded-full bg-blue-500 transition-all duration-300"
+              style={{
+                width: `${Math.min(
+                  ((uploadStatusQuery.data?.file_queue_length ?? 0) / 20) * 100,
+                  100,
+                )}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between text-xs text-neutral-600">
+            <span>Chunk Batches</span>
+            <span>
+              {uploadStatusQuery.data?.chunk_queue_length ?? 0} batches
+            </span>
+          </div>
+          <div class="h-2 w-full rounded-full bg-neutral-200">
+            <div
+              class="h-2 rounded-full bg-orange-500 transition-all duration-300"
+              style={{
+                width: `${Math.min(
+                  ((uploadStatusQuery.data?.chunk_queue_length ?? 0) / 1000) *
+                    100,
+                  100,
+                )}%`,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const Link = (props: {
     href: string;
@@ -238,6 +329,10 @@ export const DashboardSidebar = () => {
                 label="Manage Dataset"
               />
             </Show>
+          </div>
+          <div class="gap flex flex-col pt-4">
+            <SectionLabel>Upload Status</SectionLabel>
+            <UploadStatusBar />
           </div>
         </div>
       </div>

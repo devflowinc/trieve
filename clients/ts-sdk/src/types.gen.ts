@@ -1470,6 +1470,17 @@ export type DatasetFilePathParams = {
     page: number;
 };
 
+export type DatasetQueueLengthsResponse = {
+    /**
+     * Number of chunks in the queue for the dataset
+     */
+    chunk_queue_length: number;
+    /**
+     * Number of files in the queue for the dataset
+     */
+    file_queue_length: number;
+};
+
 export type DatasetUsageCount = {
     chunk_count: number;
     dataset_id: string;
@@ -6012,6 +6023,15 @@ export type GetAllTagsData = {
 
 export type GetAllTagsResponse2 = (GetAllTagsResponse);
 
+export type GetDatasetQueueLengthsData = {
+    /**
+     * The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.
+     */
+    trDataset: string;
+};
+
+export type GetDatasetQueueLengthsResponse = (DatasetQueueLengthsResponse);
+
 export type GetGroupsForDatasetData = {
     /**
      * The cursor offset for. Requires `use_cursor` = True. Defaults to `00000000-00000000-00000000-00000000`. Group ids are compared to the cursor using a greater than or equal to.
@@ -7806,6 +7826,21 @@ export type $OpenApiTs = {
                 200: GetAllTagsResponse;
                 /**
                  * Service error relating to finding items by tag
+                 */
+                400: ErrorResponseBody;
+            };
+        };
+    };
+    '/api/dataset/get_dataset_queue_lengths': {
+        get: {
+            req: GetDatasetQueueLengthsData;
+            res: {
+                /**
+                 * Queue lengths for file and chunk creation
+                 */
+                200: DatasetQueueLengthsResponse;
+                /**
+                 * Service error relating to getting the queue lengths
                  */
                 400: ErrorResponseBody;
             };

@@ -261,6 +261,7 @@ impl Modify for SecurityAddon {
         handlers::dataset_handler::get_pagefind_index_for_dataset,
         handlers::dataset_handler::clear_dataset,
         handlers::dataset_handler::clone_dataset,
+        handlers::dataset_handler::get_dataset_queue_lengths,
         handlers::payment_handler::direct_to_payment_link,
         handlers::payment_handler::cancel_subscription,
         handlers::payment_handler::update_subscription_plan,

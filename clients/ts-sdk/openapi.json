@@ -4239,6 +4239,57 @@
         ]
       }
     },
+    "/api/dataset/get_dataset_queue_lengths": {
+      "get": {
+        "tags": [
+          "Dataset"
+        ],
+        "summary": "Get file and chunk creation queue lengths",
+        "description": "Get the queue lengths for file and chunk creation.",
+        "operationId": "get_dataset_queue_lengths",
+        "parameters": [
+          {
+            "name": "TR-Dataset",
+            "in": "header",
+            "description": "The dataset id or tracking_id to use for the request. We assume you intend to use an id if the value is a valid uuid.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Queue lengths for file and chunk creation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetQueueLengthsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Service error relating to getting the queue lengths",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": [
+              "readonly"
+            ]
+          }
+        ]
+      }
+    },
     "/api/dataset/groups/{dataset_id}/{page}": {
       "get": {
         "tags": [
@@ -12388,6 +12439,25 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "DatasetQueueLengthsResponse": {
+        "type": "object",
+        "required": [
+          "file_queue_length",
+          "chunk_queue_length"
+        ],
+        "properties": {
+          "chunk_queue_length": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of chunks in the queue for the dataset"
+          },
+          "file_queue_length": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of files in the queue for the dataset"
           }
         }
       },
