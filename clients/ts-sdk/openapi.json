@@ -12347,6 +12347,14 @@
             "description": "The temperature to use",
             "nullable": true
           },
+          "TOOL_CONFIGURATION": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ToolConfiguration"
+              }
+            ],
+            "nullable": true
+          },
           "USE_MESSAGE_TO_QUERY_PROMPT": {
             "type": "boolean",
             "description": "Whether to use the message to query prompt",
@@ -17524,6 +17532,31 @@
           "lte": 1
         }
       },
+      "QueryToolOptions": {
+        "type": "object",
+        "properties": {
+          "max_price_option_description": {
+            "type": "string",
+            "nullable": true
+          },
+          "min_price_option_description": {
+            "type": "string",
+            "nullable": true
+          },
+          "price_filter_description": {
+            "type": "string",
+            "nullable": true
+          },
+          "query_parameter_description": {
+            "type": "string",
+            "nullable": true
+          },
+          "tool_description": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "QueryTypes": {
         "oneOf": [
           {
@@ -22693,6 +22726,19 @@
           }
         ],
         "description": "Specifies which tokenizer to use for the chunking process.\n\nThis type supports two ways of specifying a tokenizer:\n1. Using a predefined tokenizer from the `Tokenizer` enum\n2. Using any Hugging Face tokenizer by providing its model ID as a string\n(e.g. \"facebook/bart-large\", \"Qwen/Qwen-tokenizer\", etc.)\n\nWhen using a string, any valid Hugging Face tokenizer ID can be specified,\nwhich will be loaded using the Hugging Face tokenizers library."
+      },
+      "ToolConfiguration": {
+        "type": "object",
+        "properties": {
+          "query_tool_options": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QueryToolOptions"
+              }
+            ],
+            "nullable": true
+          }
+        }
       },
       "ToolFunction": {
         "type": "object",
