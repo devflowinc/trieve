@@ -714,8 +714,8 @@ const PublicPageControls = () => {
                   typeof q === "string"
                     ? q
                     : q.query
-                    ? q.query + "," + (q.imageUrl ?? "")
-                    : q.query ?? "",
+                      ? q.query + "," + (q.imageUrl ?? "")
+                      : q.query ?? "",
                 ) || []
               }
               onChange={(e) => {
