@@ -484,6 +484,202 @@ export const LLMSettings = (props: {
               </div>
             </div>
           </div>
+
+          {/* Tool Settings */}
+          <div class="mt-6">
+            <span>
+              <h2 class="flex items-center gap-2 text-lg font-semibold leading-6">
+                Tool Settings
+                <Tooltip
+                  body={<AiOutlineInfoCircle />}
+                  tooltipText="Tools are used to configure the prompt which is used to transform user prompts into search queries which hit the retrieval sub-system."
+                />
+              </h2>
+              <hr class="mt-2" />
+            </span>
+
+            <div class="mt-4 grid grid-cols-4 gap-x-6 gap-y-3">
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="messageToQueryPrompt"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Query Tool Description
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="Description of the query tool. This will be used to describe the query tool to the LLM."
+                  />
+                </label>
+                <textarea
+                  value={
+                    props.serverConfig()?.TOOL_CONFIGURATION?.query_tool_options
+                      ?.tool_description ?? ""
+                  }
+                  onInput={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        TOOL_CONFIGURATION: {
+                          ...prev.TOOL_CONFIGURATION,
+                          query_tool_options: {
+                            ...prev.TOOL_CONFIGURATION?.query_tool_options,
+                            tool_description: e.currentTarget.value,
+                          },
+                        },
+                      };
+                    })
+                  }
+                  rows="4"
+                  name="queryToolDescription"
+                  id="queryToolDescription"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="queryParameterDescription"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Query Parameter Description
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="Description of the query parameter. This will be used to describe the query parameter to the LLM."
+                  />
+                </label>
+                <textarea
+                  value={
+                    props.serverConfig()?.TOOL_CONFIGURATION?.query_tool_options
+                      ?.query_parameter_description ?? ""
+                  }
+                  onInput={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        TOOL_CONFIGURATION: {
+                          ...prev.TOOL_CONFIGURATION,
+                          query_tool_options: {
+                            ...prev.TOOL_CONFIGURATION?.query_tool_options,
+                            query_parameter_description: e.currentTarget.value,
+                          },
+                        },
+                      };
+                    })
+                  }
+                  rows="4"
+                  name="queryParameterDescription"
+                  id="queryParameterDescription"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="priceFilterDescription"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Price Filter Description
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="Description of the price filter. This will be used to describe the price filter to the LLM."
+                  />
+                </label>
+                <textarea
+                  value={
+                    props.serverConfig().TOOL_CONFIGURATION?.query_tool_options
+                      ?.price_filter_description ?? ""
+                  }
+                  onInput={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        TOOL_CONFIGURATION: {
+                          ...prev.TOOL_CONFIGURATION,
+                          query_tool_options: {
+                            ...prev.TOOL_CONFIGURATION?.query_tool_options,
+                            price_filter_description: e.currentTarget.value,
+                          },
+                        },
+                      };
+                    })
+                  }
+                  rows="4"
+                  name="priceFilterDescription"
+                  id="priceFilterDescription"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="maxPriceOptionDescription"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Max Price Option Description
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="Description of the max price option. This will be used to describe the max price option to the LLM."
+                  />
+                </label>
+                <textarea
+                  value={
+                    props.serverConfig()?.TOOL_CONFIGURATION?.query_tool_options
+                      ?.max_price_option_description ?? ""
+                  }
+                  onInput={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        TOOL_CONFIGURATION: {
+                          ...prev.TOOL_CONFIGURATION,
+                          query_tool_options: {
+                            ...prev.TOOL_CONFIGURATION?.query_tool_options,
+                            max_price_option_description: e.currentTarget.value,
+                          },
+                        },
+                      };
+                    })
+                  }
+                  name="maxPriceOptionDescription"
+                  id="maxPriceOptionDescription"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="minPriceOptionDescription"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  Min Price Option Description
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="Description of the min price option. This will be used to describe the min price option to the LLM."
+                  />
+                </label>
+                <textarea
+                  value={
+                    props.serverConfig()?.TOOL_CONFIGURATION?.query_tool_options
+                      ?.min_price_option_description ?? ""
+                  }
+                  onInput={(e) =>
+                    props.setServerConfig((prev) => {
+                      return {
+                        ...prev,
+                        TOOL_CONFIGURATION: {
+                          ...prev.TOOL_CONFIGURATION,
+                          query_tool_options: {
+                            ...prev.TOOL_CONFIGURATION?.query_tool_options,
+                            min_price_option_description: e.currentTarget.value,
+                          },
+                        },
+                      };
+                    })
+                  }
+                  name="minPriceOptionDescription"
+                  id="minPriceOptionDescription"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </form>
