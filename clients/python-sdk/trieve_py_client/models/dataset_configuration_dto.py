@@ -315,7 +315,7 @@ class DatasetConfigurationDTO(BaseModel):
             "STOP_TOKENS": obj.get("STOP_TOKENS"),
             "SYSTEM_PROMPT": obj.get("SYSTEM_PROMPT"),
             "TEMPERATURE": obj.get("TEMPERATURE"),
-            "USE_MESSAGE_TO_QUERY_PROMPT": obj.get("USE_MESSAGE_TO_QUERY_PROMPT")
+            "USE_MESSAGE_TO_QUERY_PROMPT": obj.get("USE_MESSAGE_TO_QUERY_PROMPT"),
             "AIMON_RERANKER_TASK_DEFINITION": obj.get("AIMON_RERANKER_TASK_DEFINITION")
         })
         return _obj
