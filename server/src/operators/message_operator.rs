@@ -178,18 +178,45 @@ pub async fn create_messages_query(
 }
 
 const AGENTIC_SEARCH_SYSTEM_PROMPT: &str = r#"
-You have access to a search tool that can be used to query the knowledge base for information when you need to find out more information 
-to accurately answer the user's question.
+You are a smart assistant with access to a search tool that can query a knowledge base for accurate and relevant information. Use this tool when you need to find facts, product details, or pricing information to answer the user's question correctly.
+How to Use the Search Tool:
+When using the search tool, you must provide:
+    query: A string describing what you're looking for (e.g. "wireless headphones with noise cancellation").
+    price_filter (optional): An object that limits results based on price range.
 
-You provide this tool a query that you want to search the knowledge base for. You can use this tool multiple times if the information you 
-need is not found in the first search. For example, if the user was to ask about "What are the flagship products of the company?", 
-you would use the tool to search for "flagship products" and then if that didn't return enough info, you can use the tool again with the 
-gained context about the company to create a new more specific query to get more information.
+Example with price filter:
+If a user asks:
+“Find laptops under $1000”
 
-You will also be given a list of chunks that you can use to answer the user's question.
+Your query should be:
+{
+  "query": "laptops",
+  "price_filter": {
+    "min": null,
+    "max": 1000
+  }
+}
 
-If you use the search tool, you MUST use the chunks_used tool to respond with the chunks that you plan to use to generate your response. It will
-respond with the chunks you MUST include in your response to the user's question.
+You can also set both:
+{
+  "query": "4K TVs",
+  "price_filter": {
+    "min": 500,
+    "max": 1500
+  }
+}
+
+If price isn't relevant, you can leave the filter empty or set both min and max to null.
+Search Process:
+Start with a simple query, with or without a price filter.
+Refine your query using the results if you don’t get enough useful info.
+Repeat until you're confident you can answer well.
+
+Important:
+If you use the search tool, you must use the chunks_used tool to select the relevant content before writing your reply.
+Your response must be based only on the selected chunks.
+You can use the search tool multiple times to gather more context.
+Your job is to be accurate, helpful, and complete—based only on what you find. Be smart, be curious, and use price filters when needed to meet the user's needs.
 "#;
 
 const STRUCTURE_SYSTEM_PROMPT: &str = r#"
@@ -2158,14 +2185,18 @@ pub async fn stream_response_with_agentic_search(
         let final_response = if completion_first {
             format!(
                 "{}||{}",
-                serde_json::to_string(&searched_chunks).unwrap_or_default(),
+                serde_json::to_string(&searched_chunks)
+                    .unwrap_or_default()
+                    .replace("||", ""),
                 response_text
             )
         } else {
             format!(
                 "{}||{}",
                 response_text,
-                serde_json::to_string(&searched_chunks).unwrap_or_default(),
+                serde_json::to_string(&searched_chunks)
+                    .unwrap_or_default()
+                    .replace("||", ""),
             )
         };
 
@@ -2318,12 +2349,12 @@ pub async fn stream_response_with_agentic_search(
                                         content_buffer.push_str(&format!(
                                             "{}||",
                                             serde_json::to_string(&searched_chunks)
-                                                .unwrap_or_default()
+                                                .unwrap_or_default().replace("||", "")
                                         ));
                                         response_text.push_str(&format!(
                                             "{}||",
                                             serde_json::to_string(&searched_chunks)
-                                                .unwrap_or_default()
+                                                .unwrap_or_default().replace("||", "")
                                         ));
                                     }
                                     content_buffer.push_str(text);
