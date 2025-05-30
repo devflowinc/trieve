@@ -691,6 +691,8 @@ impl Modify for SecurityAddon {
             data::models::TopicQuery,
             data::models::TopicAnalyticsFilter,
             data::models::TopPages,
+            data::models::QueryToolOptions,
+            data::models::ToolConfiguration,
             data::models::FloatRange,
             data::models::RecommendationUsageGraphResponse,
             data::models::RecommendationsPerUserResponse,
