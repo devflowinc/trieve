@@ -1454,6 +1454,7 @@ export type DatasetConfigurationDTO = {
      * The temperature to use
      */
     TEMPERATURE?: (number) | null;
+    TOOL_CONFIGURATION?: ((ToolConfiguration) | null);
     /**
      * Whether to use the message to query prompt
      */
@@ -3308,6 +3309,14 @@ export type QueryRatingRange = {
     lte?: (number) | null;
 };
 
+export type QueryToolOptions = {
+    max_price_option_description?: (string) | null;
+    min_price_option_description?: (string) | null;
+    price_filter_description?: (string) | null;
+    query_parameter_description?: (string) | null;
+    tool_description?: (string) | null;
+};
+
 /**
  * Query is the search query. This can be any string. The query will be used to create an embedding vector and/or SPLADE vector which will be used to find the result set.  You can either provide one query, or multiple with weights. Multi-query only works with Semantic Search and is not compatible with cross encoder re-ranking or highlights.
  */
@@ -4613,6 +4622,10 @@ export type TokenizerType = {
      * Examples: "Qwen/Qwen-tokenizer", "facebook/bart-large"
      */
     String: string;
+};
+
+export type ToolConfiguration = {
+    query_tool_options?: ((QueryToolOptions) | null);
 };
 
 /**
