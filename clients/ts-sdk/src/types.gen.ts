@@ -2265,6 +2265,10 @@ export type GenerateOffChunksReqPayload = {
      */
     metadata?: unknown;
     /**
+     * Model to use for the completion. If not specified, the default model configured for the dataset will be used.
+     */
+    model?: (string) | null;
+    /**
      * Presence penalty is a number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. Default is 0.7.
      */
     presence_penalty?: (number) | null;

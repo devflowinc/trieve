@@ -2523,6 +2523,8 @@ pub struct GenerateOffChunksReqPayload {
     pub image_config: Option<ImageConfig>,
     /// Context options to use for the completion. If not specified, all options will default to false.
     pub context_options: Option<ContextOptions>,
+    /// Model to use for the completion. If not specified, the default model configured for the dataset will be used.
+    pub model: Option<String>,
 }
 
 /// RAG on Specified Chunks
@@ -2584,7 +2586,10 @@ pub async fn generate_off_chunks(
 
     let base_url = dataset_config.LLM_BASE_URL;
     let rag_prompt = dataset_config.RAG_PROMPT.clone();
-    let chosen_model = dataset_config.LLM_DEFAULT_MODEL;
+    let chosen_model = data
+        .model
+        .clone()
+        .unwrap_or(dataset_config.LLM_DEFAULT_MODEL);
 
     let base_url = if base_url.is_empty() {
         "https://openrouter.ai/api/v1".into()

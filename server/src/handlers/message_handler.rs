@@ -289,6 +289,8 @@ pub async fn create_message(
             redis_pool,
             dataset_config,
             create_message_data,
+            #[cfg(feature = "hallucination-detection")]
+            hallucination_detector,
         )
         .await
     } else {
@@ -704,6 +706,8 @@ pub async fn regenerate_message_patch(
                 redis_pool,
                 dataset_config,
                 create_message_data,
+                #[cfg(feature = "hallucination-detection")]
+                hallucination_detector,
             )
             .await;
         } else {
@@ -792,6 +796,8 @@ pub async fn regenerate_message_patch(
             redis_pool,
             dataset_config,
             create_message_data,
+            #[cfg(feature = "hallucination-detection")]
+            hallucination_detector,
         )
         .await
     } else {

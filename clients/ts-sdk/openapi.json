@@ -14589,6 +14589,11 @@
             "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
             "nullable": true
           },
+          "model": {
+            "type": "string",
+            "description": "Model to use for the completion. If not specified, the default model configured for the dataset will be used.",
+            "nullable": true
+          },
           "presence_penalty": {
             "type": "number",
             "format": "float",

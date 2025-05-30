@@ -1698,7 +1698,7 @@ pub async fn stream_response_with_agentic_search(
     redis_pool: web::Data<RedisPool>,
     dataset_config: DatasetConfiguration,
     create_message_req_payload: CreateMessageReqPayload,
-    #[cfg(feature = "hallucination-detection")] hallucination_detector: web::Data<
+    #[cfg(feature = "hallucination-detection")] _hallucination_detector: web::Data<
         HallucinationDetector,
     >,
 ) -> Result<HttpResponse, actix_web::Error> {
