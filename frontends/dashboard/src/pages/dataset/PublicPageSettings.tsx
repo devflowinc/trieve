@@ -1343,7 +1343,7 @@ const PublicPageControls = () => {
                 </div>
                 <input
                   type="checkbox"
-                  checked={extraParams.showResultHighlights ?? true}
+                  checked={extraParams.showResultHighlights ?? false}
                   onChange={(e) => {
                     setExtraParams(
                       "showResultHighlights",

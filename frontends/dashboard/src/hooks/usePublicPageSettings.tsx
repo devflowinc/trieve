@@ -140,7 +140,7 @@ export const { use: usePublicPage, provider: PublicPageProvider } =
         extraParams.showResultHighlights === null ||
         extraParams.showResultHighlights === undefined
       ) {
-        setExtraParams("showResultHighlights", true);
+        setExtraParams("showResultHighlights", false);
       }
     });
 

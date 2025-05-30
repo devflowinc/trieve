@@ -313,7 +313,7 @@ const defaultProps = {
   defaultImageQuestion:
     "This is an image of a product that I want you to show similar recomendations for.",
   onAddToCart: undefined,
-  showResultHighlights: true,
+  showResultHighlights: false,
   initialAiMessage: undefined,
   ignoreEventListeners: false,
   hideOverlay: false,

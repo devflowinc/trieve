@@ -359,22 +359,15 @@ body {
 
     .ecomm-details {
       @apply tv-flex tv-gap-1 tv-items-center tv-text-center tv-flex-col tv-px-2;
-    }
 
-    .ecomm-item-title {
-      @apply tv-p-0 tv-line-clamp-4 tv-text-base tv-mb-0 tv-w-4/5;
-
-      mark {
-        @apply tv-bg-inherit;
-        color: var(--tv-prop-brand-color);
-
-        b {
-          @apply tv-font-semibold;
-        }
+      b {
+        @apply tv-font-semibold;
       }
     }
 
     .ecom-item-description {
+      @apply tv-line-clamp-2 tv-text-ellipsis;
+
       mark {
         @apply tv-bg-inherit;
         color: var(--tv-prop-brand-color);

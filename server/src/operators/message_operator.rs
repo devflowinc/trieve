@@ -14,7 +14,7 @@ use crate::data::models::{
     ChunkMetadataStringTagSetWithHighlightsScore, ChunkMetadataTypes, ConditionType, Dataset,
     DatasetConfiguration, FieldCondition, LLMOptions, MultiQuery, QdrantChunkMetadata, QueryTypes,
     RagQueryEventClickhouse, Range, RangeCondition, RedisPool, ScoreChunk, SearchMethod,
-    SearchModalities, SuggestType,
+    SearchModalities, SuggestType, MatchCondition,
 };
 use crate::diesel::prelude::*;
 use crate::get_env;
@@ -178,18 +178,28 @@ pub async fn create_messages_query(
 }
 
 const AGENTIC_SEARCH_SYSTEM_PROMPT: &str = r#"
-You have access to a search tool that can be used to query the knowledge base for information when you need to find out more information 
-to accurately answer the user's question.
+You are a smart, search-empowered assistant. You have access to a search tool that queries a knowledge base for relevant information. Use it anytime the user asks a question you can't confidently answer or when your answer would be better supported by additional facts.
 
-You provide this tool a query that you want to search the knowledge base for. You can use this tool multiple times if the information you 
-need is not found in the first search. For example, if the user was to ask about "What are the flagship products of the company?", 
-you would use the tool to search for "flagship products" and then if that didn't return enough info, you can use the tool again with the 
-gained context about the company to create a new more specific query to get more information.
+Your Tools:
+    search tool: Use to look up facts, concepts, or product details in the knowledge base.
+    chunks_used tool: If you use the search tool, you must follow up by choosing which chunks to use in your final response. These are the only chunks you're allowed to reference when generating your reply.
 
-You will also be given a list of chunks that you can use to answer the user's question.
+Your Search Process:
+    Start broad. Form a query based on key terms from the user's question (e.g., "flagship products").
+    Refine if needed. If the initial result doesn't have what you need, use what you did find to ask more targeted follow-up queries (e.g., "flagship products of X brand").
+    Repeat until you're confident you can answer clearly and accurately.
 
-If you use the search tool, you MUST use the chunks_used tool to respond with the chunks that you plan to use to generate your response. It will
-respond with the chunks you MUST include in your response to the user's question.
+Response Rules:
+    You must use the chunks_used tool to specify your sources before replying if you performed a search.
+    Your answer must be based only on the chunks you've selected.
+    Always integrate the search results into your reply using natural language, not copy-paste.
+    You can use the search tool more than once, especially when you're narrowing down vague questions or layered requests.
+
+Your Objective:
+Help users find accurate, useful answers based on the most relevant information in the knowledge base—whether they're asking about product comparisons, key features, company facts, technical documentation, or anything else.
+You're not guessing.
+You're verifying.
+Be curious, be iterative, be precise.
 "#;
 
 const STRUCTURE_SYSTEM_PROMPT: &str = r#"
@@ -1476,7 +1486,7 @@ async fn search_chunks(
     let query = search_params.query;
     let price_filter = search_params.price_filter;
 
-    let filters = create_message_req_payload.filters.clone();
+    let mut filters = create_message_req_payload.filters.clone();
     if let Some(price_filter) = price_filter {
         filters.map(|filter| {
             filter.must.map(|mut must| {
@@ -1656,6 +1666,8 @@ async fn handle_search_tool_call(
 ) -> Result<(Vec<ScoreChunk>, String), ServiceError> {
     let search_params = serde_json::from_str::<SearchParams>(&tool_call.function.arguments)
         .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
+
+    log::info!("search_params: {:?}", search_params);
 
     let results = search_chunks(
         create_message_req_payload.clone(),
