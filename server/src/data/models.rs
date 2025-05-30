@@ -2708,6 +2708,7 @@ pub struct DatasetConfiguration {
     pub DISABLE_ANALYTICS: bool,
     pub PAGEFIND_ENABLED: bool,
     pub AIMON_RERANKER_TASK_DEFINITION: String,
+    pub TOOL_CONFIGURATION: ToolConfiguration,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
@@ -2822,8 +2823,23 @@ pub struct DatasetConfigurationDTO {
     pub DISABLE_ANALYTICS: Option<bool>,
     /// Whether to enable pagefind indexing
     pub PAGEFIND_ENABLED: Option<bool>,
-
+    /// The tool configuration to use for the dataset
+    pub TOOL_CONFIGURATION: Option<ToolConfiguration>,
     pub AIMON_RERANKER_TASK_DEFINITION: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct QueryToolOptions {
+    pub tool_description: Option<String>,
+    pub query_parameter_description: Option<String>,
+    pub price_filter_description: Option<String>,
+    pub max_price_option_description: Option<String>,
+    pub min_price_option_description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct ToolConfiguration {
+    pub query_tool_options: Option<QueryToolOptions>,
 }
 
 impl From<DatasetConfigurationDTO> for DatasetConfiguration {
@@ -2882,6 +2898,15 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
             DISABLE_ANALYTICS: dto.DISABLE_ANALYTICS.unwrap_or(false),
             PAGEFIND_ENABLED: dto.PAGEFIND_ENABLED.unwrap_or(false),
             AIMON_RERANKER_TASK_DEFINITION: dto.AIMON_RERANKER_TASK_DEFINITION.unwrap_or("Your task is to grade the relevance of context document(s) against the specified user query.".to_string()),
+            TOOL_CONFIGURATION: dto.TOOL_CONFIGURATION.unwrap_or(ToolConfiguration {
+                query_tool_options: Some(QueryToolOptions {
+                    tool_description: Some("Search for relevant information in the knowledge base. You can use this tool multiple times if the information you need is not found in the first search.".to_string()),
+                    query_parameter_description: Some("The search query to find relevant information".to_string()),
+                    price_filter_description: Some("The price filter to use for the search".to_string()),
+                    max_price_option_description: Some("The maximum price to filter by".to_string()),
+                    min_price_option_description: Some("The minimum price to filter by".to_string()),
+                }),
+            }),
         }
     }
 }
@@ -2933,6 +2958,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
             DISABLE_ANALYTICS: Some(config.DISABLE_ANALYTICS),
             PAGEFIND_ENABLED: Some(config.PAGEFIND_ENABLED),
             AIMON_RERANKER_TASK_DEFINITION: Some(config.AIMON_RERANKER_TASK_DEFINITION),
+            TOOL_CONFIGURATION: Some(config.TOOL_CONFIGURATION),
         }
     }
 }
@@ -2979,7 +3005,16 @@ impl Default for DatasetConfiguration {
             DISABLE_ANALYTICS: false,
             PAGEFIND_ENABLED: false,
             AIMON_RERANKER_TASK_DEFINITION: "Your task is to grade the relevance of context document(s) against the specified user query.".to_string(),
-        }
+            TOOL_CONFIGURATION: ToolConfiguration {
+                query_tool_options: Some(QueryToolOptions {
+                    tool_description: Some("Search for relevant information in the knowledge base. You can use this tool multiple times if the information you need is not found in the first search.".to_string()),
+                    query_parameter_description: Some("The search query to find relevant information".to_string()),
+                    price_filter_description: Some("The price filter to use for the search".to_string()),
+                    max_price_option_description: Some("The maximum price to filter by".to_string()),
+                    min_price_option_description: Some("The minimum price to filter by".to_string()),
+                }),
+            },
+            }
     }
 }
 
@@ -3281,6 +3316,36 @@ impl DatasetConfiguration {
                     s.to_string()
                 }
             }).unwrap_or("Your task is to grade the relevance of context document(s) against the specified user query.".to_string()),
+            TOOL_CONFIGURATION: configuration
+                .get("TOOL_CONFIGURATION")
+                .unwrap_or(&json!(ToolConfiguration {
+                    query_tool_options: Some(QueryToolOptions {
+                        tool_description: Some("Search for relevant information in the knowledge base. You can use this tool multiple times if the information you need is not found in the first search.".to_string()),
+                        query_parameter_description: Some("The search query to find relevant information".to_string()),
+                        price_filter_description: Some("The price filter to use for the search".to_string()),
+                        max_price_option_description: Some("The maximum price to filter by".to_string()),
+                        min_price_option_description: Some("The minimum price to filter by".to_string()),
+                    }),
+                }))
+                .as_object()
+                .map(|o| ToolConfiguration {
+                    query_tool_options: o.get("query_tool_options").unwrap_or(&json!(None::<serde_json::Value>)).as_object().map(|o| QueryToolOptions {
+                        tool_description: o.get("tool_description").unwrap_or(&json!(None::<serde_json::Value>)).as_str().map(|s| s.to_string()),
+                        query_parameter_description: o.get("query_parameter_description").unwrap_or(&json!(None::<serde_json::Value>)).as_str().map(|s| s.to_string()),
+                        price_filter_description: o.get("price_filter_description").unwrap_or(&json!(None::<serde_json::Value>)).as_str().map(|s| s.to_string()),
+                        max_price_option_description: o.get("max_price_option_description").unwrap_or(&json!(None::<serde_json::Value>)).as_str().map(|s| s.to_string()),
+                        min_price_option_description: o.get("min_price_option_description").unwrap_or(&json!(None::<serde_json::Value>)).as_str().map(|s| s.to_string()),
+                    }),
+                })
+                .unwrap_or(ToolConfiguration {
+                    query_tool_options: Some(QueryToolOptions {
+                        tool_description: Some("Search for relevant information in the knowledge base. You can use this tool multiple times if the information you need is not found in the first search.".to_string()),
+                        query_parameter_description: Some("The search query to find relevant information".to_string()),
+                        price_filter_description: Some("The price filter to use for the search".to_string()),
+                        max_price_option_description: Some("The maximum price to filter by".to_string()),
+                        min_price_option_description: Some("The minimum price to filter by".to_string()),
+                    }),
+                }),
         }
     }
 
@@ -3326,6 +3391,7 @@ impl DatasetConfiguration {
             "DISABLE_ANALYTICS": self.DISABLE_ANALYTICS,
             "PAGEFIND_ENABLED": self.PAGEFIND_ENABLED,
             "AIMON_RERANKER_TASK_DEFINITION": self.AIMON_RERANKER_TASK_DEFINITION,
+            "TOOL_CONFIGURATION": self.TOOL_CONFIGURATION,
         })
     }
 }
@@ -3649,6 +3715,10 @@ impl DatasetConfigurationDTO {
                 .AIMON_RERANKER_TASK_DEFINITION
                 .clone()
                 .unwrap_or(curr_dataset_config.AIMON_RERANKER_TASK_DEFINITION),
+            TOOL_CONFIGURATION: self
+                .TOOL_CONFIGURATION
+                .clone()
+                .unwrap_or(curr_dataset_config.TOOL_CONFIGURATION),
         }
     }
 }
