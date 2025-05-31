@@ -22,8 +22,7 @@ export const SuggestedQuestions = ({
   const { suggestedQuestions, isLoadingSuggestedQueries, getQuestions } =
     useSuggestedQuestions();
 
-  const { props, trieveSDK, fingerprint, abTreatment } =
-    useModalState();
+  const { props, trieveSDK, fingerprint, abTreatment } = useModalState();
   const [parent] = useAutoAnimate({ duration: 100 });
 
   if (messages.length) {
@@ -33,7 +32,13 @@ export const SuggestedQuestions = ({
   const handleSuggestedQuestion = async (
     q: AiQuestion | DefaultSearchQuery | string,
   ) => {
-    setCurrentQuestion(isAiQuestion(q) ? q.questionText : isDefaultSearchQuery(q) ? q.query ?? "" : q);
+    setCurrentQuestion(
+      isAiQuestion(q)
+        ? q.questionText
+        : isDefaultSearchQuery(q)
+          ? (q.query ?? "")
+          : q,
+    );
 
     if (!isDefaultSearchQuery(q)) {
       askQuestion(
@@ -44,7 +49,11 @@ export const SuggestedQuestions = ({
       );
     } else {
       askQuestion(
-        isAiQuestion(q) ? q.questionText : isDefaultSearchQuery(q) ? q.query ?? "" : q,
+        isAiQuestion(q)
+          ? q.questionText
+          : isDefaultSearchQuery(q)
+            ? (q.query ?? "")
+            : q,
         undefined,
         isAiQuestion(q) ? (q.products?.map((p) => p.groupId) ?? []) : undefined,
         isAiQuestion(q) && q.promptForAI !== "" ? q.promptForAI : undefined,
@@ -63,7 +72,11 @@ export const SuggestedQuestions = ({
       user_id: fingerprint,
       location: window.location.href,
       metadata: {
-        followup_query: isAiQuestion(q) ? q.questionText : isDefaultSearchQuery(q) ? q.query ?? "" : q,
+        followup_query: isAiQuestion(q)
+          ? q.questionText
+          : isDefaultSearchQuery(q)
+            ? (q.query ?? "")
+            : q,
         component_props: props,
         ab_treatment: abTreatment,
       },
@@ -117,13 +130,23 @@ export const SuggestedQuestions = ({
               onClick={() => {
                 handleSuggestedQuestion(q);
               }}
-              key={isAiQuestion(q) ? q.questionText : isDefaultSearchQuery(q) ? q.query ?? "": q}
+              key={
+                isAiQuestion(q)
+                  ? q.questionText
+                  : isDefaultSearchQuery(q)
+                    ? (q.query ?? "")
+                    : q
+              }
               className={`suggested-question tv-flex tv-gap-1 tv-items-center${
                 isLoadingSuggestedQueries ? " loading" : ""
               }`}
             >
               <SparklesIcon fill="none" width={15} height={15} />
-              {isAiQuestion(q) ? q.questionText : isDefaultSearchQuery(q) ? q.query ?? "": q}
+              {isAiQuestion(q)
+                ? q.questionText
+                : isDefaultSearchQuery(q)
+                  ? (q.query ?? "")
+                  : q}
             </button>
           ))}
         </div>

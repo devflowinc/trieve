@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { cn } from "../../utils/styles";
-import { useModalState, isDefaultSearchQuery } from "../../utils/hooks/modal-context";
+import {
+  useModalState,
+  isDefaultSearchQuery,
+} from "../../utils/hooks/modal-context";
 import { DefaultSearchQuery } from "trieve-ts-sdk";
 import { getSuggestedQueries } from "../../utils/trieve";
 
@@ -42,9 +45,11 @@ export const SuggestedQueries = () => {
 
   useEffect(() => {
     const defaultQueries =
-      props.defaultSearchQueries && props.defaultSearchQueries.length > 0 && isDefaultSearchQuery(props.defaultSearchQueries[0])
+      props.defaultSearchQueries &&
+      props.defaultSearchQueries.length > 0 &&
+      isDefaultSearchQuery(props.defaultSearchQueries[0])
         ? props.defaultSearchQueries
-        : props.defaultSearchQueries?.filter((q) => q !== "") ?? [];
+        : (props.defaultSearchQueries?.filter((q) => q !== "") ?? []);
 
     if (props.defaultSearchQueries?.length) {
       setSuggestedQueries(defaultQueries);
@@ -79,7 +84,9 @@ export const SuggestedQueries = () => {
         <div className="suggested-query loading">Loading...</div>
       ) : (
         suggestedQueries.map((q) => {
-          let query = isDefaultSearchQuery(q)  ? q.query?.replace(/^-|\*$/g, "") : q.replace(/^-|\*$/g, "");
+          let query = isDefaultSearchQuery(q)
+            ? q.query?.replace(/^-|\*$/g, "")
+            : q.replace(/^-|\*$/g, "");
           query = query?.trim();
           return (
             <button
