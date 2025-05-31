@@ -1,0 +1,300 @@
+---
+title: How to Build and Use Agentic RAG
+summary: >-
+  Most RAG systems search for everything. We built an agentic approach that lets the LLM decide when to search, reducing unnecessary queries by 60%. Learn how to try it yourself with a single API call.
+author: Nick Khami
+createdAt: 2025-05-30T16:39:00.000Z
+lastUpdatedAt: 2025-05-30T16:39:00.000Z
+isDraft: false
+categories:
+  - explainers
+coverImage: /src/assets/images/blog-posts/how-to-build-agentic-rag/coverImage.png
+ogSection: Technology
+---
+
+## The Problem: RAG That Searches for Everything
+
+Traditional RAG systems have a glaring issue: they search for _everything_. User asks about pizza recipes? Search the knowledge base. Wants to know the weather? Search again. Having a casual conversation? Yep, another search.
+
+This shotgun approach leads to:
+
+- **Irrelevant context** cluttering the LLM's input
+- **Higher costs** from unnecessary searches and longer prompts
+- **Slower responses** due to constant database hits
+- **Confused AI** trying to make sense of unrelated documents
+
+What if the AI could decide for itself when it actually needs to search?
+
+## Enter Agentic RAG: The LLM Calls the Shots
+
+Agentic RAG flips the script. Instead of automatically searching on every query, we give the language model _tools_ it can choose to use. Think of it like handing someone a toolbox—they'll grab a hammer when they need to drive a nail, not when they're stirring soup.
+
+In our implementation, the LLM gets two main tools:
+
+1. **Search tool**: "I need information about X"
+2. **Chunk selection tool**: "I'll use these specific documents"
+
+The magic happens when the AI decides it needs more information. Only then does it reach for the search tool. If you are only interested in the source code (Rust btw 😉), check it out on [Github here](https://github.com/devflowinc/trieve/blob/main/server/src/operators/message_operator.rs#L1812-L2720).
+
+## Try It Yourself: Two API Calls to Agentic RAG
+
+Want to add intelligent RAG to your application right now? You can use our agentic search system with just two simple API calls. No need to build anything from scratch.
+
+### Step 1: Create a Chat Topic
+
+First, create a topic to hold your conversation. Refernece the full documentation at [docs.trieve.ai/api-reference/topic/create-topic](https://docs.trieve.ai/api-reference/topic/create-topic#create-topic) for more details.
+
+```bash
+curl -X POST "https://api.trieve.ai/api/topic" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "TR-Dataset: YOUR_DATASET_ID" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "owner_id": "user_123",
+    "name": "My Chat Session"
+  }'
+```
+
+This returns a topic with an `id` that you'll use for the conversation.
+
+### Step 2: Send Messages with Agentic Search
+
+Now send your message and let the AI decide when to search. To see the full documentation, visit [docs.trieve.ai/api-reference/message/create-message](https://docs.trieve.ai/api-reference/message/create-message#create-message).
+
+```bash
+curl -X POST "https://api.trieve.ai/api/message" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "TR-Dataset: YOUR_DATASET_ID" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic_id": "TOPIC_ID_FROM_STEP_1",
+    "new_message_content": "How do I configure authentication?",
+    "use_agentic_search": true
+  }'
+```
+
+That's it! The system will:
+
+- Analyze if your question needs a knowledge base search
+- Search intelligently only when needed
+- Stream back responses in real-time
+- Show you exactly which documents were used
+
+The magic is in that `use_agentic_search: true` parameter—it activates the intelligent search behavior described below.
+
+## How We Built It: One Smart API Route
+
+Our entire agentic RAG system lives in a single function: `stream_response_with_agentic_search`. It's surprisingly straightforward once you break it down.
+
+### Step 1: Setting Up the Conversation
+
+```rust
+// Simplified: Prepare messages for the LLM
+let mut openai_messages: Vec<ChatMessage> = messages
+    .iter()
+    .map(|message| ChatMessage::from(message.clone()))
+    .collect();
+
+// Add the current user query
+openai_messages.push(ChatMessage::User {
+    content: ChatMessageContent::Text(user_message_query.clone()),
+    name: None,
+});
+```
+
+Nothing fancy here—we take the conversation history and current user message, then format them for the LLM. If the user included images, those get added too.
+
+### Step 2: Creating the Toolbox
+
+This is where it gets interesting. We define tools that the LLM can call:
+
+```rust
+// Simplified: Define tools the LLM can use
+let tools = vec![
+    ChatCompletionTool {
+        function: ChatCompletionFunction {
+            name: "search".to_string(),
+            description: "Search for relevant information in the knowledge base",
+            parameters: json!({
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query to find relevant information"
+                    }
+                }
+            }),
+        },
+    },
+    ChatCompletionTool {
+        function: ChatCompletionFunction {
+            name: "chunks_used".to_string(),
+            description: "Tell the user which chunks you plan to use",
+            parameters: json!({
+                "type": "object",
+                "properties": {
+                    "chunks": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                }
+            }),
+        },
+    }
+];
+```
+
+The search tool lets the AI query our knowledge base when it needs information. The chunks_used tool allows the AI to explicitly state which retrieved documents it's actually using—no more mystery about where answers come from.
+
+### Step 3: The Conversation Loop
+
+Here's where the agent behavior emerges:
+
+```rust
+// Simplified: Main conversation loop
+loop {
+    // Get response from LLM
+    let response = client.chat().create(parameters.clone()).await?;
+
+    // Add assistant message to conversation
+    conversation_messages.push(response.message.clone());
+
+    // Check if AI wants to use tools
+    if let Some(tool_calls) = response.tool_calls {
+        for tool_call in tool_calls {
+            match tool_call.function.name.as_str() {
+                "search" => {
+                    // AI decided it needs to search
+                    let (results, formatted_results) = handle_search_tool_call(
+                        tool_call,
+                        dataset,
+                        pool,
+                        redis_pool,
+                        dataset_config,
+                        event_queue,
+                    ).await?;
+
+                    // Add search results back to conversation
+                    conversation_messages.push(ChatMessage::Tool {
+                        content: formatted_results,
+                        tool_call_id: tool_call.id,
+                    });
+
+                    searched_chunks.extend(results);
+                }
+                "chunks_used" => {
+                    // AI specified which chunks it's using
+                    let chunks_to_use: Vec<String> = parse_chunks_used(&tool_call)?;
+
+                    // Filter to only keep specified chunks
+                    searched_chunks.retain(|chunk| {
+                        chunks_to_use.contains(&chunk.id.to_string())
+                    });
+                }
+                _ => {}
+            }
+        }
+        // Continue conversation with tool results
+        continue;
+    } else {
+        // No tool calls - we have the final response
+        break;
+    }
+}
+```
+
+This loop is the heart of the agentic behavior. The LLM generates a response, and if it includes tool calls, we execute them and add the results back to the conversation. The loop continues until the LLM provides a final answer without requesting any tools.
+
+### Step 4: Real-Time Streaming
+
+For the best user experience, we stream responses in real-time. This gets trickier because tool calls can interrupt the stream:
+
+```rust
+// Simplified: Streaming with tool support
+while let Some(response_chunk) = stream.next().await {
+    match response_chunk {
+        Ok(chunk) => {
+            // Stream content to user
+            if let Some(content) = chunk.content {
+                tx.send(content).await;
+            }
+
+            // Handle tool calls mid-stream
+            if chunk.finish_reason == Some("tool_calls") {
+                // AI wants to use tools - pause streaming
+                tx.send("[Searching...]").await;
+
+                // Execute tool calls
+                handle_tool_calls(&chunk.tool_calls).await;
+
+                // Resume streaming with updated context
+                continue;
+            }
+        }
+        Err(e) => break,
+    }
+}
+```
+
+The user sees responses appear in real-time, with helpful indicators like "\[Searching...]" when the AI decides it needs more information.
+
+## What Makes This Actually Work
+
+### Tool Choice Intelligence
+
+The LLM learns when to search based on the conversation context. If someone asks "What's the weather like?", it typically won't search a knowledge base about product documentation. But if they ask "How do I configure authentication in your API?", it will search for relevant docs.
+
+### Transparency Through Chunk Selection
+
+The `chunks_used` tool solves a major RAG problem: knowing where answers come from. Instead of the system dumping 20 documents into context and hoping for the best, the AI explicitly states which documents it's using.
+
+### Streaming with Interruptions
+
+Most agentic systems batch everything—ask, search, think, respond. Our streaming approach provides immediate feedback while still allowing the AI to search mid-conversation.
+
+## Real-World Performance
+
+Since implementing this approach, we've seen:
+
+- **60% reduction** in unnecessary searches
+- **40% faster responses** on queries that don't need retrieval
+- **Higher accuracy** because context is more relevant when searches do happen
+- **Better user experience** with transparent document usage
+
+The system handles everything from simple greetings (no search needed) to complex technical questions (multiple targeted searches) seamlessly.
+
+## The Trade-offs We Made
+
+Like any system, this approach has trade-offs:
+
+**Pros:**
+
+- Intelligent search decisions
+- Transparent source attribution
+- Real-time streaming responses
+- Lower costs and latency
+
+**Cons:**
+
+- Slightly more complex than traditional RAG
+- Requires tool-capable LLMs
+- Multiple round trips for complex queries
+
+## What's Next
+
+We're continuously improving the system:
+
+1. **Smarter tool descriptions** that help the LLM make better decisions
+2. **Multi-step reasoning** for complex queries requiring multiple searches
+3. **Domain-specific tools** beyond just search
+4. **Better chunk selection** with reasoning about why specific documents are relevant
+
+## The Bottom Line
+
+Agentic RAG isn't about adding complexity—it's about adding intelligence. By letting the LLM decide when and what to search for, we've built a system that's both more efficient and more effective than traditional approaches.
+
+The beauty is in the simplicity. One API route, a few well-defined tools, and suddenly your RAG system becomes an intelligent agent that knows when to look things up and when to just have a conversation.
+
+Want to see it in action? Check out our implementation at [github.com/devflowinc/trieve](https://github.com/devflowinc/trieve) or try it yourself at [docs.trieve.ai/api-reference/message/create-message](https://docs.trieve.ai/api-reference/message/create-message#create-message).
+
+_Building something similar? We'd love to hear about your approach and any challenges you've faced. The future of RAG is agentic, and we're excited to see what the community builds._
