@@ -136,6 +136,8 @@ pub struct CreateMessageReqPayload {
     pub rag_context: Option<String>,
     /// If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.
     pub use_agentic_search: Option<bool>,
+    /// Number of messages to include in the context window. If not specified, this defaults to 10.
+    pub number_of_messages_to_include: Option<u64>,
 }
 
 /// Create message
@@ -243,6 +245,11 @@ pub async fn create_message(
     // remove chunks from the previous messages
     previous_messages = previous_messages
         .into_iter()
+        .take(
+            create_message_data
+                .number_of_messages_to_include
+                .unwrap_or(10) as usize,
+        )
         .map(|message| {
             let mut message = message;
             if message.role == "assistant" {
@@ -442,6 +449,8 @@ pub struct RegenerateMessageReqPayload {
     pub rag_context: Option<String>,
     /// If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.
     pub use_agentic_search: Option<bool>,
+    /// Number of messages to include in the context window. If not specified, this defaults to 10.
+    pub number_of_messages_to_include: Option<u64>,
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -498,6 +507,8 @@ pub struct EditMessageReqPayload {
     pub rag_context: Option<String>,
     /// If true, the search will be conducted using llm tool calling. If not specified, this defaults to false.
     pub use_agentic_search: Option<bool>,
+    /// Number of messages to include in the context window. If not specified, this defaults to 10.
+    pub number_of_messages_to_include: Option<u64>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -528,6 +539,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             rag_context: data.rag_context,
             use_agentic_search: data.use_agentic_search,
             only_include_docs_used: data.only_include_docs_used,
+            number_of_messages_to_include: data.number_of_messages_to_include,
         }
     }
 }
@@ -560,6 +572,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             rag_context: data.rag_context,
             use_agentic_search: data.use_agentic_search,
             only_include_docs_used: data.only_include_docs_used,
+            number_of_messages_to_include: data.number_of_messages_to_include,
         }
     }
 }
@@ -732,6 +745,11 @@ pub async fn regenerate_message_patch(
     // remove citations from the previous messages
     previous_messages = previous_messages
         .into_iter()
+        .take(
+            create_message_data
+                .number_of_messages_to_include
+                .unwrap_or(10) as usize,
+        )
         .map(|message| {
             let mut message = message;
             if message.role == "assistant" {

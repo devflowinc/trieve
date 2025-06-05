@@ -3324,7 +3324,7 @@ impl DatasetConfiguration {
                         query_parameter_description: Some("The search query to find relevant information".to_string()),
                         price_filter_description: Some("The price filter to use for the search".to_string()),
                         max_price_option_description: Some("The maximum price to filter by".to_string()),
-                        min_price_option_description: Some("The minimum price to filter by".to_string()),
+                        min_price_option_description: Some("The minimum price to filter by".to_string()),   
                     }),
                 }))
                 .as_object()
@@ -4618,6 +4618,7 @@ impl ApiKeyRequestParams {
             metadata: payload.metadata,
             use_agentic_search: payload.use_agentic_search,
             only_include_docs_used: payload.only_include_docs_used,
+            number_of_messages_to_include: payload.number_of_messages_to_include,
         }
     }
 
@@ -9504,6 +9505,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             remove_stop_words: Option<bool>,
             typo_options: Option<TypoOptions>,
             pub only_include_docs_used: Option<bool>,
+            pub number_of_messages_to_include: Option<u64>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -9545,6 +9547,7 @@ impl<'de> Deserialize<'de> for CreateMessageReqPayload {
             typo_options: helper.typo_options,
             use_agentic_search: helper.use_agentic_search,
             only_include_docs_used: helper.only_include_docs_used,
+            number_of_messages_to_include: helper.number_of_messages_to_include,
         })
     }
 }
@@ -9580,6 +9583,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             pub rag_context: Option<String>,
             pub use_agentic_search: Option<bool>,
             pub only_include_docs_used: Option<bool>,
+            pub number_of_messages_to_include: Option<u64>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -9618,6 +9622,7 @@ impl<'de> Deserialize<'de> for RegenerateMessageReqPayload {
             rag_context: helper.rag_context,
             use_agentic_search: helper.use_agentic_search,
             only_include_docs_used: helper.only_include_docs_used,
+            number_of_messages_to_include: helper.number_of_messages_to_include,
         })
     }
 }
@@ -9657,6 +9662,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             pub rag_context: Option<String>,
             pub use_agentic_search: Option<bool>,
             pub only_include_docs_used: Option<bool>,
+            pub number_of_messages_to_include: Option<u64>,
         }
 
         let mut helper = Helper::deserialize(deserializer)?;
@@ -9699,6 +9705,7 @@ impl<'de> Deserialize<'de> for EditMessageReqPayload {
             rag_context: helper.rag_context,
             use_agentic_search: helper.use_agentic_search,
             only_include_docs_used: helper.only_include_docs_used,
+            number_of_messages_to_include: helper.number_of_messages_to_include,
         })
     }
 }
