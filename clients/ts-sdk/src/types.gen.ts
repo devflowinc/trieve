@@ -888,6 +888,10 @@ export type CrawlOptions = {
      */
     site_url?: (string) | null;
     /**
+     * Tags to add to the crawl
+     */
+    tags?: Array<(string)> | null;
+    /**
      * Metadata to send back with the webhook call for each successful page scrape
      */
     webhook_metadata?: unknown;
@@ -1086,6 +1090,10 @@ export type CreateMessageReqPayload = {
      * No result message for when there are no chunks found above the score threshold.
      */
     no_result_message?: (string) | null;
+    /**
+     * Number of messages to include in the context window. If not specified, this defaults to 10.
+     */
+    number_of_messages_to_include?: (number) | null;
     /**
      * Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.
      */
@@ -1599,6 +1607,10 @@ export type EditMessageReqPayload = {
      * No result message for when there are no chunks found above the score threshold.
      */
     no_result_message?: (string) | null;
+    /**
+     * Number of messages to include in the context window. If not specified, this defaults to 10.
+     */
+    number_of_messages_to_include?: (number) | null;
     /**
      * Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.
      */
@@ -3716,6 +3728,10 @@ export type RegenerateMessageReqPayload = {
      * No result message for when there are no chunks found above the score threshold.
      */
     no_result_message?: (string) | null;
+    /**
+     * Number of messages to include in the context window. If not specified, this defaults to 10.
+     */
+    number_of_messages_to_include?: (number) | null;
     /**
      * Only include docs used is a boolean that indicates whether or not to only include the docs that were used in the completion. If true, the completion will only include the docs that were used in the completion. If false, the completion will include all of the docs.
      */
