@@ -177,10 +177,19 @@ fn create_shopify_chunk_req_payload(
         product_title.clone()
     };
 
+    let mut tag_set = product.tags.clone();
+    tag_set.extend(
+        scrape_request
+            .crawl_options
+            .tags
+            .clone()
+            .unwrap_or_default(),
+    );
+
     Ok(ChunkReqPayload {
         chunk_html: Some(chunk_html),
         link: Some(link),
-        tag_set: Some(product.tags.clone()),
+        tag_set: Some(tag_set),
         num_value: variant.price.clone().unwrap_or_default().parse().ok(),
         metadata: serde_json::to_value(product.clone()).ok(),
         tracking_id: if group_variants {
@@ -282,6 +291,7 @@ async fn parse_chunks_with_firecrawl(
         let page_html = crawl_doc.html.clone().unwrap_or_default();
         let mut page_tags = get_tags(page_link.clone());
         page_tags.push(crawl_req.url.clone());
+        page_tags.extend(crawl_req.crawl_options.tags.clone().unwrap_or_default());
 
         if let Some(spec) = &spec {
             if let Some(ScrapeOptions::OpenApi(ref openapi_options)) =
@@ -815,7 +825,7 @@ async fn parse_youtube_chunks(
                             video.id.video_id,
                             transcript.start.as_secs()
                         )),
-                        tag_set: None,
+                        tag_set: crawl_request.crawl_options.tags.clone(),
                         metadata: Some(json!({
                             "heading": video.snippet.title.clone(),
                             "title": video.snippet.title.clone(),

@@ -10030,6 +10030,8 @@ pub struct CrawlOptions {
     pub webhook_metadata: Option<serde_json::Value>,
     /// Add chunks to the dataset that the crawl is created for, defaults to true
     pub add_chunks_to_dataset: Option<bool>,
+    /// Tags to add to the crawl
+    pub tags: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
@@ -10088,6 +10090,7 @@ impl CrawlOptions {
                 .clone()
                 .or(other.webhook_metadata.clone()),
             add_chunks_to_dataset: self.add_chunks_to_dataset.or(other.add_chunks_to_dataset),
+            tags: self.tags.clone().or(other.tags.clone()),
         }
     }
 }

@@ -10996,6 +10996,14 @@
             "description": "The URL to crawl",
             "nullable": true
           },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tags to add to the crawl",
+            "nullable": true
+          },
           "webhook_metadata": {
             "description": "Metadata to send back with the webhook call for each successful page scrape",
             "nullable": true
@@ -11669,6 +11677,13 @@
             "type": "string",
             "description": "No result message for when there are no chunks found above the score threshold.",
             "nullable": true
+          },
+          "number_of_messages_to_include": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of messages to include in the context window. If not specified, this defaults to 10.",
+            "nullable": true,
+            "minimum": 0
           },
           "only_include_docs_used": {
             "type": "boolean",
@@ -12778,6 +12793,13 @@
             "type": "string",
             "description": "No result message for when there are no chunks found above the score threshold.",
             "nullable": true
+          },
+          "number_of_messages_to_include": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of messages to include in the context window. If not specified, this defaults to 10.",
+            "nullable": true,
+            "minimum": 0
           },
           "only_include_docs_used": {
             "type": "boolean",
@@ -19370,6 +19392,13 @@
             "type": "string",
             "description": "No result message for when there are no chunks found above the score threshold.",
             "nullable": true
+          },
+          "number_of_messages_to_include": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of messages to include in the context window. If not specified, this defaults to 10.",
+            "nullable": true,
+            "minimum": 0
           },
           "only_include_docs_used": {
             "type": "boolean",

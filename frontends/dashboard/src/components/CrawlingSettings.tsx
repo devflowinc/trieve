@@ -34,6 +34,7 @@ export const defaultCrawlOptions: CrawlOptions = {
   } as ScrapeOptions,
   webhook_urls: [],
   add_chunks_to_dataset: true,
+  tags: [],
 };
 
 export type FlatCrawlOptions = Omit<CrawlOptions, "scrape_options"> & {
@@ -71,6 +72,7 @@ export const unflattenCrawlOptions = (
       },
       webhook_urls: options.webhook_urls,
       add_chunks_to_dataset: options.add_chunks_to_dataset,
+      tags: options.tags,
     };
   } else if (options && options.type == "shopify") {
     return {
@@ -90,6 +92,7 @@ export const unflattenCrawlOptions = (
       },
       webhook_urls: options.webhook_urls,
       add_chunks_to_dataset: options.add_chunks_to_dataset,
+      tags: options.tags,
     };
   } else if (options && options.type == "youtube") {
     return {
@@ -107,6 +110,7 @@ export const unflattenCrawlOptions = (
       },
       webhook_urls: options.webhook_urls,
       add_chunks_to_dataset: options.add_chunks_to_dataset,
+      tags: options.tags,
     };
   }
   return {
@@ -122,6 +126,7 @@ export const unflattenCrawlOptions = (
     scrape_options: null,
     webhook_urls: options.webhook_urls,
     add_chunks_to_dataset: options.add_chunks_to_dataset,
+    tags: options.tags,
   };
 };
 
@@ -751,6 +756,25 @@ const RealCrawlingSettings = (props: RealCrawlingSettingsProps) => {
             value={options.body_remove_strings || []}
           />
           <Error error={errors.body_remove_strings} />
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <div>Crawl Tags</div>
+            <Tooltip
+              tooltipText="Tags to associate with all chunks created from this crawl. Useful for filtering and organizing crawled content."
+              body={<FaRegularCircleQuestion class="h-3 w-3 text-black" />}
+            />
+          </div>
+          <MultiStringInput
+            placeholder="documentation"
+            addClass="bg-magenta-100/40 px-2 text-sm rounded border border-magenta-300/40"
+            addLabel="Add Tag"
+            onChange={(value) => {
+              setOptions("tags", value);
+            }}
+            value={options.tags || []}
+          />
+          <Error error={errors.tags} />
         </div>
       </div>
       <Spacer h={18} />
