@@ -1486,7 +1486,7 @@ struct PriceFilter {
     min: Option<f32>,
     max: Option<f32>,
 }
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 struct SearchParams {
     query: String,
     price_filter: Option<PriceFilter>,
@@ -1763,7 +1763,7 @@ async fn search_chunks(
 }
 
 async fn handle_search_tool_call(
-    tool_call: ToolCall,
+    search_params: SearchParams,
     create_message_req_payload: CreateMessageReqPayload,
     dataset: Dataset,
     pool: web::Data<Pool>,
@@ -1771,9 +1771,6 @@ async fn handle_search_tool_call(
     dataset_config: DatasetConfiguration,
     event_queue: web::Data<EventQueue>,
 ) -> Result<(Vec<ScoreChunk>, String, SearchQueryEventClickhouse), ServiceError> {
-    let search_params = serde_json::from_str::<SearchParams>(&tool_call.function.arguments)
-        .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
-
     let (clickhouse_search_event, results) = search_chunks(
         create_message_req_payload.clone(),
         search_params,
@@ -2071,9 +2068,13 @@ pub async fn stream_response_with_agentic_search(
                         // Handle tool calls
                         for tool_call in tool_calls {
                             if tool_call.function.name == "search" {
+                                let search_params = serde_json::from_str::<SearchParams>(
+                                    &tool_call.function.arguments,
+                                )
+                                .map_err(|e| ServiceError::BadRequest(e.to_string()))?;
                                 let (results, formatted_results, clickhouse_search_event) =
                                     handle_search_tool_call(
-                                        tool_call.clone(),
+                                        search_params,
                                         create_message_req_payload.clone(),
                                         dataset.clone(),
                                         pool.clone(),
@@ -2430,15 +2431,17 @@ pub async fn stream_response_with_agentic_search(
                                         // Process all tool calls
                                         for tool_call in &tool_calls_vec {
                                             if tool_call.function.name == "search" {
+                                                let search_params = serde_json::from_str::<SearchParams>(&tool_call.function.arguments)
+                                                    .map_err(|e| ServiceError::BadRequest(e.to_string())).unwrap_or_default();
                                                 // Send search indicator
                                                 let _ = tx
                                                     .send(web::Bytes::from(
-                                                        "\n\n[Searching...]\n\n",
+                                                        format!("\n\n[Searching for {}...]\n\n", search_params.query),
                                                     ))
                                                     .await;
 
                                                 match handle_search_tool_call(
-                                                    tool_call.clone(),
+                                                    search_params,
                                                     create_message_req_payload_clone.clone(),
                                                     dataset.clone(),
                                                     pool.clone(),
