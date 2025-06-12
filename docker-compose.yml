@@ -281,20 +281,6 @@ services:
       - VITE_DASHBOARD_URL=${VITE_DASHBOARD_URL}
       - VITE_BM25_ACTIVE=${VITE_BM25_ACTIVE}
 
-  analytics-site:
-    image: trieve/analytics-site
-    build:
-      context: ./frontends
-      dockerfile: ./analytics/Dockerfile
-    networks:
-      - app-network
-    ports:
-      - 5176:80
-    environment:
-      - VITE_API_HOST=${VITE_API_HOST}
-      - VITE_SEARCH_UI_URL=${VITE_SEARCH_UI_URL}
-      - VITE_DASHBOARD_URL=${VITE_DASHBOARD_URL}
-
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.7
     depends_on:
