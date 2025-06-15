@@ -1,6 +1,7 @@
 {
   "name": "agentic-rag-cli",
   "version": "1.0.0",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "trieve-cli": "dist/index.js"
@@ -27,7 +28,7 @@
   "dependencies": {
     "chalk": "^5.4.1",
     "commander": "^14.0.0",
-    "conf": "^11.0.0",
+    "conf": "^14.0.0",
     "inquirer": "^12.6.3",
     "trieve-ts-sdk": "^0.0.118"
   }
