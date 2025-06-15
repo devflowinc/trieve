@@ -455,14 +455,27 @@ async fn upload_file(
             })?;
 
         let is_success = pdf2md_response.status().is_success();
+        let status_code = pdf2md_response.status();
 
         let response_body: serde_json::Value = pdf2md_response.json().await.map_err(|err| {
-            log::error!("Could not get pdf2md response body {:?}", err);
-            BroccoliError::Job("Could not get pdf2md response body".to_string())
+            log::error!(
+                "Could not get pdf2md response body, status: {}, error: {:?}",
+                status_code,
+                err
+            );
+            BroccoliError::Job(format!(
+                "Could not get pdf2md response body, status: {}",
+                status_code
+            ))
         })?;
 
         if !is_success {
-            log::error!("pdf2md response body: {:?}", response_body.clone());
+            log::error!(
+                "pdf2md failed with status: {}, response body: {:?}",
+                status_code,
+                response_body
+            );
+
             return Err(BroccoliError::Job(
                 "Could not send file to pdf2md".to_string(),
             ));
