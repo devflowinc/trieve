@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "5.67.0"
+      version = "~> 5.0"
     }
   }
 }
@@ -16,18 +16,12 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.16.0"
 
-  create_vpc = var.create_vpc
-
   name = "${var.name}-vpc"
   cidr = "10.0.0.0/16"
 
   azs             = ["${var.aws_region}a", "${var.aws_region}b", "${var.aws_region}c"]
   private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
   public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-
-  create_database_subnet_group           = true
-  create_database_subnet_route_table     = true
-  create_database_internet_gateway_route = true
 
   public_subnet_tags = {
     "kubernetes.io/role/elb" = "1"
@@ -44,13 +38,28 @@ module "vpc" {
 # EKS Module
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "~> 20.0"
 
   cluster_name    = var.name
   cluster_version = "1.32"
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
+
+  # Add-ons
+  cluster_addons = {
+    coredns = {}
+    kube-proxy = {}
+    vpc-cni = {}
+    aws-ebs-csi-driver = {
+      service_account_role_arn = module.ebs_csi_irsa.iam_role_arn
+    }
+    eks-pod-identity-agent = {}
+  }
+
+  cluster_endpoint_public_access = true
+  enable_cluster_creator_admin_permissions = true
+  enable_irsa = true
 
   eks_managed_node_groups = {
     standard = {
@@ -79,23 +88,45 @@ module "eks" {
           effect = "NO_SCHEDULE"
         }
       ]
-    }
-  }
-  cluster_endpoint_public_access = true
 
-  # Add-ons
-  cluster_addons = {
-    coredns = {
-      most_recent = true
-    }
-    kube-proxy = {
-      most_recent = true
-    }
-    vpc-cni = {
-      most_recent = true
-    }
-    aws-ebs-csi-driver = {
-      most_recent = true
     }
   }
+}
+
+# Add this after your EKS module
+resource "aws_security_group_rule" "node_to_node_all" {
+  description              = "Allow nodes to communicate with each other on all ports"
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "-1"
+  source_security_group_id = module.eks.node_security_group_id
+  security_group_id        = module.eks.node_security_group_id
+}
+
+resource "aws_security_group_rule" "vpc_cidr_ingress" {
+  description       = "Allow all traffic from VPC CIDR"
+  type              = "ingress"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "-1"
+  cidr_blocks       = [module.vpc.vpc_cidr_block]
+  security_group_id = module.eks.node_security_group_id
+}
+
+module "ebs_csi_irsa" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.0"
+
+  role_name = "${var.name}-ebs-csi-irsa"
+
+  # Bind the role to the cluster’s OIDC provider and the CSI controller SA
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
+    }
+  }
+
+  attach_ebs_csi_policy = true
 }
