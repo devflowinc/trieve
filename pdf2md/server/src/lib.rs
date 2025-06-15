@@ -165,7 +165,7 @@ pub async fn main() -> std::io::Result<()> {
             .into_utoipa_app()
             .openapi(ApiDoc::openapi())
             .app_data(json_cfg.clone())
-            .app_data(PayloadConfig::new(134200000))
+            .app_data(PayloadConfig::new(1073741824))
             .app_data(web::Data::new(jinja_env))
             .app_data(web::Data::new(redis_pool.clone()))
             .app_data(web::Data::new(clickhouse_client.clone()))
