@@ -953,7 +953,7 @@ pub fn main() -> std::io::Result<()> {
                 .wrap(
                     Cors::permissive()
                 )
-                .app_data(PayloadConfig::new(134200000))
+                .app_data(PayloadConfig::new(1073741824))
                 .wrap(
                     // Set up logger, but avoid logging hot status endpoints
                     Logger::new("%r %s %b %{Referer}i %{User-Agent}i %T %{TR-Dataset}i")
