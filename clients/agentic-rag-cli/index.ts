@@ -2,15 +2,22 @@
 
 import fs from 'fs';
 import path from 'path';
-import { TrieveSDK } from 'trieve-ts-sdk';
+import { TrieveSDK, Topic } from 'trieve-ts-sdk';
 import { program } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import Conf from 'conf';
+import os from 'os';
 
-// Use XDG_CONFIG_HOME or default to ~/.config
-const configDir =
-  process.env.XDG_CONFIG_HOME || `${require('os').homedir()}/.config`;
+interface UploadedFile {
+  fileName: string;
+  filePath: string;
+  trackingId: string;
+  uploadedAt: string;
+  status: 'pending' | 'completed';
+}
+
+const configDir = process.env.XDG_CONFIG_HOME || `${os.homedir()}/.config`;
 const config = new Conf({
   cwd: `${configDir}/trieve-cli`,
   configName: 'config',
@@ -22,14 +29,8 @@ const uploadedFilesPath = path.join(
   'uploaded_files.json',
 );
 
-// File tracking interface
-interface UploadedFile {
-  fileName: string;
-  filePath: string;
-  trackingId: string;
-  uploadedAt: string;
-  status?: 'pending' | 'completed';
-}
+// Path for storing topics data
+const topicsPath = path.join(`${configDir}/trieve-cli`, 'topics.json');
 
 // Function to manage uploaded files tracking
 function manageUploadedFiles(
@@ -68,8 +69,39 @@ function manageUploadedFiles(
   }
 }
 
-function getConfigOrEnv(key: string, envVar: string) {
-  return process.env[envVar] || config.get(key);
+// Function to manage topics
+function manageTopics(action: 'get' | 'add', topicData?: Topic): Topic[] {
+  try {
+    // Create the directory if it doesn't exist
+    if (!fs.existsSync(path.dirname(topicsPath))) {
+      fs.mkdirSync(path.dirname(topicsPath), { recursive: true });
+    }
+
+    // Initialize or read existing data
+    let topics: Topic[] = [];
+    if (fs.existsSync(topicsPath)) {
+      const fileContent = fs.readFileSync(topicsPath, 'utf-8');
+      topics = fileContent ? JSON.parse(fileContent) : [];
+    }
+
+    if (action === 'add' && topicData) {
+      // Add new topic data
+      topics.push(topicData);
+      fs.writeFileSync(topicsPath, JSON.stringify(topics, null, 2));
+    }
+
+    return topics;
+  } catch (error) {
+    console.error(
+      chalk.red('❌ Error managing topics:'),
+      error instanceof Error ? error.message : error,
+    );
+    return [];
+  }
+}
+
+function getConfigOrEnv(key: string, envVar: string): string | undefined {
+  return process.env[envVar] || (config.get(key) as string);
 }
 
 function ensureTrieveConfig() {
@@ -180,8 +212,9 @@ async function promptForFile() {
   }
 }
 
-// Function to check file upload status using tracking ID
-async function checkFileUploadStatus(trackingId: string): Promise<boolean> {
+async function checkFileUploadStatus(
+  groupTrackingId: string,
+): Promise<boolean> {
   try {
     const { apiKey, datasetId } = ensureTrieveConfig();
     const trieveClient: TrieveSDK = new TrieveSDK({
@@ -189,21 +222,15 @@ async function checkFileUploadStatus(trackingId: string): Promise<boolean> {
       datasetId,
     });
 
-    // Call the API to check the status
-    const response = await trieveClient.getChunksGroupByTrackingId(
-      trackingId,
-      1,
-    );
+    const response = await trieveClient.getChunksGroupByTrackingId({
+      groupTrackingId,
+      page: 1,
+    });
 
-    // If we get chunks back, the file is processed
     const isCompleted = response.chunks && response.chunks.length > 0;
 
     return isCompleted;
   } catch (error) {
-    console.error(
-      chalk.red(`❌ Failed to check status for tracking ID ${trackingId}:`),
-      error instanceof Error ? error.message : error,
-    );
     return false;
   }
 }
@@ -327,6 +354,80 @@ async function interactiveCheckStatus(): Promise<void> {
   }
 }
 
+// Function to ask a question and stream back the response
+async function askQuestion(question: string): Promise<void> {
+  try {
+    console.log(chalk.blue('🤔 Processing your question...'));
+
+    const { apiKey, datasetId } = ensureTrieveConfig();
+    const trieveClient: TrieveSDK = new TrieveSDK({
+      apiKey,
+      datasetId,
+    });
+
+    // Generate a topic name from the question (use first few words)
+    const topicName = question.split(' ').slice(0, 5).join(' ') + '...';
+
+    // Create a topic
+    console.log(chalk.blue('📝 Creating a new topic...'));
+    const ownerId =
+      (config.get('userId') as string) ||
+      'default-user-' + Math.random().toString(36).substring(2, 15);
+
+    const topicData = await trieveClient.createTopic({
+      first_user_message: question,
+      name: topicName,
+      owner_id: ownerId,
+    });
+
+    // Save the topic for future reference
+    manageTopics('add', topicData as Topic);
+
+    console.log(chalk.green(`✅ Topic created: ${topicName}`));
+    console.log(chalk.blue('🔍 Fetching answer...'));
+
+    // Create a message and stream the response
+    const { reader, queryId } =
+      await trieveClient.createMessageReaderWithQueryId({
+        topic_id: topicData.id,
+        new_message_content: question,
+      });
+
+    console.log(chalk.yellow('\n🤖 Answer:'));
+    console.log('─'.repeat(80));
+
+    // Stream the response
+    const decoder = new TextDecoder();
+    let answer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        answer += chunk;
+        process.stdout.write(chunk);
+      }
+    } catch (e) {
+      console.error(chalk.red('❌ Error streaming response:'), e);
+    } finally {
+      reader.releaseLock();
+    }
+
+    console.log('\n' + '─'.repeat(80));
+    console.log(chalk.green('✅ Response complete'));
+    console.log(
+      chalk.blue(`📚 Topic ID: ${topicData.id} (saved for future reference)`),
+    );
+  } catch (error) {
+    console.error(
+      chalk.red('❌ Failed to process question:'),
+      error instanceof Error ? error.message : error,
+    );
+  }
+}
+
 program
   .name('trieve-cli')
   .description('A CLI tool for using Trieve')
@@ -362,9 +463,16 @@ program
         message: 'Enter your TRIEVE_DATASET_ID:',
         default: (config.get('TRIEVE_DATASET_ID') as string) || '',
       },
+      {
+        type: 'input',
+        name: 'userId',
+        message: 'Enter your user ID (for topic ownership):',
+        default: (config.get('userId') as string) || '',
+      },
     ]);
     config.set('TRIEVE_API_KEY', answers.TRIEVE_API_KEY);
     config.set('TRIEVE_DATASET_ID', answers.TRIEVE_DATASET_ID);
+    config.set('userId', answers.userId);
     console.log(chalk.green('✅ Configuration saved!'));
   });
 
@@ -386,6 +494,33 @@ program
     }
   });
 
+program
+  .command('ask')
+  .description('Ask a question and get a streamed response')
+  .argument('<question>', 'The question to ask')
+  .action(async (question) => {
+    await askQuestion(question);
+  });
+
+program
+  .command('interactive-ask')
+  .description('Ask a question interactively and get a streamed response')
+  .action(async () => {
+    const answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'question',
+        message: 'What would you like to ask?',
+        validate: (input) => {
+          if (!input) return 'Question is required';
+          return true;
+        },
+      },
+    ]);
+
+    await askQuestion(answers.question);
+  });
+
 program.addHelpText(
   'after',
   `
@@ -395,6 +530,8 @@ ${chalk.yellow('Examples:')}
   $ ${chalk.green('trieve-cli check-upload-status')}
   $ ${chalk.green('trieve-cli check-upload-status --all')}
   $ ${chalk.green('trieve-cli check-upload-status --tracking-id <tracking-id>')}
+  $ ${chalk.green('trieve-cli ask "What is the capital of France?"')}
+  $ ${chalk.green('trieve-cli interactive-ask')}
 `,
 );
 
