@@ -1,8 +1,3 @@
-variable "create_vpc" {
-  type    = bool
-  default = true
-}
-
 variable "aws_region" {
   type    = string
   default = "us-west-2"
@@ -51,10 +46,4 @@ variable "standard_min_size" {
 variable "standard_desired_capacity" {
   type    = number
   default = 2
-}
-
-variable "install_alb_controller" {
-  type        = bool
-  default     = true
-  description = "Whether to install the AWS Load Balancer Controller"
 }
