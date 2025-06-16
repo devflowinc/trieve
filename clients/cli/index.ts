@@ -647,7 +647,6 @@ program
   .name('trieve')
   .description('A CLI tool for using Trieve')
   .version('0.0.6');
-
 program
   .command('upload')
   .description('Upload a file to the server')
