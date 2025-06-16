@@ -1,0 +1,380 @@
+---
+title: How to Build Agentic RAG for any PDF in 10 minutes
+summary: >-
+  Set up an agentic RAG pipeline for any PDF in under ten minutes—all from a
+  simple Node.js script.
+author: Nick Khami
+createdAt: 2025-06-15T21:01:00.000Z
+lastUpdatedAt: 2025-06-15T21:01:00.000Z
+isDraft: false
+categories:
+  - explainers
+  - tutorials
+coverImage: >-
+  /src/assets/images/blog-posts/build-agentic-rag-for-any-pdf-in-10-minutes-with-chunkr-and-trieve/coverImage.jpg
+ogSection: Technology
+---
+## Introduction
+
+Retrieval Augmented Generation (RAG) has revolutionized how we build AI applications, allowing Large Language Models (LLMs) to answer questions based on custom data. But what if the LLM could *decide* when and how to search that data, like a smart assistant? That's where **Agentic RAG** comes in.
+
+With Trieve, you can easily set up an agentic RAG pipeline that leverages advanced OCR for PDFs (via [Chunkr](https://chunkr.ai)) and gives your LLM the autonomy to intelligently query your knowledge base.
+
+If you're not interested in the guide and just want to see the code in order to give it to your agent as a starting point, you can find a fully complete CLI demonstrating this functionality in a single file on github at [github.com/devflowinc/trieve/blob/main/clients/cli/index.ts](https://github.com/devflowinc/trieve/blob/main/clients/cli/index.ts) or install it via [`npm i -g trieve-cli`](https://www.npmjs.com/package/trieve-cli).
+
+## Step 1: Sign Up for Trieve and Set Up Your Dataset
+
+If you haven't already, sign up for a Trieve account at [dashboard.trieve.ai](https://dashboard.trieve.ai/). Once logged in, create a new dataset and upload your PDFs. Trieve will automatically process them using Chunkr, extracting text and metadata for efficient searching.
+
+**Prerequisites:**
+
+1. A Trieve account (sign up at [dashboard.trieve.ai](https://dashboard.trieve.ai/))
+2. Copy your Trieve `API_KEY`, `DATASET_ID`, and `ORGANIZATION_ID` from the dashboard.
+3. Node.js and npm/yarn installed.
+
+## Step 2: Initialize Your Node.js Project and Trieve Client
+
+Create a new Node.js script (e.g., `agentic-rag.js`) and set up your Trieve client:
+
+```javascript
+import fs from "fs";
+import { TrieveSDK, UpdateDatasetReqPayload } from "trieve-ts-sdk";
+
+// ---- Configuration ----
+// Replace with your actual credentials
+const TRIEVE_API_KEY = process.env.TRIEVE_API_KEY || "YOUR_TRIEVE_API_KEY";
+const TRIEVE_DATASET_ID =
+  process.env.TRIEVE_DATASET_ID || "YOUR_TRIEVE_DATASET_ID";
+const TRIEVE_ORGANIZATION_ID =
+  process.env.TRIEVE_ORGANIZATION_ID || "YOUR_TRIEVE_ORGANIZATION_ID";
+
+if (
+  TRIEVE_API_KEY === "YOUR_TRIEVE_API_KEY" ||
+  TRIEVE_DATASET_ID === "YOUR_TRIEVE_DATASET_ID" ||
+  TRIEVE_ORGANIZATION_ID === "YOUR_TRIEVE_ORGANIZATION_ID"
+) {
+  console.error(
+    "Please set your TRIEVE_API_KEY, TRIEVE_DATASET_ID, and TRIEVE_ORGANIZATION_ID in the script or as environment variables.",
+  );
+  process.exit(1);
+}
+
+const trieveClient = new TrieveSDK({
+  apiKey: TRIEVE_API_KEY,
+  datasetId: TRIEVE_DATASET_ID,
+  organizationId: TRIEVE_ORGANIZATION_ID, // Required for dataset updates
+});
+
+console.log("Trieve SDK initialized.");
+```
+
+## Step 3: Configure Your Agent's Search Tool
+
+For an LLM to act as an agent, it needs clear instructions on *when* and *how* to use its tools (in this case, searching your Trieve dataset). We configure this at the dataset level.
+
+* **System Prompt (`SYSTEM_PROMPT`):** This is the overarching instruction for the LLM. It should emphasize relying on the search tool.
+* **Tool Description (`tool_description`):** This tells the LLM *when* it should use the search tool. For robust RAG, you often want it to *always* use the tool.
+* **Query Parameter Description (`query_parameter_description`):** This guides the LLM on *how* to formulate its search queries effectively.
+
+**Tips and Tricks for Descriptions:**
+
+* **Be Explicit:** Don't assume the LLM knows. Tell it directly, e.g., "ALWAYS call this search tool for EVERY user question."
+* **Emphasize Data Freshness:** Remind the LLM that its internal knowledge might be outdated and the search tool provides current information from your documents.
+* **Encourage Specificity in Queries:** Guide the LLM to extract keywords and form precise queries. Suggest trying multiple queries if the first attempt isn't fruitful.
+* **Iterate:** These descriptions are powerful. Experiment with different phrasings to see what works best for your use case.
+
+Here's how to update your dataset configuration using the SDK:
+
+```javascript
+async function configureSearchTool() {
+  console.log("🔧 Configuring dataset for agentic search...");
+  try {
+    const updatePayload: UpdateDatasetReqPayload = {
+      dataset_id: TRIEVE_DATASET_ID, // Ensure this is the correct dataset ID
+      server_configuration: {
+        SYSTEM_PROMPT: "You are an AI assistant that helps people find information in a set of documents. You have access to a search tool that can retrieve relevant information from the documents based on a query. YOU MUST ALWAYS CALL AND USE THE SEARCH TOOL FOR EVERY USER QUESTION WITHOUT EXCEPTION. Do not rely on your own knowledge - it may be outdated or incorrect. For each user question: 1) Use the search tool with a well-crafted query 2) If the first search doesn't yield satisfactory results, try additional searches with different terms 3) Only after searching should you formulate your response, citing the information found. Always inform the user that your answer is based on search results from their documents. If you don't find relevant information after multiple searches, be honest about this limitation.",
+        TOOL_CONFIGURATION: {
+          query_tool_options: {
+            tool_description: "ALWAYS use the search tool for EVERY user question, even if you think you already know the answer. Your knowledge is limited and potentially outdated - you must rely on the provided search tool to get the most accurate and up-to-date information.",
+            query_parameter_description: "Write a specific query with critical keywords from the user question. Use multiple search queries with different terms if needed to get comprehensive results.",
+            // You can also define descriptions for other filters if you plan to use them agentically
+            // price_filter_description: "The page range filter to use for the search",
+            // max_price_option_description: "The maximum page to filter by",
+            // min_price_option_description: "The minimum page to filter by",
+          },
+        },
+      },
+    };
+
+    await trieveClient.updateDataset(updatePayload);
+    console.log("✅ Dataset configuration updated successfully!");
+  } catch (error) {
+    console.error("❌ Failed to update dataset configuration:", error instanceof Error ? error.message : error);
+  }
+}
+```
+
+## Step 4: Upload and Chunk Your PDF with Chunkr
+
+Chunkr is Trieve's advanced file processing service. When you upload a file (like a PDF) with the `chunkr_create_task_req_payload` field, Chunkr uses sophisticated OCR technology that excels at understanding document layouts, tables, and images. This results in higher-quality chunks for your RAG pipeline.
+
+**Request Explanation:**
+
+* `base64_file`: The file content, base64 encoded.
+* `file_name`: The original name of the file.
+* `group_tracking_id` (Optional but Recommended): A unique ID you can use to later check the status of the file processing and group related chunks. If not provided, Trieve might generate one.
+* `chunkr_create_task_req_payload: {}`: This empty object is the key! It signals Trieve to process this file using Chunkr for advanced chunking. You can pass specific Chunkr options here if needed, but an empty object uses sensible defaults.
+
+```javascript
+async function uploadPdfWithChunkr(filePath: string, trackingId?: string) {
+  console.log(`📤 Uploading PDF: ${filePath} with Chunkr...`);
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    const base64File = fileBuffer.toString('base64');
+    const fileName = filePath.split('/').pop() || filePath;
+
+    const generatedTrackingId = trackingId || `chunkr-doc-${fileName}-${Date.now()}`;
+
+    const response = await trieveClient.uploadFile({
+      base64_file: base64File,
+      file_name: fileName,
+      group_tracking_id: generatedTrackingId,
+      chunkr_create_task_req_payload: {}, // This enables Chunkr processing!
+    });
+
+    console.log("📄 File upload initiated. Response:", response);
+    console.log(`✨ File sent to Chunkr for processing. Tracking ID: ${generatedTrackingId}`);
+    console.log("⏳ You can check processing status using this tracking ID with other Trieve endpoints.");
+    return generatedTrackingId; // Return for potential status checking
+  } catch (error) {
+    console.error("❌ PDF upload failed:", error instanceof Error ? error.message : error);
+  }
+}
+```
+
+*Note: File processing with Chunkr is asynchronous. The `uploadFile` endpoint returns quickly, but the actual chunking happens in the background. You'd typically use the `group_tracking_id` to poll for completion status if needed, though for this example, we'll assume it completes.*
+
+## Step 4: Asking Agentic Questions
+
+Now for the magic! To ask an agentic question:
+
+1. **Create a Topic:** Topics are like conversation threads. Each agentic interaction typically happens within a topic.
+2. **Create a Message Reader:** When creating a message within a topic, set:
+   * `use_agentic_search: true`: This tells Trieve to use the agentic flow defined by your dataset's tool configuration.
+   * `model`: Specify an LLM capable of agentic behavior. Trieve offers models like `o3` (Claude 3 Opus), `c3.5s` (Claude 3.5 Sonnet), `gpro` (GPT-4o), `gpt4t` (GPT-4 Turbo) which are well-suited for this. Check Trieve documentation for the latest list of supported models. `o3` is a powerful option.
+
+The response will be streamed back, often including "thinking" steps from the agent before the final answer.
+
+```javascript
+import { TrieveSDK, ChunkMetadata, Topic } from 'trieve-ts-sdk';
+import chalk from 'chalk'; // Optional: for styled console output
+
+// Assume trieveClient is already initialized and configured globally for this script
+// const trieveClient = new TrieveSDK({ ... });
+
+async function askAgenticQuestion(
+  question: string,
+  existingTopicId?: string,
+  userId: string = 'default-blog-user-' + Date.now() // Example user ID
+): Promise<{ actualAnswer: string; parsedChunks: ChunkMetadata[]; topicId: string } | undefined> {
+  console.log(chalk.blue(`🤔 Asking agentic question: "${question}"`));
+  try {
+    let topicIdToUse = existingTopicId;
+
+    if (!topicIdToUse) {
+      const topicName = question.substring(0, 50) + "..."; // Simple topic name
+      console.log(chalk.magenta(`📝 Creating new topic: "${topicName}" for user "${userId}"`));
+      // Ensure Topic type is correctly imported if using createTopic's return type explicitly
+      const topicData: Topic = await trieveClient.createTopic({
+        name: topicName,
+        owner_id: userId,
+      });
+      topicIdToUse = topicData.id;
+      console.log(chalk.magenta(`🏷️ Topic created with ID: ${topicIdToUse}`));
+    }
+
+    // This check is good practice, though topicIdToUse should be set if creation was successful
+    if (!topicIdToUse) {
+        console.error(chalk.red("❌ Critical error: Topic ID could not be established."));
+        return undefined;
+    }
+
+    const { reader } = await trieveClient.createMessageReaderWithQueryId({
+      topic_id: topicIdToUse,
+      new_message_content: question,
+      use_agentic_search: true, // Crucial for agentic behavior
+      model: "o3", // Or "c3.5s", "gpro", "gpt4t". Using a powerful model is recommended.
+                    // "o3" refers to Claude 3 Opus in Trieve's context.
+    });
+
+    console.log(chalk.cyan("💬 Streaming response from agent:"));
+    process.stdout.write(chalk.bold("🤖 Agent: ")); // Start the agent's response line
+
+    const decoder = new TextDecoder();
+    let actualAnswer: string = '';
+    let parsedChunks: ChunkMetadata[] = [];
+    let chunkDataAccumulator: string = ''; // Accumulates parts of the stream that might form chunk JSON
+    let isParsingChunks: boolean = false;   // Flag: actively accumulating/expecting chunk JSON
+    let isThinkingSection: boolean = false; // Flag: agent is sending "thinking" status messages
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const streamChunkText = decoder.decode(value);
+
+      // 1. Handle "thinking" or status messages from the agent stream
+      if (streamChunkText.includes('🤔') || streamChunkText.includes('📝') || streamChunkText.includes('✅') || streamChunkText.includes('🔍')) {
+        isThinkingSection = true; // We are in a special status update from the agent
+        process.stdout.write(chalk.yellow(streamChunkText)); // Print thinking messages
+        continue; // Process next part of the stream
+      } else {
+        // If we were in a thinking section and now receive a non-thinking chunk, reset the flag.
+        // This ensures subsequent text is treated as part of the answer or chunk data.
+        isThinkingSection = false;
+      }
+
+      // 2. Detect the start of the chunk JSON data section (inspired by CLI's logic)
+      // Assumes chunk data starts with '[{'
+      if (streamChunkText.includes('[{') && !isParsingChunks) {
+        isParsingChunks = true;
+        chunkDataAccumulator = ''; // Reset accumulator for this new potential JSON block
+      }
+
+      // 3. Accumulate and parse chunk JSON data
+      if (isParsingChunks) {
+        chunkDataAccumulator += streamChunkText;
+
+        // Check for the delimiter "||" which, by CLI convention, separates chunk JSON from the main answer
+        if (chunkDataAccumulator.includes('||')) {
+          isParsingChunks = false; // We've likely received the full chunk JSON block
+          const parts = chunkDataAccumulator.split('||');
+          const jsonDataPart = parts[0].trim();
+
+          if (jsonDataPart) {
+            try {
+              // The CLI expects the stream to format chunks as: [{ "chunk": ChunkMetadata }, ...]
+              const rawChunkObjects: { chunk: ChunkMetadata }[] = JSON.parse(jsonDataPart);
+              if (Array.isArray(rawChunkObjects)) {
+                parsedChunks = rawChunkObjects.map(item => item.chunk);
+                // Optional: Log that chunks were found during streaming
+                process.stdout.write(chalk.dim(`\n[ℹ️ System: Extracted ${parsedChunks.length} reference chunks.]\n`));
+                process.stdout.write(chalk.bold("🤖 Agent: ")); // Re-prompt for agent answer part
+              }
+            } catch (e) {
+              process.stdout.write(chalk.yellow('\n⚠️ Warning: Could not parse chunk JSON. Content (partial): ' + jsonDataPart.substring(0, 100) + "...\n"));
+              // If parsing fails, it might be an error or unexpected format.
+              // The CLI logs an error. Consider if this data should be part of `actualAnswer`.
+              // For now, mirroring CLI's behavior of just warning.
+            }
+          }
+
+          // The part after "||" is considered the start of the textual answer from the LLM
+          if (parts[1]) {
+            const answerInitialPart = parts[1];
+            actualAnswer += answerInitialPart;
+            process.stdout.write(answerInitialPart);
+          }
+          chunkDataAccumulator = ''; // Clear the accumulator
+        }
+        // If "||" is not yet found, `chunkDataAccumulator` continues to build in next iteration.
+      } else if (!isThinkingSection) {
+        // 4. Accumulate the actual textual answer from the LLM
+        // This runs if a) not parsing chunks, and b) not in a "thinking" message from the agent
+        actualAnswer += streamChunkText;
+        process.stdout.write(streamChunkText);
+      }
+    }
+
+    reader.releaseLock();
+    process.stdout.write('\n'); // Ensure a new line after the full streamed response
+
+    console.log(chalk.green('\n✅ Agentic response complete.'));
+
+    // Optional: Summarize found chunks after the stream
+    if (parsedChunks.length > 0) {
+        console.log(chalk.blueBright(`\n📚 Summary of ${parsedChunks.length} references found:`));
+        parsedChunks.forEach((chunk, index) => {
+            console.log(
+                chalk.grey(`  Ref ${index + 1}: ID (${chunk.tracking_id || chunk.id.substring(0,8)}) `) +
+                (chunk.link ? chalk.cyan(`Link: ${chunk.link} `) : '') +
+                (chunk.metadata ? chalk.magenta(`File: ${chunk.metadata.file_name || 'N/A'}`) : '')
+            );
+        });
+    } else {
+        console.log(chalk.yellow('⚠️ No reference chunks were explicitly parsed from this stream via "||" delimiter.'));
+    }
+
+    return { actualAnswer, parsedChunks, topicId: topicIdToUse };
+
+  } catch (error) {
+    console.error(chalk.red('❌ Failed to process agentic question:'), error instanceof Error ? error.message : error);
+    return undefined;
+  }
+}
+```
+
+## Putting It All Together
+
+Let's create a simple `main` function to run these steps. Make sure you have a PDF file (e.g., `sample.pdf`) in the same directory or provide a full path.
+
+```javascript
+async function main() {
+  // Step 1: Configure the dataset's search tool (run once or when you want to update)
+  await configureSearchTool();
+
+  // Step 2: Upload a PDF using Chunkr
+  // Replace 'sample.pdf' with the path to your PDF file
+  const pdfFilePath = "sample.pdf";
+  if (!fs.existsSync(pdfFilePath)) {
+    console.error(
+      `Error: PDF file not found at ${pdfFilePath}. Please create a sample.pdf or update the path.`,
+    );
+    return;
+  }
+  const trackingId = await uploadPdfWithChunkr(pdfFilePath);
+
+  if (!trackingId) {
+    console.error("File upload failed, cannot proceed to ask question.");
+    return;
+  }
+
+  // Give some time for Chunkr to process (in a real app, you'd poll status)
+  console.log(
+    "\n⏳ Waiting 30 seconds for Chunkr to process the PDF (adjust as needed for larger files)...",
+  );
+  await new Promise((resolve) => setTimeout(resolve, 30000));
+
+  // Step 3: Ask an agentic question related to the content of your PDF
+  const question = "What are the main topics discussed in this document?"; // Change this to fit your PDF
+  const result = await askAgenticQuestion(question);
+
+  if (result) {
+    console.log(`\n🗣️ You asked: "${question}"`);
+    // The fullResponse might contain structured data depending on the stream.
+    // For this example, we primarily focused on printing text as it came.
+    // console.log(`\n📝 Agent's Full Streamed Response (may include intermediate steps):\n${result.fullResponse}`);
+  }
+}
+
+main().catch(console.error);
+```
+
+**To run this:**
+
+1. Save the combined code as `agentic-rag.js`.
+2. Place a `sample.pdf` in the same directory or update `pdfFilePath`.
+3. Set your environment variables or update the placeholders in the script.
+4. Run `node agentic-rag.js` (if you're not using TypeScript directly, you might need `ts-node agentic-rag.ts` or compile it first).
+
+## Conclusion
+
+You've just built a powerful Agentic RAG pipeline! By configuring your Trieve dataset's tool descriptions, leveraging Chunkr for superior PDF processing, and enabling agentic search, you've empowered an LLM to intelligently query your custom documents.
+
+This is just the beginning. You can expand on this by:
+
+* Implementing robust status checking for file uploads.
+* Building a more sophisticated UI to handle streamed responses and citations.
+* Experimenting with different agentic models and prompt engineering for your tool descriptions.
+
+Trieve makes complex AI tasks like Agentic RAG surprisingly accessible. Happy building!

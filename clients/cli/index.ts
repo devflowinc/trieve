@@ -639,7 +639,7 @@ function formatChunksCollapsible(chunks: ChunkMetadata[]): string {
 program
   .name('trieve')
   .description('A CLI tool for using Trieve')
-  .version('0.0.2');
+  .version('0.0.4');
 
 program
   .command('upload')
@@ -761,18 +761,16 @@ program
       dataset_id: datasetId,
       server_configuration: {
         SYSTEM_PROMPT:
-          "You are an AI assistant that helps people find information in a set of documents. You have access to a search tool that can retrieve relevant information from the documents based on a query. YOU MUST ALWAYS USE THE SEARCH TOOL FOR EVERY USER QUESTION WITHOUT EXCEPTION. Do not rely on your own knowledge - it may be outdated or incorrect. For each user question: 1) Use the search tool with a well-crafted query 2) If the first search doesn't yield satisfactory results, try additional searches with different terms 3) Only after searching should you formulate your response, citing the information found. Always inform the user that your answer is based on search results from their documents. If you don't find relevant information after multiple searches, be honest about this limitation.",
+          "You are an AI assistant that helps people find information in a set of documents. You have access to a search tool that can retrieve relevant information from the documents based on a query. YOU MUST ALWAYS CALL AND USE THE SEARCH TOOL FOR EVERY USER QUESTION WITHOUT EXCEPTION. Do not rely on your own knowledge - it may be outdated or incorrect. For each user question: 1) Use the search tool with a well-crafted query 2) If the first search doesn't yield satisfactory results, try additional searches with different terms 3) Only after searching should you formulate your response, citing the information found. Always inform the user that your answer is based on search results from their documents. If you don't find relevant information after multiple searches, be honest about this limitation.",
         TOOL_CONFIGURATION: {
           query_tool_options: {
             tool_description:
-              'ALWAYS use the search tool for EVERY user question, even if you think you already know the answer. Your knowledge is limited and potentially outdated - you must rely on the provided search tool to get the most accurate and up-to-date information.',
+              'ALWAYS call this search tool for EVERY user question, even if you think you already know the answer. Your knowledge is limited and potentially outdated - you must rely on the provided search tool to get the most accurate and up-to-date information.',
             query_parameter_description:
               'Write a specific query with critical keywords from the user question. Use multiple search queries with different terms if needed to get comprehensive results.',
             price_filter_description:
               'The page range filter to use for the search',
-
             max_price_option_description: 'The maximum page to filter by',
-
             min_price_option_description: 'The minimum page to filter by',
           },
         },

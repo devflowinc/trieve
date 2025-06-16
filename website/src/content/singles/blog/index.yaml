@@ -5,9 +5,8 @@ featuredPosts:
   title: |
     *Featured* posts
   posts:
+    - build-agentic-rag-for-any-pdf-in-10-minutes-with-chunkr-and-trieve
     - ai-sales-agent-on-shopify-flaviar
     - cheating-at-search-with-llms
-    - build-hotel-voice-assistant-with-trieve-and-vapi
-    - accurate-hallucination-detection-with-ner
 furtherReadingsTitle: |
   Further *readings*
