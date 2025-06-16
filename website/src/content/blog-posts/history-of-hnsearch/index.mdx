@@ -1,5 +1,5 @@
 ---
-title: 'History of HackerNews Search: From 2007 to 2024'
+title: "History of HackerNews Search: From 2007 to 2024"
 summary: >-
   The history of HackerNews (HN) search spans three generations. Starting in
   2007 with Disqus founder Jason Yan followed by a series of other sites,
@@ -13,6 +13,7 @@ categories:
   - explainers
 coverImage: /src/assets/images/blog-posts/history-of-hnsearch/coverImage.png
 ---
+
 We at Trieve are going to be launching a search engine for HackerNews with some additional features soon and thought it would be worth studying the history of HN search before finalizing things. Here's what we found!
 
 #### Update!
@@ -32,7 +33,7 @@ Here's [a writeup on the launch](https://trieve.ai/launching-trieve-hn-discovery
 
 Written and shared by Jason Yan, Founder/CTO of Disqus (S07) (aka [jsonyan](https://news.ycombinator.com/user?id=jasonyan)), on [March 17, 2007](https://news.ycombinator.com/item?id=4780). Can still be viewed [here on the internet archive](https://web.archive.org/web/20070707020143/http://nycs.bigheadlabs.com/).
 
-!\[search-news-yc-screenshot]\(https\://cdn.trieve.ai/blog/history-of-hnsearch/nycs.bigheadlabs.com.webp)
+![search-news-yc-screenshot](https://cdn.trieve.ai/blog/history-of-hnsearch/nycs.bigheadlabs.com.webp)
 
 I assume there was some indexing logic being done on the DJango server that Jason used.
 
@@ -48,7 +49,7 @@ Created and shared by Kesevan (aka [cosmok](https://news.ycombinator.com/user?id
 
 Can see the UI at this [link on the internet archive](https://web.archive.org/web/20080306153636/http://trk7.com/yc).
 
-!\[trk7-search-hn-screenshot]\(https\://cdn.trieve.ai/blog/history-of-hnsearch/trk7-hnsearch.webp)
+![trk7-search-hn-screenshot](https://cdn.trieve.ai/blog/history-of-hnsearch/trk7-hnsearch.webp)
 
 In the text of the original post (see [here](https://news.ycombinator.com/item?id=1309589)), cosmok explains that he built it using Yahoo's search API.
 
@@ -58,7 +59,7 @@ Independently created and shared by Mike Cheng (aka [chengmi](https://news.ycomb
 
 I surmise from the comment on the post that the motivation here was ycsearch being limited in terms of HN-specific filters and the bigheadlabs one being un-maintained.
 
-!\[search-yc-screenshot]\(https\://cdn.trieve.ai/blog/history-of-hnsearch/searchyc.com.webp)
+![search-yc-screenshot](https://cdn.trieve.ai/blog/history-of-hnsearch/searchyc.com.webp)
 
 Judging from the last [paulg comment on this thread](https://news.ycombinator.com/item?id=35959) it seems like, similar to ycsearch, it was built using [cse.google.com](https://programmablesearchengine.google.com/about/).
 
@@ -80,7 +81,7 @@ Worth mentioning that HNSearch (mentioned further below) was up by this point in
 
 The official launch of HNSearch was posted by Paul Graham, founder of Y-Combinator itself (aka [pg](https://news.ycombinator.com/user?id=pg)), and Andres Morey, founder of Octopart (W07) (aka [andres](https://news.ycombinator.com/user?id=andres)), separately on June 4, 2011. Andres posted it as an [API contest here](https://news.ycombinator.com/item?id=2619892) to build the best thing on top of the HNSearch API where the winner would get a 27-inch Dell monitor. PG posted it as an official announcement on [HN here](https://news.ycombinator.com/item?id=2619736) which linked to [ycombinator.com in a now only archive-available page](https://web.archive.org/web/20110618105517/http://ycombinator.com/newsnews.html).
 
-!\[octopart/thriftdb-search-screenshot]\(https\://cdn.trieve.ai/blog/history-of-hnsearch/hnsearch-api-contest.webp)
+![octopart/thriftdb-search-screenshot](https://cdn.trieve.ai/blog/history-of-hnsearch/hnsearch-api-contest.webp)
 
 Building search for HN has certainly been a trial for us and we felt validated seeing that [PG first mentioned the Octopart guys using ThriftDB to make this in 2007 4yrs before it released](https://news.ycombinator.com/item?id=35959).
 
@@ -95,7 +96,7 @@ I think the best part of HNSearch was that third-party applications were built o
 
 The first HN post I was able to find mentioning Algolia HN search was [Ask HN: What do you think about our last HN Search update? on Jan 26, 2014](https://news.ycombinator.com/item?id=7126301) posted by Julian Lemoine, founder/CTO of Algolia (W14) aka [jlemoine](https://news.ycombinator.com/user?id=jlemoine).
 
-!\[algolia-hn-search-screenshot]\(https\://cdn.trieve.ai/blog/history-of-hnsearch/algolia-hn-search.webp)
+![algolia-hn-search-screenshot](https://cdn.trieve.ai/blog/history-of-hnsearch/algolia-hn-search.webp)
 
 Algolia's ability to get HN search up so quickly is really impressive. If you look at the [Github repo](https://github.com/algolia/hn-search/commits/master/?after=e27760e09840a6fa3efc592649fceb89237e4c2f+1119) it seems like they started in Sep 2013 and released in Jan 2014.
 
@@ -105,9 +106,9 @@ We also took about 6 months to get everything up having [started in Feb 2024 and
 
 ## Honorable Mentions during the Algolia era
 
-* [hackersearch.net](https://hackersearch.net/) by [jnnnthnn](https://news.ycombinator.com/user?id=jnnnthnn) posted May 2024 | semantic search engine using OpenAI embeddings
-* [deephn.org](https://deephn.org/) by [wolfgarbe](https://news.ycombinator.com/user?id=wolfgarbe) posted April 13, 2021 | full-text search of both HN posts and linked webpages
-* [hackernews.demo.vectara.com](https://hackernews.demo.vectara.com/) by [ofermend](https://news.ycombinator.com/user?id=ofermend) posted July 2024 | semantic search for past 6mths of data
-* [searchhacker.news](https://searchhacker.news/) by [isoprophlex](https://news.ycombinator.com/user?id=isoprophlex) posted April 2024 | keyword search over discussions re-ranked by dense semantic vectors
-* [hn.lixiasearch.com](https://hn.lixiasearch.com/) by [larose](https://news.ycombinator.com/user?id=larose) posted February 2024 | unknown data level and indexing strategy
-* [orangewords.com](https://orangewords.com/search) by [cmcollier](https://news.ycombinator.com/submitted?id=cmcollier) (not posted to HN yet) | all of HN indexed in Vespa with RAG
+- [hackersearch.net](https://hackersearch.net/) by [jnnnthnn](https://news.ycombinator.com/user?id=jnnnthnn) posted May 2024 | semantic search engine using OpenAI embeddings
+- [deephn.org](https://deephn.org/) by [wolfgarbe](https://news.ycombinator.com/user?id=wolfgarbe) posted April 13, 2021 | full-text search of both HN posts and linked webpages
+- [hackernews.demo.vectara.com](https://hackernews.demo.vectara.com/) by [ofermend](https://news.ycombinator.com/user?id=ofermend) posted July 2024 | semantic search for past 6mths of data
+- [searchhacker.news](https://searchhacker.news/) by [isoprophlex](https://news.ycombinator.com/user?id=isoprophlex) posted April 2024 | keyword search over discussions re-ranked by dense semantic vectors
+- [hn.lixiasearch.com](https://hn.lixiasearch.com/) by [larose](https://news.ycombinator.com/user?id=larose) posted February 2024 | unknown data level and indexing strategy
+- [orangewords.com](https://orangewords.com/search) by [cmcollier](https://news.ycombinator.com/submitted?id=cmcollier) (not posted to HN yet) | all of HN indexed in Vespa with RAG
