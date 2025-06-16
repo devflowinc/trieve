@@ -2902,9 +2902,9 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
                 query_tool_options: Some(QueryToolOptions {
                     tool_description: Some("Search for relevant information in the knowledge base. You can use this tool multiple times if the information you need is not found in the first search.".to_string()),
                     query_parameter_description: Some("The search query to find relevant information".to_string()),
-                    price_filter_description: Some("The price filter to use for the search".to_string()),
-                    max_price_option_description: Some("The maximum price to filter by".to_string()),
-                    min_price_option_description: Some("The minimum price to filter by".to_string()),
+                    price_filter_description: Some("The price or page range filter to use for the search".to_string()),
+                    max_price_option_description: Some("The maximum price or page to filter by".to_string()),
+                    min_price_option_description: Some("The minimum price or page to filter by".to_string()),
                 }),
             }),
         }

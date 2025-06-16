@@ -2,7 +2,12 @@
 
 import fs from 'fs';
 import path from 'path';
-import { TrieveSDK, Topic, ChunkMetadata } from 'trieve-ts-sdk';
+import {
+  TrieveSDK,
+  Topic,
+  ChunkMetadata,
+  UpdateDatasetReqPayload,
+} from 'trieve-ts-sdk';
 import { program } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
@@ -108,6 +113,10 @@ function getConfigOrEnv(key: string, envVar: string): string | undefined {
 function ensureTrieveConfig() {
   const apiKey = getConfigOrEnv('TRIEVE_API_KEY', 'TRIEVE_API_KEY');
   const datasetId = getConfigOrEnv('TRIEVE_DATASET_ID', 'TRIEVE_DATASET_ID');
+  const organizationId = getConfigOrEnv(
+    'TRIEVE_ORGANIZATION_ID',
+    'TRIEVE_ORGANIZATION_ID',
+  );
 
   if (!apiKey) {
     console.error(
@@ -125,7 +134,15 @@ function ensureTrieveConfig() {
     console.log(chalk.cyan('trieve-cli configure'));
     process.exit(1);
   }
-  return { apiKey, datasetId };
+  if (!organizationId) {
+    console.error(
+      chalk.red('Error: TRIEVE_ORGANIZATION_ID is not set in env or config.'),
+    );
+    console.log(chalk.yellow('Run the following command to set it:'));
+    console.log(chalk.cyan('trieve-cli configure'));
+    process.exit(1);
+  }
+  return { apiKey, datasetId, organizationId };
 }
 
 const uploadFile = async (
@@ -217,10 +234,11 @@ async function checkFileUploadStatus(
   groupTrackingId: string,
 ): Promise<boolean> {
   try {
-    const { apiKey, datasetId } = ensureTrieveConfig();
+    const { apiKey, datasetId, organizationId } = ensureTrieveConfig();
     const trieveClient: TrieveSDK = new TrieveSDK({
       apiKey,
       datasetId,
+      organizationId,
     });
 
     const response = await trieveClient.getChunksGroupByTrackingId({
@@ -388,7 +406,6 @@ async function askQuestion(question: string): Promise<void> {
       'default-user-' + Math.random().toString(36).substring(2, 15);
 
     const topicData = await trieveClient.createTopic({
-      first_user_message: question,
       name: topicName,
       owner_id: ownerId,
     });
@@ -411,7 +428,7 @@ async function askQuestion(question: string): Promise<void> {
     let fullResponse = '';
     let parsedChunks: ChunkMetadata[] = [];
     let isCollapsed = true;
-    let isChunkSection = true; // Initially assume we're receiving chunks
+    let isChunkSection = false; // Initially assume we're receiving chunks
     let actualAnswer = '';
 
     // Set up keyboard interaction for collapsible chunks
@@ -425,12 +442,22 @@ async function askQuestion(question: string): Promise<void> {
       key: { name: string; ctrl?: boolean; sequence?: string },
     ) => {
       // Handle both key.name and raw sequence for better compatibility
-      if (key.name === 'j' || key.sequence === 'j') {
+      if (str === 'j' || key.name === 'j' || key.sequence === 'j') {
         isCollapsed = !isCollapsed;
         // Clear console and redisplay with updated collapse state
         console.clear();
 
         if (parsedChunks.length > 0) {
+          // Show the answer first (if available)
+          if (actualAnswer) {
+            console.log(actualAnswer);
+          }
+
+          // Add a separator between answer and chunks
+          console.log(
+            chalk.dim('─'.repeat(40) + ' References ' + '─'.repeat(40)),
+          );
+
           if (isCollapsed) {
             console.log(
               chalk.cyan(
@@ -440,12 +467,7 @@ async function askQuestion(question: string): Promise<void> {
           } else {
             console.log(formatChunksCollapsible(parsedChunks));
           }
-
-          // Add a separator between chunks and answer
-          console.log(chalk.dim('─'.repeat(40) + ' Answer ' + '─'.repeat(40)));
-        }
-
-        if (actualAnswer) {
+        } else if (actualAnswer) {
           console.log(actualAnswer);
         }
       } else if (key.name === 'c' && key.ctrl) {
@@ -475,21 +497,8 @@ async function askQuestion(question: string): Promise<void> {
             if (chunksJson) {
               parsedChunks = JSON.parse(chunksJson);
 
-              // Only show a collapsed summary initially
-              if (isCollapsed) {
-                console.log(
-                  chalk.cyan(
-                    `📚 Found ${parsedChunks.length} reference chunks (press 'j' to expand)`,
-                  ),
-                );
-              } else {
-                console.log(formatChunksCollapsible(parsedChunks));
-              }
-
-              // Add a separator between chunks and answer
-              console.log(
-                chalk.dim('─'.repeat(40) + ' Answer ' + '─'.repeat(40)),
-              );
+              // Don't display chunks immediately, we'll show them after the answer
+              // Just save them for later display
             }
           } catch (e) {
             console.error(chalk.red('❌ Error parsing chunks:'), e);
@@ -519,11 +528,18 @@ async function askQuestion(question: string): Promise<void> {
     console.log(chalk.green('✅ Response complete'));
 
     if (parsedChunks.length > 0) {
+      // Add a separator between answer and chunks at the end
+      console.log(chalk.dim('─'.repeat(40) + ' References ' + '─'.repeat(40)));
       console.log(
         chalk.blue(
           `📚 ${parsedChunks.length} reference chunks used (press 'j' to ${isCollapsed ? 'expand' : 'collapse'})`,
         ),
       );
+
+      // If not collapsed, show the chunks again
+      if (!isCollapsed) {
+        console.log(formatChunksCollapsible(parsedChunks));
+      }
     }
 
     console.log(
@@ -601,6 +617,66 @@ program
     }
   });
 
+//  -t "Always use the search tool here when the user asks a question about some information you're supposed to have or some files."
+//  -q "Write this as a maximum 5 word query with the keywords you think would be useful"
+
+program
+  .command('update-tool-config')
+  .description('Update the tool configuration for a dataset')
+  .requiredOption(
+    '-t, --tool-description <toolDescription>',
+    'Description that tells the LLM when it should use the search tool to retrieve information from your dataset',
+    "Always use the search tool here when the user asks a question about some information you're supposed to have or some files.",
+  )
+  .requiredOption(
+    '-q, --query-description <queryDescription>',
+    'Description of how the LLM should write its search queries to retrieve relevant information from your dataset',
+    'Write this as a maximum 5 word query with the keywords you think would be useful',
+  )
+  .action(async (options) => {
+    try {
+      console.log(chalk.blue('🔧 Updating tool configuration...'));
+
+      const { apiKey, datasetId, organizationId } = ensureTrieveConfig();
+
+      // Initialize SDK with apiKey and datasetId from config
+      const trieveClient: TrieveSDK = new TrieveSDK({
+        apiKey,
+        datasetId,
+        organizationId,
+      });
+
+      const updatePayload: UpdateDatasetReqPayload = {
+        dataset_id: datasetId,
+        server_configuration: {
+          TOOL_CONFIGURATION: {
+            query_tool_options: {
+              tool_description: options.toolDescription,
+              query_parameter_description: options.queryDescription,
+              price_filter_description:
+                'The price or page range filter to use for the search',
+
+              max_price_option_description:
+                'The maximum price or page to filter by',
+
+              min_price_option_description:
+                'The minimum price or page to filter by',
+            },
+          },
+        },
+      };
+
+      await trieveClient.updateDataset(updatePayload);
+
+      console.log(chalk.green('✅ Tool configuration updated successfully!'));
+    } catch (error) {
+      console.error(
+        chalk.red('❌ Failed to update tool configuration:'),
+        error instanceof Error ? error.message : error,
+      );
+    }
+  });
+
 program
   .command('configure')
   .description('Set up or update your Trieve CLI configuration')
@@ -620,6 +696,12 @@ program
       },
       {
         type: 'input',
+        name: 'TRIEVE_ORGANIZATION_ID',
+        message: 'Enter your TRIEVE_ORGANIZATION_ID:',
+        default: (config.get('TRIEVE_ORGANIZATION_ID') as string) || '',
+      },
+      {
+        type: 'input',
         name: 'userId',
         message: 'Enter your user ID (for topic ownership):',
         default: (config.get('userId') as string) || '',
@@ -627,6 +709,7 @@ program
     ]);
     config.set('TRIEVE_API_KEY', answers.TRIEVE_API_KEY);
     config.set('TRIEVE_DATASET_ID', answers.TRIEVE_DATASET_ID);
+    config.set('TRIEVE_ORGANIZATION_ID', answers.TRIEVE_ORGANIZATION_ID);
     config.set('userId', answers.userId);
     console.log(chalk.green('✅ Configuration saved!'));
   });
@@ -685,6 +768,7 @@ ${chalk.yellow('Examples:')}
   $ ${chalk.green('trieve-cli check-upload-status --tracking-id <tracking-id>')}
   $ ${chalk.green('trieve-cli ask "What is the capital of France?"')}
   $ ${chalk.green('trieve-cli ask')}
+  $ ${chalk.green('trieve-cli update-tool-config -t "Use this tool to search for information about our products and services" -q "Write specific search queries to find relevant information from our knowledge base"')}
 `,
 );
 

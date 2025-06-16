@@ -607,7 +607,7 @@ async fn upload_file(
                             split_avg: None,
                             convert_html_to_text: None,
                             image_urls: None,
-                            num_value: None,
+                            num_value: Some(page.page_num as f64),
                             fulltext_boost: None,
                             semantic_boost: None,
                             high_priority: None,
