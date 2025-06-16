@@ -12395,6 +12395,16 @@
           }
         }
       },
+      "DefaultSearchQueryType": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "$ref": "#/components/schemas/DefaultSearchQuery"
+          }
+        ]
+      },
       "DeleteTopicData": {
         "type": "object",
         "required": [
@@ -16754,7 +16764,7 @@
           "defaultAiQuestions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DefaultSearchQuery"
+              "$ref": "#/components/schemas/DefaultSearchQueryType"
             },
             "nullable": true
           },
@@ -16773,7 +16783,7 @@
           "defaultSearchQueries": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DefaultSearchQuery"
+              "$ref": "#/components/schemas/DefaultSearchQueryType"
             },
             "nullable": true
           },
