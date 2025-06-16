@@ -2,12 +2,13 @@
 
 import fs from 'fs';
 import path from 'path';
-import { TrieveSDK, Topic } from 'trieve-ts-sdk';
+import { TrieveSDK, Topic, ChunkMetadata } from 'trieve-ts-sdk';
 import { program } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import Conf from 'conf';
 import os from 'os';
+import readline from 'readline';
 
 interface UploadedFile {
   fileName: string;
@@ -251,6 +252,11 @@ async function updateFileStatuses(): Promise<UploadedFile[]> {
     }
   }
 
+  // Sort files by uploadedAt timestamp (most recent first)
+  updatedFiles.sort((a, b) => {
+    return new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime();
+  });
+
   // Save the updated statuses
   if (updatedFiles.length > 0) {
     fs.writeFileSync(uploadedFilesPath, JSON.stringify(updatedFiles, null, 2));
@@ -320,15 +326,22 @@ async function checkSpecificFile(trackingId: string): Promise<void> {
 
 // Interactive function to select and check a specific file
 async function interactiveCheckStatus(): Promise<void> {
-  const files = manageUploadedFiles('get');
+  let files = manageUploadedFiles('get');
 
   if (files.length === 0) {
     console.log(chalk.yellow('No files have been uploaded yet.'));
     return;
   }
 
+  // Sort files by uploadedAt timestamp (most recent first)
+  files.sort((a, b) => {
+    return new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime();
+  });
+
   const fileChoices = files.map((file) => ({
-    name: `${file.fileName} (${file.trackingId})`,
+    name: `${file.fileName} (${file.trackingId}) - ${new Date(
+      file.uploadedAt,
+    ).toLocaleString()}`,
     value: file.trackingId,
   }));
 
@@ -387,18 +400,61 @@ async function askQuestion(question: string): Promise<void> {
     console.log(chalk.blue('🔍 Fetching answer...'));
 
     // Create a message and stream the response
-    const { reader, queryId } =
-      await trieveClient.createMessageReaderWithQueryId({
-        topic_id: topicData.id,
-        new_message_content: question,
-      });
-
-    console.log(chalk.yellow('\n🤖 Answer:'));
-    console.log('─'.repeat(80));
+    const { reader } = await trieveClient.createMessageReaderWithQueryId({
+      topic_id: topicData.id,
+      new_message_content: question,
+      use_agentic_search: true,
+    });
 
     // Stream the response
     const decoder = new TextDecoder();
-    let answer = '';
+    let fullResponse = '';
+    let parsedChunks: ChunkMetadata[] = [];
+    let isCollapsed = true;
+    let isChunkSection = true; // Initially assume we're receiving chunks
+    let actualAnswer = '';
+
+    // Set up keyboard interaction for collapsible chunks
+    readline.emitKeypressEvents(process.stdin);
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+    }
+
+    const keyPressHandler = (
+      str: string,
+      key: { name: string; ctrl?: boolean; sequence?: string },
+    ) => {
+      // Handle both key.name and raw sequence for better compatibility
+      if (key.name === 'j' || key.sequence === 'j') {
+        isCollapsed = !isCollapsed;
+        // Clear console and redisplay with updated collapse state
+        console.clear();
+
+        if (parsedChunks.length > 0) {
+          if (isCollapsed) {
+            console.log(
+              chalk.cyan(
+                `📚 Found ${parsedChunks.length} reference chunks (press 'j' to expand)`,
+              ),
+            );
+          } else {
+            console.log(formatChunksCollapsible(parsedChunks));
+          }
+
+          // Add a separator between chunks and answer
+          console.log(chalk.dim('─'.repeat(40) + ' Answer ' + '─'.repeat(40)));
+        }
+
+        if (actualAnswer) {
+          console.log(actualAnswer);
+        }
+      } else if (key.name === 'c' && key.ctrl) {
+        // Allow Ctrl+C to exit
+        process.exit();
+      }
+    };
+
+    process.stdin.on('keypress', keyPressHandler);
 
     try {
       while (true) {
@@ -406,19 +462,72 @@ async function askQuestion(question: string): Promise<void> {
         if (done) break;
 
         const chunk = decoder.decode(value);
-        answer += chunk;
-        process.stdout.write(chunk);
+        fullResponse += chunk;
+
+        // Check if we've reached the separator between chunks and answer
+        if (isChunkSection && fullResponse.includes('||')) {
+          isChunkSection = false;
+          const parts = fullResponse.split('||');
+
+          try {
+            // The first part should contain the JSON array of chunks
+            const chunksJson = parts[0].trim();
+            if (chunksJson) {
+              parsedChunks = JSON.parse(chunksJson);
+
+              // Only show a collapsed summary initially
+              if (isCollapsed) {
+                console.log(
+                  chalk.cyan(
+                    `📚 Found ${parsedChunks.length} reference chunks (press 'j' to expand)`,
+                  ),
+                );
+              } else {
+                console.log(formatChunksCollapsible(parsedChunks));
+              }
+
+              // Add a separator between chunks and answer
+              console.log(
+                chalk.dim('─'.repeat(40) + ' Answer ' + '─'.repeat(40)),
+              );
+            }
+          } catch (e) {
+            console.error(chalk.red('❌ Error parsing chunks:'), e);
+          }
+
+          // Start displaying the actual answer from the second part
+          actualAnswer = parts[1] || '';
+          process.stdout.write(actualAnswer);
+        } else if (!isChunkSection) {
+          // We're in the answer section, just display the chunk
+          actualAnswer += chunk;
+          process.stdout.write(chunk);
+        }
       }
     } catch (e) {
       console.error(chalk.red('❌ Error streaming response:'), e);
     } finally {
       reader.releaseLock();
+      // Clean up the keypress listener
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(false);
+      }
+      process.stdin.removeListener('keypress', keyPressHandler);
     }
 
     console.log('\n' + '─'.repeat(80));
     console.log(chalk.green('✅ Response complete'));
+
+    if (parsedChunks.length > 0) {
+      console.log(
+        chalk.blue(
+          `📚 ${parsedChunks.length} reference chunks used (press 'j' to ${isCollapsed ? 'expand' : 'collapse'})`,
+        ),
+      );
+    }
+
     console.log(
-      chalk.blue(`📚 Topic ID: ${topicData.id} (saved for future reference)`),
+      chalk.blue(`� Topic ID: ${topicData.id} (saved for future reference)`),
     );
   } catch (error) {
     console.error(
@@ -426,6 +535,52 @@ async function askQuestion(question: string): Promise<void> {
       error instanceof Error ? error.message : error,
     );
   }
+}
+
+// Function to format chunk metadata in a collapsible way
+function formatChunksCollapsible(chunks: ChunkMetadata[]): string {
+  if (!chunks || chunks.length === 0) {
+    return '';
+  }
+
+  const summary = chalk.cyan(`📚 Found ${chunks.length} reference chunks`);
+  const collapsedMessage = chalk.dim(`(Use 'j' to expand/collapse references)`);
+
+  // Format each chunk in a more readable way
+  const formattedChunks = chunks
+    .map((chunk, index) => {
+      const header = chalk.yellow(
+        `\n📄 Reference #${index + 1}: ${chunk.tracking_id || chunk.id.substring(0, 8)}`,
+      );
+
+      // Extract important fields for preview
+      const details = [
+        chunk.link ? chalk.blue(`🔗 ${chunk.link}`) : '',
+        chunk.tag_set?.length
+          ? chalk.magenta(`🏷️  Tags: ${chunk.tag_set.join(', ')}`)
+          : '',
+        chalk.grey(
+          `📅 Created: ${new Date(chunk.created_at).toLocaleString()}`,
+        ),
+      ]
+        .filter(Boolean)
+        .join('\n  ');
+
+      // Create preview of chunk content (if available)
+      let contentPreview = '';
+      if (chunk.chunk_html) {
+        // Strip HTML tags for clean preview and limit length
+        const plainText = chunk.chunk_html.replace(/<[^>]*>?/gm, '');
+        contentPreview = chalk.white(
+          `\n  "${plainText.substring(0, 150)}${plainText.length > 150 ? '...' : ''}"`,
+        );
+      }
+
+      return `${header}\n  ${details}${contentPreview}`;
+    })
+    .join('\n');
+
+  return `${summary} ${collapsedMessage}\n${formattedChunks}`;
 }
 
 program
@@ -483,7 +638,6 @@ program
     '-t, --tracking-id <trackingId>',
     'Check specific file by tracking ID',
   )
-  .option('-a, --all', 'Check all uploaded files')
   .action(async (options) => {
     if (options.trackingId) {
       await checkSpecificFile(options.trackingId);
@@ -496,42 +650,41 @@ program
 
 program
   .command('ask')
-  .description('Ask a question and get a streamed response')
-  .argument('<question>', 'The question to ask')
+  .description(
+    'Ask a question and get a streamed response (interactive mode if no question provided)',
+  )
+  .argument('[question]', 'The question to ask')
   .action(async (question) => {
-    await askQuestion(question);
-  });
-
-program
-  .command('interactive-ask')
-  .description('Ask a question interactively and get a streamed response')
-  .action(async () => {
-    const answers = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'question',
-        message: 'What would you like to ask?',
-        validate: (input) => {
-          if (!input) return 'Question is required';
-          return true;
+    if (question) {
+      await askQuestion(question);
+    } else {
+      // Interactive mode when no question is provided
+      const answers = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'question',
+          message: 'What would you like to ask?',
+          validate: (input) => {
+            if (!input) return 'Question is required';
+            return true;
+          },
         },
-      },
-    ]);
+      ]);
 
-    await askQuestion(answers.question);
+      await askQuestion(answers.question);
+    }
   });
 
 program.addHelpText(
   'after',
   `
 ${chalk.yellow('Examples:')}
-  $ ${chalk.green('trieve-cli upload path/to/file.txt -t my-tracking-id')}
   $ ${chalk.green('trieve-cli configure')}
+  $ ${chalk.green('trieve-cli upload path/to/file.txt -t my-tracking-id')}
   $ ${chalk.green('trieve-cli check-upload-status')}
-  $ ${chalk.green('trieve-cli check-upload-status --all')}
   $ ${chalk.green('trieve-cli check-upload-status --tracking-id <tracking-id>')}
   $ ${chalk.green('trieve-cli ask "What is the capital of France?"')}
-  $ ${chalk.green('trieve-cli interactive-ask')}
+  $ ${chalk.green('trieve-cli ask')}
 `,
 );
 
