@@ -854,7 +854,10 @@ pub async fn stream_response(
     };
 
     let rag_prompt = dataset_config.RAG_PROMPT.clone();
-    let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
+    let chosen_model = create_message_req_payload
+        .model
+        .clone()
+        .unwrap_or(dataset_config.LLM_DEFAULT_MODEL.clone());
 
     let (search_event, score_chunks) = get_rag_chunks_query(
         create_message_req_payload.clone(),
@@ -1894,8 +1897,10 @@ pub async fn stream_response_with_agentic_search(
         messages_len
     };
 
-    let chosen_model = dataset_config.LLM_DEFAULT_MODEL.clone();
-
+    let chosen_model = create_message_req_payload
+        .model
+        .clone()
+        .unwrap_or(dataset_config.LLM_DEFAULT_MODEL.clone());
     let tools = vec![ChatCompletionTool {
         r#type: ChatCompletionToolType::Function,
         function: ChatCompletionFunction {

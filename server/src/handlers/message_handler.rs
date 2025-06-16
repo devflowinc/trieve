@@ -138,6 +138,8 @@ pub struct CreateMessageReqPayload {
     pub use_agentic_search: Option<bool>,
     /// Number of messages to include in the context window. If not specified, this defaults to 10.
     pub number_of_messages_to_include: Option<u64>,
+    /// Model name to use for the completion. If not specified, this defaults to the dataset's model.
+    pub model: Option<String>,
 }
 
 /// Create message
@@ -451,6 +453,8 @@ pub struct RegenerateMessageReqPayload {
     pub use_agentic_search: Option<bool>,
     /// Number of messages to include in the context window. If not specified, this defaults to 10.
     pub number_of_messages_to_include: Option<u64>,
+    /// Model name to use for the completion. If not specified, this defaults to the dataset's model.
+    pub model: Option<String>,
 }
 
 #[derive(Serialize, Debug, ToSchema)]
@@ -509,6 +513,8 @@ pub struct EditMessageReqPayload {
     pub use_agentic_search: Option<bool>,
     /// Number of messages to include in the context window. If not specified, this defaults to 10.
     pub number_of_messages_to_include: Option<u64>,
+    /// Model name to use for the completion. If not specified, this defaults to the dataset's model.
+    pub model: Option<String>,
 }
 
 impl From<EditMessageReqPayload> for CreateMessageReqPayload {
@@ -540,6 +546,7 @@ impl From<EditMessageReqPayload> for CreateMessageReqPayload {
             use_agentic_search: data.use_agentic_search,
             only_include_docs_used: data.only_include_docs_used,
             number_of_messages_to_include: data.number_of_messages_to_include,
+            model: data.model,
         }
     }
 }
@@ -573,6 +580,7 @@ impl From<RegenerateMessageReqPayload> for CreateMessageReqPayload {
             use_agentic_search: data.use_agentic_search,
             only_include_docs_used: data.only_include_docs_used,
             number_of_messages_to_include: data.number_of_messages_to_include,
+            model: data.model,
         }
     }
 }
