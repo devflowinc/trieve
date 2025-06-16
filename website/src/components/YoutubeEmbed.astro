@@ -1,0 +1,27 @@
+---
+// Define the props with TypeScript interface
+interface Props {
+  src: string;
+  title?: string;
+}
+
+// Destructure props with default values
+const { src, title = "Vimeo video player" } = Astro.props;
+---
+
+<div
+  class="mx-auto rounded-xl w-fit max-w-full lg:max-w-[900px] mb-6 sm:rounded-md bg-gray-400 dark:bg-slate-700"
+>
+  <div class="rounded-xl mx-auto">
+      <iframe 
+        width="560" 
+        height="315" 
+        src={src}
+        title={title} 
+        frameborder="0" 
+        allow="accelerometer; fullscreen; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+        referrerpolicy="strict-origin-when-cross-origin" 
+        allowfullscreen></iframe>
+  </div>
+  <script src="https://player.vimeo.com/api/player.js"></script>
+</div>

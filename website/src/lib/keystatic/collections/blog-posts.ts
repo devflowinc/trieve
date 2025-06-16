@@ -84,6 +84,13 @@ export const blogPosts = collection({
             title: fields.text({ label: "Video Title" }),
           },
         }),
+        YoutubeEmbed: block({
+          label: "YouTube Embed",
+          schema: {
+            src: fields.text({ label: "Video Src" }),
+            title: fields.text({ label: "Video Title" }),
+          },
+        }),
         ParallelClothesLabelingAstro: block({
           label: "Parallel Clothes Labeling",
           schema: {

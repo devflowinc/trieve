@@ -14,13 +14,21 @@ coverImage: >-
   /src/assets/images/blog-posts/build-agentic-rag-for-any-pdf-in-10-minutes-with-chunkr-and-trieve/coverImage.jpg
 ogSection: Technology
 ---
+
 ## Introduction
 
-Retrieval Augmented Generation (RAG) has revolutionized how we build AI applications, allowing Large Language Models (LLMs) to answer questions based on custom data. But what if the LLM could *decide* when and how to search that data, like a smart assistant? That's where **Agentic RAG** comes in.
+Retrieval Augmented Generation (RAG) has revolutionized how we build AI applications, allowing Large Language Models (LLMs) to answer questions based on custom data. But what if the LLM could _decide_ when and how to search that data, like a smart assistant? That's where **Agentic RAG** comes in.
 
 With Trieve, you can easily set up an agentic RAG pipeline that leverages advanced OCR for PDFs (via [Chunkr](https://chunkr.ai)) and gives your LLM the autonomy to intelligently query your knowledge base.
 
 If you're not interested in the guide and just want to see the code in order to give it to your agent as a starting point, you can find a fully complete CLI demonstrating this functionality in a single file on github at [github.com/devflowinc/trieve/blob/main/clients/cli/index.ts](https://github.com/devflowinc/trieve/blob/main/clients/cli/index.ts) or install it via [`npm i -g trieve-cli`](https://www.npmjs.com/package/trieve-cli).
+
+Here's a short video where I break down how agentic RAG performs against Gemini with the entire file in the context window along with naive RAG (no agentic search) for the 2025 CrossFit Games Rulebook. Credit to [canonical ai's original post](https://canonical.chat/blog/model_assisted_generation).
+
+<YoutubeEmbed
+  src="https://www.youtube.com/embed/SAV-esDsRUk?si=IvuvXfsZxSL9Y3jL"
+  title="Analysis of Agentic RAG Performance vs. Gemini for the 2025 CrossFit Games Rulebook"
+/>
 
 ## Step 1: Sign Up for Trieve and Set Up Your Dataset
 
@@ -70,18 +78,18 @@ console.log("Trieve SDK initialized.");
 
 ## Step 3: Configure Your Agent's Search Tool
 
-For an LLM to act as an agent, it needs clear instructions on *when* and *how* to use its tools (in this case, searching your Trieve dataset). We configure this at the dataset level.
+For an LLM to act as an agent, it needs clear instructions on _when_ and _how_ to use its tools (in this case, searching your Trieve dataset). We configure this at the dataset level.
 
-* **System Prompt (`SYSTEM_PROMPT`):** This is the overarching instruction for the LLM. It should emphasize relying on the search tool.
-* **Tool Description (`tool_description`):** This tells the LLM *when* it should use the search tool. For robust RAG, you often want it to *always* use the tool.
-* **Query Parameter Description (`query_parameter_description`):** This guides the LLM on *how* to formulate its search queries effectively.
+- **System Prompt (`SYSTEM_PROMPT`):** This is the overarching instruction for the LLM. It should emphasize relying on the search tool.
+- **Tool Description (`tool_description`):** This tells the LLM _when_ it should use the search tool. For robust RAG, you often want it to _always_ use the tool.
+- **Query Parameter Description (`query_parameter_description`):** This guides the LLM on _how_ to formulate its search queries effectively.
 
 **Tips and Tricks for Descriptions:**
 
-* **Be Explicit:** Don't assume the LLM knows. Tell it directly, e.g., "ALWAYS call this search tool for EVERY user question."
-* **Emphasize Data Freshness:** Remind the LLM that its internal knowledge might be outdated and the search tool provides current information from your documents.
-* **Encourage Specificity in Queries:** Guide the LLM to extract keywords and form precise queries. Suggest trying multiple queries if the first attempt isn't fruitful.
-* **Iterate:** These descriptions are powerful. Experiment with different phrasings to see what works best for your use case.
+- **Be Explicit:** Don't assume the LLM knows. Tell it directly, e.g., "ALWAYS call this search tool for EVERY user question."
+- **Emphasize Data Freshness:** Remind the LLM that its internal knowledge might be outdated and the search tool provides current information from your documents.
+- **Encourage Specificity in Queries:** Guide the LLM to extract keywords and form precise queries. Suggest trying multiple queries if the first attempt isn't fruitful.
+- **Iterate:** These descriptions are powerful. Experiment with different phrasings to see what works best for your use case.
 
 Here's how to update your dataset configuration using the SDK:
 
@@ -120,10 +128,10 @@ Chunkr is Trieve's advanced file processing service. When you upload a file (lik
 
 **Request Explanation:**
 
-* `base64_file`: The file content, base64 encoded.
-* `file_name`: The original name of the file.
-* `group_tracking_id` (Optional but Recommended): A unique ID you can use to later check the status of the file processing and group related chunks. If not provided, Trieve might generate one.
-* `chunkr_create_task_req_payload: {}`: This empty object is the key! It signals Trieve to process this file using Chunkr for advanced chunking. You can pass specific Chunkr options here if needed, but an empty object uses sensible defaults.
+- `base64_file`: The file content, base64 encoded.
+- `file_name`: The original name of the file.
+- `group_tracking_id` (Optional but Recommended): A unique ID you can use to later check the status of the file processing and group related chunks. If not provided, Trieve might generate one.
+- `chunkr_create_task_req_payload: {}`: This empty object is the key! It signals Trieve to process this file using Chunkr for advanced chunking. You can pass specific Chunkr options here if needed, but an empty object uses sensible defaults.
 
 ```javascript
 async function uploadPdfWithChunkr(filePath: string, trackingId?: string) {
@@ -152,7 +160,7 @@ async function uploadPdfWithChunkr(filePath: string, trackingId?: string) {
 }
 ```
 
-*Note: File processing with Chunkr is asynchronous. The `uploadFile` endpoint returns quickly, but the actual chunking happens in the background. You'd typically use the `group_tracking_id` to poll for completion status if needed, though for this example, we'll assume it completes.*
+_Note: File processing with Chunkr is asynchronous. The `uploadFile` endpoint returns quickly, but the actual chunking happens in the background. You'd typically use the `group_tracking_id` to poll for completion status if needed, though for this example, we'll assume it completes._
 
 ## Step 4: Asking Agentic Questions
 
@@ -160,8 +168,8 @@ Now for the magic! To ask an agentic question:
 
 1. **Create a Topic:** Topics are like conversation threads. Each agentic interaction typically happens within a topic.
 2. **Create a Message Reader:** When creating a message within a topic, set:
-   * `use_agentic_search: true`: This tells Trieve to use the agentic flow defined by your dataset's tool configuration.
-   * `model`: Specify an LLM capable of agentic behavior. Trieve offers models like `o3` (Claude 3 Opus), `c3.5s` (Claude 3.5 Sonnet), `gpro` (GPT-4o), `gpt4t` (GPT-4 Turbo) which are well-suited for this. Check Trieve documentation for the latest list of supported models. `o3` is a powerful option.
+   - `use_agentic_search: true`: This tells Trieve to use the agentic flow defined by your dataset's tool configuration.
+   - `model`: Specify an LLM capable of agentic behavior. Trieve offers models like `o3` (Claude 3 Opus), `c3.5s` (Claude 3.5 Sonnet), `gpro` (GPT-4o), `gpt4t` (GPT-4 Turbo) which are well-suited for this. Check Trieve documentation for the latest list of supported models. `o3` is a powerful option.
 
 The response will be streamed back, often including "thinking" steps from the agent before the final answer.
 
@@ -373,8 +381,8 @@ You've just built a powerful Agentic RAG pipeline! By configuring your Trieve da
 
 This is just the beginning. You can expand on this by:
 
-* Implementing robust status checking for file uploads.
-* Building a more sophisticated UI to handle streamed responses and citations.
-* Experimenting with different agentic models and prompt engineering for your tool descriptions.
+- Implementing robust status checking for file uploads.
+- Building a more sophisticated UI to handle streamed responses and citations.
+- Experimenting with different agentic models and prompt engineering for your tool descriptions.
 
 Trieve makes complex AI tasks like Agentic RAG surprisingly accessible. Happy building!

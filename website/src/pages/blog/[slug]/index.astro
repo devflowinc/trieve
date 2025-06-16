@@ -10,6 +10,7 @@ import Layout from "@layouts/Layout.astro";
 import Info from "@components/Info.astro";
 import { getCollection, render } from "astro:content";
 import ParallelClothesLabelingAstro from "@components/ParallelClothesLabelingAstro.astro";
+import YoutubeEmbed from "@components/YoutubeEmbed.astro";
 
 export async function getStaticPaths() {
   const entries = await getCollection("blogPosts");
@@ -109,6 +110,7 @@ const ogImage = new URL(i18n.coverImage.src, site).href;
             TextBoxLearnMore,
             Warning,
             VimeoEmbed,
+            YoutubeEmbed,
             Info,
             ParallelClothesLabelingAstro,
           }}
