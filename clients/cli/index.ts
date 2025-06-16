@@ -13,7 +13,8 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import Conf from 'conf';
 import os from 'os';
-import readline from 'readline';
+// Import readline with specific import for better Node.js compatibility
+import * as readline from 'readline';
 
 interface UploadedFile {
   fileName: string;
@@ -399,24 +400,17 @@ async function askQuestion(question: string): Promise<void> {
     // Generate a topic name from the question (use first few words)
     const topicName = question.split(' ').slice(0, 5).join(' ') + '...';
 
-    // Create a topic
-    console.log(chalk.blue('📝 Creating a new topic...'));
     const ownerId =
       (config.get('userId') as string) ||
       'default-user-' + Math.random().toString(36).substring(2, 15);
 
     const topicData = await trieveClient.createTopic({
-      first_user_message: topicName,
+      name: topicName,
       owner_id: ownerId,
     });
 
-    // Save the topic for future reference
     manageTopics('add', topicData as Topic);
 
-    console.log(chalk.green(`✅ Topic created: ${topicName}`));
-    console.log(chalk.blue('🔍 Fetching answer...'));
-
-    // Create a message and stream the response
     const { reader } = await trieveClient.createMessageReaderWithQueryId({
       topic_id: topicData.id,
       new_message_content: question,
@@ -429,55 +423,68 @@ async function askQuestion(question: string): Promise<void> {
     let fullResponse = '';
     let parsedChunks: ChunkMetadata[] = [];
     let isCollapsed = true;
-    let isChunkSection = false; // Initially assume we're receiving chunks
+    let chunkData = '';
+    let isParsingChunks = false;
     let actualAnswer = '';
+    let isThinkingSection = false;
 
-    // Set up keyboard interaction for collapsible chunks
-    readline.emitKeypressEvents(process.stdin);
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(true);
-    }
-
+    // Define keypress handler before setting up event listener
     const keyPressHandler = (
       str: string,
       key: { name: string; ctrl?: boolean; sequence?: string },
     ) => {
+      // Debug logging - always keep this to verify keypresses are being received
+      console.log(
+        chalk.dim(
+          `DEBUG: Keypress detected: str='${str}', key.name='${key.name}', ctrl=${key.ctrl}, sequence='${key.sequence}'`,
+        ),
+      );
       // Handle both key.name and raw sequence for better compatibility
       if (str === 'j' || key.name === 'j' || key.sequence === 'j') {
-        isCollapsed = !isCollapsed;
-        // Clear console and redisplay with updated collapse state
-        console.clear();
+        console.log(`Key 'j' pressed - toggling reference display...`);
 
-        if (parsedChunks.length > 0) {
-          // Show the answer first (if available)
-          if (actualAnswer) {
+        // Add a small delay to ensure the UI updates properly
+        setTimeout(() => {
+          isCollapsed = !isCollapsed;
+          // Clear console and redisplay with updated collapse state
+          console.clear();
+
+          if (parsedChunks.length > 0) {
+            if (isCollapsed) {
+              if (actualAnswer) {
+                console.log(actualAnswer);
+              }
+
+              console.log(
+                chalk.cyan(
+                  `📚 Found ${parsedChunks.length} reference chunks (press 'j' to expand,  Ctrl+C to exit)`,
+                ),
+              );
+            } else {
+              if (actualAnswer) {
+                console.log(actualAnswer);
+              }
+
+              console.log(
+                chalk.dim('─'.repeat(40) + ' References ' + '─'.repeat(40)),
+              );
+              console.log(formatChunksCollapsible(parsedChunks));
+              process.exit(0);
+            }
+          } else if (actualAnswer) {
             console.log(actualAnswer);
           }
-
-          // Add a separator between answer and chunks
-          console.log(
-            chalk.dim('─'.repeat(40) + ' References ' + '─'.repeat(40)),
-          );
-
-          if (isCollapsed) {
-            console.log(
-              chalk.cyan(
-                `📚 Found ${parsedChunks.length} reference chunks (press 'j' to expand)`,
-              ),
-            );
-          } else {
-            console.log(formatChunksCollapsible(parsedChunks));
-          }
-        } else if (actualAnswer) {
-          console.log(actualAnswer);
-        }
+        }, 100); // 100ms timeout to ensure the keystroke is processed
       } else if (key.name === 'c' && key.ctrl) {
         // Allow Ctrl+C to exit
         process.exit();
+      } else {
+        // Provide debug feedback for any other keypress
+        console.log(
+          chalk.dim(`DEBUG: Unhandled key: ${key.name || str || key.sequence}`),
+        );
       }
     };
-
-    process.stdin.on('keypress', keyPressHandler);
 
     try {
       while (true) {
@@ -487,28 +494,53 @@ async function askQuestion(question: string): Promise<void> {
         const chunk = decoder.decode(value);
         fullResponse += chunk;
 
-        // Check if we've reached the separator between chunks and answer
-        if (isChunkSection && fullResponse.includes('||')) {
-          isChunkSection = false;
-          const parts = fullResponse.split('||');
+        // Detect the start of chunk JSON data section
+        if (chunk.includes('[{') && !isParsingChunks) {
+          isParsingChunks = true;
+          chunkData = '';
+        }
 
-          try {
-            // The first part should contain the JSON array of chunks
-            const chunksJson = parts[0].trim();
-            if (chunksJson) {
-              parsedChunks = JSON.parse(chunksJson);
+        // Handle the thinking/processing messages
+        if (
+          chunk.includes('🤔') ||
+          chunk.includes('📝') ||
+          chunk.includes('✅') ||
+          chunk.includes('🔍')
+        ) {
+          isThinkingSection = true;
+          process.stdout.write(chunk);
+          continue;
+        }
 
-              // Don't display chunks immediately, we'll show them after the answer
-              // Just save them for later display
+        // When we encounter the opening [ and "chunk" in the JSON, we're starting to receive chunks
+        if (isParsingChunks) {
+          chunkData += chunk;
+
+          // Try to find the end of the JSON chunk data (marked by "||" or the start of the actual answer)
+          if (chunkData.includes('||')) {
+            isParsingChunks = false;
+            const parts = chunkData.split('||');
+
+            try {
+              // The first part should contain the JSON array of chunks
+              const chunksJson = parts[0].trim();
+              if (chunksJson) {
+                const parsedChunksRaw: {
+                  chunk: ChunkMetadata;
+                }[] = JSON.parse(chunksJson);
+                parsedChunks = parsedChunksRaw.map((item) => item.chunk);
+              }
+            } catch (e) {
+              console.error(chalk.red('❌ Error parsing chunks:'), e);
             }
-          } catch (e) {
-            console.error(chalk.red('❌ Error parsing chunks:'), e);
-          }
 
-          // Start displaying the actual answer from the second part
-          actualAnswer = parts[1] || '';
-          process.stdout.write(actualAnswer);
-        } else if (!isChunkSection) {
+            // Start displaying the actual answer from the second part
+            if (parts[1]) {
+              actualAnswer = parts[1] || '';
+              process.stdout.write(actualAnswer);
+            }
+          }
+        } else if (!isParsingChunks && !isThinkingSection) {
           // We're in the answer section, just display the chunk
           actualAnswer += chunk;
           process.stdout.write(chunk);
@@ -518,34 +550,41 @@ async function askQuestion(question: string): Promise<void> {
       console.error(chalk.red('❌ Error streaming response:'), e);
     } finally {
       reader.releaseLock();
-      // Clean up the keypress listener
-      if (process.stdin.isTTY) {
-        process.stdin.setRawMode(false);
-      }
-      process.stdin.removeListener('keypress', keyPressHandler);
     }
 
     console.log('\n' + '─'.repeat(80));
     console.log(chalk.green('✅ Response complete'));
 
     if (parsedChunks.length > 0) {
-      // Add a separator between answer and chunks at the end
-      console.log(chalk.dim('─'.repeat(40) + ' References ' + '─'.repeat(40)));
-      console.log(
-        chalk.blue(
-          `📚 ${parsedChunks.length} reference chunks used (press 'j' to ${isCollapsed ? 'expand' : 'collapse'})`,
-        ),
-      );
-
       // If not collapsed, show the chunks again
       if (!isCollapsed) {
         console.log(formatChunksCollapsible(parsedChunks));
       }
-    }
 
-    console.log(
-      chalk.blue(`� Topic ID: ${topicData.id} (saved for future reference)`),
-    );
+      // Setup keyboard input handling for interacting with references
+      readline.emitKeypressEvents(process.stdin);
+      // Set raw mode to get keypress events
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(true);
+      }
+
+      // Listen for keypresses
+      process.stdin.on('keypress', (str, key) => {
+        // Exit on Ctrl+C
+        if (key.ctrl && key.name === 'c') {
+          process.exit();
+        }
+
+        // Handle keypresses with the handler function
+        keyPressHandler(str, key);
+      });
+
+      console.log(chalk.dim('Press j to expand references, or Ctrl+C to exit'));
+    } else {
+      console.log(
+        chalk.yellow('⚠️ No reference chunks were found for this query.'),
+      );
+    }
   } catch (error) {
     console.error(
       chalk.red('❌ Failed to process question:'),
@@ -559,9 +598,6 @@ function formatChunksCollapsible(chunks: ChunkMetadata[]): string {
   if (!chunks || chunks.length === 0) {
     return '';
   }
-
-  const summary = chalk.cyan(`📚 Found ${chunks.length} reference chunks`);
-  const collapsedMessage = chalk.dim(`(Use 'j' to expand/collapse references)`);
 
   // Format each chunk in a more readable way
   const formattedChunks = chunks
@@ -589,7 +625,7 @@ function formatChunksCollapsible(chunks: ChunkMetadata[]): string {
         // Strip HTML tags for clean preview and limit length
         const plainText = chunk.chunk_html.replace(/<[^>]*>?/gm, '');
         contentPreview = chalk.white(
-          `\n  "${plainText.substring(0, 150)}${plainText.length > 150 ? '...' : ''}"`,
+          `\n  "${plainText.substring(0, 1000)}${plainText.length > 1000 ? '...' : ''}"`,
         );
       }
 
@@ -597,13 +633,13 @@ function formatChunksCollapsible(chunks: ChunkMetadata[]): string {
     })
     .join('\n');
 
-  return `${summary} ${collapsedMessage}\n${formattedChunks}`;
+  return `${formattedChunks}`;
 }
 
 program
   .name('trieve')
   .description('A CLI tool for using Trieve')
-  .version('1.0.0');
+  .version('0.0.2');
 
 program
   .command('upload')
@@ -624,17 +660,17 @@ program
   .option(
     '-t, --tool-description <toolDescription>',
     'Description that tells the LLM when it should use the search tool to retrieve information from your dataset',
-    "Always use the search tool here when the user asks a question about some information you're supposed to have or some files.",
+    'ALWAYS call this search tool for EVERY user question, even if you think you already know the answer. Your knowledge is limited and potentially outdated - you must rely on the provided search tool to get the most accurate and up-to-date information.',
   )
   .option(
     '-q, --query-description <queryDescription>',
     'Description of how the LLM should write its search queries to retrieve relevant information from your dataset',
-    'Write this as a maximum 5 word query with the keywords you think would be useful',
+    'Write a specific query with critical keywords from the user question. Use multiple search queries with different terms if needed to get comprehensive results.',
   )
   .option(
     '-s, --system-prompt <systemPrompt>',
     'Custom system prompt for the AI assistant',
-    "You are an AI assistant that helps people find information in a set of documents. You have access to a search tool that can retrieve relevant information from the documents based on a query. When you need to find information, use the search tool by writing a concise query that captures the essence of what you're looking for. Be specific and use keywords that are likely to yield relevant results. Once you receive the search results, use them to answer the user's question accurately and comprehensively. If the search results do not contain the information you need, inform the user that you couldn't find an answer in the documents.",
+    "You are an AI assistant that helps people find information in a set of documents. You have access to a search tool that can retrieve relevant information from the documents based on a query. YOU MUST ALWAYS CALL AND USE THE SEARCH TOOL FOR EVERY USER QUESTION WITHOUT EXCEPTION. Do not rely on your own knowledge - it may be outdated or incorrect. For each user question: 1) Use the search tool with a well-crafted query 2) If the first search doesn't yield satisfactory results, try additional searches with different terms 3) Only after searching should you formulate your response, citing the information found. Always inform the user that your answer is based on search results from their documents. If you don't find relevant information after multiple searches, be honest about this limitation.",
   )
   .action(async (options) => {
     try {
@@ -725,13 +761,13 @@ program
       dataset_id: datasetId,
       server_configuration: {
         SYSTEM_PROMPT:
-          "You are an AI assistant that helps people find information in a set of documents. You have access to a search tool that can retrieve relevant information from the documents based on a query. When you need to find information, use the search tool by writing a concise query that captures the essence of what you're looking for. Be specific and use keywords that are likely to yield relevant results. Once you receive the search results, use them to answer the user's question accurately and comprehensively. If the search results do not contain the information you need, inform the user that you couldn't find an answer in the documents.",
+          "You are an AI assistant that helps people find information in a set of documents. You have access to a search tool that can retrieve relevant information from the documents based on a query. YOU MUST ALWAYS USE THE SEARCH TOOL FOR EVERY USER QUESTION WITHOUT EXCEPTION. Do not rely on your own knowledge - it may be outdated or incorrect. For each user question: 1) Use the search tool with a well-crafted query 2) If the first search doesn't yield satisfactory results, try additional searches with different terms 3) Only after searching should you formulate your response, citing the information found. Always inform the user that your answer is based on search results from their documents. If you don't find relevant information after multiple searches, be honest about this limitation.",
         TOOL_CONFIGURATION: {
           query_tool_options: {
             tool_description:
-              "Always use the search tool here when the user asks a question about some information you're supposed to have or some files.",
+              'ALWAYS use the search tool for EVERY user question, even if you think you already know the answer. Your knowledge is limited and potentially outdated - you must rely on the provided search tool to get the most accurate and up-to-date information.',
             query_parameter_description:
-              'Write this as a maximum 5 word query with the keywords you think would be useful',
+              'Write a specific query with critical keywords from the user question. Use multiple search queries with different terms if needed to get comprehensive results.',
             price_filter_description:
               'The page range filter to use for the search',
 
