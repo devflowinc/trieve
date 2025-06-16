@@ -11668,6 +11668,11 @@
             "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
             "nullable": true
           },
+          "model": {
+            "type": "string",
+            "description": "Model name to use for the completion. If not specified, this defaults to the dataset's model.",
+            "nullable": true
+          },
           "new_message_content": {
             "type": "string",
             "description": "The content of the user message to attach to the topic and then generate an assistant message in response to.",
@@ -12782,6 +12787,11 @@
           },
           "metadata": {
             "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "description": "Model name to use for the completion. If not specified, this defaults to the dataset's model.",
             "nullable": true
           },
           "new_message_content": {
@@ -19386,6 +19396,11 @@
           },
           "metadata": {
             "description": "Metadata is any metadata you want to associate w/ the event that is created from this request",
+            "nullable": true
+          },
+          "model": {
+            "type": "string",
+            "description": "Model name to use for the completion. If not specified, this defaults to the dataset's model.",
             "nullable": true
           },
           "no_result_message": {

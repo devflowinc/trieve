@@ -1,10 +1,10 @@
 {
-  "name": "agentic-rag-cli",
-  "version": "1.0.0",
+  "name": "trieve-cli",
+  "version": "0.0.1",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "trieve-cli": "dist/index.js"
+    "trieve": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -12,12 +12,11 @@
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "format": "prettier --check .",
-    "format:fix": "prettier --write .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "format:fix": "prettier --write ."
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": "Trieve Team <contact@trieve.ai>",
+  "license": "MIT",
+  "description": "Beta command-line interface for Trieve API that enables users to upload files and interact with them using agentic RAG (Retrieval Augmented Generation). Simplifies document management and Q&A workflows.",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
@@ -30,6 +29,6 @@
     "commander": "^14.0.0",
     "conf": "^14.0.0",
     "inquirer": "^12.6.3",
-    "trieve-ts-sdk": "^0.0.120"
+    "trieve-ts-sdk": "^0.0.121"
   }
 }

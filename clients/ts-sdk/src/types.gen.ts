@@ -1083,6 +1083,10 @@ export type CreateMessageReqPayload = {
      */
     metadata?: unknown;
     /**
+     * Model name to use for the completion. If not specified, this defaults to the dataset's model.
+     */
+    model?: (string) | null;
+    /**
      * The content of the user message to attach to the topic and then generate an assistant message in response to.
      */
     new_message_content?: (string) | null;
@@ -1599,6 +1603,10 @@ export type EditMessageReqPayload = {
      * Metadata is any metadata you want to associate w/ the event that is created from this request
      */
     metadata?: unknown;
+    /**
+     * Model name to use for the completion. If not specified, this defaults to the dataset's model.
+     */
+    model?: (string) | null;
     /**
      * The new content of the message to replace the old content with.
      */
@@ -3724,6 +3732,10 @@ export type RegenerateMessageReqPayload = {
      * Metadata is any metadata you want to associate w/ the event that is created from this request
      */
     metadata?: unknown;
+    /**
+     * Model name to use for the completion. If not specified, this defaults to the dataset's model.
+     */
+    model?: (string) | null;
     /**
      * No result message for when there are no chunks found above the score threshold.
      */

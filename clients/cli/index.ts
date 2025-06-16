@@ -25,18 +25,18 @@ interface UploadedFile {
 
 const configDir = process.env.XDG_CONFIG_HOME || `${os.homedir()}/.config`;
 const config = new Conf({
-  cwd: `${configDir}/trieve-cli`,
+  cwd: `${configDir}/trieve`,
   configName: 'config',
 });
 
 // Path for storing uploaded files tracking data
 const uploadedFilesPath = path.join(
-  `${configDir}/trieve-cli`,
+  `${configDir}/trieve`,
   'uploaded_files.json',
 );
 
 // Path for storing topics data
-const topicsPath = path.join(`${configDir}/trieve-cli`, 'topics.json');
+const topicsPath = path.join(`${configDir}/trieve`, 'topics.json');
 
 // Function to manage uploaded files tracking
 function manageUploadedFiles(
@@ -123,7 +123,7 @@ function ensureTrieveConfig() {
       chalk.red('Error: TRIEVE_API_KEY is not set in env or config.'),
     );
     console.log(chalk.yellow('Run the following command to set it:'));
-    console.log(chalk.cyan('trieve-cli configure'));
+    console.log(chalk.cyan('trieve configure'));
     process.exit(1);
   }
   if (!datasetId) {
@@ -131,7 +131,7 @@ function ensureTrieveConfig() {
       chalk.red('Error: TRIEVE_DATASET_ID is not set in env or config.'),
     );
     console.log(chalk.yellow('Run the following command to set it:'));
-    console.log(chalk.cyan('trieve-cli configure'));
+    console.log(chalk.cyan('trieve configure'));
     process.exit(1);
   }
   if (!organizationId) {
@@ -139,7 +139,7 @@ function ensureTrieveConfig() {
       chalk.red('Error: TRIEVE_ORGANIZATION_ID is not set in env or config.'),
     );
     console.log(chalk.yellow('Run the following command to set it:'));
-    console.log(chalk.cyan('trieve-cli configure'));
+    console.log(chalk.cyan('trieve configure'));
     process.exit(1);
   }
   return { apiKey, datasetId, organizationId };
@@ -179,7 +179,7 @@ const uploadFile = async (
     );
     console.log(
       chalk.cyan(
-        `trieve-cli check-upload-status --tracking-id "${options.trackingId ?? `tracking-${filePath.split('/').pop() ?? filePath}`}"`,
+        `trieve check-upload-status --tracking-id "${options.trackingId ?? `tracking-${filePath.split('/').pop() ?? filePath}`}"`,
       ),
     );
 
@@ -406,7 +406,7 @@ async function askQuestion(question: string): Promise<void> {
       'default-user-' + Math.random().toString(36).substring(2, 15);
 
     const topicData = await trieveClient.createTopic({
-      name: topicName,
+      first_user_message: topicName,
       owner_id: ownerId,
     });
 
@@ -421,6 +421,7 @@ async function askQuestion(question: string): Promise<void> {
       topic_id: topicData.id,
       new_message_content: question,
       use_agentic_search: true,
+      model: 'o3',
     });
 
     // Stream the response
@@ -600,7 +601,7 @@ function formatChunksCollapsible(chunks: ChunkMetadata[]): string {
 }
 
 program
-  .name('trieve-cli')
+  .name('trieve')
   .description('A CLI tool for using Trieve')
   .version('1.0.0');
 
@@ -617,21 +618,23 @@ program
     }
   });
 
-//  -t "Always use the search tool here when the user asks a question about some information you're supposed to have or some files."
-//  -q "Write this as a maximum 5 word query with the keywords you think would be useful"
-
 program
   .command('update-tool-config')
   .description('Update the tool configuration for a dataset')
-  .requiredOption(
+  .option(
     '-t, --tool-description <toolDescription>',
     'Description that tells the LLM when it should use the search tool to retrieve information from your dataset',
     "Always use the search tool here when the user asks a question about some information you're supposed to have or some files.",
   )
-  .requiredOption(
+  .option(
     '-q, --query-description <queryDescription>',
     'Description of how the LLM should write its search queries to retrieve relevant information from your dataset',
     'Write this as a maximum 5 word query with the keywords you think would be useful',
+  )
+  .option(
+    '-s, --system-prompt <systemPrompt>',
+    'Custom system prompt for the AI assistant',
+    "You are an AI assistant that helps people find information in a set of documents. You have access to a search tool that can retrieve relevant information from the documents based on a query. When you need to find information, use the search tool by writing a concise query that captures the essence of what you're looking for. Be specific and use keywords that are likely to yield relevant results. Once you receive the search results, use them to answer the user's question accurately and comprehensively. If the search results do not contain the information you need, inform the user that you couldn't find an answer in the documents.",
   )
   .action(async (options) => {
     try {
@@ -639,7 +642,6 @@ program
 
       const { apiKey, datasetId, organizationId } = ensureTrieveConfig();
 
-      // Initialize SDK with apiKey and datasetId from config
       const trieveClient: TrieveSDK = new TrieveSDK({
         apiKey,
         datasetId,
@@ -649,18 +651,17 @@ program
       const updatePayload: UpdateDatasetReqPayload = {
         dataset_id: datasetId,
         server_configuration: {
+          SYSTEM_PROMPT: options.systemPrompt,
           TOOL_CONFIGURATION: {
             query_tool_options: {
               tool_description: options.toolDescription,
               query_parameter_description: options.queryDescription,
               price_filter_description:
-                'The price or page range filter to use for the search',
+                'The page range filter to use for the search',
 
-              max_price_option_description:
-                'The maximum price or page to filter by',
+              max_price_option_description: 'The maximum page to filter by',
 
-              min_price_option_description:
-                'The minimum price or page to filter by',
+              min_price_option_description: 'The minimum page to filter by',
             },
           },
         },
@@ -681,12 +682,20 @@ program
   .command('configure')
   .description('Set up or update your Trieve CLI configuration')
   .action(async () => {
+    const { apiKey, datasetId, organizationId } = ensureTrieveConfig();
+
+    const trieveClient: TrieveSDK = new TrieveSDK({
+      apiKey,
+      datasetId,
+      organizationId,
+    });
+
     const answers = await inquirer.prompt([
       {
         type: 'input',
-        name: 'TRIEVE_API_KEY',
-        message: 'Enter your TRIEVE_API_KEY:',
-        default: (config.get('TRIEVE_API_KEY') as string) || '',
+        name: 'TRIEVE_ORGANIZATION_ID',
+        message: 'Enter your TRIEVE_ORGANIZATION_ID:',
+        default: (config.get('TRIEVE_ORGANIZATION_ID') as string) || '',
       },
       {
         type: 'input',
@@ -696,9 +705,9 @@ program
       },
       {
         type: 'input',
-        name: 'TRIEVE_ORGANIZATION_ID',
-        message: 'Enter your TRIEVE_ORGANIZATION_ID:',
-        default: (config.get('TRIEVE_ORGANIZATION_ID') as string) || '',
+        name: 'TRIEVE_API_KEY',
+        message: 'Enter your TRIEVE_API_KEY:',
+        default: (config.get('TRIEVE_API_KEY') as string) || '',
       },
       {
         type: 'input',
@@ -711,6 +720,30 @@ program
     config.set('TRIEVE_DATASET_ID', answers.TRIEVE_DATASET_ID);
     config.set('TRIEVE_ORGANIZATION_ID', answers.TRIEVE_ORGANIZATION_ID);
     config.set('userId', answers.userId);
+
+    const updatePayload: UpdateDatasetReqPayload = {
+      dataset_id: datasetId,
+      server_configuration: {
+        SYSTEM_PROMPT:
+          "You are an AI assistant that helps people find information in a set of documents. You have access to a search tool that can retrieve relevant information from the documents based on a query. When you need to find information, use the search tool by writing a concise query that captures the essence of what you're looking for. Be specific and use keywords that are likely to yield relevant results. Once you receive the search results, use them to answer the user's question accurately and comprehensively. If the search results do not contain the information you need, inform the user that you couldn't find an answer in the documents.",
+        TOOL_CONFIGURATION: {
+          query_tool_options: {
+            tool_description:
+              "Always use the search tool here when the user asks a question about some information you're supposed to have or some files.",
+            query_parameter_description:
+              'Write this as a maximum 5 word query with the keywords you think would be useful',
+            price_filter_description:
+              'The page range filter to use for the search',
+
+            max_price_option_description: 'The maximum page to filter by',
+
+            min_price_option_description: 'The minimum page to filter by',
+          },
+        },
+      },
+    };
+
+    await trieveClient.updateDataset(updatePayload);
     console.log(chalk.green('✅ Configuration saved!'));
   });
 
@@ -757,19 +790,5 @@ program
       await askQuestion(answers.question);
     }
   });
-
-program.addHelpText(
-  'after',
-  `
-${chalk.yellow('Examples:')}
-  $ ${chalk.green('trieve-cli configure')}
-  $ ${chalk.green('trieve-cli upload path/to/file.txt -t my-tracking-id')}
-  $ ${chalk.green('trieve-cli check-upload-status')}
-  $ ${chalk.green('trieve-cli check-upload-status --tracking-id <tracking-id>')}
-  $ ${chalk.green('trieve-cli ask "What is the capital of France?"')}
-  $ ${chalk.green('trieve-cli ask')}
-  $ ${chalk.green('trieve-cli update-tool-config -t "Use this tool to search for information about our products and services" -q "Write specific search queries to find relevant information from our knowledge base"')}
-`,
-);
 
 program.parse();
