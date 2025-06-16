@@ -30,6 +30,6 @@
     "commander": "^14.0.0",
     "conf": "^14.0.0",
     "inquirer": "^12.6.3",
-    "trieve-ts-sdk": "^0.0.119"
+    "trieve-ts-sdk": "^0.0.120"
   }
 }
