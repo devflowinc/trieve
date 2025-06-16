@@ -180,7 +180,10 @@ const uploadFile = async (
     );
     console.log(
       chalk.cyan(
-        `trieve check-upload-status --tracking-id "${options.trackingId ?? `tracking-${filePath.split('/').pop() ?? filePath}`}"`,
+        `trieve check-upload-status --tracking-id "${
+          options.trackingId ??
+          `tracking-${filePath.split('/').pop() ?? filePath}`
+        }"`,
       ),
     );
 
@@ -603,7 +606,9 @@ function formatChunksCollapsible(chunks: ChunkMetadata[]): string {
   const formattedChunks = chunks
     .map((chunk, index) => {
       const header = chalk.yellow(
-        `\n📄 Reference #${index + 1}: ${chunk.tracking_id || chunk.id.substring(0, 8)}`,
+        `\n📄 Reference #${index + 1}: ${
+          chunk.tracking_id || chunk.id.substring(0, 8)
+        }`,
       );
 
       // Extract important fields for preview
@@ -625,7 +630,9 @@ function formatChunksCollapsible(chunks: ChunkMetadata[]): string {
         // Strip HTML tags for clean preview and limit length
         const plainText = chunk.chunk_html.replace(/<[^>]*>?/gm, '');
         contentPreview = chalk.white(
-          `\n  "${plainText.substring(0, 1000)}${plainText.length > 1000 ? '...' : ''}"`,
+          `\n  "${plainText.substring(0, 1000)}${
+            plainText.length > 1000 ? '...' : ''
+          }"`,
         );
       }
 
@@ -639,7 +646,7 @@ function formatChunksCollapsible(chunks: ChunkMetadata[]): string {
 program
   .name('trieve')
   .description('A CLI tool for using Trieve')
-  .version('0.0.4');
+  .version('0.0.6');
 
 program
   .command('upload')
@@ -718,14 +725,6 @@ program
   .command('configure')
   .description('Set up or update your Trieve CLI configuration')
   .action(async () => {
-    const { apiKey, datasetId, organizationId } = ensureTrieveConfig();
-
-    const trieveClient: TrieveSDK = new TrieveSDK({
-      apiKey,
-      datasetId,
-      organizationId,
-    });
-
     const answers = await inquirer.prompt([
       {
         type: 'input',
@@ -756,6 +755,14 @@ program
     config.set('TRIEVE_DATASET_ID', answers.TRIEVE_DATASET_ID);
     config.set('TRIEVE_ORGANIZATION_ID', answers.TRIEVE_ORGANIZATION_ID);
     config.set('userId', answers.userId);
+
+    const { apiKey, datasetId, organizationId } = ensureTrieveConfig();
+
+    const trieveClient: TrieveSDK = new TrieveSDK({
+      apiKey,
+      datasetId,
+      organizationId,
+    });
 
     const updatePayload: UpdateDatasetReqPayload = {
       dataset_id: datasetId,

@@ -1,22 +1,8 @@
-<p align="center">
-  <img height="100" src="https://cdn.trieve.ai/trieve-logo.png" alt="Trieve Logo">
-</p>
-<p align="center">
-<strong><a href="https://dashboard.trieve.ai">Sign Up (1k chunks free)</a> | <a href="https://docs.trieve.ai">Documentation</a> | <a href="https://discord.gg/eBJXXZDB8z">Discord</a> | <a href="https://matrix.to/#/#trieve-general:trieve.ai">Matrix</a>
-</strong>
-</p>
+![Trieve Logo](https://cdn.trieve.ai/trieve-logo.png)
 
-<p align="center">
-    <a href="https://github.com/devflowinc/trieve/stargazers">
-        <img src="https://img.shields.io/github/stars/devflowinc/trieve.svg?style=flat&color=yellow" alt="Github stars"/>
-    </a>
-    <a href="https://discord.gg/CuJVfgZf54">
-        <img src="https://img.shields.io/discord/1130153053056684123.svg?label=Discord&logo=Discord&colorB=7289da&style=flat" alt="Join Discord"/>
-    </a>
-    <a href="https://matrix.to/#/#trieve-general:trieve.ai">
-        <img src="https://img.shields.io/badge/matrix-join-purple?style=flat&logo=matrix&logocolor=white" alt="Join Matrix"/>
-    </a>
-</p>
+**[Sign Up (1k chunks free)](https://dashboard.trieve.ai) | [Documentation](https://docs.trieve.ai) | [Discord](https://discord.gg/eBJXXZDB8z) | [Matrix](https://matrix.to/#/#trieve-general:trieve.ai)**
+
+[![Github stars](https://img.shields.io/github/stars/devflowinc/trieve.svg?style=flat&color=yellow)](https://github.com/devflowinc/trieve/stargazers) [![Join Discord](https://img.shields.io/discord/1130153053056684123.svg?label=Discord&logo=Discord&colorB=7289da&style=flat)](https://discord.gg/CuJVfgZf54) [![Join Matrix](https://img.shields.io/badge/matrix-join-purple?style=flat&logo=matrix&logocolor=white)](https://matrix.to/#/#trieve-general:trieve.ai)
 
 # Trieve CLI
 
@@ -103,6 +89,14 @@ This allows you to customize:
 - **🤔 Interactive Q&A**: Ask questions and receive answers based on your uploaded documents
 - **📚 Reference Display**: View source references for answers with expandable details
 - **🔧 Customizable RAG**: Configure system prompts and tool behavior
+
+## Demo
+
+Watch our demo video to see the Trieve CLI in action:
+
+[![Trieve CLI Demo Video](https://img.youtube.com/vi/SAV-esDsRUk/0.jpg)](https://www.youtube.com/watch?v=SAV-esDsRUk)
+
+Watch the [Trieve CLI Demo Video on YouTube](https://www.youtube.com/watch?v=SAV-esDsRUk).
 
 ## Examples
 
