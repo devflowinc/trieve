@@ -81,13 +81,13 @@ module "eks" {
       capacity_type  = "ON_DEMAND"
       ami_type       = "BOTTLEROCKET_x86_64_NVIDIA"
 
-      taints = [
+      taints = var.use_gpu_taints ? [
         {
           key    = "nvidia.com/gpu"
           value  = "present"
           effect = "NO_SCHEDULE"
         }
-      ]
+      ] : []
 
       labels = {
         "eks-node" = "gpu"

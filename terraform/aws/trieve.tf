@@ -10,6 +10,7 @@ module "trieve" {
   gpu_max_size         = 8
   gpu_min_size         = 1
   gpu_desired_capacity = 5
+  use_gpu_taints       = true
 
   instance_type_standard = "c7a.2xlarge"
   standard_max_size      = 2

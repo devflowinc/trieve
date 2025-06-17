@@ -28,6 +28,11 @@ variable "gpu_desired_capacity" {
   default = 1
 }
 
+variable "use_gpu_taints" {
+  type    = bool
+  default = true
+}
+
 variable "instance_type_standard" {
   type    = string
   default = "t3.2xlarge"
