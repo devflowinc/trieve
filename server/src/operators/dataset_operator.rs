@@ -595,6 +595,7 @@ pub async fn clear_dataset_query(
             .collect::<Vec<uuid::Uuid>>();
 
         if chunk_ids.is_empty() {
+            log::info!("No more chunks to delete for dataset {}", id);
             break;
         }
 
