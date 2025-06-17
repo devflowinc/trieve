@@ -89,6 +89,10 @@ module "eks" {
         }
       ]
 
+      labels = {
+        "eks-node" = "gpu"
+      }
+
     }
   }
 }
