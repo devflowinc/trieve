@@ -62,5 +62,6 @@ export default defineConfig({
     "/usage-based-pricing": "/blog/usage-based-pricing",
     "/we-have-a-new-js-sdk": "/blog/we-have-a-new-js-sdk",
     "/sitesearch": "/products/sitesearch",
+    "/ecommerce": "/products/ecommerce",
   },
 });
