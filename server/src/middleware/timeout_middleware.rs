@@ -48,6 +48,13 @@ pub async fn timeout_15secs(
         timeout_secs = 300;
     }
 
+    if path == "/api/message"
+        || path == "/api/message/get_tool_function_params"
+        || path == "/api/chunk/generate"
+    {
+        timeout_secs = 120;
+    }
+
     match tokio::time::timeout(
         std::time::Duration::from_secs(timeout_secs),
         next.call(service_req),

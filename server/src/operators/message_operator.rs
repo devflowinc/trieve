@@ -1353,9 +1353,9 @@ pub async fn stream_response(
     });
 
     let chat_completion_timeout = std::env::var("CHAT_COMPLETION_TIMEOUT_SECS")
-        .unwrap_or("60".to_string())
+        .unwrap_or("120".to_string())
         .parse::<u64>()
-        .unwrap_or(60);
+        .unwrap_or(120);
 
     let state = Arc::new(AtomicU16::new(0));
     let documents = if create_message_req_payload
@@ -2699,9 +2699,9 @@ pub async fn stream_response_with_agentic_search(
     });
 
     let chat_completion_timeout = std::env::var("CHAT_COMPLETION_TIMEOUT_SECS")
-        .unwrap_or("60".to_string())
+        .unwrap_or("120".to_string())
         .parse::<u64>()
-        .unwrap_or(60);
+        .unwrap_or(120);
 
     let completion_stream = tokio_stream::wrappers::ReceiverStream::new(rx)
         .take_until(tokio::time::sleep(std::time::Duration::from_secs(
