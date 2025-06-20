@@ -335,8 +335,9 @@ export async function sendChunksFromWebhook(
     );
   });
 
+  let dataChunksResolved: ChunkReqPayload[] = [];
   try {
-    let dataChunksResolved = await Promise.all(dataChunks);
+    dataChunksResolved = await Promise.all(dataChunks);
   } catch (e) {
     console.error(`Error getting chunks to send to Trieve: ${e}`);
   }
