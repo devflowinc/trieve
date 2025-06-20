@@ -30,48 +30,55 @@ export const buildAdminApiFetcherForServer = (
     query: string,
     opts: { variables?: any } = {},
   ): Promise<Result<T>> => {
-    const result = await tryCatch(
-      fetch(`https://${storeName}/admin/api/2025-01/graphql.json`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Shopify-Access-Token": accessToken,
-        },
-        body: JSON.stringify({
-          query,
-          variables: opts.variables,
+    try {
+      const result = await tryCatch(
+        fetch(`https://${storeName}/admin/api/2025-01/graphql.json`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": accessToken,
+          },
+          body: JSON.stringify({
+            query,
+            variables: opts.variables,
+          }),
         }),
-      }),
-    );
+      );
 
-    if (result.error) {
-      return result;
-    } else {
-      const data = result.data;
-      const parsed = await tryCatch(data.json());
-
-      if (parsed.error) {
-        return parsed;
-      }
-
-      if (parsed.data.errors) {
-        return {
-          error: new Error(JSON.stringify(parsed.data.errors)),
-          data: null,
-        };
-      }
-
-      if (parsed.data.data) {
-        return {
-          data: parsed.data.data,
-          error: null,
-        };
+      if (result.error) {
+        return result;
       } else {
-        return {
-          data: null,
-          error: new Error(JSON.stringify(parsed.data.errors)),
-        };
+        const data = result.data;
+        const parsed = await tryCatch(data.json());
+
+        if (parsed.error) {
+          return parsed;
+        }
+
+        if (parsed.data.errors) {
+          return {
+            error: new Error(JSON.stringify(parsed.data.errors)),
+            data: null,
+          };
+        }
+
+        if (parsed.data.data) {
+          return {
+            data: parsed.data.data,
+            error: null,
+          };
+        } else {
+          return {
+            data: null,
+            error: new Error(JSON.stringify(parsed.data.errors)),
+          };
+        }
       }
+    } catch (err) {
+      return {
+        data: null,
+        error: err instanceof Error ? err : new Error(String(err)),
+      };
     }
   };
 };
