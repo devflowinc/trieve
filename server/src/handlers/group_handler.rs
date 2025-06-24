@@ -1793,6 +1793,7 @@ pub struct SearchOverGroupsReqPayload {
     /// The user_id is the id of the user who is making the request. This is used to track user interactions with the search results.
     pub user_id: Option<String>,
     pub typo_options: Option<TypoOptions>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 /// Search Over Groups
@@ -2041,6 +2042,8 @@ pub struct AutocompleteSearchOverGroupsReqPayload {
     pub user_id: Option<String>,
     /// If true, the query will be corrected for typos. Default is false.
     pub typo_options: Option<TypoOptions>,
+    /// Metadata is any metadata you want to associate w/ the event that is created from this request
+    pub metadata: Option<serde_json::Value>,
 }
 
 impl From<AutocompleteSearchOverGroupsReqPayload> for SearchOverGroupsReqPayload {
@@ -2060,6 +2063,7 @@ impl From<AutocompleteSearchOverGroupsReqPayload> for SearchOverGroupsReqPayload
             remove_stop_words: value.remove_stop_words,
             user_id: value.user_id,
             typo_options: value.typo_options,
+            metadata: value.metadata,
             get_total_pages: Some(false),
             search_type: value.search_type,
         }
