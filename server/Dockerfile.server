@@ -32,7 +32,7 @@ RUN apt-get update -y; \
     unzip \
     ;
 
-RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b267/subtrace-linux-amd64 \
+RUN curl -fsSLO https://github.com/subtrace/subtrace/releases/download/b314/subtrace-linux-amd64 \
     && chmod +x ./subtrace-linux-amd64
 
 RUN curl -L -o libtorch-cxx11-abi-shared-with-deps-2.4.0+cpu.zip https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.4.0%2Bcpu.zip \
