@@ -3071,6 +3071,11 @@ pub async fn autocomplete_search_over_groups_query(
         data.sort_options,
     ));
 
+    reranked_chunks = reranked_chunks
+        .into_iter()
+        .dedup_by(|a, b| a.group_id == b.group_id)
+        .collect::<Vec<GroupScoreChunk>>();
+
     reranked_chunks.truncate(data.page_size.unwrap_or(10) as usize);
 
     result_chunks.group_chunks = reranked_chunks;

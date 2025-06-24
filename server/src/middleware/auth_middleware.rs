@@ -6,7 +6,10 @@ use crate::{
     handlers::{
         auth_handler::{AdminOnly, LoggedUser, OrganizationRole, OwnerOnly},
         chunk_handler::{AutocompleteReqPayload, ScrollChunksReqPayload, SearchChunksReqPayload},
-        group_handler::{SearchOverGroupsReqPayload, SearchWithinGroupReqPayload},
+        group_handler::{
+            AutocompleteSearchOverGroupsReqPayload, SearchOverGroupsReqPayload,
+            SearchWithinGroupReqPayload,
+        },
         message_handler::CreateMessageReqPayload,
     },
     operators::{
@@ -388,6 +391,15 @@ pub async fn insert_api_key_payload(
         "/api/chunk_group/group_oriented_search" => {
             let body = req.extract::<Json<SearchOverGroupsReqPayload>>().await?;
             let new_body = api_key_params.combine_with_search_over_groups(body.into_inner());
+            let body_bytes = serde_json::to_vec(&web::Json(new_body)).unwrap();
+            req.set_payload(bytes_to_payload(body_bytes.into()));
+        }
+        "/api/chunk_group/group_oriented_autocomplete" => {
+            let body = req
+                .extract::<Json<AutocompleteSearchOverGroupsReqPayload>>()
+                .await?;
+            let new_body =
+                api_key_params.combine_with_autocomplete_search_over_groups(body.into_inner());
             let body_bytes = serde_json::to_vec(&web::Json(new_body)).unwrap();
             req.set_payload(bytes_to_payload(body_bytes.into()));
         }
