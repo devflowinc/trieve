@@ -18,6 +18,7 @@ use crate::handlers::message_handler::{
     CreateMessageReqPayload, EditMessageReqPayload, RegenerateMessageReqPayload,
 };
 
+use crate::handlers::group_handler::AutocompleteSearchOverGroupsReqPayload;
 use crate::handlers::page_handler::PublicPageParameters;
 use crate::operators::analytics_operator::{
     CTRRecommendationsWithClicksResponse, CTRRecommendationsWithoutClicksResponse,
@@ -4620,6 +4621,32 @@ impl ApiKeyRequestParams {
             only_include_docs_used: payload.only_include_docs_used,
             number_of_messages_to_include: payload.number_of_messages_to_include,
             model: payload.model,
+        }
+    }
+
+    pub fn combine_with_autocomplete_search_over_groups(
+        self,
+        payload: AutocompleteSearchOverGroupsReqPayload,
+    ) -> AutocompleteSearchOverGroupsReqPayload {
+        AutocompleteSearchOverGroupsReqPayload {
+            search_type: self.search_type.unwrap_or(payload.search_type),
+            extend_results: payload.extend_results,
+            query: payload.query,
+            page_size: self.page_size.or(payload.page_size),
+            filters: self.filters.or(payload.filters),
+            sort_options: payload.sort_options,
+            scoring_options: payload.scoring_options,
+            highlight_options: self.highlight_options.or(payload.highlight_options),
+            score_threshold: self.score_threshold.or(payload.score_threshold),
+            slim_chunks: self.slim_chunks.or(payload.slim_chunks),
+            use_quote_negated_terms: self
+                .use_quote_negated_terms
+                .or(payload.use_quote_negated_terms),
+            group_size: payload.group_size,
+            remove_stop_words: self.remove_stop_words.or(payload.remove_stop_words),
+            user_id: payload.user_id,
+            typo_options: self.typo_options.or(payload.typo_options),
+            metadata: payload.metadata,
         }
     }
 
