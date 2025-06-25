@@ -3,6 +3,9 @@
 *.bat -linguist-detectable
 *.md -linguist-detectable
 *.ipynb -linguist-detectable
+*.ts -linguist-detectable
+*.js -linguist-detectable
+*.tsx -linguist-detectable
 chat/** -linguist-detectable
 dashboard/** -linguist-detectable
 keycloak/** -linguist-detectable
