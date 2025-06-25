@@ -4025,9 +4025,8 @@ dependencies = [
 
 [[package]]
 name = "openidconnect"
-version = "3.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f47e80a9cfae4462dd29c41e987edd228971d6565553fbc14b8a11e666d91590"
+version = "3.4.0"
+source = "git+https://github.com/devflowinc/openidconnect-rs.git?branch=patch-3.4.0#77e3d33960acf7650aeda3fdd9fac622f6814ee5"
 dependencies = [
  "base64 0.13.1",
  "chrono",

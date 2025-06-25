@@ -153,7 +153,7 @@ utoipa = { version = "4.2", features = [
     "debug",
 ] }
 utoipa-redoc = { version = "4.0", features = ["actix-web"] }
-openidconnect = { version = "3.4.0", features = [
+openidconnect = { git = "https://github.com/devflowinc/openidconnect-rs.git", branch = "patch-3.4.0",  features = [
     "reqwest",
 ], default-features = false }
 oauth2 = "4.4.2"
