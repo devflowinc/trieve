@@ -348,6 +348,7 @@ pub async fn create_chunk(
                 .json(json!({"message": "Must upgrade your plan to add more chunks"})));
         }
 
+        log::info!("Chunk count: {}", chunk_count);
         timer.add("get dataset count");
     }
 
@@ -397,6 +398,8 @@ pub async fn create_chunk(
         .collect::<Option<Vec<uuid::Uuid>>>()
         .unwrap_or(vec![])
         .contains(&dataset_org_plan_sub.organization.organization.id);
+
+    timer.add("create chunk metadata");
 
     if !non_upsert_chunk_metadatas.is_empty() {
         let prio_chunks_message: Vec<UploadIngestionMessage> = non_upsert_chunk_ingestion_message
@@ -541,6 +544,8 @@ pub async fn create_chunk(
         }
     }
 
+    timer.add("push to queue");
+
     let response = match create_chunk_data.into_inner() {
         CreateChunkReqPayloadEnum::Single(_) => ReturnQueuedChunk::Single(Box::new(SingleQueuedChunkResponse {
             chunk_metadata: chunk_metadatas
@@ -554,6 +559,8 @@ pub async fn create_chunk(
             chunk_metadata: chunk_metadatas,
         }),
     };
+
+    log::info!("Create Chunk timer: {:?}", timer.header_value());
 
     Ok(HttpResponse::Ok()
         .insert_header((Timer::header_key(), timer.header_value()))
