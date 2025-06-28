@@ -507,6 +507,7 @@ pub async fn count_group_chunks(
     _user: LoggedUser,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
+    let mut timer = Timer::new();
     let dataset_config =
         DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration.clone());
 
@@ -530,16 +531,23 @@ pub async fn count_group_chunks(
         ));
     };
 
+    timer.add("fetch group id");
+
     // check if group exists
     get_group_by_id_query(group_id, dataset_org_plan_sub.dataset.id, pool.clone()).await?;
+    timer.add("check postgres group exists");
 
     let group_size =
         get_group_size_query(group_id, dataset_org_plan_sub.dataset.id, dataset_config).await?;
 
-    Ok(HttpResponse::Ok().json(GetChunkGroupCountResponse {
-        group_id,
-        count: group_size,
-    }))
+    timer.add("Check qdrant for group size");
+
+    Ok(HttpResponse::Ok()
+        .insert_header((Timer::header_key(), timer.header_value()))
+        .json(GetChunkGroupCountResponse {
+            group_id,
+            count: group_size,
+        }))
 }
 
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
