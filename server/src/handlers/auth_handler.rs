@@ -453,14 +453,15 @@ pub async fn oidc_callback(
         .ok_or_else(|| ServiceError::InternalServerError("Empty ID Token".into()))?;
 
     let id_token_verifier = oidc_client.id_token_verifier();
-    let claims = id_token
-        .claims(&id_token_verifier, &nonce)
-        .map_err(|_| ServiceError::InternalServerError("Claims Verification Error".into()))?;
+    let claims = id_token.claims(&id_token_verifier, &nonce).map_err(|e| {
+        ServiceError::InternalServerError(format!("Claims Verification Error, {}", e))
+    })?;
 
     match claims.access_token_hash() {
-        None => Err(ServiceError::BadRequest(
-            "Missing access token hash".to_string(),
-        ))?,
+        None => {
+            log::warn!("Access Token Hash Not provided by openid provider, skipping hash check");
+            Ok(())
+        }
         Some(given_token_hash) => {
             let calculated_token_hash = AccessTokenHash::from_token(
                 token_response.access_token(),
