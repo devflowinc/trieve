@@ -382,6 +382,7 @@ fn bytes_to_payload(buf: web::Bytes) -> Payload {
     Payload::from(pl)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn insert_api_key_payload(
     req: &mut ServiceRequest,
     api_key_params: ApiKeyRequestParams,

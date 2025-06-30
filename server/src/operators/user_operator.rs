@@ -13,6 +13,7 @@ use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use redis::AsyncCommands;
 
+#[tracing::instrument(skip_all)]
 pub async fn get_user_by_id_query(
     user_id: &uuid::Uuid,
     pool: web::Data<Pool>,
@@ -77,6 +78,7 @@ pub async fn get_user_by_id_query(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_user_by_oidc_subject_query(
     oidc_subject: &str,
     pool: web::Data<Pool>,
@@ -118,6 +120,7 @@ pub async fn get_user_by_oidc_subject_query(
     Ok((user, user_orgs, orgs))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_option_user_by_email_query(
     email: &str,
     pool: web::Data<Pool>,
@@ -134,6 +137,7 @@ pub async fn get_option_user_by_email_query(
         .map_err(|_| ServiceError::BadRequest("Error checking user by id".to_string()))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn add_existing_user_to_org(
     email: String,
     organization_id: uuid::Uuid,
@@ -172,6 +176,7 @@ pub async fn add_existing_user_to_org(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_user_query(
     user_id: uuid::Uuid,
     organization_id: uuid::Uuid,
@@ -243,6 +248,7 @@ pub async fn update_user_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn associate_user_to_oidc_subject_query(
     user_id: uuid::Uuid,
     oidc_subject: String,
@@ -263,6 +269,7 @@ pub async fn associate_user_to_oidc_subject_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_user_query(
     user_oidc_subject: Option<String>,
     email: String,
@@ -309,6 +316,7 @@ pub async fn create_user_query(
     Ok(user_org)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_user_from_api_key_query(
     api_key: &str,
     pool: web::Data<Pool>,
@@ -384,6 +392,7 @@ pub async fn get_user_from_api_key_query(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn add_user_to_organization(
     _req: Option<&HttpRequest>,
     _calling_user_id: Option<uuid::Uuid>,
@@ -421,6 +430,7 @@ pub async fn add_user_to_organization(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result<(), ServiceError> {
     use crate::data::schema::organizations::dsl as organization_columns;
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
@@ -500,6 +510,7 @@ pub async fn create_default_user(api_key: &str, pool: web::Data<Pool>) -> Result
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn remove_user_from_org_query(
     user_id: uuid::Uuid,
     max_allowed_role: UserRole,
@@ -548,6 +559,7 @@ pub async fn remove_user_from_org_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_all_users_query(pool: web::Data<Pool>) -> Result<Vec<SlimUser>, ServiceError> {
     use crate::data::schema::organizations::dsl as organization_columns;
     use crate::data::schema::user_organizations::dsl as user_organizations_columns;
@@ -625,6 +637,7 @@ pub async fn get_all_users_query(pool: web::Data<Pool>) -> Result<Vec<SlimUser>,
     Ok(unique_slim_users)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_user_api_keys_query(
     user_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -649,6 +662,7 @@ pub async fn get_user_api_keys_query(
     Ok(api_keys)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_user_api_keys_query(
     user_id: uuid::Uuid,
     api_key_id: uuid::Uuid,

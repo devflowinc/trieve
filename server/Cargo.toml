@@ -196,6 +196,11 @@ pagefind = { version = "1.3.0" }
 tl = "0.7.8"
 url = "2.5.4"
 actix-request-reply-cache = "0.1.6"
+sentry = { version = "0.41.0", features = ["tracing"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "registry"] }
+sentry-tracing = "0.41.0"
+sentry-actix = "0.41.0"
 
 [build-dependencies]
 dotenvy = "0.15.7"

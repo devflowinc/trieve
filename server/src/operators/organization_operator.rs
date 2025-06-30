@@ -28,6 +28,7 @@ use serde::Deserialize;
 
 /// Creates a dataset from Name if it doesn't conflict. If it does, then it creates a random name
 /// for the user
+#[tracing::instrument(skip_all)]
 pub async fn create_organization_query(
     name: &str,
     pool: web::Data<Pool>,

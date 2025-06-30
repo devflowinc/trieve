@@ -11,6 +11,7 @@ use crate::{
 
 use super::{qdrant_operator::scroll_dataset_points, search_operator::assemble_qdrant_filter};
 
+#[tracing::instrument(skip_all)]
 pub async fn build_index_for_dataset_id(
     dataset_id: uuid::Uuid,
     dataset_config: DatasetConfiguration,

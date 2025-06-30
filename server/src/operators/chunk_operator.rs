@@ -34,6 +34,7 @@ use utoipa::ToSchema;
 
 use super::search_operator::assemble_qdrant_filter;
 
+#[tracing::instrument(skip_all)]
 pub async fn get_chunk_metadatas_from_point_ids(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -84,6 +85,7 @@ pub async fn get_chunk_metadatas_from_point_ids(
     Ok(chunk_metadatas)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_point_ids_from_unified_chunk_ids(
     chunk_ids: Vec<UnifiedId>,
     dataset_id: uuid::Uuid,
@@ -135,6 +137,7 @@ pub struct ChunkMetadataWithQdrantId {
     pub qdrant_id: uuid::Uuid,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_chunk_metadatas_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -186,6 +189,7 @@ pub async fn get_chunk_metadatas_from_point_ids_query(
     Ok(chunk_metadatas)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_slim_chunks_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -249,6 +253,7 @@ pub async fn get_slim_chunks_from_point_ids_query(
     Ok(slim_chunks)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_content_chunk_from_point_ids_query(
     point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -288,6 +293,7 @@ pub async fn get_content_chunk_from_point_ids_query(
     Ok(content_chunks)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_random_chunk_qdrant_point_id_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -339,6 +345,7 @@ pub async fn get_random_chunk_qdrant_point_id_query(
     Ok(qdrant_point_id)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_metadata_from_id_query(
     chunk_id: uuid::Uuid,
     dataset_id: uuid::Uuid,
@@ -382,6 +389,7 @@ pub async fn get_metadata_from_id_query(
     ))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_metadata_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
@@ -428,6 +436,7 @@ pub async fn get_metadata_from_tracking_id_query(
     ))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_metadata_from_ids_query(
     chunk_ids: Vec<uuid::Uuid>,
     dataset_uuid: uuid::Uuid,
@@ -476,6 +485,7 @@ pub async fn get_metadata_from_ids_query(
     Ok(chunk_metadatas)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_metadata_from_tracking_ids_query(
     tracking_ids: Vec<String>,
     dataset_uuid: uuid::Uuid,
@@ -524,6 +534,7 @@ pub async fn get_metadata_from_tracking_ids_query(
     Ok(chunk_metadatas)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn bulk_delete_chunks_query(
     filter: Option<ChunkFilter>,
     deleted_at: chrono::NaiveDateTime,
@@ -621,6 +632,7 @@ pub async fn bulk_delete_chunks_query(
 
 /// Only inserts, does not try to upsert data
 #[allow(clippy::type_complexity)]
+#[tracing::instrument(skip_all)]
 pub async fn bulk_insert_chunk_metadata_query(
     mut insertion_data: Vec<ChunkData>,
     dataset_uuid: uuid::Uuid,
@@ -934,6 +946,7 @@ pub async fn bulk_insert_chunk_metadata_query(
     Ok(insertion_data)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_optional_metadata_from_tracking_id_query(
     tracking_id: String,
     dataset_uuid: uuid::Uuid,
@@ -987,6 +1000,7 @@ pub async fn get_optional_metadata_from_tracking_id_query(
     }))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn insert_chunk_metadata_query(
     chunk_data: ChunkMetadata,
     group_ids: Option<Vec<uuid::Uuid>>,
@@ -1143,6 +1157,7 @@ pub async fn insert_chunk_metadata_query(
     Ok(chunk_data)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn insert_chunk_boost(
     chunk_boost: ChunkBoost,
     pool: web::Data<Pool>,
@@ -1163,6 +1178,7 @@ pub async fn insert_chunk_boost(
     Ok(chunk_boost)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_dataset_tags_id_from_names(
     pool: web::Data<Pool>,
     dataset_id: uuid::Uuid,
@@ -1184,6 +1200,7 @@ pub async fn get_dataset_tags_id_from_names(
 }
 
 /// Bulk revert, assumes upsert chunk_ids were not upserted, only enterted
+#[tracing::instrument(skip_all)]
 pub async fn bulk_revert_insert_chunk_metadata_query(
     chunk_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -1218,6 +1235,7 @@ pub async fn bulk_revert_insert_chunk_metadata_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_chunk_metadata_query(
     chunk_data: ChunkMetadata,
     group_ids: Option<Vec<uuid::Uuid>>,
@@ -1384,6 +1402,7 @@ pub async fn update_chunk_metadata_query(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_chunk_boost_query(
     chunk_boost: ChunkBoost,
     pool: web::Data<Pool>,
@@ -1411,6 +1430,7 @@ pub async fn update_chunk_boost_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_chunk_boost_query(
     chunk_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -1430,6 +1450,7 @@ pub async fn get_chunk_boost_query(
     Ok(chunk_boost)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_chunk_metadata_query(
     chunk_uuid: Vec<uuid::Uuid>,
     deleted_at: chrono::NaiveDateTime,
@@ -1479,6 +1500,7 @@ pub async fn delete_chunk_metadata_query(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_qdrant_id_from_chunk_id_query(
     chunk_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -1504,6 +1526,7 @@ pub async fn get_qdrant_id_from_chunk_id_query(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_qdrant_ids_from_chunk_ids_query(
     chunk_ids: Vec<UnifiedId>,
     pool: web::Data<Pool>,
@@ -2425,6 +2448,7 @@ fn apply_highlights_to_html(
     chunk_html
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_row_count_for_organization_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -2448,6 +2472,7 @@ pub async fn get_row_count_for_organization_id_query(
     Ok(chunk_metadata_count as usize)
 }
 
+#[tracing::instrument(skip_all)]
 pub fn create_chunk_metadata(
     chunks: Vec<ChunkReqPayload>,
     dataset_uuid: uuid::Uuid,
@@ -2525,6 +2550,7 @@ pub fn create_chunk_metadata(
     ))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_pg_point_ids_from_qdrant_point_ids(
     qdrant_point_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -2548,6 +2574,7 @@ pub async fn get_pg_point_ids_from_qdrant_point_ids(
     Ok(chunk_ids)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_chunk_html_from_ids_query(
     chunk_ids: Vec<uuid::Uuid>,
     pool: web::Data<Pool>,
@@ -2573,6 +2600,7 @@ pub async fn get_chunk_html_from_ids_query(
     Ok(Some(chunk_htmls))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn scroll_chunk_ids_for_dictionary_query(
     pool: web::Data<Pool>,
     dataset_id: uuid::Uuid,
@@ -2621,6 +2649,7 @@ pub async fn scroll_chunk_ids_for_dictionary_query(
     Ok(Some(chunk_ids))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn scroll_chunks_from_pg(
     pool: web::Data<Pool>,
     dataset_id: uuid::Uuid,
@@ -2680,6 +2709,8 @@ pub async fn scroll_chunks_from_pg(
     Ok((chunk_metadatas, offset_id))
 }
 
+#[tracing::instrument(skip_all)]
+#[allow(clippy::type_complexity)]
 pub async fn scroll_chunks_with_boosts_and_groups(
     pool: web::Data<Pool>,
     dataset_id: uuid::Uuid,
@@ -2874,6 +2905,7 @@ pub async fn scroll_chunks_with_boosts_and_groups(
     Ok((chunk_metadatas_with_boosts_and_groups, offset_id))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_dataset_chunk_count(
     dataset_id: uuid::Uuid,
     amount_to_increase: i32,
@@ -2926,6 +2958,7 @@ pub struct DatasetLastProcessed {
     pub last_processed: OffsetDateTime,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_last_processed_from_clickhouse(
     clickhouse_client: &clickhouse::Client,
     dataset_id: uuid::Uuid,
@@ -2954,6 +2987,7 @@ pub fn get_storage_mb_from_chunk_count(chunk_count: i32) -> i64 {
     (((1536 * 4) + (256 * 4) + 4096) * (chunk_count as i64)) / (1_000_000)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_chunk_queue_length(
     dataset_id: uuid::Uuid,
     broccoli_queue: &BroccoliQueue,
