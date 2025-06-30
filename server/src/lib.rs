@@ -37,6 +37,7 @@ use once_cell::sync::Lazy;
 use openssl::ssl::SslVerifyMode;
 use openssl::ssl::{SslConnector, SslMethod};
 use postgres_openssl::MakeTlsConnector;
+use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use ureq::json;
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -746,10 +747,42 @@ pub struct ApiDoc;
 pub fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
 
-    env_logger::builder()
-        .target(env_logger::Target::Stdout)
-        .filter_level(log::LevelFilter::Info)
-        .init();
+    let sentry_url = std::env::var("SENTRY_URL");
+    let _guard = if let Ok(sentry_url) = sentry_url {
+        let guard = sentry::init((
+            sentry_url,
+            sentry::ClientOptions {
+                release: sentry::release_name!(),
+                traces_sample_rate: 1.0,
+                send_default_pii: true,
+                ..Default::default()
+            },
+        ));
+
+        tracing_subscriber::Registry::default()
+            .with(sentry::integrations::tracing::layer())
+            .with(
+                tracing_subscriber::fmt::layer().with_filter(
+                    EnvFilter::from_default_env()
+                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+                ),
+            )
+            .init();
+
+        log::info!("Sentry monitoring enabled");
+        Some(guard)
+    } else {
+        tracing_subscriber::Registry::default()
+            .with(
+                tracing_subscriber::fmt::layer().with_filter(
+                    tracing_subscriber::EnvFilter::from_default_env()
+                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+                ),
+            )
+            .init();
+
+        None
+    };
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL should be set");
     let redis_url = get_env!("REDIS_URL", "REDIS_URL should be set");
@@ -923,6 +956,7 @@ pub fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(event_queue.clone()))
                 .app_data(web::Data::new(clickhouse_client.clone()))
                 .app_data(web::Data::new(metrics.clone()))
+                .wrap(sentry_actix::Sentry::new())
                 .app_data(detector.clone())
                 .app_data(web::Data::new(broccoli_queue.clone()))
                 .wrap(from_fn(middleware::timeout_middleware::timeout_15secs))

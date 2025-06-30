@@ -29,6 +29,7 @@ use time::{format_description, OffsetDateTime};
 
 use super::clickhouse_operator::EventQueue;
 
+#[tracing::instrument(skip_all)]
 pub async fn create_dataset_query(
     new_dataset: Dataset,
     pool: web::Data<Pool>,
@@ -57,6 +58,7 @@ pub async fn create_dataset_query(
     Ok(new_dataset)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_datasets_query(
     datasets: Vec<Dataset>,
     upsert: Option<bool>,
@@ -107,6 +109,7 @@ pub async fn create_datasets_query(
     Ok(created_or_upserted_datasets)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -128,6 +131,7 @@ pub async fn get_dataset_by_id_query(
     Ok(dataset)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_dataset_by_tracking_id_query(
     tracking_id: String,
     org_id: uuid::Uuid,
@@ -151,6 +155,7 @@ pub async fn get_dataset_by_tracking_id_query(
     Ok(dataset)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_dataset_by_tracking_id_unsafe_query(
     tracking_id: String,
     pool: web::Data<Pool>,
@@ -172,6 +177,7 @@ pub async fn get_dataset_by_tracking_id_unsafe_query(
     Ok(dataset)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_deleted_dataset_by_id_query(
     id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -192,6 +198,7 @@ pub async fn get_deleted_dataset_by_id_query(
     Ok(dataset)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_deleted_dataset_by_tracking_id_query(
     tracking_id: String,
     org_id: uuid::Uuid,
@@ -214,6 +221,7 @@ pub async fn get_deleted_dataset_by_tracking_id_query(
     Ok(dataset)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_all_dataset_ids(pool: web::Data<Pool>) -> Result<Vec<uuid::Uuid>, ServiceError> {
     use crate::data::schema::datasets::dsl as datasets_columns;
     let mut conn = pool
@@ -231,6 +239,7 @@ pub async fn get_all_dataset_ids(pool: web::Data<Pool>) -> Result<Vec<uuid::Uuid
     Ok(datasets)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_dataset_and_organization_from_dataset_id_query(
     id: UnifiedId,
     org_id: Option<uuid::Uuid>,
@@ -400,6 +409,7 @@ impl DeleteMessage {
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn soft_delete_dataset_by_id_query(
     id: uuid::Uuid,
     dataset_config: DatasetConfiguration,
@@ -453,6 +463,7 @@ pub async fn soft_delete_dataset_by_id_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn clear_dataset_by_dataset_id_query(
     id: uuid::Uuid,
     dataset_config: DatasetConfiguration,
@@ -488,6 +499,7 @@ pub async fn clear_dataset_by_dataset_id_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn clear_dataset_query(
     id: uuid::Uuid,
     deleted_at: chrono::NaiveDateTime,
@@ -647,6 +659,7 @@ pub async fn clear_dataset_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_dataset_by_id_query(
     id: uuid::Uuid,
     deleted_at: chrono::NaiveDateTime,
@@ -692,6 +705,7 @@ pub async fn delete_dataset_by_id_query(
     Ok(dataset)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_dataset_query(
     id: uuid::Uuid,
     name: String,
@@ -744,6 +758,7 @@ pub async fn update_dataset_query(
     Ok(new_dataset)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_datasets_by_organization_id(
     org_id: uuid::Uuid,
     pagination: GetDatasetsPagination,
@@ -786,6 +801,7 @@ pub async fn get_datasets_by_organization_id(
     Ok(dataset_and_usages)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_dataset_usage_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -806,6 +822,7 @@ pub async fn get_dataset_usage_query(
     Ok(dataset_usage)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_tags_in_dataset_query(
     dataset_id: uuid::Uuid,
     page: i64,
@@ -846,6 +863,7 @@ pub async fn get_tags_in_dataset_query(
     Ok((items, total_count))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn scroll_dataset_ids_query(
     offset: uuid::Uuid,
     limit: i64,
@@ -873,6 +891,7 @@ pub async fn scroll_dataset_ids_query(
     Ok(Some(datasets))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn add_words_to_dataset(
     words: Vec<String>,
     counts: Vec<i32>,
@@ -914,6 +933,7 @@ pub struct WordDatasetCount {
     pub count: i32,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn scroll_words_from_dataset(
     dataset_id: uuid::Uuid,
     offset: uuid::Uuid,
@@ -970,6 +990,7 @@ pub async fn scroll_words_from_dataset(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_dataset_last_processed_query(
     dataset_id: uuid::Uuid,
     clickhouse_client: &clickhouse::Client,
@@ -997,6 +1018,7 @@ pub async fn update_dataset_last_processed_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_dataset_config_query(
     dataset_id: uuid::Uuid,
     pool: web::Data<Pool>,

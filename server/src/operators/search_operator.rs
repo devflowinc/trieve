@@ -68,22 +68,27 @@ pub struct SearchResult {
 }
 
 impl SearchResultTrait for SearchResult {
+    #[tracing::instrument(skip_all)]
     fn score(&self) -> f32 {
         self.score
     }
 
+    #[tracing::instrument(skip_all)]
     fn set_score(&mut self, score: f32) {
         self.score = score;
     }
 
+    #[tracing::instrument(skip_all)]
     fn point_id(&self) -> uuid::Uuid {
         self.point_id
     }
 
+    #[tracing::instrument(skip_all)]
     fn payload(&self) -> HashMap<String, qdrant_client::qdrant::Value> {
         self.payload.clone()
     }
 
+    #[tracing::instrument(skip_all)]
     fn embedding(&self) -> Option<Vec<f32>> {
         self.embedding.clone()
     }
@@ -96,6 +101,7 @@ pub struct SearchChunkQueryResult {
     pub batch_lengths: Vec<usize>,
 }
 
+#[tracing::instrument(skip_all)]
 async fn convert_group_tracking_ids_to_group_ids(
     condition: FieldCondition,
     dataset_id: uuid::Uuid,
@@ -168,6 +174,7 @@ async fn convert_group_tracking_ids_to_group_ids(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_qdrant_ids_from_condition(
     cond: HasChunkIDCondition,
     pool: web::Data<Pool>,
@@ -200,6 +207,7 @@ pub async fn get_qdrant_ids_from_condition(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub fn get_all_matching_ids_from_field(condition: FieldCondition) -> Vec<String> {
     let mut ids = vec![];
     if let Some(match_any) = condition.match_any {
@@ -217,6 +225,7 @@ pub fn get_all_matching_ids_from_field(condition: FieldCondition) -> Vec<String>
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip_all)]
 pub async fn assemble_qdrant_filter(
     filters: Option<ChunkFilter>,
     quote_words: Option<Vec<String>>,
@@ -533,6 +542,7 @@ impl RetrievePointQuery {
     }
 }
 
+#[tracing::instrument(skip_all)]
 fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     let dot_product: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
     let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
@@ -545,6 +555,7 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub fn apply_mmr<T: SearchResultTrait + Clone>(
     mut docs: Vec<T>,
     lambda: f32,
@@ -616,6 +627,7 @@ pub fn apply_mmr<T: SearchResultTrait + Clone>(
         .collect()
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn retrieve_qdrant_points_query(
     qdrant_searches: Vec<QdrantSearchQuery>,
     page: u64,
@@ -651,6 +663,7 @@ pub async fn retrieve_qdrant_points_query(
     })
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_metadata_filter_condition(
     filter: &FieldCondition,
     dataset_id: uuid::Uuid,
@@ -863,6 +876,7 @@ pub async fn get_metadata_filter_condition(
     Ok(metadata_filter)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_group_metadata_filter_condition(
     filter: &FieldCondition,
     dataset_id: uuid::Uuid,
@@ -1049,6 +1063,7 @@ pub async fn get_group_metadata_filter_condition(
     Ok(metadata_filter)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_group_tag_set_filter_condition(
     filter: &FieldCondition,
     dataset_id: uuid::Uuid,
@@ -1182,6 +1197,7 @@ pub struct SearchOverGroupsQueryResult {
     pub batch_lengths: Vec<usize>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn retrieve_group_qdrant_points_query(
     qdrant_searches: Vec<QdrantSearchQuery>,
     page: u64,
@@ -1246,6 +1262,7 @@ pub struct SearchOverGroupsResults {
 }
 
 impl From<GroupScoreChunk> for SearchOverGroupsResults {
+    #[tracing::instrument(skip_all)]
     fn from(val: GroupScoreChunk) -> Self {
         SearchOverGroupsResults {
             group: ChunkGroup {
@@ -1278,6 +1295,7 @@ pub struct DeprecatedSearchOverGroupsResponseBody {
 }
 
 impl DeprecatedSearchOverGroupsResponseBody {
+    #[tracing::instrument(skip_all)]
     pub fn into_v2(self, search_id: uuid::Uuid) -> SearchOverGroupsResponseBody {
         SearchOverGroupsResponseBody {
             id: search_id,
@@ -1310,6 +1328,7 @@ pub enum SearchOverGroupsResponseTypes {
     V1(DeprecatedSearchOverGroupsResponseBody),
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn retrieve_chunks_for_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     data: &SearchOverGroupsReqPayload,
@@ -1450,6 +1469,7 @@ pub async fn retrieve_chunks_for_groups(
     })
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_metadata_from_groups(
     search_over_groups_query_result: SearchOverGroupsQueryResult,
     slim_chunks: Option<bool>,
@@ -1529,6 +1549,7 @@ pub async fn get_metadata_from_groups(
 
 #[inline(never)]
 /// Retrieve chunks from point ids, DOES NOT GUARD AGAINST DATASET ACCESS PERMISSIONS
+#[tracing::instrument(skip_all)]
 pub async fn retrieve_chunks_from_point_ids(
     search_chunk_query_results: SearchChunkQueryResult,
     timer: Option<&mut Timer>,
@@ -1704,6 +1725,7 @@ pub enum ParsedQueryTypes {
 }
 
 impl ParsedQueryTypes {
+    #[tracing::instrument(skip_all)]
     pub fn to_parsed_query(&self) -> Result<ParsedQuery, ServiceError> {
         match self {
             ParsedQueryTypes::Single(query) => Ok(query.clone()),
@@ -1714,6 +1736,7 @@ impl ParsedQueryTypes {
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn parse_query(
     query: SearchModalities,
     dataset: &Dataset,
@@ -1795,6 +1818,7 @@ pub async fn parse_query(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub fn rerank_chunks(
     chunks: Vec<ScoreChunkDTO>,
     search_results: Vec<SearchResult>,
@@ -1968,6 +1992,7 @@ pub fn rerank_chunks(
     reranked_chunks
 }
 
+#[tracing::instrument(skip_all)]
 pub fn rerank_groups(
     groups: Vec<GroupScoreChunk>,
     search_results: Vec<GroupSearchResults>,
@@ -2268,6 +2293,7 @@ async fn get_qdrant_vector(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn search_chunks_query(
     mut data: SearchChunksReqPayload,
     parsed_query: ParsedQueryTypes,
@@ -2406,6 +2432,7 @@ pub async fn search_chunks_query(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip_all)]
 pub async fn search_hybrid_chunks(
     mut data: SearchChunksReqPayload,
     parsed_query: ParsedQuery,
@@ -2920,6 +2947,7 @@ pub async fn search_hybrid_groups(
     })
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn autocomplete_search_over_groups_query(
     mut data: AutocompleteSearchOverGroupsReqPayload,
     parsed_query: ParsedQuery,
@@ -3090,6 +3118,7 @@ pub async fn autocomplete_search_over_groups_query(
     Ok(result_chunks)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn search_over_groups_query(
     mut data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQueryTypes,
@@ -3255,6 +3284,7 @@ async fn cross_encoder_for_groups(
     Ok(group_results)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn hybrid_search_over_groups(
     mut data: SearchOverGroupsReqPayload,
     parsed_query: ParsedQuery,
@@ -3440,6 +3470,7 @@ pub async fn hybrid_search_over_groups(
     Ok(result_chunks)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn autocomplete_chunks_query(
     mut data: AutocompleteReqPayload,
     parsed_query: ParsedQuery,
@@ -3590,6 +3621,7 @@ pub async fn autocomplete_chunks_query(
     Ok(result_chunks)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn count_chunks_query(
     data: CountChunksReqPayload,
     parsed_query: ParsedQueryTypes,

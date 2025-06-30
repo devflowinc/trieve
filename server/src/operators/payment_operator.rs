@@ -29,6 +29,7 @@ pub fn get_stripe_client() -> stripe::Client {
     stripe::Client::new(stripe_secret)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_usage_stripe_subscription_query(
     stripe_subscription_id: String,
     current_usage: OrganizationUsageCount,
@@ -71,6 +72,7 @@ pub async fn create_usage_stripe_subscription_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_static_stripe_meters(
     usage_based_subscription: StripeUsageBasedSubscription,
     pool: web::Data<Pool>,
@@ -175,6 +177,7 @@ pub async fn update_static_stripe_meters(
     Ok(static_events)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_flat_subscription_query(
     stripe_id: String,
     plan_id: uuid::Uuid,
@@ -206,6 +209,7 @@ pub async fn create_flat_subscription_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_stripe_plan_query(
     stripe_id: String,
     amount: i64,
@@ -242,6 +246,7 @@ pub async fn create_stripe_plan_query(
     Ok(created_stripe_plan)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_trieve_plan_by_id_query(
     plan_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -253,6 +258,7 @@ pub async fn get_trieve_plan_by_id_query(
         .ok_or(ServiceError::NotFound("TrievePlan not found".to_string()))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_plan_by_id_query(
     plan_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -276,6 +282,7 @@ pub async fn get_plan_by_id_query(
     Ok(stripe_plan)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_plan_by_handle_query(
     plan_handle: String,
     pool: web::Data<Pool>,
@@ -299,6 +306,7 @@ pub async fn get_plan_by_handle_query(
     Ok(stripe_plan)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_usage_based_plan_query(
     plan_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -323,6 +331,7 @@ pub async fn get_usage_based_plan_query(
     Ok(stripe_plan)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_all_usage_plans_query(
     pool: web::Data<Pool>,
 ) -> Result<Vec<StripeUsageBasedPlan>, ServiceError> {
@@ -345,6 +354,7 @@ pub async fn get_all_usage_plans_query(
     Ok(stripe_plans)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan>, ServiceError> {
     use crate::data::schema::stripe_plans::dsl as stripe_plans_columns;
 
@@ -363,6 +373,7 @@ pub async fn get_all_plans_query(pool: web::Data<Pool>) -> Result<Vec<StripePlan
     Ok(stripe_plans)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_stripe_payment_link(
     plan: StripePlan,
     organization_id: uuid::Uuid,
@@ -411,6 +422,7 @@ pub async fn create_stripe_payment_link(
     Ok(payment_link.to_string())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_usage_based_stripe_payment_link(
     usage_based_plan: StripeUsageBasedPlan,
     organization_id: uuid::Uuid,
@@ -481,6 +493,7 @@ pub async fn create_usage_based_stripe_payment_link(
     Ok(session.url.unwrap().to_string())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_trieve_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -533,6 +546,7 @@ pub async fn get_trieve_subscription_by_id_query(
         .ok_or(ServiceError::NotFound("Subscription not found".to_string()))
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_usage_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -557,6 +571,7 @@ pub async fn delete_usage_subscription_by_id_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_subscription_by_id_query(
     subscription_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -581,6 +596,7 @@ pub async fn delete_subscription_by_id_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_option_usage_based_subscription_by_organization_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -609,6 +625,7 @@ pub async fn get_option_usage_based_subscription_by_organization_id_query(
     Ok(stripe_usage_based_subscriptions)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_option_usage_based_subscription_by_subscription_id_query(
     stripe_subscription_id: String,
     pool: web::Data<Pool>,
@@ -640,6 +657,7 @@ pub async fn get_option_usage_based_subscription_by_subscription_id_query(
     Ok(stripe_usage_based_subscriptions)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_option_subscription_by_organization_id_query(
     organization_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -669,6 +687,7 @@ pub async fn get_option_subscription_by_organization_id_query(
     Ok(stripe_subscriptions.into_iter().next())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn set_stripe_subscription_current_period_end(
     stripe_subscription_id: String,
     current_period_end: chrono::NaiveDateTime,
@@ -720,6 +739,7 @@ pub async fn set_stripe_subscription_current_period_end(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn cancel_stripe_subscription(
     subscription_stripe_id: String,
 ) -> Result<(), ServiceError> {
@@ -742,6 +762,7 @@ pub async fn cancel_stripe_subscription(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_stripe_subscription_plan_query(
     subscription_id: uuid::Uuid,
     plan_id: uuid::Uuid,
@@ -768,6 +789,7 @@ pub async fn update_stripe_subscription_plan_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_to_usage_based_stripe_subscription(
     subscription_stripe_id: String,
     usage_plan: StripeUsageBasedPlan,
@@ -834,6 +856,7 @@ pub async fn update_to_usage_based_stripe_subscription(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_to_flat_stripe_subscription(
     subscription_stripe_id: String,
     plan_stripe_id: String,
@@ -888,6 +911,7 @@ pub async fn update_to_flat_stripe_subscription(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_invoice_query(
     org_id: uuid::Uuid,
     invoice_id: stripe::InvoiceId,
@@ -937,6 +961,7 @@ pub async fn create_invoice_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn invoice_exists_query(
     invoice_id: String,
     pool: web::Data<Pool>,
@@ -959,6 +984,7 @@ pub async fn invoice_exists_query(
     Ok(invoice.is_some())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_invoices_for_org_query(
     org_id: uuid::Uuid,
     pool: web::Data<Pool>,
@@ -979,6 +1005,7 @@ pub async fn get_invoices_for_org_query(
     Ok(invoices)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_stripe_setup_checkout_session(
     subscription_id: String,
     organization_id: uuid::Uuid,
@@ -1019,6 +1046,7 @@ pub async fn create_stripe_setup_checkout_session(
     Ok(session.url.unwrap().to_string())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn set_subscription_payment_method(
     setup_intent: stripe::SetupIntent,
     subscription_id: String,
@@ -1063,6 +1091,7 @@ pub async fn set_subscription_payment_method(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_stripe_customer_id_from_subscription(
     stripe_subscription_id: String,
 ) -> Result<String, ServiceError> {
@@ -1091,6 +1120,7 @@ pub struct StripeErrorMessage {
     pub message: String,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn send_stripe_billing(
     usage_based_subscription: StripeUsageBasedSubscription,
     clickhouse_client: &clickhouse::Client,
@@ -1192,6 +1222,7 @@ pub async fn send_stripe_billing(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_stripe_usage_based_subscription_plan_query(
     subscription_id: uuid::Uuid,
     plan_id: uuid::Uuid,
@@ -1219,6 +1250,7 @@ pub async fn update_stripe_usage_based_subscription_plan_query(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn update_stripe_usage_based_subscription(
     usage_based_subscription_id: uuid::Uuid,
     last_recorded_meter: chrono::NaiveDateTime,
@@ -1252,6 +1284,7 @@ pub struct BillingPrice {
     pub guage_name: String,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_bill_from_range(
     organization_id: uuid::Uuid,
     usage_plan: StripeUsageBasedPlan,

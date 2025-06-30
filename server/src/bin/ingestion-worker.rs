@@ -11,6 +11,7 @@ use signal_hook::consts::SIGTERM;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{atomic::AtomicBool, Arc};
+use tracing_subscriber::{prelude::*, EnvFilter, Layer};
 use trieve_server::data::models::{
     self, ChunkBoost, ChunkData, ChunkGroup, ChunkMetadata, DatasetConfiguration,
     PagefindIndexWorkerMessage, QdrantPayload, WorkerEvent,
@@ -43,10 +44,46 @@ use trieve_server::{establish_connection, get_env};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenvy::dotenv().ok();
-    env_logger::builder()
-        .target(env_logger::Target::Stdout)
-        .filter_level(log::LevelFilter::Info)
-        .init();
+    // env_logger::builder()
+    //     .target(env_logger::Target::Stdout)
+    //     .filter_level(log::LevelFilter::Info)
+    //     .init();
+    let sentry_url = std::env::var("SENTRY_URL");
+    let _guard = if let Ok(sentry_url) = sentry_url {
+        let guard = sentry::init((
+            sentry_url,
+            sentry::ClientOptions {
+                release: sentry::release_name!(),
+                traces_sample_rate: 1.0,
+                send_default_pii: true,
+                ..Default::default()
+            },
+        ));
+
+        tracing_subscriber::Registry::default()
+            .with(sentry::integrations::tracing::layer())
+            .with(
+                tracing_subscriber::fmt::layer().with_filter(
+                    EnvFilter::from_default_env()
+                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+                ),
+            )
+            .init();
+
+        log::info!("Sentry monitoring enabled");
+        Some(guard)
+    } else {
+        tracing_subscriber::Registry::default()
+            .with(
+                tracing_subscriber::fmt::layer().with_filter(
+                    tracing_subscriber::EnvFilter::from_default_env()
+                        .add_directive(tracing_subscriber::filter::LevelFilter::INFO.into()),
+                ),
+            )
+            .init();
+
+        None
+    };
 
     let database_url = get_env!("DATABASE_URL", "DATABASE_URL is not set");
 

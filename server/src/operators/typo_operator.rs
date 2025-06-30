@@ -294,6 +294,7 @@ impl BkTree {
         Iter { queue }
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn from_redis(
         dataset_id: uuid::Uuid,
         redis_pool: web::Data<RedisPool>,
@@ -332,6 +333,7 @@ impl BkTree {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn save(
         &self,
         dataset_id: uuid::Uuid,
@@ -767,6 +769,7 @@ pub struct CorrectedQuery {
     pub corrected: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn correct_query(
     query: ParsedQuery,
     dataset_id: uuid::Uuid,

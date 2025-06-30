@@ -7,6 +7,7 @@ use actix_web::{
     web,
 };
 
+#[tracing::instrument(skip_all)]
 pub async fn timeout_15secs(
     service_req: ServiceRequest,
     next: Next<impl MessageBody + 'static>,

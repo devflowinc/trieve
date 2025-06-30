@@ -1091,6 +1091,7 @@ pub struct GetToolFunctionParamsRespBody {
         ("ApiKey" = ["admin"]),
     )
 )]
+#[tracing::instrument(name = "get_tool_function_params", skip(_required_user))]
 pub async fn get_tool_function_params(
     data: web::Json<GetToolFunctionParamsReqPayload>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,

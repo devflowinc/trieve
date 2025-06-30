@@ -105,6 +105,7 @@ pub struct ChatCompletionDTO {
     pub completion_tokens: i32,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_topic_messages_query(
     messages_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -130,6 +131,7 @@ pub async fn get_topic_messages_query(
     Ok(topic_messages)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_message_by_id_query(
     message_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -155,6 +157,7 @@ pub async fn get_message_by_id_query(
     Ok(message)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_messages_query(
     new_messages: Vec<Message>,
     pool: &web::Data<Pool>,
@@ -234,6 +237,7 @@ documents: [1,2]
 After you have done these things now follow:
 "#;
 
+#[tracing::instrument(skip_all)]
 pub async fn create_generic_system_message(
     system_prompt: String,
     use_agentic_search: bool,
@@ -270,6 +274,7 @@ pub async fn create_generic_system_message(
     Ok(system_message)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_topic_message_query(
     config: &DatasetConfiguration,
     previous_messages: Vec<Message>,
@@ -306,6 +311,7 @@ pub async fn create_topic_message_query(
     Ok(ret_messages)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_message_by_sort_for_topic_query(
     message_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -332,6 +338,7 @@ pub async fn get_message_by_sort_for_topic_query(
         })
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_messages_for_topic_query(
     message_topic_id: uuid::Uuid,
     given_dataset_id: uuid::Uuid,
@@ -357,6 +364,7 @@ pub async fn get_messages_for_topic_query(
         })
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_message_query(
     given_message_id: uuid::Uuid,
     given_topic_id: uuid::Uuid,
@@ -390,6 +398,7 @@ pub async fn delete_message_query(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip_all)]
 pub async fn get_rag_chunks_query(
     create_message_req_payload: CreateMessageReqPayload,
     dataset_config: DatasetConfiguration,
@@ -796,6 +805,7 @@ pub fn clean_markdown(markdown_text: &str) -> String {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip_all)]
 pub async fn stream_response(
     messages: Vec<models::Message>,
     topic_id: uuid::Uuid,
@@ -1809,6 +1819,7 @@ async fn handle_search_tool_call(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[tracing::instrument(skip_all)]
 pub async fn stream_response_with_agentic_search(
     messages: Vec<models::Message>,
     topic_id: uuid::Uuid,
@@ -2726,6 +2737,7 @@ pub async fn stream_response_with_agentic_search(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_topic_string(
     model: String,
     first_message: String,
@@ -2809,6 +2821,7 @@ pub async fn get_topic_string(
     Ok(topic)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_text_from_image(
     image_url: String,
     prompt: Option<String>,
@@ -2908,6 +2921,7 @@ pub async fn get_text_from_image(
     Ok(text)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_text_from_audio(audio_base64: &str) -> Result<String, ServiceError> {
     let client = Client {
         headers: None,
@@ -2964,6 +2978,7 @@ pub fn get_llm_api_key(dataset_config: &DatasetConfiguration) -> String {
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn suggested_followp_questions(
     payload: SuggestedQueriesReqPayload,
     dataset_config: DatasetConfiguration,
@@ -3078,6 +3093,7 @@ pub async fn suggested_followp_questions(
     Ok(queries)
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn suggested_new_queries(
     payload: SuggestedQueriesReqPayload,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,

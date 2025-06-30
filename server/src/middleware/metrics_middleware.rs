@@ -6,6 +6,7 @@ use actix_web::{
     web,
 };
 
+#[tracing::instrument(skip_all)]
 pub async fn error_logging_middleware(
     metrics: web::Data<Metrics>,
     req: ServiceRequest,
