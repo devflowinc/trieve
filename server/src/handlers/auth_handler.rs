@@ -32,7 +32,7 @@ use oauth2::{
     RedirectUrl, Scope, TokenResponse,
 };
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
-use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce};
+use openidconnect::{AccessTokenHash, ClientId, IssuerUrl, Nonce, ProviderMetadataWithLogout};
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -276,9 +276,35 @@ pub async fn logout(
         "Client ID for OpenID provider must be set"
     )
     .to_string();
+
+    let metadata = ProviderMetadataWithLogout::discover_async(
+        IssuerUrl::new(issuer_url.clone()).expect("IssuerUrl for OpenID provider must be set"),
+        async_http_client,
+    )
+    .await
+    .map_err(|err| format!("Failed to discover OIDC provider {:?}", err))
+    .unwrap();
+
+    let end_session_endpoint = metadata.additional_metadata().end_session_endpoint.clone();
+
+    let post_logout_redirect_uri = match end_session_endpoint {
+        Some(url) => url.to_string(),
+        None => format!(
+            "{}/protocol/openid-connect/logout?post_logout_redirect_uri={}&client_id={}",
+            issuer_url,
+            data.redirect_uri.clone().unwrap_or(
+                req.headers()
+                    .get("Referer")
+                    .map_or("/", |h| h.to_str().unwrap_or("/"))
+                    .to_string()
+            ),
+            client_id
+        ),
+    };
+
     let logout_url = format!(
-        "{}/protocol/openid-connect/logout?post_logout_redirect_uri={}&client_id={}",
-        issuer_url,
+        "{}?post_logout_redirect_uri={}&client_id={}",
+        post_logout_redirect_uri,
         data.redirect_uri.clone().unwrap_or(
             req.headers()
                 .get("Referer")
