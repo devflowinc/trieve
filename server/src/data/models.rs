@@ -3443,9 +3443,7 @@ impl DatasetConfigurationDTO {
                 .LLM_API_KEY
                 .clone()
                 .unwrap_or(curr_dataset_config.LLM_API_KEY),
-            LLM_API_VERSION: self
-                .LLM_API_VERSION
-                .clone(),
+            LLM_API_VERSION: self.LLM_API_VERSION.clone(),
             RERANKER_API_KEY: self
                 .RERANKER_API_KEY
                 .clone()
