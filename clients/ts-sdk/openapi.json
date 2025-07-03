@@ -12264,6 +12264,11 @@
             "description": "Whether to only use indexed chunks",
             "nullable": true
           },
+          "LLM_API_VERSION": {
+            "type": "string",
+            "description": "The API version for the LLM API",
+            "nullable": true
+          },
           "LLM_BASE_URL": {
             "type": "string",
             "description": "The base URL for the LLM API",

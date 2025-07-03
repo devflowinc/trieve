@@ -9,7 +9,7 @@ use crate::{
         UserOrganization, UserRole,
     },
     errors::ServiceError,
-    middleware::auth_middleware::{get_role_for_org, verify_admin, verify_owner},
+    middleware::auth_middleware::get_role_for_org,
     operators::{
         organization_operator::{
             create_organization_api_key_query, create_organization_query,
@@ -51,11 +51,8 @@ use utoipa::ToSchema;
 pub async fn get_organization(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if !verify_admin(&user, &organization_id) {
-        return Ok(HttpResponse::Forbidden().finish());
-    };
     let organization_id = organization_id.into_inner();
 
     let org_plan_sub = get_org_from_id_query(organization_id, pool).await?;
@@ -91,10 +88,6 @@ pub async fn delete_organization(
     user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = organization_id.into_inner();
-
-    if !verify_owner(&user, &organization_id) {
-        return Ok(HttpResponse::Forbidden().finish());
-    }
 
     delete_organization_query(
         Some(&req),
@@ -141,11 +134,8 @@ pub async fn update_organization(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     org_with_plan_and_sub: OrganizationWithSubAndPlan,
-    user: OwnerOnly,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if !verify_owner(&user, &org_with_plan_and_sub.organization.id) {
-        return Ok(HttpResponse::Forbidden().finish());
-    }
     let organization_update_data = organization.into_inner();
     let old_organization =
         get_org_from_id_query(org_with_plan_and_sub.organization.id, pool.clone()).await?;
@@ -339,12 +329,8 @@ pub struct ExtendedOrganizationUsageCount {
 pub async fn get_organization_users(
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if !verify_admin(&user, &organization_id) {
-        return Ok(HttpResponse::Forbidden().finish());
-    };
-
     let org_id = organization_id.into_inner();
 
     let usage = get_org_users_by_id_query(org_id, pool).await?;
@@ -386,10 +372,6 @@ pub async fn remove_user_from_org(
     org_with_plan_and_sub: OrganizationWithSubAndPlan,
     user: AdminOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if !verify_admin(&user, &org_with_plan_and_sub.organization.id) {
-        return Ok(HttpResponse::Forbidden().finish());
-    };
-
     let org_id = org_with_plan_and_sub.organization.id;
     let user_role = match get_role_for_org(&user.0, &org_id.clone()) {
         Some(role) => role,
@@ -464,12 +446,9 @@ pub async fn update_all_org_dataset_configs(
     req_payload: web::Json<UpdateAllOrgDatasetConfigsReqPayload>,
     pool: web::Data<Pool>,
     org_with_plan_and_sub: OrganizationWithSubAndPlan,
-    user: OwnerOnly,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, actix_web::Error> {
     let organization_id = org_with_plan_and_sub.organization.id;
-    if !verify_owner(&user, &organization_id) {
-        return Ok(HttpResponse::Forbidden().finish());
-    };
 
     let req_payload = req_payload.into_inner();
 

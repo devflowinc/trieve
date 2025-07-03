@@ -4,4 +4,12 @@ import runtimeEnv from "vite-plugin-runtime-env";
 
 export default defineConfig({
   plugins: [solid(), runtimeEnv()],
+  optimizeDeps: {
+    include: ["debug", "extend"],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/debug/, /extend/, /node_modules/],
+    },
+  },
 });

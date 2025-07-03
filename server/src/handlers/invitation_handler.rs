@@ -2,7 +2,6 @@ use super::auth_handler::AdminOnly;
 use crate::{
     data::models::{Invitation, OrganizationWithSubAndPlan, Pool, RedisPool, Templates},
     errors::ServiceError,
-    middleware::auth_middleware::verify_admin,
     operators::{
         invitation_operator::{
             create_invitation_query, delete_invitation_by_id_query, get_invitation_by_id_query,
@@ -216,13 +215,10 @@ pub async fn create_invitation(
     )
 )]
 pub async fn get_invitations(
-    user: AdminOnly,
+    _user: AdminOnly,
     organization_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
-    if !verify_admin(&user, &organization_id.clone()) {
-        return Err(ServiceError::Forbidden);
-    }
     let invitations =
         get_invitations_for_organization_query(organization_id.into_inner(), pool).await?;
     Ok(HttpResponse::Ok().json(invitations))
@@ -249,17 +245,13 @@ pub async fn get_invitations(
     )
 )]
 pub async fn delete_invitation(
-    user: AdminOnly,
+    _user: AdminOnly,
     invitation_id: web::Path<uuid::Uuid>,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, ServiceError> {
     let invite_id = invitation_id.into_inner();
     let invite = get_invitation_by_id_query(invite_id, pool.clone()).await?;
 
-    if !verify_admin(&user, &invite.organization_id) {
-        return Err(ServiceError::Forbidden);
-    }
-
-    delete_invitation_by_id_query(invite_id, pool).await?;
+    delete_invitation_by_id_query(invite.id, pool).await?;
     Ok(HttpResponse::NoContent().finish())
 }

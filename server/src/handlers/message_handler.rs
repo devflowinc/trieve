@@ -28,7 +28,7 @@ use base64::Engine;
 use hallucination_detection::HallucinationDetector;
 use openai_dive::v1::{
     api::Client,
-    models::WhisperModel,
+    models::TranscriptionModel::Whisper1,
     resources::{
         audio::{AudioOutputFormat, AudioTranscriptionParametersBuilder},
         chat::{
@@ -36,7 +36,7 @@ use openai_dive::v1::{
             ChatCompletionToolType, ChatMessage, ChatMessageContent, ChatMessageContentPart,
             ChatMessageImageContentPart, ChatMessageTextContentPart, ImageUrlType,
         },
-        image::{EditImageParametersBuilder, ImageData, ImageQuality, ImageSize},
+        image::{EditImageParametersBuilder, ImageData, ImageQuality, ImageSize, MimeType},
         shared::{FileUpload, FileUploadBytes},
     },
 };
@@ -1125,6 +1125,8 @@ pub async fn get_tool_function_params(
         .into()
     };
 
+    let llm_api_version = dataset_config.LLM_API_VERSION.clone();
+
     let message_content = if let Some(ref audio_input) = data.audio_input {
         get_text_from_audio(audio_input).await?
     } else {
@@ -1183,6 +1185,16 @@ pub async fn get_tool_function_params(
 
     parameters_builder
         .model(chosen_model)
+        .query_params(
+            llm_api_version
+                .as_ref()
+                .map(|version| {
+                    let mut map = std::collections::HashMap::new();
+                    map.insert("api-version".to_string(), version.clone());
+                    map
+                })
+                .unwrap_or_default(),
+        )
         .messages(vec![ChatMessage::User {
             content: ChatMessageContent::ContentPart(message_content_parts),
             name: None,
@@ -1444,6 +1456,20 @@ pub async fn edit_image(
         organization: None,
     };
 
+    let mime_type: MimeType = match data.mime_type.as_deref() {
+        Some("image/png") => MimeType::Png,
+        Some("image/jpeg") => MimeType::Jpeg,
+        Some("image/webp") => MimeType::Webp,
+        Some("application/octet-stream") => MimeType::OctetStream,
+        Some(mime_str) => {
+            return Err(ServiceError::BadRequest(format!(
+                "Unsupported mime type: {}",
+                mime_str
+            )))
+        }
+        None => MimeType::Png, // Default to PNG if no mime type is provided
+    };
+
     let mut file_upload_bytes_futures = Vec::new();
     for input_image in &data.input_images {
         let fut = input_image.to_file_upload_bytes();
@@ -1456,7 +1482,7 @@ pub async fn edit_image(
         .model("gpt-image-1")
         .quality::<ImageQuality>(data.quality.unwrap_or_default().into())
         .prompt(data.prompt.clone())
-        .mime_type(data.mime_type.clone().unwrap_or("image/png".to_string()))
+        .mime_type(mime_type)
         .n(data.n.unwrap_or(1))
         .size::<ImageSize>(data.size.unwrap_or_default().into())
         .build()
@@ -1565,7 +1591,7 @@ pub async fn transcribe_audio(
 
     let parameters = AudioTranscriptionParametersBuilder::default()
         .file(file_upload)
-        .model(WhisperModel::Whisper1.to_string())
+        .model(Whisper1.to_string())
         .response_format(AudioOutputFormat::Text)
         .language("en".to_string())
         .build()
@@ -1632,6 +1658,8 @@ pub async fn generate_message_completions(
     let llm_api_key = get_llm_api_key(&dataset_config);
     let mut base_url = dataset_config.LLM_BASE_URL.clone();
 
+    let llm_api_version = dataset_config.LLM_API_VERSION.clone();
+
     if !base_url.contains("openai.com") {
         base_url = "https://api.openai.com/v1".to_string();
     }
@@ -1657,6 +1685,16 @@ pub async fn generate_message_completions(
 
     let parameters = ChatCompletionParametersBuilder::default()
         .model("gpt-4o-mini".to_string())
+        .query_params(
+            llm_api_version
+                .as_ref()
+                .map(|version| {
+                    let mut map = std::collections::HashMap::new();
+                    map.insert("api-version".to_string(), version.clone());
+                    map
+                })
+                .unwrap_or_default(),
+        )
         .messages(vec![system_message, user_message])
         .build()
         .map_err(|err| {

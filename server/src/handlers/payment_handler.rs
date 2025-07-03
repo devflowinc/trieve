@@ -2,7 +2,6 @@ use crate::{
     data::models::{DateRange, OrganizationWithSubAndPlan, Pool, TrievePlan, TrieveSubscription},
     errors::ServiceError,
     get_env,
-    middleware::auth_middleware::verify_owner,
     operators::{
         email_operator::send_email,
         organization_operator::{
@@ -398,16 +397,12 @@ pub async fn direct_to_payment_link(
 )]
 pub async fn cancel_subscription(
     subscription_id: web::Path<uuid::Uuid>,
-    user: OwnerOnly,
+    _user: OwnerOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let get_sub_pool = pool.clone();
     let subscription =
         get_trieve_subscription_by_id_query(subscription_id.into_inner(), get_sub_pool).await?;
-
-    if !verify_owner(&user, &subscription.organization_id()) {
-        return Err(ServiceError::Forbidden.into());
-    };
 
     cancel_stripe_subscription(subscription.stripe_subscription_id()).await?;
 
@@ -443,7 +438,7 @@ pub struct UpdateSubscriptionData {
 )]
 pub async fn update_subscription_plan(
     path_data: web::Path<UpdateSubscriptionData>,
-    user: OwnerOnly,
+    _user: OwnerOnly,
     pool: web::Data<Pool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let current_subscription_id = path_data.subscription_id;
@@ -453,10 +448,6 @@ pub async fn update_subscription_plan(
         get_trieve_subscription_by_id_query(current_subscription_id, pool.clone()).await?;
 
     let new_trieve_plan = get_trieve_plan_by_id_query(new_plan_id, pool.clone()).await?;
-
-    if !verify_owner(&user, &current_trieve_subscription.organization_id()) {
-        return Err(ServiceError::Forbidden.into());
-    };
 
     match new_trieve_plan {
         TrievePlan::Flat(flat_plan) => {

@@ -1,6 +1,6 @@
 import { Tooltip } from "shared/ui";
 import { AiOutlineInfoCircle } from "solid-icons/ai";
-import { Accessor, createEffect, onCleanup } from "solid-js";
+import { Accessor, createEffect, onCleanup, For, createSignal } from "solid-js";
 import { DatasetConfig } from "./LegacySettingsWrapper";
 
 export const LLMSettings = (props: {
@@ -8,6 +8,35 @@ export const LLMSettings = (props: {
   setServerConfig: (config: (prev: DatasetConfig) => DatasetConfig) => void;
   saveConfig?: () => void;
 }) => {
+  const [showOptions, setShowOptions] = createSignal(false);
+  const [filteredOptions, setFilteredOptions] = createSignal<string[]>([]);
+
+  // Predefined LLM API URLs
+  const availableLLMUrls = [
+    "https://api.openai.com/v1",
+    "https://openrouter.ai/api/v1",
+    "https://api.groq.com/openai/v1",
+  ];
+
+  // Filter options based on current input
+  const filterOptions = (inputValue: string) => {
+    if (!inputValue.trim()) {
+      setFilteredOptions(availableLLMUrls);
+      return;
+    }
+
+    const filtered = availableLLMUrls.filter((url) =>
+      url.toLowerCase().includes(inputValue.toLowerCase()),
+    );
+    setFilteredOptions(filtered);
+  };
+
+  // Initialize filtered options
+  createEffect(() => {
+    const currentUrl = props.serverConfig().LLM_BASE_URL ?? "";
+    filterOptions(currentUrl);
+  });
+
   createEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === "s") {
@@ -48,6 +77,7 @@ export const LLMSettings = (props: {
             </span>
 
             <div class="mt-4 grid grid-cols-4 gap-x-3 gap-y-6">
+              {/* LLM API URL Combobox */}
               <div class="col-span-4 sm:col-span-2">
                 <label
                   for="llmAPIURL"
@@ -56,38 +86,97 @@ export const LLMSettings = (props: {
                   LLM API URL
                   <Tooltip
                     body={<AiOutlineInfoCircle />}
-                    tooltipText="Select the API URL to use for the LLM. Contact us or use the API if you need a custom URL."
+                    tooltipText="Select the API URL to use for the LLM, or enter your own. Contact us or use the API if you need a custom URL."
                   />
                 </label>
-                <select
-                  name="llmAPIURL"
-                  id="llmAPIURL"
-                  class="block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-2 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
-                  value={props.serverConfig().LLM_BASE_URL?.toString()}
-                  onInput={(e) =>
-                    props.setServerConfig((prev) => {
-                      const updatedConfig = {
-                        ...prev,
-                        LLM_BASE_URL: e.currentTarget.value,
-                      };
-                      if (prev.LLM_BASE_URL !== e.currentTarget.value) {
-                        updatedConfig.LLM_API_KEY = null;
-                      }
-
-                      return updatedConfig;
-                    })
-                  }
-                >
-                  <option value="https://api.openai.com/v1">
-                    https://api.openai.com/v1
-                  </option>
-                  <option value="https://openrouter.ai/api/v1">
-                    https://openrouter.ai/api/v1
-                  </option>
-                  <option value="https://api.groq.com/openai/v1">
-                    https://api.groq.com/openai/v1
-                  </option>
-                </select>
+                <div class="relative">
+                  <input
+                    type="text"
+                    name="llmAPIURL"
+                    id="llmAPIURL"
+                    class="block w-full rounded-md border-[0.5px] border-neutral-300 bg-white px-3 py-2 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                    value={props.serverConfig().LLM_BASE_URL ?? ""}
+                    placeholder="Enter or select an API URL"
+                    autocomplete="off"
+                    onInput={(e) => {
+                      const value = e.currentTarget.value;
+                      props.setServerConfig((prev) => {
+                        const updatedConfig = {
+                          ...prev,
+                          LLM_BASE_URL: value,
+                        };
+                        if (prev.LLM_BASE_URL !== value) {
+                          updatedConfig.LLM_API_KEY = null;
+                        }
+                        return updatedConfig;
+                      });
+                      filterOptions(value);
+                      setShowOptions(true);
+                    }}
+                    onFocus={() => {
+                      const currentValue =
+                        props.serverConfig().LLM_BASE_URL ?? "";
+                      filterOptions(currentValue);
+                      setShowOptions(true);
+                    }}
+                    onBlur={() => setTimeout(() => setShowOptions(false), 100)}
+                  />
+                  <button
+                    type="button"
+                    class="absolute inset-y-0 right-2 flex items-center px-1 text-neutral-400 hover:text-magenta-500 focus:outline-none"
+                    tabIndex={-1}
+                    onClick={() => {
+                      const currentValue =
+                        props.serverConfig().LLM_BASE_URL ?? "";
+                      filterOptions(currentValue);
+                      setShowOptions((v) => !v);
+                    }}
+                  >
+                    <svg
+                      class="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  {showOptions() && (
+                    <ul class="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                      {filteredOptions().length === 0 && (
+                        <li class="cursor-default select-none px-4 py-2 text-neutral-400">
+                          No options
+                        </li>
+                      )}
+                      <For each={filteredOptions()}>
+                        {(url) => (
+                          <li
+                            class={`cursor-pointer select-none px-4 py-2 hover:bg-magenta-50 ${
+                              url === props.serverConfig().LLM_BASE_URL
+                                ? "bg-magenta-100 text-magenta-700"
+                                : ""
+                            }`}
+                            onMouseDown={() => {
+                              props.setServerConfig((prev) => ({
+                                ...prev,
+                                LLM_BASE_URL: url,
+                                LLM_API_KEY: null,
+                              }));
+                              setShowOptions(false);
+                            }}
+                          >
+                            {url}
+                          </li>
+                        )}
+                      </For>
+                    </ul>
+                  )}
+                </div>
               </div>
 
               <div class="col-span-4 sm:col-span-2">
@@ -135,6 +224,40 @@ export const LLMSettings = (props: {
                     Reset
                   </button>
                 </div>
+              </div>
+
+              <div class="col-span-4 sm:col-span-2">
+                <label
+                  for="llmAPIVersion"
+                  class="flex items-center gap-2 text-sm font-medium leading-6"
+                >
+                  LLM API Version
+                  <Tooltip
+                    body={<AiOutlineInfoCircle />}
+                    tooltipText="Specify the API version for the LLM if required by your provider. Azure OpenAI Service requires this to be set."
+                  />
+                </label>
+                <input
+                  type="text"
+                  name="llmAPIVersion"
+                  id="llmAPIVersion"
+                  class="block w-full rounded-md border-[0.5px] border-neutral-300 px-3 py-1.5 shadow-sm placeholder:text-neutral-400 focus:outline-magenta-500 sm:text-sm sm:leading-6"
+                  value={
+                    (props.serverConfig().LLM_API_VERSION as
+                      | string
+                      | undefined) ?? ""
+                  }
+                  onInput={(e) =>
+                    props.setServerConfig((prev) => ({
+                      ...prev,
+                      LLM_API_VERSION:
+                        e.currentTarget.value != ""
+                          ? e.currentTarget.value
+                          : null,
+                    }))
+                  }
+                  placeholder="Enter API version (optional)"
+                />
               </div>
 
               <div class="col-span-4 sm:col-span-2">
