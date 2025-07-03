@@ -2675,6 +2675,7 @@ pub struct DatasetConfiguration {
     pub LLM_BASE_URL: String,
     #[serde(skip_serializing)]
     pub LLM_API_KEY: String,
+    pub LLM_API_VERSION: Option<String>,
     #[serde(skip_serializing)]
     pub RERANKER_API_KEY: String,
     pub RERANKER_MODEL_NAME: String,
@@ -2759,6 +2760,8 @@ pub struct DatasetConfigurationDTO {
     #[serde(skip_serializing)]
     /// The API key for the LLM API
     pub LLM_API_KEY: Option<String>,
+    /// The API version for the LLM API
+    pub LLM_API_VERSION: Option<String>,
     #[serde(skip_serializing)]
     /// The API key for the Reranker API
     pub RERANKER_API_KEY: Option<String>,
@@ -2848,6 +2851,7 @@ impl From<DatasetConfigurationDTO> for DatasetConfiguration {
         DatasetConfiguration {
             LLM_BASE_URL: dto.LLM_BASE_URL.unwrap_or("https://api.openai.com/v1".to_string()),
             LLM_API_KEY: dto.LLM_API_KEY.unwrap_or("".to_string()),
+            LLM_API_VERSION: dto.LLM_API_VERSION,
             RERANKER_API_KEY: dto.RERANKER_API_KEY.unwrap_or("".to_string()),
             RERANKER_MODEL_NAME: dto.RERANKER_MODEL_NAME.unwrap_or("bge-reranker-large".to_string()),
             EMBEDDING_BASE_URL: dto.EMBEDDING_BASE_URL.unwrap_or("https://embedding.trieve.ai".to_string()),
@@ -2917,6 +2921,7 @@ impl From<DatasetConfiguration> for DatasetConfigurationDTO {
         DatasetConfigurationDTO {
             LLM_BASE_URL: Some(config.LLM_BASE_URL),
             LLM_API_KEY: Some(config.LLM_API_KEY),
+            LLM_API_VERSION: config.LLM_API_VERSION,
             RERANKER_API_KEY: Some(config.RERANKER_API_KEY),
             RERANKER_MODEL_NAME: Some(config.RERANKER_MODEL_NAME),
             EMBEDDING_BASE_URL: Some(config.EMBEDDING_BASE_URL),
@@ -2969,6 +2974,7 @@ impl Default for DatasetConfiguration {
         DatasetConfiguration {
             LLM_BASE_URL: "https://api.openai.com/v1".to_string(),
             LLM_API_KEY: "".to_string(),
+            LLM_API_VERSION: None,
             RERANKER_API_KEY: "".to_string(),
             RERANKER_MODEL_NAME: "bge-reranker-large".to_string(),
             EMBEDDING_BASE_URL: "https://embedding.trieve.ai".to_string(),
@@ -3057,6 +3063,10 @@ impl DatasetConfiguration {
                     }
                 })
                 .unwrap_or("".to_string()),
+            LLM_API_VERSION: configuration
+                .get("LLM_API_VERSION")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string()),
             RERANKER_API_KEY: configuration
                 .get("RERANKER_API_KEY")
                 .unwrap_or(&json!("".to_string()))
@@ -3356,6 +3366,7 @@ impl DatasetConfiguration {
         json!({
             "LLM_BASE_URL": self.LLM_BASE_URL,
             "LLM_API_KEY": self.LLM_API_KEY,
+            "LLM_API_VERSION": self.LLM_API_VERSION,
             "RERANKER_API_KEY": self.RERANKER_API_KEY,
             "RERANKER_BASE_URL": self.RERANKER_BASE_URL,
             "RERANKER_MODEL_NAME": self.RERANKER_MODEL_NAME,
@@ -3432,6 +3443,9 @@ impl DatasetConfigurationDTO {
                 .LLM_API_KEY
                 .clone()
                 .unwrap_or(curr_dataset_config.LLM_API_KEY),
+            LLM_API_VERSION: self
+                .LLM_API_VERSION
+                .clone(),
             RERANKER_API_KEY: self
                 .RERANKER_API_KEY
                 .clone()

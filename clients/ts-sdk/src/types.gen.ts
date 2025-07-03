@@ -1398,6 +1398,10 @@ export type DatasetConfigurationDTO = {
      */
     INDEXED_ONLY?: (boolean) | null;
     /**
+     * The API version for the LLM API
+     */
+    LLM_API_VERSION?: (string) | null;
+    /**
      * The base URL for the LLM API
      */
     LLM_BASE_URL?: (string) | null;

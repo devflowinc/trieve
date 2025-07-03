@@ -6,7 +6,6 @@ use crate::{
     },
     errors::ServiceError,
     get_env,
-    middleware::auth_middleware::{verify_admin, verify_owner},
     operators::{
         chunk_operator::get_chunk_queue_length,
         dataset_operator::{
@@ -268,7 +267,7 @@ pub struct UpdateDatasetReqPayload {
 pub async fn update_dataset(
     data: web::Json<UpdateDatasetReqPayload>,
     pool: web::Data<Pool>,
-    user: OwnerOnly,
+    _user: OwnerOnly,
     org_with_plan_and_sub: OrganizationWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let curr_dataset = if let Some(dataset_id) = data.dataset_id {
@@ -285,10 +284,6 @@ pub async fn update_dataset(
             "You must provide a dataset_id or tracking_id to update a dataset".to_string(),
         ));
     };
-
-    if !verify_owner(&user, &curr_dataset.organization_id) {
-        return Err(ServiceError::Forbidden);
-    }
 
     let curr_dataset_config = DatasetConfiguration::from_json(curr_dataset.server_configuration);
 
@@ -334,16 +329,12 @@ pub async fn delete_dataset(
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    user: OwnerOnly,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     if dataset_org_plan_sub.dataset.id != *data {
         return Err(ServiceError::BadRequest(
             "Dataset header does not match provided dataset ID".to_string(),
         ));
-    }
-
-    if !verify_owner(&user, &dataset_org_plan_sub.organization.organization.id) {
-        return Err(ServiceError::Forbidden);
     }
 
     let config = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
@@ -516,15 +507,12 @@ pub async fn clear_dataset(
     data: web::Path<uuid::Uuid>,
     redis_pool: web::Data<RedisPool>,
     dataset_org_plan_sub: DatasetAndOrgWithSubAndPlan,
-    user: OwnerOnly,
+    _user: OwnerOnly,
 ) -> Result<HttpResponse, ServiceError> {
     if dataset_org_plan_sub.dataset.id != *data {
         return Err(ServiceError::BadRequest(
             "Dataset header does not match provided dataset ID".to_string(),
         ));
-    }
-    if !verify_owner(&user, &dataset_org_plan_sub.organization.organization.id) {
-        return Err(ServiceError::Forbidden);
     }
 
     let config = DatasetConfiguration::from_json(dataset_org_plan_sub.dataset.server_configuration);
@@ -663,7 +651,7 @@ pub async fn delete_dataset_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
     redis_pool: web::Data<RedisPool>,
-    user: OwnerOnly,
+    _user: OwnerOnly,
     org_with_plan_and_sub: OrganizationWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let dataset = get_dataset_by_tracking_id_query(
@@ -672,10 +660,6 @@ pub async fn delete_dataset_by_tracking_id(
         pool.clone(),
     )
     .await?;
-
-    if !verify_owner(&user, &dataset.organization_id) {
-        return Err(ServiceError::Forbidden);
-    }
 
     let config = DatasetConfiguration::from_json(dataset.server_configuration);
 
@@ -708,13 +692,9 @@ pub async fn delete_dataset_by_tracking_id(
 pub async fn get_dataset(
     pool: web::Data<Pool>,
     dataset_id: web::Path<uuid::Uuid>,
-    user: AdminOnly,
+    _user: AdminOnly,
 ) -> Result<HttpResponse, ServiceError> {
     let mut dataset = get_dataset_by_id_query(dataset_id.into_inner(), pool).await?;
-
-    if !verify_admin(&user, &dataset.organization_id) {
-        return Err(ServiceError::Forbidden);
-    }
 
     dataset.server_configuration = json!(DatasetConfiguration::from_json(
         dataset.server_configuration
@@ -780,7 +760,7 @@ pub async fn get_usage_by_dataset_id(
 pub async fn get_dataset_by_tracking_id(
     tracking_id: web::Path<String>,
     pool: web::Data<Pool>,
-    user: AdminOnly,
+    _user: AdminOnly,
     org_with_plan_and_sub: OrganizationWithSubAndPlan,
 ) -> Result<HttpResponse, ServiceError> {
     let mut dataset = get_dataset_by_tracking_id_query(
@@ -790,10 +770,6 @@ pub async fn get_dataset_by_tracking_id(
     )
     .await
     .map_err(|e| ServiceError::InternalServerError(e.to_string()))?;
-
-    if !verify_admin(&user, &dataset.organization_id) {
-        return Err(ServiceError::Forbidden);
-    }
 
     dataset.server_configuration = json!(DatasetConfiguration::from_json(
         dataset.server_configuration
