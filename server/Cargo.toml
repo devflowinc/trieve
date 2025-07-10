@@ -126,7 +126,7 @@ time = { version = "0.3" }
 uuid = { version = "1", features = ["v4", "serde", "v5"] }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
-openai_dive = { git = "https://github.com/devflowinc/openai-client.git", rev = "61531093857b987c889d2d3ad8f2d80cb90ec050", features = [
+openai_dive = { git = "https://github.com/devflowinc/openai-client.git", rev = "6c52d30bedc40877c2880e71524f9e36b0c66cee", features = [
     "stream",
 ] }
 tokio = { version = "1.27.0", features = ["rt-multi-thread"] }
@@ -153,9 +153,9 @@ utoipa = { version = "4.2", features = [
     "debug",
 ] }
 utoipa-redoc = { version = "4.0", features = ["actix-web"] }
-openidconnect = { git = "https://github.com/devflowinc/openidconnect-rs.git", rev = "9b9cefd91ae7e1bc4ad336a9bed5dcf04fa179a5",  features = [
+openidconnect = { git = "https://github.com/devflowinc/openidconnect-rs.git", rev = "9b9cefd91ae7e1bc4ad336a9bed5dcf04fa179a5", features = [
     "reqwest",
-    "accept-rfc3339-timestamps"
+    "accept-rfc3339-timestamps",
 ], default-features = false }
 oauth2 = "4.4.2"
 dateparser = "0.2.1"
@@ -198,7 +198,10 @@ url = "2.5.4"
 actix-request-reply-cache = "0.1.6"
 sentry = { version = "0.41.0", features = ["tracing"] }
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter", "registry"] }
+tracing-subscriber = { version = "0.3.19", features = [
+    "env-filter",
+    "registry",
+] }
 sentry-tracing = "0.41.0"
 sentry-actix = "0.41.0"
 
