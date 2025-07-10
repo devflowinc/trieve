@@ -113,13 +113,17 @@ pub fn get_csvjsonl_aws_bucket() -> Result<Bucket, ServiceError> {
     } else {
         let s3_access_key = std::env::var("S3_ACCESS_KEY_CSVJSONL")
             .unwrap_or(get_env!("S3_ACCESS_KEY", "S3_ACCESS_KEY should be set").to_string());
-        let s3_secret_key = std::env::var("S3_SECRET_KEY_CSVJSONL").unwrap_or(
-            get_env!(
-                "S3_SECRET_KEY",
-                "S3_SECRET_KEY should be set"
-            )
-            .to_string(),
-        );
+        let s3_secret_key = match std::env::var("S3_SECRET_KEY_CSVJSONL") {
+            Ok(val) => val,
+            Err(_) => match std::env::var("S3_SECRET_KEY") {
+                Ok(val) => val,
+                Err(_) => {
+                    return Err(ServiceError::BadRequest(
+                        "S3_SECRET_KEY_CSVJSONL or S3_SECRET_KEY should be set".to_string(),
+                    ));
+                }
+            },
+        };
 
         Credentials {
             access_key: Some(s3_access_key),
