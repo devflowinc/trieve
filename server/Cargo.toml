@@ -126,9 +126,6 @@ time = { version = "0.3" }
 uuid = { version = "1", features = ["v4", "serde", "v5"] }
 diesel_migrations = { version = "2.0" }
 regex = "1.7.3"
-openai_dive = { git = "https://github.com/devflowinc/openai-client.git", rev = "6c52d30bedc40877c2880e71524f9e36b0c66cee", features = [
-    "stream",
-] }
 tokio = { version = "1.27.0", features = ["rt-multi-thread"] }
 tokio-stream = "0.1.12"
 futures-util = "0.3.28"
@@ -204,6 +201,7 @@ tracing-subscriber = { version = "0.3.19", features = [
 ] }
 sentry-tracing = "0.41.0"
 sentry-actix = "0.41.0"
+openai_dive = { version = "1.2.3", features = ["stream"] }
 
 [build-dependencies]
 dotenvy = "0.15.7"
