@@ -11,13 +11,17 @@ export async function GET(context) {
     description:
       "Sell more and answer every question with Conversational Discovery. Trieve uses GenAI to show your users what they're looking for every time",
     site: context.site,
-    items: blog.map((post) => ({
-      link: `/blog/${post.id}/`,
-      content: sanitizeHtml(parser.render(post.body), {
-        allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
-      }),
-      ...post.data,
-    })),
+    items: blog
+      .filter((post) => !(post.data.isDraft ?? false))
+      .sort((a, b) => new Date(b.data.date) - new Date(a.data.date))
+      .map((post) => ({
+        link: `/blog/${post.id}/`,
+        content: sanitizeHtml(parser.render(post.body), {
+          allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+        }),
+        pubDate: post.data.lastUpdatedAt,
+        ...post.data,
+      })),
     customData: `<language>en-us</language>`,
   });
 }

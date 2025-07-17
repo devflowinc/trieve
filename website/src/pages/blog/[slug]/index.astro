@@ -66,16 +66,33 @@ const ogImage = new URL(i18n.coverImage.src, site).href;
         <p class="md:flex-1/2 text-xl max-w-[40ch]">{i18n.summary}</p>
 
         {
-          i18n.author || i18n.lastUpdatedAt || i18n.createdAt ? (
-            <p class="text-black">
-              {i18n.author ? `Written by ${i18n.author}.` : null}
-              {i18n.lastUpdatedAt
-                ? `${i18n.lastUpdatedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+          (i18n.author || i18n.lastUpdatedAt || i18n.createdAt) && (
+            <div class="flex flex-wrap items-center gap-2 text-sm text-gray-700">
+              {i18n.author && (
+          <span class="font-medium">{`Written by ${i18n.author}`}</span>
+              )}
+              {(i18n.lastUpdatedAt || i18n.createdAt) && (
+          <>
+            <span class="mx-1 text-gray-400">•</span>
+            <span>
+              {(i18n.lastUpdatedAt
+                ? i18n.lastUpdatedAt
                 : i18n.createdAt
-                  ? `${i18n.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
-                  : null}
-            </p>
-          ) : null
+              )
+                ? (i18n.lastUpdatedAt
+                    ? i18n.lastUpdatedAt
+                    : i18n.createdAt
+                  )?.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : ""}
+            </span>
+          </>
+              )}
+            </div>
+          )
         }
 
         <div class="flex flex-row gap-2">
