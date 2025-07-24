@@ -5,23 +5,17 @@ metadata:
     generative AI powering discovery experiences that delight users and drive
     conversions.
 hero:
-  tagline: GenAI for your Shopify store
-  taglineURL: https://apps.shopify.com/trieve
   title: |
-    Conversational AI that *Converts*
+    *Thank you* for all of the searches!
   leadText: >-
-    Instantly add AI search, chat, and recommendations with our widget, or build
-    custom experiences with our API.
-  externalImageUrl: https://trieve.b-cdn.net/laptop-hero-gif-final-final-last.gif
+    Trieve is being sunset on November 1st and the license changed to MIT open
+    source as part of the acquisition by Mintlify. See more details on our blog.
+  image: /src/assets/images/home/hero/image.png
   overrideActions:
-    - label: Start Free
-      href: https://dashboard.trieve.ai
-      newTab: true
+    - label: See the Announcement
+      href: https://www.trieve.ai/blog/trieve-is-being-acquired-by-mintlify
+      newTab: false
       variant: primary
-    - label: Request a Demo
-      href: https://cal.com/team/trieve/trieve-demo
-      newTab: true
-      variant: secondary
 killerFeatures:
   title: |
     The Everything Platform for AI

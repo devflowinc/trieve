@@ -20,13 +20,6 @@ invariant(i18n, "No homepage content found");
   <section
     class="min-h-[80vh] container text-center flex flex-col items-center gap-8 pt-8"
   >
-    {
-      i18n.hero.tagline ? (
-        <Tagline href={i18n.hero.taglineURL} target="_blank">
-          {i18n.hero.tagline}
-        </Tagline>
-      ) : null
-    }
     <h1
       class="text-balance text-6xl md:text-7xl lg:text-8xl font-medium -mt-4 md:mt-0"
       set:html={marked.parseInline(i18n.hero.title)}
@@ -37,10 +30,10 @@ invariant(i18n, "No homepage content found");
     <CallToAction actions={i18n.hero.overrideActions} />
     <div class="w-full md:w-4xl">
       <div
-        class="relative w-full aspect-[1.500013392976723] rounded-2xl overflow-hidden"
+        class="relative w-full aspect-video rounded-2xl overflow-hidden"
       >
         <img
-          src={i18n.hero.externalImageUrl ?? ""}
+          src={i18n.hero.image ?? ""}
           alt="Hero product sample view"
           class="rounded-2xl w-full h-full object-cover absolute inset-0"
           loading="eager"
