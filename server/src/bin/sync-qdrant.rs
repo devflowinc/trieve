@@ -32,6 +32,7 @@ async fn main() -> Result<(), ServiceError> {
     let web_pool = actix_web::web::Data::new(pool.clone());
 
     let collections = get_qdrant_collections().await?;
+    let mut total = 0;
 
     for collection in collections {
         println!("starting on collection: {:?}", collection);
@@ -72,6 +73,8 @@ async fn main() -> Result<(), ServiceError> {
                 .map(|(_, x)| *x)
                 .collect::<Vec<uuid::Uuid>>();
 
+            total += qdrant_point_ids.len();
+
             if !qdrant_point_ids_not_in_pg.is_empty() {
                 println!(
                     "len of qdrant_point_ids_not_in_pg: {:?}, {:?}",
@@ -80,6 +83,8 @@ async fn main() -> Result<(), ServiceError> {
                 );
 
                 delete_points_from_qdrant(qdrant_point_ids_not_in_pg, collection.clone()).await?;
+            } else {
+                println!("Scrolled {}/{}", qdrant_point_ids.len(), total);
             }
 
             offset = new_offset;
