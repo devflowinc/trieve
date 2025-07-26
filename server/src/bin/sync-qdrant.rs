@@ -34,16 +34,24 @@ async fn main() -> Result<(), ServiceError> {
     let collections = get_qdrant_collections().await?;
     let mut total = 0;
 
+    let pg_point_ids_and_datasets = get_pg_point_ids_from_qdrant_point_ids(
+        vec![uuid::Uuid::parse_str("3c1cc578-0e3e-4356-bff5-67e034b77962").unwrap()],
+        web_pool.clone(),
+    )
+    .await?;
+    println!("{:?}", pg_point_ids_and_datasets);
+
     for collection in collections {
         println!("starting on collection: {:?}", collection);
 
         let mut offset = Some(uuid::Uuid::nil().to_string());
 
         while let Some(cur_offset) = offset {
+            println!("cur_offset: {}", cur_offset);
             let (qdrant_point_ids, new_offset) = scroll_qdrant_collection_ids(
                 collection.clone(),
                 Some(cur_offset.to_string()),
-                Some(1000),
+                Some(10000),
             )
             .await?;
 
@@ -75,16 +83,28 @@ async fn main() -> Result<(), ServiceError> {
 
             total += qdrant_point_ids.len();
 
-            if !qdrant_point_ids_not_in_pg.is_empty() {
+            let qdrant_points_missing = qdrant_point_ids
+                .iter()
+                .filter(|x| !pg_point_ids.contains(x))
+                .map(|x| *x)
+                .collect::<Vec<uuid::Uuid>>();
+
+            if !qdrant_points_missing.is_empty() {
                 println!(
                     "len of qdrant_point_ids_not_in_pg: {:?}, {:?}",
-                    qdrant_point_ids_not_in_pg.len(),
+                    qdrant_points_missing.len(),
                     datasets_out_of_sync
                 );
 
-                delete_points_from_qdrant(qdrant_point_ids_not_in_pg, collection.clone()).await?;
+                delete_points_from_qdrant(qdrant_points_missing, collection.clone()).await?;
             } else {
-                println!("Scrolled {}/{}", qdrant_point_ids.len(), total);
+                println!(
+                    "{:?} Scrolled {}(qd) {}(pg) /{}",
+                    qdrant_point_ids.get(0),
+                    qdrant_point_ids.len(),
+                    pg_point_ids.len(),
+                    total
+                );
             }
 
             offset = new_offset;
