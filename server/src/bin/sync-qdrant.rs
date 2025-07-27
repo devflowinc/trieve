@@ -34,13 +34,6 @@ async fn main() -> Result<(), ServiceError> {
     let collections = get_qdrant_collections().await?;
     let mut total = 0;
 
-    let pg_point_ids_and_datasets = get_pg_point_ids_from_qdrant_point_ids(
-        vec![uuid::Uuid::parse_str("3c1cc578-0e3e-4356-bff5-67e034b77962").unwrap()],
-        web_pool.clone(),
-    )
-    .await?;
-    println!("{:?}", pg_point_ids_and_datasets);
-
     for collection in collections {
         println!("starting on collection: {:?}", collection);
 
@@ -64,23 +57,6 @@ async fn main() -> Result<(), ServiceError> {
                 .map(|(x, _)| *x)
                 .collect::<Vec<uuid::Uuid>>();
 
-            let qdrant_point_ids_and_datasets_not_in_pg = qdrant_point_ids
-                .iter()
-                .filter(|x| !pg_point_ids.contains(x))
-                .filter_map(|x| pg_point_ids_and_datasets.iter().find(|(y, _)| y == x))
-                .cloned()
-                .collect::<Vec<(uuid::Uuid, uuid::Uuid)>>();
-
-            let qdrant_point_ids_not_in_pg = qdrant_point_ids_and_datasets_not_in_pg
-                .iter()
-                .map(|(x, _)| *x)
-                .collect::<Vec<uuid::Uuid>>();
-
-            let datasets_out_of_sync = qdrant_point_ids_and_datasets_not_in_pg
-                .iter()
-                .map(|(_, x)| *x)
-                .collect::<Vec<uuid::Uuid>>();
-
             total += qdrant_point_ids.len();
 
             let qdrant_points_missing = qdrant_point_ids
@@ -91,9 +67,8 @@ async fn main() -> Result<(), ServiceError> {
 
             if !qdrant_points_missing.is_empty() {
                 println!(
-                    "len of qdrant_point_ids_not_in_pg: {:?}, {:?}",
+                    "len of qdrant_point_ids_not_in_pg: {:?}",
                     qdrant_points_missing.len(),
-                    datasets_out_of_sync
                 );
 
                 delete_points_from_qdrant(qdrant_points_missing, collection.clone()).await?;
