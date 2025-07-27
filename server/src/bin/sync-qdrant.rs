@@ -40,10 +40,11 @@ async fn main() -> Result<(), ServiceError> {
         let mut offset = Some(uuid::Uuid::nil().to_string());
 
         while let Some(cur_offset) = offset {
+            println!("cur_offset: {}", cur_offset);
             let (qdrant_point_ids, new_offset) = scroll_qdrant_collection_ids(
                 collection.clone(),
                 Some(cur_offset.to_string()),
-                Some(1000),
+                Some(10000),
             )
             .await?;
 
@@ -56,35 +57,29 @@ async fn main() -> Result<(), ServiceError> {
                 .map(|(x, _)| *x)
                 .collect::<Vec<uuid::Uuid>>();
 
-            let qdrant_point_ids_and_datasets_not_in_pg = qdrant_point_ids
-                .iter()
-                .filter(|x| !pg_point_ids.contains(x))
-                .filter_map(|x| pg_point_ids_and_datasets.iter().find(|(y, _)| y == x))
-                .cloned()
-                .collect::<Vec<(uuid::Uuid, uuid::Uuid)>>();
-
-            let qdrant_point_ids_not_in_pg = qdrant_point_ids_and_datasets_not_in_pg
-                .iter()
-                .map(|(x, _)| *x)
-                .collect::<Vec<uuid::Uuid>>();
-
-            let datasets_out_of_sync = qdrant_point_ids_and_datasets_not_in_pg
-                .iter()
-                .map(|(_, x)| *x)
-                .collect::<Vec<uuid::Uuid>>();
-
             total += qdrant_point_ids.len();
 
-            if !qdrant_point_ids_not_in_pg.is_empty() {
+            let qdrant_points_missing = qdrant_point_ids
+                .iter()
+                .filter(|x| !pg_point_ids.contains(x))
+                .map(|x| *x)
+                .collect::<Vec<uuid::Uuid>>();
+
+            if !qdrant_points_missing.is_empty() {
                 println!(
-                    "len of qdrant_point_ids_not_in_pg: {:?}, {:?}",
-                    qdrant_point_ids_not_in_pg.len(),
-                    datasets_out_of_sync
+                    "len of qdrant_point_ids_not_in_pg: {:?}",
+                    qdrant_points_missing.len(),
                 );
 
-                delete_points_from_qdrant(qdrant_point_ids_not_in_pg, collection.clone()).await?;
+                delete_points_from_qdrant(qdrant_points_missing, collection.clone()).await?;
             } else {
-                println!("Scrolled {}/{}", qdrant_point_ids.len(), total);
+                println!(
+                    "{:?} Scrolled {}(qd) {}(pg) /{}",
+                    qdrant_point_ids.get(0),
+                    qdrant_point_ids.len(),
+                    pg_point_ids.len(),
+                    total
+                );
             }
 
             offset = new_offset;
