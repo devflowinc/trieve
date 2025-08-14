@@ -121,6 +121,11 @@ services:
         condition: service_healthy
     network_mode: "host"
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     environment:
       - ADMIN_API_KEY=${ADMIN_API_KEY}
       - BASE_SERVER_URL=${BASE_SERVER_URL}
