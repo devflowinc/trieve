@@ -15,6 +15,8 @@
     </a>
     <a href="https://matrix.to/#/#trieve-general:trieve.ai">
         <img src="https://img.shields.io/badge/matrix-join-purple?style=flat&logo=matrix&logocolor=white" alt="Join Matrix"/>
+
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/devflowinc/trieve)](https://archestra.ai/mcp-catalog/devflowinc__trieve)
     </a>
     <a href="https://smithery.ai/server/trieve-mcp-server">
         <img src="https://smithery.ai/badge/trieve-mcp-server" alt="smithery badge"/>
