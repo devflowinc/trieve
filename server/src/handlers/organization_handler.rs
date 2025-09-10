@@ -509,7 +509,7 @@ pub struct CreateApiKeyResponse {
     )
 )]
 pub async fn create_organization_api_key(
-    _user: LoggedUser,
+    _user: AdminOnly,
     data: web::Json<CreateApiKeyReqPayload>,
     organization: OrganizationWithSubAndPlan,
     pool: web::Data<Pool>,
