@@ -6,6 +6,7 @@
 
 import {
   AddChunkToGroupReqPayload,
+  AutocompleteSearchOverGroupsReqPayload,
   CreateChunkGroupReqPayloadEnum,
   DeleteChunkGroupData,
   DeleteGroupByTrackingIdData,
@@ -535,6 +536,38 @@ export async function getGroupsForDataset(
     "get",
     {
       ...data,
+      datasetId: this.datasetId,
+    },
+    signal,
+  );
+}
+
+/**
+ * Provides autocomplete suggestions for group-oriented searches. This function returns suggested completions based on partial queries that can be used to search over groups. Useful for implementing search-as-you-type functionality for group searches.
+ *
+ * Example:
+ * ```js
+ * const data = await trieve.groupOrientedAutcomplete({
+ *   query: "partial search ter",
+ *   size: 10,
+ * });
+ * ```
+ */
+export async function groupOrientedAutcomplete(
+  /** @hidden */
+  this: TrieveSDK,
+  data: Omit<AutocompleteSearchOverGroupsReqPayload, "datasetId">,
+  signal?: AbortSignal,
+) {
+  if (!this.datasetId) {
+    throw new Error("datasetId is required");
+  }
+
+  return this.trieve.fetch(
+    "/api/chunk_group/group_oriented_autocomplete",
+    "post",
+    {
+      data,
       datasetId: this.datasetId,
     },
     signal,

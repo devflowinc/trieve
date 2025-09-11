@@ -17,8 +17,25 @@
   "files": [
     "dist"
   ],
-  "version": "0.0.122",
+  "version": "0.0.124",
   "license": "MIT",
+  "description": "TypeScript SDK for Mintlify Search",
+  "keywords": [
+    "trieve",
+    "sdk",
+    "typescript",
+    "search",
+    "api"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devflowinc/trieve.git",
+    "directory": "clients/ts-sdk"
+  },
+  "homepage": "https://github.com/devflowinc/trieve/tree/main/clients/ts-sdk",
+  "bugs": {
+    "url": "https://github.com/devflowinc/trieve/issues"
+  },
   "scripts": {
     "lint": "eslint 'src/**/*.ts'",
     "build:clean": "rm -f tsconfig.tsbuildinfo && rm -rf dist && yarn type:gen && yarn build",
