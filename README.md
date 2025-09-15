@@ -154,9 +154,9 @@ cp .env.dashboard ./frontends/dashboard/.env
 2. Replace the value for `LLM_API_KEY` to be your own OpenAI API key.
 3. Replace the value for `OPENAI_API_KEY` to be your own OpenAI API key.
 
-### Export the following keys in your terminal for local dev
+### Override the following keys in your terminal for local dev
 
-The PAGEFIND_CDN_BASE_URL and S3_SECRET_KEY_CSVJSONL could be set to a random list of strings.
+The PAGEFIND_CDN_BASE_URL and S3_SECRET_KEY_CSVJSONL can be set to a random list of strings.
 
 ```
 export OPENAI_API_KEY="your_OpenAI_api_key" \
