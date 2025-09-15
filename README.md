@@ -56,7 +56,7 @@
 
 **Are we missing a feature that your use case would need?** - call us at [628-222-4090](mailto:+16282224090), make a [Github issue](https://github.com/devflowinc/trieve/issues), or join the [Matrix community](https://matrix.to/#/#trieve-general:trieve.ai) and tell us! We are a small company who is still very hands-on and eager to build what you need; professional services are available.
 
-## Local development with Linux
+## Local Development
 
 ### Installing via Smithery
 
@@ -66,8 +66,9 @@ To install Trieve for Claude Desktop automatically via [Smithery](https://smithe
 npx -y @smithery/cli install trieve-mcp-server --client claude
 ```
 
-### Debian/Ubuntu Packages needed packages
+### System Dependencies
 
+#### Linux (Debian/Ubuntu)
 ```sh
 sudo apt install curl \
 gcc \
@@ -81,10 +82,21 @@ libssl-dev \
 openssl
 ```
 
-### Arch Packages needed
-
+#### Linux (Arch)
 ```sh
 sudo pacman -S base-devel postgresql-libs
+```
+
+#### MacOS
+```sh
+# Install Xcode command line tools
+xcode-select --install
+
+# Install Homebrew if not already installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install required packages
+brew install pkg-config openssl
 ```
 
 ### Install NodeJS and Yarn
