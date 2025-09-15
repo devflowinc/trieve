@@ -27,7 +27,7 @@ services:
       - ./data:/data
 
   bgem3:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
     command: --model-id BAAI/bge-m3 --revision main
     ports:
       - "7000:80"
@@ -35,7 +35,7 @@ services:
       - ./data:/data
 
   reranker:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.2
     command: --model-id BAAI/bge-reranker-base --revision main
     ports:
       - "8000:80"

@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+  clickhouse-db:
+    environment:
+      # Loop back to the host machine to reach the embedding server
+      - EMBEDDING_SERVER_URL=http://host.docker.internal:6000

@@ -245,8 +245,8 @@ services:
   dashboard:
     image: trieve/dashboard
     build:
-      context: ./frontends
-      dockerfile: ./dashboard/Dockerfile
+      context: .
+      dockerfile: ./frontends/dashboard/Dockerfile
     networks:
       - app-network
     ports:
@@ -261,8 +261,8 @@ services:
   chat:
     image: trieve/chat
     build:
-      context: ./frontends
-      dockerfile: ./chat/Dockerfile
+      context: .
+      dockerfile: ./frontends/chat/Dockerfile
     networks:
       - app-network
     ports:
@@ -275,8 +275,8 @@ services:
   search:
     image: trieve/search
     build:
-      context: ./frontends
-      dockerfile: /search/
+      context: .
+      dockerfile: ./frontends/search/Dockerfile
     networks:
       - app-network
     ports:

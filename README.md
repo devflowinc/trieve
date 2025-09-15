@@ -56,7 +56,7 @@
 
 **Are we missing a feature that your use case would need?** - call us at [628-222-4090](mailto:+16282224090), make a [Github issue](https://github.com/devflowinc/trieve/issues), or join the [Matrix community](https://matrix.to/#/#trieve-general:trieve.ai) and tell us! We are a small company who is still very hands-on and eager to build what you need; professional services are available.
 
-## Local development with Linux
+## Local Development
 
 ### Installing via Smithery
 
@@ -66,8 +66,9 @@ To install Trieve for Claude Desktop automatically via [Smithery](https://smithe
 npx -y @smithery/cli install trieve-mcp-server --client claude
 ```
 
-### Debian/Ubuntu Packages needed packages
+### System Dependencies
 
+#### Linux (Debian/Ubuntu)
 ```sh
 sudo apt install curl \
 gcc \
@@ -81,10 +82,21 @@ libssl-dev \
 openssl
 ```
 
-### Arch Packages needed
-
+#### Linux (Arch)
 ```sh
 sudo pacman -S base-devel postgresql-libs
+```
+
+#### MacOS
+```sh
+# Install Xcode command line tools
+xcode-select --install
+
+# Install Homebrew if not already installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install required packages
+brew install pkg-config openssl
 ```
 
 ### Install NodeJS and Yarn
@@ -142,9 +154,9 @@ cp .env.dashboard ./frontends/dashboard/.env
 2. Replace the value for `LLM_API_KEY` to be your own OpenAI API key.
 3. Replace the value for `OPENAI_API_KEY` to be your own OpenAI API key.
 
-### Export the following keys in your terminal for local dev
+### Override the following keys in your terminal for local dev
 
-The PAGEFIND_CDN_BASE_URL and S3_SECRET_KEY_CSVJSONL could be set to a random list of strings.
+The PAGEFIND_CDN_BASE_URL and S3_SECRET_KEY_CSVJSONL can be set to a random list of strings.
 
 ```
 export OPENAI_API_KEY="your_OpenAI_api_key" \
@@ -161,6 +173,35 @@ GROQ_API_KEY="GROQ_API_KEY_if_applicable"
 cat .env.chat .env.search .env.server .env.docker-compose > .env
 
 ./convenience.sh -l
+```
+
+### Start embedding servers
+
+We offer 2 docker-compose files for embedding servers. One for GPU and one for CPU.
+
+```sh
+docker compose -f docker-compose-cpu-embeddings.yml up -d
+```
+
+or
+
+```sh
+docker compose -f docker-compose-gpu-embeddings.yml up -d
+```
+
+* Note on embedding servers. If you want to use a separate GPU enabled device for embedding servers you will need to update the following parameters
+
+```
+SPARSE_SERVER_QUERY_ORIGIN
+SPARSE_SERVER_DOC_ORIGIN
+EMBEDDING_SERVER_ORIGIN
+SPARSE_SERVER_QUERY_ORIGIN
+```
+
+#### Using CPU embeddings on MacOS
+```
+cp docker-compose-cpu-embeddings.override.mac docker-compose-cpu-embeddings.override.yml
+docker-compose -f docker-compose-cpu-embeddings.yml -f docker-compose-cpu-embeddings.override.yml docker up -d
 ```
 
 ### Install front-end packages for local dev
