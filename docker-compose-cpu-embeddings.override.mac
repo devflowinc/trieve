@@ -1,0 +1,21 @@
+# Docker Compose overrides for macOS development with CPU embeddings
+# To use this file: docker-compose -f docker-compose-cpu-embeddings.yml -f docker-compose-cpu-embeddings.override.yml up
+# For Linux development, don't include this override file
+
+version: '3'
+
+services:
+  splade-doc:
+    platform: linux/amd64
+    
+  splade-query:
+    platform: linux/amd64
+    
+  jina:
+    platform: linux/amd64
+    
+  bgem3:
+    platform: linux/amd64
+    
+  reranker:
+    platform: linux/amd64

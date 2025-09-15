@@ -175,6 +175,35 @@ cat .env.chat .env.search .env.server .env.docker-compose > .env
 ./convenience.sh -l
 ```
 
+### Start embedding servers
+
+We offer 2 docker-compose files for embedding servers. One for GPU and one for CPU.
+
+```sh
+docker compose -f docker-compose-cpu-embeddings.yml up -d
+```
+
+or
+
+```sh
+docker compose -f docker-compose-gpu-embeddings.yml up -d
+```
+
+* Note on embedding servers. If you want to use a separate GPU enabled device for embedding servers you will need to update the following parameters
+
+```
+SPARSE_SERVER_QUERY_ORIGIN
+SPARSE_SERVER_DOC_ORIGIN
+EMBEDDING_SERVER_ORIGIN
+SPARSE_SERVER_QUERY_ORIGIN
+```
+
+#### Using CPU embeddings on MacOS
+```
+cp docker-compose-cpu-embeddings.override.mac docker-compose-cpu-embeddings.override.yml
+docker-compose -f docker-compose-cpu-embeddings.yml -f docker-compose-cpu-embeddings.override.yml docker up -d
+```
+
 ### Install front-end packages for local dev
 
 ```
