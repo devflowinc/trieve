@@ -39,6 +39,10 @@
 - [Typescript SDK](https://ts-sdk.trieve.ai/)
 - [Python SDK](https://pypi.org/project/trieve-py-client/)
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/devflowinc-trieve).
+
 ## Features
 
 - **🔒 Self-Hosting in your VPC or on-prem**: We have full self-hosting guides for AWS, GCP, Kubernetes generally, and docker compose available on our [documentation page here](https://docs.trieve.ai/self-hosting/docker-compose).
