@@ -470,12 +470,29 @@ pub async fn get_crawl_by_scrape_id_query(
     Ok(request.into())
 }
 
-pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestResult, ServiceError> {
-    log::info!("Getting crawl from firecrawl");
+/// Resolve the crawl backend base URL and API key.
+///
+/// fastCRW is a Firecrawl-compatible web scraper (single binary; self-host or
+/// cloud at https://fastcrw.com/api). When `CRW_URL`/`CRW_API_KEY` are set they
+/// take precedence so the same Firecrawl-compatible code path targets fastCRW;
+/// otherwise the existing Firecrawl env vars (and Firecrawl cloud default) are
+/// used, preserving the original behavior.
+fn get_crawl_backend() -> (String, String) {
+    if let Ok(crw_url) = std::env::var("CRW_URL") {
+        let crw_api_key = std::env::var("CRW_API_KEY").unwrap_or_else(|_| "".to_string());
+        return (crw_url, crw_api_key);
+    }
 
     let firecrawl_url =
         std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "https://api.firecrawl.dev".to_string());
     let firecrawl_api_key = std::env::var("FIRECRAWL_API_KEY").unwrap_or_else(|_| "".to_string());
+    (firecrawl_url, firecrawl_api_key)
+}
+
+pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestResult, ServiceError> {
+    log::info!("Getting crawl from firecrawl");
+
+    let (firecrawl_url, firecrawl_api_key) = get_crawl_backend();
     let mut firecrawl_url = format!("{}/v1/crawl/{}", firecrawl_url, scrape_id);
 
     let mut collected_docs: Vec<Option<Document>> = vec![];
@@ -553,9 +570,7 @@ pub async fn get_crawl_from_firecrawl(scrape_id: uuid::Uuid) -> Result<IngestRes
 }
 
 pub async fn crawl_site(crawl_options: CrawlOptions) -> Result<uuid::Uuid, ServiceError> {
-    let firecrawl_url =
-        std::env::var("FIRECRAWL_URL").unwrap_or_else(|_| "https://api.firecrawl.dev".to_string());
-    let firecrawl_api_key = std::env::var("FIRECRAWL_API_KEY").unwrap_or_else(|_| "".to_string());
+    let (firecrawl_url, firecrawl_api_key) = get_crawl_backend();
     let firecrawl_url = format!("{}/v1/crawl", firecrawl_url);
     let client = reqwest::Client::new();
     let response = client
@@ -879,4 +894,29 @@ pub async fn process_crawl_doc(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod crw_tests {
+    use crate::data::models::CrawlType;
+
+    /// fastCRW is registered as an additive crawl backend alongside Firecrawl.
+    /// It maps from the "crw" string and never disturbs the existing variants.
+    #[test]
+    fn crawl_type_parses_crw_variant() {
+        assert_eq!(CrawlType::from("crw".to_string()), CrawlType::Crw);
+        // Existing variants remain intact (additive, non-breaking).
+        assert_eq!(
+            CrawlType::from("firecrawl".to_string()),
+            CrawlType::Firecrawl
+        );
+        assert_eq!(CrawlType::from("openapi".to_string()), CrawlType::OpenAPI);
+        assert_eq!(CrawlType::from("shopify".to_string()), CrawlType::Shopify);
+        assert_eq!(CrawlType::from("youtube".to_string()), CrawlType::Youtube);
+        // Unknown values still fall back to Firecrawl (unchanged behavior).
+        assert_eq!(
+            CrawlType::from("unknown".to_string()),
+            CrawlType::Firecrawl
+        );
+    }
 }
