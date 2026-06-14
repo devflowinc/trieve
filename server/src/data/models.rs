@@ -9913,6 +9913,9 @@ impl From<String> for CrawlStatus {
 pub enum CrawlType {
     #[serde(rename = "firecrawl")]
     Firecrawl,
+    /// fastCRW crawl type (Firecrawl-compatible web scraper; single binary, self-host or cloud)
+    #[serde(rename = "crw")]
+    Crw,
     /// OpenAPI crawl type
     #[serde(rename = "openapi")]
     OpenAPI,
@@ -9930,6 +9933,7 @@ impl From<String> for CrawlType {
             "openapi" => CrawlType::OpenAPI,
             "shopify" => CrawlType::Shopify,
             "youtube" => CrawlType::Youtube,
+            "crw" => CrawlType::Crw,
             "firecrawl" => CrawlType::Firecrawl,
             _ => CrawlType::Firecrawl,
         }
